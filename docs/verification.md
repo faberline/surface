@@ -57,9 +57,23 @@ Playwright installation. `SURFACE_URL` defaults to `http://127.0.0.1:8080`.
 
 Windows/Linux native GPU runtime, other browsers, full IME editing,
 screen readers, performance/load, release packaging, and Core/Jet consumer
-migration are unrun or not implemented. The new CI workflow checks Linux
-builds and behavior; it does not prove a Linux GPU or window journey.
+migration are unrun or not implemented. The new CI workflow is configured to check Linux builds and behavior.
+Its first hosted job did not start because of the account billing limit.
+No Linux CI test ran. A passing future CI run would still not prove a
+Linux GPU or window journey.
 
 The pinned dependency `block 0.1.6` reports a Rust future-compatibility
 warning through the native graphics stack. Current Rust 1.96.1 checks pass.
 Upgrade the graphics stack before claiming support for later toolchains.
+
+## Hosted CI block
+
+[Initial run 41668157876](https://github.com/faberline/surface/actions/runs/41668157876)
+ended with `failure` before executing any job step. GitHub's check
+annotation states:
+
+> The job was not started because recent account payments have failed or your spending limit needs to be increased.
+
+The account owner must resolve the GitHub billing/spending restriction,
+then re-run the workflow. This is an unrun cloud gate. The local evidence
+above remains limited to the tested macOS and browser environments.
