@@ -1,0 +1,20 @@
+[package]
+name = "surface-wgpu"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+surface.workspace = true
+wgpu.workspace = true
+glyphon.workspace = true
+bytemuck.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+pollster.workspace = true
+png = "0.17"

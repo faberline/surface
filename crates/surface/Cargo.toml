@@ -1,0 +1,23 @@
+[package]
+name = "surface"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Renderer-neutral UI element model shared by Jet WASM, native desktop readers, renderers, and parity tools"
+
+[lib]
+name = "surface"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+
+taffy.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[lints]
+workspace = true

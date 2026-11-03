@@ -1,0 +1,152 @@
+# Surface
+
+A Rust app framework built around **UI = f(state)** and a small semantic
+MicroDOM. One application supplies the state, messages, and view. The same
+GPU renderer paints it in a native window or a browser canvas.
+
+This is the first working framework version. It includes a Material
+3-inspired component set, not the full Material component specification.
+
+![Material showcase rendered by the shared Rust GPU backend](docs/images/showcase.png)
+
+## Run the example
+
+Tested with Rust 1.96.1 through rustup. Put its shims before Homebrew's Rust on macOS.
+Local builds use `cap` and two build jobs.
+
+```sh
+export PATH="$HOME/.cargo/bin:$PATH"
+export CARGO_BUILD_JOBS=2
+cap cargo run --locked -p surface-showcase
+```
+
+For the browser:
+
+```sh
+rustup target add wasm32-unknown-unknown
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
+./scripts/build-web.sh
+python3 -m http.server 8080 --directory examples/showcase/web
+```
+
+Open `http://localhost:8080` in a browser with WebGPU. Production hosting
+needs HTTPS. The only HTML UI host is a canvas. Layout, components, state,
+input routing, and drawing run in Rust/WASM.
+
+The showcase supports a counter, reset, disabled controls, text input,
+keyboard focus, scrolling, and a light/dark theme. Both hosts use the same
+[`Showcase`](examples/showcase/src/lib.rs) implementation.
+
+## Write an app
+
+```rust,no_run
+use surface_app::{Application, View};
+use surface_material::Theme;
+
+#[derive(Default)]
+struct Counter { count: u32 }
+
+#[derive(Clone)]
+enum Message { Add }
+
+impl Application for Counter {
+    type Message = Message;
+
+    fn update(&mut self, message: Message) {
+        match message { Message::Add => self.count += 1 }
+    }
+
+    fn view(&self) -> View<Message> {
+        let theme = Theme::light();
+        theme.page([
+            theme.heading("count", self.count.to_string()),
+            theme.button("add", "Add one", Message::Add),
+        ])
+    }
+}
+
+fn main() -> Result<(), surface_platform::HostError> {
+    surface_platform::run(Counter::default())
+}
+```
+
+Add `surface-app`, `surface-material`, and `surface-platform` from this
+workspace to your app. The repository has no dependency on Core or Jet.
+The crates are not yet published on crates.io.
+
+`view(&self)` describes the current UI. Keep it pure: no network calls,
+state writes, timers, or platform work. Compose components as Rust functions
+that return `View<Message>`. Events produce messages. `update` changes
+state. The runtime then builds a fresh semantic tree. Stable control IDs
+preserve focus across updates. A retained layout engine reuses unchanged
+measurements. Renderer resources stay outside application state.
+
+## Packages
+
+| Package | Responsibility |
+| --- | --- |
+| `surface` | Existing Element API, compact MicroDOM arena, semantic lookup, typed style, retained layout, geometry, hit testing, display list |
+| `surface-app` | Pure views, application state, typed messages, pointer/keyboard input, focus and scroll state |
+| `surface-material` | Light/dark color roles, text, headings, cards, rows, filled/tonal/disabled buttons, checkbox, controlled text field |
+| `surface-wgpu` | Rounded rectangle shader, embedded font, shared text shaping, clipped GPU painting in display-list order |
+| `surface-platform` | Native window and browser canvas hosts, GPU surface setup, resize/DPI handling, platform event translation |
+| `ui-runtime` | Existing hooks API imported from Core for compatibility; independent of the new application API |
+| `surface-showcase` | One application built as a desktop binary or WASM library |
+
+```mermaid
+flowchart LR
+    State --> View[view: state to UI]
+    View --> MicroDOM --> Layout --> DisplayList
+    DisplayList --> GPU[shared wgpu renderer]
+    GPU --> Desktop[native GPU window]
+    GPU --> Web[WASM / WebGPU canvas]
+    Desktop --> Input
+    Web --> Input
+    Input --> Message --> Update --> State
+```
+
+## Verify
+
+```sh
+./scripts/check.sh
+./scripts/check-gpu.sh
+cap cargo run --locked -p surface-showcase -- --smoke
+```
+
+The first script checks format, Rust behavior, native compilation, and WASM
+compilation. The second explicitly runs the GPU pixel test. It fails when
+an adapter is unavailable. The desktop smoke run creates a real window,
+paints two frames, and exits. A browser smoke journey is available in
+[`scripts/browser-smoke.mjs`](scripts/browser-smoke.mjs).
+
+## Current limits
+
+- Material components cover the controls listed above. Motion, ripples,
+  menus, dialogs, and a full design-token system remain planned.
+- The text field appends at the end and removes the last Unicode scalar.
+  Caret movement, selection, clipboard, complete IME composition, and
+  grapheme editing remain planned. Commit events are accepted.
+- Semantic roles support tests. Native screen-reader bridges and an
+  accessible HTML companion tree remain planned.
+- Flexbox, wrapping, clipping, scroll offsets, and ordered paint are present.
+  Images, animation, transforms, and a general CSS engine are not included.
+- Application state is explicit. Async commands and keyed local component
+  state need a separate design. The legacy hooks package is retained, but
+  it is not connected to `View<Message>`.
+- macOS and browser runtime checks are separate from Windows/Linux build
+  and runtime qualification. See [verification](docs/verification.md).
+
+See [architecture](docs/architecture.md), [migration](docs/migration.md),
+and [remaining work](docs/roadmap.md).
+
+## Origin and license
+
+`surface` and `ui-runtime` started as MIT-licensed packages from
+[`faberline/core`](https://github.com/faberline/core) at
+`41c352eaae687a1914087d279f36adbe9e9b4af5`.
+The source inventory is in [`docs/provenance.json`](docs/provenance.json).
+Jet supplies the public-domain Tuffy font and reference layout concepts.
+No Jet renderer or application code is linked. Font attribution is in
+[`assets/LICENSE.txt`](crates/surface-wgpu/assets/LICENSE.txt).
+
+MIT. See [LICENSE](LICENSE).
