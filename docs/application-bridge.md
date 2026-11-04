@@ -105,6 +105,17 @@ CLI/MCP state. The native test checks authentication, file permissions and
 normal descriptor cleanup. The web test checks WebGPU readiness, PNG
 capture and actual browser exit. It uses no Playwright runtime.
 
+For a small native viewport and an explicit focus-scrolling regression:
+
+```sh
+cap cargo build --locked -p surface-material-gallery --features devtools --example compact
+CHROME_PATH=/path/to/chrome python3 scripts/bridge-e2e.py --jet-bridge /path/to/jet-bridge --native-bin target/debug/examples/compact --require-overflow
+```
+
+This requires the slider to start clipped. Tab must reach it and its new
+geometry must be visible on both hosts. The fixture uses the same gallery
+application and changes only its native viewport size.
+
 Local macOS native and Chrome 157 WASM journeys pass. Linux and Windows
 native runtime journeys remain unrun. Semantic Chinese fill is not a
 test of OS IME candidate windows. Physical native Zhuyin composition

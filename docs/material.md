@@ -45,6 +45,12 @@ methods call the same implementations. Stable IDs preserve focus after
 an update. Nested modal panels keep their own focus restoration points.
 A click that dismisses a modal panel does not activate a background control.
 
+Tab can reach controls outside a scroll viewport. A new focus target is
+revealed from its inner scroll container to its outer container. A viewport
+resize also reveals focus. Fixed overlays do not move the background.
+Repeated frames preserve a deliberate manual scroll when focus and viewport
+have not changed. A target larger than its viewport is aligned at its start.
+
 ## Gallery and evidence
 
 Run `cap cargo run --locked -p surface-material-gallery` for a native window.
@@ -58,5 +64,5 @@ modal bounds. It also reads the live DOM export. The native smoke check
 presents two frames. It does not prove every native interaction or variant.
 
 Open gaps include the remaining families and variants, exact Material
-shapes and typography, elevation, animation, touch refinements, automated
-focus scrolling and platform accessibility. See [verification](verification.md).
+shapes and typography, elevation, animation, touch refinements and platform
+accessibility. See [verification](verification.md).

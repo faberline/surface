@@ -77,6 +77,15 @@ def node(snapshot, stable_id):
     return next(item for item in snapshot["dom"]["nodes"] if item["stable_id"] == stable_id)
 
 
+def fully_visible(snapshot, stable_id):
+    index = next(i for i, item in enumerate(snapshot["dom"]["nodes"]) if item["stable_id"] == stable_id)
+    geometry = snapshot["layout"]["nodes"][index]
+    bounds, clip = geometry["bounds"], geometry["clip"]
+    return (bounds["x"] >= clip["x"] - 0.5 and bounds["y"] >= clip["y"] - 0.5
+            and bounds["x"] + bounds["width"] <= clip["x"] + clip["width"] + 0.5
+            and bounds["y"] + bounds["height"] <= clip["y"] + clip["height"] + 0.5)
+
+
 def journey(client, mode):
     caps = client.tool("ui_capabilities")
     assert caps["runtime"] == "surface" and caps["snapshot_schema"] == "surface.dom.v1", caps
@@ -84,6 +93,20 @@ def journey(client, mode):
     assert first["version"] == 1 and len(first["dom"]["nodes"]) > 10
     assert len(first["layout"]["nodes"]) == len(first["dom"]["nodes"]), "missing current geometry"
     assert first["layout"]["nodes"][0]["bounds"]["width"] > 0
+    initially_clipped = not fully_visible(first, "volume")
+    # A clipped control remains reachable by Tab. Read actual new geometry.
+    visited = []
+    for _ in range(20):
+        client.cli("ui", "key", "tab")
+        frame = client.tool("ui_snapshot")
+        focused = frame["interaction"]["focused"]
+        assert focused not in visited, f"Tab cycled before reaching volume: {visited}"
+        visited.append(focused)
+        if focused == "volume":
+            assert fully_visible(frame, "volume"), "focused range is still clipped"
+            break
+    else:
+        raise AssertionError("Tab did not reach the range control")
     client.tool("ui_set_value", {"id": "volume", "value": 67})
     assert node(client.cli("ui", "snapshot"), "volume")["range"]["value"] == 65
     client.cli("ui", "activate", "check")
@@ -124,7 +147,9 @@ def journey(client, mode):
     (ARTIFACTS / f"bridge-{mode}-dom.json").write_text(json.dumps(final, ensure_ascii=False, indent=2))
     return {"mode": mode, "tools": 7, "saved_name": "中文橋接🦀", "focus_restored": True,
             "controlled_range": 65, "stale_node_rejected": True, "disabled_rejected": True,
-            "modal_scope_enforced": True, "cli_mcp_share_state": True, "matching_layout": True}
+            "modal_scope_enforced": True, "cli_mcp_share_state": True, "matching_layout": True,
+            "tab_reaches_scrolled_controls": True, "tab_order": visited,
+            "initial_range_clipped": initially_clipped}
 
 
 def native(args, folder, diagnostic):
@@ -241,6 +266,8 @@ def main():
     parser.add_argument("--jet-bridge", required=True, type=Path)
     parser.add_argument("--native-bin", type=Path, default=ROOT / "target/debug/surface-material-gallery")
     parser.add_argument("--mode", choices=["native", "web", "both"], default="both")
+    parser.add_argument("--require-overflow", action="store_true",
+                        help="Require the range to start outside the visible viewport")
     args = parser.parse_args()
     args.jet_bridge = args.jet_bridge.resolve()
     ARTIFACTS.mkdir(exist_ok=True)
@@ -249,6 +276,8 @@ def main():
         with tempfile.TemporaryDirectory(prefix=f"surface-bridge-{mode}-") as folder, \
                 (ARTIFACTS / f"bridge-{mode}-stderr.log").open("w") as diagnostic:
             result = (native if mode == "native" else web)(args, folder, diagnostic)
+            if args.require_overflow:
+                assert result["initial_range_clipped"], f"{mode} fixture did not exercise scrolling"
             evidence.append(result)
             (ARTIFACTS / f"bridge-{mode}-result.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
             print(json.dumps(result, ensure_ascii=False), flush=True)

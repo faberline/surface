@@ -4,6 +4,7 @@ mod bridge;
 mod controls;
 mod editing;
 mod editing_runtime;
+mod focus_scroll;
 mod snapshot;
 pub use controls::Roving;
 pub use editing::{
@@ -174,6 +175,8 @@ pub struct Runtime<A: Application> {
     scopes: Vec<controls::FocusScope>,
     range_drag: Option<controls::RangeDrag>,
     modal_outside: bool,
+    layout_focus: Option<String>,
+    layout_viewport: Option<(f32, f32)>,
 }
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
@@ -194,6 +197,8 @@ impl<A: Application> Runtime<A> {
             scopes: Vec::new(),
             range_drag: None,
             modal_outside: false,
+            layout_focus: None,
+            layout_viewport: None,
         };
         runtime.rebuild()?;
         Ok(runtime)
@@ -305,7 +310,20 @@ impl<A: Application> Runtime<A> {
         height: f32,
         measurer: &mut impl TextMeasurer,
     ) -> Result<DisplayList, AppError> {
-        let (display_dom, decorations, computed) = self.layout_editing(width, height, measurer)?;
+        let (mut display_dom, mut decorations, mut computed) =
+            self.layout_editing(width, height, measurer)?;
+        if self.focused != self.layout_focus || self.layout_viewport != Some((width, height)) {
+            if let Some(focused) = self.focused_node() {
+                for ancestor in self.scroll_ancestors(focused) {
+                    if self.reveal_in(focused, ancestor, &computed)? {
+                        (display_dom, decorations, computed) =
+                            self.layout_editing(width, height, measurer)?;
+                    }
+                }
+            }
+            self.layout_focus.clone_from(&self.focused);
+            self.layout_viewport = Some((width, height));
+        }
         let focused = self.focused.as_ref().and_then(|id| self.dom.by_id(id));
         let interaction = surface::InteractionState {
             hovered: self.hovered.as_ref().and_then(|id| self.dom.by_id(id)),
@@ -412,8 +430,7 @@ impl<A: Application> Runtime<A> {
                             && n.is_tab_stop()
                             && self.computed.as_ref().is_none_or(|c| {
                                 let g = &c.nodes[id.index()];
-                                let r = g.bounds.intersect(g.clip);
-                                r.width > 0. && r.height > 0.
+                                g.bounds.width > 0. && g.bounds.height > 0.
                             })
                     })
                     .filter_map(|(id, _)| self.stable(id))
