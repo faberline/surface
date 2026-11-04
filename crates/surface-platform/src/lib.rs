@@ -1,4 +1,6 @@
 //! Thin desktop/browser window host. The application never sees platform events.
+#[cfg(feature = "devtools")]
+mod devtools;
 #[cfg(not(target_arch = "wasm32"))]
 mod ime_session;
 mod keyboard;
@@ -7,7 +9,7 @@ mod web_input;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", feature = "devtools"))]
 use winit::event_loop::EventLoopProxy;
 use winit::{
     application::ApplicationHandler,
@@ -108,16 +110,23 @@ impl Gpu {
     }
 }
 enum UserEvent {
+    #[cfg(feature = "devtools")]
+    Bridge {
+        request: jet_bridge_protocol::Request,
+        reply: devtools::Reply,
+    },
     #[cfg(target_arch = "wasm32")]
-    Ready(Result<Gpu, HostError>),
+    Ready(Result<Box<Gpu>, HostError>),
 }
 struct Host<A: Application> {
     runtime: Rc<RefCell<Runtime<A>>>,
     options: Options,
     gpu: Option<Gpu>,
     window: Option<Arc<Window>>,
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(any(target_arch = "wasm32", feature = "devtools"))]
     proxy: EventLoopProxy<UserEvent>,
+    #[cfg(feature = "devtools")]
+    bridge: Option<devtools::Bridge>,
     pointer: (f32, f32),
     shift: bool,
     control: bool,
@@ -131,6 +140,53 @@ struct Host<A: Application> {
     ime: ime_session::ImeSession,
 }
 impl<A: Application> Host<A> {
+    #[cfg(feature = "devtools")]
+    fn install_bridge(&mut self, event_loop: &ActiveEventLoop) {
+        let result =
+            devtools::Bridge::install(self.proxy.clone(), self.runtime.borrow().app().title());
+        match result {
+            Ok(bridge) => self.bridge = bridge,
+            Err(error) => self.fail(event_loop, error),
+        }
+    }
+    #[cfg(feature = "devtools")]
+    fn bridge_request(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        request: jet_bridge_protocol::Request,
+        reply: devtools::Reply,
+    ) {
+        use jet_bridge_protocol::Response;
+        if self.gpu.is_none() || self.window.is_none() {
+            reply.send(Response::error(
+                request.id,
+                "not_ready",
+                "the application renderer is not ready",
+            ));
+            return;
+        }
+        // Read queries must use current geometry. Actions then present their new state.
+        self.draw(event_loop);
+        if self.error.is_some() {
+            reply.send(Response::error(
+                request.id,
+                "render_failed",
+                "the application renderer failed",
+            ));
+            return;
+        }
+        let mutating = request.command.is_mutating();
+        let id = request.id;
+        let response = self.runtime.borrow_mut().execute_bridge(request);
+        if mutating {
+            self.draw(event_loop);
+            if self.error.is_some() {
+                reply.send(Response::error(id, "render_failed", "the renderer failed after handling the action; application state may have changed"));
+                return;
+            }
+        }
+        reply.send(response);
+    }
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
         let message = error.to_string();
         eprintln!("Surface error: {message}");
@@ -293,6 +349,8 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         match pollster::block_on(Gpu::new(window)) {
             Ok(gpu) => {
                 self.gpu = Some(gpu);
+                #[cfg(feature = "devtools")]
+                self.install_bridge(event_loop);
                 self.window.as_ref().unwrap().request_redraw();
             }
             Err(error) => self.fail(event_loop, error),
@@ -301,22 +359,28 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         {
             let proxy = self.proxy.clone();
             wasm_bindgen_futures::spawn_local(async move {
-                let result = Gpu::new(window).await;
+                let result = Gpu::new(window).await.map(Box::new);
                 let _ = proxy.send_event(UserEvent::Ready(result));
             });
         }
     }
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(any(target_arch = "wasm32", feature = "devtools"))]
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
+            #[cfg(feature = "devtools")]
+            UserEvent::Bridge { request, reply } => self.bridge_request(event_loop, request, reply),
+            #[cfg(target_arch = "wasm32")]
             UserEvent::Ready(Ok(gpu)) => {
-                self.gpu = Some(gpu);
+                self.gpu = Some(*gpu);
+                #[cfg(feature = "devtools")]
+                self.install_bridge(event_loop);
                 if let (Some(window), Some(gpu)) = (&self.window, &mut self.gpu) {
                     let size = window.inner_size();
                     gpu.resize(size.width, size.height);
                     window.request_redraw();
                 }
             }
+            #[cfg(target_arch = "wasm32")]
             UserEvent::Ready(Err(error)) => self.fail(event_loop, error),
         }
     }
@@ -457,8 +521,10 @@ pub fn run_runtime<A: Application>(
         options,
         gpu: None,
         window: None,
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(any(target_arch = "wasm32", feature = "devtools"))]
         proxy: event_loop.create_proxy(),
+        #[cfg(feature = "devtools")]
+        bridge: None,
         pointer: (0., 0.),
         shift: false,
         control: false,

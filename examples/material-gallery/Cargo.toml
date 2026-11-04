@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 publish = false
 
+[features]
+devtools = ["surface-platform/devtools"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

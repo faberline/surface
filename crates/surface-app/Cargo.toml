@@ -5,12 +5,16 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+bridge = ["dep:jet-bridge-protocol"]
+
 [dependencies]
 surface.workspace = true
 thiserror.workspace = true
 unicode-segmentation.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
+jet-bridge-protocol = { workspace = true, optional = true }
 
 [lints]
 workspace = true
