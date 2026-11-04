@@ -5,6 +5,9 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+devtools = ["surface-app/bridge", "dep:jet-bridge-protocol", "dep:serde_json", "dep:getrandom", "dep:js-sys"]
+
 [dependencies]
 surface.workspace = true
 surface-app.workspace = true
@@ -12,14 +15,19 @@ surface-wgpu.workspace = true
 wgpu.workspace = true
 winit.workspace = true
 thiserror.workspace = true
+jet-bridge-protocol = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
 
 [lints]
 workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster.workspace = true
+arboard = { version = "3.6", default-features = false }
+getrandom = { version = "0.3", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "=0.2.129"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Window", "Document", "HtmlElement", "HtmlCanvasElement", "Element"] }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", features = ["Window", "Document", "HtmlElement", "HtmlCanvasElement", "Element", "HtmlTextAreaElement", "CssStyleDeclaration", "DomRect", "Event", "EventTarget", "CompositionEvent", "KeyboardEvent", "InputEvent", "FocusEvent", "Node", "console"] }

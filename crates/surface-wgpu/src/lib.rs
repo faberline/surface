@@ -28,9 +28,9 @@ struct Vertex {
     size: [f32; 2],
     color: [f32; 4],
     radius: f32,
+    stroke: f32,
 }
-const ATTRS: [wgpu::VertexAttribute; 5] =
-    wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32];
+const ATTRS: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32,5=>Float32];
 enum Draw {
     Quad { start: u32, clip: Rect },
     Text(usize),
@@ -163,7 +163,18 @@ impl Renderer {
                     clip,
                     radius,
                     color,
+                }
+                | PaintOp::Stroke {
+                    rect,
+                    clip,
+                    radius,
+                    color,
+                    ..
                 } => {
+                    let stroke = match op {
+                        PaintOp::Stroke { width, .. } => *width,
+                        _ => 0.,
+                    };
                     let start = vertices.len() as u32;
                     for (u, v) in [(0., 0.), (1., 0.), (0., 1.), (0., 1.), (1., 0.), (1., 1.)] {
                         let x = (rect.x + u * rect.width) * scale;
@@ -189,6 +200,7 @@ impl Renderer {
                                 color.3 as f32 / 255.,
                             ],
                             radius: *radius,
+                            stroke,
                         });
                     }
                     draws.push(Draw::Quad { start, clip: *clip });
@@ -199,9 +211,27 @@ impl Renderer {
                     text,
                     font_size,
                     color,
+                }
+                | PaintOp::EditableText {
+                    rect,
+                    clip,
+                    text,
+                    font_size,
+                    color,
+                    ..
                 } => {
+                    let (scroll, wrap) = match op {
+                        PaintOp::EditableText {
+                            scroll, multiline, ..
+                        } => (*scroll, *multiline),
+                        _ => (Default::default(), true),
+                    };
                     let index = buffers.len();
-                    buffers.push(self.text.buffer(text, *font_size, Some(rect.width)));
+                    buffers.push(self.text.buffer(
+                        text,
+                        *font_size,
+                        if wrap { Some(rect.width) } else { None },
+                    ));
                     while self.text_renderers.len() <= index {
                         self.text_renderers.push(TextRenderer::new(
                             &mut self.atlas,
@@ -218,8 +248,8 @@ impl Renderer {
                         &self.viewport,
                         [TextArea {
                             buffer: &buffers[index],
-                            left: rect.x * scale,
-                            top: rect.y * scale,
+                            left: (rect.x - scroll.0) * scale,
+                            top: (rect.y - scroll.1) * scale,
                             scale,
                             bounds: TextBounds {
                                 left: (clip.x * scale).floor() as i32,

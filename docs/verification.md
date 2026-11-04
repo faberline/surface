@@ -1,4 +1,59 @@
-# Initial framework verification
+# Framework verification
+
+## Material controls and current DOM export
+
+Recorded on 2026-11-04, on macOS / Apple M1 Max, Rust 1.96.1 and
+Chrome 157.0.8103.38. This is a partial Material checkpoint.
+
+| Check | Observed result |
+| --- | --- |
+| `./scripts/check.sh` | PASS: format, Clippy with warnings denied, 38 Rust cases, native compilation and both example WASM libraries |
+| `./scripts/check-gpu.sh` | PASS on Metal: rounded stroke edge/interior, filled shapes, text, clipping and paint order |
+| `cap cargo run --locked -p surface-material-gallery -- --smoke` | PASS: two native GPU frames |
+| `./scripts/build-web.sh` and `./scripts/build-gallery.sh` | PASS: both browser packages built |
+| `node scripts/browser-smoke.mjs` | PASS: original pointer/keyboard/theme/resize/scroll journey, no errors |
+| `node scripts/browser-ime.mjs` | PASS: 40 composition/input events; current DOM export before and after Chinese commit; no errors |
+| `node scripts/browser-material.mjs` | PASS: choices, disabled skip, manual groups, slider pointer/keys, button release, chips, both themes, dialogs/menus, mobile panel sizing and DOM export; no errors |
+
+The 38-case run excludes one GPU test. That test was then explicitly run
+and passed. Generated evidence is under `artifacts/`: `dom-export.json`,
+`material-dom-export.json`, the browser JSON logs and gallery screenshots.
+The export test also checks current tree links, deterministic reads,
+controlled preedit/commit isolation and missing geometry after invalidation.
+The dialog browser test repeats forward and reverse Tab cycles. It checks
+both Rust focus and the actual canvas/textarea focus. Returning from an
+input keeps keyboard focus on the canvas. Internal focus transfers do not
+clear the runtime focus.
+
+Linux hosted CI also passed at implementation commit
+`7a57f4c65ad93569b735a86e6e5160f67792ea1d` in
+[run 41773509204](https://github.com/faberline/surface/actions/runs/41773509204).
+It ran format, Clippy with warnings denied, workspace all-feature tests
+and WASM checks for both examples. The push run 41773481274 passed too.
+
+The native gallery smoke proves window presentation, not every component
+interaction. The own-window macOS Zhuyin prototype failed to produce a
+preedit event. Native composition and its candidate popup remain unverified.
+No Material family or full native editing acceptance is claimed.
+
+## Chinese editing update
+
+Recorded on 2026-11-04 on the same macOS environment below.
+
+| Check | Observed result |
+| --- | --- |
+| `./scripts/check.sh` | PASS: format, Clippy with warnings denied, 28 Rust tests, native and WASM compilation |
+| `./scripts/check-gpu.sh` | PASS: explicitly executed on Apple M1 Max / Metal |
+| `cap cargo run --locked -p surface-showcase -- --smoke` | PASS: two presented native GPU frames |
+| `node scripts/browser-smoke.mjs` | PASS: original pointer/keyboard/theme/resize/scroll journey; no errors |
+| `node scripts/browser-ime.mjs` | PASS: Chrome 157.0.8103.38 composition, replacement, focus cancellation, grapheme deletion, undo/redo, and caret host placement; 40 events, no errors |
+
+Native paste, caret movement, deletion and undo were observed in a visible
+macOS window. Native OS composition and the candidate popup remain unverified.
+See [text input](text-input.md) for the exact limits. This update does not
+complete the full Material catalog or Core/Jet migration.
+
+## Initial framework
 
 Recorded on 2026-11-03, Asia/Taipei. This is evidence for the initial
 standalone framework, not production acceptance of the Core/Jet backlog.
@@ -51,22 +106,30 @@ node scripts/browser-smoke.mjs
 
 `SURFACE_CHROME` can select an existing browser executable.
 `SURFACE_PLAYWRIGHT` can select the ESM entry point of an external
-Playwright installation. `SURFACE_URL` defaults to `http://127.0.0.1:8080`.
+Playwright installation. Tests start their own local HTTP server on a free
+port. `SURFACE_URL` can select an already running test server.
 
 ## Remaining qualification
 
 Windows/Linux native GPU runtime, other browsers, full IME editing,
-screen readers, performance/load, release packaging, and Core/Jet consumer
-migration are unrun or not implemented. The new CI workflow is configured to check Linux builds and behavior.
-Its first hosted job did not start because of the account billing limit.
-No Linux CI test ran. A passing future CI run would still not prove a
-Linux GPU or window journey.
+screen readers, performance/load and release packaging remain open.
+Core and Jet have draft migration PRs with local evidence. Hosted
+consumer acceptance is separate. Linux builds and Rust behavior passed
+at the input checkpoint below. This does not prove a Linux GPU/window journey.
 
 The pinned dependency `block 0.1.6` reports a Rust future-compatibility
 warning through the native graphics stack. Current Rust 1.96.1 checks pass.
 Upgrade the graphics stack before claiming support for later toolchains.
 
-## Hosted CI block
+## Hosted CI
+
+Surface is public. [Run 41762321151](https://github.com/faberline/surface/actions/runs/41762321151)
+passed at `1754a2e96e487ea693be558041abdf21ffc63d27`: Linux format,
+Clippy, workspace all-feature tests and WASM check. This is the input
+checkpoint, before the Material/export changes above. Later commits need
+their own run.
+
+### Historical startup block
 
 [Initial run 41668157876](https://github.com/faberline/surface/actions/runs/41668157876)
 ended with `failure` before executing any job step. GitHub's check
@@ -74,6 +137,5 @@ annotation states:
 
 > The job was not started because recent account payments have failed or your spending limit needs to be increased.
 
-The account owner must resolve the GitHub billing/spending restriction,
-then re-run the workflow. This is an unrun cloud gate. The local evidence
-above remains limited to the tested macOS and browser environments.
+That initial run remains a failed, unrun gate. The later successful run
+above supplies separate evidence at its exact head.

@@ -84,6 +84,56 @@ fn layout_reuses_measurements_and_updates_changed_leaf() {
         "unchanged sibling uses Taffy cache"
     );
 }
+
+#[test]
+fn fixed_layers_escape_scroll_clips_and_paint_above_flow_content() {
+    let mut root = Style::default()
+        .width(Length::Px(120.))
+        .height(Length::Px(60.))
+        .clip(true);
+    root.scroll_y = 160.;
+    let mut dom = MicroDom::new(Node::new(Role::Window, "App").styled(root));
+    let parent = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Group, "clipped").styled(
+                Style::default()
+                    .width(Length::Px(80.))
+                    .height(Length::Px(40.))
+                    .padding(10.)
+                    .clip(true),
+            ),
+        )
+        .unwrap();
+    let layer = dom
+        .append(
+            parent,
+            Node::new(Role::Button, "overlay").id("overlay").styled(
+                Style::default()
+                    .width(Length::Px(100.))
+                    .height(Length::Px(80.))
+                    .fixed(Insets {
+                        left: Length::Px(140.),
+                        top: Length::Px(90.),
+                        ..Default::default()
+                    }),
+            ),
+        )
+        .unwrap();
+    let computed = LayoutEngine::default()
+        .compute(&dom, 320., 240., &mut Metrics::default())
+        .unwrap();
+    assert_eq!(
+        computed.nodes[layer.index()].bounds,
+        Rect::new(140., 90., 100., 80.)
+    );
+    assert_eq!(
+        computed.nodes[layer.index()].clip,
+        Rect::new(0., 0., 320., 240.)
+    );
+    assert_eq!(computed.hit_test(&dom, 150., 100.), Some(layer));
+    assert_eq!(computed.paint_order.last(), Some(&layer));
+}
 #[test]
 fn scroll_offsets_and_ancestor_clips_control_hit_testing() {
     let mut dom = fixture();

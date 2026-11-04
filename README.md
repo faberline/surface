@@ -7,6 +7,12 @@ GPU renderer paints it in a native window or a browser canvas.
 This is the first working framework version. It includes a Material
 3-inspired component set, not the full Material component specification.
 
+The current main-branch landing is
+[surface@0.1.0](https://github.com/faberline/surface/milestone/1).
+[surface@0.2.0](https://github.com/faberline/surface/milestone/2) tracks the
+full component and platform target. See [delivery stages](docs/delivery-stages.md)
+for every follow-up issue. Native OS Zhuyin verification remains deferred.
+
 ![Material showcase rendered by the shared Rust GPU backend](docs/images/showcase.png)
 
 ## Run the example
@@ -36,6 +42,31 @@ input routing, and drawing run in Rust/WASM.
 The showcase supports a counter, reset, disabled controls, text input,
 keyboard focus, scrolling, and a light/dark theme. Both hosts use the same
 [`Showcase`](examples/showcase/src/lib.rs) implementation.
+
+Run the larger component gallery:
+
+```sh
+cap cargo run --locked -p surface-material-gallery
+```
+
+For WebGPU, run `./scripts/build-gallery.sh`, then serve
+`examples/material-gallery/web`. It includes controlled selections,
+sliders, button/chip variants, menus and an editable dialog.
+Both themes use a generated Material color scheme.
+
+## Export the current DOM
+
+`runtime.export_dom()?` returns JSON with the current semantic tree,
+styles, optional layout, focus, pointer state and text editing state.
+`runtime.snapshot()` returns the typed value. The browser gallery exposes
+the same call as `window.gallery.export_dom()`.
+See [DOM export](docs/dom-export.md) for file and browser download examples.
+
+Enable `surface-platform`'s optional `devtools` feature for desktop or WASM
+CLI/MCP access through the independent Jet bridge. Both hosts use the same
+seven semantic operations. They read the Rust tree and send normal state
+updates. Surface imports only the small protocol crate. See the
+[application bridge](docs/application-bridge.md) for setup and live tests.
 
 ## Write an app
 
@@ -86,12 +117,13 @@ measurements. Renderer resources stay outside application state.
 | Package | Responsibility |
 | --- | --- |
 | `surface` | Existing Element API, compact MicroDOM arena, semantic lookup, typed style, retained layout, geometry, hit testing, display list |
-| `surface-app` | Pure views, application state, typed messages, pointer/keyboard input, focus and scroll state |
-| `surface-material` | Light/dark color roles, text, headings, cards, rows, filled/tonal/disabled buttons, checkbox, controlled text field |
+| `surface-app` | Pure views, messages, Unicode editing, modal focus, roving groups, sliders, scroll state and DOM export |
+| `surface-material` | Seeded light/dark color roles, text, cards, button/chip variants, selections, slider, tabs, menus, dialogs and controlled text fields |
 | `surface-wgpu` | Rounded rectangle shader, embedded font, shared text shaping, clipped GPU painting in display-list order |
 | `surface-platform` | Native window and browser canvas hosts, GPU surface setup, resize/DPI handling, platform event translation |
 | `ui-runtime` | Existing hooks API imported from Core for compatibility; independent of the new application API |
 | `surface-showcase` | One application built as a desktop binary or WASM library |
+| `surface-material-gallery` | Shared desktop/WebGPU component gallery and behavior examples |
 
 ```mermaid
 flowchart LR
@@ -121,11 +153,15 @@ paints two frames, and exits. A browser smoke journey is available in
 
 ## Current limits
 
-- Material components cover the controls listed above. Motion, ripples,
-  menus, dialogs, and a full design-token system remain planned.
-- The text field appends at the end and removes the last Unicode scalar.
-  Caret movement, selection, clipboard, complete IME composition, and
-  grapheme editing remain planned. Commit events are accepted.
+- Material components cover the controls listed above. Full family and
+  variant coverage, typography, elevation, motion and ripples remain open.
+  See the [component record](docs/material-coverage.json) and
+  [Material API notes](docs/material.md).
+- Text editing includes caret/selection, clipboard, grapheme deletion,
+  undo/redo, Chinese font coverage and preedit/commit/cancel handling.
+  Browser composition is tested. The native OS candidate-popup journey,
+  other desktop platforms and mobile keyboards still need runtime evidence.
+  See [text input](docs/text-input.md).
 - Semantic roles support tests. Native screen-reader bridges and an
   accessible HTML companion tree remain planned.
 - Flexbox, wrapping, clipping, scroll offsets, and ordered paint are present.

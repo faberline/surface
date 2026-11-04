@@ -2,6 +2,23 @@ use surface::{Color, DisplayList, PaintOp, Rect, TextMeasurer};
 use surface_wgpu::{Renderer, TextSystem};
 
 #[test]
+fn chinese_font_and_shaped_editing_geometry_have_real_glyphs() {
+    let mut text = TextSystem::default();
+    assert_eq!(text.missing_glyphs("繁體中文简体汉语ㄅㄆㄇㄓㄨㄥ✓−×"), 0);
+    let layout = text.text_layout("中文輸入", 18., None);
+    assert_eq!(layout.clusters.len(), 4);
+    for cluster in &layout.clusters {
+        assert!(cluster.bounds.width > 10.);
+    }
+    let caret = layout.caret("中文".len());
+    assert!(caret.x > 20.);
+    assert_eq!(layout.hit(caret.x + 1., caret.y + 5.), "中文".len());
+    assert!(!layout.selection(0.."中文".len()).is_empty());
+    let wrapped = text.text_layout("中文\n輸入", 18., Some(100.));
+    assert!(wrapped.caret("中文\n".len()).y > 0.);
+}
+
+#[test]
 fn bundled_font_measures_repeated_text_and_wraps_at_the_paint_width() {
     let mut text = TextSystem::default();
     let wide = text.measure("Surface Rust application", 16., Some(600.));
@@ -59,6 +76,13 @@ fn gpu_offscreen_paints_clips_rounding_text_and_order() {
                     clip: viewport,
                     radius: 0.,
                     color: Color::rgb(254, 247, 255),
+                },
+                PaintOp::Stroke {
+                    rect: Rect::new(228., 8., 20., 40.),
+                    clip: viewport,
+                    radius: 6.,
+                    width: 2.,
+                    color: Color::rgb(40, 80, 180),
                 },
                 PaintOp::Quad {
                     rect: Rect::new(16., 16., 96., 48.),
@@ -139,6 +163,12 @@ fn gpu_offscreen_paints_clips_rounding_text_and_order() {
             ]
         };
         assert_eq!(pixel(64, 40), [103, 80, 164, 255]);
+        assert_eq!(pixel(238, 9), [40, 80, 180, 255], "rounded stroke edge");
+        assert_eq!(
+            pixel(238, 20),
+            [254, 247, 255, 255],
+            "stroke leaves its center clear"
+        );
         assert_eq!(
             pixel(16, 16),
             [254, 247, 255, 255],

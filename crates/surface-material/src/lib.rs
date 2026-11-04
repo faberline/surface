@@ -1,9 +1,15 @@
 //! A small Material 3-inspired component set. Values remain renderer-independent.
 use surface::{Align, Color, Length, Node, Role, Style};
 use surface_app::View;
+mod components;
+mod tokens;
+pub use components::{ButtonKind, CheckValue, ChipKind, ChoiceState};
+pub use tokens::ColorScheme;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Theme {
+    pub colors: ColorScheme,
+    pub is_dark: bool,
     pub primary: Color,
     pub on_primary: Color,
     pub background: Color,
@@ -18,33 +24,29 @@ pub struct Theme {
 }
 impl Theme {
     pub fn light() -> Self {
-        Self {
-            primary: Color::rgb(103, 80, 164),
-            on_primary: Color::rgb(255, 255, 255),
-            background: Color::rgb(254, 247, 255),
-            on_background: Color::rgb(29, 27, 32),
-            container: Color::rgb(243, 237, 247),
-            on_container: Color::rgb(29, 27, 32),
-            outline: Color::rgb(121, 116, 126),
-            disabled: Color::rgb(223, 218, 227),
-            tonal: Color::rgb(234, 221, 255),
-            on_tonal: Color::rgb(33, 0, 93),
-            input_container: Color::rgb(231, 224, 236),
-        }
+        static THEME: std::sync::OnceLock<Theme> = std::sync::OnceLock::new();
+        *THEME.get_or_init(|| Self::from_seed(Color::rgb(103, 80, 164), false))
     }
     pub fn dark() -> Self {
+        static THEME: std::sync::OnceLock<Theme> = std::sync::OnceLock::new();
+        *THEME.get_or_init(|| Self::from_seed(Color::rgb(103, 80, 164), true))
+    }
+    pub fn from_seed(seed: Color, dark: bool) -> Self {
+        let colors = ColorScheme::from_seed(seed, dark);
         Self {
-            primary: Color::rgb(208, 188, 255),
-            on_primary: Color::rgb(56, 30, 114),
-            background: Color::rgb(20, 18, 24),
-            on_background: Color::rgb(230, 224, 233),
-            container: Color::rgb(33, 31, 38),
-            on_container: Color::rgb(230, 224, 233),
-            outline: Color::rgb(147, 143, 153),
-            disabled: Color::rgb(66, 62, 71),
-            tonal: Color::rgb(79, 55, 139),
-            on_tonal: Color::rgb(234, 221, 255),
-            input_container: Color::rgb(49, 45, 56),
+            colors,
+            is_dark: dark,
+            primary: colors.primary,
+            on_primary: colors.on_primary,
+            background: colors.surface,
+            on_background: colors.on_surface,
+            container: colors.surface_container,
+            on_container: colors.on_surface,
+            outline: colors.outline,
+            disabled: tokens::blend(colors.surface, colors.on_surface, 0.12),
+            tonal: colors.secondary_container,
+            on_tonal: colors.on_secondary_container,
+            input_container: colors.surface_container_highest,
         }
     }
     pub fn page<M>(&self, children: impl IntoIterator<Item = View<M>>) -> View<M> {
@@ -105,95 +107,28 @@ impl Theme {
         .children(children)
     }
     pub fn button<M>(&self, id: &str, label: &str, message: M) -> View<M> {
-        self.button_variant(id, label, message, false, false)
+        self.button_with(id, label, ButtonKind::Filled, false, message)
     }
     pub fn tonal_button<M>(&self, id: &str, label: &str, message: M) -> View<M> {
-        self.button_variant(id, label, message, true, false)
+        self.button_with(id, label, ButtonKind::Tonal, false, message)
     }
     pub fn disabled_button<M>(&self, id: &str, label: &str, message: M) -> View<M> {
-        self.button_variant(id, label, message, false, true)
-    }
-    fn button_variant<M>(
-        &self,
-        id: &str,
-        label: &str,
-        message: M,
-        tonal: bool,
-        disabled: bool,
-    ) -> View<M> {
-        let background = if disabled {
-            self.disabled
-        } else if tonal {
-            self.tonal
-        } else {
-            self.primary
-        };
-        let foreground = if disabled {
-            self.outline
-        } else if tonal {
-            self.on_tonal
-        } else {
-            self.on_primary
-        };
-        let mut style = Style::default()
-            .padding(12.)
-            .height(Length::Px(48.))
-            .radius(24.)
-            .background(background)
-            .foreground(foreground)
-            .font_size(16.);
-        style.min_width = 96.;
-        View::new(
-            Node::new(Role::Button, label)
-                .id(id)
-                .text(label)
-                .disabled(disabled)
-                .styled(style),
-        )
-        .on_press(message)
+        self.button_with(id, label, ButtonKind::Filled, true, message)
     }
     pub fn checkbox<M>(&self, id: &str, label: &str, checked: bool, message: M) -> View<M> {
-        View::new(
-            Node::new(Role::Checkbox, label)
-                .id(id)
-                .checked(checked)
-                .styled(
-                    Style::row()
-                        .padding(12.)
-                        .gap(12.)
-                        .align(Align::Center)
-                        .radius(12.)
-                        .foreground(self.on_container),
-                ),
+        self.checkbox_with(
+            id,
+            label,
+            if checked {
+                CheckValue::Checked
+            } else {
+                CheckValue::Unchecked
+            },
+            false,
+            message,
         )
-        .children([
-            View::new(
-                Node::new(Role::Text, "")
-                    .text(if checked { "x" } else { "" })
-                    .styled(
-                        Style::default()
-                            .width(Length::Px(24.))
-                            .height(Length::Px(24.))
-                            .radius(4.)
-                            .padding(2.)
-                            .background(if checked {
-                                self.primary
-                            } else {
-                                self.input_container
-                            })
-                            .foreground(self.on_primary)
-                            .font_size(14.),
-                    ),
-            ),
-            View::new(
-                Node::new(Role::Text, label)
-                    .text(label)
-                    .styled(Style::default().foreground(self.on_container)),
-            ),
-        ])
-        .on_press(message)
     }
-    /// Controlled, end-editing text field. IME/caret/selection are a later stage.
+    /// Controlled text field with runtime caret, selection and IME support.
     pub fn text_field<M>(
         &self,
         id: &str,

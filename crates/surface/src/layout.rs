@@ -1,10 +1,40 @@
 //! Retained Taffy layout with renderer-supplied text measurement.
-use crate::{Align, Direction, Length, MicroDom, NodeId, Rect, Style};
+use crate::{Align, Direction, Length, MicroDom, NodeId, Position, Rect, Style};
 use taffy::prelude as t;
 
 /// A renderer must use the same font metrics here and during text painting.
 pub trait TextMeasurer {
     fn measure(&mut self, text: &str, font_size: f32, width: Option<f32>) -> (f32, f32);
+    fn text_layout(&mut self, text: &str, font_size: f32, width: Option<f32>) -> crate::TextLayout {
+        let line_height = font_size * 1.5;
+        let mut clusters = Vec::new();
+        let mut x = 0.;
+        let mut y = 0.;
+        for (start, c) in text.char_indices() {
+            if c == '\n' {
+                x = 0.;
+                y += line_height;
+                continue;
+            }
+            let (w, _) = self.measure(&c.to_string(), font_size, None);
+            if width.is_some_and(|limit| x + w > limit) && x > 0. {
+                x = 0.;
+                y += line_height;
+            }
+            clusters.push(crate::TextCluster {
+                bytes: start..start + c.len_utf8(),
+                bounds: Rect::new(x, y, w, line_height),
+                rtl: false,
+            });
+            x += w;
+        }
+        crate::TextLayout {
+            clusters,
+            line_height,
+            text_len: text.len(),
+            height: y + line_height,
+        }
+    }
 }
 #[derive(Debug, thiserror::Error)]
 pub enum LayoutError {
@@ -25,6 +55,7 @@ pub struct LayoutEngine {
     tree: t::TaffyTree<(String, f32)>,
     ids: Vec<t::NodeId>,
     previous: Vec<Input>,
+    viewport: Option<t::NodeId>,
 }
 impl Default for LayoutEngine {
     fn default() -> Self {
@@ -32,16 +63,17 @@ impl Default for LayoutEngine {
             tree: t::TaffyTree::new(),
             ids: Vec::new(),
             previous: Vec::new(),
+            viewport: None,
         }
     }
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ComputedNode {
     pub id: NodeId,
     pub bounds: Rect,
     pub clip: Rect,
 }
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ComputedDom {
     pub viewport: Rect,
     pub nodes: Vec<ComputedNode>,
@@ -70,7 +102,9 @@ fn valid(s: &Style) -> bool {
         Length::Auto => true,
         Length::Px(v) | Length::Percent(v) => v.is_finite() && v >= 0.,
     };
-    [s.width, s.height, s.max_width].into_iter().all(length)
+    [s.width, s.height, s.max_width, s.max_height]
+        .into_iter()
+        .all(length)
         && [
             s.min_width,
             s.min_height,
@@ -79,16 +113,43 @@ fn valid(s: &Style) -> bool {
             s.grow,
             s.radius,
             s.font_size,
+            s.border_width,
         ]
         .into_iter()
         .all(|v| v.is_finite() && v >= 0.)
         && s.font_size > 0.
         && s.scroll_x.is_finite()
         && s.scroll_y.is_finite()
+        && [s.inset.left, s.inset.top, s.inset.right, s.inset.bottom]
+            .into_iter()
+            .all(|v| match v {
+                Length::Auto => true,
+                Length::Px(v) | Length::Percent(v) => v.is_finite(),
+            })
 }
 fn style(s: &Style) -> t::Style {
+    let offset = |v| match v {
+        Length::Auto => t::LengthPercentageAuto::Auto,
+        Length::Px(v) => t::LengthPercentageAuto::Length(v),
+        Length::Percent(v) => t::LengthPercentageAuto::Percent(v),
+    };
     t::Style {
         display: t::Display::Flex,
+        position: match s.position {
+            Position::Flow => t::Position::Relative,
+            Position::Absolute | Position::Fixed => t::Position::Absolute,
+        },
+        inset: t::Rect {
+            left: offset(s.inset.left),
+            top: offset(s.inset.top),
+            right: offset(s.inset.right),
+            bottom: offset(s.inset.bottom),
+        },
+        justify_content: Some(match s.justify {
+            Align::Center => t::JustifyContent::Center,
+            Align::End => t::JustifyContent::FlexEnd,
+            _ => t::JustifyContent::FlexStart,
+        }),
         size: t::Size {
             width: dimension(s.width),
             height: dimension(s.height),
@@ -99,7 +160,7 @@ fn style(s: &Style) -> t::Style {
         },
         max_size: t::Size {
             width: dimension(s.max_width),
-            height: t::Dimension::Auto,
+            height: dimension(s.max_height),
         },
         flex_direction: match s.direction {
             Direction::Row => t::FlexDirection::Row,
@@ -151,14 +212,15 @@ impl LayoutEngine {
             }
         }
         let topology_changed = self.previous.len() != input.len()
-            || self
-                .previous
-                .iter()
-                .zip(&input)
-                .any(|(a, b)| a.children != b.children);
+            || self.previous.iter().zip(&input).any(|(a, b)| {
+                a.children != b.children
+                    || (a.style.position == Position::Fixed)
+                        != (b.style.position == Position::Fixed)
+            });
         if topology_changed {
             self.tree = t::TaffyTree::new();
             self.ids.clear();
+            self.viewport = Some(self.tree.new_leaf(t::Style::default())?);
             for n in &input {
                 self.ids.push(self.tree.new_leaf_with_context(
                     style(&n.style),
@@ -166,9 +228,26 @@ impl LayoutEngine {
                 )?);
             }
             for (i, n) in input.iter().enumerate() {
-                let children: Vec<_> = n.children.iter().map(|c| self.ids[c.index()]).collect();
+                let children: Vec<_> = n
+                    .children
+                    .iter()
+                    .filter(|c| input[c.index()].style.position != Position::Fixed)
+                    .map(|c| self.ids[c.index()])
+                    .collect();
                 self.tree.set_children(self.ids[i], &children)?;
             }
+            let children: Vec<_> = std::iter::once(self.ids[0])
+                .chain(
+                    input
+                        .iter()
+                        .enumerate()
+                        .skip(1)
+                        .filter(|(_, n)| n.style.position == Position::Fixed)
+                        .map(|(i, _)| self.ids[i]),
+                )
+                .collect();
+            self.tree
+                .set_children(self.viewport.expect("viewport exists"), &children)?;
         } else {
             for (i, (a, b)) in self.previous.iter().zip(&input).enumerate() {
                 if style(&a.style) != style(&b.style) {
@@ -184,6 +263,16 @@ impl LayoutEngine {
         }
         // Root auto size fills the host viewport. Explicit sizes are respected.
         let mut root_style = style(&input[0].style);
+        // The viewport wrapper only positions scene roots. Keeping the normal
+        // root absolute avoids a second flex intrinsic-measurement pass and
+        // preserves caches for unchanged siblings inside that root.
+        root_style.position = t::Position::Absolute;
+        root_style.inset = t::Rect {
+            left: t::LengthPercentageAuto::Length(0.),
+            top: t::LengthPercentageAuto::Length(0.),
+            right: t::LengthPercentageAuto::Auto,
+            bottom: t::LengthPercentageAuto::Auto,
+        };
         if matches!(input[0].style.width, Length::Auto) {
             root_style.size.width = t::Dimension::Length(width);
         }
@@ -193,8 +282,19 @@ impl LayoutEngine {
         if self.tree.style(self.ids[0])? != &root_style {
             self.tree.set_style(self.ids[0], root_style)?;
         }
+        let viewport_id = self.viewport.expect("viewport exists");
+        let viewport_style = t::Style {
+            size: t::Size {
+                width: t::Dimension::Length(width),
+                height: t::Dimension::Length(height),
+            },
+            ..Default::default()
+        };
+        if self.tree.style(viewport_id)? != &viewport_style {
+            self.tree.set_style(viewport_id, viewport_style)?;
+        }
         self.tree.compute_layout_with_measure(
-            self.ids[0],
+            viewport_id,
             t::Size {
                 width: t::AvailableSpace::Definite(width),
                 height: t::AvailableSpace::Definite(height),
@@ -223,7 +323,9 @@ impl LayoutEngine {
         let mut nodes = Vec::with_capacity(dom.len());
         for (id, n) in dom.iter() {
             let layout = self.tree.layout(self.ids[id.index()])?;
-            let (x, y, clip) = if let Some(parent) = n.parent() {
+            let (x, y, clip) = if n.style().position == Position::Fixed {
+                (0., 0., viewport)
+            } else if let Some(parent) = n.parent() {
                 let p: &ComputedNode = &nodes[parent.index()];
                 let ps = dom.get(parent).expect("valid parent").style();
                 (
@@ -249,16 +351,7 @@ impl LayoutEngine {
                 clip,
             });
         }
-        fn order(dom: &MicroDom, id: NodeId, out: &mut Vec<NodeId>) {
-            out.push(id);
-            let mut children: Vec<_> = dom.children(id).collect();
-            children.sort_by_key(|id| dom.get(*id).expect("valid node").style().z_index);
-            for child in children {
-                order(dom, child, out);
-            }
-        }
-        let mut paint_order = Vec::with_capacity(nodes.len());
-        order(dom, dom.root(), &mut paint_order);
+        let paint_order = dom.paint_order();
         Ok(ComputedDom {
             viewport,
             nodes,

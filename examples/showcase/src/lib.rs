@@ -95,6 +95,17 @@ mod web {
     }
     /// Example diagnostics for browser smoke tests; the framework needs no JS UI.
     #[wasm_bindgen]
+    pub fn export_dom() -> Result<String, JsValue> {
+        APP.with(|app| {
+            app.borrow()
+                .as_ref()
+                .expect("app started")
+                .borrow()
+                .export_dom()
+                .map_err(|error| JsValue::from_str(&error.to_string()))
+        })
+    }
+    #[wasm_bindgen]
     pub fn inspect() -> String {
         APP.with(|app| {
             let app = app.borrow();
@@ -123,6 +134,37 @@ mod web {
             };
             let r = computed.nodes[node.index()].bounds;
             vec![r.x, r.y, r.width, r.height]
+        })
+    }
+    #[wasm_bindgen]
+    pub fn editing_state() -> Vec<String> {
+        APP.with(|app| {
+            let app = app.borrow();
+            let runtime = app.as_ref().expect("app started").borrow();
+            runtime
+                .editor("name")
+                .map(|e| {
+                    vec![
+                        e.value().to_owned(),
+                        e.display_value(),
+                        e.selection().anchor.to_string(),
+                        e.selection().cursor.to_string(),
+                        e.is_composing().to_string(),
+                    ]
+                })
+                .unwrap_or_default()
+        })
+    }
+    #[wasm_bindgen]
+    pub fn input_caret() -> Vec<f32> {
+        APP.with(|app| {
+            let app = app.borrow();
+            let runtime = app.as_ref().expect("app started").borrow();
+            runtime
+                .input_snapshot()
+                .and_then(|s| s.caret)
+                .map(|r| vec![r.x, r.y, r.width, r.height])
+                .unwrap_or_default()
         })
     }
 }

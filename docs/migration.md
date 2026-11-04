@@ -8,10 +8,28 @@ commit `41c352eaae687a1914087d279f36adbe9e9b4af5`. Their public names remain
 available. New APIs are additive. Imported shell-recursive EC wrappers were
 replaced with direct Rust behavior tests suitable for this repository.
 
-Core still contains its old packages. Jet still pins Core `v0.4.14`. That
-is a staged migration, not an automatic dependency switch. Do not mix a
-Core `surface::Element` value with the standalone crate's value in one
-dependency graph: Cargo treats them as different Rust types.
+Core's and Jet's main branches still use the old dependency arrangement.
+The reviewable migration proposals are:
+
+- [Core PR #95](https://github.com/faberline/core/pull/95), implementation commit
+  `23e614ca3e85e7ef77ae5563bb9c7a1fbdc15120`: compatibility packages
+  re-export the standalone types and hooks, including debug support.
+- [Jet PR #75](https://github.com/faberline/jet/pull/75), implementation commit
+  `41ecdf95aeaa2723f862d1007fe2d1eb6c7718e1`: both UI dependencies and
+  generated Rust use standalone Surface. `cli-std` stays on Core v0.4.14.
+
+Both pin `1754a2e96e487ea693be558041abdf21ffc63d27`. Surface is public.
+Its Linux CI passes at that revision. Neither consumer PR is merged.
+
+Core's mixed-source behavior/type tests pass locally. Core CI stops at
+draft/issue preflight; old EC metadata and independent acceptance remain
+open. Jet's complete local advanced WASM gate passes, including MUI/AntD
+live parity. Its hosted parity job reports success by skipping an unwired
+oracle, so it is not hosted parity acceptance. Three existing Clippy
+findings also reproduce on Jet's untouched base.
+
+Until the facades are adopted, old Core types and standalone types have
+different Cargo identities. Move both UI packages together.
 
 ## Follow-up sequence
 

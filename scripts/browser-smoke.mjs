@@ -1,18 +1,20 @@
 // Optional test tool. Install playwright, or set SURFACE_PLAYWRIGHT to its ESM entry.
 import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
+import { startWebServer } from './web-test-support.mjs';
 const { chromium } = await import(process.env.SURFACE_PLAYWRIGHT || 'playwright');
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.SURFACE_CHROME ? { executablePath: process.env.SURFACE_CHROME } : {}),
   args: ['--enable-unsafe-webgpu'],
 });
+const web = await startWebServer();
 try {
   const page = await browser.newPage({ viewport: { width: 1000, height: 900 }, deviceScaleFactor: 2 });
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  await page.goto(process.env.SURFACE_URL || 'http://127.0.0.1:8080');
+  await page.goto(web.url);
   await page.waitForFunction(() => document.querySelector('#status').textContent.startsWith('Ready'), { timeout: 45000 });
   assert.equal(await page.evaluate(() => !!navigator.gpu), true);
   await page.waitForFunction(() => {
@@ -71,4 +73,5 @@ try {
   console.log(JSON.stringify(evidence));
 } finally {
   await browser.close();
+  await web.close();
 }

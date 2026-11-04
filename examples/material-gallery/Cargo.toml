@@ -1,0 +1,26 @@
+[package]
+name = "surface-material-gallery"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+devtools = ["surface-platform/devtools"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+surface.workspace = true
+surface-app.workspace = true
+surface-material.workspace = true
+surface-platform.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = "=0.2.129"
+console_error_panic_hook = "0.1"
+
+[lints]
+workspace = true

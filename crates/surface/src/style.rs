@@ -31,15 +31,47 @@ pub enum Align {
     Stretch,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub enum Position {
+    #[default]
+    Flow,
+    Absolute,
+    /// Viewport layer. Escapes ancestor clipping and scroll offsets.
+    Fixed,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Insets {
+    pub left: Length,
+    pub top: Length,
+    pub right: Length,
+    pub bottom: Length,
+}
+impl Insets {
+    pub fn all(value: f32) -> Self {
+        Self {
+            left: Length::Px(value),
+            top: Length::Px(value),
+            right: Length::Px(value),
+            bottom: Length::Px(value),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Style {
     pub width: Length,
     pub height: Length,
     pub min_width: f32,
     pub min_height: f32,
     pub max_width: Length,
+    pub max_height: Length,
     pub direction: Direction,
     pub align: Align,
+    pub justify: Align,
+    pub position: Position,
+    pub inset: Insets,
     pub gap: f32,
     pub padding: f32,
     pub grow: f32,
@@ -52,6 +84,9 @@ pub struct Style {
     pub foreground: Color,
     pub radius: f32,
     pub font_size: f32,
+    pub border_width: f32,
+    pub border_color: Color,
+    pub state_layer: Color,
 }
 impl Default for Style {
     fn default() -> Self {
@@ -61,8 +96,12 @@ impl Default for Style {
             min_width: 0.,
             min_height: 0.,
             max_width: Length::Auto,
+            max_height: Length::Auto,
             direction: Direction::Column,
             align: Align::Stretch,
+            justify: Align::Start,
+            position: Position::Flow,
+            inset: Insets::default(),
             gap: 0.,
             padding: 0.,
             grow: 0.,
@@ -75,6 +114,9 @@ impl Default for Style {
             foreground: Color::rgb(29, 27, 32),
             radius: 0.,
             font_size: 16.,
+            border_width: 0.,
+            border_color: Color::TRANSPARENT,
+            state_layer: Color::TRANSPARENT,
         }
     }
 }
@@ -122,6 +164,29 @@ impl Style {
     }
     pub fn align(mut self, value: Align) -> Self {
         self.align = value;
+        self
+    }
+    pub fn justify(mut self, value: Align) -> Self {
+        self.justify = value;
+        self
+    }
+    pub fn absolute(mut self, inset: Insets) -> Self {
+        self.position = Position::Absolute;
+        self.inset = inset;
+        self
+    }
+    pub fn fixed(mut self, inset: Insets) -> Self {
+        self.position = Position::Fixed;
+        self.inset = inset;
+        self
+    }
+    pub fn border(mut self, width: f32, color: Color) -> Self {
+        self.border_width = width;
+        self.border_color = color;
+        self
+    }
+    pub fn state_layer(mut self, color: Color) -> Self {
+        self.state_layer = color;
         self
     }
     pub fn grow(mut self, value: f32) -> Self {

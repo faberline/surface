@@ -21,6 +21,49 @@ pub enum Role {
     Checkbox,
     TextInput,
     Navigation,
+    Radio,
+    RadioGroup,
+    Switch,
+    Slider,
+    Tab,
+    TabList,
+    Menu,
+    MenuItem,
+    Dialog,
+    Progress,
+    Status,
+    Separator,
+    Tooltip,
+    List,
+    ListItem,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct RangeValue {
+    pub min: f64,
+    pub max: f64,
+    pub value: f64,
+    pub step: f64,
+}
+impl RangeValue {
+    pub fn is_valid(self) -> bool {
+        [self.min, self.max, self.value, self.step]
+            .into_iter()
+            .all(f64::is_finite)
+            && self.min < self.max
+            && (self.max - self.min).is_finite()
+            && self.step > 0.
+            && self.value >= self.min
+            && self.value <= self.max
+    }
+    pub fn snap(self, value: f64) -> f64 {
+        let value = value.clamp(self.min, self.max);
+        let steps = (value - self.min) / self.step;
+        if steps.is_finite() {
+            (self.min + steps.round() * self.step).clamp(self.min, self.max)
+        } else {
+            value
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node {
@@ -30,6 +73,14 @@ pub struct Node {
     pub(crate) text: Option<String>,
     pub(crate) disabled: bool,
     pub(crate) checked: Option<bool>,
+    #[serde(default)]
+    selected: Option<bool>,
+    #[serde(default)]
+    mixed: bool,
+    #[serde(default)]
+    range: Option<RangeValue>,
+    #[serde(default)]
+    tab_index: Option<i32>,
     pub(crate) style: Style,
     parent: Option<NodeId>,
     first_child: Option<NodeId>,
@@ -45,6 +96,10 @@ impl Node {
             text: None,
             disabled: false,
             checked: None,
+            selected: None,
+            mixed: false,
+            range: None,
+            tab_index: None,
             style: Style::default(),
             parent: None,
             first_child: None,
@@ -72,6 +127,34 @@ impl Node {
         self.checked = Some(value);
         self
     }
+    pub fn selected(mut self, value: bool) -> Self {
+        self.selected = Some(value);
+        self
+    }
+    pub fn mixed(mut self, value: bool) -> Self {
+        self.mixed = value;
+        self
+    }
+    pub fn range(mut self, value: RangeValue) -> Self {
+        self.range = Some(value);
+        self
+    }
+    pub fn tab_index(mut self, value: i32) -> Self {
+        self.tab_index = Some(value);
+        self
+    }
+    pub fn is_selected(&self) -> Option<bool> {
+        self.selected
+    }
+    pub fn is_mixed(&self) -> bool {
+        self.mixed
+    }
+    pub fn range_value(&self) -> Option<RangeValue> {
+        self.range
+    }
+    pub fn is_tab_stop(&self) -> bool {
+        self.is_focusable() && self.tab_index.is_none_or(|v| v >= 0)
+    }
     pub fn stable_id(&self) -> Option<&str> {
         self.stable_id.as_deref()
     }
@@ -97,7 +180,19 @@ impl Node {
         self.parent
     }
     pub fn is_focusable(&self) -> bool {
-        !self.disabled && matches!(self.role, Role::Button | Role::Checkbox | Role::TextInput)
+        !self.disabled
+            && (self.tab_index.is_some()
+                || matches!(
+                    self.role,
+                    Role::Button
+                        | Role::Checkbox
+                        | Role::TextInput
+                        | Role::Radio
+                        | Role::Switch
+                        | Role::Slider
+                        | Role::Tab
+                        | Role::MenuItem
+                ))
     }
 }
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -213,6 +308,34 @@ impl MicroDom {
             version: 1,
             nodes: self.nodes.clone(),
         }
+    }
+    /// Viewport layers paint after flow content, in z-index order.
+    pub fn paint_order(&self) -> Vec<NodeId> {
+        fn visit(dom: &MicroDom, id: NodeId, out: &mut Vec<NodeId>) {
+            out.push(id);
+            let mut children: Vec<_> = dom
+                .children(id)
+                .filter(|id| {
+                    dom.get(*id).expect("valid node").style().position != crate::Position::Fixed
+                })
+                .collect();
+            children.sort_by_key(|id| dom.get(*id).expect("valid node").style().z_index);
+            for id in children {
+                visit(dom, id, out);
+            }
+        }
+        let mut out = Vec::with_capacity(self.len());
+        visit(self, self.root(), &mut out);
+        let mut layers: Vec<_> = self
+            .iter()
+            .filter(|(id, n)| *id != self.root() && n.style().position == crate::Position::Fixed)
+            .map(|(id, _)| id)
+            .collect();
+        layers.sort_by_key(|id| self.get(*id).expect("valid node").style().z_index);
+        for id in layers {
+            visit(self, id, &mut out);
+        }
+        out
     }
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
