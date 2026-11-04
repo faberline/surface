@@ -446,13 +446,18 @@ impl<A: Application> WebInput<A> {
             .and_then(|d| d.active_element())
             .is_some_and(|e| e.id() == self.textarea.id())
     }
+    pub fn owns_focus(&self) -> bool {
+        self.switching.get() || self.focused()
+    }
     pub fn sync(&self) {
         let snapshot = self.runtime.borrow().input_snapshot();
         let field = snapshot.as_ref().map(|s| s.id.clone());
         if *self.field.borrow() != field {
             self.switching.set(true);
-            if self.focused() {
+            if field.is_some() && self.focused() {
                 // End the old browser composition before reusing this host.
+                // A move back to canvas must blur and focus in one guarded step
+                // below. Blurring here would leave the page body focused.
                 let _ = self.textarea.blur();
             }
             self.composing.set(false);

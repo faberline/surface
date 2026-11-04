@@ -416,7 +416,13 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
             WindowEvent::Focused(false) => {
                 #[cfg(target_arch = "wasm32")]
-                if self.web_input.as_ref().is_some_and(|input| input.focused()) {
+                // Canvas -> input host keeps focus inside this application.
+                // The canvas blur can run before the textarea's focus event.
+                if self
+                    .web_input
+                    .as_ref()
+                    .is_some_and(|input| input.owns_focus())
+                {
                     return;
                 }
                 self.input(event_loop, Event::Blur)

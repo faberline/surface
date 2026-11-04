@@ -4,8 +4,9 @@ import { startWebServer } from './web-test-support.mjs';
 const { chromium }=await import(process.env.SURFACE_PLAYWRIGHT||'playwright');
 const browser=await chromium.launch({headless:true,...(process.env.SURFACE_CHROME?{executablePath:process.env.SURFACE_CHROME}:{}),args:['--enable-unsafe-webgpu']});
 const web=await startWebServer('material-gallery');
+let testPage;
 try{
-  const page=await browser.newPage({viewport:{width:1100,height:1100},deviceScaleFactor:2});
+  const page=testPage=await browser.newPage({viewport:{width:1100,height:1100},deviceScaleFactor:2});
   const errors=[];page.on('pageerror',e=>errors.push(String(e)));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.goto(web.url);
   await page.waitForFunction(()=>window.gallery&&document.querySelector('#status').textContent.startsWith('Ready'));
@@ -64,8 +65,19 @@ try{
   await page.keyboard.press(process.platform==='darwin'?'Meta+A':'Control+A');await session.send('Input.insertText',{text:'中文框架'});
   await wait(()=>JSON.parse(window.gallery.inspect()).draft==='中文框架');
   await page.keyboard.press('Tab');await wait(()=>JSON.parse(window.gallery.inspect()).focused==='dialog-cancel');
+  await wait(()=>document.activeElement?.id==='surface');
   await page.keyboard.press('Tab');await wait(()=>JSON.parse(window.gallery.inspect()).focused==='dialog-save');
   await page.keyboard.press('Tab');await wait(()=>JSON.parse(window.gallery.inspect()).focused==='dialog-name');
+  await wait(()=>document.activeElement?.id==='surface-text-input');
+  for(let cycle=0;cycle<3;cycle++){
+    for(const [key,id,host] of [
+      ['Tab','dialog-cancel','surface'],['Tab','dialog-save','surface'],['Tab','dialog-name','surface-text-input'],
+      ['Shift+Tab','dialog-save','surface'],['Shift+Tab','dialog-cancel','surface'],['Shift+Tab','dialog-name','surface-text-input']
+    ]){
+      await page.keyboard.press(key);
+      await page.waitForFunction(({id,host})=>JSON.parse(window.gallery.inspect()).focused===id&&document.activeElement?.id===host,{id,host});
+    }
+  }
   await page.screenshot({path:'artifacts/material-dialog.png'});
   const domExport=await page.evaluate(()=>JSON.parse(window.gallery.export_dom()));
   assert.equal(domExport.text_inputs['dialog-name'].value,'中文框架');
@@ -89,4 +101,10 @@ try{
   const evidence={browser:await browser.version(),state:await state(),errors};
   await writeFile('artifacts/browser-material.json',JSON.stringify(evidence,null,2)+'\n');
   console.log(JSON.stringify(evidence));
+}catch(error){
+  if(testPage){
+    await writeFile('artifacts/material-failure.json',JSON.stringify(await testPage.evaluate(()=>({state:JSON.parse(window.gallery.inspect()),active:document.activeElement?.id,dom:JSON.parse(window.gallery.export_dom())})),null,2)+'\n');
+    await testPage.screenshot({path:'artifacts/material-failure.png'});
+  }
+  throw error;
 }finally{await browser.close();await web.close();}

@@ -20,6 +20,10 @@ and passed. Generated evidence is under `artifacts/`: `dom-export.json`,
 `material-dom-export.json`, the browser JSON logs and gallery screenshots.
 The export test also checks current tree links, deterministic reads,
 controlled preedit/commit isolation and missing geometry after invalidation.
+The dialog browser test repeats forward and reverse Tab cycles. It checks
+both Rust focus and the actual canvas/textarea focus. Returning from an
+input keeps keyboard focus on the canvas. Internal focus transfers do not
+clear the runtime focus.
 
 Linux hosted CI also passed at implementation commit
 `7a57f4c65ad93569b735a86e6e5160f67792ea1d` in
