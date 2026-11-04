@@ -21,6 +21,12 @@ and passed. Generated evidence is under `artifacts/`: `dom-export.json`,
 The export test also checks current tree links, deterministic reads,
 controlled preedit/commit isolation and missing geometry after invalidation.
 
+Linux hosted CI also passed at implementation commit
+`7a57f4c65ad93569b735a86e6e5160f67792ea1d` in
+[run 41773509204](https://github.com/faberline/surface/actions/runs/41773509204).
+It ran format, Clippy with warnings denied, workspace all-feature tests
+and WASM checks for both examples. The push run 41773481274 passed too.
+
 The native gallery smoke proves window presentation, not every component
 interaction. The own-window macOS Zhuyin prototype failed to produce a
 preedit event. Native composition and its candidate popup remain unverified.

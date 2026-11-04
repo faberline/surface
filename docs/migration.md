@@ -11,10 +11,10 @@ replaced with direct Rust behavior tests suitable for this repository.
 Core's and Jet's main branches still use the old dependency arrangement.
 The reviewable migration proposals are:
 
-- [Core PR #95](https://github.com/faberline/core/pull/95), head
+- [Core PR #95](https://github.com/faberline/core/pull/95), implementation commit
   `23e614ca3e85e7ef77ae5563bb9c7a1fbdc15120`: compatibility packages
   re-export the standalone types and hooks, including debug support.
-- [Jet PR #75](https://github.com/faberline/jet/pull/75), head
+- [Jet PR #75](https://github.com/faberline/jet/pull/75), implementation commit
   `41ecdf95aeaa2723f862d1007fe2d1eb6c7718e1`: both UI dependencies and
   generated Rust use standalone Surface. `cli-std` stays on Core v0.4.14.
 
