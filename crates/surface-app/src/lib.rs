@@ -1,11 +1,15 @@
 //! Platform-independent Rust application state and input routing.
+mod controls;
 mod editing;
 mod editing_runtime;
+mod snapshot;
+pub use controls::Roving;
 pub use editing::{
     utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
+pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{collections::BTreeMap, rc::Rc};
 use surface::{
     ComputedDom, DisplayList, DomError, LayoutEngine, LayoutError, MicroDom, Node, NodeId, Role,
@@ -19,6 +23,9 @@ pub struct View<M> {
     activate: Option<M>,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
+    value: Option<Rc<dyn Fn(f64) -> M>>,
+    roving: Option<Roving>,
+    dismiss: Option<M>,
 }
 impl<M> View<M> {
     pub fn new(node: Node) -> Self {
@@ -28,6 +35,9 @@ impl<M> View<M> {
             activate: None,
             input: None,
             text_options: TextOptions::default(),
+            value: None,
+            roving: None,
+            dismiss: None,
         }
     }
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -44,6 +54,19 @@ impl<M> View<M> {
     }
     pub fn text_options(mut self, options: TextOptions) -> Self {
         self.text_options = options;
+        self
+    }
+    pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
+        self.value = Some(Rc::new(handler));
+        self
+    }
+    pub fn roving(mut self, options: Roving) -> Self {
+        self.roving = Some(options);
+        self
+    }
+    /// Trap focus in this panel, dismiss on Escape/outside click, then restore focus.
+    pub fn modal(mut self, dismiss: M) -> Self {
+        self.dismiss = Some(dismiss);
         self
     }
 }
@@ -75,6 +98,7 @@ pub enum Event {
         x: f32,
         y: f32,
     },
+    PointerLeave,
     Edit {
         key: EditKey,
         extend: bool,
@@ -102,6 +126,10 @@ pub enum Event {
         delta_x: f32,
         delta_y: f32,
     },
+    SetValue {
+        id: String,
+        value: f64,
+    },
 }
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
@@ -115,11 +143,16 @@ pub enum AppError {
     MissingControl(String),
     #[error("writable text input needs an on_input handler: {0}")]
     MissingInputHandler(String),
+    #[error("slider needs a finite range and on_value handler: {0}")]
+    InvalidRange(String),
 }
 struct Binding<M> {
     activate: Option<M>,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
+    value: Option<Rc<dyn Fn(f64) -> M>>,
+    roving: Option<Roving>,
+    dismiss: Option<M>,
 }
 
 pub struct Runtime<A: Application> {
@@ -130,11 +163,15 @@ pub struct Runtime<A: Application> {
     computed: Option<ComputedDom>,
     focused: Option<String>,
     pressed: Option<String>,
+    hovered: Option<String>,
     scroll: BTreeMap<String, (f32, f32)>,
     editors: BTreeMap<String, TextEditor>,
     text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
     ime_area: Option<surface::Rect>,
     text_drag: Option<String>,
+    scopes: Vec<controls::FocusScope>,
+    range_drag: Option<controls::RangeDrag>,
+    modal_outside: bool,
 }
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
@@ -146,11 +183,15 @@ impl<A: Application> Runtime<A> {
             computed: None,
             focused: None,
             pressed: None,
+            hovered: None,
             scroll: BTreeMap::new(),
             editors: BTreeMap::new(),
             text_geometry: BTreeMap::new(),
             ime_area: None,
             text_drag: None,
+            scopes: Vec::new(),
+            range_drag: None,
+            modal_outside: false,
         };
         runtime.rebuild()?;
         Ok(runtime)
@@ -177,8 +218,18 @@ impl<A: Application> Runtime<A> {
         ) -> Result<(), AppError> {
             let disabled = disabled || view.node.is_disabled();
             let node = view.node.disabled(disabled);
-            if node.is_focusable() && node.stable_id().is_none() {
+            if (node.is_focusable() || view.roving.is_some() || view.dismiss.is_some())
+                && node.stable_id().is_none()
+            {
                 return Err(AppError::MissingId(node.name().to_owned()));
+            }
+            if node.role() == Role::Slider
+                && (node.range_value().is_none_or(|v| !v.is_valid())
+                    || (!disabled && view.value.is_none()))
+            {
+                return Err(AppError::InvalidRange(
+                    node.stable_id().unwrap_or(node.name()).to_owned(),
+                ));
             }
             if node.role() == Role::TextInput
                 && !disabled
@@ -200,6 +251,9 @@ impl<A: Application> Runtime<A> {
                     activate: view.activate,
                     input: view.input,
                     text_options: view.text_options,
+                    value: view.value,
+                    roving: view.roving,
+                    dismiss: view.dismiss,
                 },
             );
             for child in view.children {
@@ -231,6 +285,16 @@ impl<A: Application> Runtime<A> {
             self.focused = None;
         }
         self.computed = None;
+        self.reconcile_controls();
+        self.hovered = self
+            .hovered
+            .take()
+            .filter(|key| self.dom.by_id(key).is_some());
+        self.pressed = self.pressed.take().filter(|key| {
+            self.dom
+                .by_id(key)
+                .is_some_and(|id| self.dom.get(id).is_ok_and(|n| n.is_focusable()))
+        });
         Ok(())
     }
     pub fn render(
@@ -241,12 +305,25 @@ impl<A: Application> Runtime<A> {
     ) -> Result<DisplayList, AppError> {
         let (display_dom, decorations, computed) = self.layout_editing(width, height, measurer)?;
         let focused = self.focused.as_ref().and_then(|id| self.dom.by_id(id));
-        let list = DisplayList::compile_with_text(&display_dom, &computed, focused, &decorations);
+        let interaction = surface::InteractionState {
+            hovered: self.hovered.as_ref().and_then(|id| self.dom.by_id(id)),
+            pressed: self.pressed.as_ref().and_then(|id| self.dom.by_id(id)),
+        };
+        let list = DisplayList::compile_with_interaction(
+            &display_dom,
+            &computed,
+            focused,
+            &decorations,
+            interaction,
+        );
         self.computed = Some(computed);
         Ok(list)
     }
     fn hit(&self, x: f32, y: f32) -> Option<NodeId> {
-        self.computed.as_ref()?.hit_test(&self.dom, x, y)
+        self.computed
+            .as_ref()?
+            .hit_test(&self.dom, x, y)
+            .filter(|id| self.in_scope(*id))
     }
     fn stable(&self, id: NodeId) -> Option<String> {
         self.dom.get(id).ok()?.stable_id().map(str::to_owned)
@@ -265,28 +342,52 @@ impl<A: Application> Runtime<A> {
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
+        let focus_changed = self.focused.as_deref() != Some(stable_id);
         if self.focused.as_deref() != Some(stable_id) {
             self.cancel_composition();
         }
         let id = self
             .dom
             .by_id(stable_id)
-            .filter(|id| self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
+            .filter(|id| self.in_scope(*id) && self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
             .ok_or_else(|| AppError::MissingControl(stable_id.to_owned()))?;
         self.focused = Some(stable_id.to_owned());
         let message = self.bindings.get(&id).and_then(|b| b.activate.clone());
         self.message(message)
+            .map(|changed| changed || focus_changed)
     }
     pub fn dispatch(&mut self, event: Event) -> Result<bool, AppError> {
         match event {
             Event::PointerDown { x, y } => {
                 self.cancel_composition();
+                self.modal_outside = self.outside_scope(x, y);
+                if self.modal_outside {
+                    self.pressed = None;
+                    return Ok(true);
+                }
                 self.pressed = self.hit(x, y).and_then(|id| self.stable(id));
+                self.hovered = self.pressed.clone();
                 self.focused = self.pressed.clone();
+                if self.start_range_drag() {
+                    return self.range_pointer(x);
+                }
                 self.place_text_cursor(x, y, false);
                 Ok(true)
             }
             Event::PointerUp { x, y } => {
+                if self.range_drag.is_some() {
+                    let result = self.range_pointer(x);
+                    self.range_drag = None;
+                    self.pressed = None;
+                    return result;
+                }
+                if std::mem::take(&mut self.modal_outside) {
+                    return if self.outside_scope(x, y) {
+                        self.dismiss_scope()
+                    } else {
+                        Ok(true)
+                    };
+                }
                 self.text_drag = None;
                 let hit = self.hit(x, y).and_then(|id| self.stable(id));
                 if let Some(pressed) = self
@@ -294,9 +395,9 @@ impl<A: Application> Runtime<A> {
                     .take()
                     .filter(|pressed| hit.as_ref() == Some(pressed))
                 {
-                    self.activate(&pressed)
+                    self.activate(&pressed).map(|_| true)
                 } else {
-                    Ok(false)
+                    Ok(true)
                 }
             }
             Event::FocusNext { reverse } => {
@@ -305,7 +406,8 @@ impl<A: Application> Runtime<A> {
                     .dom
                     .iter()
                     .filter(|(id, n)| {
-                        n.is_focusable()
+                        self.tab_stop(*id)
+                            && n.is_tab_stop()
                             && self.computed.as_ref().is_none_or(|c| {
                                 let g = &c.nodes[id.index()];
                                 let r = g.bounds.intersect(g.clip);
@@ -315,8 +417,8 @@ impl<A: Application> Runtime<A> {
                     .filter_map(|(id, _)| self.stable(id))
                     .collect();
                 if controls.is_empty() {
-                    self.focused = None;
-                    return Ok(false);
+                    self.focused = self.scope_entry();
+                    return Ok(true);
                 }
                 let current = self
                     .focused
@@ -345,25 +447,58 @@ impl<A: Application> Runtime<A> {
                 by_word: false,
             }),
             Event::PointerMove { x, y } => {
+                let hover = self.hit(x, y).and_then(|id| self.stable(id));
+                let changed = self.hovered != hover;
+                self.hovered = hover;
+                if self.range_drag.is_some() {
+                    return self.range_pointer(x);
+                }
                 self.place_text_cursor(x, y, true);
-                Ok(self.text_drag.is_some())
+                Ok(changed || self.text_drag.is_some())
             }
+            Event::PointerLeave => Ok(self.hovered.take().is_some()),
             Event::ImeFor { id, event } => {
                 if self.focused.as_ref() != Some(&id) {
                     return Ok(false);
                 }
                 self.editing_event(Event::Ime(event))
             }
-            event @ (Event::Edit { .. }
-            | Event::Ime(_)
+            Event::Edit {
+                key,
+                extend,
+                by_word,
+            } => {
+                if self
+                    .focused_node()
+                    .and_then(|id| self.dom.get(id).ok())
+                    .is_some_and(|n| n.role() != Role::TextInput)
+                {
+                    self.navigate_control(key)
+                } else {
+                    self.editing_event(Event::Edit {
+                        key,
+                        extend,
+                        by_word,
+                    })
+                }
+            }
+            Event::SetValue { id, value } => self.set_value(&id, value),
+            event @ (Event::Ime(_)
             | Event::InputValue { .. }
             | Event::Select { .. }
             | Event::Blur) => self.editing_event(event),
             Event::Cancel => {
                 self.pressed = None;
                 self.text_drag = None;
+                self.range_drag = None;
+                self.modal_outside = false;
+                let composing = self.editors.values().any(|e| e.is_composing());
                 self.cancel_composition();
-                Ok(true)
+                if composing {
+                    Ok(true)
+                } else {
+                    self.dismiss_scope()
+                }
             }
             Event::Scroll {
                 x,
@@ -385,6 +520,7 @@ impl<A: Application> Runtime<A> {
                         let n = self.dom.get(**id).expect("valid node");
                         let g = &computed.nodes[id.index()];
                         n.style().clip
+                            && self.in_scope(**id)
                             && n.stable_id().is_some()
                             && g.bounds.intersect(g.clip).contains(x, y)
                     })
@@ -412,6 +548,8 @@ impl<A: Application> Runtime<A> {
                 style.scroll_x = offset.0;
                 style.scroll_y = offset.1;
                 self.dom.set_style(id, style)?;
+                self.computed = None;
+                self.ime_area = None;
                 Ok(true)
             }
         }

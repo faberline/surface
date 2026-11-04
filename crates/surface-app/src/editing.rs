@@ -28,6 +28,8 @@ pub enum EditKey {
     Right,
     Home,
     End,
+    PageUp,
+    PageDown,
     Up,
     Down,
     Backspace,
@@ -62,6 +64,7 @@ pub struct TextEditor {
     value: String,
     selection: TextSelection,
     composition: Option<Composition>,
+    composing: bool,
     undo: Vec<Checkpoint>,
     redo: Vec<Checkpoint>,
 }
@@ -84,6 +87,7 @@ impl TextEditor {
                 cursor: end,
             },
             composition: None,
+            composing: false,
             undo: Vec::new(),
             redo: Vec::new(),
         }
@@ -98,12 +102,13 @@ impl TextEditor {
         self.composition.as_ref()
     }
     pub fn is_composing(&self) -> bool {
-        self.composition.is_some()
+        self.composing
     }
     pub fn sync(&mut self, value: &str) {
         if self.value != value {
             self.value = value.to_owned();
             self.composition = None;
+            self.composing = false;
             self.undo.clear();
             self.redo.clear();
             self.select(self.selection.anchor, self.selection.cursor);
@@ -135,6 +140,7 @@ impl TextEditor {
         if options.read_only || self.is_composing() {
             return false;
         }
+        self.composition = None;
         self.replace(self.selection.range(), text, options)
     }
     fn replace(&mut self, range: Range<usize>, text: &str, options: &TextOptions) -> bool {
@@ -176,6 +182,7 @@ impl TextEditor {
         if self.is_composing() || options.read_only {
             return false;
         }
+        self.composition = None;
         let before = self.value.clone();
         if self.value != value {
             // Browser input already applied a selection-aware operation. Still
@@ -189,30 +196,37 @@ impl TextEditor {
     pub fn ime(&mut self, event: ImeEvent, options: &TextOptions) -> bool {
         if options.read_only {
             self.composition = None;
+            self.composing = false;
             return false;
         }
         match event {
             ImeEvent::Begin => {
-                if self.composition.is_none() {
+                if !self.composing {
                     self.composition = Some(Composition {
                         replacement: self.selection.range(),
                         text: String::new(),
                         selection: None,
                     });
                 }
+                self.composing = true;
                 false
             }
             ImeEvent::Preedit { text, selection } => {
-                if self.composition.is_none() {
+                if !self.composing {
                     self.ime(ImeEvent::Begin, options);
                 }
                 let selection = selection.map(|(a, b)| (boundary(&text, a), boundary(&text, b)));
                 let composition = self.composition.as_mut().expect("composition was started");
+                // winit clears preedit before commit, and also on cancellation.
+                // Keep the replacement range for an immediate commit, while
+                // allowing ordinary keys if cancellation sends no commit.
+                self.composing = !text.is_empty();
                 composition.text = text;
                 composition.selection = selection;
                 false
             }
             ImeEvent::Commit(text) => {
+                self.composing = false;
                 let range = self
                     .composition
                     .take()
@@ -222,6 +236,7 @@ impl TextEditor {
             }
             ImeEvent::Cancel => {
                 self.composition = None;
+                self.composing = false;
                 false
             }
         }
@@ -240,7 +255,7 @@ impl TextEditor {
         self.value.clone()
     }
     pub fn display_selection(&self) -> Option<TextSelection> {
-        if let Some(c) = &self.composition {
+        if let Some(c) = self.composition.as_ref().filter(|_| self.composing) {
             return c.selection.map(|(a, b)| TextSelection {
                 anchor: c.replacement.start + a,
                 cursor: c.replacement.start + b,
@@ -264,6 +279,7 @@ impl TextEditor {
         if self.is_composing() {
             return false;
         }
+        self.composition = None;
         let cursor = self.selection.cursor;
         let previous = self.value[..cursor]
             .grapheme_indices(true)

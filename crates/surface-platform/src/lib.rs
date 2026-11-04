@@ -421,7 +421,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 }
                 self.input(event_loop, Event::Blur)
             }
-            WindowEvent::CursorLeft { .. } => {}
+            WindowEvent::CursorLeft { .. } => self.input(event_loop, Event::PointerLeave),
             WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
                 self.key_input(event_loop, event);
             }

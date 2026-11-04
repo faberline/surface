@@ -95,6 +95,17 @@ mod web {
     }
     /// Example diagnostics for browser smoke tests; the framework needs no JS UI.
     #[wasm_bindgen]
+    pub fn export_dom() -> Result<String, JsValue> {
+        APP.with(|app| {
+            app.borrow()
+                .as_ref()
+                .expect("app started")
+                .borrow()
+                .export_dom()
+                .map_err(|error| JsValue::from_str(&error.to_string()))
+        })
+    }
+    #[wasm_bindgen]
     pub fn inspect() -> String {
         APP.with(|app| {
             let app = app.borrow();

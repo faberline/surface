@@ -4,9 +4,9 @@ import { readFile } from 'node:fs/promises';
 import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export async function startWebServer() {
+export async function startWebServer(example = 'showcase') {
   if (process.env.SURFACE_URL) return { url: process.env.SURFACE_URL, close: async () => {} };
-  const root = resolve(dirname(fileURLToPath(import.meta.url)), '../examples/showcase/web');
+  const root = resolve(dirname(fileURLToPath(import.meta.url)), `../examples/${example}/web`);
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm', '.json': 'application/json' };
   const server = createServer(async (req, res) => {
     try {

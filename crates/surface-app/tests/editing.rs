@@ -4,6 +4,49 @@ use surface_app::{
     TextOptions, View,
 };
 
+#[test]
+fn cleared_native_preedit_preserves_a_commit_range_but_does_not_lock_normal_keys() {
+    let options = TextOptions::default();
+    let mut editor = TextEditor::new("台灣");
+    editor.select(0, "台".len());
+    editor.ime(
+        ImeEvent::Preedit {
+            text: "ㄓㄨㄥ".into(),
+            selection: None,
+        },
+        &options,
+    );
+    editor.ime(
+        ImeEvent::Preedit {
+            text: String::new(),
+            selection: None,
+        },
+        &options,
+    );
+    assert!(!editor.is_composing());
+    assert!(editor.ime(ImeEvent::Commit("中".into()), &options));
+    assert_eq!(editor.value(), "中灣");
+    editor.select(editor.value().len(), editor.value().len());
+    editor.ime(
+        ImeEvent::Preedit {
+            text: "ㄅ".into(),
+            selection: None,
+        },
+        &options,
+    );
+    editor.ime(
+        ImeEvent::Preedit {
+            text: String::new(),
+            selection: None,
+        },
+        &options,
+    );
+    assert!(editor.insert("文", &options));
+    assert_eq!(editor.value(), "中灣文");
+    assert!(editor.key(EditKey::Backspace, false, false, &options));
+    assert_eq!(editor.value(), "中灣");
+}
+
 #[derive(Default)]
 struct App {
     text: String,

@@ -83,6 +83,10 @@ impl<A: Application> Runtime<A> {
         }
     }
     pub(crate) fn cancel_composition(&mut self) {
+        if self.editors.values().any(|editor| editor.is_composing()) {
+            self.computed = None;
+        }
+        self.ime_area = None;
         for editor in self.editors.values_mut() {
             editor.ime(ImeEvent::Cancel, &Default::default());
         }
@@ -122,6 +126,9 @@ impl<A: Application> Runtime<A> {
             self.focused = None;
             self.pressed = None;
             self.text_drag = None;
+            self.range_drag = None;
+            self.hovered = None;
+            self.modal_outside = false;
             self.ime_area = None;
             return Ok(true);
         }
@@ -132,6 +139,10 @@ impl<A: Application> Runtime<A> {
         if node.role() != Role::TextInput || node.is_disabled() {
             return Ok(false);
         }
+        // A capture must never attach geometry from the previous preedit frame
+        // to the new editor state. The next render supplies matching geometry.
+        self.computed = None;
+        self.ime_area = None;
         let stable = node.stable_id().expect("input needs ID").to_owned();
         let binding = self.bindings.get(&id).expect("bound node");
         let options = binding.text_options.clone();

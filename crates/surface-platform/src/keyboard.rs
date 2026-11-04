@@ -52,6 +52,8 @@ impl<A: Application> Host<A> {
             Key::Named(NamedKey::ArrowDown) => Some(EditKey::Down),
             Key::Named(NamedKey::Home) => Some(EditKey::Home),
             Key::Named(NamedKey::End) => Some(EditKey::End),
+            Key::Named(NamedKey::PageUp) => Some(EditKey::PageUp),
+            Key::Named(NamedKey::PageDown) => Some(EditKey::PageDown),
             Key::Named(NamedKey::Backspace) => Some(EditKey::Backspace),
             Key::Named(NamedKey::Delete) => Some(EditKey::Delete),
             _ => None,

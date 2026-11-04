@@ -28,9 +28,9 @@ struct Vertex {
     size: [f32; 2],
     color: [f32; 4],
     radius: f32,
+    stroke: f32,
 }
-const ATTRS: [wgpu::VertexAttribute; 5] =
-    wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32];
+const ATTRS: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32,5=>Float32];
 enum Draw {
     Quad { start: u32, clip: Rect },
     Text(usize),
@@ -163,7 +163,18 @@ impl Renderer {
                     clip,
                     radius,
                     color,
+                }
+                | PaintOp::Stroke {
+                    rect,
+                    clip,
+                    radius,
+                    color,
+                    ..
                 } => {
+                    let stroke = match op {
+                        PaintOp::Stroke { width, .. } => *width,
+                        _ => 0.,
+                    };
                     let start = vertices.len() as u32;
                     for (u, v) in [(0., 0.), (1., 0.), (0., 1.), (0., 1.), (1., 0.), (1., 1.)] {
                         let x = (rect.x + u * rect.width) * scale;
@@ -189,6 +200,7 @@ impl Renderer {
                                 color.3 as f32 / 255.,
                             ],
                             radius: *radius,
+                            stroke,
                         });
                     }
                     draws.push(Draw::Quad { start, clip: *clip });

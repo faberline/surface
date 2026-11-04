@@ -37,6 +37,25 @@ The showcase supports a counter, reset, disabled controls, text input,
 keyboard focus, scrolling, and a light/dark theme. Both hosts use the same
 [`Showcase`](examples/showcase/src/lib.rs) implementation.
 
+Run the larger component gallery:
+
+```sh
+cap cargo run --locked -p surface-material-gallery
+```
+
+For WebGPU, run `./scripts/build-gallery.sh`, then serve
+`examples/material-gallery/web`. It includes controlled selections,
+sliders, button/chip variants, menus and an editable dialog.
+Both themes use a generated Material color scheme.
+
+## Export the current DOM
+
+`runtime.export_dom()?` returns JSON with the current semantic tree,
+styles, optional layout, focus, pointer state and text editing state.
+`runtime.snapshot()` returns the typed value. The browser gallery exposes
+the same call as `window.gallery.export_dom()`.
+See [DOM export](docs/dom-export.md) for file and browser download examples.
+
 ## Write an app
 
 ```rust,no_run
@@ -86,12 +105,13 @@ measurements. Renderer resources stay outside application state.
 | Package | Responsibility |
 | --- | --- |
 | `surface` | Existing Element API, compact MicroDOM arena, semantic lookup, typed style, retained layout, geometry, hit testing, display list |
-| `surface-app` | Pure views, application state, typed messages, pointer/keyboard input, focus and scroll state |
-| `surface-material` | Light/dark color roles, text, headings, cards, rows, filled/tonal/disabled buttons, checkbox, controlled text field |
+| `surface-app` | Pure views, messages, Unicode editing, modal focus, roving groups, sliders, scroll state and DOM export |
+| `surface-material` | Seeded light/dark color roles, text, cards, button/chip variants, selections, slider, tabs, menus, dialogs and controlled text fields |
 | `surface-wgpu` | Rounded rectangle shader, embedded font, shared text shaping, clipped GPU painting in display-list order |
 | `surface-platform` | Native window and browser canvas hosts, GPU surface setup, resize/DPI handling, platform event translation |
 | `ui-runtime` | Existing hooks API imported from Core for compatibility; independent of the new application API |
 | `surface-showcase` | One application built as a desktop binary or WASM library |
+| `surface-material-gallery` | Shared desktop/WebGPU component gallery and behavior examples |
 
 ```mermaid
 flowchart LR
@@ -121,8 +141,10 @@ paints two frames, and exits. A browser smoke journey is available in
 
 ## Current limits
 
-- Material components cover the controls listed above. Motion, ripples,
-  menus, dialogs, and a full design-token system remain planned.
+- Material components cover the controls listed above. Full family and
+  variant coverage, typography, elevation, motion and ripples remain open.
+  See the [component record](docs/material-coverage.json) and
+  [Material API notes](docs/material.md).
 - Text editing includes caret/selection, clipboard, grapheme deletion,
   undo/redo, Chinese font coverage and preedit/commit/cancel handling.
   Browser composition is tested. The native OS candidate-popup journey,

@@ -1,0 +1,631 @@
+use crate::{tokens::blend, Theme};
+use surface::{Align, Color, Insets, Length, Node, RangeValue, Role, Style};
+use surface_app::{Roving, View};
+
+#[derive(Clone, Copy, Debug)]
+pub enum ButtonKind {
+    Filled,
+    Tonal,
+    Outlined,
+    Text,
+}
+#[derive(Clone, Copy, Debug, Default)]
+pub struct ChoiceState {
+    pub selected: bool,
+    pub disabled: bool,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CheckValue {
+    Unchecked,
+    Checked,
+    Mixed,
+}
+#[derive(Clone, Copy, Debug)]
+pub enum ChipKind {
+    Assist,
+    Suggestion,
+    Filter,
+    Input,
+}
+
+fn label<M>(text: &str, color: Color, size: f32) -> View<M> {
+    View::new(
+        Node::new(Role::Text, text)
+            .text(text)
+            .styled(Style::default().foreground(color).font_size(size)),
+    )
+}
+fn box_view<M>(style: Style) -> View<M> {
+    View::new(Node::new(Role::Group, "").styled(style))
+}
+fn offset(left: Length, top: Length) -> Insets {
+    Insets {
+        left,
+        top,
+        ..Default::default()
+    }
+}
+
+impl Theme {
+    pub fn button_with<M>(
+        &self,
+        id: &str,
+        text: &str,
+        kind: ButtonKind,
+        disabled: bool,
+        message: M,
+    ) -> View<M> {
+        let (background, foreground) = match kind {
+            ButtonKind::Filled => (self.primary, self.on_primary),
+            ButtonKind::Tonal => (self.tonal, self.on_tonal),
+            ButtonKind::Outlined | ButtonKind::Text => (Color::TRANSPARENT, self.primary),
+        };
+        let mut visual = Style::row()
+            .align(Align::Center)
+            .justify(Align::Center)
+            .padding(8.)
+            .height(Length::Px(40.))
+            .radius(20.)
+            .state_layer(foreground)
+            .background(if disabled { self.disabled } else { background });
+        visual.grow = 1.;
+        if matches!(kind, ButtonKind::Outlined) {
+            visual = visual.border(1., self.outline);
+        }
+        let mut touch = Style::row()
+            .padding(4.)
+            .height(Length::Px(48.))
+            .align(Align::Center);
+        touch.min_width = 80.;
+        View::new(
+            Node::new(Role::Button, text)
+                .id(id)
+                .disabled(disabled)
+                .styled(touch),
+        )
+        .children([box_view(visual).children([label(
+            text,
+            if disabled { self.outline } else { foreground },
+            14.,
+        )])])
+        .on_press(message)
+    }
+    pub fn checkbox_with<M>(
+        &self,
+        id: &str,
+        text: &str,
+        value: CheckValue,
+        disabled: bool,
+        message: M,
+    ) -> View<M> {
+        let checked = value != CheckValue::Unchecked;
+        let color = if disabled { self.outline } else { self.primary };
+        let mark = match value {
+            CheckValue::Checked => "✓",
+            CheckValue::Mixed => "−",
+            _ => "",
+        };
+        let visual = Style::row()
+            .align(Align::Center)
+            .justify(Align::Center)
+            .width(Length::Px(20.))
+            .height(Length::Px(20.))
+            .radius(2.)
+            .border(2., color)
+            .background(if checked { color } else { Color::TRANSPARENT });
+        View::new(
+            Node::new(Role::Checkbox, text)
+                .id(id)
+                .checked(checked)
+                .mixed(value == CheckValue::Mixed)
+                .disabled(disabled)
+                .styled(self.selection_style()),
+        )
+        .children([
+            box_view(visual).children([label(mark, self.on_primary, 12.)]),
+            label(text, self.on_container, 16.),
+        ])
+        .on_press(message)
+    }
+    pub fn radio<M>(&self, id: &str, text: &str, state: ChoiceState, message: M) -> View<M> {
+        let color = if state.disabled {
+            self.outline
+        } else {
+            self.primary
+        };
+        View::new(
+            Node::new(Role::Radio, text)
+                .id(id)
+                .checked(state.selected)
+                .disabled(state.disabled)
+                .styled(self.selection_style()),
+        )
+        .children([
+            box_view(
+                Style::default()
+                    .width(Length::Px(20.))
+                    .height(Length::Px(20.))
+                    .padding(5.)
+                    .radius(10.)
+                    .border(2., color),
+            )
+            .children([box_view(
+                Style::default()
+                    .width(Length::Px(10.))
+                    .height(Length::Px(10.))
+                    .radius(5.)
+                    .background(if state.selected {
+                        color
+                    } else {
+                        Color::TRANSPARENT
+                    }),
+            )]),
+            label(text, self.on_container, 16.),
+        ])
+        .on_press(message)
+    }
+    pub fn radio_group<M>(
+        &self,
+        id: &str,
+        name: &str,
+        children: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::RadioGroup, name)
+                .id(id)
+                .styled(Style::column().gap(4.)),
+        )
+        .children(children)
+        .roving(Roving::vertical(true))
+    }
+    pub fn switch<M>(&self, id: &str, text: &str, state: ChoiceState, message: M) -> View<M> {
+        let color = if state.disabled {
+            self.outline
+        } else {
+            self.primary
+        };
+        let track = Style::row()
+            .width(Length::Px(52.))
+            .height(Length::Px(32.))
+            .padding(4.)
+            .align(Align::Center)
+            .justify(if state.selected {
+                Align::End
+            } else {
+                Align::Start
+            })
+            .radius(16.)
+            .border(2., color)
+            .background(if state.selected {
+                color
+            } else {
+                self.input_container
+            });
+        View::new(
+            Node::new(Role::Switch, text)
+                .id(id)
+                .checked(state.selected)
+                .disabled(state.disabled)
+                .styled(self.selection_style()),
+        )
+        .children([
+            box_view(track).children([box_view(
+                Style::default()
+                    .width(Length::Px(24.))
+                    .height(Length::Px(24.))
+                    .radius(12.)
+                    .background(if state.selected {
+                        self.on_primary
+                    } else {
+                        self.outline
+                    }),
+            )]),
+            label(text, self.on_container, 16.),
+        ])
+        .on_press(message)
+    }
+    fn selection_style(&self) -> Style {
+        let mut style = Style::row()
+            .padding(12.)
+            .gap(12.)
+            .align(Align::Center)
+            .foreground(self.primary);
+        style.min_height = 48.;
+        style
+    }
+    pub fn segmented_button<M>(
+        &self,
+        id: &str,
+        text: &str,
+        state: ChoiceState,
+        message: M,
+    ) -> View<M> {
+        self.choice(id, text, state, Role::Button, message)
+    }
+    pub fn segmented_buttons<M>(
+        &self,
+        id: &str,
+        name: &str,
+        children: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::Group, name)
+                .id(id)
+                .styled(Style::row().gap(0.).wrap(true)),
+        )
+        .children(children)
+        .roving(Roving::horizontal(false))
+    }
+    fn choice<M>(
+        &self,
+        id: &str,
+        text: &str,
+        state: ChoiceState,
+        role: Role,
+        message: M,
+    ) -> View<M> {
+        let (background, foreground) = if state.selected {
+            (self.tonal, self.on_tonal)
+        } else {
+            (Color::TRANSPARENT, self.on_container)
+        };
+        View::new(
+            Node::new(role, text)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .styled(
+                    Style::row()
+                        .padding(12.)
+                        .height(Length::Px(48.))
+                        .align(Align::Center)
+                        .justify(Align::Center)
+                        .background(if state.disabled {
+                            self.disabled
+                        } else {
+                            background
+                        })
+                        .foreground(self.primary)
+                        .state_layer(foreground)
+                        .border(1., self.outline)
+                        .radius(24.),
+                ),
+        )
+        .children([label(text, foreground, 14.)])
+        .on_press(message)
+    }
+    pub fn tab<M>(&self, id: &str, text: &str, state: ChoiceState, message: M) -> View<M> {
+        let foreground = if state.disabled {
+            self.outline
+        } else if state.selected {
+            self.primary
+        } else {
+            self.colors.on_surface_variant
+        };
+        let mut children = vec![label(text, foreground, 14.)];
+        if state.selected {
+            children.push(box_view(
+                Style::default()
+                    .height(Length::Px(3.))
+                    .radius(2.)
+                    .background(self.primary)
+                    .absolute(Insets {
+                        left: Length::Px(12.),
+                        right: Length::Px(12.),
+                        bottom: Length::Px(0.),
+                        ..Default::default()
+                    }),
+            ));
+        }
+        View::new(
+            Node::new(Role::Tab, text)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .styled(
+                    Style::row()
+                        .height(Length::Px(48.))
+                        .padding(12.)
+                        .align(Align::Center)
+                        .justify(Align::Center)
+                        .foreground(self.primary)
+                        .state_layer(foreground),
+                ),
+        )
+        .children(children)
+        .on_press(message)
+    }
+    pub fn tabs<M>(
+        &self,
+        id: &str,
+        name: &str,
+        children: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::TabList, name)
+                .id(id)
+                .styled(Style::row().gap(4.).wrap(true)),
+        )
+        .children(children)
+        .roving(Roving::horizontal(false))
+    }
+    pub fn chip<M>(
+        &self,
+        id: &str,
+        text: &str,
+        kind: ChipKind,
+        state: ChoiceState,
+        message: M,
+        remove: Option<M>,
+    ) -> View<M> {
+        let mut children = vec![label(
+            text,
+            if state.selected {
+                self.on_tonal
+            } else {
+                self.on_container
+            },
+            14.,
+        )];
+        if matches!(kind, ChipKind::Input) {
+            if let Some(message) = remove {
+                children.push(
+                    View::new(
+                        Node::new(Role::Button, format!("Remove {text}"))
+                            .id(format!("{id}-remove"))
+                            .text("×")
+                            .styled(
+                                Style::default()
+                                    .width(Length::Px(24.))
+                                    .height(Length::Px(24.))
+                                    .foreground(self.on_container),
+                            ),
+                    )
+                    .on_press(message),
+                );
+            }
+        }
+        View::new(
+            Node::new(Role::Button, text)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .styled(
+                    Style::row()
+                        .padding(8.)
+                        .gap(8.)
+                        .align(Align::Center)
+                        .radius(8.)
+                        .border(1., self.outline)
+                        .background(if state.selected {
+                            self.tonal
+                        } else {
+                            Color::TRANSPARENT
+                        }),
+                ),
+        )
+        .children(children)
+        .on_press(message)
+    }
+    pub fn slider<M>(
+        &self,
+        id: &str,
+        name: &str,
+        range: RangeValue,
+        disabled: bool,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> View<M> {
+        let fraction = if range.is_valid() {
+            ((range.value - range.min) / (range.max - range.min)) as f32
+        } else {
+            0.
+        };
+        let color = if disabled { self.outline } else { self.primary };
+        let track = box_view(
+            Style::default()
+                .width(Length::Percent(1.))
+                .height(Length::Px(24.)),
+        )
+        .children([
+            box_view(
+                Style::default()
+                    .height(Length::Px(4.))
+                    .radius(2.)
+                    .background(self.input_container)
+                    .absolute(Insets {
+                        left: Length::Px(0.),
+                        right: Length::Px(0.),
+                        top: Length::Px(10.),
+                        ..Default::default()
+                    }),
+            ),
+            box_view(
+                Style::default()
+                    .width(Length::Percent(fraction))
+                    .height(Length::Px(4.))
+                    .radius(2.)
+                    .background(color)
+                    .absolute(offset(Length::Px(0.), Length::Px(10.))),
+            ),
+            box_view(
+                Style::default()
+                    .width(Length::Px(0.))
+                    .height(Length::Px(24.))
+                    .absolute(offset(Length::Percent(fraction), Length::Px(0.))),
+            )
+            .children([box_view(
+                Style::default()
+                    .width(Length::Px(20.))
+                    .height(Length::Px(20.))
+                    .radius(10.)
+                    .background(color)
+                    .absolute(offset(Length::Px(-10.), Length::Px(2.))),
+            )]),
+        ]);
+        View::new(
+            Node::new(Role::Slider, name)
+                .id(id)
+                .range(range)
+                .disabled(disabled)
+                .styled(
+                    Style::default()
+                        .width(Length::Percent(1.))
+                        .height(Length::Px(48.))
+                        .padding(12.)
+                        .foreground(color),
+                ),
+        )
+        .children([track])
+        .on_value(handler)
+    }
+    pub fn dialog<M>(
+        &self,
+        id: &str,
+        title: &str,
+        body: impl IntoIterator<Item = View<M>>,
+        actions: impl IntoIterator<Item = View<M>>,
+        dismiss: M,
+    ) -> View<M> {
+        let mut content = vec![View::new(
+            Node::new(Role::Heading, title).text(title).styled(
+                Style::default()
+                    .font_size(24.)
+                    .foreground(self.on_container),
+            ),
+        )];
+        content.extend(body);
+        content.push(
+            View::new(
+                Node::new(Role::Group, "Dialog actions")
+                    .styled(Style::row().gap(8.).justify(Align::End).wrap(true)),
+            )
+            .children(actions),
+        );
+        let mut style = Style::column()
+            .width(Length::Percent(1.))
+            .padding(24.)
+            .gap(16.)
+            .radius(28.)
+            .background(self.container)
+            .clip(true);
+        style.max_width = Length::Px(560.);
+        style.max_height = Length::Percent(1.);
+        let panel = View::new(
+            Node::new(Role::Dialog, title)
+                .id(id)
+                .tab_index(-1)
+                .styled(style),
+        )
+        .children(content)
+        .modal(dismiss);
+        let mut layer = Style::default()
+            .fixed(Insets::all(0.))
+            .padding(24.)
+            .align(Align::Center)
+            .justify(Align::Center)
+            .background(Color(0, 0, 0, 80));
+        layer.z_index = 1000;
+        View::new(
+            Node::new(Role::Group, "Dialog overlay")
+                .id(format!("{id}-layer"))
+                .styled(layer),
+        )
+        .children([panel])
+    }
+    pub fn menu_item<M>(&self, id: &str, text: &str, disabled: bool, message: M) -> View<M> {
+        View::new(
+            Node::new(Role::MenuItem, text)
+                .id(id)
+                .disabled(disabled)
+                .styled(
+                    Style::row()
+                        .padding(12.)
+                        .height(Length::Px(48.))
+                        .align(Align::Center)
+                        .foreground(self.primary),
+                ),
+        )
+        .children([label(
+            text,
+            if disabled {
+                self.outline
+            } else {
+                self.on_container
+            },
+            14.,
+        )])
+        .on_press(message)
+    }
+    pub fn menu_at<M>(
+        &self,
+        id: &str,
+        name: &str,
+        position: (f32, f32),
+        items: impl IntoIterator<Item = View<M>>,
+        dismiss: M,
+    ) -> View<M> {
+        let mut style = Style::column()
+            .width(Length::Px(240.))
+            .padding(8.)
+            .radius(4.)
+            .background(self.colors.surface_container_high)
+            .clip(true)
+            .fixed(offset(Length::Px(position.0), Length::Px(position.1)));
+        style.z_index = 1001;
+        View::new(
+            Node::new(Role::Menu, name)
+                .id(id)
+                .tab_index(-1)
+                .styled(style),
+        )
+        .children(items)
+        .roving(Roving::vertical(false))
+        .modal(dismiss)
+    }
+    pub fn divider<M>(&self, id: &str) -> View<M> {
+        View::new(
+            Node::new(Role::Separator, "Divider").id(id).styled(
+                Style::default()
+                    .height(Length::Px(1.))
+                    .background(self.colors.outline_variant),
+            ),
+        )
+    }
+    pub fn outlined_card<M>(
+        &self,
+        id: &str,
+        children: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::Group, "Card").id(id).styled(
+                Style::column()
+                    .padding(24.)
+                    .gap(16.)
+                    .radius(12.)
+                    .background(self.background)
+                    .border(1., self.outline),
+            ),
+        )
+        .children(children)
+    }
+    /// A transient interaction layer over an opaque component surface.
+    pub fn state_layer(
+        &self,
+        surface: Color,
+        foreground: Color,
+        pressed: bool,
+        hovered: bool,
+    ) -> Color {
+        blend(
+            surface,
+            foreground,
+            if pressed {
+                0.12
+            } else if hovered {
+                0.08
+            } else {
+                0.
+            },
+        )
+    }
+}

@@ -4,7 +4,7 @@ use surface_wgpu::{Renderer, TextSystem};
 #[test]
 fn chinese_font_and_shaped_editing_geometry_have_real_glyphs() {
     let mut text = TextSystem::default();
-    assert_eq!(text.missing_glyphs("繁體中文简体汉语ㄅㄆㄇㄓㄨㄥ"), 0);
+    assert_eq!(text.missing_glyphs("繁體中文简体汉语ㄅㄆㄇㄓㄨㄥ✓−×"), 0);
     let layout = text.text_layout("中文輸入", 18., None);
     assert_eq!(layout.clusters.len(), 4);
     for cluster in &layout.clusters {
@@ -76,6 +76,13 @@ fn gpu_offscreen_paints_clips_rounding_text_and_order() {
                     clip: viewport,
                     radius: 0.,
                     color: Color::rgb(254, 247, 255),
+                },
+                PaintOp::Stroke {
+                    rect: Rect::new(228., 8., 20., 40.),
+                    clip: viewport,
+                    radius: 6.,
+                    width: 2.,
+                    color: Color::rgb(40, 80, 180),
                 },
                 PaintOp::Quad {
                     rect: Rect::new(16., 16., 96., 48.),
@@ -156,6 +163,12 @@ fn gpu_offscreen_paints_clips_rounding_text_and_order() {
             ]
         };
         assert_eq!(pixel(64, 40), [103, 80, 164, 255]);
+        assert_eq!(pixel(238, 9), [40, 80, 180, 255], "rounded stroke edge");
+        assert_eq!(
+            pixel(238, 20),
+            [254, 247, 255, 255],
+            "stroke leaves its center clear"
+        );
         assert_eq!(
             pixel(16, 16),
             [254, 247, 255, 255],

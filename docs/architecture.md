@@ -22,6 +22,10 @@ role/name selectors have deterministic indexes. Snapshots contain semantic
 data and styles, with no closures or platform handles. Schema version 1 is
 separate from the pre-existing `SurfaceSnapshot` schema.
 
+`Runtime::snapshot()` adds current interaction and editor state, with
+matching layout when available. `Runtime::export_dom()` serializes it as
+versioned JSON. See [DOM export](dom-export.md).
+
 `LayoutEngine` retains a Taffy tree. With unchanged topology it updates only
 changed layout inputs and text contexts. Taffy caches the measurements.
 A topology change rebuilds that layout tree. This is not a keyed Virtual
@@ -31,11 +35,13 @@ pixels.
 
 `ComputedDom` holds absolute bounds and ancestor clips. Scroll offsets
 shift descendants. Stable sibling sorting by `z_index` defines paint order.
+Fixed layers use viewport coordinates and escape ancestor clips and scroll.
+They paint after flow content, ordered by `z_index`.
 Hit testing walks that order backwards and checks bounds, clipping, and
 enabled control roles. This supports the current layout model; it is not
 the full CSS stacking-context model.
 
-The display list contains ordered rounded quads and text. It has no wgpu
+The display list contains ordered rounded quads, borders and text. It has no wgpu
 types. The backend preserves order when mixing text and rectangles.
 There is no incremental GPU damage optimization yet; each dirty frame
 paints a full display list.
@@ -48,10 +54,10 @@ and web events into the same `surface_app::Event` values.
 
 `surface-wgpu` owns the device, queue, shaders, font database, glyph atlas,
 and text renderers. It supports native and WebGPU adapters through wgpu.
-Its default font database contains bundled Tuffy only. Call
+Its default font database contains bundled Tuffy and Noto Sans CJK TC. Call
 `TextSystem::add_font` before the first render for other script coverage.
-The text engine shapes text, but the bundled font does not cover every
-language. The initial input editor does not provide full text editing.
+The editor and renderer share shaped caret and selection geometry.
+See [text input](text-input.md) for the tested input paths and remaining gates.
 
 ## Upstream references
 

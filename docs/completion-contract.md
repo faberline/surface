@@ -57,5 +57,6 @@ rendering, and both themes.
 ## Evidence
 
 Keep source pins, executed checks and remaining gaps in the verification
-record. GitHub hosted CI was blocked by account billing at the start of
-this work. Failed/unrun hosted gates remain unproven until a real run passes.
+record. Surface is public. Linux hosted CI passes at the input checkpoint
+`1754a2e96e487ea693be558041abdf21ffc63d27`. Later source revisions need their
+own checks. Failed, skipped and unrun gates do not establish acceptance.

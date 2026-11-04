@@ -29,6 +29,13 @@ try {
   await page.waitForFunction(()=>window.showcase.editing_state()[1]==='中文');
   await mkdir('artifacts',{recursive:true});
   await page.screenshot({path:'artifacts/browser-ime-preedit.png'});
+  const preeditExport=await page.evaluate(()=>JSON.parse(window.showcase.export_dom()));
+  assert.equal(preeditExport.version,1);
+  assert.equal(preeditExport.text_inputs.name.value,'');
+  assert.equal(preeditExport.text_inputs.name.display_value,'中文');
+  assert.equal(preeditExport.text_inputs.name.composing,true);
+  assert.equal(preeditExport.dom.nodes.find(n=>n.stable_id==='name').text,'');
+  assert.ok(preeditExport.layout?.nodes.length===preeditExport.dom.nodes.length);
   const candidate=await page.evaluate(()=>{
     const area=document.querySelector('#surface-text-input').getBoundingClientRect();
     const canvas=document.querySelector('canvas').getBoundingClientRect();
@@ -69,6 +76,12 @@ try {
   await page.keyboard.press(process.platform==='darwin'?'Meta+A':'Control+A');
   await commit('繁體中文、简体中文');await waitValue('繁體中文、简体中文');
   await page.screenshot({path:'artifacts/browser-ime-committed.png'});
+  const domExport=await page.evaluate(()=>JSON.parse(window.showcase.export_dom()));
+  assert.equal(domExport.dom.nodes.find(n=>n.stable_id==='name').text,'繁體中文、简体中文');
+  assert.equal(domExport.text_inputs.name.value,'繁體中文、简体中文');
+  assert.equal(domExport.text_inputs.name.composing,false);
+  assert.equal(domExport.interaction.focused,'name');
+  await writeFile('artifacts/dom-export.json',JSON.stringify(domExport,null,2)+'\n');
   const events=await page.evaluate(()=>window.imeEvents);
   for(const type of ['compositionstart','compositionupdate','compositionend','input'])assert.ok(events.some(e=>e.type===type),type);
   assert.deepEqual(errors,[]);

@@ -53,3 +53,15 @@ clipboard path. The computer-use tool timed out when entering physical
 letter keys after switching input sources. Therefore native Chinese IME
 composition and the visible OS candidate popup remain **unverified**.
 Windows/Linux IME and mobile soft keyboards also need runtime evidence.
+
+A later own-window AppKit integration attempt selected the installed
+`com.apple.inputmethod.TCIM.Zhuyin` source and obtained the GPU caret at
+`[68, 452, 1, 24]`. Synthesized NSEvents produced no winit preedit event.
+The bounded test timed out and failed. It captured no candidate window.
+This attempt adds no native composition acceptance. The prototype is not
+part of the framework API. Physical input still needs a real OS journey.
+
+An empty native preedit can precede either commit or cancellation. The
+editor preserves the replacement range for an immediate commit, while
+allowing the next ordinary key when no commit follows. A regression test
+covers both sequences.
