@@ -7,6 +7,12 @@ GPU renderer paints it in a native window or a browser canvas.
 This is the first working framework version. It includes a Material
 3-inspired component set, not the full Material component specification.
 
+The current main-branch landing is
+[surface@0.1.0](https://github.com/faberline/surface/milestone/1).
+[surface@0.2.0](https://github.com/faberline/surface/milestone/2) tracks the
+full component and platform target. See [delivery stages](docs/delivery-stages.md)
+for every follow-up issue. Native OS Zhuyin verification remains deferred.
+
 ![Material showcase rendered by the shared Rust GPU backend](docs/images/showcase.png)
 
 ## Run the example

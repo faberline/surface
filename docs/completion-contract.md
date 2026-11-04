@@ -1,6 +1,9 @@
 # Material, Chinese input, and consumer migration
 
-The active goal is to complete all three workstreams below. A starter set,
+The full framework target is tracked in
+[surface@0.2.0](https://github.com/faberline/surface/milestone/2).
+The current [0.1.0 checkpoint](delivery-stages.md) is a partial foundation.
+Completion requires all three workstreams below. A starter set,
 an API-only test, or a compatible duplicate implementation does not close
 this goal. Each row needs current source and matching execution evidence.
 
