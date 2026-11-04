@@ -77,6 +77,13 @@ fn export_tracks_live_state_and_never_labels_old_geometry_as_current() {
     assert_eq!(pending.text_inputs["name"].display_value, "ㄋㄧ");
     assert!(pending.text_inputs["name"].composing);
     assert_eq!(runtime.app().name, "");
+    let before_rejected_action = runtime.export_dom().unwrap();
+    assert!(runtime.activate("missing").is_err());
+    assert_eq!(
+        runtime.export_dom().unwrap(),
+        before_rejected_action,
+        "a rejected action must not cancel the active preedit or mutate the capture"
+    );
     runtime.render(320., 180., &mut Metrics).unwrap();
     assert!(runtime.snapshot().layout.is_some());
     runtime

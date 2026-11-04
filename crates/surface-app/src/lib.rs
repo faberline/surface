@@ -342,15 +342,15 @@ impl<A: Application> Runtime<A> {
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
-        let focus_changed = self.focused.as_deref() != Some(stable_id);
-        if self.focused.as_deref() != Some(stable_id) {
-            self.cancel_composition();
-        }
         let id = self
             .dom
             .by_id(stable_id)
             .filter(|id| self.in_scope(*id) && self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
             .ok_or_else(|| AppError::MissingControl(stable_id.to_owned()))?;
+        let focus_changed = self.focused.as_deref() != Some(stable_id);
+        if focus_changed {
+            self.cancel_composition();
+        }
         self.focused = Some(stable_id.to_owned());
         let message = self.bindings.get(&id).and_then(|b| b.activate.clone());
         self.message(message)
