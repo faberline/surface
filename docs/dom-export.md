@@ -4,6 +4,10 @@ Call `Runtime::export_dom()` to get a JSON string. The call reads current
 state. It does not run `update`, trigger a render, or write a file.
 Desktop and WASM use the same method.
 
+For a running desktop window or WASM app, the optional
+[application bridge](application-bridge.md) exposes this data through
+Jet bridge's `ui snapshot` CLI command and `ui_snapshot` MCP tool.
+
 ```rust,ignore
 let json = runtime.export_dom()?;
 std::fs::write("surface-dom.json", json)?;

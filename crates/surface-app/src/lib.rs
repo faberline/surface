@@ -1,4 +1,6 @@
 //! Platform-independent Rust application state and input routing.
+#[cfg(feature = "bridge")]
+mod bridge;
 mod controls;
 mod editing;
 mod editing_runtime;

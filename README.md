@@ -56,6 +56,12 @@ styles, optional layout, focus, pointer state and text editing state.
 the same call as `window.gallery.export_dom()`.
 See [DOM export](docs/dom-export.md) for file and browser download examples.
 
+Enable `surface-platform`'s optional `devtools` feature for desktop or WASM
+CLI/MCP access through the independent Jet bridge. Both hosts use the same
+seven semantic operations. They read the Rust tree and send normal state
+updates. Surface imports only the small protocol crate. See the
+[application bridge](docs/application-bridge.md) for setup and live tests.
+
 ## Write an app
 
 ```rust,no_run
