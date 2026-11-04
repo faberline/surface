@@ -123,9 +123,11 @@ paints two frames, and exits. A browser smoke journey is available in
 
 - Material components cover the controls listed above. Motion, ripples,
   menus, dialogs, and a full design-token system remain planned.
-- The text field appends at the end and removes the last Unicode scalar.
-  Caret movement, selection, clipboard, complete IME composition, and
-  grapheme editing remain planned. Commit events are accepted.
+- Text editing includes caret/selection, clipboard, grapheme deletion,
+  undo/redo, Chinese font coverage and preedit/commit/cancel handling.
+  Browser composition is tested. The native OS candidate-popup journey,
+  other desktop platforms and mobile keyboards still need runtime evidence.
+  See [text input](docs/text-input.md).
 - Semantic roles support tests. Native screen-reader bridges and an
   accessible HTML companion tree remain planned.
 - Flexbox, wrapping, clipping, scroll offsets, and ordered paint are present.

@@ -9,7 +9,7 @@ The current target is a usable early Rust application framework with
 | Shared app | Immutable views, messages, state updates, focus, pointer, keyboard, controlled text, scroll | Implemented with the input limits in README |
 | Material starter | Light/dark palette, typography, buttons, cards, checkbox, text field | Implemented starter set |
 | GPU and hosts | Native window, WASM canvas, shared text and rectangles, resize/DPI | Implemented; platform evidence is recorded separately |
-| Editing and accessibility | Caret, selection, clipboard, full IME, grapheme edits, platform accessibility bridges | Planned |
+| Editing and accessibility | Caret, selection, clipboard, IME, grapheme edits, platform accessibility bridges | Editing implemented; browser composition tested; native OS composition, mobile keyboards and accessibility bridges remain open |
 | Component runtime | Keyed component identity, local state, effects with cleanup, async commands, batched scheduling | Planned; legacy hooks alone do not satisfy this stage |
 | Material system | Theme tokens, color generation, elevation, motion, ripples, menus, dialogs, lists, navigation | Planned |
 | Rich render and tooling | Images, transforms, damage, virtual lists, drag, Rust semantic driver, screenshots/traces, replay | Planned |

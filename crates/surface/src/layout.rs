@@ -5,6 +5,36 @@ use taffy::prelude as t;
 /// A renderer must use the same font metrics here and during text painting.
 pub trait TextMeasurer {
     fn measure(&mut self, text: &str, font_size: f32, width: Option<f32>) -> (f32, f32);
+    fn text_layout(&mut self, text: &str, font_size: f32, width: Option<f32>) -> crate::TextLayout {
+        let line_height = font_size * 1.5;
+        let mut clusters = Vec::new();
+        let mut x = 0.;
+        let mut y = 0.;
+        for (start, c) in text.char_indices() {
+            if c == '\n' {
+                x = 0.;
+                y += line_height;
+                continue;
+            }
+            let (w, _) = self.measure(&c.to_string(), font_size, None);
+            if width.is_some_and(|limit| x + w > limit) && x > 0. {
+                x = 0.;
+                y += line_height;
+            }
+            clusters.push(crate::TextCluster {
+                bytes: start..start + c.len_utf8(),
+                bounds: Rect::new(x, y, w, line_height),
+                rtl: false,
+            });
+            x += w;
+        }
+        crate::TextLayout {
+            clusters,
+            line_height,
+            text_len: text.len(),
+            height: y + line_height,
+        }
+    }
 }
 #[derive(Debug, thiserror::Error)]
 pub enum LayoutError {

@@ -1,4 +1,9 @@
 //! Thin desktop/browser window host. The application never sees platform events.
+#[cfg(not(target_arch = "wasm32"))]
+mod ime_session;
+mod keyboard;
+#[cfg(target_arch = "wasm32")]
+mod web_input;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;
@@ -9,7 +14,6 @@ use winit::{
     dpi::LogicalSize,
     event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop},
-    keyboard::{Key, NamedKey},
     window::{Window, WindowId},
 };
 
@@ -119,6 +123,12 @@ struct Host<A: Application> {
     control: bool,
     frames: u32,
     error: Option<HostError>,
+    #[cfg(target_arch = "wasm32")]
+    web_input: Option<web_input::WebInput<A>>,
+    #[cfg(not(target_arch = "wasm32"))]
+    clipboard: Option<arboard::Clipboard>,
+    #[cfg(not(target_arch = "wasm32"))]
+    ime: ime_session::ImeSession,
 }
 impl<A: Application> Host<A> {
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
@@ -144,6 +154,31 @@ impl<A: Application> Host<A> {
             }
             Ok(false) => {}
             Err(error) => self.fail(event_loop, error),
+        }
+        self.sync_text_input();
+    }
+    fn sync_text_input(&mut self) {
+        #[cfg(target_arch = "wasm32")]
+        if let Some(input) = &self.web_input {
+            input.sync();
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(window) = &self.window {
+            let input = self.runtime.borrow().input_snapshot();
+            let target = input
+                .as_ref()
+                .filter(|i| !i.read_only)
+                .map(|i| i.id.clone());
+            let allowed = target.is_some();
+            for allowed in self.ime.focus(target) {
+                window.set_ime_allowed(allowed);
+            }
+            if let Some(caret) = input.and_then(|i| i.caret).filter(|_| allowed) {
+                window.set_ime_cursor_area(
+                    winit::dpi::LogicalPosition::new(caret.x, caret.y),
+                    winit::dpi::LogicalSize::new(caret.width.max(1.), caret.height.max(1.)),
+                );
+            }
         }
     }
     fn draw(&mut self, event_loop: &ActiveEventLoop) {
@@ -211,6 +246,7 @@ impl<A: Application> Host<A> {
                 window.request_redraw();
             }
         }
+        self.sync_text_input();
     }
 }
 impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
@@ -244,8 +280,15 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 return;
             }
         };
-        window.set_ime_allowed(true);
         self.window = Some(window.clone());
+        #[cfg(target_arch = "wasm32")]
+        match web_input::WebInput::new(self.runtime.clone(), window.clone()) {
+            Ok(input) => self.web_input = Some(input),
+            Err(error) => {
+                self.fail(event_loop, format!("browser input bridge: {error:?}"));
+                return;
+            }
+        }
         #[cfg(not(target_arch = "wasm32"))]
         match pollster::block_on(Gpu::new(window)) {
             Ok(gpu) => {
@@ -301,6 +344,13 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                     .map(|w| w.scale_factor() as f32)
                     .unwrap_or(1.);
                 self.pointer = (position.x as f32 / scale, position.y as f32 / scale);
+                self.input(
+                    event_loop,
+                    Event::PointerMove {
+                        x: self.pointer.0,
+                        y: self.pointer.1,
+                    },
+                );
             }
             WindowEvent::MouseInput {
                 state,
@@ -364,40 +414,22 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 self.shift = m.state().shift_key();
                 self.control = m.state().control_key() || m.state().super_key();
             }
-            WindowEvent::Focused(false) | WindowEvent::CursorLeft { .. } => {
-                self.input(event_loop, Event::Cancel)
-            }
-            WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
-                match event.logical_key {
-                    Key::Named(NamedKey::Tab) => self.input(
-                        event_loop,
-                        Event::FocusNext {
-                            reverse: self.shift,
-                        },
-                    ),
-                    Key::Named(NamedKey::Backspace) => self.input(event_loop, Event::Backspace),
-                    Key::Named(NamedKey::Enter) => self.input(event_loop, Event::Activate),
-                    Key::Named(NamedKey::Escape) => self.input(event_loop, Event::Cancel),
-                    _ if !self.control => {
-                        let text_field = {
-                            let r = self.runtime.borrow();
-                            r.focused()
-                                .and_then(|id| r.dom().by_id(id))
-                                .and_then(|id| r.dom().get(id).ok())
-                                .is_some_and(|n| n.role() == surface::Role::TextInput)
-                        };
-                        if event.logical_key == Key::Named(NamedKey::Space) && !text_field {
-                            self.input(event_loop, Event::Activate);
-                        } else if let Some(text) = event.text {
-                            self.input(event_loop, Event::Text(text.to_string()));
-                        }
-                    }
-                    _ => {}
+            WindowEvent::Focused(false) => {
+                #[cfg(target_arch = "wasm32")]
+                if self.web_input.as_ref().is_some_and(|input| input.focused()) {
+                    return;
                 }
+                self.input(event_loop, Event::Blur)
             }
-            // Basic committed input only. Full IME pre-edit and caret UI are not yet implemented.
-            WindowEvent::Ime(winit::event::Ime::Commit(text)) => {
-                self.input(event_loop, Event::Text(text))
+            WindowEvent::CursorLeft { .. } => {}
+            WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
+                self.key_input(event_loop, event);
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            WindowEvent::Ime(event) => {
+                if let Some(event) = self.ime.event(event) {
+                    self.input(event_loop, event);
+                }
             }
             _ => {}
         }
@@ -426,6 +458,12 @@ pub fn run_runtime<A: Application>(
         control: false,
         frames: 0,
         error: None,
+        #[cfg(target_arch = "wasm32")]
+        web_input: None,
+        #[cfg(not(target_arch = "wasm32"))]
+        clipboard: None,
+        #[cfg(not(target_arch = "wasm32"))]
+        ime: ime_session::ImeSession::default(),
     };
     #[cfg(not(target_arch = "wasm32"))]
     {

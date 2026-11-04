@@ -1,4 +1,23 @@
-# Initial framework verification
+# Framework verification
+
+## Chinese editing update
+
+Recorded on 2026-11-04 on the same macOS environment below.
+
+| Check | Observed result |
+| --- | --- |
+| `./scripts/check.sh` | PASS: format, Clippy with warnings denied, 28 Rust tests, native and WASM compilation |
+| `./scripts/check-gpu.sh` | PASS: explicitly executed on Apple M1 Max / Metal |
+| `cap cargo run --locked -p surface-showcase -- --smoke` | PASS: two presented native GPU frames |
+| `node scripts/browser-smoke.mjs` | PASS: original pointer/keyboard/theme/resize/scroll journey; no errors |
+| `node scripts/browser-ime.mjs` | PASS: Chrome 157.0.8103.38 composition, replacement, focus cancellation, grapheme deletion, undo/redo, and caret host placement; 40 events, no errors |
+
+Native paste, caret movement, deletion and undo were observed in a visible
+macOS window. Native OS composition and the candidate popup remain unverified.
+See [text input](text-input.md) for the exact limits. This update does not
+complete the full Material catalog or Core/Jet migration.
+
+## Initial framework
 
 Recorded on 2026-11-03, Asia/Taipei. This is evidence for the initial
 standalone framework, not production acceptance of the Core/Jet backlog.
@@ -51,7 +70,8 @@ node scripts/browser-smoke.mjs
 
 `SURFACE_CHROME` can select an existing browser executable.
 `SURFACE_PLAYWRIGHT` can select the ESM entry point of an external
-Playwright installation. `SURFACE_URL` defaults to `http://127.0.0.1:8080`.
+Playwright installation. Tests start their own local HTTP server on a free
+port. `SURFACE_URL` can select an already running test server.
 
 ## Remaining qualification
 

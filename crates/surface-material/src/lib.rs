@@ -193,7 +193,7 @@ impl Theme {
         ])
         .on_press(message)
     }
-    /// Controlled, end-editing text field. IME/caret/selection are a later stage.
+    /// Controlled text field with runtime caret, selection and IME support.
     pub fn text_field<M>(
         &self,
         id: &str,

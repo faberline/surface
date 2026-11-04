@@ -199,9 +199,27 @@ impl Renderer {
                     text,
                     font_size,
                     color,
+                }
+                | PaintOp::EditableText {
+                    rect,
+                    clip,
+                    text,
+                    font_size,
+                    color,
+                    ..
                 } => {
+                    let (scroll, wrap) = match op {
+                        PaintOp::EditableText {
+                            scroll, multiline, ..
+                        } => (*scroll, *multiline),
+                        _ => (Default::default(), true),
+                    };
                     let index = buffers.len();
-                    buffers.push(self.text.buffer(text, *font_size, Some(rect.width)));
+                    buffers.push(self.text.buffer(
+                        text,
+                        *font_size,
+                        if wrap { Some(rect.width) } else { None },
+                    ));
                     while self.text_renderers.len() <= index {
                         self.text_renderers.push(TextRenderer::new(
                             &mut self.atlas,
@@ -218,8 +236,8 @@ impl Renderer {
                         &self.viewport,
                         [TextArea {
                             buffer: &buffers[index],
-                            left: rect.x * scale,
-                            top: rect.y * scale,
+                            left: (rect.x - scroll.0) * scale,
+                            top: (rect.y - scroll.1) * scale,
                             scale,
                             bounds: TextBounds {
                                 left: (clip.x * scale).floor() as i32,

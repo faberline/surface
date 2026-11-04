@@ -1,4 +1,11 @@
 //! Platform-independent Rust application state and input routing.
+mod editing;
+mod editing_runtime;
+pub use editing::{
+    utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
+    TextSelection,
+};
+pub use editing_runtime::InputSnapshot;
 use std::{collections::BTreeMap, rc::Rc};
 use surface::{
     ComputedDom, DisplayList, DomError, LayoutEngine, LayoutError, MicroDom, Node, NodeId, Role,
@@ -11,6 +18,7 @@ pub struct View<M> {
     children: Vec<Self>,
     activate: Option<M>,
     input: Option<Rc<dyn Fn(String) -> M>>,
+    text_options: TextOptions,
 }
 impl<M> View<M> {
     pub fn new(node: Node) -> Self {
@@ -19,6 +27,7 @@ impl<M> View<M> {
             children: Vec::new(),
             activate: None,
             input: None,
+            text_options: TextOptions::default(),
         }
     }
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -31,6 +40,10 @@ impl<M> View<M> {
     }
     pub fn on_input(mut self, handler: impl Fn(String) -> M + 'static) -> Self {
         self.input = Some(Rc::new(handler));
+        self
+    }
+    pub fn text_options(mut self, options: TextOptions) -> Self {
+        self.text_options = options;
         self
     }
 }
@@ -58,6 +71,30 @@ pub enum Event {
     Activate,
     Text(String),
     Backspace,
+    PointerMove {
+        x: f32,
+        y: f32,
+    },
+    Edit {
+        key: EditKey,
+        extend: bool,
+        by_word: bool,
+    },
+    Ime(ImeEvent),
+    ImeFor {
+        id: String,
+        event: ImeEvent,
+    },
+    InputValue {
+        value: String,
+        anchor: usize,
+        cursor: usize,
+    },
+    Select {
+        anchor: usize,
+        cursor: usize,
+    },
+    Blur,
     Cancel,
     Scroll {
         x: f32,
@@ -76,10 +113,13 @@ pub enum AppError {
     MissingId(String),
     #[error("no enabled control with ID {0}")]
     MissingControl(String),
+    #[error("writable text input needs an on_input handler: {0}")]
+    MissingInputHandler(String),
 }
 struct Binding<M> {
     activate: Option<M>,
     input: Option<Rc<dyn Fn(String) -> M>>,
+    text_options: TextOptions,
 }
 
 pub struct Runtime<A: Application> {
@@ -91,6 +131,10 @@ pub struct Runtime<A: Application> {
     focused: Option<String>,
     pressed: Option<String>,
     scroll: BTreeMap<String, (f32, f32)>,
+    editors: BTreeMap<String, TextEditor>,
+    text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
+    ime_area: Option<surface::Rect>,
+    text_drag: Option<String>,
 }
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
@@ -103,6 +147,10 @@ impl<A: Application> Runtime<A> {
             focused: None,
             pressed: None,
             scroll: BTreeMap::new(),
+            editors: BTreeMap::new(),
+            text_geometry: BTreeMap::new(),
+            ime_area: None,
+            text_drag: None,
         };
         runtime.rebuild()?;
         Ok(runtime)
@@ -132,6 +180,15 @@ impl<A: Application> Runtime<A> {
             if node.is_focusable() && node.stable_id().is_none() {
                 return Err(AppError::MissingId(node.name().to_owned()));
             }
+            if node.role() == Role::TextInput
+                && !disabled
+                && !view.text_options.read_only
+                && view.input.is_none()
+            {
+                return Err(AppError::MissingInputHandler(
+                    node.stable_id().unwrap_or(node.name()).to_owned(),
+                ));
+            }
             let id = if let Some(parent) = parent {
                 dom.append(parent, node)?
             } else {
@@ -142,6 +199,7 @@ impl<A: Application> Runtime<A> {
                 Binding {
                     activate: view.activate,
                     input: view.input,
+                    text_options: view.text_options,
                 },
             );
             for child in view.children {
@@ -163,6 +221,7 @@ impl<A: Application> Runtime<A> {
         }
         self.dom = dom;
         self.bindings = bindings;
+        self.reconcile_editors();
         if self.focused.as_ref().is_some_and(|key| {
             self.dom
                 .by_id(key)
@@ -180,9 +239,9 @@ impl<A: Application> Runtime<A> {
         height: f32,
         measurer: &mut impl TextMeasurer,
     ) -> Result<DisplayList, AppError> {
-        let computed = self.layout.compute(&self.dom, width, height, measurer)?;
+        let (display_dom, decorations, computed) = self.layout_editing(width, height, measurer)?;
         let focused = self.focused.as_ref().and_then(|id| self.dom.by_id(id));
-        let list = DisplayList::compile(&self.dom, &computed, focused);
+        let list = DisplayList::compile_with_text(&display_dom, &computed, focused, &decorations);
         self.computed = Some(computed);
         Ok(list)
     }
@@ -206,6 +265,9 @@ impl<A: Application> Runtime<A> {
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
+        if self.focused.as_deref() != Some(stable_id) {
+            self.cancel_composition();
+        }
         let id = self
             .dom
             .by_id(stable_id)
@@ -218,11 +280,14 @@ impl<A: Application> Runtime<A> {
     pub fn dispatch(&mut self, event: Event) -> Result<bool, AppError> {
         match event {
             Event::PointerDown { x, y } => {
+                self.cancel_composition();
                 self.pressed = self.hit(x, y).and_then(|id| self.stable(id));
                 self.focused = self.pressed.clone();
+                self.place_text_cursor(x, y, false);
                 Ok(true)
             }
             Event::PointerUp { x, y } => {
+                self.text_drag = None;
                 let hit = self.hit(x, y).and_then(|id| self.stable(id));
                 if let Some(pressed) = self
                     .pressed
@@ -235,6 +300,7 @@ impl<A: Application> Runtime<A> {
                 }
             }
             Event::FocusNext { reverse } => {
+                self.cancel_composition();
                 let controls: Vec<_> = self
                     .dom
                     .iter()
@@ -272,15 +338,32 @@ impl<A: Application> Runtime<A> {
                     Ok(false)
                 }
             }
-            Event::Text(text) => self.edit(|value| {
-                value.push_str(&text.chars().filter(|c| !c.is_control()).collect::<String>())
+            Event::Text(text) => self.editing_event(Event::Text(text)),
+            Event::Backspace => self.editing_event(Event::Edit {
+                key: EditKey::Backspace,
+                extend: false,
+                by_word: false,
             }),
-            Event::Backspace => self.edit(|value| {
-                value.pop();
-            }),
+            Event::PointerMove { x, y } => {
+                self.place_text_cursor(x, y, true);
+                Ok(self.text_drag.is_some())
+            }
+            Event::ImeFor { id, event } => {
+                if self.focused.as_ref() != Some(&id) {
+                    return Ok(false);
+                }
+                self.editing_event(Event::Ime(event))
+            }
+            event @ (Event::Edit { .. }
+            | Event::Ime(_)
+            | Event::InputValue { .. }
+            | Event::Select { .. }
+            | Event::Blur) => self.editing_event(event),
             Event::Cancel => {
                 self.pressed = None;
-                Ok(false)
+                self.text_drag = None;
+                self.cancel_composition();
+                Ok(true)
             }
             Event::Scroll {
                 x,
@@ -332,20 +415,5 @@ impl<A: Application> Runtime<A> {
                 Ok(true)
             }
         }
-    }
-    fn edit(&mut self, edit: impl FnOnce(&mut String)) -> Result<bool, AppError> {
-        let Some(id) = self.focused_node() else {
-            return Ok(false);
-        };
-        let node = self.dom.get(id)?;
-        if node.role() != Role::TextInput || node.is_disabled() {
-            return Ok(false);
-        }
-        let Some(handler) = self.bindings.get(&id).and_then(|b| b.input.clone()) else {
-            return Ok(false);
-        };
-        let mut value = node.text_value().unwrap_or_default().to_owned();
-        edit(&mut value);
-        self.message(Some(handler(value)))
     }
 }
