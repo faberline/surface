@@ -2,7 +2,10 @@
 use surface::{Align, Color, Length, Node, Role, Style};
 use surface_app::View;
 mod components;
+pub mod motion;
+pub mod shape;
 mod tokens;
+pub mod typography;
 pub use components::{ButtonKind, CheckValue, ChipKind, ChoiceState};
 pub use tokens::ColorScheme;
 
@@ -72,8 +75,8 @@ impl Theme {
                 .text(text)
                 .styled(
                     Style::default()
-                        .foreground(self.on_background)
-                        .font_size(32.),
+                        .with_text_style(typography::HEADLINE_LARGE)
+                        .foreground(self.on_background),
                 ),
         )
     }
@@ -83,7 +86,11 @@ impl Theme {
             Node::new(Role::Text, text.clone())
                 .id(id)
                 .text(text)
-                .styled(Style::default().foreground(self.on_background)),
+                .styled(
+                    Style::default()
+                        .with_text_style(typography::BODY_LARGE)
+                        .foreground(self.on_background),
+                ),
         )
     }
     pub fn card<M>(&self, id: &str, children: impl IntoIterator<Item = View<M>>) -> View<M> {
@@ -94,7 +101,7 @@ impl Theme {
                     .gap(16.)
                     .background(self.container)
                     .foreground(self.on_container)
-                    .radius(16.),
+                    .corners(shape::MEDIUM),
             ),
         )
         .children(children)
@@ -139,9 +146,10 @@ impl Theme {
         View::new(
             Node::new(Role::TextInput, label).id(id).text(value).styled(
                 Style::default()
+                    .with_text_style(typography::BODY_LARGE)
                     .padding(16.)
                     .height(Length::Px(56.))
-                    .radius(4.)
+                    .corners(shape::EXTRA_SMALL_TOP)
                     .background(self.input_container)
                     .foreground(self.on_container),
             ),

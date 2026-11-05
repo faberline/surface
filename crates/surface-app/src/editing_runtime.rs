@@ -244,9 +244,9 @@ impl<A: Application> Runtime<A> {
             let g = &computed.nodes[id.index()];
             let origin = g.bounds.inset(node.style().padding);
             let text = editor.display_value();
-            let layout = measurer.text_layout(
+            let layout = measurer.text_layout_styled(
                 &text,
-                node.style().font_size,
+                &node.style().text_style(),
                 if options.multiline {
                     Some(origin.width)
                 } else {

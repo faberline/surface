@@ -1,5 +1,5 @@
-use crate::{tokens::blend, Theme};
-use surface::{Align, Color, Insets, Length, Node, RangeValue, Role, Style};
+use crate::{motion::STATE_CHANGE, shape, tokens::blend, typography, Theme};
+use surface::{Align, Color, Corners, Insets, Length, Node, RangeValue, Role, Style};
 use surface_app::{Roving, View};
 
 #[derive(Clone, Copy, Debug)]
@@ -28,11 +28,20 @@ pub enum ChipKind {
     Input,
 }
 
+/// Labels at the two sizes Material names map to their type roles. Any other
+/// size stays a plain size-only style, like the checkbox mark glyph.
 fn label<M>(text: &str, color: Color, size: f32) -> View<M> {
+    let style = if size == 14. {
+        Style::default().with_text_style(typography::LABEL_LARGE)
+    } else if size == 16. {
+        Style::default().with_text_style(typography::BODY_LARGE)
+    } else {
+        Style::default().font_size(size)
+    };
     View::new(
         Node::new(Role::Text, text)
             .text(text)
-            .styled(Style::default().foreground(color).font_size(size)),
+            .styled(style.foreground(color)),
     )
 }
 fn box_view<M>(style: Style) -> View<M> {
@@ -65,9 +74,10 @@ impl Theme {
             .justify(Align::Center)
             .padding(8.)
             .height(Length::Px(40.))
-            .radius(20.)
+            .corners(shape::FULL)
             .state_layer(foreground)
-            .background(if disabled { self.disabled } else { background });
+            .background(if disabled { self.disabled } else { background })
+            .transition(STATE_CHANGE);
         visual.grow = 1.;
         if matches!(kind, ButtonKind::Outlined) {
             visual = visual.border(1., self.outline);
@@ -110,9 +120,11 @@ impl Theme {
             .justify(Align::Center)
             .width(Length::Px(20.))
             .height(Length::Px(20.))
-            .radius(2.)
+            // CheckboxTokens ContainerShape is 2dp.
+            .corners(Corners::all(2.))
             .border(2., color)
-            .background(if checked { color } else { Color::TRANSPARENT });
+            .background(if checked { color } else { Color::TRANSPARENT })
+            .transition(STATE_CHANGE);
         View::new(
             Node::new(Role::Checkbox, text)
                 .id(id)
@@ -146,19 +158,21 @@ impl Theme {
                     .width(Length::Px(20.))
                     .height(Length::Px(20.))
                     .padding(5.)
-                    .radius(10.)
-                    .border(2., color),
+                    .corners(shape::FULL)
+                    .border(2., color)
+                    .transition(STATE_CHANGE),
             )
             .children([box_view(
                 Style::default()
                     .width(Length::Px(10.))
                     .height(Length::Px(10.))
-                    .radius(5.)
+                    .corners(shape::FULL)
                     .background(if state.selected {
                         color
                     } else {
                         Color::TRANSPARENT
-                    }),
+                    })
+                    .transition(STATE_CHANGE),
             )]),
             label(text, self.on_container, 16.),
         ])
@@ -194,13 +208,14 @@ impl Theme {
             } else {
                 Align::Start
             })
-            .radius(16.)
+            .corners(shape::FULL)
             .border(2., color)
             .background(if state.selected {
                 color
             } else {
                 self.input_container
-            });
+            })
+            .transition(STATE_CHANGE);
         View::new(
             Node::new(Role::Switch, text)
                 .id(id)
@@ -213,12 +228,13 @@ impl Theme {
                 Style::default()
                     .width(Length::Px(24.))
                     .height(Length::Px(24.))
-                    .radius(12.)
+                    .corners(shape::FULL)
                     .background(if state.selected {
                         self.on_primary
                     } else {
                         self.outline
-                    }),
+                    })
+                    .transition(STATE_CHANGE),
             )]),
             label(text, self.on_container, 16.),
         ])
@@ -288,7 +304,8 @@ impl Theme {
                         .foreground(self.primary)
                         .state_layer(foreground)
                         .border(1., self.outline)
-                        .radius(24.),
+                        .corners(shape::FULL)
+                        .transition(STATE_CHANGE),
                 ),
         )
         .children([label(text, foreground, 14.)])
@@ -307,8 +324,10 @@ impl Theme {
             children.push(box_view(
                 Style::default()
                     .height(Length::Px(3.))
-                    .radius(2.)
+                    // PrimaryNavigationTabTokens ActiveIndicatorShape is 3dp.
+                    .corners(Corners::all(3.))
                     .background(self.primary)
+                    .transition(STATE_CHANGE)
                     .absolute(Insets {
                         left: Length::Px(12.),
                         right: Length::Px(12.),
@@ -395,13 +414,14 @@ impl Theme {
                         .padding(8.)
                         .gap(8.)
                         .align(Align::Center)
-                        .radius(8.)
+                        .corners(shape::SMALL)
                         .border(1., self.outline)
                         .background(if state.selected {
                             self.tonal
                         } else {
                             Color::TRANSPARENT
-                        }),
+                        })
+                        .transition(STATE_CHANGE),
                 ),
         )
         .children(children)
@@ -430,7 +450,7 @@ impl Theme {
             box_view(
                 Style::default()
                     .height(Length::Px(4.))
-                    .radius(2.)
+                    .corners(shape::FULL)
                     .background(self.input_container)
                     .absolute(Insets {
                         left: Length::Px(0.),
@@ -443,7 +463,7 @@ impl Theme {
                 Style::default()
                     .width(Length::Percent(fraction))
                     .height(Length::Px(4.))
-                    .radius(2.)
+                    .corners(shape::FULL)
                     .background(color)
                     .absolute(offset(Length::Px(0.), Length::Px(10.))),
             ),
@@ -457,7 +477,7 @@ impl Theme {
                 Style::default()
                     .width(Length::Px(20.))
                     .height(Length::Px(20.))
-                    .radius(10.)
+                    .corners(shape::FULL)
                     .background(color)
                     .absolute(offset(Length::Px(-10.), Length::Px(2.))),
             )]),
@@ -489,7 +509,7 @@ impl Theme {
         let mut content = vec![View::new(
             Node::new(Role::Heading, title).text(title).styled(
                 Style::default()
-                    .font_size(24.)
+                    .with_text_style(typography::HEADLINE_SMALL)
                     .foreground(self.on_container),
             ),
         )];
@@ -505,7 +525,7 @@ impl Theme {
             .width(Length::Percent(1.))
             .padding(24.)
             .gap(16.)
-            .radius(28.)
+            .corners(shape::EXTRA_LARGE)
             .background(self.container)
             .clip(true);
         style.max_width = Length::Px(560.);
@@ -567,7 +587,7 @@ impl Theme {
         let mut style = Style::column()
             .width(Length::Px(240.))
             .padding(8.)
-            .radius(4.)
+            .corners(shape::EXTRA_SMALL)
             .background(self.colors.surface_container_high)
             .clip(true)
             .fixed(offset(Length::Px(position.0), Length::Px(position.1)));
@@ -601,7 +621,7 @@ impl Theme {
                 Style::column()
                     .padding(24.)
                     .gap(16.)
-                    .radius(12.)
+                    .corners(shape::MEDIUM)
                     .background(self.background)
                     .border(1., self.outline),
             ),

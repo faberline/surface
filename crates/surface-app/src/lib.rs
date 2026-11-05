@@ -5,6 +5,7 @@ mod controls;
 mod editing;
 mod editing_runtime;
 mod focus_scroll;
+mod motion;
 mod snapshot;
 pub use controls::Roving;
 pub use editing::{
@@ -177,6 +178,7 @@ pub struct Runtime<A: Application> {
     modal_outside: bool,
     layout_focus: Option<String>,
     layout_viewport: Option<(f32, f32)>,
+    motion: motion::Motion,
 }
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
@@ -199,6 +201,7 @@ impl<A: Application> Runtime<A> {
             modal_outside: false,
             layout_focus: None,
             layout_viewport: None,
+            motion: motion::Motion::default(),
         };
         runtime.rebuild()?;
         Ok(runtime)
@@ -324,6 +327,7 @@ impl<A: Application> Runtime<A> {
             self.layout_focus.clone_from(&self.focused);
             self.layout_viewport = Some((width, height));
         }
+        self.present_motion(&mut display_dom, &computed)?;
         let focused = self.focused.as_ref().and_then(|id| self.dom.by_id(id));
         let interaction = surface::InteractionState {
             hovered: self.hovered.as_ref().and_then(|id| self.dom.by_id(id)),

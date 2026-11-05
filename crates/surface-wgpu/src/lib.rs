@@ -3,7 +3,8 @@ mod text;
 use glyphon::{
     Cache, Resolution, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
-use surface::{DisplayList, PaintOp, Rect};
+use std::borrow::Cow;
+use surface::{Color, Corners, DisplayList, PaintOp, Rect, TextStyle};
 pub use text::TextSystem;
 use wgpu::util::DeviceExt;
 
@@ -27,13 +28,85 @@ struct Vertex {
     local: [f32; 2],
     size: [f32; 2],
     color: [f32; 4],
-    radius: f32,
+    /// Top-left, top-right, bottom-right, bottom-left.
+    radius: [f32; 4],
     stroke: f32,
 }
-const ATTRS: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32,5=>Float32];
+const ATTRS: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32x4,5=>Float32];
+fn corner_array(c: &Corners) -> [f32; 4] {
+    [c.top_left, c.top_right, c.bottom_right, c.bottom_left]
+}
 enum Draw {
     Quad { start: u32, clip: Rect },
     Text(usize),
+}
+/// The paint-time view shared by `Text`, `EditableText` and `StyledText`.
+struct TextRun<'a> {
+    rect: &'a Rect,
+    clip: &'a Rect,
+    text: &'a str,
+    style: Cow<'a, TextStyle>,
+    color: &'a Color,
+    scroll: (f32, f32),
+    wrap: bool,
+}
+fn text_run(op: &PaintOp) -> Option<TextRun<'_>> {
+    match op {
+        PaintOp::Quad { .. }
+        | PaintOp::Stroke { .. }
+        | PaintOp::Shape { .. }
+        | PaintOp::ShapeStroke { .. } => None,
+        PaintOp::Text {
+            rect,
+            clip,
+            text,
+            font_size,
+            color,
+        } => Some(TextRun {
+            rect,
+            clip,
+            text,
+            style: Cow::Owned(TextStyle::new(*font_size)),
+            color,
+            scroll: (0., 0.),
+            wrap: true,
+        }),
+        PaintOp::EditableText {
+            rect,
+            clip,
+            text,
+            font_size,
+            color,
+            scroll,
+            multiline,
+        } => Some(TextRun {
+            rect,
+            clip,
+            text,
+            style: Cow::Owned(TextStyle::new(*font_size)),
+            color,
+            scroll: *scroll,
+            wrap: *multiline,
+        }),
+        PaintOp::StyledText {
+            rect,
+            clip,
+            text,
+            style,
+            color,
+            scroll,
+            multiline,
+            ..
+        } => Some(TextRun {
+            rect,
+            clip,
+            text,
+            style: Cow::Borrowed(style),
+            color,
+            scroll: *scroll,
+            wrap: *multiline,
+        }),
+    }
 }
 pub struct Renderer {
     pub device: wgpu::Device,
@@ -158,23 +231,43 @@ impl Renderer {
         let mut buffers = Vec::new();
         for op in &list.ops {
             match op {
-                PaintOp::Quad {
-                    rect,
-                    clip,
-                    radius,
-                    color,
-                }
-                | PaintOp::Stroke {
-                    rect,
-                    clip,
-                    radius,
-                    color,
-                    ..
-                } => {
-                    let stroke = match op {
-                        PaintOp::Stroke { width, .. } => *width,
-                        _ => 0.,
+                PaintOp::Quad { .. }
+                | PaintOp::Stroke { .. }
+                | PaintOp::Shape { .. }
+                | PaintOp::ShapeStroke { .. } => {
+                    let (rect, clip, radii, stroke, color) = match op {
+                        PaintOp::Quad {
+                            rect,
+                            clip,
+                            radius,
+                            color,
+                        } => (rect, clip, [*radius; 4], 0., color),
+                        PaintOp::Stroke {
+                            rect,
+                            clip,
+                            radius,
+                            width,
+                            color,
+                        } => (rect, clip, [*radius; 4], *width, color),
+                        PaintOp::Shape {
+                            rect,
+                            clip,
+                            corners,
+                            color,
+                        } => (rect, clip, corner_array(corners), 0., color),
+                        PaintOp::ShapeStroke {
+                            rect,
+                            clip,
+                            corners,
+                            width,
+                            color,
+                        } => (rect, clip, corner_array(corners), *width, color),
+                        _ => unreachable!("only rectangle ops reach this arm"),
                     };
+                    // The shader clamps again. Clamping here keeps fully rounded
+                    // radii (f32::MAX) out of vertex interpolation.
+                    let limit = rect.width.min(rect.height) * 0.5;
+                    let radius = radii.map(|r| r.min(limit));
                     let start = vertices.len() as u32;
                     for (u, v) in [(0., 0.), (1., 0.), (0., 1.), (0., 1.), (1., 0.), (1., 1.)] {
                         let x = (rect.x + u * rect.width) * scale;
@@ -199,37 +292,31 @@ impl Renderer {
                                 channel(color.2),
                                 color.3 as f32 / 255.,
                             ],
-                            radius: *radius,
+                            radius,
                             stroke,
                         });
                     }
                     draws.push(Draw::Quad { start, clip: *clip });
                 }
-                PaintOp::Text {
-                    rect,
-                    clip,
-                    text,
-                    font_size,
-                    color,
-                }
-                | PaintOp::EditableText {
-                    rect,
-                    clip,
-                    text,
-                    font_size,
-                    color,
-                    ..
-                } => {
-                    let (scroll, wrap) = match op {
-                        PaintOp::EditableText {
-                            scroll, multiline, ..
-                        } => (*scroll, *multiline),
-                        _ => (Default::default(), true),
+                PaintOp::Text { .. }
+                | PaintOp::EditableText { .. }
+                | PaintOp::StyledText { .. } => {
+                    let Some(TextRun {
+                        rect,
+                        clip,
+                        text,
+                        style,
+                        color,
+                        scroll,
+                        wrap,
+                    }) = text_run(op)
+                    else {
+                        continue;
                     };
                     let index = buffers.len();
                     buffers.push(self.text.buffer(
                         text,
-                        *font_size,
+                        &style,
                         if wrap { Some(rect.width) } else { None },
                     ));
                     while self.text_renderers.len() <= index {
