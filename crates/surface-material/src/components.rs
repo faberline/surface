@@ -85,7 +85,10 @@ impl Theme {
         let mut touch = Style::row()
             .padding(4.)
             .height(Length::Px(48.))
-            .align(Align::Center);
+            .align(Align::Center)
+            // The focus ring lands on this node. It follows the pill.
+            .foreground(self.primary)
+            .corners(shape::FULL);
         touch.min_width = 80.;
         View::new(
             Node::new(Role::Button, text)
@@ -415,6 +418,7 @@ impl Theme {
                         .gap(8.)
                         .align(Align::Center)
                         .corners(shape::SMALL)
+                        .foreground(self.primary)
                         .border(1., self.outline)
                         .background(if state.selected {
                             self.tonal
