@@ -9,7 +9,7 @@ describe those separate runs. This section records the combined tree.
 
 | Check | Observed result |
 | --- | --- |
-| `./scripts/check.sh` | PASS: format, Clippy with warnings denied, 110 Rust tests passed and 4 GPU tests ignored, native compilation and both example WASM libraries |
+| `./scripts/check.sh` | PASS: format, Clippy with warnings denied, 116 Rust tests passed and 4 GPU tests ignored, native compilation and both example WASM libraries |
 | `./scripts/check-gpu.sh` | PASS on Apple M1 Max / Metal: `gpu_offscreen_paints_clips_rounding_text_and_order`, `gpu_offscreen_per_corner_shapes`, `gpu_offscreen_bottom_corners_are_not_swapped` and `gpu_offscreen_motion_animates_color_and_corners` all ran with 0 ignored, and each printed a `GPU evidence: AdapterInfo` line |
 
 No existing test assertion changed when the features were combined.
