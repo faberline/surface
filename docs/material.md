@@ -158,8 +158,11 @@ does not change application state.
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 
 The short `button`, `tonal_button`, `disabled_button` and `checkbox`
-methods call the same implementations. Stable IDs preserve focus after
-an update. Nested modal panels keep their own focus restoration points.
+methods call the same implementations. Button and chip containers paint
+the focus ring in primary. The ring follows the control shape. The input
+chip remove button keeps an `on_container` ring. Stable IDs preserve
+focus after an update. Nested modal panels keep their own focus
+restoration points.
 A click that dismisses a modal panel does not activate a background control.
 
 Tab can reach controls outside a scroll viewport. A new focus target is
