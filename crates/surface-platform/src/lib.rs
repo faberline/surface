@@ -3,6 +3,7 @@
 mod devtools;
 #[cfg(not(target_arch = "wasm32"))]
 mod ime_session;
+mod key_order;
 mod keyboard;
 mod motion;
 #[cfg(target_arch = "wasm32")]
@@ -131,6 +132,8 @@ struct Host<A: Application> {
     pointer: (f32, f32),
     shift: bool,
     control: bool,
+    #[cfg(target_arch = "wasm32")]
+    key_order: key_order::KeyOrder<winit::event::KeyEvent>,
     frames: u32,
     error: Option<HostError>,
     clock: motion::Clock,
@@ -144,6 +147,24 @@ struct Host<A: Application> {
     ime: ime_session::ImeSession,
 }
 impl<A: Application> Host<A> {
+    /// Handles the held web key press with the modifiers seen so far.
+    #[cfg(target_arch = "wasm32")]
+    fn deliver_held_key(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        held: Option<(winit::event::KeyEvent, key_order::Mods)>,
+    ) {
+        if let Some((event, mods)) = held {
+            self.shift = mods.shift;
+            self.control = mods.control;
+            self.key_input(event_loop, event);
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn flush_held_key(&mut self, event_loop: &ActiveEventLoop) {
+        let held = self.key_order.flush();
+        self.deliver_held_key(event_loop, held);
+    }
     #[cfg(feature = "devtools")]
     fn install_bridge(&mut self, event_loop: &ActiveEventLoop) {
         let result =
@@ -405,7 +426,20 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             UserEvent::Ready(Err(error)) => self.fail(event_loop, error),
         }
     }
+    #[cfg(target_arch = "wasm32")]
+    fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        self.flush_held_key(event_loop);
+    }
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+        // The web backend sends a key press before its modifier change.
+        // Any other event first handles the held key, which keeps the order.
+        #[cfg(target_arch = "wasm32")]
+        if !matches!(
+            event,
+            WindowEvent::KeyboardInput { .. } | WindowEvent::ModifiersChanged(_)
+        ) {
+            self.flush_held_key(event_loop);
+        }
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::RedrawRequested => self.draw(event_loop),
@@ -495,6 +529,18 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                     },
                 );
             }
+            #[cfg(target_arch = "wasm32")]
+            WindowEvent::ModifiersChanged(m) => {
+                let state = m.state();
+                let held = self.key_order.modifiers(key_order::Mods {
+                    shift: state.shift_key(),
+                    control: state.control_key() || state.super_key(),
+                });
+                self.shift = state.shift_key();
+                self.control = state.control_key() || state.super_key();
+                self.deliver_held_key(event_loop, held);
+            }
+            #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::ModifiersChanged(m) => {
                 self.shift = m.state().shift_key();
                 self.control = m.state().control_key() || m.state().super_key();
@@ -513,6 +559,12 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 self.input(event_loop, Event::Blur)
             }
             WindowEvent::CursorLeft { .. } => self.input(event_loop, Event::PointerLeave),
+            #[cfg(target_arch = "wasm32")]
+            WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
+                let held = self.key_order.press(event);
+                self.deliver_held_key(event_loop, held);
+            }
+            #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
                 self.key_input(event_loop, event);
             }
@@ -553,6 +605,8 @@ pub fn run_runtime<A: Application>(
         pointer: (0., 0.),
         shift: false,
         control: false,
+        #[cfg(target_arch = "wasm32")]
+        key_order: key_order::KeyOrder::new(),
         frames: 0,
         error: None,
         clock: motion::Clock::new(),
