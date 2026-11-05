@@ -4,6 +4,7 @@ mod devtools;
 #[cfg(not(target_arch = "wasm32"))]
 mod ime_session;
 mod keyboard;
+mod motion;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
@@ -132,8 +133,11 @@ struct Host<A: Application> {
     control: bool,
     frames: u32,
     error: Option<HostError>,
+    clock: motion::Clock,
     #[cfg(target_arch = "wasm32")]
     web_input: Option<web_input::WebInput<A>>,
+    #[cfg(target_arch = "wasm32")]
+    reduced_motion: Option<motion::ReducedMotionWatch>,
     #[cfg(not(target_arch = "wasm32"))]
     clipboard: Option<arboard::Clipboard>,
     #[cfg(not(target_arch = "wasm32"))]
@@ -248,11 +252,18 @@ impl<A: Application> Host<A> {
         if gpu.config.width != size.width || gpu.config.height != size.height {
             gpu.resize(size.width, size.height);
         }
-        let result = self.runtime.borrow_mut().render(
-            size.width as f32 / scale,
-            size.height as f32 / scale,
-            &mut gpu.renderer.text,
-        );
+        let (result, animating) = {
+            let mut runtime = self.runtime.borrow_mut();
+            if let Some(now) = self.clock.now_ms() {
+                runtime.set_time(now);
+            }
+            let result = runtime.render(
+                size.width as f32 / scale,
+                size.height as f32 / scale,
+                &mut gpu.renderer.text,
+            );
+            (result, runtime.needs_frame())
+        };
         let list = match result {
             Ok(list) => list,
             Err(error) => {
@@ -260,6 +271,11 @@ impl<A: Application> Host<A> {
                 return;
             }
         };
+        // Keep drawing while a transition runs. winit maps this to
+        // requestAnimationFrame on the web.
+        if animating {
+            window.request_redraw();
+        }
         let frame = match gpu.surface.get_current_texture() {
             Ok(frame) => frame,
             Err(wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated) => {
@@ -344,6 +360,11 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 self.fail(event_loop, format!("browser input bridge: {error:?}"));
                 return;
             }
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.reduced_motion =
+                motion::ReducedMotionWatch::new(self.runtime.clone(), window.clone());
         }
         #[cfg(not(target_arch = "wasm32"))]
         match pollster::block_on(Gpu::new(window)) {
@@ -516,6 +537,10 @@ pub fn run_runtime<A: Application>(
     let event_loop = EventLoop::<UserEvent>::with_user_event()
         .build()
         .map_err(|e| HostError(e.to_string()))?;
+    #[cfg(not(target_arch = "wasm32"))]
+    if motion::reduced_motion_from_env() {
+        runtime.borrow_mut().set_reduced_motion(true);
+    }
     let host = Host {
         runtime,
         options,
@@ -530,8 +555,11 @@ pub fn run_runtime<A: Application>(
         control: false,
         frames: 0,
         error: None,
+        clock: motion::Clock::new(),
         #[cfg(target_arch = "wasm32")]
         web_input: None,
+        #[cfg(target_arch = "wasm32")]
+        reduced_motion: None,
         #[cfg(not(target_arch = "wasm32"))]
         clipboard: None,
         #[cfg(not(target_arch = "wasm32"))]

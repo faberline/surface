@@ -1,10 +1,42 @@
 //! Retained Taffy layout with renderer-supplied text measurement.
-use crate::{Align, Direction, Length, MicroDom, NodeId, Position, Rect, Style};
+use crate::{Align, Direction, Length, MicroDom, NodeId, Position, Rect, Style, TextStyle};
 use taffy::prelude as t;
 
 /// A renderer must use the same font metrics here and during text painting.
 pub trait TextMeasurer {
+    /// With a style `line_height`, the default `measure_text` assumes this
+    /// returns a height for a 1.5 x `font_size` line. Override `measure_text`
+    /// if your measurer uses another line height.
     fn measure(&mut self, text: &str, font_size: f32, width: Option<f32>) -> (f32, f32);
+    /// Measure with a full text style. The default keeps size-only measurers
+    /// working: it scales the measured height to the requested line height.
+    fn measure_text(&mut self, text: &str, style: &TextStyle, width: Option<f32>) -> (f32, f32) {
+        let (w, h) = self.measure(text, style.font_size, width);
+        match style.line_height {
+            // Multiply before dividing so exact ratios stay exact in f32.
+            Some(lh) => (w, h * lh / (style.font_size * 1.5)),
+            None => (w, h),
+        }
+    }
+    /// Cluster geometry with a full text style. The default scales every
+    /// vertical value of the size-only layout to the requested line height.
+    fn text_layout_styled(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        width: Option<f32>,
+    ) -> crate::TextLayout {
+        let mut layout = self.text_layout(text, style.font_size, width);
+        if let Some(k) = style.line_height_scale() {
+            for cluster in &mut layout.clusters {
+                cluster.bounds.y *= k;
+                cluster.bounds.height *= k;
+            }
+            layout.line_height *= k;
+            layout.height *= k;
+        }
+        layout
+    }
     fn text_layout(&mut self, text: &str, font_size: f32, width: Option<f32>) -> crate::TextLayout {
         let line_height = font_size * 1.5;
         let mut clusters = Vec::new();
@@ -52,7 +84,7 @@ struct Input {
     children: Vec<NodeId>,
 }
 pub struct LayoutEngine {
-    tree: t::TaffyTree<(String, f32)>,
+    tree: t::TaffyTree<(String, TextStyle)>,
     ids: Vec<t::NodeId>,
     previous: Vec<Input>,
     viewport: Option<t::NodeId>,
@@ -118,8 +150,13 @@ fn valid(s: &Style) -> bool {
         .into_iter()
         .all(|v| v.is_finite() && v >= 0.)
         && s.font_size > 0.
+        && s.corners.is_none_or(|c| c.is_valid())
+        && (1..=1000).contains(&s.font_weight)
+        && s.line_height.is_none_or(|v| v.is_finite() && v > 0.)
+        && s.letter_spacing.is_finite()
         && s.scroll_x.is_finite()
         && s.scroll_y.is_finite()
+        && s.transition.is_none_or(|t| t.is_valid())
         && [s.inset.left, s.inset.top, s.inset.right, s.inset.bottom]
             .into_iter()
             .all(|v| match v {
@@ -224,7 +261,7 @@ impl LayoutEngine {
             for n in &input {
                 self.ids.push(self.tree.new_leaf_with_context(
                     style(&n.style),
-                    (n.text.clone().unwrap_or_default(), n.style.font_size),
+                    (n.text.clone().unwrap_or_default(), n.style.text_style()),
                 )?);
             }
             for (i, n) in input.iter().enumerate() {
@@ -253,10 +290,10 @@ impl LayoutEngine {
                 if style(&a.style) != style(&b.style) {
                     self.tree.set_style(self.ids[i], style(&b.style))?;
                 }
-                if a.text != b.text || a.style.font_size != b.style.font_size {
+                if a.text != b.text || !a.style.same_text_style(&b.style) {
                     self.tree.set_node_context(
                         self.ids[i],
-                        Some((b.text.clone().unwrap_or_default(), b.style.font_size)),
+                        Some((b.text.clone().unwrap_or_default(), b.style.text_style())),
                     )?;
                 }
             }
@@ -300,17 +337,15 @@ impl LayoutEngine {
                 height: t::AvailableSpace::Definite(height),
             },
             |known, available, _, context, _| {
-                let (text, size) = context
-                    .map(|(text, size)| (text.as_str(), *size))
-                    .unwrap_or(("", 16.));
                 let limit = known.width.or(match available.width {
                     t::AvailableSpace::Definite(w) => Some(w),
                     _ => None,
                 });
-                let (w, h) = if text.is_empty() {
-                    (0., 0.)
-                } else {
-                    measurer.measure(text, size, limit)
+                let (w, h) = match context {
+                    Some((text, style)) if !text.is_empty() => {
+                        measurer.measure_text(text, style, limit)
+                    }
+                    _ => (0., 0.),
                 };
                 t::Size {
                     width: known.width.unwrap_or(w),

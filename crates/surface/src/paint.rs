@@ -1,5 +1,5 @@
 //! Ordered, serializable drawing commands shared by every GPU backend.
-use crate::{Color, ComputedDom, MicroDom, NodeId, Rect, Role};
+use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, Rect, Role, Style, TextStyle};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[derive(Clone, Debug, Default)]
@@ -46,6 +46,87 @@ pub enum PaintOp {
         scroll: (f32, f32),
         multiline: bool,
     },
+    /// A filled rectangle with a radius per corner.
+    Shape {
+        rect: Rect,
+        clip: Rect,
+        corners: Corners,
+        color: Color,
+    },
+    /// An inside stroke that follows a per-corner shape.
+    ShapeStroke {
+        rect: Rect,
+        clip: Rect,
+        corners: Corners,
+        width: f32,
+        color: Color,
+    },
+    /// Text whose style is more than a size. Size-only text keeps the
+    /// `Text` and `EditableText` forms above.
+    StyledText {
+        rect: Rect,
+        clip: Rect,
+        text: String,
+        style: TextStyle,
+        color: Color,
+        scroll: (f32, f32),
+        multiline: bool,
+        editable: bool,
+    },
+}
+/// The outline of one node. A uniform shape keeps the plain radius ops.
+#[derive(Clone, Copy)]
+enum Outline {
+    Radius(f32),
+    Corners(Corners),
+}
+impl Outline {
+    fn of(style: &Style, bounds: Rect) -> Self {
+        match style.corners {
+            // Legacy nodes are not resolved so their output never changes.
+            None => Self::Radius(style.radius),
+            Some(corners) => {
+                let corners = corners.resolve(bounds.width, bounds.height);
+                corners
+                    .uniform()
+                    .map_or(Self::Corners(corners), Self::Radius)
+            }
+        }
+    }
+    fn fill(self, rect: Rect, clip: Rect, color: Color) -> PaintOp {
+        match self {
+            Self::Radius(radius) => PaintOp::Quad {
+                rect,
+                clip,
+                radius,
+                color,
+            },
+            Self::Corners(corners) => PaintOp::Shape {
+                rect,
+                clip,
+                corners,
+                color,
+            },
+        }
+    }
+    fn stroke(self, rect: Rect, clip: Rect, width: f32, color: Color) -> PaintOp {
+        match self {
+            Self::Radius(radius) => PaintOp::Stroke {
+                rect,
+                clip,
+                radius,
+                width,
+                color,
+            },
+            Self::Corners(corners) => PaintOp::ShapeStroke {
+                rect,
+                clip,
+                corners,
+                width,
+                color,
+            },
+        }
+    }
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DisplayList {
@@ -85,22 +166,12 @@ impl DisplayList {
             if g.bounds.intersect(g.clip).width <= 0. || g.bounds.intersect(g.clip).height <= 0. {
                 continue;
             }
+            let outline = Outline::of(s, g.bounds);
             if s.background.3 > 0 {
-                ops.push(PaintOp::Quad {
-                    rect: g.bounds,
-                    clip: g.clip,
-                    radius: s.radius,
-                    color: s.background,
-                });
+                ops.push(outline.fill(g.bounds, g.clip, s.background));
             }
             if s.border_width > 0. && s.border_color.3 > 0 {
-                ops.push(PaintOp::Stroke {
-                    rect: g.bounds,
-                    clip: g.clip,
-                    radius: s.radius,
-                    width: s.border_width,
-                    color: s.border_color,
-                });
+                ops.push(outline.stroke(g.bounds, g.clip, s.border_width, s.border_color));
             }
             if s.state_layer.3 > 0 && !n.is_disabled() {
                 let mut target = Some(*id);
@@ -117,28 +188,33 @@ impl DisplayList {
                 }
                 if opacity > 0 {
                     let c = s.state_layer;
-                    ops.push(PaintOp::Quad {
-                        rect: g.bounds,
-                        clip: g.clip,
-                        radius: s.radius,
-                        color: Color(c.0, c.1, c.2, (c.3 as u16 * opacity / 255) as u8),
-                    });
+                    ops.push(outline.fill(
+                        g.bounds,
+                        g.clip,
+                        Color(c.0, c.1, c.2, (c.3 as u16 * opacity / 255) as u8),
+                    ));
                 }
             }
             if focused == Some(*id) {
-                let r = g.bounds;
-                for line in [
-                    Rect::new(r.x, r.y, r.width, 2.),
-                    Rect::new(r.x, r.y + r.height - 2., r.width, 2.),
-                    Rect::new(r.x, r.y, 2., r.height),
-                    Rect::new(r.x + r.width - 2., r.y, 2., r.height),
-                ] {
-                    ops.push(PaintOp::Quad {
-                        rect: line,
-                        clip: g.clip,
-                        radius: 0.,
-                        color: s.foreground,
-                    });
+                if s.corners.is_none() {
+                    // Legacy nodes keep the four square edge quads.
+                    let r = g.bounds;
+                    for line in [
+                        Rect::new(r.x, r.y, r.width, 2.),
+                        Rect::new(r.x, r.y + r.height - 2., r.width, 2.),
+                        Rect::new(r.x, r.y, 2., r.height),
+                        Rect::new(r.x + r.width - 2., r.y, 2., r.height),
+                    ] {
+                        ops.push(PaintOp::Quad {
+                            rect: line,
+                            clip: g.clip,
+                            radius: 0.,
+                            color: s.foreground,
+                        });
+                    }
+                } else {
+                    // One inside stroke that follows the node shape.
+                    ops.push(outline.stroke(g.bounds, g.clip, 2., s.foreground));
                 }
             }
             if let Some(text) = n.text_value() {
@@ -155,7 +231,28 @@ impl DisplayList {
                         });
                     }
                 }
-                if n.role() == Role::TextInput {
+                let editable = n.role() == Role::TextInput;
+                let text_style = s.text_style();
+                if !text_style.is_legacy() {
+                    let (scroll, multiline) = if editable {
+                        (
+                            decoration.map(|d| d.scroll).unwrap_or_default(),
+                            decoration.is_some_and(|d| d.multiline),
+                        )
+                    } else {
+                        ((0., 0.), true)
+                    };
+                    ops.push(PaintOp::StyledText {
+                        rect,
+                        clip,
+                        text: text.to_owned(),
+                        style: text_style,
+                        color: s.foreground,
+                        scroll,
+                        multiline,
+                        editable,
+                    });
+                } else if editable {
                     ops.push(PaintOp::EditableText {
                         rect,
                         clip,

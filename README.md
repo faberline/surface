@@ -154,7 +154,8 @@ paints two frames, and exits. A browser smoke journey is available in
 ## Current limits
 
 - Material components cover the controls listed above. Full family and
-  variant coverage, typography, elevation, motion and ripples remain open.
+  variant coverage, elevation, ripples, heavier font faces, rendered letter
+  spacing and the rest of motion remain open.
   See the [component record](docs/material-coverage.json) and
   [Material API notes](docs/material.md).
 - Text editing includes caret/selection, clipboard, grapheme deletion,
@@ -165,7 +166,10 @@ paints two frames, and exits. A browser smoke journey is available in
 - Semantic roles support tests. Native screen-reader bridges and an
   accessible HTML companion tree remain planned.
 - Flexbox, wrapping, clipping, scroll offsets, and ordered paint are present.
-  Images, animation, transforms, and a general CSS engine are not included.
+  Images, transforms, and a general CSS engine are not included.
+  Animation is limited to color and corner transitions with reduced motion.
+  Springs, layout animation and enter/exit animation are not included. See
+  [Material motion](docs/material.md#motion).
 - Application state is explicit. Async commands and keyed local component
   state need a separate design. The legacy hooks package is retained, but
   it is not connected to `View<Message>`.
