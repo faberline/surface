@@ -12,7 +12,7 @@ canvas{display:block;width:100vw!important;height:calc(100dvh - 44px)!important;
 <header><span>Surface · Material gallery</span><span id="status">Starting WebGPU…</span></header>
 <canvas id="surface" tabindex="0" aria-label="Material gallery"></canvas>
 <script type="module">
-import init,* as gallery from './pkg/surface_material_gallery.js';
+import init,* as gallery from '%SURFACE_JS%';
 try{if(!navigator.gpu)throw new Error('WebGPU is unavailable.');await init();window.gallery=gallery;document.querySelector('canvas').focus();}
 catch(error){document.querySelector('#status').textContent=String(error);console.error(error);}
 </script>
