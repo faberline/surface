@@ -12,7 +12,8 @@ Material catalog or the physical native OS input-method journey.
 The source checkpoint passes 45 Rust cases, native/WASM checks, compact
 macOS GPU and Chrome 157 WebGPU bridge journeys, the existing Material
 browser journey and the 40-event browser composition journey. Exact-head
-CI must pass for the final landing. No crate release or tag is implied.
+CI must pass for the final landing. Tag `v0.1.0` at `b3c4917` marks the
+consumer contract. No crate is published.
 
 ## Full framework target: surface@0.2.0
 
@@ -91,6 +92,6 @@ local browser/WASM evidence and any required current-head gates stay visible.
 
 Core #95 and Jet #75 pin `1754a2e`, which is not on Surface main. The
 [agreed Jet and Surface split](migration.md#jet-and-surface-split) replaces
-that pin with a tag cut from main. Whether to rebase or replace the PRs is
-an open decision. Branches and the separate native IME experiment remain
-preserved.
+that pin with tag `v0.1.0`, cut from main. Whether to rebase or replace the
+PRs is an open decision. Branches and the separate native IME experiment
+remain preserved.

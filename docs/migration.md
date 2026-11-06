@@ -20,8 +20,9 @@ The reviewable migration proposals are:
 
 Both pin `1754a2e96e487ea693be558041abdf21ffc63d27`. Surface is public.
 Its Linux CI passes at that revision. Neither consumer PR is merged.
-That revision is not an ancestor of Surface main. Surface has no tags yet.
-The plan below replaces the pin with a tag cut from main.
+That revision is not an ancestor of Surface main. Tag `v0.1.0` was cut
+from main at `b3c4917`. The plan below replaces the `1754a2e` pin with that
+tag.
 
 Core's mixed-source behavior/type tests pass locally. Core CI stops at
 draft/issue preflight; old EC metadata and independent acceptance remain
@@ -35,12 +36,13 @@ different Cargo identities. Move both UI packages together.
 
 ## Jet and Surface split
 
-This plan was agreed on 2026-11-05. No step has started. Nothing in it is
-accepted or complete. A measured spike, D1, decides whether Surface takes
-over Jet's layout, text and GPU rendering.
+This plan was agreed on 2026-11-05. Step 3 is done. No other step has
+started. A measured spike, D1, decides whether Surface takes over Jet's
+layout, text and GPU rendering.
 
-Citations are pinned to exact commits. Plain paths are Surface main
-`8b4e205`. Paths that start with `jet:` are Jet main `a584413`.
+Citations are pinned to exact commits. Plain paths are Surface commit
+`8b4e205` (main before PR #55), unless the text names `b3c4917`. Paths that
+start with `jet:` are Jet main `a584413`.
 
 ### Dependency direction
 
@@ -67,13 +69,14 @@ Citations are pinned to exact commits. Plain paths are Surface main
 - Core commit `eaa4b1b` makes `Props` and `Component` fields private. It
   sits between Core v0.4.14 and `41c352e`. Jet's runtime and generated code
   still use the public fields.
-- Surface's wasm32 check builds `surface` only as a dependency of its two
-  examples (`scripts/check.sh:9`). No workspace crate depends on
-  `ui-runtime`. So Surface never wasm-checks `ui-runtime`, or the `debug`
-  feature that Jet enables (`jet:wasm/Cargo.toml:61`).
-- Surface's GPU test is ignored by default
-  (`crates/surface-wgpu/tests/it.rs:44`). Only `scripts/check-gpu.sh` runs
-  it. No gate runs the browser smoke journey.
+- At `8b4e205`, the wasm32 check built `surface` only through the two
+  examples (`scripts/check.sh:9`). No workspace crate depended on
+  `ui-runtime`. So `ui-runtime` and the `debug` feature that Jet enables
+  (`jet:wasm/Cargo.toml:61`) were not wasm-checked. Step 3 added both
+  checks.
+- Surface's GPU tests are ignored by default (one at `8b4e205`,
+  `crates/surface-wgpu/tests/it.rs:44`). Main now has four. Only
+  `scripts/check-gpu.sh` runs them. No gate runs the browser smoke journey.
 - In standalone Jet, `wasm_build_end_to_end` fails early. It looks for
   `jet-wasm` under `projects/jet/wasm`, which does not exist
   (`jet:src/wasm_build/mod.rs:468-474`). It fails before it reaches its
@@ -93,15 +96,18 @@ The frozen contract covers what Jet and Core use today.
 pins each item and is the full list. Change it only with a consumer
 migration. In summary:
 
-- From `surface`: the `Element` variants, `Props` builders and getters,
-  `Callback<P>`, `Component::new`, `name()` and `render()`, `ComponentFn`,
-  and the `SurfaceSnapshot`, `SurfaceNode`, `SurfaceNodeKind`,
-  `SurfaceProps` and `SurfaceRect` types.
+- From `surface`: the `Element` variants, the `Element` constructors and
+  queries, `Props` builders and getters, `Callback<P>`, `Component::new`,
+  `name()` and `render()`, `ComponentFn`, and the `SurfaceSnapshot`,
+  `SurfaceNode`, `SurfaceNodeKind`, `SurfaceProps` and `SurfaceRect` types.
 - The `SurfaceSnapshot` JSON schema v1
   ([`snapshot_json.rs`](../crates/surface/tests/it/snapshot_json.rs)).
 - From `ui_runtime`: `mount`, `MountHandle::flush` and `snapshot`,
-  `set_update_scheduler`, the `use_*` hooks, `FiberId::new` and `get`, and
-  the `debug` feature.
+  `set_update_scheduler`, the `use_*` hooks, `hash_dep` with
+  `MemoDepHash`, `FiberId::new` and `get`, and the `debug` feature.
+
+Jet's generated Rust calls the `Element` constructors and `hash_dep`
+(`jet:src/tsx_to_rust/emit.rs:604-675`, `:1469` and `:1959`).
 
 Steps:
 
@@ -114,40 +120,58 @@ Steps:
    `wasm_build_end_to_end`. The log shows a build, not a skip.
 2. **Jet: add a required-WebGPU mode.** Add an opt-in flag, such as
    `JET_REQUIRE_WEBGPU=1`. With it set, a missing `navigator.gpu` fails the
-   e2e and MUI/AntD tests. Today they return early
-   (`jet:tests/wasm/wasm_build_end_to_end.rs:362-366` and `:772-776`).
-   Jet's `scripts/verify-advanced-wasm-gates.sh` sets the flag. Non-GPU
-   hosted runs leave it off.
-   Gate: on a real GPU, the tests run and pass. In headless Chromium
-   without WebGPU, the same command fails. Keep both logs. Needs step 1.
-3. **Surface: freeze the consumer contract, then tag.** Add `ui-runtime`
-   with all features to the wasm32 step in `scripts/check.sh` and in CI.
-   Add a compile-only test that names every contract item. Check the
-   [`provenance.json`](provenance.json) hashes, and list the known
-   divergences. After merge, cut a tag on main.
-   Gate: `check.sh` passes locally. Hosted CI passes at the tagged commit
-   and runs the contract test and the provenance check.
-   `git merge-base --is-ancestor <tag> origin/main` exits 0.
+   two WebGPU e2e tests. Today they return early.
+   `counter_demo_builds_and_updates_on_webgpu_canvas` returns at
+   `jet:tests/wasm/wasm_build_end_to_end.rs:362-366`.
+   `webgpu_renderer_reports_runtime_status_and_visual_probe_when_available`
+   returns at `:772-776`. The MUI/AntD tests do not skip. They assert the
+   WebGPU status (`jet:tests/wasm/mui_visual_regression.rs:1916-1929`) and
+   panic on a missing prerequisite (`jet:tests/common/mod.rs:73-75` and
+   `:97-107`). Jet's `scripts/verify-advanced-wasm-gates.sh` sets the flag.
+   Non-GPU hosted runs leave it off.
+   Gate: on a real GPU, the e2e and MUI/AntD tests run and pass. In
+   headless Chromium without WebGPU, the same command fails. Keep both logs.
+   Needs step 1.
+3. **Surface: freeze the consumer contract, then tag. Done.** PR #56 landed
+   as `b3c4917`. It added the compile-only `consumer_contract.rs` test and
+   `scripts/check-provenance.py`. The provenance check verifies the
+   [`provenance.json`](provenance.json) hashes. Known divergences are
+   listed under `modified_since_import`. The wasm32 step in
+   `scripts/check.sh` and in CI checks `ui-runtime` twice, with
+   `--all-features` and with `--no-default-features`
+   (`scripts/check.sh:13-14` at `b3c4917`). The annotated tag `v0.1.0`
+   points at `b3c4917`.
+   Evidence: hosted CI passed at `b3c4917`
+   ([run 42172139938](https://github.com/faberline/surface/actions/runs/42172139938)).
+   Its log prints "provenance: 23 of 27 Core files unchanged, 4 listed as
+   modified, 2 font files match (14 self-test cases passed)" and "test
+   consumer_contract_compiles ... ok".
+   `git merge-base --is-ancestor v0.1.0 origin/main` exits 0. Locally,
+   `check.sh` passed on PR #55 plus the contract: 117 passed, 0 failed,
+   4 ignored. The 4 ignored GPU tests were not run.
 4. **Jet: absorb Core's private-field break.** Move both crates together
    from Core v0.4.14 to Core `41c352e`. Emit `Component::new` and
    `Props::default().with_*()`. Read `Props` fields through getters. Pass
    `FiberId::new` to `debug_snapshot_hooks`
-   (`jet:wasm/src/debug/mod.rs:126`). Call `name()` instead of reading
-   `c.name` (`jet:wasm/src/debug/mod.rs:232`). Keep Jet's re-exports
+   (`jet:wasm/src/debug/mod.rs:126`). Copy `f.id.get()` into
+   `DebugFiber { id: u64 }`, because `f.id` is a `FiberId` at Core
+   `41c352e` (`jet:wasm/src/debug/mod.rs:112`). Call `name()` instead of
+   reading `c.name` (`jet:wasm/src/debug/mod.rs:232`). Keep Jet's re-exports
    unchanged. Reuse the PR #75 emitter diff if it matches.
    Gate: the `jet-wasm`, `tsx_to_rust` and `wasm_build` tests pass. The
    step 2 required-GPU gate passes, including MUI/AntD. `Cargo.lock` has
    one `surface` and one `ui-runtime`, both from Core `41c352e`.
    Needs step 2.
-5. **Jet: point both crates at the Surface tag.** Change only
+5. **Jet: point both crates at Surface tag `v0.1.0`.** Change only
    `jet:wasm/Cargo.toml:74-75`, both lines in one change. Make no code
    change. `cli-std` stays on Core.
    Gate: `cargo tree -i surface` and `cargo tree -i ui-runtime` each show
    one package from Surface. The step 4 tests pass with the same counts and
    no new skips. Record the `.wasm` size change for the DOM and WebGPU
    builds. Needs steps 3 and 4.
-6. **Core: re-point its facade at the Surface tag.** Update PR #95 from
-   `1754a2e` to the tag. Core's crates stay `pub use surface_upstream::*;`.
+6. **Core: re-point its facade at Surface tag `v0.1.0`.** Update PR #95
+   from `1754a2e` to `v0.1.0`. Core's crates stay
+   `pub use surface_upstream::*;`.
    Gate: Core tests pass, including `ui-runtime` with `debug`. Core's
    `cargo tree` shows one `surface`. Needs step 3.
 7. **Core: retire its two crates.** Delete the `surface` and `ui-runtime`
@@ -385,8 +409,8 @@ Each decision closes only with the named evidence.
 ### Rejected options
 
 - A CSS subset parser in Surface. It conflicts with `README.md:168`.
-- Pinning any consumer to `1754a2e`. It is not on main. A tag from main
-  replaces it.
+- Pinning any consumer to `1754a2e`. It is not on main. Tag `v0.1.0`,
+  cut from main, replaces it.
 - A shared `pub(crate)` role table between `surface` and
   `surface-element`. `pub(crate)` does not cross crates. It would also
   edit the provenance-tracked `snapshot.rs`.
