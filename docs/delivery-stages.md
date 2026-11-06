@@ -9,11 +9,15 @@ partial Material controls, controlled Unicode editing, current DOM export,
 opt-in CLI/MCP access and focus scrolling. It does not qualify the full
 Material catalog or the physical native OS input-method journey.
 
-The source checkpoint passes 45 Rust cases, native/WASM checks, compact
-macOS GPU and Chrome 157 WebGPU bridge journeys, the existing Material
-browser journey and the 40-event browser composition journey. Exact-head
-CI must pass for the final landing. Tag `v0.1.0` at `b3c4917` marks the
-consumer contract. No crate is published.
+The PR #4 landing at `8b4e205` passed 45 Rust cases, the native/WASM
+checks, the compact macOS GPU and Chrome 157 WebGPU bridge journeys, the
+existing Material browser journey and the 40-event browser composition
+journey. Hosted CI passed there
+([run 41807907931](https://github.com/faberline/surface/actions/runs/41807907931)).
+Tag `v0.1.0` at `b3c4917` adds PR #55 and the PR #56 consumer contract.
+Hosted [run 42172139938](https://github.com/faberline/surface/actions/runs/42172139938)
+passed there: 117 passed, 0 failed, 4 ignored. The 4 ignored GPU tests did
+not run. No crate is published.
 
 ## Full framework target: surface@0.2.0
 

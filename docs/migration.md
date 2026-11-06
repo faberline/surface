@@ -61,8 +61,8 @@ start with `jet:` are Jet main `a584413`.
 - Jet takes `surface` and `ui-runtime` from Core tag v0.4.14
   (`jet:wasm/Cargo.toml:74-75`). `jet-wasm` re-exports them
   (`jet:wasm/src/lib.rs:80-83`, `jet:wasm/src/react/mod.rs:17`).
-  Generated Rust names only `jet_wasm` paths
-  (`jet:src/tsx_to_rust/emit.rs:134-136`).
+  Generated Rust reaches `surface` and `ui-runtime` only through
+  `jet_wasm` paths (`jet:src/tsx_to_rust/emit.rs:134-136`).
 - Jet's WebGPU renderer is a v0. It measures text with hard-coded widths
   (`jet:wasm/src/renderer/mod.rs:1539-1546`). It paints procedural
   placeholder glyphs (`jet:crates/grid-wasm/src/renderer_bridge.rs:271-276`).
@@ -80,8 +80,9 @@ start with `jet:` are Jet main `a584413`.
 - In standalone Jet, `wasm_build_end_to_end` fails early. It looks for
   `jet-wasm` under `projects/jet/wasm`, which does not exist
   (`jet:src/wasm_build/mod.rs:468-474`). It fails before it reaches its
-  `navigator.gpu` skip. No Jet CI job runs this test. The PR #75 head is
-  not available locally, so its path handling was not rechecked.
+  `navigator.gpu` skip. No Jet CI job runs this test. PR #75's
+  implementation commit `41ecdf95` and its head `c2b9c7f` are both missing
+  locally, so its path handling was not rechecked.
 - Jet's hosted parity job turns exit 77, an unwired oracle, into success
   (`jet:.github/workflows/parity.yml:23-25`).
 
@@ -93,15 +94,17 @@ passes. A skipped GPU or browser test never counts as a pass.
 
 The frozen contract covers what Jet and Core use today.
 [`consumer_contract.rs`](../crates/ui-runtime/tests/consumer_contract.rs)
-pins each item and is the full list. Change it only with a consumer
-migration. In summary:
+pins each API item and is the full API list. Of the JSON schema, it pins
+only `SurfaceSnapshot::SCHEMA_VERSION`.
+[`snapshot_json.rs`](../crates/surface/tests/it/snapshot_json.rs) pins the
+JSON schema itself. Change either only with a consumer migration. In
+summary:
 
 - From `surface`: the `Element` variants, the `Element` constructors and
   queries, `Props` builders and getters, `Callback<P>`, `Component::new`,
   `name()` and `render()`, `ComponentFn`, and the `SurfaceSnapshot`,
   `SurfaceNode`, `SurfaceNodeKind`, `SurfaceProps` and `SurfaceRect` types.
-- The `SurfaceSnapshot` JSON schema v1
-  ([`snapshot_json.rs`](../crates/surface/tests/it/snapshot_json.rs)).
+- The `SurfaceSnapshot` JSON schema v1.
 - From `ui_runtime`: `mount`, `MountHandle::flush` and `snapshot`,
   `set_update_scheduler`, the `use_*` hooks, `hash_dep` with
   `MemoDepHash`, `FiberId::new` and `get`, and the `debug` feature.
@@ -127,8 +130,11 @@ Steps:
    returns at `:772-776`. The MUI/AntD tests do not skip. They assert the
    WebGPU status (`jet:tests/wasm/mui_visual_regression.rs:1916-1929`) and
    panic on a missing prerequisite (`jet:tests/common/mod.rs:73-75` and
-   `:97-107`). Jet's `scripts/verify-advanced-wasm-gates.sh` sets the flag.
-   Non-GPU hosted runs leave it off.
+   `:97-107`). Of the two e2e tests, Jet's
+   `scripts/verify-advanced-wasm-gates.sh` runs only the status test
+   (`jet:scripts/verify-advanced-wasm-gates.sh:20`). This step adds the
+   counter test to that script and sets the flag there. Non-GPU hosted runs
+   leave it off.
    Gate: on a real GPU, the e2e and MUI/AntD tests run and pass. In
    headless Chromium without WebGPU, the same command fails. Keep both logs.
    Needs step 1.
@@ -146,12 +152,18 @@ Steps:
    Its log prints "provenance: 23 of 27 Core files unchanged, 4 listed as
    modified, 2 font files match (14 self-test cases passed)" and "test
    consumer_contract_compiles ... ok".
+   Its test step reports 117 passed, 0 failed, 4 ignored. The 4 ignored
+   GPU tests did not run.
    `git merge-base --is-ancestor v0.1.0 origin/main` exits 0. Locally,
-   `check.sh` passed on PR #55 plus the contract: 117 passed, 0 failed,
-   4 ignored. The 4 ignored GPU tests were not run.
+   `check.sh` passed on PR #55 plus the contract with the same counts.
 4. **Jet: absorb Core's private-field break.** Move both crates together
    from Core v0.4.14 to Core `41c352e`. Emit `Component::new` and
-   `Props::default().with_*()`. Read `Props` fields through getters. Pass
+   `Props::default().with_*()`. Read `Props` fields through getters. Call
+   `component.render()` instead of `(component.render)(&component.props)`
+   (`jet:wasm/src/react/dom_app.rs:97`). Jet's own tests build `Props` and
+   `Component` literals (for example
+   `jet:wasm/tests/counter_integration.rs:59-73`). Move them to the builders
+   and `Component::new`. Pass
    `FiberId::new` to `debug_snapshot_hooks`
    (`jet:wasm/src/debug/mod.rs:126`). Copy `f.id.get()` into
    `DebugFiber { id: u64 }`, because `f.id` is a `FiberId` at Core
@@ -169,9 +181,9 @@ Steps:
    one package from Surface. The step 4 tests pass with the same counts and
    no new skips. Record the `.wasm` size change for the DOM and WebGPU
    builds. Needs steps 3 and 4.
-6. **Core: re-point its facade at Surface tag `v0.1.0`.** Update PR #95
-   from `1754a2e` to `v0.1.0`. Core's crates stay
-   `pub use surface_upstream::*;`.
+6. **Core: re-point its facade at Surface tag `v0.1.0`.** Re-point Core's
+   facade from `1754a2e` to `v0.1.0`, in PR #95 or its replacement. Core's
+   crates stay `pub use surface_upstream::*;`.
    Gate: Core tests pass, including `ui-runtime` with `debug`. Core's
    `cargo tree` shows one `surface`. Needs step 3.
 7. **Core: retire its two crates.** Delete the `surface` and `ui-runtime`
@@ -293,10 +305,11 @@ Surface prerequisites:
 Jet prerequisites:
 
 16. **Align `wasm-bindgen`.** Jet's scaffold pins `=0.2.121`
-    (`jet:src/wasm_build/mod.rs:510-512`). `surface-platform` pins
+    (`jet:src/wasm_build/mod.rs:510-513`). `surface-platform` pins
     `=0.2.129` (`crates/surface-platform/Cargo.toml:30`). Cargo cannot
     unify two exact pins. Move the scaffold to `=0.2.129` with matching
-    `wasm-bindgen-futures` and `js-sys`, or agree on one version.
+    `wasm-bindgen-futures`, `js-sys` and `web-sys`, or agree on one
+    version.
     Gate: in required-GPU mode, `wasm_build_end_to_end` builds and loads a
     scaffolded app. The existing WebGPU and DOM paths still render.
     Needs step 2.
@@ -361,8 +374,10 @@ If D1 passes:
 25. **Jet: delete its duplicate engine.** Do this one release after step
     24. Drop `taffy` 0.5 and `rustybuzz` (`jet:wasm/Cargo.toml:80` and
     `:85`). Leave the grid product alone.
-    Gate: `cargo tree -p jet-wasm -e normal` shows one `taffy` (0.7.7), no
-    `rustybuzz` and one `wgpu` 24.0.5.
+    Gate: `cargo tree -p jet-wasm -e normal` shows one `taffy` (0.7.7) and
+    one `wgpu` 24.0.5. `jet-wasm` has no direct `rustybuzz` dependency, and
+    `rustybuzz` 0.20 is gone. The only `rustybuzz` left is 0.14, from
+    Surface's `glyphon` text stack.
 
 If D1 fails, the step 19 ADR names the fallback. It replaces steps 20 to
 25:
@@ -403,8 +418,8 @@ Each decision closes only with the named evidence.
   Surface's host and #54, or folded into #54. Evidence: compare each ADR
   with Surface's hidden-textarea IME host and the #54 plan.
 - **Rebase or replace Jet PR #75/#76 and Core PR #95.** Evidence: fetch
-  the PR #75 head `41ecdf95`, which is missing locally. Diff it against
-  step 4.
+  PR #75's implementation commit `41ecdf95` and its head `c2b9c7f`. Both
+  are missing locally. Diff them against step 4.
 
 ### Rejected options
 

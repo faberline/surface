@@ -303,6 +303,13 @@ Clippy, workspace all-feature tests and WASM check. This is the input
 checkpoint, before the Material/export changes above. Later commits need
 their own run.
 
+[Run 42172139938](https://github.com/faberline/surface/actions/runs/42172139938)
+passed at `b3c49177a442ab85a84effd0037bbc810435de5d`, which tag `v0.1.0`
+points at. It ran the provenance check, format, Clippy, workspace
+all-feature tests (117 passed, 0 failed, 4 ignored) and the wasm32 checks.
+The wasm32 checks cover both examples, and `ui-runtime` with all features
+and with no default features. The 4 ignored GPU tests did not run.
+
 ### Historical startup block
 
 [Initial run 41668157876](https://github.com/faberline/surface/actions/runs/41668157876)
