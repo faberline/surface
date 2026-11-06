@@ -31,11 +31,14 @@ For the browser:
 ```sh
 rustup target add wasm32-unknown-unknown
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
-./scripts/build-web.sh
-python3 -m http.server 8080 --directory examples/showcase/web
+brew install binaryen   # wasm-opt, for release builds
+cargo xtask web dev showcase
 ```
 
-Open `http://localhost:8080` in a browser with WebGPU. Production hosting
+Open `http://127.0.0.1:8080` in a browser with WebGPU. The page reloads
+after each successful rebuild. `cargo xtask web build showcase` makes a
+release package in `target/web/release/showcase`, and
+`cargo xtask web serve showcase` serves it. See [web build](docs/web-build.md). Production hosting
 needs HTTPS. The only HTML UI host is a canvas. Layout, components, state,
 input routing, and drawing run in Rust/WASM.
 
@@ -49,8 +52,7 @@ Run the larger component gallery:
 cap cargo run --locked -p surface-material-gallery
 ```
 
-For WebGPU, run `./scripts/build-gallery.sh`, then serve
-`examples/material-gallery/web`. It includes controlled selections,
+For WebGPU, run `cargo xtask web dev material-gallery`. It includes controlled selections,
 sliders, button/chip variants, menus and an editable dialog.
 Both themes use a generated Material color scheme.
 
