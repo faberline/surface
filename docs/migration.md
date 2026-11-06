@@ -34,6 +34,9 @@ different Cargo identities. Move both UI packages together.
 ## Follow-up sequence
 
 1. Version and validate the standalone package API with consumers.
+   [`consumer_contract.rs`](../crates/ui-runtime/tests/consumer_contract.rs)
+   pins the `surface` and `ui-runtime` items Jet and Core use. Change it
+   only with a consumer migration. The release tag is not cut yet.
 2. Move Jet's `surface` and `ui-runtime` dependencies together to one pinned
    commit or release in this repository. Run Jet's transpiler and WASM
    parity gates. Changing only one dependency would split the types.
