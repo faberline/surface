@@ -31,6 +31,12 @@
     "crates/ui-runtime/src/domain.rs": "cd6d9ff5d6676619db83c144b3c9ecdf5044f3acab20dde679999c56fca2889e",
     "crates/ui-runtime/src/lib.rs": "e53ab689197046404d2b331f652018df8f25a0bc0337bd9c632a4f4a1e5860a3"
   },
+  "modified_since_import": {
+    "crates/surface/src/element.rs": "Allows clippy::large_enum_variant on Element so its public variants stay unchanged.",
+    "crates/surface/src/lib.rs": "Adds the MicroDOM, layout, paint, style and text-layout modules and their exports. The Core exports stay.",
+    "crates/surface/src/snapshot.rs": "Passes tag instead of *tag to two helpers to satisfy Clippy. Behavior is unchanged.",
+    "crates/ui-runtime/src/domain/use_reducer.rs": "Names the reducer type with a Reducer alias to satisfy Clippy type_complexity. The signature is unchanged."
+  },
   "noto_cjk": {
     "repository": "https://github.com/notofonts/noto-cjk",
     "commit": "f8d157532fbfaeda587e826d4cd5b21a49186f7c",

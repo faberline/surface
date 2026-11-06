@@ -145,8 +145,10 @@ flowchart LR
 cap cargo run --locked -p surface-showcase -- --smoke
 ```
 
-The first script checks format, Rust behavior, native compilation, and WASM
-compilation. The second explicitly runs the GPU pixel test. It fails when
+The first script checks source provenance, format, Rust behavior, native
+compilation, and WASM compilation. Its WASM step also builds `ui-runtime`
+with and without `debug`, plus the consumer contract test that pins the API
+Jet and Core use. The second explicitly runs the GPU pixel test. It fails when
 an adapter is unavailable. The desktop smoke run creates a real window,
 paints two frames, and exits. A browser smoke journey is available in
 [`scripts/browser-smoke.mjs`](scripts/browser-smoke.mjs).
@@ -185,6 +187,8 @@ and [remaining work](docs/roadmap.md).
 [`faberline/core`](https://github.com/faberline/core) at
 `41c352eaae687a1914087d279f36adbe9e9b4af5`.
 The source inventory is in [`docs/provenance.json`](docs/provenance.json).
+[`scripts/check-provenance.py`](scripts/check-provenance.py) checks its hashes.
+Files changed since the import are listed there with a reason.
 Jet supplies the public-domain Tuffy font and reference layout concepts.
 No Jet renderer or application code is linked. Font attribution is in
 [`assets/LICENSE.txt`](crates/surface-wgpu/assets/LICENSE.txt).
