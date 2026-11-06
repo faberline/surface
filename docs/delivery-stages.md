@@ -89,5 +89,8 @@ to the public standalone dependencies. Its hosted parity wrapper currently
 reports an unwired oracle. That exit is not hosted parity acceptance. The
 local browser/WASM evidence and any required current-head gates stay visible.
 
-Pinned consumer revisions are retained while the independent repositories
-land. Branches and the separate native IME experiment remain preserved.
+Core #95 and Jet #75 pin `1754a2e`, which is not on Surface main. The
+[agreed Jet and Surface split](migration.md#jet-and-surface-split) replaces
+that pin with a tag cut from main. Whether to rebase or replace the PRs is
+an open decision. Branches and the separate native IME experiment remain
+preserved.
