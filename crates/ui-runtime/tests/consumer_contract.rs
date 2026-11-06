@@ -4,10 +4,10 @@
 //! Jet's `jet-wasm` re-exports the `surface` types and `ui_runtime::*`.
 //! Core's compatibility packages re-export both crate roots. Each item below
 //! is one they name, pinned to the signature they rely on. This file stops
-//! compiling when an item is renamed or removed, a signature changes, an
-//! `Element` or `SurfaceNodeKind` variant is added, or a public snapshot or
-//! debug field changes. Change it only together with a consumer migration
-//! (see `docs/migration.md`).
+//! compiling when an item is renamed or removed, a signature changes, a
+//! hook's generic parameter order changes, an `Element` or `SurfaceNodeKind`
+//! variant is added, or a public snapshot or debug field changes. Change it
+//! only together with a consumer migration (see `docs/migration.md`).
 //!
 //! The list was checked against Jet `a584413`: `wasm/src/lib.rs`,
 //! `wasm/src/react/{mod,dom_app,webgpu_app}.rs`, `wasm/src/debug/mod.rs`,
@@ -19,7 +19,7 @@
 //! takes each contract function's address.
 
 use std::any::Any;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::rc::Rc;
 
@@ -41,6 +41,11 @@ fn cloned<T: Clone>() {}
 fn debugged<T: Clone + Debug>() {}
 fn wire<T: Clone + Debug + PartialEq>() {}
 fn id_value<T: Copy + Debug + Default + Eq + Hash>() {}
+
+/// Jet's generated code passes `bool` and arbitrary expressions here.
+fn from_any_display<N: Display>(n: N) -> Element {
+    Element::from_number(n)
+}
 
 /// `Element`: the five variants that Jet's adapters match exhaustively, the
 /// constructors generated code calls, and the queries Jet's tests use.
@@ -74,6 +79,9 @@ fn element_contract(element: &Element) {
     let _: fn(&'static str) -> Element = Element::text;
     let _: fn(i64) -> Element = Element::from_number::<i64>;
     let _: fn(f64) -> Element = Element::from_number::<f64>;
+    let _: fn(bool) -> Element = Element::from_number::<bool>;
+    let _: Element = from_any_display(true);
+    let _: Element = from_any_display(1.5f32 * 2.0);
     let _: fn(&Element) -> String = Element::text_content;
     let _: fn(&Element, &str) -> Option<Callback<()>> = Element::find_on_click;
     let _: fn(&Element) -> SurfaceSnapshot = Element::surface_snapshot;
@@ -158,6 +166,8 @@ fn component_contract() {
 /// The snapshot wire types: every public field and every node kind.
 fn snapshot_contract(snapshot: SurfaceSnapshot) {
     let _: fn(&Element) -> SurfaceSnapshot = SurfaceSnapshot::from_element;
+    let _: for<'a> fn(&'a SurfaceSnapshot, &str) -> Option<&'a SurfaceNode> =
+        SurfaceSnapshot::find_by_semantic_id;
     let _: SurfaceProps = SurfaceProps::from(&Props::default());
     let _: u32 = SurfaceSnapshot::SCHEMA_VERSION;
     let SurfaceSnapshot {
@@ -230,6 +240,8 @@ fn mount_contract(component: Component) {
     let _: fn(&MountHandle) -> Element = MountHandle::snapshot;
     let _: fn(UpdateScheduler) = set_update_scheduler;
     let handle: Rc<MountHandle> = Rc::new(mount(component));
+    // Core's standalone compatibility test reads this public field.
+    let _: FiberId = handle.fiber_id;
     let _: bool = handle.flush();
     let _: Element = handle.snapshot();
     set_update_scheduler(Some(Rc::new(|| {})));
@@ -242,11 +254,19 @@ fn hooks_contract() -> Element {
     let _: fn(&StateSetter<i64>, i64) = StateSetter::<i64>::set;
     let _: fn(&String) -> MemoDepHash = hash_dep::<String>;
     let _: fn(MemoDepHash) -> u64 = |hash| hash;
+    // Jet names the generics in this order, e.g. `use_reducer::<i64, Action, _>`.
+    type Reducer = fn(&i64, u8) -> i64;
+    type Deps = Vec<MemoDepHash>;
+    let _: fn(Reducer, i64) -> (i64, DispatchHandle<i64, u8>) = use_reducer::<i64, u8, Reducer>;
+    let _: fn(fn() -> i64, Deps) -> i64 = use_memo::<i64, fn() -> i64>;
+    let _: fn(fn(()), Deps) -> Callback<()> = use_callback::<(), fn(())>;
 
     let (count, set_count) = use_state::<i64>(0);
     let _: StateSetter<i64> = set_count.clone();
     let doubled: i64 = use_memo(move || count * 2, vec![hash_dep(&count)]);
-    use_effect_once(|| {});
+    // Generated effects move values out, so the closure is only `FnOnce`.
+    let owned = String::new();
+    use_effect_once(move || drop(owned));
     let on_click: Callback<()> = use_callback(
         move |()| set_count.set(doubled),
         vec![hash_dep(&count), hash_dep("label")],

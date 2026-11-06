@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Check the hashes in docs/provenance.json against the imported files.
+"""Check the hashes in docs/provenance.json against the files it pins.
 
-Each file imported from Core must still hash to its Core value, unless
-"modified_since_import" lists it with a reason. A listed file must differ
-from Core, so the list cannot go stale. The pinned fonts must match their
-hash and size. The checker tests itself on a temporary tree first.
+Only two sets of files are hashed: the source files imported from Core,
+listed in "original_source_sha256", and the pinned Noto CJK files. Other
+files are not tracked here. Each imported source file must still hash to
+its Core value, unless "modified_since_import" lists it with a reason. A
+listed file must differ from Core, so the list cannot go stale. The pinned
+fonts must match their hash and size. The checker tests itself on a
+temporary tree first.
 """
 import hashlib
 import json
@@ -21,9 +24,24 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def required_map(manifest, *keys):
+    """Return the non-empty map at keys, or None when it is missing or empty."""
+    value = manifest
+    for key in keys:
+        value = value.get(key) if isinstance(value, dict) else None
+    return value if isinstance(value, dict) and value else None
+
+
 def problems(root, manifest):
     found = []
-    core = manifest["original_source_sha256"]
+    core = required_map(manifest, "original_source_sha256")
+    fonts = required_map(manifest, "noto_cjk", "files")
+    if core is None:
+        found.append("original_source_sha256: missing or empty")
+        core = {}
+    if fonts is None:
+        found.append("noto_cjk.files: missing or empty")
+        fonts = {}
     modified = manifest.get("modified_since_import", {})
     for path in sorted(set(modified) - set(core)):
         found.append(f"{path}: listed as modified but not imported from Core")
@@ -34,7 +52,8 @@ def problems(root, manifest):
             continue
         same = sha256(file) == core_hash
         if path in modified:
-            if not str(modified[path]).strip():
+            reason = modified[path]
+            if not isinstance(reason, str) or not reason.strip():
                 found.append(f"{path}: modified_since_import needs a reason")
             if same:
                 found.append(f"{path}: matches Core again; remove it from modified_since_import")
@@ -43,7 +62,7 @@ def problems(root, manifest):
                 f"{path}: differs from Core; restore it or list it in "
                 "modified_since_import with a reason"
             )
-    for name, font in sorted(manifest.get("noto_cjk", {}).get("files", {}).items()):
+    for name, font in sorted(fonts.items()):
         file = root / FONT_DIR / name
         if not file.is_file():
             found.append(f"{FONT_DIR / name}: pinned font file is missing")
@@ -65,28 +84,38 @@ def self_test():
         }
         font = {"font.otf": {"sha256": hashlib.sha256(b"font").hexdigest(), "bytes": 4}}
 
-        def manifest(modified, fonts=font):
-            return {
-                "original_source_sha256": core,
-                "modified_since_import": modified,
-                "noto_cjk": {"files": fonts},
-            }
-
         listed = {"changed.rs": "local edit"}
+        absent = "0" * 64
+
+        def manifest(modified=listed, fonts=font, sources=core, noto=True):
+            case = {"original_source_sha256": sources, "modified_since_import": modified}
+            if noto:
+                case["noto_cjk"] = {"files": fonts}
+            return case
+
         cases = [
-            ("clean tree passes", manifest(listed), 0),
+            ("clean tree passes", manifest(), 0),
             ("unlisted change fails", manifest({}), 1),
             ("stale listing fails", manifest({**listed, "kept.rs": "none"}), 1),
-            ("empty reason fails", manifest({"changed.rs": " "}), 1),
+            ("blank reason fails", manifest({"changed.rs": " "}), 1),
+            ("null reason fails", manifest({"changed.rs": None}), 1),
+            ("false reason fails", manifest({"changed.rs": False}), 1),
             ("unknown listing fails", manifest({**listed, "other.rs": "typo"}), 1),
-            ("font drift fails", manifest(listed, {"font.otf": {**font["font.otf"], "bytes": 5}}), 1),
+            ("missing Core file fails", manifest(sources={**core, "absent.rs": absent}), 1),
+            ("empty Core map fails", manifest({}, sources={}), 1),
+            ("font size drift fails", manifest(fonts={"font.otf": {**font["font.otf"], "bytes": 5}}), 1),
+            ("font hash drift fails", manifest(fonts={"font.otf": {**font["font.otf"], "sha256": absent}}), 1),
+            ("missing font fails", manifest(fonts={**font, "absent.otf": {"sha256": absent, "bytes": 4}}), 1),
+            ("empty font map fails", manifest(fonts={}), 1),
+            ("missing noto_cjk fails", manifest(noto=False), 1),
         ]
+        failures = []
         for name, case, expected in cases:
             got = len(problems(root, case))
-            assert got == expected, f"self-test {name}: {got} problems, expected {expected}"
-        (root / "kept.rs").unlink()
-        assert len(problems(root, manifest(listed))) == 1, "self-test missing file is not caught"
-    return len(cases) + 1
+            if got != expected:
+                failures.append(f"self-test {name}: {got} problems, expected {expected}")
+        assert not failures, "\n".join(failures)
+    return len(cases)
 
 
 def main():
@@ -98,9 +127,10 @@ def main():
         for line in found:
             print(f"  {line}", file=sys.stderr)
         return 1
+    # problems() has already rejected a missing or empty map.
     core = manifest["original_source_sha256"]
     modified = manifest.get("modified_since_import", {})
-    fonts = manifest.get("noto_cjk", {}).get("files", {})
+    fonts = manifest["noto_cjk"]["files"]
     print(
         f"provenance: {len(core) - len(modified)} of {len(core)} Core files unchanged, "
         f"{len(modified)} listed as modified, {len(fonts)} font files match "

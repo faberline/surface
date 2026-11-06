@@ -188,7 +188,9 @@ and [remaining work](docs/roadmap.md).
 `41c352eaae687a1914087d279f36adbe9e9b4af5`.
 The source inventory is in [`docs/provenance.json`](docs/provenance.json).
 [`scripts/check-provenance.py`](scripts/check-provenance.py) checks its hashes.
-Files changed since the import are listed there with a reason.
+It hashes only the source files imported from Core and the pinned fonts.
+Imported source files changed since the import are listed there with a
+reason.
 Jet supplies the public-domain Tuffy font and reference layout concepts.
 No Jet renderer or application code is linked. Font attribution is in
 [`assets/LICENSE.txt`](crates/surface-wgpu/assets/LICENSE.txt).
