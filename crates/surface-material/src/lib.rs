@@ -6,7 +6,9 @@ pub mod motion;
 pub mod shape;
 mod tokens;
 pub mod typography;
-pub use components::{ButtonKind, CheckValue, ChipKind, ChoiceState, SegmentPosition};
+pub use components::{
+    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, SegmentPosition,
+};
 pub use tokens::ColorScheme;
 
 #[derive(Clone, Copy, Debug)]
