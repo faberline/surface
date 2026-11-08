@@ -39,7 +39,7 @@ Fixed layers use viewport coordinates and escape ancestor clips and scroll.
 They paint after flow content, ordered by `z_index`.
 Hit testing walks that order backwards and checks bounds, clipping, and
 enabled control roles. This supports the current layout model; it is not
-the full CSS stacking-context model.
+the full CSS stacking-context model. `ComputedDom::changed_since` lists the nodes whose bounds or clip differ from an earlier frame.
 
 The display list contains ordered rounded quads, borders and text. It has no wgpu
 types. The backend preserves order when mixing text and rectangles.
