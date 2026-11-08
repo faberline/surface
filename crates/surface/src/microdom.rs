@@ -203,6 +203,12 @@ pub enum DomError {
     InvalidNode(usize),
     #[error("MicroDOM exceeds the u32 node limit")]
     Capacity,
+    #[error("unsupported MicroDOM snapshot version: {0}")]
+    UnsupportedVersion(u32),
+    #[error("MicroDOM snapshot has no nodes")]
+    EmptySnapshot,
+    #[error("invalid MicroDOM tree links at node {0}")]
+    InvalidTree(usize),
 }
 #[derive(Clone, Debug)]
 pub struct MicroDom {
@@ -308,6 +314,76 @@ impl MicroDom {
             version: 1,
             nodes: self.nodes.clone(),
         }
+    }
+    pub fn from_snapshot(snapshot: DomSnapshot) -> Result<MicroDom, DomError> {
+        if snapshot.version != 1 {
+            return Err(DomError::UnsupportedVersion(snapshot.version));
+        }
+        let nodes = snapshot.nodes;
+        if nodes.is_empty() {
+            return Err(DomError::EmptySnapshot);
+        }
+        let len = nodes.len();
+        u32::try_from(len).map_err(|_| DomError::Capacity)?;
+        for node in &nodes {
+            for link in [
+                node.parent,
+                node.first_child,
+                node.last_child,
+                node.next_sibling,
+            ]
+            .into_iter()
+            .flatten()
+            {
+                if link.index() >= len {
+                    return Err(DomError::InvalidNode(link.index()));
+                }
+            }
+        }
+        let mut ids = BTreeMap::new();
+        let mut semantics: BTreeMap<(Role, String), Vec<NodeId>> = BTreeMap::new();
+        for (i, node) in nodes.iter().enumerate() {
+            let id = NodeId(i as u32);
+            if let Some(stable_id) = &node.stable_id {
+                if ids.contains_key(stable_id) {
+                    return Err(DomError::DuplicateId(stable_id.clone()));
+                }
+                ids.insert(stable_id.clone(), id);
+            }
+            semantics
+                .entry((node.role, node.name.clone()))
+                .or_default()
+                .push(id);
+        }
+        if nodes[0].parent.is_some() {
+            return Err(DomError::InvalidTree(0));
+        }
+        let mut visited = vec![false; len];
+        visited[0] = true;
+        for p in 0..len {
+            let mut last_seen = None;
+            let mut cur = nodes[p].first_child;
+            while let Some(c) = cur {
+                let ci = c.index();
+                if nodes[ci].parent != Some(NodeId(p as u32)) || visited[ci] {
+                    return Err(DomError::InvalidTree(ci));
+                }
+                visited[ci] = true;
+                last_seen = Some(c);
+                cur = nodes[ci].next_sibling;
+            }
+            if last_seen != nodes[p].last_child {
+                return Err(DomError::InvalidTree(p));
+            }
+        }
+        if let Some(i) = visited.iter().position(|seen| !seen) {
+            return Err(DomError::InvalidTree(i));
+        }
+        Ok(MicroDom {
+            nodes,
+            ids,
+            semantics,
+        })
     }
     /// Viewport layers paint after flow content, in z-index order.
     pub fn paint_order(&self) -> Vec<NodeId> {
