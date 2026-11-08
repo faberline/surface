@@ -74,6 +74,32 @@ pub enum PaintOp {
         editable: bool,
     },
 }
+impl PaintOp {
+    pub fn rect(&self) -> Rect {
+        match self {
+            Self::Quad { rect, .. }
+            | Self::Stroke { rect, .. }
+            | Self::Text { rect, .. }
+            | Self::EditableText { rect, .. }
+            | Self::Shape { rect, .. }
+            | Self::ShapeStroke { rect, .. }
+            | Self::StyledText { rect, .. } => *rect,
+        }
+    }
+
+    pub fn clip(&self) -> Rect {
+        match self {
+            Self::Quad { clip, .. }
+            | Self::Stroke { clip, .. }
+            | Self::Text { clip, .. }
+            | Self::EditableText { clip, .. }
+            | Self::Shape { clip, .. }
+            | Self::ShapeStroke { clip, .. }
+            | Self::StyledText { clip, .. } => *clip,
+        }
+    }
+}
+
 /// The outline of one node. A uniform shape keeps the plain radius ops.
 #[derive(Clone, Copy)]
 enum Outline {
@@ -295,5 +321,28 @@ impl DisplayList {
             viewport: computed.viewport,
             ops,
         }
+    }
+
+    /// The visible rectangles of the ops that differ from `previous`.
+    pub fn damage(&self, previous: &DisplayList) -> Vec<Rect> {
+        if self.viewport != previous.viewport {
+            return vec![self.viewport];
+        }
+        let mut damage: Vec<Rect> = Vec::new();
+        let n = self.ops.len().max(previous.ops.len());
+        for i in 0..n {
+            let a = self.ops.get(i);
+            let b = previous.ops.get(i);
+            if a == b {
+                continue;
+            }
+            for op in [a, b].into_iter().flatten() {
+                let visible = op.rect().intersect(op.clip());
+                if visible.width > 0. && visible.height > 0. && !damage.contains(&visible) {
+                    damage.push(visible);
+                }
+            }
+        }
+        damage
     }
 }
