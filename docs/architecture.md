@@ -20,7 +20,7 @@ state. It must return the current value on each view call.
 last-child, and next-sibling links are typed indices. Stable IDs and
 role/name selectors have deterministic indexes. Snapshots contain semantic
 data and styles, with no closures or platform handles. Schema version 1 is
-separate from the pre-existing `SurfaceSnapshot` schema.
+separate from the pre-existing `SurfaceSnapshot` schema. `MicroDom::from_snapshot` rebuilds a tree from a snapshot and returns `DomError` for a bad version, a duplicate ID or broken links.
 
 `Runtime::snapshot()` adds current interaction and editor state, with
 matching layout when available. `Runtime::export_dom()` serializes it as
