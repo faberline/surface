@@ -1,7 +1,8 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
 use surface_material::{
-    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, LoadingKind, Theme,
+    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind, LoadingKind,
+    Theme,
 };
 
 pub struct Gallery {
@@ -320,6 +321,62 @@ impl Application for Gallery {
                                 "+",
                                 FabSize::Regular,
                                 FabColor::Primary,
+                                true,
+                                Message::Click,
+                            ),
+                        ]),
+                        t.row([
+                            t.icon_button(
+                                "icon-standard",
+                                "Favorite",
+                                "★",
+                                IconButtonKind::Standard,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-filled",
+                                "Favorite filled",
+                                "★",
+                                IconButtonKind::Filled,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-tonal",
+                                "Favorite tonal",
+                                "★",
+                                IconButtonKind::Tonal,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-outlined",
+                                "Favorite outlined",
+                                "★",
+                                IconButtonKind::Outlined,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-toggle",
+                                "Favorite toggle",
+                                "★",
+                                IconButtonKind::Filled,
+                                Some(false),
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-disabled",
+                                "Favorite disabled",
+                                "★",
+                                IconButtonKind::Filled,
+                                None,
                                 true,
                                 Message::Click,
                             ),

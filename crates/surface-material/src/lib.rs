@@ -7,7 +7,7 @@ pub mod shape;
 mod tokens;
 pub mod typography;
 pub use components::{
-    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, LoadingKind,
+    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind, LoadingKind,
 };
 pub use tokens::ColorScheme;
 
