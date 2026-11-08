@@ -1,6 +1,8 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
-use surface_material::{ButtonKind, CheckValue, ChipKind, ChoiceState, IconButtonKind, Theme};
+use surface_material::{
+    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind, Theme,
+};
 
 pub struct Gallery {
     pub section: usize,
@@ -264,6 +266,62 @@ impl Application for Gallery {
                                 choice(self.filter),
                                 Message::Filter,
                                 None,
+                            ),
+                        ]),
+                        t.row([
+                            t.fab(
+                                "fab-small",
+                                "Add small",
+                                "+",
+                                FabSize::Small,
+                                FabColor::Primary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab",
+                                "Add",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Primary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-large",
+                                "Add large",
+                                "+",
+                                FabSize::Large,
+                                FabColor::Tertiary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-surface",
+                                "Add surface",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Surface,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-secondary",
+                                "Add secondary",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Secondary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-disabled",
+                                "Add disabled",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Primary,
+                                true,
+                                Message::Click,
                             ),
                         ]),
                         t.row([
