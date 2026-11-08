@@ -27,6 +27,19 @@ pub enum ChipKind {
     Filter,
     Input,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FabSize {
+    Small,
+    Regular,
+    Large,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FabColor {
+    Surface,
+    Primary,
+    Secondary,
+    Tertiary,
+}
 
 /// Labels at the two sizes Material names map to their type roles. Any other
 /// size stays a plain size-only style, like the checkbox mark glyph.
@@ -100,6 +113,71 @@ impl Theme {
             text,
             if disabled { self.outline } else { foreground },
             14.,
+        )])])
+        .on_press(message)
+    }
+    /// A floating action button. `name` is the accessible name; `icon` is a
+    /// short text glyph (there is no icon system yet).
+    #[allow(clippy::too_many_arguments)]
+    pub fn fab<M>(
+        &self,
+        id: &str,
+        name: &str,
+        icon: &str,
+        size: FabSize,
+        color: FabColor,
+        disabled: bool,
+        message: M,
+    ) -> View<M> {
+        let (container, corner, icon_size) = match size {
+            FabSize::Small => (40., shape::MEDIUM, 24.),
+            FabSize::Regular => (56., shape::LARGE, 24.),
+            FabSize::Large => (96., shape::EXTRA_LARGE, 36.),
+        };
+        let (background, foreground) = match color {
+            FabColor::Surface => (self.colors.surface_container_high, self.colors.primary),
+            FabColor::Primary => (
+                self.colors.primary_container,
+                self.colors.on_primary_container,
+            ),
+            FabColor::Secondary => (
+                self.colors.secondary_container,
+                self.colors.on_secondary_container,
+            ),
+            FabColor::Tertiary => (
+                self.colors.tertiary_container,
+                self.colors.on_tertiary_container,
+            ),
+        };
+        let visual = Style::row()
+            .align(Align::Center)
+            .justify(Align::Center)
+            .width(Length::Px(container))
+            .height(Length::Px(container))
+            .corners(corner)
+            .state_layer(foreground)
+            .background(if disabled { self.disabled } else { background })
+            .transition(STATE_CHANGE);
+        // The touch target is at least 48 px, even for the small size.
+        let touch_size = container.max(48.);
+        let touch = Style::row()
+            .align(Align::Center)
+            .justify(Align::Center)
+            .width(Length::Px(touch_size))
+            .height(Length::Px(touch_size))
+            // The focus ring lands on this node. It follows the round shape.
+            .foreground(self.primary)
+            .corners(corner);
+        View::new(
+            Node::new(Role::Button, name)
+                .id(id)
+                .disabled(disabled)
+                .styled(touch),
+        )
+        .children([box_view(visual).children([label(
+            icon,
+            if disabled { self.outline } else { foreground },
+            icon_size,
         )])])
         .on_press(message)
     }
