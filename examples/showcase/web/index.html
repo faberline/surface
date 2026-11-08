@@ -12,7 +12,7 @@
 <header><span>Surface · Rust application framework</span><span id="status">Starting WebGPU…</span></header>
 <canvas id="surface" tabindex="0" aria-label="Surface Material showcase"></canvas>
 <script type="module">
-  import init, * as showcase from './pkg/surface_showcase.js';
+  import init, * as showcase from '%SURFACE_JS%';
   const status=document.querySelector('#status');
   try {
     if (!navigator.gpu) throw new Error('WebGPU is unavailable. Use a browser with WebGPU on HTTPS or localhost.');

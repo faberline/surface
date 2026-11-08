@@ -35,8 +35,8 @@ does not retry submitted actions automatically.
 For a browser gallery:
 
 ```sh
-sh scripts/build-gallery.sh --features devtools
-python3 -m http.server 8080 --directory examples/material-gallery/web
+cargo xtask web build material-gallery --features devtools --out target/web/devtools/material-gallery
+cargo xtask web serve material-gallery --dir target/web/devtools/material-gallery
 jet-bridge --root /path/to/browser-session bb launch http://127.0.0.1:8080
 jet-bridge --root /path/to/browser-session ui snapshot
 jet-bridge --root /path/to/browser-session mcp --ui
@@ -97,6 +97,9 @@ the pinned protocol revision or a compatible descendant. Then run:
 ```sh
 CHROME_PATH=/path/to/chrome python3 scripts/bridge-e2e.py --jet-bridge /path/to/jet-bridge
 ```
+
+The web test serves `target/web/devtools/material-gallery`, the output of
+the build command above. `--web-dir` selects another built directory.
 
 The test creates its own window, browser, server and sessions. It checks
 actual controlled Chinese input, saved state, slider snapping, disabled
