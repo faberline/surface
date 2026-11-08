@@ -1,7 +1,7 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
 use surface_material::{
-    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind,
+    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind, LoadingKind,
     SegmentPosition, Theme,
 };
 
@@ -406,6 +406,20 @@ impl Application for Gallery {
                                 None,
                                 true,
                                 Message::Click,
+                            ),
+                        ]),
+                        t.row([
+                            t.loading_indicator(
+                                "loading-default",
+                                "Loading",
+                                LoadingKind::Default,
+                                0.,
+                            ),
+                            t.loading_indicator(
+                                "loading-contained",
+                                "Loading contained",
+                                LoadingKind::Contained,
+                                0.,
                             ),
                         ]),
                     ],

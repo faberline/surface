@@ -55,6 +55,25 @@ pub enum FabColor {
     Tertiary,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LoadingKind {
+    Default,
+    Contained,
+}
+
+/// Corner radius of the 38 px indicator for each of the seven shape steps.
+/// Even steps are circles (radius 19); odd steps are rounder squares.
+fn loading_corners(phase: f32) -> Corners {
+    const RADII: [f32; 7] = [19., 12., 19., 8., 19., 14., 19.];
+    let phase = if phase.is_finite() {
+        phase.clamp(0., 1.)
+    } else {
+        0.
+    };
+    let step = ((phase * 7.0).floor() as usize).min(6);
+    Corners::all(RADII[step])
+}
+
 /// Labels at the two sizes Material names map to their type roles. Any other
 /// size stays a plain size-only style, like the checkbox mark glyph.
 fn label<M>(text: &str, color: Color, size: f32) -> View<M> {
@@ -202,6 +221,37 @@ impl Theme {
             icon_size,
         )])])
         .on_press(message)
+    }
+    /// Indeterminate loading indicator. The application owns `phase` (0 to 1)
+    /// and changes it over time. It draws the shape cycle by corner radius;
+    /// it does not rotate or morph polygons yet.
+    pub fn loading_indicator<M>(
+        &self,
+        id: &str,
+        name: &str,
+        kind: LoadingKind,
+        phase: f32,
+    ) -> View<M> {
+        let indicator = match kind {
+            LoadingKind::Default => self.colors.primary,
+            LoadingKind::Contained => self.colors.on_primary_container,
+        };
+        let mut outer = Style::row()
+            .align(Align::Center)
+            .justify(Align::Center)
+            .width(Length::Px(48.))
+            .height(Length::Px(48.));
+        if kind == LoadingKind::Contained {
+            outer = outer
+                .corners(shape::FULL)
+                .background(self.colors.primary_container);
+        }
+        let shape = Style::default()
+            .width(Length::Px(38.))
+            .height(Length::Px(38.))
+            .corners(loading_corners(phase))
+            .background(indicator);
+        View::new(Node::new(Role::Progress, name).id(id).styled(outer)).children([box_view(shape)])
     }
     // The spec fixes this signature; the clippy gate needs the lint allowed here.
     #[allow(clippy::too_many_arguments)]
