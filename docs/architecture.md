@@ -44,7 +44,7 @@ the full CSS stacking-context model. `ComputedDom::changed_since` lists the node
 The display list contains ordered rounded quads, borders and text. It has no wgpu
 types. The backend preserves order when mixing text and rectangles.
 There is no incremental GPU damage optimization yet; each dirty frame
-paints a full display list.
+paints a full display list. `DisplayList::damage` returns the visible rectangles of the ops that differ from an earlier list.
 
 ## Platform boundary
 
