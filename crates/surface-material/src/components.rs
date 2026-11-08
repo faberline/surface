@@ -469,6 +469,7 @@ impl Theme {
                     .height(Length::Px(4.))
                     .corners(shape::FULL)
                     .background(color)
+                    .transition(STATE_CHANGE)
                     .absolute(offset(Length::Px(0.), Length::Px(10.))),
             ),
             box_view(
@@ -483,6 +484,7 @@ impl Theme {
                     .height(Length::Px(20.))
                     .corners(shape::FULL)
                     .background(color)
+                    .transition(STATE_CHANGE)
                     .absolute(offset(Length::Px(-10.), Length::Px(2.))),
             )]),
         ]);
