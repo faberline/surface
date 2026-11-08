@@ -353,6 +353,15 @@ impl Application for Gallery {
                             ),
                         ]),
                         t.row([
+                            t.linear_progress(
+                                "lp-determinate",
+                                "Determinate progress",
+                                Some(0.4),
+                                0.,
+                            ),
+                            t.linear_progress("lp-indeterminate", "Loading", None, 0.5),
+                        ]),
+                        t.row([
                             t.icon_button(
                                 "icon-standard",
                                 "Favorite",

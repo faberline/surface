@@ -729,6 +729,76 @@ impl Theme {
         .children([track])
         .on_value(handler)
     }
+    /// Linear progress: determinate when `value` is `Some`, otherwise an
+    /// indeterminate bar whose position follows the application's `phase`.
+    pub fn linear_progress<M>(
+        &self,
+        id: &str,
+        name: &str,
+        value: Option<f32>,
+        phase: f32,
+    ) -> View<M> {
+        let clamp = |v: f32| if v.is_finite() { v.clamp(0., 1.) } else { 0. };
+        let (range, bar) = match value {
+            Some(v) => {
+                let f = clamp(v);
+                (
+                    Some(RangeValue {
+                        min: 0.,
+                        max: 1.,
+                        value: f as f64,
+                        step: 0.01,
+                    }),
+                    Style::default()
+                        .width(Length::Percent(f))
+                        .height(Length::Px(4.))
+                        .corners(shape::FULL)
+                        .background(self.primary)
+                        .absolute(offset(Length::Px(0.), Length::Px(0.))),
+                )
+            }
+            None => {
+                let p = clamp(phase);
+                (
+                    None,
+                    Style::default()
+                        .width(Length::Percent(0.4))
+                        .height(Length::Px(4.))
+                        .corners(shape::FULL)
+                        .background(self.primary)
+                        .absolute(offset(Length::Percent(p * 0.6), Length::Px(0.))),
+                )
+            }
+        };
+        let track = box_view(
+            Style::default()
+                .width(Length::Percent(1.))
+                .height(Length::Px(4.)),
+        )
+        .children([
+            box_view(
+                Style::default()
+                    .width(Length::Percent(1.))
+                    .height(Length::Px(4.))
+                    .corners(shape::FULL)
+                    .background(self.colors.secondary_container)
+                    .absolute(offset(Length::Px(0.), Length::Px(0.))),
+            ),
+            box_view(bar),
+        ]);
+        let mut node = Node::new(Role::Progress, name).id(id);
+        if let Some(range) = range {
+            node = node.range(range);
+        }
+        View::new(
+            node.styled(
+                Style::default()
+                    .width(Length::Px(240.))
+                    .height(Length::Px(4.)),
+            ),
+        )
+        .children([track])
+    }
     pub fn dialog<M>(
         &self,
         id: &str,
