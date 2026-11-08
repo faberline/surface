@@ -90,6 +90,17 @@ fn label<M>(text: &str, color: Color, size: f32) -> View<M> {
             .styled(style.foreground(color)),
     )
 }
+/// The navigation-bar destination label, at the Material LABEL_MEDIUM role.
+/// Kept apart from `label`: the checkbox mark also uses a 12 dp size-only style.
+fn nav_label<M>(text: &str, color: Color) -> View<M> {
+    View::new(
+        Node::new(Role::Text, text).text(text).styled(
+            Style::default()
+                .with_text_style(typography::LABEL_MEDIUM)
+                .foreground(color),
+        ),
+    )
+}
 fn box_view<M>(style: Style) -> View<M> {
     View::new(Node::new(Role::Group, "").styled(style))
 }
@@ -644,6 +655,76 @@ impl Theme {
                 .styled(Style::row().gap(4.).wrap(true)),
         )
         .children(children)
+        .roving(Roving::horizontal(false))
+    }
+    pub fn navigation_bar_item<M>(
+        &self,
+        id: &str,
+        name: &str,
+        icon: &str,
+        state: ChoiceState,
+        message: M,
+    ) -> View<M> {
+        let (icon_color, label_color) = if state.disabled {
+            (self.outline, self.outline)
+        } else if state.selected {
+            (self.colors.on_secondary_container, self.colors.on_surface)
+        } else {
+            (
+                self.colors.on_surface_variant,
+                self.colors.on_surface_variant,
+            )
+        };
+        let indicator = box_view(
+            Style::row()
+                .align(Align::Center)
+                .justify(Align::Center)
+                .width(Length::Px(64.))
+                .height(Length::Px(32.))
+                .corners(shape::FULL)
+                .background(if state.selected {
+                    self.colors.secondary_container
+                } else {
+                    Color::TRANSPARENT
+                })
+                .transition(STATE_CHANGE),
+        )
+        .children([label(icon, icon_color, 24.)]);
+        View::new(
+            Node::new(Role::Button, name)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .styled(
+                    Style::column()
+                        .align(Align::Center)
+                        .justify(Align::Center)
+                        .gap(4.)
+                        .height(Length::Px(80.))
+                        .grow(1.)
+                        .foreground(self.primary)
+                        .state_layer(label_color),
+                ),
+        )
+        .children([indicator, nav_label(name, label_color)])
+        .on_press(message)
+    }
+    pub fn navigation_bar<M>(
+        &self,
+        id: &str,
+        name: &str,
+        items: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::Navigation, name).id(id).styled(
+                Style::row()
+                    .align(Align::Center)
+                    .width(Length::Percent(1.))
+                    .height(Length::Px(80.))
+                    .background(self.colors.surface_container),
+            ),
+        )
+        .children(items)
         .roving(Roving::horizontal(false))
     }
     pub fn navigation_drawer_item<M>(
