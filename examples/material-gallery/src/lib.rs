@@ -20,6 +20,7 @@ pub struct Gallery {
     pub menu: bool,
     pub name: String,
     pub draft: String,
+    pub drawer: usize,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -38,12 +39,14 @@ impl Default for Gallery {
             menu: false,
             name: "Surface".into(),
             draft: String::new(),
+            drawer: 0,
         }
     }
 }
 #[derive(Clone)]
 pub enum Message {
     Section(usize),
+    Drawer(usize),
     Theme,
     Radio(usize),
     Switch,
@@ -66,6 +69,7 @@ impl Application for Gallery {
     fn update(&mut self, m: Message) {
         match m {
             Message::Section(i) => self.section = i,
+            Message::Drawer(i) => self.drawer = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
             Message::Switch => self.enabled = !self.enabled,
@@ -447,6 +451,31 @@ impl Application for Gallery {
                     "outlined-card",
                     [t.text("outlined-description", "Outlined card · 共用的色彩與形狀")],
                 ));
+                children.push(
+                    t.card(
+                        "navigation-drawer-card",
+                        [t.navigation_drawer(
+                            "nav-drawer",
+                            "Destinations",
+                            [
+                                ("drawer-inbox", "Inbox", "I"),
+                                ("drawer-sent", "Sent", "S"),
+                                ("drawer-trash", "Trash", "T"),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, (id, name, icon))| {
+                                t.navigation_drawer_item(
+                                    id,
+                                    name,
+                                    icon,
+                                    choice(self.drawer == i),
+                                    Message::Drawer(i),
+                                )
+                            }),
+                        )],
+                    ),
+                );
             }
             2 => {
                 children.push(t.card(
