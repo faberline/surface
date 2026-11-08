@@ -20,6 +20,13 @@ pub enum CheckValue {
     Checked,
     Mixed,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum IconButtonKind {
+    Standard,
+    Filled,
+    Tonal,
+    Outlined,
+}
 #[derive(Clone, Copy, Debug)]
 pub enum ChipKind {
     Assist,
@@ -103,6 +110,77 @@ impl Theme {
         )])])
         .on_press(message)
     }
+    // The spec fixes this signature; the clippy gate needs the lint allowed here.
+    #[allow(clippy::too_many_arguments)]
+    pub fn icon_button<M>(
+        &self,
+        id: &str,
+        name: &str,
+        icon: &str,
+        kind: IconButtonKind,
+        selected: Option<bool>,
+        disabled: bool,
+        message: M,
+    ) -> View<M> {
+        let on = selected == Some(true);
+        let toggle = selected.is_some();
+        let c = self.colors;
+        let (background, foreground, bordered) = match (kind, toggle, on) {
+            (IconButtonKind::Standard, _, true) => (Color::TRANSPARENT, c.primary, false),
+            (IconButtonKind::Standard, _, false) => {
+                (Color::TRANSPARENT, c.on_surface_variant, false)
+            }
+            (IconButtonKind::Filled, true, false) => {
+                (c.surface_container_highest, c.primary, false)
+            }
+            (IconButtonKind::Filled, _, _) => (c.primary, c.on_primary, false),
+            (IconButtonKind::Tonal, true, false) => {
+                (c.surface_container_highest, c.on_surface_variant, false)
+            }
+            (IconButtonKind::Tonal, _, _) => {
+                (c.secondary_container, c.on_secondary_container, false)
+            }
+            (IconButtonKind::Outlined, _, true) => (c.inverse_surface, c.inverse_on_surface, false),
+            (IconButtonKind::Outlined, _, false) => {
+                (Color::TRANSPARENT, c.on_surface_variant, true)
+            }
+        };
+        let mut visual = Style::row()
+            .align(Align::Center)
+            .justify(Align::Center)
+            .width(Length::Px(40.))
+            .height(Length::Px(40.))
+            .corners(shape::FULL)
+            .state_layer(foreground)
+            .background(if disabled { self.disabled } else { background })
+            .transition(STATE_CHANGE);
+        if bordered {
+            visual = visual.border(1., self.outline);
+        }
+        let touch = Style::row()
+            .width(Length::Px(48.))
+            .height(Length::Px(48.))
+            .align(Align::Center)
+            .justify(Align::Center)
+            // The focus ring lands on this node. It follows the circle.
+            .foreground(self.primary)
+            .corners(shape::FULL);
+        let mut node = Node::new(Role::Button, name)
+            .id(id)
+            .disabled(disabled)
+            .styled(touch);
+        if let Some(v) = selected {
+            node = node.selected(v);
+        }
+        View::new(node)
+            .children([box_view(visual).children([label(
+                icon,
+                if disabled { self.outline } else { foreground },
+                24.,
+            )])])
+            .on_press(message)
+    }
+
     pub fn checkbox_with<M>(
         &self,
         id: &str,

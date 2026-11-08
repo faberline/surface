@@ -144,6 +144,7 @@ does not change application state.
 | API | Current behavior |
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
+| `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices |
 | `switch` | Controlled on/off choice and disabled state |
