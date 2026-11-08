@@ -91,31 +91,29 @@ the default browser mode retains its 27 tools.
 
 ## Runtime verification
 
-Build the native and WASM gallery with `devtools`. Build Jet bridge from
-the pinned protocol revision or a compatible descendant. Then run:
+`cargo xtask web e2e` builds the native and WASM gallery with
+`devtools`, the compact example and jet-bridge at the revision pinned in
+`Cargo.toml`. It then runs the bridge suites with the other browser suites:
 
 ```sh
-CHROME_PATH=/path/to/chrome python3 scripts/bridge-e2e.py --jet-bridge /path/to/jet-bridge
+cap cargo xtask web e2e bridge-native bridge-native-compact bridge-web
 ```
 
-The web test serves `target/web/devtools/material-gallery`, the output of
-the build command above. `--web-dir` selects another built directory.
+`SURFACE_CHROME` selects Chrome; otherwise a system install is used. The
+web test serves `target/web/devtools/material-gallery`. `--bridge-web`
+selects another built directory and `--jet-bridge` another binary.
 
 The test creates its own window, browser, server and sessions. It checks
 actual controlled Chinese input, saved state, slider snapping, disabled
 controls, removed nodes, modal scope, Tab loops, restored focus and shared
 CLI/MCP state. The native test checks authentication, file permissions and
 normal descriptor cleanup. The web test checks WebGPU readiness, PNG
-capture and actual browser exit. It uses no Playwright runtime.
+capture and actual browser exit. The suites live in
+[`e2e/src/bridge.rs`](../e2e/src/bridge.rs).
 
-For a small native viewport and an explicit focus-scrolling regression:
-
-```sh
-cap cargo build --locked -p surface-material-gallery --features devtools --example compact
-CHROME_PATH=/path/to/chrome python3 scripts/bridge-e2e.py --jet-bridge /path/to/jet-bridge --native-bin target/debug/examples/compact --require-overflow
-```
-
-This requires the slider to start clipped. Tab must reach it and its new
+`bridge-native-compact` runs the `compact` example, a small native
+viewport, as an explicit focus-scrolling regression.
+It requires the slider to start clipped. Tab must reach it and its new
 geometry must be visible on both hosts. The fixture uses the same gallery
 application and changes only its native viewport size.
 

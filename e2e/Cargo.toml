@@ -1,0 +1,17 @@
+[package]
+name = "surface-e2e"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "Browser and bridge end-to-end journeys for Surface, driven through jet-bridge."
+
+[dependencies]
+anyhow = "1"
+jet-bridge.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "process", "time", "io-util", "sync", "fs"] }
+
+[lints]
+workspace = true

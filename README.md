@@ -152,8 +152,10 @@ compilation, and WASM compilation. Its WASM step also builds `ui-runtime`
 with and without `debug`, plus the consumer contract test that pins the API
 Jet and Core use. The second explicitly runs the GPU pixel test. It fails when
 an adapter is unavailable. The desktop smoke run creates a real window,
-paints two frames, and exits. A browser smoke journey is available in
-[`scripts/browser-smoke.mjs`](scripts/browser-smoke.mjs).
+paints two frames, and exits. `cargo xtask web e2e` builds the web and
+native inputs and runs the browser and bridge end-to-end tests in
+[`e2e/`](e2e). It needs Chrome; see
+[verification](docs/verification.md#re-run-the-browser-tests).
 
 ## Current limits
 
@@ -189,7 +191,7 @@ and [remaining work](docs/roadmap.md).
 [`faberline/core`](https://github.com/faberline/core) at
 `41c352eaae687a1914087d279f36adbe9e9b4af5`.
 The source inventory is in [`docs/provenance.json`](docs/provenance.json).
-[`scripts/check-provenance.py`](scripts/check-provenance.py) checks its hashes.
+`cargo xtask provenance` checks its hashes.
 It hashes only the source files imported from Core and the pinned fonts.
 Imported source files changed since the import are listed there with a
 reason.

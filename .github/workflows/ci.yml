@@ -12,7 +12,7 @@ jobs:
           targets: wasm32-unknown-unknown
           components: rustfmt, clippy
       - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev
-      - run: python3 -I scripts/check-provenance.py
+      - run: cargo xtask provenance
       - run: cargo fmt --all --check
       - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
       - run: cargo test --locked --workspace --all-features
@@ -21,3 +21,40 @@ jobs:
       # contract test pins the surface and ui-runtime API that Jet and Core use.
       - run: cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract
       - run: cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract
+
+  # Browser and bridge end-to-end tests (surface-e2e, issue #62). Chrome uses
+  # SwiftShader for WebGPU and the native gallery uses Mesa lavapipe under
+  # Xvfb. The runner fails when any case fails, skips a step or runs no check.
+  browser-e2e:
+    runs-on: ubuntu-latest
+    env:
+      WASM_BINDGEN_VERSION: 0.2.129
+      BINARYEN_VERSION: "133"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.96.1
+        with:
+          targets: wasm32-unknown-unknown
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev xvfb mesa-vulkan-drivers libvulkan1
+      - name: Install wasm-bindgen CLI
+        run: cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
+      - name: Install wasm-opt
+        run: |
+          curl -fsSL -o binaryen.tar.gz "https://github.com/WebAssembly/binaryen/releases/download/version_${BINARYEN_VERSION}/binaryen-version_${BINARYEN_VERSION}-x86_64-linux.tar.gz"
+          tar -xzf binaryen.tar.gz
+          echo "$PWD/binaryen-version_${BINARYEN_VERSION}/bin" >> "$GITHUB_PATH"
+      - uses: browser-actions/setup-chrome@v1
+        id: chrome
+        with:
+          chrome-version: stable
+      - name: Run surface-e2e
+        env:
+          SURFACE_CHROME: ${{ steps.chrome.outputs.chrome-path }}
+          SURFACE_CHROME_ARGS: --enable-unsafe-webgpu --enable-features=Vulkan --use-vulkan=swiftshader --use-webgpu-adapter=swiftshader --use-angle=swiftshader
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surface-e2e-artifacts
+          path: artifacts/
+          if-no-files-found: warn

@@ -247,7 +247,9 @@ Run `cap cargo run --locked -p surface-material-gallery` for a native window.
 Run `cargo xtask web dev material-gallery` for the browser. See
 [web build](web-build.md). The same `Gallery` state and view drive both.
 
-`scripts/browser-material.mjs` runs the real WASM/WebGPU gallery. It checks
+The `material` suite of `cargo xtask web e2e`
+([`e2e/src/material.rs`](../e2e/src/material.rs)) runs the real
+WASM/WebGPU gallery. It checks
 selections, keyboard groups, slider drag, both themes, chip removal,
 Chinese dialog editing, focus trapping/restoration, menus and responsive
 modal bounds. It also reads the live DOM export. The native smoke check
