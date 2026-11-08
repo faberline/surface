@@ -20,6 +20,7 @@ pub struct Gallery {
     pub menu: bool,
     pub name: String,
     pub draft: String,
+    pub rail: usize,
     pub drawer: usize,
     pub nav: usize,
 }
@@ -40,6 +41,7 @@ impl Default for Gallery {
             menu: false,
             name: "Surface".into(),
             draft: String::new(),
+            rail: 0,
             drawer: 0,
             nav: 0,
         }
@@ -48,6 +50,7 @@ impl Default for Gallery {
 #[derive(Clone)]
 pub enum Message {
     Section(usize),
+    Rail(usize),
     Drawer(usize),
     Nav(usize),
     Theme,
@@ -72,6 +75,7 @@ impl Application for Gallery {
     fn update(&mut self, m: Message) {
         match m {
             Message::Section(i) => self.section = i,
+            Message::Rail(i) => self.rail = i,
             Message::Drawer(i) => self.drawer = i,
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
@@ -477,6 +481,31 @@ impl Application for Gallery {
                     "outlined-card",
                     [t.text("outlined-description", "Outlined card · 共用的色彩與形狀")],
                 ));
+                children.push(
+                    t.card(
+                        "navigation-rail-card",
+                        [t.navigation_rail(
+                            "nav-rail",
+                            "Destinations",
+                            [
+                                ("rail-home", "Home", "H"),
+                                ("rail-search", "Search", "S"),
+                                ("rail-more", "More", "M"),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, (id, name, icon))| {
+                                t.navigation_rail_item(
+                                    id,
+                                    name,
+                                    icon,
+                                    choice(self.rail == i),
+                                    Message::Rail(i),
+                                )
+                            }),
+                        )],
+                    ),
+                );
                 children.push(
                     t.card(
                         "navigation-drawer-card",
