@@ -1,6 +1,6 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
-use surface_material::{ButtonKind, CheckValue, ChipKind, ChoiceState, Theme};
+use surface_material::{ButtonKind, CheckValue, ChipKind, ChoiceState, SegmentPosition, Theme};
 
 pub struct Gallery {
     pub section: usize,
@@ -266,6 +266,33 @@ impl Application for Gallery {
                                 None,
                             ),
                         ]),
+                        t.segmented_buttons(
+                            "segments-multi",
+                            "樣式",
+                            [
+                                t.segment(
+                                    "seg-a",
+                                    "日",
+                                    SegmentPosition::First,
+                                    choice(true),
+                                    Message::Click,
+                                ),
+                                t.segment(
+                                    "seg-b",
+                                    "週",
+                                    SegmentPosition::Middle,
+                                    choice(false),
+                                    Message::Click,
+                                ),
+                                t.segment(
+                                    "seg-c",
+                                    "月",
+                                    SegmentPosition::Last,
+                                    choice(true),
+                                    Message::Click,
+                                ),
+                            ],
+                        ),
                     ],
                 ));
                 if self.input_chip {
