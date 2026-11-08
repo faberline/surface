@@ -1,6 +1,8 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
-use surface_material::{ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, Theme};
+use surface_material::{
+    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, LoadingKind, Theme,
+};
 
 pub struct Gallery {
     pub section: usize,
@@ -320,6 +322,20 @@ impl Application for Gallery {
                                 FabColor::Primary,
                                 true,
                                 Message::Click,
+                            ),
+                        ]),
+                        t.row([
+                            t.loading_indicator(
+                                "loading-default",
+                                "Loading",
+                                LoadingKind::Default,
+                                0.,
+                            ),
+                            t.loading_indicator(
+                                "loading-contained",
+                                "Loading contained",
+                                LoadingKind::Contained,
+                                0.,
                             ),
                         ]),
                     ],
