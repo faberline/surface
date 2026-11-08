@@ -26,6 +26,7 @@ impl TextMeasurer for Metrics {
 
 struct Counter {
     count: usize,
+    disabled: bool,
 }
 impl Application for Counter {
     type Message = ();
@@ -40,7 +41,7 @@ impl Application for Counter {
             "+",
             FabSize::Regular,
             FabColor::Primary,
-            false,
+            self.disabled,
             (),
         )])
     }
@@ -148,7 +149,11 @@ fn disabled_uses_the_disabled_color() {
 
 #[test]
 fn keyboard_activation_sends_the_message() {
-    let mut r = Runtime::new(Counter { count: 0 }).unwrap();
+    let mut r = Runtime::new(Counter {
+        count: 0,
+        disabled: false,
+    })
+    .unwrap();
     r.render(400., 300., &mut Metrics).unwrap();
     r.dispatch(Event::FocusNext { reverse: false }).unwrap();
     assert_eq!(r.focused(), Some("fab"));
@@ -158,22 +163,17 @@ fn keyboard_activation_sends_the_message() {
 
 #[test]
 fn disabled_keyboard_activation_sends_nothing() {
-    let build: Build = Box::new(|t| {
-        t.fab(
-            "fab",
-            "Add",
-            "+",
-            FabSize::Regular,
-            FabColor::Primary,
-            true,
-            (),
-        )
-    });
-    let mut r = Runtime::new(App(false, Box::new(move |t| t.page([build(t)])))).unwrap();
+    let mut r = Runtime::new(Counter {
+        count: 0,
+        disabled: true,
+    })
+    .unwrap();
     r.render(400., 300., &mut Metrics).unwrap();
     r.dispatch(Event::FocusNext { reverse: false }).unwrap();
-    let _ = r.dispatch(Event::Activate);
     assert_eq!(r.focused(), None);
+    // No node is focused, so Activate may return Err; the message count is the proof.
+    let _ = r.dispatch(Event::Activate);
+    assert_eq!(r.app().count, 0);
 }
 
 #[test]
