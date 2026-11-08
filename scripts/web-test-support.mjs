@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url';
 
 export async function startWebServer(example = 'showcase') {
   if (process.env.SURFACE_URL) return { url: process.env.SURFACE_URL, close: async () => {} };
-  const root = resolve(dirname(fileURLToPath(import.meta.url)), `../examples/${example}/web`);
+  // Output of `cargo xtask web build <app>`. SURFACE_WEB_PROFILE=dev selects
+  // a `--dev` build; SURFACE_WEB_DIR selects any built directory.
+  const profile = process.env.SURFACE_WEB_PROFILE || 'release';
+  const root = resolve(process.env.SURFACE_WEB_DIR || resolve(dirname(fileURLToPath(import.meta.url)), `../target/web/${profile}/${example}`));
   const types = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm', '.json': 'application/json' };
   const server = createServer(async (req, res) => {
     try {

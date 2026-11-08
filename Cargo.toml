@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "examples/showcase", "examples/material-gallery"]
+members = ["crates/*", "examples/showcase", "examples/material-gallery", "xtask"]
 default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
 
 [workspace.package]
@@ -37,3 +37,13 @@ debug = 1
 
 [profile.release]
 lto = "thin"
+
+# Browser release builds: `cargo xtask web build <app>`. Tuned for download
+# size; wasm-opt -Oz runs after it. Native release builds keep `release`.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"

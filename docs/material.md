@@ -146,6 +146,8 @@ does not change application state.
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
 | `navigation_rail` | Three to seven destinations in an 80-pixel column; selected and disabled destination; 56x32 active indicator; arrow keys; light and dark; text-glyph icons, no badge, menu button, FAB slot, expanded rail or ripple |
+| `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
+| `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
 | `loading_indicator` | Default and contained; light and dark; phase set by the application; shape cycle by corner radius, no rotation or polygon morph yet |
 | `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
@@ -251,8 +253,8 @@ the motion foundation at `partial`.
 ## Gallery and evidence
 
 Run `cap cargo run --locked -p surface-material-gallery` for a native window.
-Run `./scripts/build-gallery.sh` and serve `examples/material-gallery/web`
-for the browser. The same `Gallery` state and view drive both.
+Run `cargo xtask web dev material-gallery` for the browser. See
+[web build](web-build.md). The same `Gallery` state and view drive both.
 
 `scripts/browser-material.mjs` runs the real WASM/WebGPU gallery. It checks
 selections, keyboard groups, slider drag, both themes, chip removal,

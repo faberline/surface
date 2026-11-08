@@ -206,7 +206,7 @@ class QuietServer(http.server.SimpleHTTPRequestHandler):
 
 
 def web(args, folder, diagnostic):
-    handler = functools.partial(QuietServer, directory=str(ROOT / "examples/material-gallery/web"))
+    handler = functools.partial(QuietServer, directory=str(args.web_dir))
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -265,6 +265,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jet-bridge", required=True, type=Path)
     parser.add_argument("--native-bin", type=Path, default=ROOT / "target/debug/surface-material-gallery")
+    parser.add_argument("--web-dir", type=Path, default=ROOT / "target/web/devtools/material-gallery",
+                        help="output of `cargo xtask web build material-gallery --features devtools --out <dir>`")
     parser.add_argument("--mode", choices=["native", "web", "both"], default="both")
     parser.add_argument("--require-overflow", action="store_true",
                         help="Require the range to start outside the visible viewport")
