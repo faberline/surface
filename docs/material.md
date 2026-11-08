@@ -145,6 +145,7 @@ does not change application state.
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+| `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
 | `loading_indicator` | Default and contained; light and dark; phase set by the application; shape cycle by corner radius, no rotation or polygon morph yet |
 | `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |

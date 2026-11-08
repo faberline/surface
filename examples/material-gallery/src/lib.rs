@@ -20,6 +20,7 @@ pub struct Gallery {
     pub menu: bool,
     pub name: String,
     pub draft: String,
+    pub nav: usize,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -38,12 +39,14 @@ impl Default for Gallery {
             menu: false,
             name: "Surface".into(),
             draft: String::new(),
+            nav: 0,
         }
     }
 }
 #[derive(Clone)]
 pub enum Message {
     Section(usize),
+    Nav(usize),
     Theme,
     Radio(usize),
     Switch,
@@ -66,6 +69,7 @@ impl Application for Gallery {
     fn update(&mut self, m: Message) {
         match m {
             Message::Section(i) => self.section = i,
+            Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
             Message::Switch => self.enabled = !self.enabled,
@@ -202,6 +206,27 @@ impl Application for Gallery {
                 );
             }
             1 => {
+                let nav_items = [
+                    ("nav-home", "Home", "H"),
+                    ("nav-search", "Search", "S"),
+                    ("nav-more", "More", "M"),
+                ];
+                let nav_bar = t.navigation_bar(
+                    "nav-bar",
+                    "Destinations",
+                    nav_items
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, (id, name, icon))| {
+                            t.navigation_bar_item(
+                                id,
+                                name,
+                                icon,
+                                choice(self.nav == i),
+                                Message::Nav(i),
+                            )
+                        }),
+                );
                 children.push(t.card(
                     "action-card",
                     [
@@ -352,6 +377,7 @@ impl Application for Gallery {
                                 Message::Click,
                             ),
                         ]),
+                        nav_bar,
                         t.row([
                             t.linear_progress(
                                 "lp-determinate",
@@ -584,7 +610,7 @@ mod web {
         APP.with(|a|{
         let a=a.borrow();let runtime=a.as_ref().expect("started").borrow();let s=runtime.app();
         serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
-            "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"focused":runtime.focused()}).to_string()
+            "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused()}).to_string()
     })
     }
     #[wasm_bindgen]
