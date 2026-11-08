@@ -200,6 +200,7 @@ These components use it, and nothing else does:
 - the switch track and thumb;
 - the segmented button container;
 - the chip container;
+- the slider active fill and thumb;
 - the tab active indicator.
 
 The tab indicator exists only while its tab is selected. It is added
