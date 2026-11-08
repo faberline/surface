@@ -1149,6 +1149,67 @@ impl Theme {
         )
         .children([panel])
     }
+    pub fn bottom_sheet<M>(
+        &self,
+        id: &str,
+        name: &str,
+        content: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        self.sheet_panel(id, name, Role::Group, content, None)
+    }
+    pub fn modal_bottom_sheet<M>(
+        &self,
+        id: &str,
+        name: &str,
+        content: impl IntoIterator<Item = View<M>>,
+        dismiss: M,
+    ) -> View<M> {
+        let panel = self.sheet_panel(id, name, Role::Dialog, content, Some(dismiss));
+        let mut layer = Style::default()
+            .fixed(Insets::all(0.))
+            .align(Align::Center)
+            .justify(Align::End)
+            .background(Color(0, 0, 0, 80));
+        layer.z_index = 1000;
+        View::new(
+            Node::new(Role::Group, "Sheet overlay")
+                .id(format!("{id}-layer"))
+                .styled(layer),
+        )
+        .children([panel])
+    }
+    fn sheet_panel<M>(
+        &self,
+        id: &str,
+        name: &str,
+        role: Role,
+        content: impl IntoIterator<Item = View<M>>,
+        dismiss: Option<M>,
+    ) -> View<M> {
+        let mut style = Style::column()
+            .align(Align::Center)
+            .width(Length::Percent(1.))
+            .padding(16.)
+            .gap(16.)
+            .corners(shape::EXTRA_LARGE_TOP)
+            .background(self.colors.surface_container_low)
+            .clip(true);
+        style.max_width = Length::Px(640.);
+        let mut children = vec![box_view(
+            Style::default()
+                .width(Length::Px(32.))
+                .height(Length::Px(4.))
+                .corners(Corners::all(2.))
+                .background(self.colors.on_surface_variant),
+        )];
+        children.extend(content);
+        let panel =
+            View::new(Node::new(role, name).id(id).tab_index(-1).styled(style)).children(children);
+        match dismiss {
+            Some(dismiss) => panel.modal(dismiss),
+            None => panel,
+        }
+    }
     pub fn menu_item<M>(&self, id: &str, text: &str, disabled: bool, message: M) -> View<M> {
         View::new(
             Node::new(Role::MenuItem, text)
