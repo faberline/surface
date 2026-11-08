@@ -8,6 +8,7 @@ mod tokens;
 pub mod typography;
 pub use components::{
     ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind,
+    SegmentPosition,
 };
 pub use tokens::ColorScheme;
 

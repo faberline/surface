@@ -21,6 +21,13 @@ pub enum CheckValue {
     Mixed,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SegmentPosition {
+    First,
+    Middle,
+    Last,
+    Only,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IconButtonKind {
     Standard,
     Filled,
@@ -66,6 +73,14 @@ fn label<M>(text: &str, color: Color, size: f32) -> View<M> {
 }
 fn box_view<M>(style: Style) -> View<M> {
     View::new(Node::new(Role::Group, "").styled(style))
+}
+fn segment_corners(position: SegmentPosition) -> Corners {
+    match position {
+        SegmentPosition::First => Corners::start(20.),
+        SegmentPosition::Last => Corners::end(20.),
+        SegmentPosition::Middle => shape::NONE,
+        SegmentPosition::Only => shape::FULL,
+    }
 }
 fn offset(left: Length, top: Length) -> Insets {
     Insets {
@@ -431,6 +446,60 @@ impl Theme {
         .children(children)
         .roving(Roving::horizontal(false))
     }
+    pub fn segment<M>(
+        &self,
+        id: &str,
+        text: &str,
+        position: SegmentPosition,
+        state: ChoiceState,
+        message: M,
+    ) -> View<M> {
+        let (background, foreground) = if state.selected {
+            (self.tonal, self.on_tonal)
+        } else {
+            (Color::TRANSPARENT, self.on_container)
+        };
+        let mut children = Vec::new();
+        if state.selected {
+            children.push(label("✓", foreground, 18.));
+        }
+        children.push(label(
+            text,
+            if state.disabled {
+                self.outline
+            } else {
+                foreground
+            },
+            14.,
+        ));
+        View::new(
+            Node::new(Role::Button, text)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .styled(
+                    Style::row()
+                        .padding(12.)
+                        .height(Length::Px(40.))
+                        .gap(8.)
+                        .align(Align::Center)
+                        .justify(Align::Center)
+                        .background(if state.disabled {
+                            self.disabled
+                        } else {
+                            background
+                        })
+                        .foreground(self.primary)
+                        .state_layer(foreground)
+                        .border(1., self.outline)
+                        .corners(segment_corners(position))
+                        .transition(STATE_CHANGE),
+                ),
+        )
+        .children(children)
+        .on_press(message)
+    }
+
     fn choice<M>(
         &self,
         id: &str,
