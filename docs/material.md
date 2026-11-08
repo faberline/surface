@@ -151,6 +151,7 @@ does not change application state.
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices |
 | `switch` | Controlled on/off choice and disabled state |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
+| `segment` | Position-aware segment: round outer ends, square inner edges, check mark when selected; single or multi select owned by the application |
 | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |

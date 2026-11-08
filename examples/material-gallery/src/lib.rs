@@ -2,7 +2,7 @@ use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
 use surface_material::{
     ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind, LoadingKind,
-    Theme,
+    SegmentPosition, Theme,
 };
 
 pub struct Gallery {
@@ -269,6 +269,33 @@ impl Application for Gallery {
                                 None,
                             ),
                         ]),
+                        t.segmented_buttons(
+                            "segments-multi",
+                            "樣式",
+                            [
+                                t.segment(
+                                    "seg-a",
+                                    "日",
+                                    SegmentPosition::First,
+                                    choice(true),
+                                    Message::Click,
+                                ),
+                                t.segment(
+                                    "seg-b",
+                                    "週",
+                                    SegmentPosition::Middle,
+                                    choice(false),
+                                    Message::Click,
+                                ),
+                                t.segment(
+                                    "seg-c",
+                                    "月",
+                                    SegmentPosition::Last,
+                                    choice(true),
+                                    Message::Click,
+                                ),
+                            ],
+                        ),
                         t.row([
                             t.fab(
                                 "fab-small",
