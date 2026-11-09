@@ -1,8 +1,8 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
 use surface_material::{
-    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind,
-    LoadingKind, SegmentPosition, Theme,
+    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
+    IconButtonKind, LoadingKind, SegmentPosition, Theme,
 };
 
 pub struct Gallery {
@@ -485,6 +485,8 @@ impl Application for Gallery {
                     "outlined-card",
                     [t.text("outlined-description", "Outlined card · 共用的色彩與形狀")],
                 ));
+                children.push(t.divider_with("inset-divider", DividerKind::Inset));
+                children.push(t.divider_with("middle-inset-divider", DividerKind::MiddleInset));
                 children.push(t.action_card(
                     "elevated-action-card",
                     "Elevated action card",
