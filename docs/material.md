@@ -153,7 +153,7 @@ does not change application state.
 | `loading_indicator` | Default and contained; light and dark; phase set by the application; shape cycle by corner radius, no rotation or polygon morph yet |
 | `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
-| `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices |
+| `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
 | `switch` | Controlled on/off choice and disabled state |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
 | `segment` | Position-aware segment: round outer ends, square inner edges, check mark when selected; single or multi select owned by the application |
