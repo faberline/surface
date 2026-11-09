@@ -102,7 +102,9 @@ impl<A: Application> WebInput<A> {
         textarea.set_spellcheck(false);
         textarea.set_attribute("autocomplete", "off")?;
         textarea.set_attribute("autocapitalize", "off")?;
-        textarea.style().set_css_text("position:fixed;opacity:0;width:1px;height:24px;padding:0;border:0;resize:none;pointer-events:none;overflow:hidden;z-index:-1;");
+        textarea
+            .style()
+            .set_css_text(&crate::host_style::caret_css(0., 0., 24.));
         document.body().unwrap().append_child(&textarea)?;
         let composing = Rc::new(Cell::new(false));
         let switching = Rc::new(Cell::new(false));
@@ -498,18 +500,13 @@ impl<A: Application> WebInput<A> {
         let _ = self.textarea.set_attribute("aria-label", &snapshot.label);
         if let (Some(caret), Some(canvas)) = (snapshot.caret, self.window.canvas()) {
             let bounds = canvas.get_bounding_client_rect();
-            let _ = self
-                .textarea
+            self.textarea
                 .style()
-                .set_property("left", &format!("{}px", bounds.left() + caret.x as f64));
-            let _ = self
-                .textarea
-                .style()
-                .set_property("top", &format!("{}px", bounds.top() + caret.y as f64));
-            let _ = self
-                .textarea
-                .style()
-                .set_property("height", &format!("{}px", caret.height.max(1.)));
+                .set_css_text(&crate::host_style::caret_css(
+                    bounds.left() + caret.x as f64,
+                    bounds.top() + caret.y as f64,
+                    caret.height,
+                ));
         }
         if !self.composing.get() && !snapshot.composing {
             if self.textarea.value() != snapshot.value {
