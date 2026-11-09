@@ -106,6 +106,7 @@ impl<A: Application> WebInput<A> {
         document.body().unwrap().append_child(&textarea)?;
         let composing = Rc::new(Cell::new(false));
         let switching = Rc::new(Cell::new(false));
+        let press = Rc::new(RefCell::new(crate::press_guard::PressGuard::default()));
         let text = Rc::new(RefCell::new(String::new()));
         let base = Rc::new(Cell::new(0usize));
         let owner = Rc::new(RefCell::new(None::<String>));
@@ -126,11 +127,13 @@ impl<A: Application> WebInput<A> {
             let composing = composing.clone();
             let owner = owner.clone();
             let ignore_input = ignore_input.clone();
+            let press = press.clone();
             bridge.listen_with_capture(
                 canvas.unchecked_into(),
                 "pointerdown",
                 true,
                 move |_| {
+                    press.borrow_mut().press();
                     if composing.replace(false) {
                         // Browser focus defaults can commit before winit delivers
                         // the Rust pointer event. Cancel before that default runs.
@@ -388,8 +391,14 @@ impl<A: Application> WebInput<A> {
             let window = window.clone();
             let composing = composing.clone();
             let switching = switching.clone();
+            let press = press.clone();
             bridge.listen(target, "blur", move |_| {
                 if switching.get() {
+                    return;
+                }
+                // The browser blurs the textarea inside a canvas press (Safari).
+                // Dropping that blur keeps the press that PointerUp activates.
+                if !press.borrow().forwards_blur() {
                     return;
                 }
                 composing.set(false);
@@ -407,6 +416,15 @@ impl<A: Application> WebInput<A> {
                     composing.set(false);
                     dispatch(&runtime, &window, Event::Blur);
                 },
+            )?;
+        }
+        for name in ["pointerup", "pointercancel"] {
+            let press = press.clone();
+            bridge.listen_with_capture(
+                web_sys::window().unwrap().unchecked_into(),
+                name,
+                true,
+                move |_| press.borrow_mut().release(),
             )?;
         }
         Ok(bridge)
