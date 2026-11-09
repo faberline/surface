@@ -387,10 +387,22 @@ impl Theme {
         .on_press(message)
     }
     pub fn radio<M>(&self, id: &str, text: &str, state: ChoiceState, message: M) -> View<M> {
-        let color = if state.disabled {
+        let ring = if state.disabled {
+            self.outline
+        } else if state.selected {
+            self.primary
+        } else {
+            self.colors.on_surface_variant
+        };
+        let dot = if state.disabled {
             self.outline
         } else {
             self.primary
+        };
+        let label_color = if state.disabled {
+            self.outline
+        } else {
+            self.on_container
         };
         View::new(
             Node::new(Role::Radio, text)
@@ -406,7 +418,7 @@ impl Theme {
                     .height(Length::Px(20.))
                     .padding(5.)
                     .corners(shape::FULL)
-                    .border(2., color)
+                    .border(2., ring)
                     .transition(STATE_CHANGE),
             )
             .children([box_view(
@@ -415,13 +427,13 @@ impl Theme {
                     .height(Length::Px(10.))
                     .corners(shape::FULL)
                     .background(if state.selected {
-                        color
+                        dot
                     } else {
                         Color::TRANSPARENT
                     })
                     .transition(STATE_CHANGE),
             )]),
-            label(text, self.on_container, 16.),
+            label(text, label_color, 16.),
         ])
         .on_press(message)
     }
