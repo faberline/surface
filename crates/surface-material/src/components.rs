@@ -1335,6 +1335,63 @@ impl Theme {
         )])
         .on_press(message)
     }
+    pub fn menu_item_with<M>(
+        &self,
+        id: &str,
+        text: &str,
+        leading: Option<&str>,
+        trailing: Option<&str>,
+        state: ChoiceState,
+        message: M,
+    ) -> View<M> {
+        let text_color = if state.disabled {
+            self.outline
+        } else if state.selected {
+            self.colors.on_secondary_container
+        } else {
+            self.on_container
+        };
+        let muted = if state.disabled {
+            self.outline
+        } else if state.selected {
+            self.colors.on_secondary_container
+        } else {
+            self.colors.on_surface_variant
+        };
+        let mut children = Vec::new();
+        if let Some(glyph) = leading {
+            children.push(label(glyph, muted, 24.));
+        }
+        children.push(label(text, text_color, 14.));
+        if let Some(shortcut) = trailing {
+            children.push(box_view(Style::default().grow(1.)));
+            children.push(label(shortcut, muted, 14.));
+        }
+        View::new(
+            Node::new(Role::MenuItem, text)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .styled(
+                    Style::row()
+                        .align(Align::Center)
+                        .gap(12.)
+                        .padding(12.)
+                        .height(Length::Px(48.))
+                        .width(Length::Percent(1.))
+                        .background(if state.selected {
+                            self.colors.secondary_container
+                        } else {
+                            Color::TRANSPARENT
+                        })
+                        .foreground(self.primary)
+                        .state_layer(text_color)
+                        .transition(STATE_CHANGE),
+                ),
+        )
+        .children(children)
+        .on_press(message)
+    }
     pub fn menu_at<M>(
         &self,
         id: &str,
