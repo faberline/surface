@@ -7,8 +7,8 @@ pub mod shape;
 mod tokens;
 pub mod typography;
 pub use components::{
-    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind,
-    LoadingKind, SegmentPosition,
+    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
+    IconButtonKind, LoadingKind, SegmentPosition,
 };
 pub use tokens::ColorScheme;
 

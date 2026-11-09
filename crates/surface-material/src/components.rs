@@ -42,6 +42,12 @@ pub enum ChipKind {
     Input,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DividerKind {
+    Full,
+    Inset,
+    MiddleInset,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FabSize {
     Small,
     Regular,
@@ -1362,6 +1368,49 @@ impl Theme {
                     .height(Length::Px(1.))
                     .background(self.colors.outline_variant),
             ),
+        )
+    }
+    pub fn divider_with<M>(&self, id: &str, kind: DividerKind) -> View<M> {
+        match kind {
+            DividerKind::Full => self.divider(id),
+            DividerKind::Inset | DividerKind::MiddleInset => {
+                let spacer = || {
+                    View::new(
+                        Node::new(Role::Group, "Divider spacer")
+                            .styled(Style::default().width(Length::Px(16.))),
+                    )
+                };
+                let line = View::new(
+                    Node::new(Role::Separator, "Divider").id(id).styled(
+                        Style::default()
+                            .height(Length::Px(1.))
+                            .grow(1.)
+                            .background(self.colors.outline_variant),
+                    ),
+                );
+                let mut items = vec![spacer(), line];
+                if kind == DividerKind::MiddleInset {
+                    items.push(spacer());
+                }
+                View::new(
+                    Node::new(Role::Group, "Divider inset")
+                        .id(format!("{id}-inset"))
+                        .styled(Style::row().width(Length::Percent(1.))),
+                )
+                .children(items)
+            }
+        }
+    }
+    pub fn vertical_divider<M>(&self, id: &str) -> View<M> {
+        View::new(
+            Node::new(Role::Separator, "Vertical divider")
+                .id(id)
+                .styled(
+                    Style::default()
+                        .width(Length::Px(1.))
+                        .height(Length::Percent(1.))
+                        .background(self.colors.outline_variant),
+                ),
         )
     }
     pub fn outlined_card<M>(
