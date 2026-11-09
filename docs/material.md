@@ -161,6 +161,7 @@ does not change application state.
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
+| `dialog_with` | Basic dialog with optional icon, headline, supporting text, actions; container `surface_container_high`, scrim from `colors.scrim`; no full-screen variant, shadow or motion yet |
 | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
 | `divider` | One-pixel semantic separator |
 | `card` / `outlined_card` | Filled and outlined containers |

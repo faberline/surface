@@ -617,13 +617,12 @@ impl Application for Gallery {
             }
         }
         if self.dialog {
-            children.push(t.dialog(
+            children.push(t.dialog_with(
                 "rename-dialog",
+                Some("✎"),
                 "重新命名",
-                [
-                    t.text("dialog-help", "輸入新名稱。取消會保留原名稱。"),
-                    t.text_field("dialog-name", "名稱", &self.draft, Message::Draft),
-                ],
+                "輸入新名稱。取消會保留原名稱。",
+                [t.text_field("dialog-name", "名稱", &self.draft, Message::Draft)],
                 [
                     t.button_with(
                         "dialog-cancel",
