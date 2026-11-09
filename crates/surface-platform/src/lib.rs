@@ -6,6 +6,8 @@ mod ime_session;
 mod key_order;
 mod keyboard;
 mod motion;
+#[cfg(any(target_arch = "wasm32", test))]
+mod press_guard;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
