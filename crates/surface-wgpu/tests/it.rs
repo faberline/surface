@@ -213,6 +213,25 @@ fn chinese_font_and_shaped_editing_geometry_have_real_glyphs() {
 }
 
 #[test]
+fn subset_font_keeps_the_chinese_text_the_tests_use() {
+    let mut text = TextSystem::with_cjk_font(include_bytes!("../assets/NotoSansCJKtc-Subset.otf"));
+    assert_eq!(
+        text.missing_glyphs("繁體中文简体汉语ㄅㄆㄇㄓㄨㄥ✓−×，。「」、"),
+        0
+    );
+    assert_eq!(text.missing_glyphs("ㄓㄨㄥ"), 0);
+}
+
+#[test]
+fn subset_font_is_a_real_subset() {
+    let mut text = TextSystem::with_cjk_font(include_bytes!("../assets/NotoSansCJKtc-Subset.otf"));
+    assert_eq!(text.missing_glyphs("龘"), 1);
+    assert!(include_bytes!("../assets/NotoSansCJKtc-Subset.otf").len() < 5_000_000);
+    #[cfg(not(target_arch = "wasm32"))]
+    assert_eq!(TextSystem::default().missing_glyphs("龘"), 0);
+}
+
+#[test]
 fn bundled_font_measures_repeated_text_and_wraps_at_the_paint_width() {
     let mut text = TextSystem::default();
     let wide = text.measure("Surface Rust application", 16., Some(600.));

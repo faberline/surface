@@ -54,8 +54,10 @@ and web events into the same `surface_app::Event` values.
 
 `surface-wgpu` owns the device, queue, shaders, font database, glyph atlas,
 and text renderers. It supports native and WebGPU adapters through wgpu.
-Its default font database contains bundled Tuffy and Noto Sans CJK TC. Call
-`TextSystem::add_font` before the first render for other script coverage.
+Its default font database contains bundled Tuffy and Noto Sans CJK TC. The
+browser build bundles a Big5-common subset of the CJK font; see
+`docs/web-font.md`. Call `TextSystem::add_font` before the first render for
+other script coverage.
 The editor and renderer share shaped caret and selection geometry.
 See [text input](text-input.md) for the tested input paths and remaining gates.
 
