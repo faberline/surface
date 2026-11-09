@@ -18,6 +18,7 @@ pub struct Gallery {
     pub input_chip: bool,
     pub dialog: bool,
     pub menu: bool,
+    pub sheet: bool,
     pub name: String,
     pub draft: String,
     pub rail: usize,
@@ -39,6 +40,7 @@ impl Default for Gallery {
             input_chip: true,
             dialog: false,
             menu: false,
+            sheet: false,
             name: "Surface".into(),
             draft: String::new(),
             rail: 0,
@@ -64,6 +66,7 @@ pub enum Message {
     RemoveChip,
     Dialog(bool),
     Menu(bool),
+    Sheet(bool),
     Draft(String),
     Save,
 }
@@ -101,6 +104,7 @@ impl Application for Gallery {
                 }
             }
             Message::Menu(v) => self.menu = v,
+            Message::Sheet(v) => self.sheet = v,
             Message::Draft(v) => self.draft = v,
             Message::Save => {
                 self.name = self.draft.clone();
@@ -552,6 +556,13 @@ impl Application for Gallery {
                                 false,
                                 Message::Menu(true),
                             ),
+                            t.button_with(
+                                "open-sheet",
+                                "開啟底部面板",
+                                ButtonKind::Outlined,
+                                false,
+                                Message::Sheet(true),
+                            ),
                         ]),
                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
                     ],
@@ -629,6 +640,23 @@ impl Application for Gallery {
                     t.menu_item("menu-close", "關閉選單", false, Message::Menu(false)),
                 ],
                 Message::Menu(false),
+            ));
+        }
+        if self.sheet {
+            children.push(t.modal_bottom_sheet(
+                "gallery-sheet",
+                "底部面板",
+                [
+                    t.text("sheet-help", "這是底部面板。"),
+                    t.button_with(
+                        "sheet-close",
+                        "關閉",
+                        ButtonKind::Text,
+                        false,
+                        Message::Sheet(false),
+                    ),
+                ],
+                Message::Sheet(false),
             ));
         }
         t.page(children)
