@@ -48,6 +48,12 @@ pub enum FabSize {
     Large,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CardKind {
+    Elevated,
+    Filled,
+    Outlined,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FabColor {
     Surface,
     Primary,
@@ -1285,6 +1291,61 @@ impl Theme {
             ),
         )
         .children(children)
+    }
+    /// A card with one of the three M3 container kinds. `name` is the accessible name.
+    pub fn card_with<M>(
+        &self,
+        id: &str,
+        name: &str,
+        kind: CardKind,
+        children: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::Group, name)
+                .id(id)
+                .styled(self.card_style(kind, false)),
+        )
+        .children(children)
+    }
+    /// A pressable card. It is a button with focus, press and disabled states.
+    #[allow(clippy::too_many_arguments)]
+    pub fn action_card<M>(
+        &self,
+        id: &str,
+        name: &str,
+        kind: CardKind,
+        disabled: bool,
+        message: M,
+        children: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        View::new(
+            Node::new(Role::Button, name)
+                .id(id)
+                .disabled(disabled)
+                .styled(self.card_style(kind, disabled)),
+        )
+        .children(children)
+        .on_press(message)
+    }
+    fn card_style(&self, kind: CardKind, disabled: bool) -> Style {
+        let style = Style::column()
+            .padding(16.)
+            .gap(8.)
+            .corners(shape::MEDIUM)
+            .foreground(self.colors.on_surface)
+            .state_layer(self.colors.on_surface);
+        let style = match kind {
+            CardKind::Elevated => style.background(self.colors.surface_container_low),
+            CardKind::Filled => style.background(self.colors.surface_container_highest),
+            CardKind::Outlined => style
+                .background(self.colors.surface)
+                .border(1., self.colors.outline_variant),
+        };
+        if disabled {
+            style.background(self.disabled).foreground(self.outline)
+        } else {
+            style
+        }
     }
     /// A transient interaction layer over an opaque component surface.
     pub fn state_layer(

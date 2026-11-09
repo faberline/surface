@@ -164,6 +164,7 @@ does not change application state.
 | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
 | `divider` | One-pixel semantic separator |
 | `card` / `outlined_card` | Filled and outlined containers |
+| `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 
 The short `button`, `tonal_button`, `disabled_button` and `checkbox`
