@@ -163,6 +163,7 @@ does not change application state.
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
 | `dialog_with` | Basic dialog with optional icon, headline, supporting text, actions; container `surface_container_high`, scrim from `colors.scrim`; no full-screen variant, shadow or motion yet |
 | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
+| `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
 | `divider` | One-pixel semantic separator |
 | `divider_with` / `vertical_divider` | Full, inset and middle-inset horizontal dividers and a vertical divider; 1 dp, `outline_variant`; no list or sheet integration yet |
 | `card` / `outlined_card` | Filled and outlined containers |
