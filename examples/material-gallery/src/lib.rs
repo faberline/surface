@@ -1,8 +1,8 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
 use surface_material::{
-    ButtonKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind, LoadingKind,
-    SegmentPosition, Theme,
+    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, FabColor, FabSize, IconButtonKind,
+    LoadingKind, SegmentPosition, Theme,
 };
 
 pub struct Gallery {
@@ -484,6 +484,20 @@ impl Application for Gallery {
                 children.push(t.outlined_card(
                     "outlined-card",
                     [t.text("outlined-description", "Outlined card · 共用的色彩與形狀")],
+                ));
+                children.push(t.action_card(
+                    "elevated-action-card",
+                    "Elevated action card",
+                    CardKind::Elevated,
+                    false,
+                    Message::Click,
+                    [t.text("elevated-description", "Elevated card · 可點擊")],
+                ));
+                children.push(t.card_with(
+                    "filled-card",
+                    "Filled card",
+                    CardKind::Filled,
+                    [t.text("filled-description", "Filled card")],
                 ));
                 children.push(
                     t.card(
