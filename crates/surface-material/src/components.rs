@@ -1155,6 +1155,95 @@ impl Theme {
         )
         .children([panel])
     }
+    /// Basic dialog with an optional icon, a headline, optional supporting
+    /// text, extra content and actions, using the M3 dialog tokens.
+    #[allow(clippy::too_many_arguments)]
+    pub fn dialog_with<M>(
+        &self,
+        id: &str,
+        icon: Option<&str>,
+        headline: &str,
+        supporting: &str,
+        extra: impl IntoIterator<Item = View<M>>,
+        actions: impl IntoIterator<Item = View<M>>,
+        dismiss: M,
+    ) -> View<M> {
+        let mut content = Vec::new();
+        if let Some(glyph) = icon {
+            content.push(
+                View::new(
+                    Node::new(Role::Group, "Dialog icon")
+                        .id(format!("{id}-icon"))
+                        .styled(Style::default().align(Align::Center)),
+                )
+                .children([label(glyph, self.colors.secondary, 24.)]),
+            );
+        }
+        content.push(View::new(
+            Node::new(Role::Heading, headline)
+                .id(format!("{id}-headline"))
+                .text(headline)
+                .styled(
+                    Style::default()
+                        .with_text_style(typography::HEADLINE_SMALL)
+                        .foreground(self.colors.on_surface),
+                ),
+        ));
+        if !supporting.is_empty() {
+            content.push(View::new(
+                Node::new(Role::Text, supporting)
+                    .id(format!("{id}-supporting"))
+                    .text(supporting)
+                    .styled(
+                        Style::default()
+                            .with_text_style(typography::BODY_MEDIUM)
+                            .foreground(self.colors.on_surface_variant),
+                    ),
+            ));
+        }
+        content.extend(extra);
+        content.push(
+            View::new(
+                Node::new(Role::Group, "Dialog actions")
+                    .styled(Style::row().gap(8.).justify(Align::End).wrap(true)),
+            )
+            .children(actions),
+        );
+        let mut style = Style::column()
+            .width(Length::Percent(1.))
+            .padding(24.)
+            .gap(16.)
+            .corners(shape::EXTRA_LARGE)
+            .background(self.colors.surface_container_high)
+            .clip(true);
+        style.max_width = Length::Px(560.);
+        style.max_height = Length::Percent(1.);
+        if icon.is_some() {
+            style.align = Align::Center;
+        }
+        let panel = View::new(
+            Node::new(Role::Dialog, headline)
+                .id(id)
+                .tab_index(-1)
+                .styled(style),
+        )
+        .children(content)
+        .modal(dismiss);
+        let sc = self.colors.scrim;
+        let mut layer = Style::default()
+            .fixed(Insets::all(0.))
+            .padding(24.)
+            .align(Align::Center)
+            .justify(Align::Center)
+            .background(Color(sc.0, sc.1, sc.2, 82));
+        layer.z_index = 1000;
+        View::new(
+            Node::new(Role::Group, "Dialog overlay")
+                .id(format!("{id}-layer"))
+                .styled(layer),
+        )
+        .children([panel])
+    }
     pub fn bottom_sheet<M>(
         &self,
         id: &str,
