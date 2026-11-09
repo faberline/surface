@@ -169,6 +169,7 @@ does not change application state.
 | `card` / `outlined_card` | Filled and outlined containers |
 | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
+| `search_bar` | Pill search bar with leading glyph, controlled text input and a clear button while the query is not empty; no search view, suggestions or placeholder yet |
 
 The short `button`, `tonal_button`, `disabled_button` and `checkbox`
 methods call the same implementations. Button and chip containers paint

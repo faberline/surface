@@ -1482,6 +1482,63 @@ impl Theme {
                 ),
         )
     }
+    pub fn search_bar<M>(
+        &self,
+        id: &str,
+        name: &str,
+        query: &str,
+        leading: &str,
+        on_input: impl Fn(String) -> M + 'static,
+        clear: M,
+    ) -> View<M> {
+        let input = View::new(
+            Node::new(Role::TextInput, name)
+                .id(format!("{id}-input"))
+                .text(query)
+                .styled(
+                    Style::default()
+                        .with_text_style(typography::BODY_LARGE)
+                        .grow(1.)
+                        .foreground(self.colors.on_surface),
+                ),
+        )
+        .on_input(on_input);
+        let mut children = vec![label(leading, self.colors.on_surface_variant, 24.), input];
+        if !query.is_empty() {
+            children.push(
+                View::new(
+                    Node::new(Role::Button, "Clear")
+                        .id(format!("{id}-clear"))
+                        .styled(
+                            Style::row()
+                                .align(Align::Center)
+                                .justify(Align::Center)
+                                .width(Length::Px(40.))
+                                .height(Length::Px(40.))
+                                .corners(shape::FULL)
+                                .foreground(self.primary)
+                                .state_layer(self.colors.on_surface_variant)
+                                .transition(STATE_CHANGE),
+                        ),
+                )
+                .children([label("×", self.colors.on_surface_variant, 24.)])
+                .on_press(clear),
+            );
+        }
+        View::new(
+            Node::new(Role::Group, name).id(id).styled(
+                Style::row()
+                    .align(Align::Center)
+                    .gap(16.)
+                    .padding(16.)
+                    .height(Length::Px(56.))
+                    .width(Length::Percent(1.))
+                    .corners(shape::FULL)
+                    .background(self.colors.surface_container_high),
+            ),
+        )
+        .children(children)
+    }
     pub fn outlined_card<M>(
         &self,
         id: &str,
