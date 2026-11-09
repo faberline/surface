@@ -7,6 +7,10 @@ use surface::{FontFamily, Rect, TextCluster, TextLayout, TextMeasurer, TextStyle
 /// with it, and `add_font` only widens the default family's weights for faces
 /// that carry this name.
 const DEFAULT_FAMILY: &str = "Tuffy";
+#[cfg(target_arch = "wasm32")]
+const CJK_FONT: &[u8] = include_bytes!("../assets/NotoSansCJKtc-Subset.otf");
+#[cfg(not(target_arch = "wasm32"))]
+const CJK_FONT: &[u8] = include_bytes!("../assets/NotoSansCJKtc-Regular.otf");
 
 /// Shared deterministic fonts and shaping for layout and both renderer hosts.
 ///
@@ -44,16 +48,22 @@ pub struct TextSystem {
     /// count as regular, so this starts as `[400]`.
     weights: Vec<u16>,
 }
-impl Default for TextSystem {
-    fn default() -> Self {
+impl TextSystem {
+    /// Build the default font database with `cjk` as the CJK face, without copying it.
+    pub fn with_cjk_font(cjk: &'static [u8]) -> Self {
         let mut db = glyphon::fontdb::Database::new();
         db.load_font_data(include_bytes!("../assets/Tuffy.ttf").to_vec());
-        db.load_font_data(include_bytes!("../assets/NotoSansCJKtc-Regular.otf").to_vec());
+        db.load_font_source(glyphon::fontdb::Source::Binary(Arc::new(cjk)));
         db.set_sans_serif_family(DEFAULT_FAMILY);
         Self {
             fonts: FontSystem::new_with_locale_and_db("zh-TW".to_owned(), db),
             weights: vec![TextStyle::WEIGHT_REGULAR],
         }
+    }
+}
+impl Default for TextSystem {
+    fn default() -> Self {
+        Self::with_cjk_font(CJK_FONT)
     }
 }
 /// cosmic-text rejects a zero line height. Layout validation already refuses
