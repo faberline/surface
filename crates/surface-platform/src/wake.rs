@@ -1,3 +1,43 @@
+//! Cross-thread wake. Many calls coalesce into one pending event.
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+
+struct Inner {
+    pending: AtomicBool,
+    notify: Box<dyn Fn() + Send + Sync>,
+}
+
+/// Asks the event loop for one `Application::wake` and one redraw.
+///
+/// `Clone + Send + Sync`: call it from any thread, on native and on the web.
+/// It is cheap. While a wake is pending, further calls only read an atomic
+/// flag. The host clears the flag before it calls `wake`, so a call made
+/// during `wake` schedules one more. A call is never lost.
+#[derive(Clone)]
+pub struct WakeHandle(Arc<Inner>);
+
+impl WakeHandle {
+    pub(crate) fn new(notify: impl Fn() + Send + Sync + 'static) -> Self {
+        Self(Arc::new(Inner {
+            pending: AtomicBool::new(false),
+            notify: Box::new(notify),
+        }))
+    }
+    /// Request one update on the event loop. Safe from any thread.
+    pub fn wake(&self) {
+        if !self.0.pending.swap(true, Ordering::AcqRel) {
+            (self.0.notify)();
+        }
+    }
+    /// The host calls this when it takes the pending wake, before it runs
+    /// the app.
+    pub(crate) fn acknowledge(&self) {
+        self.0.pending.store(false, Ordering::Release);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

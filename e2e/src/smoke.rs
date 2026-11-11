@@ -10,7 +10,7 @@ use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
     "S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10", "S11", "S12", "S13", "S14", "S15",
-    "S16",
+    "S16", "S17", "S18", "S19",
 ];
 
 /// Click the center of a semantic control, as the old `click(id)`.
@@ -172,5 +172,45 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     });
     env.write_json("browser-smoke.json", &evidence)?;
     println!("  evidence: {evidence}");
+
+    // Out-of-band write (issue #102, migration step 12): a JS timer writes
+    // state and wakes the host. No input event is involved.
+    step("S17", "navigator.gpu asserted before the timer write");
+    check!(
+        tab.eval("!!navigator.gpu").await? == true,
+        "navigator.gpu is missing"
+    );
+    let before_shot = env.artifact("browser-wake-before.png");
+    tab.screenshot(&before_shot).await?;
+    let before_dom = tab.eval_str("window.showcase.export_dom()").await?;
+    check!(
+        !before_dom.contains("Hello, Timer."),
+        "greeting already changed"
+    );
+
+    step(
+        "S18",
+        "setTimeout write wakes the host: name and DOM change",
+    );
+    tab.eval("setTimeout(() => window.showcase.write_from_timer('Timer'), 50); true")
+        .await?;
+    tab.wait_for(&format!("{inspect}.includes('name=Timer;')"))
+        .await?;
+    tab.wait_for("window.showcase.export_dom().includes('Hello, Timer.')")
+        .await?;
+
+    step(
+        "S19",
+        "the canvas repainted: screenshot differs, no page errors",
+    );
+    tab.settle().await?;
+    let after_shot = env.artifact("browser-wake-after.png");
+    tab.screenshot(&after_shot).await?;
+    check!(
+        std::fs::read(&before_shot)? != std::fs::read(&after_shot)?,
+        "the canvas did not change after the timer write"
+    );
+    let errors = tab.errors();
+    check!(errors.is_empty(), "page errors:\n{}", errors.join("\n"));
     Ok(())
 }

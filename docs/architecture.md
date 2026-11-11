@@ -8,6 +8,25 @@ resolves to a stable control ID, produces a typed message, and calls
 `update`. The runtime rebuilds the view after the update. Components are
 ordinary Rust functions that compose views.
 
+## Out-of-band updates and wake
+
+Input is not the only source of change. Timers, workers and async results
+also change state. Two paths cover them.
+
+- **Same thread.** `Runtime::apply(message)` runs `update` and rebuilds.
+  `Runtime::queue().post(message)` queues a message. A post made inside
+  `update` runs after that `update` returns, in order. It never re-enters
+  `update`. Equal messages do not coalesce; each post runs once.
+- **Any thread.** `surface_platform::run_with_wake(options, |wake| ...)`
+  hands the app a `WakeHandle`. It is `Clone + Send + Sync` and works on
+  native and on the web, so
+  `let f: Arc<dyn Fn() + Send + Sync> = Arc::new(move || wake.wake());`
+  fits a worker callback. The handle carries no message. A wake calls
+  `Application::wake(&mut self)` on the event loop thread; poll your worker
+  there and drain everything that is ready. Many calls coalesce into one
+  pending event, one `wake` call and one redraw. A call made while `wake`
+  runs schedules one more, so the last call is never lost.
+
 `NodeId` is an arena index for the current tree. It is not durable identity.
 Use a stable ID for an interactive node. Duplicate IDs return `DomError`.
 Focus and pending pointer presses store stable IDs. Disabling a container
