@@ -93,9 +93,9 @@ Existing rules stay:
 renderers in a browser, and the core is already host-independent. This is
 the desk's recommendation. It is not a decision.
 
-## Open decisions for the owner
+## Decisions by the owner
 
-These are unanswered.
+All three are decided. The unchosen options stay for history.
 
 - **D-A. Decided 2026-11-11: Yes.** Is desktop a first-class host?
   - Yes (chosen): #102, #103, #104 and #48 go before the Material
