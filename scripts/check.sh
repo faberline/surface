@@ -3,7 +3,7 @@ set -eu
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.cargo/bin:$PATH"
 export CARGO_BUILD_JOBS=2
-python3 -I scripts/check-provenance.py
+cap cargo xtask provenance
 cap cargo fmt --all --check
 cap cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 cap cargo test --locked --workspace --all-features

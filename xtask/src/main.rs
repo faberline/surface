@@ -2,11 +2,15 @@
 //!
 //! `cargo xtask web build <app>` builds a browser package. `web dev`
 //! rebuilds on change and reloads the page. `web serve` serves a built
-//! package with the headers a static host should send.
+//! package with the headers a static host should send. `web e2e` builds
+//! every test input and runs the browser and bridge end-to-end tests.
+//! `provenance` checks docs/provenance.json.
 
 mod apps;
 mod dev;
+mod e2e;
 mod manifest;
+mod provenance;
 mod serve;
 mod tools;
 mod web_build;
@@ -26,6 +30,8 @@ Usage:
   cargo xtask web dev <app> [--features <list>] [--host <addr>] [--port <n>] [--isolate]
   cargo xtask web serve <app> [--release | --dev] [--dir <dir>] [--host <addr>] [--port <n>] [--isolate]
   cargo xtask web apps
+  cargo xtask web e2e [--no-build] [surface-e2e args...]
+  cargo xtask provenance
 
 Apps: showcase, material-gallery.
 
@@ -36,6 +42,12 @@ dev     Builds with --dev, serves it, rebuilds on source changes and
         reloads the page. A failed rebuild keeps the last good build.
 serve   Serves a built package. Hashed files are cached as immutable.
         --isolate adds COOP/COEP headers for cross-origin isolation.
+e2e     Builds both release packages, the devtools gallery (web and native),
+        the compact example and jet-bridge, then runs surface-e2e. Other
+        arguments go to surface-e2e; `--help` lists them.
+provenance
+        Checks docs/provenance.json against the imported Core files and
+        the pinned fonts, after a self-test on a temporary tree.
 ";
 
 fn main() {
@@ -48,7 +60,9 @@ fn main() {
 fn run(args: Vec<String>) -> Result<()> {
     let mut args = args.into_iter();
     match (args.next().as_deref(), args.next().as_deref()) {
+        (Some("web"), Some("e2e")) => e2e::run(&Workspace::locate()?, args.collect()),
         (Some("web"), Some(command)) => web(command, args.collect()),
+        (Some("provenance"), None) => provenance::run(&Workspace::locate()?),
         (None | Some("help" | "--help" | "-h"), _) | (Some("web"), None) => {
             print!("{USAGE}");
             Ok(())

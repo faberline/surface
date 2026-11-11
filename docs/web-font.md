@@ -55,7 +55,7 @@ Bopomofo `ㄅ` to `ㄩ` is in the set. The subset has 6,000 characters.
 ```sh
 python3 -m pip install fonttools==4.68.0
 python3 scripts/subset-font.py
-python3 -I scripts/check-provenance.py
+cap cargo xtask provenance
 ```
 
 The script must print `6000 characters, 3615900 bytes`. When the output
@@ -77,6 +77,6 @@ regenerate when a browser page needs it.
 - `cargo check --target wasm32-unknown-unknown` for the showcase and the
   material gallery passes.
 
-The browser IME test (`scripts/browser-ime.mjs`) was not run. It needs Chrome
+The browser IME test (`cargo xtask web e2e ime`) was not run. It needs Chrome
 and a built package, so a person or browser CI must run it. A successful wasm
 check is not browser proof.

@@ -10,7 +10,10 @@ cargo xtask web build showcase --dev     # dev package, no wasm-opt
 cargo xtask web dev material-gallery     # watch, rebuild, reload
 cargo xtask web serve showcase           # serve the release package
 cargo xtask web apps                     # list the apps
+cargo xtask web e2e                      # build inputs, run browser and bridge tests
 ```
+
+`web e2e` is described in [verification](verification.md#re-run-the-browser-tests).
 
 ## Requirements
 

@@ -1,4 +1,5 @@
 //! Exactly the same state and view are used on desktop and the web.
+use surface::{Length, Node, Role, Style};
 use surface_app::{Application, View};
 use surface_material::Theme;
 
@@ -7,6 +8,7 @@ pub struct Showcase {
     pub count: u32,
     pub dark: bool,
     pub name: String,
+    pub scroll_name: String,
 }
 #[derive(Clone)]
 pub enum Message {
@@ -14,6 +16,8 @@ pub enum Message {
     Reset,
     ToggleTheme,
     Name(String),
+    ScrollName(String),
+    Noop,
 }
 impl Application for Showcase {
     type Message = Message;
@@ -26,6 +30,8 @@ impl Application for Showcase {
             Message::Reset => self.count = 0,
             Message::ToggleTheme => self.dark = !self.dark,
             Message::Name(name) => self.name = name,
+            Message::ScrollName(name) => self.scroll_name = name,
+            Message::Noop => {}
         }
     }
     fn view(&self) -> View<Message> {
@@ -68,6 +74,24 @@ impl Application for Showcase {
                     theme.checkbox("dark-mode", "Dark theme", self.dark, Message::ToggleTheme),
                 ],
             ),
+            View::new(
+                Node::new(Role::Group, "Scroll fixture")
+                    .id("scroll-fixture")
+                    .styled(Style::column().height(Length::Px(160.)).clip(true)),
+            )
+            .children([
+                theme.tonal_button("scroll-first", "Scroll first", Message::Noop),
+                View::new(
+                    Node::new(Role::Group, "Scroll spacer")
+                        .styled(Style::default().height(Length::Px(320.))),
+                ),
+                theme.text_field(
+                    "scroll-name",
+                    "Scroll name",
+                    &self.scroll_name,
+                    Message::ScrollName,
+                ),
+            ]),
             theme.text(
                 "footer",
                 "Use Tab to move focus. Press Enter or Space to activate a control.",
