@@ -328,9 +328,15 @@ impl<A: Application> WebInput<A> {
             let window = window.clone();
             let area = textarea.clone();
             let composing = composing.clone();
+            let press = press.clone();
             bridge.listen(target.clone(), name, move |event| {
                 event.stop_propagation();
                 if composing.get() {
+                    return;
+                }
+                // Safari resets the textarea selection to 0,0 when it takes focus
+                // inside a canvas press. Surface already set the caret from the pointer.
+                if name == "select" && !press.borrow().forwards_select() {
                     return;
                 }
                 let (anchor, cursor) = host_selection(&area);

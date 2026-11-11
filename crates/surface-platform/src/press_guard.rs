@@ -16,6 +16,10 @@ impl PressGuard {
     pub(crate) fn forwards_blur(&self) -> bool {
         !self.pressing
     }
+    /// A textarea select is forwarded unless it lands inside a canvas press.
+    pub(crate) fn forwards_select(&self) -> bool {
+        !self.pressing
+    }
 }
 
 #[cfg(test)]
