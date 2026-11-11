@@ -16,6 +16,10 @@ impl PressGuard {
     pub(crate) fn forwards_blur(&self) -> bool {
         !self.pressing
     }
+    /// A textarea select is forwarded unless it lands inside a canvas press.
+    pub(crate) fn forwards_select(&self) -> bool {
+        !self.pressing
+    }
 }
 
 #[cfg(test)]
@@ -166,5 +170,89 @@ mod tests {
         guard.press();
         guard.release();
         assert!(guard.forwards_blur());
+    }
+
+    /// Focus the name field holding seven 中, blur it, then return the runtime
+    /// and a click point three glyph widths into the field, like a refocus click.
+    fn refocus_setup() -> (Runtime<App>, f32, f32) {
+        let mut r = Runtime::new(App {
+            text: "中中中中中中中".into(),
+            count: 0,
+        })
+        .unwrap();
+        r.render(640., 480., &mut Metrics).unwrap();
+        r.activate("name").unwrap();
+        r.dispatch(Event::Blur).unwrap();
+        r.render(640., 480., &mut Metrics).unwrap();
+        let id = r.dom().by_id("name").unwrap();
+        let b = r.computed().unwrap().nodes[id.index()].bounds;
+        (r, b.x + 12. + 3. * 16., b.y + b.height / 2.)
+    }
+
+    /// UTF-8 offset after three 中.
+    const N: usize = 9;
+
+    fn selection(r: &Runtime<App>) -> (usize, usize) {
+        let s = r.input_snapshot().unwrap().selection;
+        (s.anchor, s.cursor)
+    }
+
+    /// Safari order: pointerdown, textarea select at 0,0, pointerup.
+    fn safari_refocus(guard_on: bool) -> Runtime<App> {
+        let (mut r, x, y) = refocus_setup();
+        let mut guard = PressGuard::default();
+        guard.press();
+        r.dispatch(Event::PointerDown { x, y }).unwrap();
+        if !guard_on || guard.forwards_select() {
+            r.dispatch(Event::Select {
+                anchor: 0,
+                cursor: 0,
+            })
+            .unwrap();
+        }
+        guard.release();
+        r.dispatch(Event::PointerUp { x, y }).unwrap();
+        r
+    }
+
+    #[test]
+    fn safari_refocus_click_keeps_a_collapsed_caret_with_the_guard() {
+        let r = safari_refocus(true);
+        assert_eq!(r.focused(), Some("name"));
+        assert_eq!(selection(&r), (N, N));
+    }
+
+    #[test]
+    fn safari_refocus_click_without_the_guard_selects_from_zero() {
+        let r = safari_refocus(false);
+        assert_eq!(r.focused(), Some("name"));
+        assert_eq!(selection(&r), (0, 0));
+    }
+
+    #[test]
+    fn chrome_refocus_click_keeps_a_collapsed_caret() {
+        let (mut r, x, y) = refocus_setup();
+        r.dispatch(Event::PointerDown { x, y }).unwrap();
+        r.dispatch(Event::PointerUp { x, y }).unwrap();
+        assert_eq!(r.focused(), Some("name"));
+        assert_eq!(selection(&r), (N, N));
+    }
+
+    #[test]
+    fn select_is_forwarded_outside_a_press() {
+        let mut guard = PressGuard::default();
+        assert!(guard.forwards_select());
+        guard.press();
+        assert!(!guard.forwards_select());
+        guard.release();
+        assert!(guard.forwards_select());
+    }
+
+    #[test]
+    fn pointercancel_release_reopens_the_select_path() {
+        let mut guard = PressGuard::default();
+        guard.press();
+        guard.release();
+        assert!(guard.forwards_select());
     }
 }
