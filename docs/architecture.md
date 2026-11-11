@@ -68,3 +68,5 @@ See [text input](text-input.md) for the tested input paths and remaining gates.
 - [glyphon 0.8](https://docs.rs/glyphon/0.8.0/glyphon/) supplies GPU text.
 - [Material color roles](https://m3.material.io/styles/color/roles) guide the
   initial light/dark palette.
+
+Product positioning is a proposal: see [decision 0001](decisions/0001-positioning.md).
