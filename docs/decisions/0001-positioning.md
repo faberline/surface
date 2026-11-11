@@ -1,6 +1,6 @@
 # 0001: Surface product positioning
 
-Status: Partly accepted (D-A decided 2026-11-11; D-B and D-C open)
+Status: Partly accepted (D-A and D-C decided 2026-11-11; D-B open)
 Date: 2026-11-11
 
 This record proposes a layering. It does not decide. The owner answers the
@@ -106,9 +106,11 @@ These are unanswered.
   reports?
   - Yes: no new web features beyond migration steps 9-15 and bug fixes.
   - No: web grows in parallel.
-- **D-C.** Which desktop platforms come first?
-  - macOS only.
-  - macOS, then Windows and Linux (#49, #50).
+- **D-C. Decided 2026-11-11: macOS only (for now).** Which desktop
+  platforms come first?
+  - macOS only (chosen). #49 and #50 stay unscheduled. This does not stop
+    core and host code from staying portable.
+  - macOS, then Windows and Linux (#49, #50) (not chosen).
 
 The Jet part of this is cross-repo. It goes through the planner and
 aw-service-desk. This record does not change Jet.
@@ -124,7 +126,7 @@ Wave 2 is migration steps 9-15. Wave 3 is the Material foundation splits.
   consumer would have had no supported path.
 - **D-B yes:** Wave 2 stays small. Web items outside D1 wait.
 - **D-B no:** web items interleave with Wave 2. Wave 2 may take longer.
-- **D-C macOS only:** #49 and #50 stay unscheduled. Verification stays on
-  one platform.
-- **D-C also Windows/Linux:** #49 and #50 join the desktop slice. Each
-  needs real-device verification (#99).
+- **D-C macOS only (chosen, in effect now):** #49 and #50 stay
+  unscheduled. Verification stays on one platform.
+- **D-C also Windows/Linux (not chosen):** #49 and #50 would join the
+  desktop slice. Each would need real-device verification (#99).
