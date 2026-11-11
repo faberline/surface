@@ -66,3 +66,19 @@ An empty native preedit can precede either commit or cancellation. The
 editor preserves the replacement range for an immediate commit, while
 allowing the next ordinary key when no commit follows. A regression test
 covers both sequences.
+
+## Scroll fixture
+
+The showcase has a scroll fixture for checking the caret, the hidden textarea
+and the candidate panel after a container scrolls. Open the showcase as
+described in `docs/web-build.md`.
+
+- `scroll-fixture` is a clip container, 160 px high.
+- `scroll-first` is a button above the field, inside the container.
+- `scroll-name` is a text field below the visible part of the container.
+
+To reveal the field, press Tab from `dark-mode` twice. Focus reveal then
+scrolls the container. You can also wheel over `scroll-fixture`.
+
+The existing `name` field is unchanged. #51 can rerun its real-input scroll
+steps with these ids. This fixture is not browser qualification.
