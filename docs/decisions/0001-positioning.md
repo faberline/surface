@@ -1,10 +1,10 @@
 # 0001: Surface product positioning
 
-Status: Partly accepted (D-A and D-C decided 2026-11-11; D-B open)
+Status: Accepted (D-A, D-B, D-C decided 2026-11-11)
 Date: 2026-11-11
 
-This record proposes a layering. It does not decide. The owner answers the
-open decisions in the last sections.
+This record proposes a layering. The owner has now decided D-A, D-B and
+D-C (see the last sections).
 
 ## Context
 
@@ -102,10 +102,12 @@ These are unanswered.
     foundations.
   - No (not chosen): desktop stays best-effort, and the infera consumer
     waits.
-- **D-B.** Is the web host scope limited to what D1 needs until D1
-  reports?
-  - Yes: no new web features beyond migration steps 9-15 and bug fixes.
-  - No: web grows in parallel.
+- **D-B. Decided 2026-11-11: Yes.** Until D1 reports, the web host takes
+  only migration steps 9-15 and bug fixes. Is the web host scope limited
+  to what D1 needs until D1 reports?
+  - Yes (chosen): no new web features beyond migration steps 9-15 and bug
+    fixes.
+  - No (not chosen): web grows in parallel.
 - **D-C. Decided 2026-11-11: macOS only (for now).** Which desktop
   platforms come first?
   - macOS only (chosen). #49 and #50 stay unscheduled. This does not stop
@@ -124,8 +126,10 @@ Wave 2 is migration steps 9-15. Wave 3 is the Material foundation splits.
   migration step 12, so one change serves both. Wave 3 slips.
 - **D-A no (not chosen):** Wave 2 then Wave 3 as planned. The infera
   consumer would have had no supported path.
-- **D-B yes:** Wave 2 stays small. Web items outside D1 wait.
-- **D-B no:** web items interleave with Wave 2. Wave 2 may take longer.
+- **D-B yes (chosen, in effect now):** Wave 2 stays small. Web items
+  outside D1 wait.
+- **D-B no (not chosen):** web items would interleave with Wave 2. Wave 2
+  may take longer.
 - **D-C macOS only (chosen, in effect now):** #49 and #50 stay
   unscheduled. Verification stays on one platform.
 - **D-C also Windows/Linux (not chosen):** #49 and #50 would join the
