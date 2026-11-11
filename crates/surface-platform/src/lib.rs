@@ -8,6 +8,7 @@ mod ime_session;
 mod key_order;
 mod keyboard;
 mod motion;
+mod wake;
 #[cfg(any(target_arch = "wasm32", test))]
 mod press_guard;
 #[cfg(target_arch = "wasm32")]
