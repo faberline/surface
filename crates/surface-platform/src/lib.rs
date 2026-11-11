@@ -121,8 +121,11 @@ impl Gpu {
         self.surface.configure(&self.renderer.device, &self.config);
     }
 }
-/// The web proxy holds `Rc` state, so it is not `Send` there. The wasm32
-/// target has one thread (no atomics), so no other thread can call it.
+/// On wasm32 `EventLoopProxy<UserEvent>` is not `Send`: `UserEvent` carries
+/// wasm-only payloads that are not `Send` (`Ready`). The proxy's own waker is
+/// thread-safe, and wasm32 here has one thread (no atomics). Sound only
+/// because this wrapper sends the payload-free `UserEvent::Wake`. Never send
+/// a variant with a payload through it.
 struct SendProxy(EventLoopProxy<UserEvent>);
 impl SendProxy {
     // A method, so a closure captures the whole wrapper, not its field.
@@ -250,6 +253,8 @@ impl<A: Application> Host<A> {
         } else if let Some(window) = &self.window {
             window.request_redraw();
         }
+        // The app may have changed the focused field, as after an input.
+        self.sync_text_input();
     }
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
         let message = error.to_string();

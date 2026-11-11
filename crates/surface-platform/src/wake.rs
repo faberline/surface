@@ -32,9 +32,11 @@ impl WakeHandle {
         }
     }
     /// The host calls this when it takes the pending wake, before it runs
-    /// the app.
+    /// the app. A swap with `AcqRel`, not a plain store: a worker whose
+    /// `wake` saw the old `true` skipped the notify, so the host must see
+    /// that worker's earlier writes when it reads the app data next.
     pub(crate) fn acknowledge(&self) {
-        self.0.pending.store(false, Ordering::Release);
+        self.0.pending.swap(false, Ordering::AcqRel);
     }
 }
 
@@ -116,10 +118,24 @@ mod tests {
                 }
             })
         };
-        // This thread plays the event loop.
-        while rx.recv_timeout(Duration::from_millis(500)).is_ok() {
-            handle.acknowledge();
-            runtime.wake().unwrap();
+        // This thread plays the event loop. It stops only after the worker
+        // finished and every pending wake is handled, so a slow worker
+        // cannot end the loop early.
+        loop {
+            match rx.recv_timeout(Duration::from_millis(10)) {
+                Ok(()) => {
+                    handle.acknowledge();
+                    runtime.wake().unwrap();
+                }
+                Err(_) if worker.is_finished() => {
+                    if rx.try_recv().is_err() {
+                        break;
+                    }
+                    handle.acknowledge();
+                    runtime.wake().unwrap();
+                }
+                Err(_) => {}
+            }
         }
         worker.join().unwrap();
         let app = runtime.app();

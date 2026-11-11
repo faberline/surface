@@ -198,6 +198,13 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
         .await?;
     tab.wait_for("window.showcase.export_dom().includes('Hello, Timer.')")
         .await?;
+    // A later wake must also arrive: the host cleared the pending flag.
+    tab.eval("setTimeout(() => window.showcase.write_from_timer('Timer2'), 50); true")
+        .await?;
+    tab.wait_for(&format!("{inspect}.includes('name=Timer2;')"))
+        .await?;
+    tab.wait_for("window.showcase.export_dom().includes('Hello, Timer2.')")
+        .await?;
 
     step(
         "S19",
