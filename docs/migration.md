@@ -140,7 +140,7 @@ Steps:
    Needs step 1.
 3. **Surface: freeze the consumer contract, then tag. Done.** PR #56 landed
    as `b3c4917`. It added the compile-only `consumer_contract.rs` test and
-   `scripts/check-provenance.py`. The provenance check verifies the
+   `cargo xtask provenance`. The provenance check verifies the
    [`provenance.json`](provenance.json) hashes. Known divergences are
    listed under `modified_since_import`. The wasm32 step in
    `scripts/check.sh` and in CI checks `ui-runtime` twice, with
@@ -288,7 +288,7 @@ Surface prerequisites:
     (`crates/surface-platform/src/lib.rs:49-53`). Default them to `surface`
     and `status`.
     Gate: browser smoke runs on a page with a non-default canvas id and
-    asserts `navigator.gpu` (`scripts/browser-smoke.mjs:19`).
+    asserts `navigator.gpu` (the `smoke` suite in `e2e/src/smoke.rs`).
 14. **`surface-element` lowering.** Create the crate with `StyleResolver`,
     a `DefaultResolver` with no CSS, and `lower()`. Do not edit the
     provenance-tracked `snapshot.rs`.
@@ -363,7 +363,7 @@ If D1 passes:
 23. **Jet: move `__jet_debug` onto `DomExport` and `DisplayList`.**
     `fiberTree` and `hookValues` keep reading `ui-runtime` debug.
     Gate: Jet's debug tests pass on `surface-render` in a required-GPU run.
-    Surface's `scripts/bridge-e2e.py` passes against a Jet-built page.
+    Surface's `cargo xtask web e2e` bridge suites pass against a Jet-built page.
     Needs step 18.
 24. **Jet: make `surface-render` the default.** Keep the old renderer
     behind a non-default feature for one release.
