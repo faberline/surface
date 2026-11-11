@@ -35,7 +35,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.96.1
         with:
           targets: wasm32-unknown-unknown
-      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev xvfb mesa-vulkan-drivers libvulkan1
+      - run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev xvfb libxkbcommon-x11-0 mesa-vulkan-drivers libvulkan1
       - name: Install wasm-bindgen CLI
         run: cargo install wasm-bindgen-cli --version "$WASM_BINDGEN_VERSION" --locked
       - name: Install wasm-opt

@@ -1,6 +1,9 @@
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{Application, View};
-use surface_material::{ButtonKind, CheckValue, ChipKind, ChoiceState, Theme};
+use surface_material::{
+    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
+    IconButtonKind, LoadingKind, SegmentPosition, Theme,
+};
 
 pub struct Gallery {
     pub section: usize,
@@ -15,8 +18,12 @@ pub struct Gallery {
     pub input_chip: bool,
     pub dialog: bool,
     pub menu: bool,
+    pub sheet: bool,
     pub name: String,
     pub draft: String,
+    pub rail: usize,
+    pub drawer: usize,
+    pub nav: usize,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -33,14 +40,21 @@ impl Default for Gallery {
             input_chip: true,
             dialog: false,
             menu: false,
+            sheet: false,
             name: "Surface".into(),
             draft: String::new(),
+            rail: 0,
+            drawer: 0,
+            nav: 0,
         }
     }
 }
 #[derive(Clone)]
 pub enum Message {
     Section(usize),
+    Rail(usize),
+    Drawer(usize),
+    Nav(usize),
     Theme,
     Radio(usize),
     Switch,
@@ -52,6 +66,7 @@ pub enum Message {
     RemoveChip,
     Dialog(bool),
     Menu(bool),
+    Sheet(bool),
     Draft(String),
     Save,
 }
@@ -63,6 +78,9 @@ impl Application for Gallery {
     fn update(&mut self, m: Message) {
         match m {
             Message::Section(i) => self.section = i,
+            Message::Rail(i) => self.rail = i,
+            Message::Drawer(i) => self.drawer = i,
+            Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
             Message::Switch => self.enabled = !self.enabled,
@@ -86,6 +104,7 @@ impl Application for Gallery {
                 }
             }
             Message::Menu(v) => self.menu = v,
+            Message::Sheet(v) => self.sheet = v,
             Message::Draft(v) => self.draft = v,
             Message::Save => {
                 self.name = self.draft.clone();
@@ -199,6 +218,27 @@ impl Application for Gallery {
                 );
             }
             1 => {
+                let nav_items = [
+                    ("nav-home", "Home", "H"),
+                    ("nav-search", "Search", "S"),
+                    ("nav-more", "More", "M"),
+                ];
+                let nav_bar = t.navigation_bar(
+                    "nav-bar",
+                    "Destinations",
+                    nav_items
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, (id, name, icon))| {
+                            t.navigation_bar_item(
+                                id,
+                                name,
+                                icon,
+                                choice(self.nav == i),
+                                Message::Nav(i),
+                            )
+                        }),
+                );
                 children.push(t.card(
                     "action-card",
                     [
@@ -266,6 +306,169 @@ impl Application for Gallery {
                                 None,
                             ),
                         ]),
+                        t.segmented_buttons(
+                            "segments-multi",
+                            "樣式",
+                            [
+                                t.segment(
+                                    "seg-a",
+                                    "日",
+                                    SegmentPosition::First,
+                                    choice(true),
+                                    Message::Click,
+                                ),
+                                t.segment(
+                                    "seg-b",
+                                    "週",
+                                    SegmentPosition::Middle,
+                                    choice(false),
+                                    Message::Click,
+                                ),
+                                t.segment(
+                                    "seg-c",
+                                    "月",
+                                    SegmentPosition::Last,
+                                    choice(true),
+                                    Message::Click,
+                                ),
+                            ],
+                        ),
+                        t.row([
+                            t.fab(
+                                "fab-small",
+                                "Add small",
+                                "+",
+                                FabSize::Small,
+                                FabColor::Primary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab",
+                                "Add",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Primary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-large",
+                                "Add large",
+                                "+",
+                                FabSize::Large,
+                                FabColor::Tertiary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-surface",
+                                "Add surface",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Surface,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-secondary",
+                                "Add secondary",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Secondary,
+                                false,
+                                Message::Click,
+                            ),
+                            t.fab(
+                                "fab-disabled",
+                                "Add disabled",
+                                "+",
+                                FabSize::Regular,
+                                FabColor::Primary,
+                                true,
+                                Message::Click,
+                            ),
+                        ]),
+                        nav_bar,
+                        t.row([
+                            t.linear_progress(
+                                "lp-determinate",
+                                "Determinate progress",
+                                Some(0.4),
+                                0.,
+                            ),
+                            t.linear_progress("lp-indeterminate", "Loading", None, 0.5),
+                        ]),
+                        t.row([
+                            t.icon_button(
+                                "icon-standard",
+                                "Favorite",
+                                "★",
+                                IconButtonKind::Standard,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-filled",
+                                "Favorite filled",
+                                "★",
+                                IconButtonKind::Filled,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-tonal",
+                                "Favorite tonal",
+                                "★",
+                                IconButtonKind::Tonal,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-outlined",
+                                "Favorite outlined",
+                                "★",
+                                IconButtonKind::Outlined,
+                                None,
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-toggle",
+                                "Favorite toggle",
+                                "★",
+                                IconButtonKind::Filled,
+                                Some(false),
+                                false,
+                                Message::Click,
+                            ),
+                            t.icon_button(
+                                "icon-disabled",
+                                "Favorite disabled",
+                                "★",
+                                IconButtonKind::Filled,
+                                None,
+                                true,
+                                Message::Click,
+                            ),
+                        ]),
+                        t.row([
+                            t.loading_indicator(
+                                "loading-default",
+                                "Loading",
+                                LoadingKind::Default,
+                                0.,
+                            ),
+                            t.loading_indicator(
+                                "loading-contained",
+                                "Loading contained",
+                                LoadingKind::Contained,
+                                0.,
+                            ),
+                        ]),
                     ],
                 ));
                 if self.input_chip {
@@ -282,6 +485,72 @@ impl Application for Gallery {
                     "outlined-card",
                     [t.text("outlined-description", "Outlined card · 共用的色彩與形狀")],
                 ));
+                children.push(t.divider_with("inset-divider", DividerKind::Inset));
+                children.push(t.divider_with("middle-inset-divider", DividerKind::MiddleInset));
+                children.push(t.action_card(
+                    "elevated-action-card",
+                    "Elevated action card",
+                    CardKind::Elevated,
+                    false,
+                    Message::Click,
+                    [t.text("elevated-description", "Elevated card · 可點擊")],
+                ));
+                children.push(t.card_with(
+                    "filled-card",
+                    "Filled card",
+                    CardKind::Filled,
+                    [t.text("filled-description", "Filled card")],
+                ));
+                children.push(
+                    t.card(
+                        "navigation-rail-card",
+                        [t.navigation_rail(
+                            "nav-rail",
+                            "Destinations",
+                            [
+                                ("rail-home", "Home", "H"),
+                                ("rail-search", "Search", "S"),
+                                ("rail-more", "More", "M"),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, (id, name, icon))| {
+                                t.navigation_rail_item(
+                                    id,
+                                    name,
+                                    icon,
+                                    choice(self.rail == i),
+                                    Message::Rail(i),
+                                )
+                            }),
+                        )],
+                    ),
+                );
+                children.push(
+                    t.card(
+                        "navigation-drawer-card",
+                        [t.navigation_drawer(
+                            "nav-drawer",
+                            "Destinations",
+                            [
+                                ("drawer-inbox", "Inbox", "I"),
+                                ("drawer-sent", "Sent", "S"),
+                                ("drawer-trash", "Trash", "T"),
+                            ]
+                            .into_iter()
+                            .enumerate()
+                            .map(|(i, (id, name, icon))| {
+                                t.navigation_drawer_item(
+                                    id,
+                                    name,
+                                    icon,
+                                    choice(self.drawer == i),
+                                    Message::Drawer(i),
+                                )
+                            }),
+                        )],
+                    ),
+                );
             }
             2 => {
                 children.push(t.card(
@@ -302,6 +571,13 @@ impl Application for Gallery {
                                 ButtonKind::Outlined,
                                 false,
                                 Message::Menu(true),
+                            ),
+                            t.button_with(
+                                "open-sheet",
+                                "開啟底部面板",
+                                ButtonKind::Outlined,
+                                false,
+                                Message::Sheet(true),
                             ),
                         ]),
                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
@@ -343,13 +619,12 @@ impl Application for Gallery {
             }
         }
         if self.dialog {
-            children.push(t.dialog(
+            children.push(t.dialog_with(
                 "rename-dialog",
+                Some("✎"),
                 "重新命名",
-                [
-                    t.text("dialog-help", "輸入新名稱。取消會保留原名稱。"),
-                    t.text_field("dialog-name", "名稱", &self.draft, Message::Draft),
-                ],
+                "輸入新名稱。取消會保留原名稱。",
+                [t.text_field("dialog-name", "名稱", &self.draft, Message::Draft)],
                 [
                     t.button_with(
                         "dialog-cancel",
@@ -380,6 +655,23 @@ impl Application for Gallery {
                     t.menu_item("menu-close", "關閉選單", false, Message::Menu(false)),
                 ],
                 Message::Menu(false),
+            ));
+        }
+        if self.sheet {
+            children.push(t.modal_bottom_sheet(
+                "gallery-sheet",
+                "底部面板",
+                [
+                    t.text("sheet-help", "這是底部面板。"),
+                    t.button_with(
+                        "sheet-close",
+                        "關閉",
+                        ButtonKind::Text,
+                        false,
+                        Message::Sheet(false),
+                    ),
+                ],
+                Message::Sheet(false),
             ));
         }
         t.page(children)
@@ -419,7 +711,7 @@ mod web {
         APP.with(|a|{
         let a=a.borrow();let runtime=a.as_ref().expect("started").borrow();let s=runtime.app();
         serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
-            "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"focused":runtime.focused()}).to_string()
+            "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused()}).to_string()
     })
     }
     #[wasm_bindgen]

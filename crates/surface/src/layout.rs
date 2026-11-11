@@ -121,6 +121,21 @@ impl ComputedDom {
                 && n.clip.contains(x, y)
         })
     }
+
+    /// Nodes whose bounds or clip differ from an earlier frame, or that the
+    /// earlier frame did not have. Index order.
+    pub fn changed_since(&self, previous: &ComputedDom) -> Vec<NodeId> {
+        self.nodes
+            .iter()
+            .filter(|node| {
+                previous
+                    .nodes
+                    .get(node.id.index())
+                    .is_none_or(|old| old.bounds != node.bounds || old.clip != node.clip)
+            })
+            .map(|node| node.id)
+            .collect()
+    }
 }
 fn dimension(value: Length) -> t::Dimension {
     match value {

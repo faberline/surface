@@ -20,7 +20,7 @@ state. It must return the current value on each view call.
 last-child, and next-sibling links are typed indices. Stable IDs and
 role/name selectors have deterministic indexes. Snapshots contain semantic
 data and styles, with no closures or platform handles. Schema version 1 is
-separate from the pre-existing `SurfaceSnapshot` schema.
+separate from the pre-existing `SurfaceSnapshot` schema. `MicroDom::from_snapshot` rebuilds a tree from a snapshot and returns `DomError` for a bad version, a duplicate ID or broken links.
 
 `Runtime::snapshot()` adds current interaction and editor state, with
 matching layout when available. `Runtime::export_dom()` serializes it as
@@ -39,12 +39,12 @@ Fixed layers use viewport coordinates and escape ancestor clips and scroll.
 They paint after flow content, ordered by `z_index`.
 Hit testing walks that order backwards and checks bounds, clipping, and
 enabled control roles. This supports the current layout model; it is not
-the full CSS stacking-context model.
+the full CSS stacking-context model. `ComputedDom::changed_since` lists the nodes whose bounds or clip differ from an earlier frame.
 
 The display list contains ordered rounded quads, borders and text. It has no wgpu
 types. The backend preserves order when mixing text and rectangles.
 There is no incremental GPU damage optimization yet; each dirty frame
-paints a full display list.
+paints a full display list. `DisplayList::damage` returns the visible rectangles of the ops that differ from an earlier list.
 
 ## Platform boundary
 
@@ -54,8 +54,10 @@ and web events into the same `surface_app::Event` values.
 
 `surface-wgpu` owns the device, queue, shaders, font database, glyph atlas,
 and text renderers. It supports native and WebGPU adapters through wgpu.
-Its default font database contains bundled Tuffy and Noto Sans CJK TC. Call
-`TextSystem::add_font` before the first render for other script coverage.
+Its default font database contains bundled Tuffy and Noto Sans CJK TC. The
+browser build bundles a Big5-common subset of the CJK font; see
+`docs/web-font.md`. Call `TextSystem::add_font` before the first render for
+other script coverage.
 The editor and renderer share shaped caret and selection geometry.
 See [text input](text-input.md) for the tested input paths and remaining gates.
 

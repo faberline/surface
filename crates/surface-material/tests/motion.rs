@@ -1,4 +1,4 @@
-use surface::{Easing, MicroDom, Node, NodeId, Role, Transition};
+use surface::{Easing, MicroDom, Node, NodeId, RangeValue, Role, Transition};
 use surface_app::{Application, Runtime, View};
 use surface_material::motion::{duration, easing, STATE_CHANGE};
 use surface_material::{ChipKind, ChoiceState, Theme};
@@ -99,6 +99,18 @@ impl Application for App {
                 Message::Noop,
                 None,
             ),
+            t.slider(
+                "volume",
+                "Volume",
+                RangeValue {
+                    min: 0.,
+                    max: 10.,
+                    value: 5.,
+                    step: 1.,
+                },
+                false,
+                |_| Message::Noop,
+            ),
             t.divider("divider"),
             t.menu_item("item", "Item", false, Message::Noop),
             t.outlined_card("card", []),
@@ -198,10 +210,53 @@ fn components_use_state_change_transition() {
         );
     }
 
-    // Nothing else changes: nine nodes animate in this view.
+    // Nothing else changes: eleven nodes animate in this view.
     let animated_count = dom
         .iter()
         .filter(|(_, n)| n.style().transition.is_some())
         .count();
-    assert_eq!(animated_count, 9, "only the listed nodes animate");
+    assert_eq!(animated_count, 11, "only the listed nodes animate");
+}
+
+#[test]
+fn slider_fill_and_thumb_use_state_change_transition() {
+    let runtime = Runtime::new(App {
+        theme: Theme::light(),
+    })
+    .unwrap();
+    let dom = runtime.dom();
+    let animated = Some(STATE_CHANGE);
+
+    // Slider: the control itself does not animate.
+    let slider = node(dom, "volume");
+    assert_eq!(transition(dom, slider), None, "slider control");
+
+    // Track: the box that holds the grey background, the fill and the thumb wrapper.
+    let track = child(dom, slider, 0);
+    assert_eq!(transition(dom, track), None, "slider track");
+
+    // Grey background track never changes colour.
+    assert_eq!(
+        transition(dom, child(dom, track, 0)),
+        None,
+        "slider background track"
+    );
+
+    // Active fill: its colour changes with `disabled`.
+    assert_eq!(
+        transition(dom, child(dom, track, 1)),
+        animated,
+        "slider active fill"
+    );
+
+    // Zero-width wrapper that positions the thumb.
+    let wrapper = child(dom, track, 2);
+    assert_eq!(transition(dom, wrapper), None, "slider thumb wrapper");
+
+    // Thumb: its colour changes with `disabled`.
+    assert_eq!(
+        transition(dom, child(dom, wrapper, 0)),
+        animated,
+        "slider thumb"
+    );
 }

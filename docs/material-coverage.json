@@ -39,7 +39,8 @@
     {
       "id": "floating-action-button",
       "spec": "https://m3.material.io/components/floating-action-button/overview",
-      "status": "pending",
+      "status": "partial",
+      "implemented": "Small, regular and large FAB; surface, primary, secondary and tertiary containers; disabled; hover and press layers. No elevation, ripple or extended FAB",
       "variant_review": "pending",
       "desktop_evidence": null,
       "web_evidence": null
@@ -47,7 +48,8 @@
     {
       "id": "icon-buttons",
       "spec": "https://m3.material.io/components/icon-buttons/overview",
-      "status": "pending",
+      "status": "partial",
+      "implemented": "Standard, filled, tonal and outlined icon buttons; toggle selection; disabled; hover and press layers. No elevation, ripple or size and width variants",
       "variant_review": "pending",
       "desktop_evidence": null,
       "web_evidence": null
@@ -59,7 +61,7 @@
       "variant_review": "pending",
       "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
       "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Controlled single selection; manual keyboard activation"
+      "implemented": "Controlled single selection; manual keyboard activation; position-aware segments with a selected check mark for single and multi select. Inner borders are drawn per segment, not shared; no elevation or ripple"
     },
     {
       "id": "split-button",
@@ -239,10 +241,11 @@
     {
       "id": "search",
       "spec": "https://m3.material.io/components/search/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
       "desktop_evidence": null,
-      "web_evidence": null
+      "web_evidence": null,
+      "implemented": "Search bar with leading glyph, controlled input and clear button"
     },
     {
       "id": "sliders",
@@ -312,7 +315,7 @@
     "focus": "Button and chip containers paint the ring in primary and it follows the control shape (the input chip remove button keeps an on_container ring); roving groups, modal trap, opener restore and nested focus scrolling; Tab reaches clipped controls; resize reveals focus; manual scrolling is preserved; platform a11y bridges pending",
     "typography": "All 30 Material 3 type roles (15 base, 15 emphasized) with size, line height, letter spacing and weight; text, heading, label, text field and dialog title adopt roles; line height and layout use the role; only regular faces bundled so Medium and Bold render regular and the emphasized roles are not visually distinct; letter spacing carried but not rendered; a named font family selects its own face but no Brand or Plain family is defined, so both map to the default family; per-locale scale pending; no screenshot of the scale was taken",
     "elevation": "pending",
-    "motion": "Partial: Material duration and easing tokens, color and corner transitions, reduced motion and a state change transition on button, checkbox, radio, switch, segmented button and chip (the tab indicator declares it but is inserted on selection, so it appears at once); springs, layout and position animation, hover and press opacity, enter and exit animation, native OS reduced-motion query and exact emphasized path easing pending; shape morphing per component state pending",
+    "motion": "Partial: Material duration and easing tokens, color and corner transitions, reduced motion and a state change transition on button, checkbox, radio, switch, slider, segmented button and chip (the tab indicator declares it but is inserted on selection, so it appears at once); springs, layout and position animation, hover and press opacity, enter and exit animation, native OS reduced-motion query and exact emphasized path easing pending; shape morphing per component state pending",
     "ripple": "pending"
   }
 }

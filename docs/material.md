@@ -144,18 +144,32 @@ does not change application state.
 | API | Current behavior |
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
+| `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+| `bottom_sheet` / `modal_bottom_sheet` | Standard and modal sheet; top extra-large corners; drag-handle visual; modal scrim, focus trap and Escape/outside dismiss; light and dark; no drag gesture, snap points or animation |
+| `navigation_rail` | Three to seven destinations in an 80-pixel column; selected and disabled destination; 56x32 active indicator; arrow keys; light and dark; text-glyph icons, no badge, menu button, FAB slot, expanded rail or ripple |
+| `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
+| `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
+| `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
+| `loading_indicator` | Default and contained; light and dark; phase set by the application; shape cycle by corner radius, no rotation or polygon morph yet |
+| `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
-| `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices |
+| `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
 | `switch` | Controlled on/off choice and disabled state |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
+| `segment` | Position-aware segment: round outer ends, square inner edges, check mark when selected; single or multi select owned by the application |
 | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
+| `dialog_with` | Basic dialog with optional icon, headline, supporting text, actions; container `surface_container_high`, scrim from `colors.scrim`; no full-screen variant, shadow or motion yet |
 | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
+| `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
 | `divider` | One-pixel semantic separator |
+| `divider_with` / `vertical_divider` | Full, inset and middle-inset horizontal dividers and a vertical divider; 1 dp, `outline_variant`; no list or sheet integration yet |
 | `card` / `outlined_card` | Filled and outlined containers |
+| `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
+| `search_bar` | Pill search bar with leading glyph, controlled text input and a clear button while the query is not empty; no search view, suggestions or placeholder yet |
 
 The short `button`, `tonal_button`, `disabled_button` and `checkbox`
 methods call the same implementations. Button and chip containers paint
@@ -200,6 +214,7 @@ These components use it, and nothing else does:
 - the switch track and thumb;
 - the segmented button container;
 - the chip container;
+- the slider active fill and thumb;
 - the tab active indicator.
 
 The tab indicator exists only while its tab is selected. It is added

@@ -9,10 +9,15 @@ partial Material controls, controlled Unicode editing, current DOM export,
 opt-in CLI/MCP access and focus scrolling. It does not qualify the full
 Material catalog or the physical native OS input-method journey.
 
-The source checkpoint passes 45 Rust cases, native/WASM checks, compact
-macOS GPU and Chrome 157 WebGPU bridge journeys, the existing Material
-browser journey and the 40-event browser composition journey. Exact-head
-CI must pass for the final landing. No crate release or tag is implied.
+The PR #4 landing at `8b4e205` passed 45 Rust cases, the native/WASM
+checks, the compact macOS GPU and Chrome 157 WebGPU bridge journeys, the
+existing Material browser journey and the 40-event browser composition
+journey. Hosted CI passed there
+([run 41807907931](https://github.com/faberline/surface/actions/runs/41807907931)).
+Tag `v0.1.0` at `b3c4917` adds PR #55 and the PR #56 consumer contract.
+Hosted [run 42172139938](https://github.com/faberline/surface/actions/runs/42172139938)
+passed there: 117 passed, 0 failed, 4 ignored. The 4 ignored GPU tests did
+not run. No crate is published.
 
 ## Full framework target: surface@0.2.0
 
@@ -89,5 +94,8 @@ to the public standalone dependencies. Its hosted parity wrapper currently
 reports an unwired oracle. That exit is not hosted parity acceptance. The
 local browser/WASM evidence and any required current-head gates stay visible.
 
-Pinned consumer revisions are retained while the independent repositories
-land. Branches and the separate native IME experiment remain preserved.
+Core #95 and Jet #75 pin `1754a2e`, which is not on Surface main. The
+[agreed Jet and Surface split](migration.md#jet-and-surface-split) replaces
+that pin with tag `v0.1.0`, cut from main. Whether to rebase or replace the
+PRs is an open decision. Branches and the separate native IME experiment
+remain preserved.

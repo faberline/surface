@@ -102,10 +102,13 @@ impl<A: Application> WebInput<A> {
         textarea.set_spellcheck(false);
         textarea.set_attribute("autocomplete", "off")?;
         textarea.set_attribute("autocapitalize", "off")?;
-        textarea.style().set_css_text("position:fixed;opacity:0;width:1px;height:24px;padding:0;border:0;resize:none;pointer-events:none;overflow:hidden;z-index:-1;");
+        textarea
+            .style()
+            .set_css_text(&crate::host_style::caret_css(0., 0., 24.));
         document.body().unwrap().append_child(&textarea)?;
         let composing = Rc::new(Cell::new(false));
         let switching = Rc::new(Cell::new(false));
+        let press = Rc::new(RefCell::new(crate::press_guard::PressGuard::default()));
         let text = Rc::new(RefCell::new(String::new()));
         let base = Rc::new(Cell::new(0usize));
         let owner = Rc::new(RefCell::new(None::<String>));
@@ -126,11 +129,13 @@ impl<A: Application> WebInput<A> {
             let composing = composing.clone();
             let owner = owner.clone();
             let ignore_input = ignore_input.clone();
+            let press = press.clone();
             bridge.listen_with_capture(
                 canvas.unchecked_into(),
                 "pointerdown",
                 true,
                 move |_| {
+                    press.borrow_mut().press();
                     if composing.replace(false) {
                         // Browser focus defaults can commit before winit delivers
                         // the Rust pointer event. Cancel before that default runs.
@@ -388,8 +393,14 @@ impl<A: Application> WebInput<A> {
             let window = window.clone();
             let composing = composing.clone();
             let switching = switching.clone();
+            let press = press.clone();
             bridge.listen(target, "blur", move |_| {
                 if switching.get() {
+                    return;
+                }
+                // The browser blurs the textarea inside a canvas press (Safari).
+                // Dropping that blur keeps the press that PointerUp activates.
+                if !press.borrow().forwards_blur() {
                     return;
                 }
                 composing.set(false);
@@ -407,6 +418,15 @@ impl<A: Application> WebInput<A> {
                     composing.set(false);
                     dispatch(&runtime, &window, Event::Blur);
                 },
+            )?;
+        }
+        for name in ["pointerup", "pointercancel"] {
+            let press = press.clone();
+            bridge.listen_with_capture(
+                web_sys::window().unwrap().unchecked_into(),
+                name,
+                true,
+                move |_| press.borrow_mut().release(),
             )?;
         }
         Ok(bridge)
@@ -480,18 +500,13 @@ impl<A: Application> WebInput<A> {
         let _ = self.textarea.set_attribute("aria-label", &snapshot.label);
         if let (Some(caret), Some(canvas)) = (snapshot.caret, self.window.canvas()) {
             let bounds = canvas.get_bounding_client_rect();
-            let _ = self
-                .textarea
+            self.textarea
                 .style()
-                .set_property("left", &format!("{}px", bounds.left() + caret.x as f64));
-            let _ = self
-                .textarea
-                .style()
-                .set_property("top", &format!("{}px", bounds.top() + caret.y as f64));
-            let _ = self
-                .textarea
-                .style()
-                .set_property("height", &format!("{}px", caret.height.max(1.)));
+                .set_css_text(&crate::host_style::caret_css(
+                    bounds.left() + caret.x as f64,
+                    bounds.top() + caret.y as f64,
+                    caret.height,
+                ));
         }
         if !self.composing.get() && !snapshot.composing {
             if self.textarea.value() != snapshot.value {
