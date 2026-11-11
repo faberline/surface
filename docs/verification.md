@@ -267,21 +267,26 @@ The final browser state was
 Local generated evidence lives under `artifacts/`. The screenshot in
 [`images/showcase.png`](images/showcase.png) is from that browser run.
 
-## Re-run browser smoke
+## Re-run the browser tests
 
-Build and serve the example as described in README. Install Playwright as
-an optional local test tool:
+The browser and bridge tests are Rust, in [`e2e/`](../e2e). They drive
+Chrome through jet-bridge's CDP client; there is no Node or Python step.
+One command builds every input and runs every suite:
 
 ```sh
-npm install --no-save --package-lock=false playwright@1.61.1
-npx playwright install chromium
-node scripts/browser-smoke.mjs
+cap cargo xtask web e2e
 ```
 
-`SURFACE_CHROME` can select an existing browser executable.
-`SURFACE_PLAYWRIGHT` can select the ESM entry point of an external
-Playwright installation. Tests start their own local HTTP server on a free
-port. `SURFACE_URL` can select an already running test server.
+Suites: `smoke`, `ime`, `material`, `bridge-native`,
+`bridge-native-compact` and `bridge-web`. Name some to run only those.
+`--no-build` reuses the last build. `SURFACE_CHROME` selects Chrome and
+`SURFACE_CHROME_ARGS` adds browser flags. Each browser suite starts its own
+local HTTP server on a free port; `--url` tests an already running server
+instead. Each case prints its step IDs and check count. The run fails when
+a case fails, skips a step, runs no check, or when no case runs.
+
+The rows above that name `node scripts/*.mjs` or `scripts/bridge-e2e.py`
+record runs of the earlier scripts, which these suites replace (#62).
 
 ## Remaining qualification
 

@@ -41,7 +41,8 @@ cancellation, replacement, stale field IDs, grapheme deletion, undo/redo,
 UTF-16 conversion and field constraints. The font test checks real CJK
 glyph IDs and shaped caret/selection geometry.
 
-`scripts/browser-ime.mjs` exercises Chrome's actual composition event
+The `ime` suite of `cargo xtask web e2e`
+([`e2e/src/ime.rs`](../e2e/src/ime.rs)) exercises Chrome's actual composition event
 pipeline through `Input.imeSetComposition` and `Input.insertText`. It
 checks preedit, commit, replacement, cancellation, deletion and undo/redo.
 It also checks that the input host is at the drawn caret. This is a browser
