@@ -1,6 +1,6 @@
 # 0001: Surface product positioning
 
-Status: Proposed (awaiting owner decision)
+Status: Partly accepted (D-A decided 2026-11-11; D-B and D-C open)
 Date: 2026-11-11
 
 This record proposes a layering. It does not decide. The owner answers the
@@ -97,9 +97,11 @@ the desk's recommendation. It is not a decision.
 
 These are unanswered.
 
-- **D-A.** Is desktop a first-class host?
-  - Yes: #102, #103, #104 and #48 go before the Material foundations.
-  - No: desktop stays best-effort, and the infera consumer waits.
+- **D-A. Decided 2026-11-11: Yes.** Is desktop a first-class host?
+  - Yes (chosen): #102, #103, #104 and #48 go before the Material
+    foundations.
+  - No (not chosen): desktop stays best-effort, and the infera consumer
+    waits.
 - **D-B.** Is the web host scope limited to what D1 needs until D1
   reports?
   - Yes: no new web features beyond migration steps 9-15 and bug fixes.
@@ -115,10 +117,11 @@ aw-service-desk. This record does not change Jet.
 
 Wave 2 is migration steps 9-15. Wave 3 is the Material foundation splits.
 
-- **D-A yes:** a desktop slice (#102, #103, #104, #48) goes first or beside
-  Wave 2. #102 overlaps step 12, so one change serves both. Wave 3 slips.
-- **D-A no:** Wave 2 then Wave 3 as planned. The infera consumer has no
-  supported path.
+- **D-A yes (chosen, applies now):** the desktop slice (#102, #103, #104,
+  #48) goes before the Material foundations (Wave 3). #102 also covers
+  migration step 12, so one change serves both. Wave 3 slips.
+- **D-A no (not chosen):** Wave 2 then Wave 3 as planned. The infera
+  consumer would have had no supported path.
 - **D-B yes:** Wave 2 stays small. Web items outside D1 wait.
 - **D-B no:** web items interleave with Wave 2. Wave 2 may take longer.
 - **D-C macOS only:** #49 and #50 stay unscheduled. Verification stays on
