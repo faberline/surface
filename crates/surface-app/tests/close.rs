@@ -61,8 +61,9 @@ impl Application for Editor {
         }
     }
     fn view(&self) -> View<Msg> {
-        View::new(Node::new(Role::Window, "Editor"))
-            .children([View::new(Node::new(Role::Text, format!("n={}", self.n)).id("n"))])
+        View::new(Node::new(Role::Window, "Editor")).children([View::new(
+            Node::new(Role::Text, format!("n={}", self.n)).id("n"),
+        )])
     }
 }
 
@@ -88,7 +89,10 @@ fn a_cancelled_close_keeps_the_window_and_later_events_still_run() {
     runtime.apply(Msg::Bump).unwrap();
     assert_eq!(runtime.app().n, 2, "later events still run");
     assert!(runtime.export_dom().unwrap().contains("n=2"));
-    assert!(!runtime.request_close().unwrap(), "asked again, vetoed again");
+    assert!(
+        !runtime.request_close().unwrap(),
+        "asked again, vetoed again"
+    );
     assert_eq!(runtime.app().asked, 2);
 }
 
@@ -100,7 +104,10 @@ fn the_app_close_command_ends_the_loop_after_a_veto() {
     assert!(!runtime.request_close().unwrap());
     assert!(!runtime.take_close(), "nothing asked to close yet");
     runtime.apply(Msg::DiscardAndClose).unwrap();
-    assert!(runtime.take_close(), "the close command is seen by the host");
+    assert!(
+        runtime.take_close(),
+        "the close command is seen by the host"
+    );
     assert!(!runtime.take_close(), "it is reported once");
     assert_eq!(runtime.app().asked, 1, "the command skips the hook");
 }

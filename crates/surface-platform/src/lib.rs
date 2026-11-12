@@ -255,6 +255,28 @@ impl<A: Application> Host<A> {
         }
         // The app may have changed the focused field, as after an input.
         self.sync_text_input();
+        self.exit_if_app_closed(event_loop);
+    }
+    /// The user asked to close the window. The app may veto. On allow the
+    /// loop exits; `run_with_wake` then drops the host and the app state.
+    fn close_requested(&mut self, event_loop: &ActiveEventLoop) {
+        let result = self.runtime.borrow_mut().request_close();
+        match result {
+            Ok(true) => event_loop.exit(),
+            Ok(false) => {
+                if let Some(window) = &self.window {
+                    window.request_redraw();
+                }
+                self.sync_text_input();
+            }
+            Err(error) => self.fail(event_loop, error),
+        }
+    }
+    /// Exit when the app queued a close command during an update or wake.
+    fn exit_if_app_closed(&mut self, event_loop: &ActiveEventLoop) {
+        if self.runtime.borrow_mut().take_close() {
+            event_loop.exit();
+        }
     }
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
         let message = error.to_string();
@@ -281,6 +303,7 @@ impl<A: Application> Host<A> {
             Err(error) => self.fail(event_loop, error),
         }
         self.sync_text_input();
+        self.exit_if_app_closed(event_loop);
     }
     fn sync_text_input(&mut self) {
         #[cfg(target_arch = "wasm32")]
@@ -485,7 +508,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             self.flush_held_key(event_loop);
         }
         match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::CloseRequested => self.close_requested(event_loop),
             WindowEvent::RedrawRequested => self.draw(event_loop),
             WindowEvent::Resized(size) => {
                 if let Some(gpu) = &mut self.gpu {

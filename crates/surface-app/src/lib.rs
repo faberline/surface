@@ -199,7 +199,7 @@ impl<M> Queue<M> {
     /// the app already decided. The host ends the event loop after the
     /// current update, and the app state is then dropped normally.
     pub fn close(&self) {
-        let _ = &self.1; // STUB (red)
+        self.1.set(true);
     }
 }
 
@@ -284,12 +284,15 @@ impl<A: Application> Runtime<A> {
     /// app's `close_requested` hook once, then queued messages, then
     /// rebuilds. Returns `true` when the window should close now.
     pub fn request_close(&mut self) -> Result<bool, AppError> {
-        Ok(true) // STUB (red)
+        let decision = self.app.close_requested();
+        // Run what the hook posted and rebuild, also after a veto.
+        self.flush()?;
+        Ok(decision == CloseDecision::Allow || self.queue.1.get())
     }
     /// True once, after the app called `Queue::close`. The host checks it
     /// after each input, wake or flush.
     pub fn take_close(&mut self) -> bool {
-        false // STUB (red)
+        self.queue.1.replace(false)
     }
     /// Run queued messages in order, including ones posted by `update`
     /// while this runs, then rebuild once.

@@ -27,6 +27,20 @@ also change state. Two paths cover them.
   pending event, one `wake` call and one redraw. A call made while `wake`
   runs schedules one more, so the last call is never lost.
 
+## Window close
+
+On native desktop a close request no longer exits the loop at once. The host
+calls `Runtime::request_close`, which calls `Application::close_requested`
+once. It returns `CloseDecision::Allow` (the default, so old apps behave as
+before) or `CloseDecision::Cancel`. After a cancel the window and the app
+state stay, and later events run. The app can close later, for example after
+a "discard and close" choice, with `Queue::close()` from `update` or `wake`.
+That command skips the hook. The host checks it after each input and wake
+and then ends the event loop. The loop returns normally from
+`run_with_wake`, so the app state is dropped by `Drop` and
+`std::process::exit` is not used. The web host has no window close and does
+not use this path.
+
 `NodeId` is an arena index for the current tree. It is not durable identity.
 Use a stable ID for an interactive node. Duplicate IDs return `DomError`.
 Focus and pending pointer presses store stable IDs. Disabling a container
