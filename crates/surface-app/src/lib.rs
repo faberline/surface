@@ -197,7 +197,9 @@ impl<M> Queue<M> {
     }
     /// Ask the host to close the window. It does not call `close_requested`:
     /// the app already decided. The host ends the event loop after the
-    /// current update, and the app state is then dropped normally.
+    /// current update, and the app state is then dropped normally. Called
+    /// from inside `close_requested`, it takes effect at once, even if that
+    /// hook returns `Cancel`.
     pub fn close(&self) {
         self.1.set(true);
     }
@@ -287,7 +289,8 @@ impl<A: Application> Runtime<A> {
         let decision = self.app.close_requested();
         // Run what the hook posted and rebuild, also after a veto.
         self.flush()?;
-        Ok(decision == CloseDecision::Allow || self.queue.1.get())
+        let closed_by_app = self.take_close();
+        Ok(decision == CloseDecision::Allow || closed_by_app)
     }
     /// True once, after the app called `Queue::close`. The host checks it
     /// after each input, wake or flush.

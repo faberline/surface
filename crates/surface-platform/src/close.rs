@@ -11,8 +11,14 @@ pub(crate) enum HostStep {
 
 /// Map the result of `Runtime::request_close` to a host step.
 pub(crate) fn step_from(result: Result<bool, AppError>, closing: &mut bool) -> HostStep {
-    let _ = (result, closing);
-    HostStep::Stay // STUB (red)
+    match result {
+        Ok(true) => {
+            *closing = true;
+            HostStep::Exit
+        }
+        Ok(false) => HostStep::Stay,
+        Err(error) => HostStep::Fail(error.to_string()),
+    }
 }
 
 /// A window close request. A request after the loop began to exit is ignored,
@@ -21,14 +27,17 @@ pub(crate) fn close_request_step<A: Application>(
     runtime: &mut Runtime<A>,
     closing: &mut bool,
 ) -> HostStep {
-    let _ = (runtime, closing);
-    HostStep::Stay // STUB (red)
+    if *closing {
+        return HostStep::Stay;
+    }
+    step_from(runtime.request_close(), closing)
 }
 
 /// True once the app asked to close with `Queue::close`.
 pub(crate) fn should_exit<A: Application>(runtime: &mut Runtime<A>, closing: &mut bool) -> bool {
-    let _ = (runtime, closing);
-    false // STUB (red)
+    let close = runtime.take_close();
+    *closing |= close;
+    close
 }
 
 #[cfg(test)]

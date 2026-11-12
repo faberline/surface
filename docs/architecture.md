@@ -35,10 +35,15 @@ once. It returns `CloseDecision::Allow` (the default, so old apps behave as
 before) or `CloseDecision::Cancel`. After a cancel the window and the app
 state stay, and later events run. The app can close later, for example after
 a "discard and close" choice, with `Queue::close()` from `update` or `wake`.
-That command skips the hook. The host checks it after each input and wake
-and then ends the event loop. The loop returns normally from
+That command skips the hook, and from inside `close_requested` it takes
+effect at once. The host checks it in `about_to_wait`, so every path that
+runs `update` (input, wake, bridge, cut) is covered, and then ends the event
+loop. A close request that arrives after the loop began to exit is ignored. The loop returns normally from
 `run_with_wake`, so the app state is dropped by `Drop` and
-`std::process::exit` is not used. The web host has no window close and does
+`std::process::exit` is not used. The host drops the GPU and the window
+first, then the app state, so cleanup in `Drop` does not run behind a frozen
+window. A caller of `run_runtime` that keeps its own `Rc<RefCell<Runtime>>`
+clone delays the app drop until that clone is gone. The web host has no window close and does
 not use this path.
 
 `NodeId` is an arena index for the current tree. It is not durable identity.
