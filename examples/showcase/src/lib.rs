@@ -3,6 +3,10 @@ use surface::{Length, Node, Role, Style};
 use surface_app::{Application, View};
 use surface_material::Theme;
 
+// Text written from outside the event loop (a browser timer). `wake` reads it.
+#[cfg(target_arch = "wasm32")]
+thread_local! {static MAILBOX: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };}
+
 #[derive(Default)]
 pub struct Showcase {
     pub count: u32,
@@ -32,6 +36,12 @@ impl Application for Showcase {
             Message::Name(name) => self.name = name,
             Message::ScrollName(name) => self.scroll_name = name,
             Message::Noop => {}
+        }
+    }
+    fn wake(&mut self) {
+        #[cfg(target_arch = "wasm32")]
+        if let Some(text) = MAILBOX.with(|slot| slot.borrow_mut().take()) {
+            self.name = text;
         }
     }
     fn view(&self) -> View<Message> {
@@ -105,17 +115,30 @@ mod web {
     use super::*;
     use std::{cell::RefCell, rc::Rc};
     use surface_app::Runtime;
+    use surface_platform::WakeHandle;
     use wasm_bindgen::prelude::*;
     thread_local! {static APP:RefCell<Option<Rc<RefCell<Runtime<Showcase>>>>>=const{RefCell::new(None)};}
+    thread_local! {static WAKE:RefCell<Option<WakeHandle>>=const{RefCell::new(None)};}
     #[wasm_bindgen(start)]
     pub fn start() -> Result<(), JsValue> {
         console_error_panic_hook::set_once();
-        let runtime = Rc::new(RefCell::new(
-            Runtime::new(Showcase::default()).map_err(|e| JsValue::from_str(&e.to_string()))?,
-        ));
-        APP.with(|slot| *slot.borrow_mut() = Some(runtime.clone()));
-        surface_platform::run_runtime(runtime, Default::default())
-            .map_err(|e| JsValue::from_str(&e.to_string()))
+        surface_platform::run_with_wake(Default::default(), |wake| {
+            let runtime = Rc::new(RefCell::new(
+                Runtime::new(Showcase::default())
+                    .map_err(|e| surface_platform::HostError::new(e.to_string()))?,
+            ));
+            APP.with(|slot| *slot.borrow_mut() = Some(runtime.clone()));
+            WAKE.with(|slot| *slot.borrow_mut() = Some(wake));
+            Ok(runtime)
+        })
+        .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+    /// Browser-test hook: a JS timer writes state outside input dispatch,
+    /// then wakes the host. The name field shows the text after `wake`.
+    #[wasm_bindgen]
+    pub fn write_from_timer(text: String) {
+        MAILBOX.with(|slot| *slot.borrow_mut() = Some(text));
+        WAKE.with(|slot| slot.borrow().as_ref().expect("app started").wake());
     }
     /// Example diagnostics for browser smoke tests; the framework needs no JS UI.
     #[wasm_bindgen]

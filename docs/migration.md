@@ -273,15 +273,21 @@ Surface prerequisites:
     one padding value (`crates/surface/src/layout.rs:184`).
     Gate: layout tests assert exact rects for each new case.
     `scripts/check-gpu.sh` passes on a real adapter.
-12. **A public out-of-band update path.** `Runtime::rebuild` is private
-    (`crates/surface-app/src/lib.rs:218`). So is `UserEvent`
-    (`crates/surface-platform/src/lib.rs:112`). Add a public `Runtime`
-    method that applies a message outside input dispatch, then rebuilds.
-    Add a public, queued `surface-platform` proxy that delivers it on the
-    event loop.
-    Gate: a headless test shows an outside write changing `DomExport`. A
-    call made during `update()` is queued, not re-entered. A browser case
-    shows a `setTimeout` write repainting, with `navigator.gpu` asserted.
+12. **A public out-of-band update path.** Done (issue #102).
+    `Runtime::apply(message)` applies a message outside input dispatch and
+    rebuilds once. `Runtime::queue()` returns a `Queue` whose `post` runs a
+    message after the current `update` returns; it never re-enters
+    `update`. `Runtime::wake()` runs the new `Application::wake` hook, then
+    queued messages, then rebuilds. `surface_platform::run_with_wake` gives
+    the app a `WakeHandle` (`Clone + Send + Sync`, native and web). Many
+    wakes coalesce into one pending event, one `wake`, one redraw. See
+    `docs/architecture.md`, "Out-of-band updates and wake".
+    Gate: `crates/surface-app/tests/wake.rs` (outside write changes
+    `DomExport`; a call during `update()` is queued), the `wake` unit tests
+    in `surface-platform` (worker thread wakes 20000 times; updates are far
+    fewer), and browser steps S17-S19 in `cargo xtask web e2e smoke`
+    (a `setTimeout` write repaints, with `navigator.gpu` asserted).
+    Step 15 connects `set_update_scheduler` to this handle.
 13. **Configurable canvas and status ids.** The web host looks up
     `canvas#surface` (`crates/surface-platform/src/lib.rs:322`) and
     `#status` (`:196` and `:293`). Add both ids to `Options`

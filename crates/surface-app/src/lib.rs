@@ -14,7 +14,11 @@ pub use editing::{
 };
 pub use editing_runtime::InputSnapshot;
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
-use std::{collections::BTreeMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{BTreeMap, VecDeque},
+    rc::Rc,
+};
 use surface::{
     ComputedDom, DisplayList, DomError, LayoutEngine, LayoutError, MicroDom, Node, NodeId, Role,
     TextMeasurer,
@@ -80,6 +84,11 @@ pub trait Application: 'static {
         "Surface"
     }
     fn update(&mut self, message: Self::Message);
+    /// Called on the event loop after a `WakeHandle::wake` from any thread.
+    /// Poll workers, channels and shared state here. The default does
+    /// nothing. Many wakes can coalesce into one call, so drain everything
+    /// that is ready. The runtime rebuilds the view after this returns.
+    fn wake(&mut self) {}
     fn view(&self) -> View<Self::Message>;
 }
 #[derive(Clone, Debug)]
@@ -159,7 +168,25 @@ struct Binding<M> {
     dismiss: Option<M>,
 }
 
+/// Messages posted from inside `update` or from other code on the UI thread.
+/// Clone it freely. It is not `Send`; use `WakeHandle` across threads.
+pub struct Queue<M>(Rc<RefCell<VecDeque<M>>>);
+impl<M> Clone for Queue<M> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+impl<M> Queue<M> {
+    /// Queue a message. It runs after the current `update` returns, in
+    /// order, and never re-enters `update`. Outside an update it runs on the
+    /// next `apply`, `wake` or `flush`.
+    pub fn post(&self, message: M) {
+        self.0.borrow_mut().push_back(message);
+    }
+}
+
 pub struct Runtime<A: Application> {
+    queue: Queue<A::Message>,
     app: A,
     dom: MicroDom,
     bindings: BTreeMap<NodeId, Binding<A::Message>>,
@@ -183,6 +210,7 @@ pub struct Runtime<A: Application> {
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
         let mut runtime = Self {
+            queue: Queue(Rc::default()),
             app,
             dom: MicroDom::new(Node::new(Role::Window, "Surface")),
             bindings: BTreeMap::new(),
@@ -217,6 +245,32 @@ impl<A: Application> Runtime<A> {
     }
     pub fn focused(&self) -> Option<&str> {
         self.focused.as_deref()
+    }
+    /// A handle for posting messages that run after the current update.
+    pub fn queue(&self) -> Queue<A::Message> {
+        self.queue.clone()
+    }
+    /// Apply a message outside input dispatch, then run queued messages and
+    /// rebuild once. Used for timers, async results and tests.
+    pub fn apply(&mut self, message: A::Message) -> Result<(), AppError> {
+        self.queue.post(message);
+        self.flush()
+    }
+    /// Run the app's `wake` hook, then queued messages, then rebuild once.
+    /// The platform host calls this once per coalesced wake.
+    pub fn wake(&mut self) -> Result<(), AppError> {
+        self.app.wake();
+        self.flush()
+    }
+    /// Run queued messages in order, including ones posted by `update`
+    /// while this runs, then rebuild once.
+    pub fn flush(&mut self) -> Result<(), AppError> {
+        loop {
+            let next = self.queue.0.borrow_mut().pop_front();
+            let Some(message) = next else { break };
+            self.app.update(message);
+        }
+        self.rebuild()
     }
     fn rebuild(&mut self) -> Result<(), AppError> {
         fn add<M>(
@@ -357,8 +411,8 @@ impl<A: Application> Runtime<A> {
     }
     fn message(&mut self, message: Option<A::Message>) -> Result<bool, AppError> {
         if let Some(message) = message {
-            self.app.update(message);
-            self.rebuild()?;
+            self.queue.post(message);
+            self.flush()?;
             Ok(true)
         } else {
             Ok(false)

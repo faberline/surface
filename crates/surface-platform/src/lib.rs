@@ -10,12 +10,13 @@ mod keyboard;
 mod motion;
 #[cfg(any(target_arch = "wasm32", test))]
 mod press_guard;
+mod wake;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;
-#[cfg(any(target_arch = "wasm32", feature = "devtools"))]
+pub use wake::WakeHandle;
 use winit::event_loop::EventLoopProxy;
 use winit::{
     application::ApplicationHandler,
@@ -69,6 +70,11 @@ impl Default for Options {
 #[derive(Debug, thiserror::Error)]
 #[error("Surface host: {0}")]
 pub struct HostError(String);
+impl HostError {
+    pub fn new(message: impl Into<String>) -> Self {
+        Self(message.into())
+    }
+}
 struct Gpu {
     surface: wgpu::Surface<'static>,
     renderer: Renderer,
@@ -115,7 +121,24 @@ impl Gpu {
         self.surface.configure(&self.renderer.device, &self.config);
     }
 }
+/// On wasm32 `EventLoopProxy<UserEvent>` is not `Send`: `UserEvent` carries
+/// wasm-only payloads that are not `Send` (`Ready`). The proxy's own waker is
+/// thread-safe, and wasm32 here has one thread (no atomics). Sound only
+/// because this wrapper sends the payload-free `UserEvent::Wake`. Never send
+/// a variant with a payload through it.
+struct SendProxy(EventLoopProxy<UserEvent>);
+impl SendProxy {
+    // A method, so a closure captures the whole wrapper, not its field.
+    fn send_wake(&self) -> Result<(), winit::event_loop::EventLoopClosed<UserEvent>> {
+        self.0.send_event(UserEvent::Wake)
+    }
+}
+#[cfg(target_arch = "wasm32")]
+unsafe impl Send for SendProxy {}
+#[cfg(target_arch = "wasm32")]
+unsafe impl Sync for SendProxy {}
 enum UserEvent {
+    Wake,
     #[cfg(feature = "devtools")]
     Bridge {
         request: jet_bridge_protocol::Request,
@@ -129,8 +152,12 @@ struct Host<A: Application> {
     options: Options,
     gpu: Option<Gpu>,
     window: Option<Arc<Window>>,
-    #[cfg(any(target_arch = "wasm32", feature = "devtools"))]
+    #[cfg_attr(
+        not(any(target_arch = "wasm32", feature = "devtools")),
+        allow(dead_code)
+    )]
     proxy: EventLoopProxy<UserEvent>,
+    wake: WakeHandle,
     #[cfg(feature = "devtools")]
     bridge: Option<devtools::Bridge>,
     pointer: (f32, f32),
@@ -215,6 +242,19 @@ impl<A: Application> Host<A> {
             }
         }
         reply.send(response);
+    }
+    /// One coalesced wake: run the app hook, rebuild, redraw once.
+    fn wake_app(&mut self, event_loop: &ActiveEventLoop) {
+        // Clear first: a wake that arrives while the app runs asks again.
+        self.wake.acknowledge();
+        let result = self.runtime.borrow_mut().wake();
+        if let Err(error) = result {
+            self.fail(event_loop, error);
+        } else if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+        // The app may have changed the focused field, as after an input.
+        self.sync_text_input();
     }
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
         let message = error.to_string();
@@ -410,9 +450,9 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             });
         }
     }
-    #[cfg(any(target_arch = "wasm32", feature = "devtools"))]
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
+            UserEvent::Wake => self.wake_app(event_loop),
             #[cfg(feature = "devtools")]
             UserEvent::Bridge { request, reply } => self.bridge_request(event_loop, request, reply),
             #[cfg(target_arch = "wasm32")]
@@ -590,9 +630,25 @@ pub fn run_runtime<A: Application>(
     runtime: Rc<RefCell<Runtime<A>>>,
     options: Options,
 ) -> Result<(), HostError> {
+    run_with_wake(options, |_| Ok(runtime))
+}
+/// Like `run_runtime`, but first gives `build` a `WakeHandle` for the new
+/// event loop. Keep the handle in your worker, wrap it in
+/// `Arc<dyn Fn() + Send + Sync>`, and call it from any thread. The host then
+/// calls `Application::wake` once per coalesced wake and redraws.
+pub fn run_with_wake<A: Application>(
+    options: Options,
+    build: impl FnOnce(WakeHandle) -> Result<Rc<RefCell<Runtime<A>>>, HostError>,
+) -> Result<(), HostError> {
     let event_loop = EventLoop::<UserEvent>::with_user_event()
         .build()
         .map_err(|e| HostError(e.to_string()))?;
+    let proxy = SendProxy(event_loop.create_proxy());
+    let wake = WakeHandle::new(move || {
+        // The loop is gone after exit; a late wake is then ignored.
+        let _ = proxy.send_wake();
+    });
+    let runtime = build(wake.clone())?;
     #[cfg(not(target_arch = "wasm32"))]
     if motion::reduced_motion_from_env() {
         runtime.borrow_mut().set_reduced_motion(true);
@@ -602,8 +658,8 @@ pub fn run_runtime<A: Application>(
         options,
         gpu: None,
         window: None,
-        #[cfg(any(target_arch = "wasm32", feature = "devtools"))]
         proxy: event_loop.create_proxy(),
+        wake,
         #[cfg(feature = "devtools")]
         bridge: None,
         pointer: (0., 0.),
