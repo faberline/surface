@@ -1,4 +1,5 @@
 //! Thin desktop/browser window host. The application never sees platform events.
+mod close;
 #[cfg(feature = "devtools")]
 mod devtools;
 #[cfg(any(target_arch = "wasm32", test))]

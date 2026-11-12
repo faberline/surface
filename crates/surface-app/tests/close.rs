@@ -141,3 +141,56 @@ fn the_app_state_is_dropped_when_the_runtime_ends() {
     // Queue clones hold no app, so the app state is gone exactly once.
     assert_eq!(shared.borrow().drops, 1);
 }
+
+#[test]
+fn a_close_command_made_inside_the_hook_is_consumed_by_the_request() {
+    struct Hooked(Rc<RefCell<Option<Queue<Msg>>>>);
+    impl Application for Hooked {
+        type Message = Msg;
+        fn update(&mut self, _: Msg) {}
+        fn close_requested(&mut self) -> CloseDecision {
+            if let Some(q) = self.0.borrow().as_ref() {
+                q.close();
+            }
+            CloseDecision::Cancel
+        }
+        fn view(&self) -> View<Msg> {
+            View::new(Node::new(Role::Window, "Hooked"))
+        }
+    }
+    let slot = Rc::new(RefCell::new(None));
+    let mut runtime = Runtime::new(Hooked(slot.clone())).unwrap();
+    *slot.borrow_mut() = Some(runtime.queue());
+    assert!(runtime.request_close().unwrap(), "cancel plus close closes");
+    assert!(!runtime.take_close(), "the request consumed the flag");
+}
+
+#[test]
+fn a_close_command_from_wake_or_dispatch_is_seen_by_the_host() {
+    // The flag lives in the runtime, so every path that runs `update`
+    // (wake, dispatch, bridge, cut) leaves it for the host to read.
+    struct Waker(Rc<RefCell<Option<Queue<Msg>>>>);
+    impl Application for Waker {
+        type Message = Msg;
+        fn update(&mut self, _: Msg) {
+            if let Some(q) = self.0.borrow().as_ref() {
+                q.close();
+            }
+        }
+        fn wake(&mut self) {
+            if let Some(q) = self.0.borrow().as_ref() {
+                q.close();
+            }
+        }
+        fn view(&self) -> View<Msg> {
+            View::new(Node::new(Role::Window, "Waker"))
+        }
+    }
+    let slot = Rc::new(RefCell::new(None));
+    let mut runtime = Runtime::new(Waker(slot.clone())).unwrap();
+    *slot.borrow_mut() = Some(runtime.queue());
+    runtime.wake().unwrap();
+    assert!(runtime.take_close());
+    runtime.apply(Msg::Bump).unwrap();
+    assert!(runtime.take_close());
+}
