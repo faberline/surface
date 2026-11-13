@@ -7,6 +7,7 @@ mod host_style;
 #[cfg(not(target_arch = "wasm32"))]
 mod ime_session;
 mod key_order;
+mod key_route;
 mod keyboard;
 mod motion;
 #[cfg(any(target_arch = "wasm32", test))]

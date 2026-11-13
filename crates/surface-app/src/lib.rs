@@ -5,6 +5,7 @@ mod controls;
 mod editing;
 mod editing_runtime;
 mod focus_scroll;
+mod keys;
 mod motion;
 mod snapshot;
 pub use controls::Roving;
@@ -13,6 +14,7 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
+pub use keys::{Key, KeyPress, Modifiers, TextAction};
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
     cell::{Cell, RefCell},
@@ -34,7 +36,10 @@ pub struct View<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<Roving>,
     dismiss: Option<M>,
+    key: Option<KeyHandler<M>>,
 }
+/// A key handler. `Some(message)` consumes the press, `None` passes it on.
+type KeyHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<M>>;
 impl<M> View<M> {
     pub fn new(node: Node) -> Self {
         Self {
@@ -46,6 +51,7 @@ impl<M> View<M> {
             value: None,
             roving: None,
             dismiss: None,
+            key: None,
         }
     }
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -70,6 +76,15 @@ impl<M> View<M> {
     }
     pub fn roving(mut self, options: Roving) -> Self {
         self.roving = Some(options);
+        self
+    }
+    /// Handle key presses while this node has focus. The handler runs
+    /// before the field's own key handling. Return `Some(message)` to
+    /// consume the press: the field does not see it, and `message` runs.
+    /// Return `None` to pass it to the field unchanged. The handler is not
+    /// called during an IME composition. See `KeyPress`.
+    pub fn on_key(mut self, handler: impl Fn(&KeyPress) -> Option<M> + 'static) -> Self {
+        self.key = Some(Rc::new(handler));
         self
     }
     /// Trap focus in this panel, dismiss on Escape/outside click, then restore focus.
@@ -178,6 +193,7 @@ struct Binding<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<Roving>,
     dismiss: Option<M>,
+    key: Option<KeyHandler<M>>,
 }
 
 /// Messages posted from inside `update` or from other code on the UI thread.
@@ -353,6 +369,7 @@ impl<A: Application> Runtime<A> {
                     value: view.value,
                     roving: view.roving,
                     dismiss: view.dismiss,
+                    key: view.key,
                 },
             );
             for child in view.children {
@@ -452,6 +469,15 @@ impl<A: Application> Runtime<A> {
         } else {
             Ok(false)
         }
+    }
+    /// The host calls this for each key press before the field's own key
+    /// handling. Returns `true` when the focused node's `on_key` handler
+    /// consumed the press; the host then skips the field. Returns `false`
+    /// with no handler, when the handler passes, or during an IME
+    /// composition, where the handler is not called.
+    pub fn key(&mut self, press: &KeyPress) -> Result<bool, AppError> {
+        let _ = press;
+        Ok(false)
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
