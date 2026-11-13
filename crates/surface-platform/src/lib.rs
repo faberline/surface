@@ -165,8 +165,7 @@ struct Host<A: Application> {
     #[cfg(feature = "devtools")]
     bridge: Option<devtools::Bridge>,
     pointer: (f32, f32),
-    shift: bool,
-    control: bool,
+    mods: key_order::Mods,
     #[cfg(target_arch = "wasm32")]
     key_order: key_order::KeyOrder<winit::event::KeyEvent>,
     frames: u32,
@@ -190,8 +189,7 @@ impl<A: Application> Host<A> {
         held: Option<(winit::event::KeyEvent, key_order::Mods)>,
     ) {
         if let Some((event, mods)) = held {
-            self.shift = mods.shift;
-            self.control = mods.control;
+            self.mods = mods;
             self.key_input(event_loop, event);
         }
     }
@@ -604,19 +602,13 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
             #[cfg(target_arch = "wasm32")]
             WindowEvent::ModifiersChanged(m) => {
-                let state = m.state();
-                let held = self.key_order.modifiers(key_order::Mods {
-                    shift: state.shift_key(),
-                    control: state.control_key() || state.super_key(),
-                });
-                self.shift = state.shift_key();
-                self.control = state.control_key() || state.super_key();
+                self.mods = key_route::from_winit_mods(m.state());
+                let held = self.key_order.modifiers(self.mods);
                 self.deliver_held_key(event_loop, held);
             }
             #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::ModifiersChanged(m) => {
-                self.shift = m.state().shift_key();
-                self.control = m.state().control_key() || m.state().super_key();
+                self.mods = key_route::from_winit_mods(m.state());
             }
             WindowEvent::Focused(false) => {
                 #[cfg(target_arch = "wasm32")]
@@ -693,8 +685,7 @@ pub fn run_with_wake<A: Application>(
         #[cfg(feature = "devtools")]
         bridge: None,
         pointer: (0., 0.),
-        shift: false,
-        control: false,
+        mods: key_order::Mods::default(),
         #[cfg(target_arch = "wasm32")]
         key_order: key_order::KeyOrder::new(),
         frames: 0,

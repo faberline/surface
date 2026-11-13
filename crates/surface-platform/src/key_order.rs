@@ -5,11 +5,9 @@
 //! arrive, or until the batch ends.
 #![cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Mods {
-    pub shift: bool,
-    pub control: bool,
-}
+/// The modifiers held with a press. Surface's own type, so the key handler
+/// sees Shift, Control, Alt and Meta separately.
+pub(crate) type Mods = surface_app::Modifiers;
 
 #[derive(Debug)]
 pub(crate) struct KeyOrder<K> {
@@ -47,10 +45,12 @@ mod tests {
     const NONE: Mods = Mods {
         shift: false,
         control: false,
+        alt: false,
+        meta: false,
     };
     const SHIFT: Mods = Mods {
         shift: true,
-        control: false,
+        ..NONE
     };
     #[test]
     fn press_then_modifiers_gives_key_with_new_modifiers() {

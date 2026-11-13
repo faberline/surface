@@ -46,6 +46,38 @@ window. A caller of `run_runtime` that keeps its own `Rc<RefCell<Runtime>>`
 clone delays the app drop until that clone is gone. The web host has no window close and does
 not use this path.
 
+## App key handler
+
+`View::on_key(|press| ...)` lets an app see a key press in the focused
+node, for example a chat field (#103). A `KeyPress` holds a Surface `Key`
+and `Modifiers` (`shift`, `control`, `alt` for Option, `meta` for Command).
+The hosts map winit and DOM keys to these types inside `surface-platform`
+(`key_route.rs`); no platform type leaves it.
+
+- **Order.** The handler runs first, before the field's own key handling
+  (newline, Activate, Escape, caret moves, Tab, shortcuts). It returns
+  `Some(message)` to consume the press: the field does not see it and
+  `message` runs. `None` passes the press to the field unchanged.
+- **Menu case.** A slash menu that is open while the field keeps focus is
+  app state. The field's handler reads it and consumes ArrowUp, ArrowDown,
+  Enter and Escape; the field value, the caret and a `modal` panel do not see
+  them. When the menu is closed, the handler passes these keys.
+- **Composition.** The handler is not called during an IME composition.
+  The composition owns the key, and Enter commits the candidate; it never
+  becomes "send". The runtime checks its own editor state, and the host
+  adds its platform state: the native IME snapshot, the DOM composition
+  flags, and `keyCode` 229, which Safari sends for the Enter that commits
+  after `compositionend`.
+- **Defaults.** `KeyPress::text_action()` maps Enter with no modifier to
+  `TextAction::Submit` and Shift+Enter to `TextAction::NewLine`. Apps may
+  use it or read the raw key.
+- **No handler.** The host path is the same as before. Enter inserts a
+  newline in a multiline field and activates elsewhere.
+
+The decisions are pure functions (`route_key`, the key maps and
+`field_action`) shared by both hosts and unit-tested without a window.
+Real-device IME evidence (macOS Zhuyin and Cangjie) is tracked in #48.
+
 `NodeId` is an arena index for the current tree. It is not durable identity.
 Use a stable ID for an interactive node. Duplicate IDs return `DomError`.
 Focus and pending pointer presses store stable IDs. Disabling a container

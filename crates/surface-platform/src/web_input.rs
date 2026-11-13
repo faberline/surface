@@ -1,10 +1,14 @@
 //! The DOM hosts IME/clipboard input only. Rust owns the value and painted UI.
+use crate::key_route::{self, KeyStep};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
     sync::Arc,
 };
-use surface_app::{utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Runtime};
+use surface_app::{
+    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, KeyPress, Modifiers,
+    Runtime,
+};
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::{EventTarget, HtmlTextAreaElement};
 use winit::{platform::web::WindowExtWebSys, window::Window};
@@ -355,6 +359,29 @@ impl<A: Application> WebInput<A> {
                 };
                 if key.is_composing() || composing.get() {
                     return;
+                }
+                // The app's key handler runs before the field (#103).
+                let mods = Modifiers {
+                    shift: key.shift_key(),
+                    control: key.ctrl_key(),
+                    alt: key.alt_key(),
+                    meta: key.meta_key(),
+                };
+                let press = key_route::from_dom(&key.key()).map(|k| KeyPress::new(k, mods));
+                let ime = key_route::dom_composing(key.is_composing(), key.key_code(), false);
+                let step = key_route::route_key(&mut runtime.borrow_mut(), press, ime);
+                match step {
+                    KeyStep::Consumed => {
+                        event.prevent_default();
+                        window.request_redraw();
+                        sync_value(&area, &runtime);
+                        return;
+                    }
+                    KeyStep::Fail(error) => {
+                        web_sys::console::error_1(&error.into());
+                        return;
+                    }
+                    KeyStep::Pass => {}
                 }
                 if (key.meta_key() || key.ctrl_key())
                     && matches!(key.key().to_lowercase().as_str(), "z" | "y")

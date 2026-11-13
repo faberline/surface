@@ -68,6 +68,19 @@ impl KeyPress {
     /// The default mapping of this press, if any. Apps may ignore it and
     /// read `key` and `modifiers` directly.
     pub fn text_action(&self) -> Option<TextAction> {
-        None
+        if self.key != Key::Enter {
+            return None;
+        }
+        let shift_only = Modifiers {
+            shift: true,
+            ..Modifiers::default()
+        };
+        if self.modifiers.is_empty() {
+            Some(TextAction::Submit)
+        } else if self.modifiers == shift_only {
+            Some(TextAction::NewLine)
+        } else {
+            None
+        }
     }
 }

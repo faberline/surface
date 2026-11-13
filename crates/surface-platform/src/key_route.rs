@@ -3,7 +3,7 @@
 //! here, ask `route_key`, and run the field's own key handling only on
 //! `KeyStep::Pass`.
 use surface_app::{Application, EditKey, Event, InputSnapshot, Key, KeyPress, Modifiers, Runtime};
-use winit::keyboard::{Key as WinitKey, NamedKey};
+use winit::keyboard::{Key as WinitKey, ModifiersState, NamedKey};
 
 /// What the host does with a key press after asking the app.
 #[derive(Debug, PartialEq, Eq)]
@@ -24,22 +24,78 @@ pub(crate) fn route_key<A: Application>(
     press: Option<KeyPress>,
     composing: bool,
 ) -> KeyStep {
-    let _ = (runtime, press, composing);
-    KeyStep::Pass
+    let Some(press) = press.filter(|_| !composing) else {
+        return KeyStep::Pass;
+    };
+    match runtime.key(&press) {
+        Ok(true) => KeyStep::Consumed,
+        Ok(false) => KeyStep::Pass,
+        Err(error) => KeyStep::Fail(error.to_string()),
+    }
+}
+
+/// Map winit modifiers. Command is `meta`, Option is `alt`.
+pub(crate) fn from_winit_mods(state: ModifiersState) -> Modifiers {
+    Modifiers {
+        shift: state.shift_key(),
+        control: state.control_key(),
+        alt: state.alt_key(),
+        meta: state.super_key(),
+    }
 }
 
 /// Map a winit logical key. Keys with no Surface name return `None` and
 /// skip the handler.
 pub(crate) fn from_winit(key: &WinitKey) -> Option<Key> {
-    let _ = key;
-    None
+    match key {
+        WinitKey::Named(named) => from_named(*named),
+        WinitKey::Character(text) => Some(Key::Character(text.to_string())),
+        _ => None,
+    }
+}
+
+fn from_named(key: NamedKey) -> Option<Key> {
+    Some(match key {
+        NamedKey::Enter => Key::Enter,
+        NamedKey::Escape => Key::Escape,
+        NamedKey::Tab => Key::Tab,
+        NamedKey::Backspace => Key::Backspace,
+        NamedKey::Delete => Key::Delete,
+        NamedKey::ArrowUp => Key::ArrowUp,
+        NamedKey::ArrowDown => Key::ArrowDown,
+        NamedKey::ArrowLeft => Key::ArrowLeft,
+        NamedKey::ArrowRight => Key::ArrowRight,
+        NamedKey::Home => Key::Home,
+        NamedKey::End => Key::End,
+        NamedKey::PageUp => Key::PageUp,
+        NamedKey::PageDown => Key::PageDown,
+        NamedKey::Space => Key::Space,
+        _ => return None,
+    })
 }
 
 /// Map a DOM `KeyboardEvent.key`.
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub(crate) fn from_dom(key: &str) -> Option<Key> {
-    let _ = key;
-    None
+    Some(match key {
+        "Enter" => Key::Enter,
+        "Escape" => Key::Escape,
+        "Tab" => Key::Tab,
+        "Backspace" => Key::Backspace,
+        "Delete" => Key::Delete,
+        "ArrowUp" => Key::ArrowUp,
+        "ArrowDown" => Key::ArrowDown,
+        "ArrowLeft" => Key::ArrowLeft,
+        "ArrowRight" => Key::ArrowRight,
+        "Home" => Key::Home,
+        "End" => Key::End,
+        "PageUp" => Key::PageUp,
+        "PageDown" => Key::PageDown,
+        " " => Key::Space,
+        // Named keys are longer than one character: "Shift", "Process".
+        text if text.chars().count() == 1 => Key::Character(text.to_owned()),
+        _ => return None,
+    })
 }
 
 /// True when a DOM keydown belongs to an IME composition. Safari sends the
@@ -47,8 +103,7 @@ pub(crate) fn from_dom(key: &str) -> Option<Key> {
 /// `isComposing` false and `keyCode` 229, so the code is checked too.
 #[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
 pub(crate) fn dom_composing(is_composing: bool, key_code: u32, host_composing: bool) -> bool {
-    let _ = key_code;
-    is_composing || host_composing
+    is_composing || key_code == 229 || host_composing
 }
 
 /// The native field's own handling of a key press: what the host did

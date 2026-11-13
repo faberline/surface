@@ -476,8 +476,20 @@ impl<A: Application> Runtime<A> {
     /// with no handler, when the handler passes, or during an IME
     /// composition, where the handler is not called.
     pub fn key(&mut self, press: &KeyPress) -> Result<bool, AppError> {
-        let _ = press;
-        Ok(false)
+        // The composition owns the keys. Enter commits the candidate.
+        if self.editors.values().any(|editor| editor.is_composing()) {
+            return Ok(false);
+        }
+        let Some(id) = self.focused_node() else {
+            return Ok(false);
+        };
+        let Some(handler) = self.bindings.get(&id).and_then(|b| b.key.clone()) else {
+            return Ok(false);
+        };
+        match handler(press) {
+            Some(message) => self.message(Some(message)),
+            None => Ok(false),
+        }
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
