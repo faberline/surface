@@ -15,7 +15,7 @@ pub use editing::{
 pub use editing_runtime::InputSnapshot;
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::{BTreeMap, VecDeque},
     rc::Rc,
 };
@@ -78,6 +78,12 @@ impl<M> View<M> {
         self
     }
 }
+/// The app's answer to a close request.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CloseDecision {
+    Allow,
+    Cancel,
+}
 pub trait Application: 'static {
     type Message: Clone + 'static;
     fn title(&self) -> &str {
@@ -89,6 +95,12 @@ pub trait Application: 'static {
     /// nothing. Many wakes can coalesce into one call, so drain everything
     /// that is ready. The runtime rebuilds the view after this returns.
     fn wake(&mut self) {}
+    /// Called once when the user asks to close the window. Return
+    /// `CloseDecision::Cancel` to keep the window, for example while a dialog
+    /// is open or after a failed save. The default allows the close.
+    fn close_requested(&mut self) -> CloseDecision {
+        CloseDecision::Allow
+    }
     fn view(&self) -> View<Self::Message>;
 }
 #[derive(Clone, Debug)]
@@ -170,10 +182,10 @@ struct Binding<M> {
 
 /// Messages posted from inside `update` or from other code on the UI thread.
 /// Clone it freely. It is not `Send`; use `WakeHandle` across threads.
-pub struct Queue<M>(Rc<RefCell<VecDeque<M>>>);
+pub struct Queue<M>(Rc<RefCell<VecDeque<M>>>, Rc<Cell<bool>>);
 impl<M> Clone for Queue<M> {
     fn clone(&self) -> Self {
-        Self(self.0.clone())
+        Self(self.0.clone(), self.1.clone())
     }
 }
 impl<M> Queue<M> {
@@ -182,6 +194,14 @@ impl<M> Queue<M> {
     /// next `apply`, `wake` or `flush`.
     pub fn post(&self, message: M) {
         self.0.borrow_mut().push_back(message);
+    }
+    /// Ask the host to close the window. It does not call `close_requested`:
+    /// the app already decided. The host ends the event loop after the
+    /// current update, and the app state is then dropped normally. Called
+    /// from inside `close_requested`, it takes effect at once, even if that
+    /// hook returns `Cancel`.
+    pub fn close(&self) {
+        self.1.set(true);
     }
 }
 
@@ -210,7 +230,7 @@ pub struct Runtime<A: Application> {
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
         let mut runtime = Self {
-            queue: Queue(Rc::default()),
+            queue: Queue(Rc::default(), Rc::default()),
             app,
             dom: MicroDom::new(Node::new(Role::Window, "Surface")),
             bindings: BTreeMap::new(),
@@ -261,6 +281,21 @@ impl<A: Application> Runtime<A> {
     pub fn wake(&mut self) -> Result<(), AppError> {
         self.app.wake();
         self.flush()
+    }
+    /// The host calls this when the user asks to close the window. Runs the
+    /// app's `close_requested` hook once, then queued messages, then
+    /// rebuilds. Returns `true` when the window should close now.
+    pub fn request_close(&mut self) -> Result<bool, AppError> {
+        let decision = self.app.close_requested();
+        // Run what the hook posted and rebuild, also after a veto.
+        self.flush()?;
+        let closed_by_app = self.take_close();
+        Ok(decision == CloseDecision::Allow || closed_by_app)
+    }
+    /// True once, after the app called `Queue::close`. The host checks it
+    /// after each input, wake or flush.
+    pub fn take_close(&mut self) -> bool {
+        self.queue.1.replace(false)
     }
     /// Run queued messages in order, including ones posted by `update`
     /// while this runs, then rebuild once.

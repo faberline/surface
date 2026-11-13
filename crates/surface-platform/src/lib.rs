@@ -1,4 +1,5 @@
 //! Thin desktop/browser window host. The application never sees platform events.
+mod close;
 #[cfg(feature = "devtools")]
 mod devtools;
 #[cfg(any(target_arch = "wasm32", test))]
@@ -158,6 +159,8 @@ struct Host<A: Application> {
     )]
     proxy: EventLoopProxy<UserEvent>,
     wake: WakeHandle,
+    /// Set once the loop began to exit; later close requests are ignored.
+    closing: bool,
     #[cfg(feature = "devtools")]
     bridge: Option<devtools::Bridge>,
     pointer: (f32, f32),
@@ -255,6 +258,29 @@ impl<A: Application> Host<A> {
         }
         // The app may have changed the focused field, as after an input.
         self.sync_text_input();
+    }
+    /// The user asked to close the window. The app may veto. On allow the
+    /// loop exits; `run_with_wake` then drops the host and the app state.
+    fn close_requested(&mut self, event_loop: &ActiveEventLoop) {
+        let step = close::close_request_step(&mut self.runtime.borrow_mut(), &mut self.closing);
+        match step {
+            close::HostStep::Exit => event_loop.exit(),
+            close::HostStep::Stay => {
+                if let Some(window) = &self.window {
+                    window.request_redraw();
+                }
+                self.sync_text_input();
+            }
+            close::HostStep::Fail(message) => self.fail(event_loop, message),
+        }
+    }
+    /// Exit when the app queued a close command. Called from
+    /// `about_to_wait`, so every path that runs `update` is covered.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn exit_if_app_closed(&mut self, event_loop: &ActiveEventLoop) {
+        if close::should_exit(&mut self.runtime.borrow_mut(), &mut self.closing) {
+            event_loop.exit();
+        }
     }
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
         let message = error.to_string();
@@ -470,9 +496,11 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             UserEvent::Ready(Err(error)) => self.fail(event_loop, error),
         }
     }
-    #[cfg(target_arch = "wasm32")]
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        #[cfg(target_arch = "wasm32")]
         self.flush_held_key(event_loop);
+        #[cfg(not(target_arch = "wasm32"))]
+        self.exit_if_app_closed(event_loop);
     }
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
         // The web backend sends a key press before its modifier change.
@@ -485,7 +513,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             self.flush_held_key(event_loop);
         }
         match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::CloseRequested => self.close_requested(event_loop),
             WindowEvent::RedrawRequested => self.draw(event_loop),
             WindowEvent::Resized(size) => {
                 if let Some(gpu) = &mut self.gpu {
@@ -660,6 +688,7 @@ pub fn run_with_wake<A: Application>(
         window: None,
         proxy: event_loop.create_proxy(),
         wake,
+        closing: false,
         #[cfg(feature = "devtools")]
         bridge: None,
         pointer: (0., 0.),
@@ -685,6 +714,10 @@ pub fn run_with_wake<A: Application>(
         event_loop
             .run_app(&mut host)
             .map_err(|e| HostError(e.to_string()))?;
+        // Close the window before the app cleanup runs in `Drop`, so a slow
+        // child stop or worker join does not freeze a visible window.
+        host.gpu = None;
+        host.window = None;
         if let Some(error) = host.error {
             return Err(error);
         }
