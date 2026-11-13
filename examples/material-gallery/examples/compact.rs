@@ -7,6 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             width: 420,
             height: 360,
             close_after_frames: std::env::args().any(|arg| arg == "--smoke").then_some(2),
+            ..Default::default()
         },
     )?;
     Ok(())

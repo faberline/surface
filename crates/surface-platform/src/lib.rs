@@ -58,6 +58,10 @@ pub struct Options {
     pub width: u32,
     pub height: u32,
     pub close_after_frames: Option<u32>,
+    /// Native close smoke only. The host sets this to `true` once the window
+    /// and gpu are dropped, before the app state drops. The app reads it in
+    /// `Drop` to prove the order.
+    pub window_released: Option<Arc<std::sync::atomic::AtomicBool>>,
 }
 impl Default for Options {
     fn default() -> Self {
@@ -65,6 +69,7 @@ impl Default for Options {
             width: 960,
             height: 800,
             close_after_frames: None,
+            window_released: None,
         }
     }
 }
@@ -711,13 +716,18 @@ pub fn run_with_wake<A: Application>(
     #[cfg(not(target_arch = "wasm32"))]
     {
         let mut host = host;
-        event_loop
-            .run_app(&mut host)
-            .map_err(|e| HostError(e.to_string()))?;
+        let result = event_loop.run_app(&mut host);
         // Close the window before the app cleanup runs in `Drop`, so a slow
-        // child stop or worker join does not freeze a visible window.
+        // child stop or worker join does not freeze a visible window. This
+        // runs on the `Err` path too, before `?` drops the runtime.
+        let window = host.window.as_ref().map(Arc::downgrade);
         host.gpu = None;
         host.window = None;
+        if let Some(flag) = &host.options.window_released {
+            let gone = window.is_none_or(|w| w.strong_count() == 0);
+            flag.store(gone, std::sync::atomic::Ordering::SeqCst);
+        }
+        result.map_err(|e| HostError(e.to_string()))?;
         if let Some(error) = host.error {
             return Err(error);
         }
