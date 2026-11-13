@@ -53,15 +53,17 @@ fn drawable_size(window: &Window) -> (winit::dpi::PhysicalSize<u32>, f32) {
     }
 }
 
+/// Test seam for the native close smoke. Not part of the supported API.
+/// 0 = no window was released, 1 = the window and gpu were gone before the app
+/// state dropped, 2 = the window was still alive. Read it from the app's `Drop`.
+#[doc(hidden)]
+pub static WINDOW_RELEASED: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
 #[derive(Clone, Debug)]
 pub struct Options {
     pub width: u32,
     pub height: u32,
     pub close_after_frames: Option<u32>,
-    /// Native close smoke only. The host sets this to `true` once the window
-    /// and gpu are dropped, before the app state drops. The app reads it in
-    /// `Drop` to prove the order.
-    pub window_released: Option<Arc<std::sync::atomic::AtomicBool>>,
 }
 impl Default for Options {
     fn default() -> Self {
@@ -69,7 +71,6 @@ impl Default for Options {
             width: 960,
             height: 800,
             close_after_frames: None,
-            window_released: None,
         }
     }
 }
@@ -723,9 +724,9 @@ pub fn run_with_wake<A: Application>(
         let window = host.window.as_ref().map(Arc::downgrade);
         host.gpu = None;
         host.window = None;
-        if let Some(flag) = &host.options.window_released {
-            let gone = window.is_none_or(|w| w.strong_count() == 0);
-            flag.store(gone, std::sync::atomic::Ordering::SeqCst);
+        if let Some(window) = window {
+            let state = if window.strong_count() == 0 { 1 } else { 2 };
+            WINDOW_RELEASED.store(state, std::sync::atomic::Ordering::SeqCst);
         }
         result.map_err(|e| HostError(e.to_string()))?;
         if let Some(error) = host.error {

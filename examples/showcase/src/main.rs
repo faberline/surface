@@ -1,10 +1,7 @@
 use std::{
     cell::RefCell,
     rc::Rc,
-    sync::{
-        atomic::{AtomicBool, AtomicU32, Ordering},
-        Arc,
-    },
+    sync::atomic::{AtomicBool, AtomicU32, Ordering},
     time::Duration,
 };
 use surface_app::{Application, Queue, Runtime, View};
@@ -18,7 +15,6 @@ static WINDOW_GONE_AT_DROP: AtomicBool = AtomicBool::new(false);
 struct CloseSmoke {
     inner: Showcase,
     queue: Rc<RefCell<Option<Queue<Message>>>>,
-    window_released: Arc<AtomicBool>,
 }
 impl Application for CloseSmoke {
     type Message = Message;
@@ -39,26 +35,25 @@ impl Application for CloseSmoke {
 }
 impl Drop for CloseSmoke {
     fn drop(&mut self) {
-        WINDOW_GONE_AT_DROP.store(
-            self.window_released.load(Ordering::SeqCst),
-            Ordering::SeqCst,
-        );
+        // 1 only if a window existed and was released first. No window gives 0.
+        let state = surface_platform::WINDOW_RELEASED.load(Ordering::SeqCst);
+        WINDOW_GONE_AT_DROP.store(state == 1, Ordering::SeqCst);
         DROPS.fetch_add(1, Ordering::SeqCst);
     }
 }
 
 fn smoke_close() -> Result<(), Box<dyn std::error::Error>> {
-    let released = Arc::new(AtomicBool::new(false));
-    let options = surface_platform::Options {
-        window_released: Some(released.clone()),
-        ..Default::default()
-    };
-    surface_platform::run_with_wake(options, |wake| {
+    // A regression must fail, not hang: stop the process if the loop never exits.
+    std::thread::spawn(|| {
+        std::thread::sleep(Duration::from_secs(10));
+        eprintln!("Surface close smoke FAILED: the event loop did not exit within 10 s");
+        std::process::exit(1);
+    });
+    surface_platform::run_with_wake(Default::default(), |wake| {
         let queue = Rc::new(RefCell::new(None));
         let app = CloseSmoke {
             inner: Showcase::default(),
             queue: queue.clone(),
-            window_released: released,
         };
         let runtime =
             Runtime::new(app).map_err(|e| surface_platform::HostError::new(e.to_string()))?;
@@ -77,7 +72,9 @@ fn smoke_close() -> Result<(), Box<dyn std::error::Error>> {
         return Err(format!("app Drop ran {drops} times, expected 1").into());
     }
     if !window_gone {
-        return Err("app state dropped while the window was still alive".into());
+        return Err(
+            "no window was released before the app state dropped, or it was still alive".into(),
+        );
     }
     Ok(())
 }

@@ -20,10 +20,16 @@ a thread calls the `WakeHandle`. The app's `wake` then calls
 - The app's `Drop` runs exactly once.
 - The window and gpu are gone before the app `Drop` runs. The host checks a
   `Weak<Window>` after it drops its `Arc`, and the app reads the result
-  through `Options::window_released`.
+  from the hidden `surface_platform::WINDOW_RELEASED`. A run with no window
+  fails, so the check cannot pass vacuously.
+- A 10 s watchdog fails the run if the loop does not exit.
 
 What it does not show:
 
+- The `CloseRequested` + `Allow` → `event_loop.exit()` path (`HostStep::Exit`
+  in `lib.rs`) is still not covered natively. It needs the reach check under
+  #99.
+- The `Err`-path drop order has no test.
 - It does not press Cmd+Q, use the app menu Quit, log out or shut down.
   Reading the winit 0.30.13 source says Cmd+Q and Quit skip
   `close_requested` and the app `Drop`. See the follow-up issue linked from
