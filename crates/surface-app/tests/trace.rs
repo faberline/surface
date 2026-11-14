@@ -283,3 +283,136 @@ fn jsonl_export_is_pinned() {
     click(&mut runtime);
     assert_eq!(runtime.trace().unwrap().export_jsonl(), CLICK_JSONL);
 }
+
+mod sources {
+    use super::{step_clock, Metrics};
+    use surface::{Length, Node, RangeValue, Role, Style};
+    use surface_app::trace::{Handler, RecordKind, Recorder};
+    use surface_app::{Application, EditKey, Event, Key, KeyPress, Modifiers, Runtime, View};
+
+    #[derive(Clone, Debug)]
+    enum Msg {
+        Volume(f64),
+        Text(String),
+        Submit,
+        Open,
+        Close,
+    }
+    #[derive(Default)]
+    struct Form {
+        volume: f64,
+        text: String,
+        dialog: bool,
+    }
+    impl Application for Form {
+        type Message = Msg;
+        fn update(&mut self, message: Msg) {
+            match message {
+                Msg::Volume(v) => self.volume = v,
+                Msg::Text(t) => self.text = t,
+                Msg::Submit => {}
+                Msg::Open => self.dialog = true,
+                Msg::Close => self.dialog = false,
+            }
+        }
+        fn view(&self) -> View<Msg> {
+            let mut children = vec![
+                View::new(
+                    Node::new(Role::Slider, "Volume")
+                        .id("vol")
+                        .range(RangeValue {
+                            min: 0.,
+                            max: 20.,
+                            step: 2.,
+                            value: self.volume,
+                        })
+                        .styled(Style::default().height(Length::Px(40.))),
+                )
+                .on_value(Msg::Volume),
+                View::new(
+                    Node::new(Role::TextInput, "Field")
+                        .id("field")
+                        .text(&self.text)
+                        .styled(Style::default().height(Length::Px(40.))),
+                )
+                .on_input(Msg::Text)
+                .on_key(|press| (press.key == Key::Enter).then_some(Msg::Submit)),
+            ];
+            if self.dialog {
+                children.push(
+                    View::new(Node::new(Role::Dialog, "Dialog").id("dialog").tab_index(-1))
+                        .modal(Msg::Close),
+                );
+            }
+            View::new(Node::new(Role::Window, "Form").styled(Style::column())).children(children)
+        }
+    }
+
+    #[test]
+    fn key_value_and_dismiss_bindings_are_sources() {
+        let mut runtime = Runtime::new(Form::default()).unwrap();
+        runtime.render(320., 240., &mut Metrics).unwrap();
+        runtime.attach_trace(Recorder::new(step_clock()));
+
+        runtime.activate("field").unwrap();
+        let enter = KeyPress::new(Key::Enter, Modifiers::default());
+        assert!(runtime.key(&enter).unwrap());
+
+        runtime
+            .dispatch(Event::SetValue {
+                id: "vol".into(),
+                value: 4.,
+            })
+            .unwrap();
+        runtime.activate("vol").unwrap();
+        runtime
+            .dispatch(Event::Edit {
+                key: EditKey::Right,
+                extend: false,
+                by_word: false,
+            })
+            .unwrap();
+        assert_eq!(runtime.app().volume, 6.);
+
+        runtime.apply(Msg::Open).unwrap();
+        runtime.render(320., 240., &mut Metrics).unwrap();
+        runtime.dispatch(Event::Cancel).unwrap();
+        assert!(!runtime.app().dialog);
+
+        let trace = runtime.trace().unwrap();
+        let sources: Vec<_> = trace
+            .records_after(None)
+            .filter(|r| r.kind() == RecordKind::Message)
+            .map(|r| r.source())
+            .collect();
+        assert_eq!(
+            sources,
+            [
+                Some(("field", Handler::Key)),
+                Some(("vol", Handler::Value)),
+                Some(("vol", Handler::Value)),
+                None,
+                Some(("dialog", Handler::Dismiss)),
+            ]
+        );
+        let inputs: Vec<_> = trace
+            .records_after(None)
+            .filter(|r| r.kind() == RecordKind::Input)
+            .map(|r| match r.data() {
+                surface_app::trace::Data::Input { event, .. } => (*event, r.id()),
+                _ => unreachable!(),
+            })
+            .collect();
+        assert_eq!(
+            inputs,
+            [
+                ("ActivateId", Some("field")),
+                ("Key", None),
+                ("SetValue", Some("vol")),
+                ("ActivateId", Some("vol")),
+                ("Edit", None),
+                ("Cancel", None),
+            ]
+        );
+    }
+}

@@ -8,6 +8,8 @@ mod focus_scroll;
 mod keys;
 mod motion;
 mod snapshot;
+#[cfg(feature = "devtools")]
+pub mod trace;
 pub use controls::Roving;
 pub use editing::{
     utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
@@ -117,6 +119,13 @@ pub trait Application: 'static {
         CloseDecision::Allow
     }
     fn view(&self) -> View<Self::Message>;
+    /// A short text for a message in a devtools trace. The default returns
+    /// `None`. The runtime calls it only while a trace recorder is attached
+    /// (feature `devtools`).
+    fn describe(&self, message: &Self::Message) -> Option<String> {
+        let _ = message;
+        None
+    }
 }
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -242,6 +251,8 @@ pub struct Runtime<A: Application> {
     layout_focus: Option<String>,
     layout_viewport: Option<(f32, f32)>,
     motion: motion::Motion,
+    #[cfg(feature = "devtools")]
+    trace: Option<trace::Recorder>,
 }
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
@@ -266,6 +277,8 @@ impl<A: Application> Runtime<A> {
             layout_focus: None,
             layout_viewport: None,
             motion: motion::Motion::default(),
+            #[cfg(feature = "devtools")]
+            trace: None,
         };
         runtime.rebuild()?;
         Ok(runtime)
@@ -316,14 +329,37 @@ impl<A: Application> Runtime<A> {
     /// Run queued messages in order, including ones posted by `update`
     /// while this runs, then rebuild once.
     pub fn flush(&mut self) -> Result<(), AppError> {
+        let result = self.run_queue();
+        #[cfg(feature = "devtools")]
+        self.trace_error(&result);
+        result
+    }
+    fn run_queue(&mut self) -> Result<(), AppError> {
         loop {
             let next = self.queue.0.borrow_mut().pop_front();
             let Some(message) = next else { break };
+            #[cfg(feature = "devtools")]
+            let start = self.trace_message(&message);
             self.app.update(message);
+            #[cfg(feature = "devtools")]
+            self.trace_update(start);
         }
         self.rebuild()
     }
     fn rebuild(&mut self) -> Result<(), AppError> {
+        #[cfg(feature = "devtools")]
+        let start = self.trace_now();
+        let result = self.rebuild_view();
+        #[cfg(feature = "devtools")]
+        self.trace_span(
+            start,
+            trace::Data::Rebuild {
+                nodes: self.dom.len() as u32,
+            },
+        );
+        result
+    }
+    fn rebuild_view(&mut self) -> Result<(), AppError> {
         fn add<M>(
             view: View<M>,
             dom: &mut MicroDom,
@@ -419,6 +455,19 @@ impl<A: Application> Runtime<A> {
         height: f32,
         measurer: &mut impl TextMeasurer,
     ) -> Result<DisplayList, AppError> {
+        let result = self.render_frame(width, height, measurer);
+        #[cfg(feature = "devtools")]
+        self.trace_error(&result);
+        result
+    }
+    fn render_frame(
+        &mut self,
+        width: f32,
+        height: f32,
+        measurer: &mut impl TextMeasurer,
+    ) -> Result<DisplayList, AppError> {
+        #[cfg(feature = "devtools")]
+        let start = self.trace_now();
         let (mut display_dom, mut decorations, mut computed) =
             self.layout_editing(width, height, measurer)?;
         if self.focused != self.layout_focus || self.layout_viewport != Some((width, height)) {
@@ -433,6 +482,15 @@ impl<A: Application> Runtime<A> {
             self.layout_focus.clone_from(&self.focused);
             self.layout_viewport = Some((width, height));
         }
+        #[cfg(feature = "devtools")]
+        self.trace_span(
+            start,
+            trace::Data::Layout {
+                nodes: computed.nodes.len() as u32,
+            },
+        );
+        #[cfg(feature = "devtools")]
+        let start = self.trace_now();
         self.present_motion(&mut display_dom, &computed)?;
         let focused = self.focused.as_ref().and_then(|id| self.dom.by_id(id));
         let interaction = surface::InteractionState {
@@ -446,6 +504,8 @@ impl<A: Application> Runtime<A> {
             &decorations,
             interaction,
         );
+        #[cfg(feature = "devtools")]
+        self.trace_paint(start, list.ops.len());
         self.computed = Some(computed);
         Ok(list)
     }
@@ -476,6 +536,14 @@ impl<A: Application> Runtime<A> {
     /// with no handler, when the handler passes, or during an IME
     /// composition, where the handler is not called.
     pub fn key(&mut self, press: &KeyPress) -> Result<bool, AppError> {
+        #[cfg(feature = "devtools")]
+        let span = self.trace_input("Key", None, None, None);
+        let result = self.key_press(press);
+        #[cfg(feature = "devtools")]
+        self.trace_input_end(span, &result);
+        result
+    }
+    fn key_press(&mut self, press: &KeyPress) -> Result<bool, AppError> {
         // The composition owns the keys. Enter commits the candidate.
         if self.editors.values().any(|editor| editor.is_composing()) {
             return Ok(false);
@@ -487,12 +555,26 @@ impl<A: Application> Runtime<A> {
             return Ok(false);
         };
         match handler(press) {
-            Some(message) => self.message(Some(message)),
+            Some(message) => {
+                #[cfg(feature = "devtools")]
+                if let (Some(recorder), Some(focused)) = (&mut self.trace, &self.focused) {
+                    recorder.set_source(focused, trace::Handler::Key);
+                }
+                self.message(Some(message))
+            }
             None => Ok(false),
         }
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
+        #[cfg(feature = "devtools")]
+        let span = self.trace_input("ActivateId", Some(stable_id), None, None);
+        let result = self.activate_id(stable_id);
+        #[cfg(feature = "devtools")]
+        self.trace_input_end(span, &result);
+        result
+    }
+    fn activate_id(&mut self, stable_id: &str) -> Result<bool, AppError> {
         let id = self
             .dom
             .by_id(stable_id)
@@ -504,10 +586,20 @@ impl<A: Application> Runtime<A> {
         }
         self.focused = Some(stable_id.to_owned());
         let message = self.bindings.get(&id).and_then(|b| b.activate.clone());
+        #[cfg(feature = "devtools")]
+        self.trace_source(stable_id, trace::Handler::Press);
         self.message(message)
             .map(|changed| changed || focus_changed)
     }
     pub fn dispatch(&mut self, event: Event) -> Result<bool, AppError> {
+        #[cfg(feature = "devtools")]
+        let span = self.trace_event(&event);
+        let result = self.dispatch_event(event);
+        #[cfg(feature = "devtools")]
+        self.trace_input_end(span, &result);
+        result
+    }
+    fn dispatch_event(&mut self, event: Event) -> Result<bool, AppError> {
         match event {
             Event::PointerDown { x, y } => {
                 self.cancel_composition();
@@ -546,7 +638,7 @@ impl<A: Application> Runtime<A> {
                     .take()
                     .filter(|pressed| hit.as_ref() == Some(pressed))
                 {
-                    self.activate(&pressed).map(|_| true)
+                    self.activate_id(&pressed).map(|_| true)
                 } else {
                     Ok(true)
                 }
@@ -585,7 +677,7 @@ impl<A: Application> Runtime<A> {
             }
             Event::Activate => {
                 if let Some(id) = self.focused.clone() {
-                    self.activate(&id)
+                    self.activate_id(&id)
                 } else {
                     Ok(false)
                 }
