@@ -235,8 +235,8 @@ impl Record {
     }
 }
 
-/// Serde's JSON text for a value: escaped strings, `null` for `None` and
-/// for non-finite numbers.
+/// Serde's JSON text for a value: escaped strings and `null` for `None`.
+/// Times are finite here; `Recorder::push` and `set_dur` guard them.
 fn json(out: &mut String, value: &(impl Serialize + ?Sized)) {
     out.push_str(&serde_json::to_string(value).expect("trace values serialize"));
 }
@@ -257,6 +257,8 @@ pub struct Recorder {
     pending_handler: Option<Handler>,
     /// Nested input calls, for example `dispatch` calling `activate`.
     depth: u32,
+    /// The last written `t_ms`, used in place of a non-finite time.
+    last_t_ms: f64,
 }
 impl std::fmt::Debug for Recorder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -287,6 +289,7 @@ impl Recorder {
             pending: String::with_capacity(ID_CAPACITY),
             pending_handler: None,
             depth: 0,
+            last_t_ms: 0.,
         }
     }
     pub fn capacity(&self) -> usize {
@@ -345,6 +348,14 @@ impl Recorder {
             self.start = (self.start + 1) % capacity;
             index
         };
+        // The export never holds `null` times: a non-finite start time
+        // repeats the previous record's start time (0 for the first).
+        let t_ms = if t_ms.is_finite() {
+            t_ms
+        } else {
+            self.last_t_ms
+        };
+        self.last_t_ms = t_ms;
         let seq = self.next_seq;
         self.next_seq += 1;
         let slot = &mut self.ring[index];
@@ -371,7 +382,13 @@ impl Recorder {
     }
     fn set_dur(&mut self, seq: u64, dur_ms: f64) {
         if let Some(slot) = self.slot(seq) {
-            slot.dur_ms = dur_ms;
+            // A non-finite or negative duration (a clock that jumps or runs
+            // backwards) becomes 0.
+            slot.dur_ms = if dur_ms.is_finite() {
+                dur_ms.max(0.)
+            } else {
+                0.
+            };
         }
     }
     /// Note the binding that the next message comes from.
