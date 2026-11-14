@@ -416,3 +416,73 @@ mod sources {
         );
     }
 }
+
+/// Every exported `t_ms` and `dur_ms` is a finite JSON number, and no
+/// duration is negative. Returns the `t_ms` values.
+fn finite_times(jsonl: &str) -> Vec<f64> {
+    assert!(!jsonl.is_empty());
+    jsonl
+        .lines()
+        .map(|line| {
+            let value: serde_json::Value = serde_json::from_str(line).unwrap();
+            let t = value["t_ms"]
+                .as_f64()
+                .unwrap_or_else(|| panic!("t_ms: {line}"));
+            let dur = value["dur_ms"]
+                .as_f64()
+                .unwrap_or_else(|| panic!("dur_ms: {line}"));
+            assert!(t.is_finite() && dur.is_finite(), "{line}");
+            assert!(dur >= 0., "negative dur_ms: {line}");
+            t
+        })
+        .collect()
+}
+
+#[test]
+fn non_finite_clock_never_exports_null_times() {
+    // 5 ms once, then NaN, infinity and NaN again.
+    let mut calls = 0;
+    let clock = Box::new(move || {
+        calls += 1;
+        match calls {
+            1 => 5.,
+            n if n % 2 == 0 => f64::NAN,
+            _ => f64::INFINITY,
+        }
+    });
+    let mut runtime = runtime(App::default());
+    runtime.attach_trace(Recorder::new(clock));
+    click(&mut runtime);
+    let trace = runtime.trace_mut().unwrap();
+    trace.record_present(f64::NAN, f64::NEG_INFINITY);
+    let times = finite_times(&trace.export_jsonl());
+    assert_eq!(times.len(), 8);
+    // A non-finite start time repeats the previous record's start time.
+    assert!(times.iter().all(|t| *t == 5.), "{times:?}");
+
+    // A clock that is never finite starts at 0.
+    let mut runtime = self::runtime(App::default());
+    runtime.attach_trace(Recorder::new(Box::new(|| f64::NAN)));
+    click(&mut runtime);
+    let times = finite_times(&runtime.trace().unwrap().export_jsonl());
+    assert!(times.iter().all(|t| *t == 0.), "{times:?}");
+}
+
+#[test]
+fn backwards_clock_never_exports_negative_durations() {
+    let mut now = 0.;
+    let mut runtime = runtime(App::default());
+    runtime.attach_trace(Recorder::new(Box::new(move || {
+        now -= 1.;
+        now
+    })));
+    click(&mut runtime);
+    let trace = runtime.trace_mut().unwrap();
+    trace.record_present(-20., -5.);
+    let jsonl = trace.export_jsonl();
+    let times = finite_times(&jsonl);
+    assert_eq!(times.len(), 8);
+    // Finite start times are kept as the clock gave them.
+    assert_eq!(times[0], -1.);
+    assert!(trace.records_after(None).all(|r| r.dur_ms() == 0.));
+}
