@@ -336,3 +336,171 @@ fn unknown_fields_are_tolerated() {
     .unwrap();
     assert_eq!(caps.limits.ring_size, 3);
 }
+
+// B1: `Capabilities::current()` is pinned as exact text. It holds the
+// version and the method list.
+const CAPABILITIES_CURRENT: &str = r#"{"version":1,"domains":["Devtools","Trace","Page","Input","Wait"],"methods":["Devtools.capabilities","Trace.start","Trace.stop","Trace.read","Page.screenshot","Input.dispatch","Wait.for"],"limits":{"request_bytes":1048576,"response_bytes":16777216,"ring_size":4096},"schemas":["surface.dom.v1","surface.trace.v1","surface.paint.v1"]}"#;
+
+#[test]
+fn capabilities_current_is_exact_text() {
+    assert_eq!(
+        serde_json::to_string(&Capabilities::current()).unwrap(),
+        CAPABILITIES_CURRENT
+    );
+}
+
+// B2: a reply is exactly one of ok-with-result or error.
+#[test]
+fn reply_rejects_bad_shapes() {
+    for line in [
+        r#"{"id":1,"ok":true,"result":{},"error":{"code":"timeout","message":"x"}}"#,
+        r#"{"id":1,"ok":true}"#,
+        r#"{"id":1,"ok":false}"#,
+        r#"{"id":1,"ok":false,"result":{}}"#,
+        r#"{"id":1,"ok":true,"error":{"code":"timeout","message":"x"}}"#,
+        r#"{"id":1,"ok":false,"result":{},"error":{"code":"timeout","message":"x"}}"#,
+    ] {
+        assert!(serde_json::from_str::<Reply>(line).is_err(), "{line}");
+    }
+}
+
+#[test]
+fn reply_accepts_both_good_shapes_and_unknown_fields() {
+    let ok: Reply = serde_json::from_str(r#"{"id":1,"ok":true,"result":null,"future":1}"#).unwrap();
+    assert!(ok.ok);
+    let err: Reply =
+        serde_json::from_str(r#"{"id":1,"ok":false,"error":{"code":"timeout","message":"x"}}"#)
+            .unwrap();
+    assert_eq!(err, Reply::error(1, ErrorCode::Timeout, "x"));
+}
+
+// B3: the recorder never emits non-finite values. The read side rejects
+// `null` for `t_ms` and `dur_ms`, so a bad line is an error, not a zero.
+#[test]
+fn trace_record_rejects_null_times() {
+    for line in [
+        r#"{"seq":1,"frame":0,"kind":"Input","t_ms":null,"dur_ms":0.0,"data":{}}"#,
+        r#"{"seq":1,"frame":0,"kind":"Input","t_ms":0.0,"dur_ms":null,"data":{}}"#,
+    ] {
+        assert!(serde_json::from_str::<TraceRecord>(line).is_err(), "{line}");
+    }
+}
+
+// N6: exact text of every input event.
+#[test]
+fn input_events_are_exact_text() {
+    use InputEvent as E;
+    let cases: Vec<(E, &str)> = vec![
+        (
+            E::PointerDown { x: 1.5, y: 2.0 },
+            r#"{"type":"pointer_down","x":1.5,"y":2.0}"#,
+        ),
+        (
+            E::PointerUp { x: 1.5, y: 2.0 },
+            r#"{"type":"pointer_up","x":1.5,"y":2.0}"#,
+        ),
+        (
+            E::PointerMove { x: 0.0, y: 4.25 },
+            r#"{"type":"pointer_move","x":0.0,"y":4.25}"#,
+        ),
+        (E::PointerLeave, r#"{"type":"pointer_leave"}"#),
+        (
+            E::FocusNext { reverse: true },
+            r#"{"type":"focus_next","reverse":true}"#,
+        ),
+        (E::Activate, r#"{"type":"activate"}"#),
+        (
+            E::Text { text: "a".into() },
+            r#"{"type":"text","text":"a"}"#,
+        ),
+        (E::Backspace, r#"{"type":"backspace"}"#),
+        (
+            E::Edit {
+                key: EditKey::SelectAll,
+                extend: true,
+                by_word: false,
+            },
+            r#"{"type":"edit","key":"select_all","extend":true,"by_word":false}"#,
+        ),
+        (
+            E::Ime {
+                event: ImeEvent::Begin,
+            },
+            r#"{"type":"ime","event":{"type":"begin"}}"#,
+        ),
+        (
+            E::Ime {
+                event: ImeEvent::Preedit {
+                    text: "ni".into(),
+                    selection: Some((0, 2)),
+                },
+            },
+            r#"{"type":"ime","event":{"type":"preedit","text":"ni","selection":[0,2]}}"#,
+        ),
+        (
+            E::Ime {
+                event: ImeEvent::Preedit {
+                    text: "".into(),
+                    selection: None,
+                },
+            },
+            r#"{"type":"ime","event":{"type":"preedit","text":"","selection":null}}"#,
+        ),
+        (
+            E::Ime {
+                event: ImeEvent::Commit { text: "a".into() },
+            },
+            r#"{"type":"ime","event":{"type":"commit","text":"a"}}"#,
+        ),
+        (
+            E::Ime {
+                event: ImeEvent::Cancel,
+            },
+            r#"{"type":"ime","event":{"type":"cancel"}}"#,
+        ),
+        (
+            E::ImeFor {
+                id: "f".into(),
+                event: ImeEvent::Cancel,
+            },
+            r#"{"type":"ime_for","id":"f","event":{"type":"cancel"}}"#,
+        ),
+        (
+            E::InputValue {
+                value: "v".into(),
+                anchor: 0,
+                cursor: 1,
+            },
+            r#"{"type":"input_value","value":"v","anchor":0,"cursor":1}"#,
+        ),
+        (
+            E::Select {
+                anchor: 1,
+                cursor: 2,
+            },
+            r#"{"type":"select","anchor":1,"cursor":2}"#,
+        ),
+        (E::Blur, r#"{"type":"blur"}"#),
+        (E::Cancel, r#"{"type":"cancel"}"#),
+        (
+            E::Scroll {
+                x: 1.0,
+                y: 2.0,
+                delta_x: 0.0,
+                delta_y: -8.0,
+            },
+            r#"{"type":"scroll","x":1.0,"y":2.0,"delta_x":0.0,"delta_y":-8.0}"#,
+        ),
+        (
+            E::SetValue {
+                id: "s".into(),
+                value: 0.5,
+            },
+            r#"{"type":"set_value","id":"s","value":0.5}"#,
+        ),
+    ];
+    for (event, text) in cases {
+        assert_eq!(serde_json::to_string(&event).unwrap(), text);
+        assert_eq!(serde_json::from_str::<E>(text).unwrap(), event, "{text}");
+    }
+}
