@@ -17,6 +17,13 @@ Newline-delimited JSON. One value per line.
 
 `params` is optional on input and defaults to `{}`.
 
+A reply holds `result` when `ok` is true and `error` when `ok` is false.
+A line with both, or with neither, is rejected on parse.
+
+Request ids are integers from 0 to 2^53 - 1 (`MAX_ID`), so a JavaScript
+client holds them exactly. The crate does not check the cap. Id 0 is a legal
+id; it is also the id of the error reply when the request id cannot be read.
+
 ## Version
 
 One integer major version, `VERSION = 1`. A request with another `v` gets
@@ -49,7 +56,10 @@ ignored. An unknown method gets `unknown_method`.
 
 `TraceRecord` has the fields `seq`, `frame`, `kind`, `t_ms`, `dur_ms`, `data`,
 in this order. `kind` is one of `Input`, `Message`, `Update`, `Rebuild`,
-`Layout`, `Paint`, `Present`, `Error`. The trace recorder (#125) exports the
+`Layout`, `Paint`, `Present`, `Error`. `t_ms` and `dur_ms` are finite numbers. The recorder must never emit NaN or
+infinity: `serde_json` writes them as `null`, and the read side rejects
+`null` for these fields, so one bad value would make the whole line
+unreadable. The same rule holds in the recorder (#125). The trace recorder (#125) exports the
 same lines; its fixture must be checked against this one.
 
 ## Input mirror

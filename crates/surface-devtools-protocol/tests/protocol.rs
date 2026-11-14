@@ -67,6 +67,10 @@ fn fixtures_are_exact_text() {
         serde_json::to_string(&capabilities()).unwrap(),
         CAPABILITIES
     );
+    assert_eq!(
+        serde_json::to_string(&Capabilities::current()).unwrap(),
+        CAPABILITIES_CURRENT
+    );
     let record = TraceRecord {
         seq: 1,
         frame: 0,
@@ -337,19 +341,11 @@ fn unknown_fields_are_tolerated() {
     assert_eq!(caps.limits.ring_size, 3);
 }
 
-// B1: `Capabilities::current()` is pinned as exact text. It holds the
+// `Capabilities::current()` is pinned as exact text. It holds the
 // version and the method list.
 const CAPABILITIES_CURRENT: &str = r#"{"version":1,"domains":["Devtools","Trace","Page","Input","Wait"],"methods":["Devtools.capabilities","Trace.start","Trace.stop","Trace.read","Page.screenshot","Input.dispatch","Wait.for"],"limits":{"request_bytes":1048576,"response_bytes":16777216,"ring_size":4096},"schemas":["surface.dom.v1","surface.trace.v1","surface.paint.v1"]}"#;
 
-#[test]
-fn capabilities_current_is_exact_text() {
-    assert_eq!(
-        serde_json::to_string(&Capabilities::current()).unwrap(),
-        CAPABILITIES_CURRENT
-    );
-}
-
-// B2: a reply is exactly one of ok-with-result or error.
+// a reply is exactly one of ok-with-result or error.
 #[test]
 fn reply_rejects_bad_shapes() {
     for line in [
@@ -374,7 +370,7 @@ fn reply_accepts_both_good_shapes_and_unknown_fields() {
     assert_eq!(err, Reply::error(1, ErrorCode::Timeout, "x"));
 }
 
-// B3: the recorder never emits non-finite values. The read side rejects
+// the recorder never emits non-finite values. The read side rejects
 // `null` for `t_ms` and `dur_ms`, so a bad line is an error, not a zero.
 #[test]
 fn trace_record_rejects_null_times() {
@@ -386,7 +382,7 @@ fn trace_record_rejects_null_times() {
     }
 }
 
-// N6: exact text of every input event.
+// exact text of every input event.
 #[test]
 fn input_events_are_exact_text() {
     use InputEvent as E;

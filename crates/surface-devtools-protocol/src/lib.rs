@@ -8,6 +8,8 @@ pub use input::{EditKey, ImeEvent, InputEvent};
 
 /// The one integer major version of the protocol.
 pub const VERSION: u32 = 1;
+/// The largest request id a client may send: 2^53 - 1.
+pub const MAX_ID: u64 = (1 << 53) - 1;
 pub const REQUEST_CAP_BYTES: u64 = 1 << 20;
 pub const RESPONSE_CAP_BYTES: u64 = 16 << 20;
 pub const DEFAULT_RING_SIZE: u64 = 4096;
@@ -84,6 +86,8 @@ impl ErrorCode {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Request {
     pub v: u32,
+    /// Clients keep ids at or below 2^53 - 1 (`MAX_ID`), so that JavaScript
+    /// numbers hold them exactly.
     pub id: u64,
     pub method: String,
     #[serde(default = "empty_params")]
@@ -99,7 +103,11 @@ pub struct ErrorBody {
     pub message: String,
 }
 
+/// A reply is either ok with a `result`, or not ok with an `error`. The
+/// wire JSON has `ok` next to the id. A line with both, or neither, is
+/// rejected on parse.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "RawReply")]
 pub struct Reply {
     pub id: u64,
     pub ok: bool,
@@ -107,6 +115,35 @@ pub struct Reply {
     pub result: Option<Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub error: Option<ErrorBody>,
+}
+#[derive(Deserialize)]
+struct RawReply {
+    id: u64,
+    ok: bool,
+    // `Some(null)` and a missing field differ, so keep the double Option.
+    #[serde(default, deserialize_with = "present")]
+    result: Option<Value>,
+    #[serde(default)]
+    error: Option<ErrorBody>,
+}
+fn present<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Value>, D::Error> {
+    Value::deserialize(d).map(Some)
+}
+impl TryFrom<RawReply> for Reply {
+    type Error = String;
+    fn try_from(raw: RawReply) -> Result<Self, String> {
+        match (raw.ok, &raw.result, &raw.error) {
+            (true, Some(_), None) | (false, None, Some(_)) => Ok(Self {
+                id: raw.id,
+                ok: raw.ok,
+                result: raw.result,
+                error: raw.error,
+            }),
+            (true, None, _) => Err("an ok reply needs a result".into()),
+            (false, _, None) => Err("a failed reply needs an error".into()),
+            _ => Err("a reply holds a result or an error, not both".into()),
+        }
+    }
 }
 impl Reply {
     pub fn ok(id: u64, result: Value) -> Self {
