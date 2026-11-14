@@ -563,21 +563,6 @@ fn gpu_offscreen_bottom_corners_are_not_swapped() {
         let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
             .await
             .unwrap();
-        let size = wgpu::Extent3d {
-            width: 256,
-            height: 128,
-            depth_or_array_layers: 1,
-        };
-        let texture = renderer.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Surface bottom corners"),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[],
-        });
         let viewport = Rect::new(0., 0., 256., 128.);
         let list = DisplayList {
             viewport,
@@ -606,47 +591,9 @@ fn gpu_offscreen_bottom_corners_are_not_swapped() {
                 },
             ],
         };
-        renderer
-            .render(
-                &list,
-                &texture.create_view(&Default::default()),
-                256,
-                128,
-                1.,
-            )
-            .unwrap();
-        let buffer = renderer.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Surface readback"),
-            size: 256 * 128 * 4,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-        let mut encoder = renderer.device.create_command_encoder(&Default::default());
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &texture,
-                mip_level: 0,
-                origin: Default::default(),
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(256 * 4),
-                    rows_per_image: Some(128),
-                },
-            },
-            size,
-        );
-        renderer.queue.submit(Some(encoder.finish()));
-        let (tx, rx) = std::sync::mpsc::channel();
-        buffer
-            .slice(..)
-            .map_async(wgpu::MapMode::Read, move |r| tx.send(r).unwrap());
-        renderer.device.poll(wgpu::Maintain::Wait);
-        rx.recv().unwrap().unwrap();
-        let pixels = buffer.slice(..).get_mapped_range();
+        let capture = renderer.capture(&list, 256, 128, 1.).unwrap();
+        assert_eq!((capture.width, capture.height), (256, 128));
+        let pixels = &capture.rgba;
         let pixel = |x: usize, y: usize| {
             let offset = (y * 256 + x) * 4;
             [
@@ -671,6 +618,107 @@ fn gpu_offscreen_bottom_corners_are_not_swapped() {
         assert_eq!(pixel(245, 93), blue, "stroke: bottom-right is square");
         assert_eq!(pixel(186, 34), blue, "stroke: top-left is square");
         assert_eq!(pixel(245, 34), blue, "stroke: top-right is square");
+    });
+}
+
+#[test]
+fn capture_rejects_oversize_requests_without_a_gpu() {
+    use surface_wgpu::{Capture, RenderError, MAX_CAPTURE_SIDE};
+    assert!(Capture::check_size(1, 1).is_ok());
+    assert!(Capture::check_size(MAX_CAPTURE_SIDE, MAX_CAPTURE_SIDE).is_ok());
+    for (w, h) in [
+        (MAX_CAPTURE_SIDE + 1, 1),
+        (1, MAX_CAPTURE_SIDE + 1),
+        (u32::MAX, u32::MAX),
+    ] {
+        match Capture::check_size(w, h) {
+            Err(RenderError::CaptureTooLarge { width, height, max }) => {
+                assert_eq!((width, height, max), (w, h, MAX_CAPTURE_SIDE));
+            }
+            other => panic!("{w}x{h} must be rejected, got {other:?}"),
+        }
+    }
+    assert!(matches!(
+        Capture::check_size(0, 10),
+        Err(RenderError::Dimensions)
+    ));
+}
+
+#[test]
+#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
+fn gpu_offscreen_capture_reads_rgba_in_both_formats() {
+    pollster::block_on(async {
+        let instance = wgpu::Instance::new(&Default::default());
+        let adapter = Renderer::request(&instance, None)
+            .await
+            .expect("native GPU adapter is required");
+        eprintln!("GPU evidence: {:?}", adapter.get_info());
+        let viewport = Rect::new(0., 0., 70., 40.);
+        // 70 px * 4 bytes = 280, so rows are not 256-byte aligned: padding must be removed.
+        let list = DisplayList {
+            viewport,
+            ops: vec![
+                PaintOp::Quad {
+                    rect: Rect::new(0., 0., 35., 40.),
+                    clip: viewport,
+                    radius: 0.,
+                    color: Color::rgb(255, 0, 0),
+                },
+                PaintOp::Quad {
+                    rect: Rect::new(35., 0., 35., 20.),
+                    clip: viewport,
+                    radius: 0.,
+                    color: Color::rgb(0, 0, 255),
+                },
+            ],
+        };
+        let formats = [
+            wgpu::TextureFormat::Rgba8Unorm,
+            wgpu::TextureFormat::Bgra8Unorm,
+        ];
+        let mut tested = 0;
+        let mut saved = None;
+        for format in formats {
+            let usages = adapter.get_texture_format_features(format).allowed_usages;
+            if !usages
+                .contains(wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC)
+            {
+                eprintln!("capture format {format:?} unsupported on this adapter");
+                continue;
+            }
+            let mut renderer = Renderer::new(&adapter, format).await.unwrap();
+            let capture = renderer.capture(&list, 70, 40, 1.).unwrap();
+            assert_eq!((capture.width, capture.height), (70, 40), "{format:?}");
+            assert_eq!(capture.rgba.len(), 70 * 40 * 4, "{format:?}: tight rows");
+            let pixel = |x: usize, y: usize| {
+                let o = (y * 70 + x) * 4;
+                [
+                    capture.rgba[o],
+                    capture.rgba[o + 1],
+                    capture.rgba[o + 2],
+                    capture.rgba[o + 3],
+                ]
+            };
+            assert_eq!(pixel(10, 10), [255, 0, 0, 255], "{format:?}: red as RGBA");
+            assert_eq!(pixel(10, 39), [255, 0, 0, 255], "{format:?}: last row");
+            assert_eq!(pixel(60, 10), [0, 0, 255, 255], "{format:?}: blue as RGBA");
+            assert_eq!(pixel(69, 19), [0, 0, 255, 255], "{format:?}: last column");
+            assert_eq!(pixel(60, 30), [0, 0, 0, 255], "{format:?}: cleared black");
+            tested += 1;
+            saved = Some(capture);
+        }
+        assert!(tested >= 1, "no capture format was usable");
+        if let (Ok(path), Some(capture)) = (std::env::var("SURFACE_GPU_EVIDENCE"), saved) {
+            let path = std::path::Path::new(&path).with_file_name("gpu-capture.png");
+            let file = std::fs::File::create(path).unwrap();
+            let mut png = png::Encoder::new(file, capture.width, capture.height);
+            png.set_color(png::ColorType::Rgba);
+            png.set_depth(png::BitDepth::Eight);
+            png.write_header()
+                .unwrap()
+                .write_image_data(&capture.rgba)
+                .unwrap();
+        }
     });
 }
 

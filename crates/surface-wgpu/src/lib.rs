@@ -20,6 +20,26 @@ pub enum RenderError {
     Text(#[from] glyphon::RenderError),
     #[error("invalid render dimensions or scale")]
     Dimensions,
+    #[error("capture of {width}x{height} exceeds the {max} pixel side limit")]
+    CaptureTooLarge { width: u32, height: u32, max: u32 },
+    #[error("capture readback failed: {0}")]
+    Readback(String),
+}
+/// Largest width or height `Renderer::capture` accepts.
+pub const MAX_CAPTURE_SIDE: u32 = 8192;
+/// Tightly packed RGBA8 pixels, row 0 at the top.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Capture {
+    pub width: u32,
+    pub height: u32,
+    pub rgba: Vec<u8>,
+}
+impl Capture {
+    /// Reject a size `Renderer::capture` would refuse. Needs no GPU.
+    pub fn check_size(width: u32, height: u32) -> Result<(), RenderError> {
+        let _ = (width, height);
+        unimplemented!("red commit: capture size check")
+    }
 }
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -211,6 +231,17 @@ impl Renderer {
             text_renderers: Vec::new(),
             srgb: format.is_srgb(),
         })
+    }
+    /// Render offscreen in the renderer's own format and read back RGBA8.
+    pub fn capture(
+        &mut self,
+        list: &DisplayList,
+        width: u32,
+        height: u32,
+        scale: f32,
+    ) -> Result<Capture, RenderError> {
+        let _ = (list, width, height, scale);
+        unimplemented!("red commit: capture")
     }
     /// Paint every command in order. Text never jumps above later rectangles.
     pub fn render(
