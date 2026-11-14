@@ -7,7 +7,7 @@ mod input;
 pub use input::{EditKey, ImeEvent, InputEvent};
 
 /// The one integer major version of the protocol.
-pub const VERSION: u32 = 0;
+pub const VERSION: u32 = 1;
 pub const REQUEST_CAP_BYTES: u64 = 1 << 20;
 pub const RESPONSE_CAP_BYTES: u64 = 16 << 20;
 pub const DEFAULT_RING_SIZE: u64 = 4096;
@@ -60,8 +60,24 @@ impl ErrorCode {
         Self::HostClosed,
         Self::RenderFailed,
     ];
+    /// The wire string. It matches the serde form.
     pub fn as_str(self) -> &'static str {
-        unimplemented!()
+        match self {
+            Self::UnsupportedVersion => "unsupported_version",
+            Self::UnknownMethod => "unknown_method",
+            Self::InvalidParams => "invalid_params",
+            Self::Unauthorized => "unauthorized",
+            Self::NotReady => "not_ready",
+            Self::MissingNode => "missing_node",
+            Self::Disabled => "disabled",
+            Self::OutsideModal => "outside_modal",
+            Self::TooLarge => "too_large",
+            Self::Timeout => "timeout",
+            Self::ActionFailed => "action_failed",
+            Self::HostTimeout => "host_timeout",
+            Self::HostClosed => "host_closed",
+            Self::RenderFailed => "render_failed",
+        }
     }
 }
 
@@ -139,7 +155,24 @@ pub struct Capabilities {
 impl Capabilities {
     /// What this version of the crate describes. A host may narrow it.
     pub fn current() -> Self {
-        unimplemented!()
+        let mut domains: Vec<String> = Vec::new();
+        for method in METHODS {
+            let domain = method.split('.').next().unwrap_or(method);
+            if !domains.iter().any(|d| d == domain) {
+                domains.push(domain.to_string());
+            }
+        }
+        Self {
+            version: VERSION,
+            domains,
+            methods: METHODS.iter().map(|m| m.to_string()).collect(),
+            limits: Limits {
+                request_bytes: REQUEST_CAP_BYTES,
+                response_bytes: RESPONSE_CAP_BYTES,
+                ring_size: DEFAULT_RING_SIZE,
+            },
+            schemas: vec![SCHEMA_DOM.into(), SCHEMA_TRACE.into(), SCHEMA_PAINT.into()],
+        }
     }
 }
 
@@ -167,6 +200,38 @@ pub struct TraceRecord {
 }
 
 /// Parse one request line. Errors come back as the reply to send.
-pub fn parse_request(_line: &str) -> Result<Request, Reply> {
-    unimplemented!()
+///
+/// Order: JSON and envelope shape (`invalid_params`), then `v`
+/// (`unsupported_version`), then the method (`unknown_method`). Unknown
+/// fields in the envelope and in `params` are tolerated. A missing `params`
+/// is `{}`. When the id cannot be read, the error reply has id 0.
+pub fn parse_request(line: &str) -> Result<Request, Reply> {
+    let invalid = |id: u64, message: &str| Reply::error(id, ErrorCode::InvalidParams, message);
+    let value: Value =
+        serde_json::from_str(line).map_err(|e| invalid(0, &format!("invalid JSON: {e}")))?;
+    let id = value.get("id").and_then(Value::as_u64);
+    let Some(id) = id else {
+        return Err(invalid(0, "request needs an integer id"));
+    };
+    match value.get("v").and_then(Value::as_u64) {
+        Some(v) if v == u64::from(VERSION) => {}
+        Some(v) => {
+            return Err(Reply::error(
+                id,
+                ErrorCode::UnsupportedVersion,
+                format!("protocol version {v} is not supported; this is version {VERSION}"),
+            ))
+        }
+        None => return Err(invalid(id, "request needs an integer v")),
+    }
+    let request: Request =
+        serde_json::from_value(value).map_err(|e| invalid(id, &e.to_string()))?;
+    if !METHODS.contains(&request.method.as_str()) {
+        return Err(Reply::error(
+            id,
+            ErrorCode::UnknownMethod,
+            format!("unknown method {}", request.method),
+        ));
+    }
+    Ok(request)
 }
