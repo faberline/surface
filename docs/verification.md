@@ -1,5 +1,50 @@
 # Framework verification
 
+## Native close smoke (real device only)
+
+Recorded on 2026-11-13, on macOS (Darwin 25.5.0, Apple Silicon, Metal). This
+check opens a real window. It cannot run in CI, so CI is not evidence for it.
+Refs #104.
+
+```text
+cap cargo run --locked -p surface-showcase -- --smoke-close
+Surface close smoke: run_with_wake returned Ok; app Drop ran 1 time(s); window and gpu dropped before app state: true
+```
+
+What the smoke does: it runs the showcase inside a wrapper app. After 1.5 s
+a thread calls the `WakeHandle`. The app's `wake` then calls
+`Queue::close()`. The process exits non-zero if any of these fail:
+
+- `run_with_wake` returns `Ok`. This proves `about_to_wait` calls
+  `event_loop.exit()`, which no headless test reaches.
+- The app's `Drop` runs exactly once.
+- The window and gpu are gone before the app `Drop` runs. The host checks a
+  `Weak<Window>` after it drops its `Arc`, and the app reads the result
+  from the hidden `surface_platform::WINDOW_RELEASED`. A run with no window
+  fails, so the check cannot pass vacuously.
+- A 10 s watchdog fails the run if the loop does not exit.
+
+What it does not show:
+
+- The `CloseRequested` + `Allow` → `event_loop.exit()` path (`HostStep::Exit`
+  in `lib.rs`) is still not covered natively. It needs the reach check under
+  #99.
+- The `Err`-path drop order has no test.
+- It does not press Cmd+Q, use the app menu Quit, log out or shut down.
+  Reading the winit 0.30.13 source says Cmd+Q and Quit skip
+  `close_requested` and the app `Drop`. See the follow-up issue linked from
+  the pull request.
+- It does not prove the window leaves the screen at once on macOS. Check
+  that by eye.
+
+Manual steps for the owner (not run by this session):
+
+1. `cap cargo run --locked -p surface-showcase`, then press Cmd+Q. Expect
+   the process to end with no `Drop` side effect. Use a test app that writes
+   a file in `Drop` to see it.
+2. Same, with the app menu Surface > Quit.
+3. Same, with a log out or a shutdown.
+
 ## Motion, shapes and typography combined
 
 Recorded on 2026-11-05, on macOS / Apple M1 Max (Metal) and Rust 1.96.1.

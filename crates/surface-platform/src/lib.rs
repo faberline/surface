@@ -53,6 +53,12 @@ fn drawable_size(window: &Window) -> (winit::dpi::PhysicalSize<u32>, f32) {
     }
 }
 
+/// Test seam for the native close smoke. Not part of the supported API.
+/// 0 = no window was released, 1 = the window and gpu were gone before the app
+/// state dropped, 2 = the window was still alive. Read it from the app's `Drop`.
+#[doc(hidden)]
+pub static WINDOW_RELEASED: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
 #[derive(Clone, Debug)]
 pub struct Options {
     pub width: u32,
@@ -711,13 +717,18 @@ pub fn run_with_wake<A: Application>(
     #[cfg(not(target_arch = "wasm32"))]
     {
         let mut host = host;
-        event_loop
-            .run_app(&mut host)
-            .map_err(|e| HostError(e.to_string()))?;
+        let result = event_loop.run_app(&mut host);
         // Close the window before the app cleanup runs in `Drop`, so a slow
-        // child stop or worker join does not freeze a visible window.
+        // child stop or worker join does not freeze a visible window. This
+        // runs on the `Err` path too, before `?` drops the runtime.
+        let window = host.window.as_ref().map(Arc::downgrade);
         host.gpu = None;
         host.window = None;
+        if let Some(window) = window {
+            let state = if window.strong_count() == 0 { 1 } else { 2 };
+            WINDOW_RELEASED.store(state, std::sync::atomic::Ordering::SeqCst);
+        }
+        result.map_err(|e| HostError(e.to_string()))?;
         if let Some(error) = host.error {
             return Err(error);
         }
