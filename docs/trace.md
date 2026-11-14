@@ -55,7 +55,9 @@ Each record has `seq`, `frame`, `kind`, `t_ms`, `dur_ms` and `data`.
   `render`. Input, message, update and rebuild records belong to the frame
   that the next `render` finishes.
 - `t_ms` is the start time and `dur_ms` the duration, from the recorder's
-  clock.
+  clock. Both are always finite. A non-finite `t_ms` repeats the previous
+  record's `t_ms` (0.0 for the first record). A non-finite or negative
+  `dur_ms` becomes 0.0, for example when the clock runs backwards.
 
 | Kind | Written by | `data` |
 | --- | --- | --- |
@@ -63,10 +65,15 @@ Each record has `seq`, `frame`, `kind`, `t_ms`, `dur_ms` and `data`.
 | `Message` | `flush`, before `Application::update` | `ordinal`, `text`, `source` |
 | `Update` | `flush`, around `Application::update` | `{}` |
 | `Rebuild` | the view rebuild | `nodes` |
-| `Layout` | `render`, layout and reveal | `nodes` |
+| `Layout` | `render`, layout and reveal (see below) | `nodes` |
 | `Paint` | `render`, motion and display list | `ops` |
 | `Present` | the host (later) | `{}` |
 | `Error` | an `AppError` from an input call, `flush` or `render` | `message` |
+
+The `Layout` span starts before the text-editing layout pass
+(`layout_editing`). It includes the reveal step, which scrolls the focused
+node's scroll ancestors so the node is visible, and the relayout after it. It ends before motion and the display list,
+which are in the `Paint` span.
 
 ### Input
 
@@ -88,6 +95,9 @@ a roving group that activates on arrow keys writes one `Edit` record.
   `handler` is `press`, `input`, `value`, `key` or `dismiss`. It is `null`
   for a message from `Runtime::apply` or posted through `Queue`, including
   posts from inside `update`.
+- `dur_ms` is always 0. The record marks when the message was taken from
+  the queue. The time spent in `Application::update` is in the `Update`
+  record that follows it.
 
 Known limits:
 
@@ -97,11 +107,15 @@ Known limits:
   message with no source, and its errors are not recorded.
 - During a slider drag the source is the focused slider. For `Cancel` and an
   outside click, the source is the open modal panel.
+- `Runtime::set_reduced_motion` writes no record. A trace does not show
+  when reduced motion was turned on or off.
 
 ## JSON lines
 
 `Recorder::export_jsonl` writes one record per line, with a fixed field
-order. Strings are escaped by `serde_json`. A non-finite time is `null`.
+order. Strings are escaped by `serde_json`. The export never contains
+`null` times: `t_ms` and `dur_ms` are guarded when the record is written
+(see Records).
 
 ```json
 {"seq":2,"frame":0,"kind":"Message","t_ms":4.0,"dur_ms":0.0,"data":{"ordinal":0,"text":"Bump","source":{"id":"ok","handler":"press"}}}
