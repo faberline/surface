@@ -20,6 +20,35 @@ pub enum RenderError {
     Text(#[from] glyphon::RenderError),
     #[error("invalid render dimensions or scale")]
     Dimensions,
+    #[error("capture of {width}x{height} exceeds the {max} pixel side limit")]
+    CaptureTooLarge { width: u32, height: u32, max: u32 },
+    #[error("capture readback failed: {0}")]
+    Readback(String),
+}
+/// Largest width or height `Renderer::capture` accepts.
+pub const MAX_CAPTURE_SIDE: u32 = 8192;
+/// Tightly packed RGBA8 pixels, row 0 at the top.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Capture {
+    pub width: u32,
+    pub height: u32,
+    pub rgba: Vec<u8>,
+}
+impl Capture {
+    /// Reject a size `Renderer::capture` would refuse. Needs no GPU.
+    pub fn check_size(width: u32, height: u32) -> Result<(), RenderError> {
+        if width == 0 || height == 0 {
+            return Err(RenderError::Dimensions);
+        }
+        if width > MAX_CAPTURE_SIDE || height > MAX_CAPTURE_SIDE {
+            return Err(RenderError::CaptureTooLarge {
+                width,
+                height,
+                max: MAX_CAPTURE_SIDE,
+            });
+        }
+        Ok(())
+    }
 }
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -118,6 +147,7 @@ pub struct Renderer {
     cache: SwashCache,
     text_renderers: Vec<TextRenderer>,
     srgb: bool,
+    format: wgpu::TextureFormat,
 }
 impl Renderer {
     pub async fn request(
@@ -210,6 +240,103 @@ impl Renderer {
             cache: SwashCache::new(),
             text_renderers: Vec::new(),
             srgb: format.is_srgb(),
+            format,
+        })
+    }
+    /// Render offscreen in the renderer's own format and read back RGBA8.
+    pub fn capture(
+        &mut self,
+        list: &DisplayList,
+        width: u32,
+        height: u32,
+        scale: f32,
+    ) -> Result<Capture, RenderError> {
+        Capture::check_size(width, height)?;
+        let limit = self.device.limits().max_texture_dimension_2d;
+        if width > limit || height > limit {
+            return Err(RenderError::CaptureTooLarge {
+                width,
+                height,
+                max: limit,
+            });
+        }
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Surface capture"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+        self.render(
+            list,
+            &texture.create_view(&Default::default()),
+            width,
+            height,
+            scale,
+        )?;
+        let row = width as usize * 4;
+        let padded = row.next_multiple_of(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize);
+        let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Surface capture readback"),
+            size: (padded * height as usize) as u64,
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            mapped_at_creation: false,
+        });
+        let mut encoder = self.device.create_command_encoder(&Default::default());
+        encoder.copy_texture_to_buffer(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: Default::default(),
+                aspect: wgpu::TextureAspect::All,
+            },
+            wgpu::TexelCopyBufferInfo {
+                buffer: &buffer,
+                layout: wgpu::TexelCopyBufferLayout {
+                    offset: 0,
+                    bytes_per_row: Some(padded as u32),
+                    rows_per_image: Some(height),
+                },
+            },
+            size,
+        );
+        self.queue.submit(Some(encoder.finish()));
+        let (tx, rx) = std::sync::mpsc::channel();
+        buffer.slice(..).map_async(wgpu::MapMode::Read, move |r| {
+            let _ = tx.send(r);
+        });
+        self.device.poll(wgpu::Maintain::Wait);
+        rx.recv()
+            .map_err(|e| RenderError::Readback(e.to_string()))?
+            .map_err(|e| RenderError::Readback(e.to_string()))?;
+        let mapped = buffer.slice(..).get_mapped_range();
+        let bgra = matches!(
+            self.format,
+            wgpu::TextureFormat::Bgra8Unorm | wgpu::TextureFormat::Bgra8UnormSrgb
+        );
+        let mut rgba = Vec::with_capacity(row * height as usize);
+        for line in mapped.chunks_exact(padded).take(height as usize) {
+            rgba.extend_from_slice(&line[..row]);
+        }
+        drop(mapped);
+        buffer.unmap();
+        if bgra {
+            for px in rgba.chunks_exact_mut(4) {
+                px.swap(0, 2);
+            }
+        }
+        Ok(Capture {
+            width,
+            height,
+            rgba,
         })
     }
     /// Paint every command in order. Text never jumps above later rectangles.
