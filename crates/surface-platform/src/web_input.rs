@@ -1,13 +1,12 @@
 //! The DOM hosts IME/clipboard input only. Rust owns the value and painted UI.
-use crate::key_route::{self, KeyStep};
+use crate::key_route;
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
     sync::Arc,
 };
 use surface_app::{
-    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, KeyPress, Modifiers,
-    Runtime,
+    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Modifiers, Runtime,
 };
 use wasm_bindgen::{closure::Closure, JsCast};
 use web_sys::{EventTarget, HtmlTextAreaElement};
@@ -357,9 +356,6 @@ impl<A: Application> WebInput<A> {
                 let Some(key) = event.dyn_ref::<web_sys::KeyboardEvent>() else {
                     return;
                 };
-                if key.is_composing() || composing.get() {
-                    return;
-                }
                 // The app's key handler runs before the field (#103).
                 let mods = Modifiers {
                     shift: key.shift_key(),
@@ -367,57 +363,26 @@ impl<A: Application> WebInput<A> {
                     alt: key.alt_key(),
                     meta: key.meta_key(),
                 };
-                let press = key_route::from_dom(&key.key()).map(|k| KeyPress::new(k, mods));
-                let ime = key_route::dom_composing(key.is_composing(), key.key_code(), false);
-                let step = key_route::route_key(&mut runtime.borrow_mut(), press, ime);
-                match step {
-                    KeyStep::Consumed => {
-                        event.prevent_default();
-                        window.request_redraw();
-                        sync_value(&area, &runtime);
-                        return;
-                    }
-                    KeyStep::Fail(error) => {
-                        web_sys::console::error_1(&error.into());
-                        return;
-                    }
-                    KeyStep::Pass => {}
+                let step = key_route::web_key(
+                    &mut runtime.borrow_mut(),
+                    &key.key(),
+                    key.key_code(),
+                    key.is_composing(),
+                    composing.get(),
+                    mods,
+                );
+                if let Some(error) = step.error {
+                    web_sys::console::error_1(&error.into());
                 }
-                if (key.meta_key() || key.ctrl_key())
-                    && matches!(key.key().to_lowercase().as_str(), "z" | "y")
-                {
+                if step.prevent_default {
                     event.prevent_default();
-                    let redo = key.shift_key() || key.key().eq_ignore_ascii_case("y");
-                    dispatch(
-                        &runtime,
-                        &window,
-                        Event::Edit {
-                            key: if redo { EditKey::Redo } else { EditKey::Undo },
-                            extend: false,
-                            by_word: false,
-                        },
-                    );
-                    sync_value(&area, &runtime);
-                    return;
+                    window.request_redraw();
                 }
-                let action = match key.key().as_str() {
-                    "Tab" => Some(Event::FocusNext {
-                        reverse: key.shift_key(),
-                    }),
-                    "Escape" => Some(Event::Cancel),
-                    "Enter"
-                        if runtime
-                            .borrow()
-                            .input_snapshot()
-                            .is_some_and(|s| !s.multiline) =>
-                    {
-                        Some(Event::Activate)
-                    }
-                    _ => None,
-                };
-                if let Some(action) = action {
-                    event.prevent_default();
+                if let Some(action) = step.dispatch {
                     dispatch(&runtime, &window, action);
+                }
+                if step.sync {
+                    sync_value(&area, &runtime);
                 }
             })?;
         }

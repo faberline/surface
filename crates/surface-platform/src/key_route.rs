@@ -205,6 +205,12 @@ pub(crate) fn native_key<A: Application>(
     if input.as_ref().is_some_and(|i| i.composing) {
         return NativeStep::Ignore;
     }
+    let press = from_winit(key).map(|k| KeyPress::new(k, mods));
+    match route_key(runtime, press, false) {
+        KeyStep::Consumed => return NativeStep::Consumed,
+        KeyStep::Fail(error) => return NativeStep::Fail(error),
+        KeyStep::Pass => {}
+    }
     NativeStep::Field(field_action(key, text, mods, input.as_ref()))
 }
 
@@ -233,9 +239,26 @@ pub(crate) fn web_key<A: Application>(
     bridge_composing: bool,
     mods: Modifiers,
 ) -> WebStep {
-    let _ = key_code;
     if is_composing || bridge_composing {
         return WebStep::default();
+    }
+    let press = from_dom(key).map(|k| KeyPress::new(k, mods));
+    let ime = dom_composing(is_composing, key_code, bridge_composing);
+    match route_key(runtime, press, ime) {
+        KeyStep::Consumed => {
+            return WebStep {
+                prevent_default: true,
+                sync: true,
+                ..WebStep::default()
+            }
+        }
+        KeyStep::Fail(error) => {
+            return WebStep {
+                error: Some(error),
+                ..WebStep::default()
+            }
+        }
+        KeyStep::Pass => {}
     }
     if (mods.meta || mods.control) && matches!(key.to_lowercase().as_str(), "z" | "y") {
         let redo = mods.shift || key.eq_ignore_ascii_case("y");

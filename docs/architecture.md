@@ -74,8 +74,10 @@ The hosts map winit and DOM keys to these types inside `surface-platform`
 - **No handler.** The host path is the same as before. Enter inserts a
   newline in a multiline field and activates elsewhere.
 
-The decisions are pure functions (`route_key`, the key maps and
-`field_action`) shared by both hosts and unit-tested without a window.
+The decisions are pure functions in `key_route.rs`, unit-tested without a
+window. `native_key` and `web_key` hold each host's whole key decision. The
+native `key_input` and the web textarea `keydown` listener only apply the
+returned step (redraw, `preventDefault`, dispatch, value sync).
 Real-device IME evidence (macOS Zhuyin and Cangjie) is tracked in #48.
 
 `NodeId` is an arena index for the current tree. It is not durable identity.
