@@ -181,6 +181,91 @@ pub(crate) fn field_action(
     event.map_or(FieldAction::Nothing, FieldAction::Dispatch)
 }
 
+/// What the native host does with one key press. `key_input` only applies it.
+#[derive(Debug)]
+pub(crate) enum NativeStep {
+    /// The focused field is composing. The IME owns the key.
+    Ignore,
+    /// The app's handler consumed the press: redraw and sync the IME area.
+    Consumed,
+    /// The field's own handling, as without a handler.
+    Field(FieldAction),
+    Fail(String),
+}
+
+/// The native host's whole key decision (#103): the composition check, the
+/// app's handler, then the field.
+pub(crate) fn native_key<A: Application>(
+    runtime: &mut Runtime<A>,
+    key: &WinitKey,
+    text: Option<&str>,
+    mods: Modifiers,
+) -> NativeStep {
+    let input = runtime.input_snapshot();
+    if input.as_ref().is_some_and(|i| i.composing) {
+        return NativeStep::Ignore;
+    }
+    NativeStep::Field(field_action(key, text, mods, input.as_ref()))
+}
+
+/// What the web textarea's `keydown` listener does. The listener only
+/// applies it, in this order: `preventDefault`, dispatch, value sync.
+#[derive(Debug, Default)]
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+pub(crate) struct WebStep {
+    pub prevent_default: bool,
+    pub dispatch: Option<Event>,
+    /// Write the runtime value and selection back to the textarea.
+    pub sync: bool,
+    pub error: Option<String>,
+}
+
+/// The web host's whole keydown decision (#103). `key` is
+/// `KeyboardEvent.key`. `bridge_composing` is the bridge's own composition
+/// flag. A passed key keeps the browser default unless the field maps it,
+/// so Shift+Enter in a multiline field inserts the newline in the browser.
+#[cfg_attr(not(target_arch = "wasm32"), allow(dead_code))]
+pub(crate) fn web_key<A: Application>(
+    runtime: &mut Runtime<A>,
+    key: &str,
+    key_code: u32,
+    is_composing: bool,
+    bridge_composing: bool,
+    mods: Modifiers,
+) -> WebStep {
+    let _ = key_code;
+    if is_composing || bridge_composing {
+        return WebStep::default();
+    }
+    if (mods.meta || mods.control) && matches!(key.to_lowercase().as_str(), "z" | "y") {
+        let redo = mods.shift || key.eq_ignore_ascii_case("y");
+        return WebStep {
+            prevent_default: true,
+            dispatch: Some(Event::Edit {
+                key: if redo { EditKey::Redo } else { EditKey::Undo },
+                extend: false,
+                by_word: false,
+            }),
+            sync: true,
+            error: None,
+        };
+    }
+    let dispatch = match key {
+        "Tab" => Some(Event::FocusNext {
+            reverse: mods.shift,
+        }),
+        "Escape" => Some(Event::Cancel),
+        "Enter" if runtime.input_snapshot().is_some_and(|s| !s.multiline) => Some(Event::Activate),
+        _ => None,
+    };
+    WebStep {
+        prevent_default: dispatch.is_some(),
+        dispatch,
+        sync: false,
+        error: None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -254,28 +339,45 @@ mod tests {
     };
     const ENTER: WinitKey = WinitKey::Named(NamedKey::Enter);
 
-    /// The native host's key path after the composition check, as in
-    /// `keyboard.rs`: ask the app, then run the field's action.
-    fn native_press(rt: &mut Runtime<App>, key: &WinitKey, text: Option<&str>, mods: Modifiers) {
-        let press = from_winit(key).map(|k| KeyPress::new(k, mods));
-        let composing = rt.input_snapshot().is_some_and(|i| i.composing);
-        match route_key(rt, press, composing) {
-            KeyStep::Consumed => {}
-            KeyStep::Pass => {
-                let input = rt.input_snapshot();
-                if let FieldAction::Dispatch(event) = field_action(key, text, mods, input.as_ref())
-                {
-                    rt.dispatch(event).unwrap();
-                }
+    /// Run `native_key` and apply its step, as `key_input` does.
+    fn native_press(
+        rt: &mut Runtime<App>,
+        key: &WinitKey,
+        text: Option<&str>,
+        mods: Modifiers,
+    ) -> String {
+        let step = native_key(rt, key, text, mods);
+        let shown = format!("{step:?}");
+        match step {
+            NativeStep::Field(FieldAction::Dispatch(event)) => {
+                rt.dispatch(event).unwrap();
             }
-            KeyStep::Fail(error) => panic!("{error}"),
+            NativeStep::Fail(error) => panic!("{error}"),
+            _ => {}
         }
+        shown
+    }
+    /// Run `web_key` and apply its step, as the keydown listener does. The
+    /// browser default for a passed key is not simulated.
+    fn web_press(
+        rt: &mut Runtime<App>,
+        key: &str,
+        key_code: u32,
+        ime: bool,
+        mods: Modifiers,
+    ) -> WebStep {
+        let step = web_key(rt, key, key_code, ime, false, mods);
+        if let Some(event) = step.dispatch.clone() {
+            rt.dispatch(event).unwrap();
+        }
+        assert!(step.error.is_none(), "{:?}", step.error);
+        step
     }
 
     #[test]
     fn native_enter_is_consumed_by_the_handler_and_inserts_no_newline() {
         let mut rt = runtime(true, true);
-        native_press(&mut rt, &ENTER, Some("\r"), NONE);
+        assert_eq!(native_press(&mut rt, &ENTER, Some("\r"), NONE), "Consumed");
         assert_eq!(rt.app().sent, 1);
         assert_eq!(rt.app().draft, "hi");
     }
@@ -297,12 +399,10 @@ mod tests {
             selection: None,
         }))
         .unwrap();
-        assert_eq!(
-            route_key(&mut rt, Some(KeyPress::new(Key::Enter, NONE)), true),
-            KeyStep::Pass
-        );
+        assert_eq!(native_press(&mut rt, &ENTER, Some("\r"), NONE), "Ignore");
         assert_eq!(rt.app().calls.get(), 0);
         assert_eq!(rt.app().sent, 0);
+        assert_eq!(rt.app().draft, "hi", "no newline during composition");
     }
 
     #[test]
@@ -333,6 +433,101 @@ mod tests {
         let mut rt = runtime(false, false);
         native_press(&mut rt, &ENTER, Some("\r"), NONE);
         assert_eq!(rt.app().draft, "hi", "single-line Enter activates");
+    }
+
+    #[test]
+    fn web_enter_is_consumed_prevents_the_default_and_syncs_the_value() {
+        let mut rt = runtime(true, true);
+        let step = web_press(&mut rt, "Enter", 13, false, NONE);
+        assert!(
+            step.prevent_default,
+            "the browser must not insert a newline"
+        );
+        assert!(step.sync);
+        assert!(step.dispatch.is_none());
+        assert_eq!(rt.app().sent, 1);
+        assert_eq!(rt.app().draft, "hi");
+    }
+
+    #[test]
+    fn web_shift_enter_passes_and_keeps_the_browser_newline() {
+        let mut rt = runtime(true, true);
+        let step = web_press(&mut rt, "Enter", 13, false, SHIFT);
+        assert!(!step.prevent_default, "the browser inserts the newline");
+        assert!(step.dispatch.is_none());
+        assert_eq!(rt.app().calls.get(), 1, "the handler saw Shift+Enter");
+        assert_eq!(rt.app().sent, 0);
+    }
+
+    #[test]
+    fn web_safari_late_enter_with_key_code_229_skips_the_handler() {
+        let mut rt = runtime(true, true);
+        let step = web_press(&mut rt, "Enter", 229, false, NONE);
+        assert_eq!(rt.app().calls.get(), 0);
+        assert_eq!(rt.app().sent, 0);
+        assert!(
+            !step.prevent_default,
+            "the old multiline path: browser default"
+        );
+        // Single line: the old path activates, as before #103.
+        let mut rt = runtime(false, true);
+        let step = web_press(&mut rt, "Enter", 229, false, NONE);
+        assert_eq!(rt.app().calls.get(), 0);
+        assert_eq!(format!("{:?}", step.dispatch), "Some(Activate)");
+    }
+
+    #[test]
+    fn web_composition_flags_skip_the_handler_and_the_field() {
+        let mut rt = runtime(true, true);
+        let step = web_press(&mut rt, "Enter", 13, true, NONE);
+        assert!(!step.prevent_default && step.dispatch.is_none() && !step.sync);
+        let step = web_key(&mut rt, "Enter", 13, false, true, NONE);
+        assert!(!step.prevent_default && step.dispatch.is_none() && !step.sync);
+        assert_eq!(rt.app().calls.get(), 0);
+    }
+
+    #[test]
+    fn web_with_no_handler_keeps_the_old_keydown_table() {
+        let cmd = Modifiers { meta: true, ..NONE };
+        let show = |multiline: bool, key: &str, mods: Modifiers| {
+            let mut rt = runtime(multiline, false);
+            let s = web_key(&mut rt, key, 0, false, false, mods);
+            format!("{} {:?} {}", s.prevent_default, s.dispatch, s.sync)
+        };
+        let cases = [
+            (show(true, "Enter", NONE), "false None false"),
+            (show(true, "Enter", SHIFT), "false None false"),
+            (show(false, "Enter", NONE), "true Some(Activate) false"),
+            (show(true, "Escape", NONE), "true Some(Cancel) false"),
+            (
+                show(true, "Tab", SHIFT),
+                "true Some(FocusNext { reverse: true }) false",
+            ),
+            (
+                show(true, "z", cmd),
+                "true Some(Edit { key: Undo, extend: false, by_word: false }) true",
+            ),
+            (
+                show(true, "Z", Modifiers { shift: true, ..cmd }),
+                "true Some(Edit { key: Redo, extend: false, by_word: false }) true",
+            ),
+            (
+                show(
+                    true,
+                    "y",
+                    Modifiers {
+                        control: true,
+                        ..NONE
+                    },
+                ),
+                "true Some(Edit { key: Redo, extend: false, by_word: false }) true",
+            ),
+            (show(true, "ArrowUp", NONE), "false None false"),
+            (show(true, "a", NONE), "false None false"),
+        ];
+        for (got, want) in cases {
+            assert_eq!(got, want);
+        }
     }
 
     #[test]
