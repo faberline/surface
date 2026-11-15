@@ -9,6 +9,7 @@ mod keys;
 mod motion;
 #[cfg(feature = "devtools")]
 mod paint_export;
+mod scroll_control;
 mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
@@ -21,6 +22,7 @@ pub use editing_runtime::InputSnapshot;
 pub use keys::{Key, KeyPress, Modifiers, TextAction};
 #[cfg(feature = "devtools")]
 pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
+pub use scroll_control::{ScrollMetrics, ScrollTarget};
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
     cell::{Cell, RefCell},
@@ -43,6 +45,7 @@ pub struct View<M> {
     roving: Option<Roving>,
     dismiss: Option<M>,
     key: Option<KeyHandler<M>>,
+    stick: bool,
 }
 /// A key handler. `Some(message)` consumes the press, `None` passes it on.
 type KeyHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<M>>;
@@ -58,6 +61,7 @@ impl<M> View<M> {
             roving: None,
             dismiss: None,
             key: None,
+            stick: false,
         }
     }
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -91,6 +95,14 @@ impl<M> View<M> {
     /// called during an IME composition. See `KeyPress`.
     pub fn on_key(mut self, handler: impl Fn(&KeyPress) -> Option<M> + 'static) -> Self {
         self.key = Some(Rc::new(handler));
+        self
+    }
+    /// Keep a scroll container pinned to its bottom while it is at the bottom.
+    /// It follows new content, stops when the user scrolls up (or a focus
+    /// reveal moves it), and resumes when it is back at the bottom. The node
+    /// needs `clip(true)` and a stable id. Without `clip` the flag is ignored.
+    pub fn stick_to_bottom(mut self, on: bool) -> Self {
+        self.stick = on;
         self
     }
     /// Trap focus in this panel, dismiss on Escape/outside click, then restore focus.
@@ -207,14 +219,19 @@ struct Binding<M> {
     roving: Option<Roving>,
     dismiss: Option<M>,
     key: Option<KeyHandler<M>>,
+    stick: bool,
 }
 
 /// Messages posted from inside `update` or from other code on the UI thread.
 /// Clone it freely. It is not `Send`; use `WakeHandle` across threads.
-pub struct Queue<M>(Rc<RefCell<VecDeque<M>>>, Rc<Cell<bool>>);
+pub struct Queue<M>(
+    Rc<RefCell<VecDeque<M>>>,
+    Rc<Cell<bool>>,
+    scroll_control::Pending,
+);
 impl<M> Clone for Queue<M> {
     fn clone(&self) -> Self {
-        Self(self.0.clone(), self.1.clone())
+        Self(self.0.clone(), self.1.clone(), self.2.clone())
     }
 }
 impl<M> Queue<M> {
@@ -245,6 +262,7 @@ pub struct Runtime<A: Application> {
     pressed: Option<String>,
     hovered: Option<String>,
     scroll: BTreeMap<String, (f32, f32)>,
+    scroll_state: scroll_control::State,
     editors: BTreeMap<String, TextEditor>,
     text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
     ime_area: Option<surface::Rect>,
@@ -263,7 +281,7 @@ pub struct Runtime<A: Application> {
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
         let mut runtime = Self {
-            queue: Queue(Rc::default(), Rc::default()),
+            queue: Queue(Rc::default(), Rc::default(), Rc::default()),
             app,
             dom: MicroDom::new(Node::new(Role::Window, "Surface")),
             bindings: BTreeMap::new(),
@@ -273,6 +291,7 @@ impl<A: Application> Runtime<A> {
             pressed: None,
             hovered: None,
             scroll: BTreeMap::new(),
+            scroll_state: scroll_control::State::default(),
             editors: BTreeMap::new(),
             text_geometry: BTreeMap::new(),
             ime_area: None,
@@ -377,7 +396,10 @@ impl<A: Application> Runtime<A> {
         ) -> Result<(), AppError> {
             let disabled = disabled || view.node.is_disabled();
             let node = view.node.disabled(disabled);
-            if (node.is_focusable() || view.roving.is_some() || view.dismiss.is_some())
+            if (node.is_focusable()
+                || view.roving.is_some()
+                || view.dismiss.is_some()
+                || view.stick)
                 && node.stable_id().is_none()
             {
                 return Err(AppError::MissingId(node.name().to_owned()));
@@ -414,6 +436,7 @@ impl<A: Application> Runtime<A> {
                     roving: view.roving,
                     dismiss: view.dismiss,
                     key: view.key,
+                    stick: view.stick,
                 },
             );
             for child in view.children {
@@ -489,6 +512,9 @@ impl<A: Application> Runtime<A> {
             }
             self.layout_focus.clone_from(&self.focused);
             self.layout_viewport = Some((width, height));
+        }
+        if self.apply_scroll_control(&computed)? {
+            (display_dom, decorations, computed) = self.layout_editing(width, height, measurer)?;
         }
         #[cfg(feature = "devtools")]
         self.trace_span(
