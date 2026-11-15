@@ -11,6 +11,7 @@
 mod bridge;
 mod browser;
 mod check;
+mod devtools_native;
 mod ime;
 mod keys;
 mod material;
@@ -26,6 +27,7 @@ const USAGE: &str = "\
 usage: surface-e2e [options] [suite...]
 
 suites: smoke ime material bridge-native bridge-native-compact bridge-web
+        devtools-native
         (default: all of them, in that order)
 
 options:
@@ -40,13 +42,14 @@ options:
   --artifacts <dir>     screenshots and evidence (default: artifacts)
 ";
 
-const SUITES: [&str; 6] = [
+const SUITES: [&str; 7] = [
     "smoke",
     "ime",
     "material",
     "bridge-native",
     "bridge-native-compact",
     "bridge-web",
+    "devtools-native",
 ];
 
 /// Paths shared by every suite.
@@ -177,6 +180,7 @@ fn expected_steps(suite: &str) -> &'static [&'static str] {
         "material" => material::STEPS,
         "bridge-native" => bridge::NATIVE_STEPS,
         "bridge-native-compact" => bridge::NATIVE_OVERFLOW_STEPS,
+        "devtools-native" => devtools_native::STEPS,
         _ => bridge::WEB_STEPS,
     }
 }
@@ -212,6 +216,7 @@ async fn run_suite(
             )
             .await
         }
+        "devtools-native" => devtools_native::run(env, &options.native_bin).await,
         "bridge-native-compact" => {
             bridge::native(
                 env,

@@ -3,6 +3,8 @@
 mod native;
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) use native::Bridge;
+#[cfg(not(target_arch = "wasm32"))]
+mod native_protocol;
 #[cfg(target_arch = "wasm32")]
 mod web;
 #[cfg(target_arch = "wasm32")]
