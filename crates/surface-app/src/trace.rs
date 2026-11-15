@@ -434,6 +434,7 @@ impl<A: Application> Runtime<A> {
         let (name, x, y, id) = match event {
             Event::PointerDown { x, y } => ("PointerDown", Some(*x), Some(*y), None),
             Event::PointerUp { x, y } => ("PointerUp", Some(*x), Some(*y), None),
+            Event::SecondaryDown { x, y } => ("SecondaryDown", Some(*x), Some(*y), None),
             Event::PointerMove { x, y } => ("PointerMove", Some(*x), Some(*y), None),
             Event::Scroll { x, y, .. } => ("Scroll", Some(*x), Some(*y), None),
             Event::FocusNext { .. } => ("FocusNext", None, None, None),

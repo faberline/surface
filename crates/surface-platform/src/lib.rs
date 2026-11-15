@@ -11,6 +11,8 @@ mod key_order;
 mod key_route;
 mod keyboard;
 mod motion;
+#[cfg(not(target_arch = "wasm32"))]
+mod pointer_route;
 #[cfg(any(target_arch = "wasm32", test))]
 mod press_guard;
 #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
@@ -23,11 +25,13 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;
 pub use wake::WakeHandle;
+#[cfg(target_arch = "wasm32")]
+use winit::event::MouseButton;
 use winit::event_loop::EventLoopProxy;
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,
-    event::{ElementState, MouseButton, MouseScrollDelta, WindowEvent},
+    event::{ElementState, MouseScrollDelta, WindowEvent},
     event_loop::{ActiveEventLoop, EventLoop},
     window::{Window, WindowId},
 };
@@ -187,6 +191,8 @@ struct Host<A: Application> {
     trace: Option<trace_file::TraceFile>,
     pointer: (f32, f32),
     mods: key_order::Mods,
+    #[cfg(not(target_arch = "wasm32"))]
+    route: pointer_route::PointerRoute,
     #[cfg(target_arch = "wasm32")]
     key_order: key_order::KeyOrder<winit::event::KeyEvent>,
     frames: u32,
@@ -646,6 +652,22 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                     },
                 );
             }
+            #[cfg(not(target_arch = "wasm32"))]
+            WindowEvent::MouseInput { state, button, .. } => {
+                let step = self.route.route_mouse(
+                    pointer_route::from_winit_button(button),
+                    state == ElementState::Pressed,
+                    self.mods,
+                    self.pointer,
+                    cfg!(target_os = "macos"),
+                );
+                match step {
+                    pointer_route::PointerStep::Primary(event)
+                    | pointer_route::PointerStep::Secondary(event) => self.input(event_loop, event),
+                    pointer_route::PointerStep::Ignore => {}
+                }
+            }
+            #[cfg(target_arch = "wasm32")]
             WindowEvent::MouseInput {
                 state,
                 button: MouseButton::Left,
@@ -804,6 +826,8 @@ pub fn run_with_wake<A: Application>(
         trace,
         pointer: (0., 0.),
         mods: key_order::Mods::default(),
+        #[cfg(not(target_arch = "wasm32"))]
+        route: pointer_route::PointerRoute::default(),
         #[cfg(target_arch = "wasm32")]
         key_order: key_order::KeyOrder::new(),
         frames: 0,
