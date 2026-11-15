@@ -10,8 +10,9 @@ pub mod mcp;
 pub mod session;
 
 use connection::{ClientError, Connection};
-use session::Session;
+use session::{Session, SessionError};
 use std::io::{BufRead, Write};
+use std::path::Path;
 
 /// Exit code of a protocol error reply.
 pub const EXIT_PROTOCOL: i32 = 1;
@@ -35,12 +36,60 @@ pub fn run(
 
 /// [`run`] with the session environment value and the connector given.
 pub fn run_with(
-    _args: &[String],
-    _env_session: Option<String>,
-    _input: &mut dyn BufRead,
-    _out: &mut dyn Write,
-    _err: &mut dyn Write,
-    _connect: &mut dyn FnMut(&Session) -> Result<Box<dyn Connection>, ClientError>,
+    args: &[String],
+    env_session: Option<String>,
+    input: &mut dyn BufRead,
+    out: &mut dyn Write,
+    err: &mut dyn Write,
+    connect: &mut dyn FnMut(&Session) -> Result<Box<dyn Connection>, ClientError>,
 ) -> i32 {
-    unimplemented!("red")
+    let parsed = match cli::parse_args(args) {
+        Ok(parsed) => parsed,
+        Err(cli::UsageError(message)) => {
+            let _ = writeln!(err, "surface-devtools: {message}\n\n{}", cli::USAGE);
+            return EXIT_USAGE;
+        }
+    };
+    let Some(path) = parsed.session.or(env_session).filter(|p| !p.is_empty()) else {
+        let _ = writeln!(
+            err,
+            "surface-devtools: no session file: pass --session <file> or set \
+             SURFACE_DEVTOOLS_SESSION"
+        );
+        return EXIT_USAGE;
+    };
+    let session = match Session::load(Path::new(&path)) {
+        Ok(session) if !session::pid_alive(session.pid) => {
+            let _ = writeln!(
+                err,
+                "surface-devtools: {}",
+                SessionError::Stale(session.file)
+            );
+            return EXIT_CLIENT;
+        }
+        Ok(session) => session,
+        Err(error) => {
+            let _ = writeln!(err, "surface-devtools: {error}");
+            return EXIT_CLIENT;
+        }
+    };
+    let mut conn = match connect(&session) {
+        Ok(conn) => conn,
+        Err(error) => {
+            let _ = writeln!(err, "surface-devtools: {error}");
+            return EXIT_CLIENT;
+        }
+    };
+    match parsed.command {
+        cli::Command::Call { method, params } => {
+            cli::execute_call(conn.as_mut(), &method, params, out, err)
+        }
+        cli::Command::Mcp => match mcp::McpServer::new().serve(conn.as_mut(), input, out) {
+            Ok(()) => 0,
+            Err(error) => {
+                let _ = writeln!(err, "surface-devtools: mcp: {error}");
+                EXIT_CLIENT
+            }
+        },
+    }
 }

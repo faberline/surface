@@ -124,7 +124,10 @@ fn args_map_commands_to_methods() {
     );
     assert_eq!(
         call_of(&["action", "fill", "field", "hello world"]),
-        ("Action.fill".into(), json!({"id":"field","value":"hello world"}))
+        (
+            "Action.fill".into(),
+            json!({"id":"field","value":"hello world"})
+        )
     );
     assert_eq!(
         call_of(&["action", "set-value", "volume", "0.5"]),
@@ -303,14 +306,23 @@ fn native_tcp_sends_the_token_and_reads_replies() {
     let seen = server.join().unwrap();
     assert_eq!(seen.len(), 2);
     for line in seen {
-        assert_eq!(serde_json::from_str::<Value>(&line).unwrap()["token"], "secret-token");
+        assert_eq!(
+            serde_json::from_str::<Value>(&line).unwrap()["token"],
+            "secret-token"
+        );
     }
 }
 
 #[test]
 fn native_tcp_refuses_a_non_loopback_endpoint() {
     // Negative control: the token goes only to the loopback endpoint.
-    for endpoint in ["10.0.0.1:9000", "example.com:80", "localhost:9000", "[::2]:80", "nonsense"] {
+    for endpoint in [
+        "10.0.0.1:9000",
+        "example.com:80",
+        "localhost:9000",
+        "[::2]:80",
+        "nonsense",
+    ] {
         let session = session_for(endpoint, PathBuf::from("/tmp/x.json"));
         assert!(
             matches!(NativeTcp::connect(&session), Err(ClientError::Session(_))),
@@ -382,7 +394,10 @@ fn missing_session_is_a_usage_error() {
     let (code, _, err) = run_cli(&["dom", "snapshot"], None);
     assert_eq!(code, EXIT_USAGE);
     assert!(err.contains("SURFACE_DEVTOOLS_SESSION"), "stderr: {err}");
-    let (code, _, err) = run_cli(&["--session", "/nonexistent/s.json", "dom", "snapshot"], None);
+    let (code, _, err) = run_cli(
+        &["--session", "/nonexistent/s.json", "dom", "snapshot"],
+        None,
+    );
     assert_eq!(code, EXIT_CLIENT);
     assert!(err.contains("/nonexistent/s.json"), "stderr: {err}");
 }
@@ -414,7 +429,13 @@ fn a_submitted_action_is_not_retried() {
         (line, extra)
     });
     let (code, out, err) = run_cli(
-        &["--session", file.to_str().unwrap(), "action", "activate", "check"],
+        &[
+            "--session",
+            file.to_str().unwrap(),
+            "action",
+            "activate",
+            "check",
+        ],
         None,
     );
     assert_eq!(code, EXIT_CLIENT);
@@ -448,7 +469,10 @@ fn run_fake(args: &[&str], replies: Vec<Reply>) -> (i32, String, String, Vec<Req
                     self.0.call(request)
                 }
             }
-            Ok(Box::new(Recording(Fake::new(replies.clone()), sink.clone())) as Box<dyn Connection>)
+            Ok(
+                Box::new(Recording(Fake::new(replies.clone()), sink.clone()))
+                    as Box<dyn Connection>,
+            )
         },
     );
     let requests = captured.borrow().clone();
@@ -468,7 +492,10 @@ fn ok_reply_prints_the_result_json_and_exits_zero() {
     );
     assert_eq!(code, 0);
     assert_eq!(err, "");
-    assert_eq!(serde_json::from_str::<Value>(&out).unwrap(), json!({"changed":true}));
+    assert_eq!(
+        serde_json::from_str::<Value>(&out).unwrap(),
+        json!({"changed":true})
+    );
     assert_eq!(requests.len(), 1);
     assert_eq!(requests[0].method, "Action.activate");
     assert_eq!(requests[0].params, json!({"id":"check"}));
@@ -519,7 +546,10 @@ fn mcp_initialize() {
     assert!(reply["result"]["protocolVersion"].is_string());
     assert_eq!(reply["result"]["serverInfo"]["name"], "surface-devtools");
     assert!(reply["result"]["capabilities"]["tools"].is_object());
-    assert!(fake.requests.is_empty(), "initialize must not touch the app");
+    assert!(
+        fake.requests.is_empty(),
+        "initialize must not touch the app"
+    );
 }
 
 #[test]
@@ -561,11 +591,20 @@ fn mcp_tools_list_has_one_tool_per_method_with_generated_descriptions() {
         assert!(!description.is_empty());
         assert_eq!(tool["inputSchema"]["type"], "object");
     }
-    let activate = tools.iter().find(|t| t["name"] == "action_activate").unwrap();
-    assert!(activate["description"].as_str().unwrap().contains("Action.activate"));
+    let activate = tools
+        .iter()
+        .find(|t| t["name"] == "action_activate")
+        .unwrap();
+    assert!(activate["description"]
+        .as_str()
+        .unwrap()
+        .contains("Action.activate"));
     assert_eq!(activate["inputSchema"]["required"], json!(["id"]));
     let future = tools.iter().find(|t| t["name"] == "future_thing").unwrap();
-    assert!(future["description"].as_str().unwrap().contains("Future.thing"));
+    assert!(future["description"]
+        .as_str()
+        .unwrap()
+        .contains("Future.thing"));
     // Capabilities are cached: a second list does not ask the app again.
     rpc(
         &mut server,
@@ -591,7 +630,10 @@ fn mcp_tools_call_forwards_one_request() {
     assert_eq!(reply["id"], "abc");
     assert_eq!(reply["result"]["isError"], false);
     let text = reply["result"]["content"][0]["text"].as_str().unwrap();
-    assert_eq!(serde_json::from_str::<Value>(text).unwrap(), json!({"changed":true}));
+    assert_eq!(
+        serde_json::from_str::<Value>(text).unwrap(),
+        json!({"changed":true})
+    );
     let call = fake.requests.last().unwrap();
     assert_eq!(call.method, "Action.setValue");
     assert_eq!(call.params, json!({"id":"volume","value":0.25}));
