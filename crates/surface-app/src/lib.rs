@@ -7,6 +7,8 @@ mod editing_runtime;
 mod focus_scroll;
 mod keys;
 mod motion;
+#[cfg(feature = "devtools")]
+mod paint_export;
 mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
@@ -17,6 +19,8 @@ pub use editing::{
 };
 pub use editing_runtime::InputSnapshot;
 pub use keys::{Key, KeyPress, Modifiers, TextAction};
+#[cfg(feature = "devtools")]
+pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
     cell::{Cell, RefCell},
@@ -253,6 +257,8 @@ pub struct Runtime<A: Application> {
     motion: motion::Motion,
     #[cfg(feature = "devtools")]
     trace: Option<trace::Recorder>,
+    #[cfg(feature = "devtools")]
+    paint_frame: Option<paint_export::PaintFrame>,
 }
 impl<A: Application> Runtime<A> {
     pub fn new(app: A) -> Result<Self, AppError> {
@@ -279,6 +285,8 @@ impl<A: Application> Runtime<A> {
             motion: motion::Motion::default(),
             #[cfg(feature = "devtools")]
             trace: None,
+            #[cfg(feature = "devtools")]
+            paint_frame: None,
         };
         runtime.rebuild()?;
         Ok(runtime)
@@ -506,6 +514,16 @@ impl<A: Application> Runtime<A> {
         );
         #[cfg(feature = "devtools")]
         self.trace_paint(start, list.ops.len());
+        #[cfg(feature = "devtools")]
+        {
+            // Moved, not copied: keeping the frame allocates nothing.
+            self.paint_frame = Some(paint_export::PaintFrame {
+                dom: display_dom,
+                decorations,
+                focused,
+                interaction,
+            });
+        }
         self.computed = Some(computed);
         Ok(list)
     }
