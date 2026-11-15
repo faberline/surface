@@ -2,6 +2,8 @@
 #[cfg(feature = "bridge")]
 mod bridge;
 mod controls;
+#[cfg(feature = "devtools")]
+mod devtools;
 mod editing;
 mod editing_runtime;
 mod focus_scroll;
