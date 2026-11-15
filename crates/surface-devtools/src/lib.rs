@@ -21,6 +21,9 @@ pub const EXIT_USAGE: i32 = 2;
 /// Exit code of a session, app or connection failure.
 pub const EXIT_CLIENT: i32 = 3;
 
+/// Opens a connection for a session. Tests give a fake one.
+pub type Connector<'a> = dyn FnMut(&Session) -> Result<Box<dyn Connection>, ClientError> + 'a;
+
 /// Run the program. Returns the process exit code.
 pub fn run(
     args: Vec<String>,
@@ -41,7 +44,7 @@ pub fn run_with(
     input: &mut dyn BufRead,
     out: &mut dyn Write,
     err: &mut dyn Write,
-    connect: &mut dyn FnMut(&Session) -> Result<Box<dyn Connection>, ClientError>,
+    connect: &mut Connector,
 ) -> i32 {
     let parsed = match cli::parse_args(args) {
         Ok(parsed) => parsed,
