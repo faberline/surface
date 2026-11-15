@@ -58,7 +58,7 @@ fn extent_ignores_the_offset() {
 #[test]
 fn extent_adds_padding_at_the_end() {
     let (dom, log) = fixture(30, 8., 0.);
-    assert_eq!(extent(&dom, log), Some((100., 608.)));
+    assert_eq!(extent(&dom, log), Some((100., 616.)));
 }
 
 #[test]
