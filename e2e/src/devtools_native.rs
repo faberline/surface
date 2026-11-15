@@ -5,6 +5,10 @@
 //! the session file and speaks raw newline-delimited JSON over TCP. There is
 //! no client binary. The jet bridge runs next to it, with its own session
 //! file. No real key or mouse input is sent.
+//!
+//! DN11 to DN14 drive the same app through the `surface-devtools` binary
+//! (issue #132, O8): the CLI, MCP over stdio, error exit codes and a stale
+//! session file.
 
 use anyhow::{anyhow, bail, Context, Result};
 use serde_json::{json, Value};
@@ -20,7 +24,8 @@ use crate::check::step;
 use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
-    "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DN9", "DN10",
+    "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DN9", "DN10", "DN11", "DN12", "DN13",
+    "DN14",
 ];
 
 const NAME: &str = "devtools-native";
@@ -262,6 +267,120 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
         client.ok(7, "Devtools.capabilities", json!({}))?;
         drop(client);
 
+        let tool = env.devtools_bin()?;
+        let stale_copy = folder.join("stale-session.json");
+        std::fs::copy(&devtools_file, &stale_copy)?;
+        let mut transcripts = String::new();
+
+        step(
+            "DN11",
+            "the surface-devtools CLI: capabilities, snapshot, query, activate",
+        );
+        let session_arg = devtools_file.to_string_lossy().to_string();
+        let run =
+            |transcript: &mut String, args: &[&str]| cli(&tool, &session_arg, args, transcript);
+        let (code, out, _) = run(&mut transcripts, &["capabilities"])?;
+        check_eq!(code, 0, "cli capabilities exit");
+        let caps_cli: Value = serde_json::from_str(&out).context("cli capabilities output")?;
+        check!(
+            caps_cli["methods"] == caps["methods"],
+            "cli capabilities differ from raw TCP: {caps_cli}"
+        );
+        let (code, out, _) = run(&mut transcripts, &["dom", "snapshot"])?;
+        check_eq!(code, 0, "cli snapshot exit");
+        let cli_before: Value = serde_json::from_str(&out).context("cli snapshot output")?;
+        check_eq!(cli_before["version"].as_u64(), Some(1), "cli dom version");
+        check_eq!(
+            node(&cli_before, "check")?["checked"],
+            json!(false),
+            "check before the CLI activate"
+        );
+        let (code, out, _) = run(&mut transcripts, &["dom", "query", "--id", "check"])?;
+        check_eq!(code, 0, "cli query exit");
+        let found: Value = serde_json::from_str(&out).context("cli query output")?;
+        check_eq!(
+            found["matches"].as_array().map(Vec::len),
+            Some(1),
+            "query matches"
+        );
+        let (code, out, _) = run(&mut transcripts, &["action", "activate", "check"])?;
+        check_eq!(code, 0, "cli activate exit");
+        let activated: Value = serde_json::from_str(&out).context("cli activate output")?;
+        check_eq!(activated["changed"], json!(true), "cli activate changed");
+        let (_, out, _) = run(&mut transcripts, &["dom", "snapshot"])?;
+        let cli_after: Value = serde_json::from_str(&out)?;
+        check_eq!(
+            node(&cli_after, "check")?["checked"],
+            json!(true),
+            "check after the CLI activate"
+        );
+        // The session file can also come from the environment.
+        let from_env = std::process::Command::new(&tool)
+            .env("SURFACE_DEVTOOLS_SESSION", &devtools_file)
+            .arg("capabilities")
+            .output()?;
+        check!(
+            from_env.status.success(),
+            "capabilities through SURFACE_DEVTOOLS_SESSION failed"
+        );
+
+        step(
+            "DN12",
+            "MCP over stdio: initialize, tools/list, one tools/call",
+        );
+        let mcp = mcp_session(&tool, &session_arg, &mut transcripts)?;
+        check_eq!(
+            mcp[0]["result"]["serverInfo"]["name"].as_str(),
+            Some("surface-devtools"),
+            "mcp server name"
+        );
+        let tools = mcp[1]["result"]["tools"].as_array().context("no tools")?;
+        for name in [
+            "devtools_capabilities",
+            "dom_snapshot",
+            "dom_query",
+            "action_activate",
+        ] {
+            check!(
+                tools.iter().any(|t| t["name"] == name),
+                "tools/list lacks {name}"
+            );
+        }
+        check_eq!(
+            tools.len(),
+            caps["methods"].as_array().map(Vec::len).unwrap_or(0),
+            "one tool per method"
+        );
+        check_eq!(
+            mcp[2]["result"]["isError"],
+            json!(false),
+            "tools/call isError"
+        );
+        let text = mcp[2]["result"]["content"][0]["text"]
+            .as_str()
+            .context("no tool text")?;
+        let snapshot: Value = serde_json::from_str(text).context("tool text is JSON")?;
+        check_eq!(
+            node(&snapshot, "check")?["checked"],
+            json!(true),
+            "check seen through MCP"
+        );
+
+        step(
+            "DN13",
+            "protocol error exits 1 with the code on stderr; a usage error exits 2",
+        );
+        let (code, out, errors) = run(&mut transcripts, &["action", "activate", "missing-node"])?;
+        check_eq!(code, 1, "protocol error exit code");
+        check!(out.is_empty(), "stdout on a protocol error: {out}");
+        check!(errors.contains("missing_node"), "stderr: {errors}");
+        let (code, _, _) = run(&mut transcripts, &["action", "fill", "only-an-id"])?;
+        check_eq!(code, 2, "usage error exit code");
+        check!(
+            !transcripts.contains(&token),
+            "the client printed the session token"
+        );
+
         step("DN8", "session token never appears in diagnostics");
         let log = std::fs::read_to_string(&diagnostic)?;
         check!(!log.contains(&token), "session token was logged");
@@ -277,6 +396,30 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
     .await;
     terminate(&mut app).await;
     let mut evidence: Value = outcome?;
+
+    step(
+        "DN14",
+        "after the app exits, the CLI reports a stale session file and exits 3",
+    );
+    let stale_copy = folder.join("stale-session.json");
+    let tool = env.devtools_bin()?;
+    let mut ignored = String::new();
+    let (code, out, errors) = cli(
+        &tool,
+        &stale_copy.to_string_lossy(),
+        &["capabilities"],
+        &mut ignored,
+    )?;
+    check_eq!(code, 3, "stale session exit code");
+    check!(out.is_empty(), "stdout on a stale session: {out}");
+    check!(
+        errors.contains("not running")
+            && errors.contains(&stale_copy.to_string_lossy().to_string()),
+        "stale session message: {errors}"
+    );
+    evidence["cli_drove_the_app"] = json!(true);
+    evidence["mcp_listed_and_called"] = json!(true);
+    evidence["stale_session_exit_3"] = json!(true);
 
     step("DN9", "--smoke run exits 0 and removes its session file");
     let smoke_file = folder.join("smoke-session.json");
@@ -331,6 +474,70 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
     env.write_json(&format!("{NAME}-result.json"), &evidence)?;
     println!("  evidence: {evidence}");
     Ok(())
+}
+
+/// Run the client with `--session <file> <args>`. Returns exit code, stdout
+/// and stderr. Everything it printed is appended to `transcript`.
+fn cli(
+    tool: &Path,
+    session: &str,
+    args: &[&str],
+    transcript: &mut String,
+) -> Result<(i32, String, String)> {
+    let output = std::process::Command::new(tool)
+        .arg("--session")
+        .arg(session)
+        .args(args)
+        .output()
+        .with_context(|| format!("running {}", tool.display()))?;
+    let out = String::from_utf8_lossy(&output.stdout).into_owned();
+    let err = String::from_utf8_lossy(&output.stderr).into_owned();
+    transcript.push_str(&out);
+    transcript.push_str(&err);
+    Ok((output.status.code().unwrap_or(-1), out, err))
+}
+
+/// `initialize`, `tools/list` and `tools/call dom_snapshot` over the stdio of
+/// `surface-devtools mcp`. Returns the three responses.
+fn mcp_session(tool: &Path, session: &str, transcript: &mut String) -> Result<Vec<Value>> {
+    let mut child = std::process::Command::new(tool)
+        .args(["--session", session, "mcp"])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .with_context(|| format!("starting {} mcp", tool.display()))?;
+    let requests = [
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+            "protocolVersion":"2025-06-18","capabilities":{},
+            "clientInfo":{"name":"surface-e2e","version":"0"}}}),
+        json!({"jsonrpc":"2.0","method":"notifications/initialized"}),
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}),
+        json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{
+            "name":"dom_snapshot","arguments":{}}}),
+    ];
+    {
+        let mut stdin = child.stdin.take().context("no stdin")?;
+        for request in requests {
+            writeln!(stdin, "{request}")?;
+        }
+    }
+    let output = child.wait_with_output()?;
+    let out = String::from_utf8_lossy(&output.stdout).into_owned();
+    transcript.push_str(&out);
+    transcript.push_str(&String::from_utf8_lossy(&output.stderr));
+    check!(output.status.success(), "mcp exited with {}", output.status);
+    let responses: Vec<Value> = out
+        .lines()
+        .map(serde_json::from_str)
+        .collect::<Result<_, _>>()
+        .context("mcp output is one JSON value per line")?;
+    check_eq!(
+        responses.len(),
+        3,
+        "mcp responses (a notification gets none)"
+    );
+    Ok(responses)
 }
 
 /// SIGTERM, then a hard kill after 10 s.

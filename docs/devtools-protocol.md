@@ -117,3 +117,51 @@ printf '{"v":1,"id":1,"method":"Devtools.capabilities","token":"%s"}\n' "$token"
 The e2e suite `devtools-native` (`cargo xtask web e2e devtools-native`)
 starts the native gallery with both session files and checks this over raw
 TCP.
+
+## Client: `surface-devtools`
+
+The crate `surface-devtools` (`crates/surface-devtools`, #132) is a CLI and
+an MCP server in one binary. It depends on `surface-devtools-protocol` and
+`serde_json` only: no `surface`, `surface-app`, `wgpu`, `winit` or Jet. It
+speaks the native transport above.
+
+```sh
+cap cargo build --locked -p surface-devtools
+export SURFACE_DEVTOOLS_SESSION=/path/to/session.json   # or --session <file>
+surface-devtools capabilities
+surface-devtools dom snapshot
+surface-devtools dom query --role Button --name Save
+surface-devtools action activate <id>
+surface-devtools action fill <id> <text>
+surface-devtools action set-value <id> <number>
+surface-devtools action key tab [--extend] [--by-word]
+surface-devtools mcp
+```
+
+- Output is the JSON `result` on stdout. Exit codes: 0 ok; 1 protocol error,
+  with the error code on stderr; 2 usage error; 3 session, app or
+  connection failure.
+- Stale session: a pid that is not running, or a refused connection, gives
+  a message that names the session file and says the app is not running.
+  The client never sends a request again. A request that may have reached
+  the app and got no reply is reported, not retried.
+- The token goes only to a loopback address from the session file. Any
+  other endpoint is refused before a connection is made.
+- `mcp` serves MCP over stdio (hand-written JSON-RPC: `initialize`,
+  `tools/list`, `tools/call`, one JSON message per line). There is one tool
+  per method in `Devtools.capabilities` of the connected app, named in snake
+  case (`DOM.snapshot` is `dom_snapshot`, `Action.setValue` is
+  `action_set_value`). Descriptions come from the capabilities. A tool call
+  is forwarded only when its method is listed there. A protocol error is a
+  tool result with `isError: true`.
+- The command layer uses a small `Connection` trait. Native TCP is the only
+  implementation; a web transport is out of scope until decision 0001 D-B
+  lifts.
+
+`METHODS` and `parse_request` in the protocol crate do not yet list
+`DOM.snapshot`, `DOM.query` and `Action.*`, which the executor serves. The
+client does not use that list: it works from `Devtools.capabilities` at run
+time.
+
+The e2e suite `devtools-native` also drives the app through this binary
+(steps DN11 to DN14). `cargo xtask web e2e` builds it first.

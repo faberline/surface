@@ -21,6 +21,9 @@ jet-bridge --app-session /path/to/new-session.json ui snapshot
 jet-bridge --app-session /path/to/new-session.json mcp
 ```
 
+The Surface devtools protocol has its own client, `surface-devtools`. See
+[devtools-protocol.md](devtools-protocol.md), section "Client".
+
 The parent directory must exist. The host creates the session file once.
 It will not overwrite an existing file. The file holds the loopback
 endpoint, app PID, title and random token. On Unix its mode is 0600.
