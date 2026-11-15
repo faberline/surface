@@ -156,6 +156,12 @@ enum UserEvent {
         request: jet_bridge_protocol::Request,
         reply: devtools::Reply,
     },
+    /// A devtools protocol request from the native loopback transport.
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    Devtools {
+        request: surface_devtools_protocol::Request,
+        reply: devtools::DevtoolsReply,
+    },
     #[cfg(target_arch = "wasm32")]
     Ready(Result<Box<Gpu>, HostError>),
 }
@@ -174,6 +180,8 @@ struct Host<A: Application> {
     closing: bool,
     #[cfg(feature = "devtools")]
     bridge: Option<devtools::Bridge>,
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    devtools: Option<devtools::DevtoolsServer>,
     #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
     trace: Option<trace_file::TraceFile>,
     pointer: (f32, f32),
@@ -218,6 +226,65 @@ impl<A: Application> Host<A> {
             Ok(bridge) => self.bridge = bridge,
             Err(error) => self.fail(event_loop, error),
         }
+    }
+    /// Starts the devtools protocol transport when `SURFACE_DEVTOOLS_SESSION`
+    /// is set. It has its own listener, token and session file.
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    fn install_devtools(&mut self, event_loop: &ActiveEventLoop) {
+        if self.error.is_some() {
+            return;
+        }
+        let result = devtools::DevtoolsServer::install(
+            self.proxy.clone(),
+            self.runtime.borrow().app().title(),
+        );
+        match result {
+            Ok(server) => self.devtools = server,
+            Err(error) => self.fail(event_loop, error),
+        }
+    }
+    /// Like `bridge_request`, on the devtools executor.
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    fn devtools_request(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        request: surface_devtools_protocol::Request,
+        reply: devtools::DevtoolsReply,
+    ) {
+        use surface_devtools_protocol::{ErrorCode, Reply};
+        if self.gpu.is_none() || self.window.is_none() {
+            reply.send(Reply::error(
+                request.id,
+                ErrorCode::NotReady,
+                "the application renderer is not ready",
+            ));
+            return;
+        }
+        // Read queries must use current geometry. Actions then present their new state.
+        self.draw(event_loop);
+        if self.error.is_some() {
+            reply.send(Reply::error(
+                request.id,
+                ErrorCode::RenderFailed,
+                "the application renderer failed",
+            ));
+            return;
+        }
+        let mutating = request.method.starts_with("Action.");
+        let id = request.id;
+        let response = self.runtime.borrow_mut().execute_devtools(request);
+        if mutating {
+            self.draw(event_loop);
+            if self.error.is_some() {
+                reply.send(Reply::error(
+                    id,
+                    ErrorCode::RenderFailed,
+                    "the renderer failed after handling the action; application state may have changed",
+                ));
+                return;
+            }
+        }
+        reply.send(response);
     }
     #[cfg(feature = "devtools")]
     fn bridge_request(
@@ -492,6 +559,8 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 self.gpu = Some(gpu);
                 #[cfg(feature = "devtools")]
                 self.install_bridge(event_loop);
+                #[cfg(feature = "devtools")]
+                self.install_devtools(event_loop);
                 self.window.as_ref().unwrap().request_redraw();
             }
             Err(error) => self.fail(event_loop, error),
@@ -510,6 +579,10 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             UserEvent::Wake => self.wake_app(event_loop),
             #[cfg(feature = "devtools")]
             UserEvent::Bridge { request, reply } => self.bridge_request(event_loop, request, reply),
+            #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+            UserEvent::Devtools { request, reply } => {
+                self.devtools_request(event_loop, request, reply)
+            }
             #[cfg(target_arch = "wasm32")]
             UserEvent::Ready(Ok(gpu)) => {
                 self.gpu = Some(*gpu);
@@ -724,6 +797,8 @@ pub fn run_with_wake<A: Application>(
         closing: false,
         #[cfg(feature = "devtools")]
         bridge: None,
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        devtools: None,
         #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
         trace,
         pointer: (0., 0.),

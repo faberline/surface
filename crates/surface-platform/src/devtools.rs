@@ -5,6 +5,8 @@ mod native;
 pub(super) use native::Bridge;
 #[cfg(not(target_arch = "wasm32"))]
 mod native_protocol;
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) use native_protocol::{DevtoolsReply, Server as DevtoolsServer};
 #[cfg(target_arch = "wasm32")]
 mod web;
 #[cfg(target_arch = "wasm32")]
