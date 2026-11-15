@@ -172,6 +172,8 @@ struct Host<A: Application> {
     closing: bool,
     #[cfg(feature = "devtools")]
     bridge: Option<devtools::Bridge>,
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    trace: Option<trace_file::TraceFile>,
     pointer: (f32, f32),
     mods: key_order::Mods,
     #[cfg(target_arch = "wasm32")]
@@ -292,6 +294,13 @@ impl<A: Application> Host<A> {
     fn fail(&mut self, event_loop: &ActiveEventLoop, error: impl std::fmt::Display) {
         let message = error.to_string();
         eprintln!("Surface error: {message}");
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        if let Some(trace) = &mut self.trace {
+            if let Some(recorder) = self.runtime.borrow().trace() {
+                trace.error(recorder, &message);
+            }
+            trace.finish();
+        }
         #[cfg(target_arch = "wasm32")]
         if let Some(status) = web_sys::window()
             .and_then(|w| w.document())
@@ -391,6 +400,8 @@ impl<A: Application> Host<A> {
             }
         };
         let view = frame.texture.create_view(&Default::default());
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        let present_start = self.trace.as_ref().map(|t| t.clock.now_ms());
         if let Err(error) = gpu
             .renderer
             .render(&list, &view, size.width, size.height, scale)
@@ -400,6 +411,15 @@ impl<A: Application> Host<A> {
         }
         frame.present();
         self.frames += 1;
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        if let (Some(trace), Some(start)) = (&mut self.trace, present_start) {
+            let end = trace.clock.now_ms();
+            let mut runtime = self.runtime.borrow_mut();
+            if let Some(recorder) = runtime.trace_mut() {
+                recorder.record_present(start, end - start);
+                trace.drain(recorder);
+            }
+        }
         #[cfg(target_arch = "wasm32")]
         if self.frames == 1 {
             if let Some(status) = web_sys::window()
@@ -678,6 +698,16 @@ pub fn run_with_wake<A: Application>(
         let _ = proxy.send_wake();
     });
     let runtime = build(wake.clone())?;
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    let trace = trace_file::TraceFile::from_env_value(std::env::var_os(trace_file::ENV))
+        .map_err(HostError)?;
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    if let Some(trace) = &trace {
+        eprintln!("Surface trace: writing {}", trace.path().display());
+        runtime
+            .borrow_mut()
+            .attach_trace(surface_app::trace::Recorder::new(trace.recorder_clock()));
+    }
     #[cfg(not(target_arch = "wasm32"))]
     if motion::reduced_motion_from_env() {
         runtime.borrow_mut().set_reduced_motion(true);
@@ -692,6 +722,8 @@ pub fn run_with_wake<A: Application>(
         closing: false,
         #[cfg(feature = "devtools")]
         bridge: None,
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        trace,
         pointer: (0., 0.),
         mods: key_order::Mods::default(),
         #[cfg(target_arch = "wasm32")]
@@ -716,6 +748,13 @@ pub fn run_with_wake<A: Application>(
         // child stop or worker join does not freeze a visible window. This
         // runs on the `Err` path too, before `?` drops the runtime.
         let window = host.window.as_ref().map(Arc::downgrade);
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        if let Some(trace) = &mut host.trace {
+            if let Some(recorder) = host.runtime.borrow().trace() {
+                trace.drain(recorder);
+            }
+            trace.finish();
+        }
         host.gpu = None;
         host.window = None;
         if let Some(window) = window {
