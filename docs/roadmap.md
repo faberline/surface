@@ -27,9 +27,9 @@ Design and items O1 to O18: [observability.md](observability.md).
 
 The track makes a running app observable for AI agents and tests: trace,
 screenshot, paint, input and wait, through a Surface-owned devtools
-protocol. It starts after the desktop milestone S1 (PR #118 key handler,
-#48 native IME). Migration steps 13 and 9 come after the first batch,
-O1 to O5. Web devtools waits for decision 0001 D-B to lift.
+protocol. It starts after the desktop milestone S1 (#103 key handler,
+done in PR #118; #48 native IME, open). Migration steps 13 and 9 come after
+the first batch, O1 to O5. Web devtools waits for decision 0001 D-B to lift.
 
 ## Gaps to egui and iced
 
@@ -39,8 +39,8 @@ issues now.
 
 | Wave | Content | Existing issues | New in wave 1, or split later |
 | --- | --- | --- | --- |
-| 0 | Desktop slice S1 to S3 (in progress) | #103, #48, #105, #107, #108, #112, #116 | none |
-| O | Observability O1 to O17 | #68 (re-split) | see observability.md |
+| 0 | Desktop slice S1 to S3 (in progress) | #103 (done, PR #118), #48, #105, #107, #108, #112, #116 (open) | none |
+| O | Observability O1 to O18 | #68 (re-split); O1 to O8 are #125 to #132, open, with PRs #136 to #138 open | see observability.md |
 | 1 | Desktop app basics | Migration step 11 (docs), #110, #111 | 1. Layout completion: margin, per-side padding and border, `flex_shrink`, space-between, `align_self`. 2. App-level shortcuts. 3. Right click and context menu. 4. Cursor icons. 5. Scrollbar painting. 6. Design of async command, timer and subscription. |
 | 2 | Painting and text | #7, #8, #10, #11, #69, #106, #6 | Split later: opacity, image decoding, icons and vector paths, gradients |
 | 3 | Large data and windows | #107, migration step 21 | Split later: virtual list, damage repaint, table, multiple windows, window options, native menus, component local state |
