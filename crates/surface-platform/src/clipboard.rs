@@ -21,15 +21,67 @@ trait Backend: Send {
 struct Memory(Option<String>);
 
 impl Backend for Memory {
-    fn set(&mut self, _text: &str) -> Result<(), ClipboardError> {
-        Ok(()) // red stub: stores nothing
+    fn set(&mut self, text: &str) -> Result<(), ClipboardError> {
+        self.0 = Some(text.to_owned());
+        Ok(())
     }
     fn get(&mut self) -> Result<Option<String>, ClipboardError> {
         Ok(self.0.clone())
     }
 }
 
+/// The OS clipboard through arboard. It opens on first use and stays open.
+/// A failure to open is an error from the call, never a panic.
+#[cfg(not(target_arch = "wasm32"))]
+#[derive(Default)]
+struct System(Option<arboard::Clipboard>);
+
+#[cfg(not(target_arch = "wasm32"))]
+impl System {
+    fn open(&mut self) -> Result<&mut arboard::Clipboard, ClipboardError> {
+        if self.0.is_none() {
+            let opened = arboard::Clipboard::new()
+                .map_err(|error| ClipboardError::Unavailable(error.to_string()))?;
+            self.0 = Some(opened);
+        }
+        Ok(self.0.as_mut().expect("opened above"))
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Backend for System {
+    fn set(&mut self, text: &str) -> Result<(), ClipboardError> {
+        self.open()?
+            .set_text(text)
+            .map_err(|error| ClipboardError::Unavailable(error.to_string()))
+    }
+    fn get(&mut self) -> Result<Option<String>, ClipboardError> {
+        match self.open()?.get_text() {
+            Ok(text) => Ok(Some(text)),
+            Err(arboard::Error::ContentNotAvailable) => Ok(None),
+            Err(error) => Err(ClipboardError::Unavailable(error.to_string())),
+        }
+    }
+}
+
+/// The web path is out of scope: every call returns `Unsupported`.
+#[cfg(target_arch = "wasm32")]
+struct Unsupported;
+
+#[cfg(target_arch = "wasm32")]
+impl Backend for Unsupported {
+    fn set(&mut self, _text: &str) -> Result<(), ClipboardError> {
+        Err(ClipboardError::Unsupported)
+    }
+    fn get(&mut self) -> Result<Option<String>, ClipboardError> {
+        Err(ClipboardError::Unsupported)
+    }
+}
+
 /// Handle to a plain-text clipboard. `Clone + Send + Sync`.
+///
+/// Create it once, keep it in the app state and call `set_text` from
+/// `update` or from a worker thread. It needs no host.
 #[derive(Clone)]
 pub struct Clipboard(Arc<Mutex<Box<dyn Backend>>>);
 
@@ -37,9 +89,12 @@ impl Clipboard {
     fn with_backend(backend: impl Backend + 'static) -> Self {
         Self(Arc::new(Mutex::new(Box::new(backend))))
     }
-    /// The OS clipboard.
+    /// The OS clipboard. On wasm32 every call returns `Unsupported`.
     pub fn system() -> Self {
-        Self::memory() // red stub
+        #[cfg(not(target_arch = "wasm32"))]
+        return Self::with_backend(System::default());
+        #[cfg(target_arch = "wasm32")]
+        return Self::with_backend(Unsupported);
     }
     /// An in-memory clipboard for tests and headless hosts.
     pub fn memory() -> Self {
@@ -47,12 +102,17 @@ impl Clipboard {
     }
     /// Replace the clipboard text.
     pub fn set_text(&self, text: &str) -> Result<(), ClipboardError> {
-        let _ = (text, &self.0); // red stub: drops the backend and its error
-        Ok(())
+        self.lock().set(text)
     }
     /// Read the clipboard text. `None` when it holds no text.
     pub fn get_text(&self) -> Result<Option<String>, ClipboardError> {
-        self.0.lock().unwrap().get()
+        self.lock().get()
+    }
+    /// A panic in another caller must not disable the clipboard.
+    fn lock(&self) -> std::sync::MutexGuard<'_, Box<dyn Backend>> {
+        self.0
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 }
 

@@ -18,10 +18,10 @@ mod trace_file;
 mod wake;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
+pub use clipboard::{Clipboard, ClipboardError};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;
-pub use clipboard::{Clipboard, ClipboardError};
 pub use wake::WakeHandle;
 use winit::event_loop::EventLoopProxy;
 use winit::{
