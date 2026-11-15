@@ -52,7 +52,7 @@ impl Application for Gallery {
             ));
         }
         items.push(t.text_field("field", "Name", "", |_| ()));
-        items.push(t.search_bar("search", "Search", "", "S", |_| (), ()));
+        items.push(t.search_bar("search", "Search", "hi", "S", |_| (), ()));
         items.push(t.checkbox("check", "Check", false, ()));
         items.push(t.radio("radio", "Radio", ChoiceState::default(), ()));
         items.push(t.switch("switch", "Switch", ChoiceState::default(), ()));
@@ -100,6 +100,7 @@ fn fab_and_icon_button_follow_the_same_rule() {
     assert_eq!(cursor(&rt, "icon-off"), CursorStyle::Default);
 }
 
+// The query is not empty: an empty input measures 0 high, so it has no area to hit.
 #[test]
 fn text_field_and_search_input_are_text() {
     let rt = runtime();

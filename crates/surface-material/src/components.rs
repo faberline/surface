@@ -1,6 +1,6 @@
 use crate::{motion::STATE_CHANGE, shape, tokens::blend, typography, Theme};
 use surface::{Align, Color, Corners, Insets, Length, Node, RangeValue, Role, Style};
-use surface_app::{Roving, View};
+use surface_app::{CursorStyle, Roving, View};
 
 #[derive(Clone, Copy, Debug)]
 pub enum ButtonKind {
@@ -167,7 +167,7 @@ impl Theme {
             .foreground(self.primary)
             .corners(shape::FULL);
         touch.min_width = 80.;
-        View::new(
+        let mut view = View::new(
             Node::new(Role::Button, text)
                 .id(id)
                 .disabled(disabled)
@@ -178,7 +178,11 @@ impl Theme {
             if disabled { self.outline } else { foreground },
             14.,
         )])])
-        .on_press(message)
+        .on_press(message);
+        if !disabled {
+            view = view.cursor(CursorStyle::Pointer);
+        }
+        view
     }
     /// A floating action button. `name` is the accessible name; `icon` is a
     /// short text glyph (there is no icon system yet).
@@ -232,7 +236,7 @@ impl Theme {
             // The focus ring lands on this node. It follows the round shape.
             .foreground(self.primary)
             .corners(corner);
-        View::new(
+        let mut view = View::new(
             Node::new(Role::Button, name)
                 .id(id)
                 .disabled(disabled)
@@ -243,7 +247,11 @@ impl Theme {
             if disabled { self.outline } else { foreground },
             icon_size,
         )])])
-        .on_press(message)
+        .on_press(message);
+        if !disabled {
+            view = view.cursor(CursorStyle::Pointer);
+        }
+        view
     }
     /// Indeterminate loading indicator. The application owns `phase` (0 to 1)
     /// and changes it over time. It draws the shape cycle by corner radius;
@@ -338,13 +346,18 @@ impl Theme {
         if let Some(v) = selected {
             node = node.selected(v);
         }
-        View::new(node)
+        let view = View::new(node)
             .children([box_view(visual).children([label(
                 icon,
                 if disabled { self.outline } else { foreground },
                 24.,
             )])])
-            .on_press(message)
+            .on_press(message);
+        if disabled {
+            view
+        } else {
+            view.cursor(CursorStyle::Pointer)
+        }
     }
 
     pub fn checkbox_with<M>(
@@ -1502,7 +1515,8 @@ impl Theme {
                         .foreground(self.colors.on_surface),
                 ),
         )
-        .on_input(on_input);
+        .on_input(on_input)
+        .cursor(CursorStyle::Text);
         let mut children = vec![label(leading, self.colors.on_surface_variant, 24.), input];
         if !query.is_empty() {
             children.push(
