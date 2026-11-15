@@ -1,5 +1,17 @@
 # Framework verification
 
+## Offscreen capture
+
+`Renderer::capture(list, width, height, scale)` renders a display list into an
+offscreen texture of the renderer's own format and returns a `Capture` with
+tightly packed RGBA8 bytes. It removes the 256-byte row padding and swaps BGRA
+to RGBA when the renderer was built for a BGRA format, as the host prefers on
+macOS. A side above `MAX_CAPTURE_SIDE` (8192) or the device limit returns
+`RenderError::CaptureTooLarge`; `Capture::check_size` checks it without a GPU.
+The library does not encode PNG. The GPU test
+`gpu_offscreen_capture_reads_rgba_in_both_formats` saves `gpu-capture.png`
+through the test-only `png` dev-dependency. Refs #126.
+
 ## Native close smoke (real device only)
 
 Recorded on 2026-11-13, on macOS (Darwin 25.5.0, Apple Silicon, Metal). This
