@@ -6,9 +6,10 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-bridge = ["dep:jet-bridge-protocol"]
-# Trace recorder for agents and tests. Off by default. No new dependency.
-devtools = []
+# The jet bridge is an adapter over the devtools executor, so it needs `devtools`.
+bridge = ["dep:jet-bridge-protocol", "devtools"]
+# Trace recorder and devtools executor for agents and tests. Off by default.
+devtools = ["dep:surface-devtools-protocol"]
 
 [dependencies]
 surface.workspace = true
@@ -17,6 +18,7 @@ unicode-segmentation.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 jet-bridge-protocol = { workspace = true, optional = true }
+surface-devtools-protocol = { workspace = true, optional = true }
 
 [lints]
 workspace = true
