@@ -48,8 +48,28 @@ impl PointerRoute {
         (x, y): (f32, f32),
         macos: bool,
     ) -> PointerStep {
-        let _ = (button, pressed, mods, x, y, macos, &mut self.held);
-        PointerStep::Ignore
+        if pressed {
+            let secondary =
+                button == Button::Secondary || (button == Button::Primary && macos && mods.control);
+            if secondary {
+                // Keep the first held button: its release is the one to drop.
+                self.held.get_or_insert(button);
+                return PointerStep::Secondary(Event::SecondaryDown { x, y });
+            }
+            return match button {
+                Button::Primary => PointerStep::Primary(Event::PointerDown { x, y }),
+                _ => PointerStep::Ignore,
+            };
+        }
+        match button {
+            Button::Secondary => PointerStep::Ignore,
+            Button::Primary if self.held == Some(Button::Primary) => {
+                self.held = None;
+                PointerStep::Ignore
+            }
+            Button::Primary => PointerStep::Primary(Event::PointerUp { x, y }),
+            Button::Other => PointerStep::Ignore,
+        }
     }
 }
 

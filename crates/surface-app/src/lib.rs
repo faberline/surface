@@ -1,6 +1,7 @@
 //! Platform-independent Rust application state and input routing.
 #[cfg(feature = "bridge")]
 mod bridge;
+mod context;
 mod controls;
 #[cfg(feature = "devtools")]
 mod devtools;
@@ -15,6 +16,7 @@ mod scroll_control;
 mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
+pub use context::PointerPoint;
 pub use controls::Roving;
 pub use editing::{
     utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
@@ -47,6 +49,7 @@ pub struct View<M> {
     roving: Option<Roving>,
     dismiss: Option<M>,
     key: Option<KeyHandler<M>>,
+    context: Option<context::ContextHandler<M>>,
     stick: bool,
 }
 /// A key handler. `Some(message)` consumes the press, `None` passes it on.
@@ -63,6 +66,7 @@ impl<M> View<M> {
             roving: None,
             dismiss: None,
             key: None,
+            context: None,
             stick: false,
         }
     }
@@ -97,6 +101,16 @@ impl<M> View<M> {
     /// called during an IME composition. See `KeyPress`.
     pub fn on_key(mut self, handler: impl Fn(&KeyPress) -> Option<M> + 'static) -> Self {
         self.key = Some(Rc::new(handler));
+        self
+    }
+    /// Handle a secondary press (right click, or Control+click on macOS)
+    /// on this node or any descendant that has no handler of its own. The
+    /// handler gets the point in logical window pixels and returns the
+    /// message to post, usually one that opens a menu there. A secondary
+    /// press does not focus, press or move a text cursor. The web host
+    /// sends no secondary press. See `docs/context-menu.md`.
+    pub fn on_context_menu(mut self, handler: impl Fn(PointerPoint) -> M + 'static) -> Self {
+        self.context = Some(Rc::new(handler));
         self
     }
     /// Keep a scroll container pinned to its bottom while it is at the bottom.
@@ -148,6 +162,11 @@ pub trait Application: 'static {
 #[derive(Clone, Debug)]
 pub enum Event {
     PointerDown {
+        x: f32,
+        y: f32,
+    },
+    /// A secondary press at a window point. See `View::on_context_menu`.
+    SecondaryDown {
         x: f32,
         y: f32,
     },
@@ -221,6 +240,7 @@ struct Binding<M> {
     roving: Option<Roving>,
     dismiss: Option<M>,
     key: Option<KeyHandler<M>>,
+    context: Option<context::ContextHandler<M>>,
     stick: bool,
 }
 
@@ -438,6 +458,7 @@ impl<A: Application> Runtime<A> {
                     roving: view.roving,
                     dismiss: view.dismiss,
                     key: view.key,
+                    context: view.context,
                     stick: view.stick,
                 },
             );
@@ -663,6 +684,7 @@ impl<A: Application> Runtime<A> {
                 self.place_text_cursor(x, y, false);
                 Ok(true)
             }
+            Event::SecondaryDown { x, y } => self.secondary_down(x, y),
             Event::PointerUp { x, y } => {
                 if self.range_drag.is_some() {
                     let result = self.range_pointer(x);

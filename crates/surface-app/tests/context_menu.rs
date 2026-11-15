@@ -32,7 +32,7 @@ impl Application for App {
     fn update(&mut self, message: Msg) {
         self.log.push(message.clone());
         match message {
-            Msg::Context(_, p) => self.menu = Some((p.x, p.y)),
+            Msg::Context(name, p) => self.menu = (name != "field").then_some((p.x, p.y)),
             Msg::Pick | Msg::Close => self.menu = None,
             Msg::Text(text) => self.text = text,
             Msg::Pressed(_) => {}
@@ -156,14 +156,14 @@ fn no_handler_on_the_node_or_any_ancestor_does_nothing() {
 #[test]
 fn the_app_opens_a_menu_at_the_point_and_an_outside_press_closes_it() {
     let mut rt = runtime();
-    secondary(&mut rt, 200., 160.);
-    assert_eq!(menu_bounds(&rt), Some((200., 160.)));
+    secondary(&mut rt, 200., 20.);
+    assert_eq!(menu_bounds(&rt), Some((200., 20.)));
     // Outside the menu: a secondary press dismisses and posts no context message.
     assert!(secondary(&mut rt, 20., 10.));
     assert_eq!(
         rt.app().log,
         [
-            Msg::Context("row", PointerPoint { x: 200., y: 160. }),
+            Msg::Context("row", PointerPoint { x: 200., y: 20. }),
             Msg::Close
         ]
     );
@@ -173,7 +173,7 @@ fn the_app_opens_a_menu_at_the_point_and_an_outside_press_closes_it() {
 #[test]
 fn a_left_click_outside_closes_the_menu() {
     let mut rt = runtime();
-    secondary(&mut rt, 200., 160.);
+    secondary(&mut rt, 200., 20.);
     left_click(&mut rt, 20., 10.);
     assert_eq!(menu_bounds(&rt), None);
     assert!(!rt.app().log.contains(&Msg::Pressed("row")));
@@ -182,7 +182,7 @@ fn a_left_click_outside_closes_the_menu() {
 #[test]
 fn escape_closes_the_menu() {
     let mut rt = runtime();
-    secondary(&mut rt, 200., 160.);
+    secondary(&mut rt, 200., 20.);
     rt.dispatch(Event::Cancel).unwrap();
     rt.render(640., 480., &mut Metrics).unwrap();
     assert_eq!(menu_bounds(&rt), None);
@@ -191,11 +191,11 @@ fn escape_closes_the_menu() {
 #[test]
 fn a_secondary_press_on_a_menu_item_does_nothing() {
     let mut rt = runtime();
-    secondary(&mut rt, 200., 160.);
+    secondary(&mut rt, 200., 20.);
     let before = rt.app().log.len();
-    assert!(!secondary(&mut rt, 210., 170.));
+    assert!(!secondary(&mut rt, 210., 30.));
     assert_eq!(rt.app().log.len(), before);
-    assert_eq!(menu_bounds(&rt), Some((200., 160.)), "the menu stays open");
+    assert_eq!(menu_bounds(&rt), Some((200., 20.)), "the menu stays open");
 }
 
 // Row 3: negative. A secondary press changes no pointer state.
@@ -209,25 +209,28 @@ fn a_secondary_press_changes_no_pointer_state() {
     let before = rt.snapshot();
     let log_len = rt.app().log.len();
 
-    // Secondary press on a pressable row with a handler.
-    secondary(&mut rt, 12., 10.);
-    let after = rt.snapshot();
+    // A secondary press on the field (its handler opens no menu) moves
+    // neither the cursor nor focus.
+    secondary(&mut rt, 2., 90.);
+    assert_eq!(rt.app().log.len(), log_len + 1, "only the context message");
     assert_eq!(
-        after.interaction, before.interaction,
+        rt.snapshot().text_inputs,
+        before.text_inputs,
+        "value and cursor"
+    );
+    assert_eq!(
+        rt.snapshot().interaction,
+        before.interaction,
         "focus, hover, pressed"
     );
-    assert_eq!(after.text_inputs, before.text_inputs, "value and cursor");
-    assert!(
-        !rt.app().log[log_len..].contains(&Msg::Pressed("row")),
-        "the row's on_press must not run"
-    );
-    // A secondary press on the text field does not move its cursor.
-    secondary(&mut rt, 2., 90.);
-    assert_eq!(rt.snapshot().text_inputs, before.text_inputs);
-    assert_eq!(rt.snapshot().interaction, before.interaction);
-    // A release after it activates nothing.
+
+    // A secondary press on a pressable row runs its handler, not on_press,
+    // and leaves nothing pressed. A release after it activates nothing.
+    secondary(&mut rt, 12., 10.);
+    assert_eq!(rt.snapshot().interaction.pressed, None);
     rt.dispatch(Event::PointerUp { x: 12., y: 10. }).unwrap();
     assert!(!rt.app().log.contains(&Msg::Pressed("row")));
+    assert_eq!(rt.snapshot().text_inputs, before.text_inputs);
 }
 
 #[test]
