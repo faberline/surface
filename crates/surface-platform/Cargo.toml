@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-devtools = ["surface-app/bridge", "dep:jet-bridge-protocol", "dep:serde_json", "dep:getrandom", "dep:js-sys"]
+devtools = ["surface-app/bridge", "surface-app/devtools", "dep:jet-bridge-protocol", "dep:serde_json", "dep:getrandom", "dep:js-sys"]
 
 [dependencies]
 surface.workspace = true
