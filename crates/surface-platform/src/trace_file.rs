@@ -1,7 +1,12 @@
 //! Native trace file sink for `SURFACE_TRACE=<path>`. Feature `devtools`.
 //! See `docs/trace.md`.
-use std::path::{Path, PathBuf};
-use surface_app::trace::Recorder;
+use std::{
+    fs::{File, OpenOptions},
+    io::{BufWriter, Write},
+    path::{Path, PathBuf},
+    time::Instant,
+};
+use surface_app::trace::{RecordKind, Recorder};
 
 /// The environment variable that turns the file sink on.
 pub(crate) const ENV: &str = "SURFACE_TRACE";
@@ -9,16 +14,20 @@ pub(crate) const ENV: &str = "SURFACE_TRACE";
 /// Milliseconds since the sink was made. Copy, so the recorder's clock and
 /// the host's `Present` timing share one base.
 #[derive(Clone, Copy)]
-pub(crate) struct TraceClock;
+pub(crate) struct TraceClock(Instant);
 impl TraceClock {
     pub(crate) fn now_ms(&self) -> f64 {
-        unimplemented!()
+        self.0.elapsed().as_secs_f64() * 1000.
     }
 }
 
 /// A trace file, created new, mode 0600. Records are appended as JSON
 /// lines; the buffer is flushed by `finish` and on drop.
 pub(crate) struct TraceFile {
+    path: PathBuf,
+    out: BufWriter<File>,
+    /// `seq` of the last record written.
+    cursor: Option<u64>,
     pub(crate) clock: TraceClock,
 }
 impl TraceFile {
@@ -26,33 +35,74 @@ impl TraceFile {
     pub(crate) fn from_env_value(
         value: Option<std::ffi::OsString>,
     ) -> Result<Option<Self>, String> {
-        let _ = value;
-        unimplemented!()
+        match value.filter(|v| !v.is_empty()) {
+            Some(path) => Self::open(Path::new(&path)).map(Some),
+            None => Ok(None),
+        }
     }
+    /// Create `path`. An existing file is an error; it is never truncated.
     pub(crate) fn open(path: &Path) -> Result<Self, String> {
-        let _ = path;
-        unimplemented!()
+        let mut options = OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        let file = options
+            .open(path)
+            .map_err(|e| format!("{ENV}={}: {e}", path.display()))?;
+        Ok(Self {
+            path: path.to_path_buf(),
+            out: BufWriter::new(file),
+            cursor: None,
+            clock: TraceClock(Instant::now()),
+        })
     }
     pub(crate) fn path(&self) -> &PathBuf {
-        unimplemented!()
+        &self.path
     }
     /// The clock to give `Recorder::new`.
     pub(crate) fn recorder_clock(&self) -> Box<dyn FnMut() -> f64> {
-        unimplemented!()
+        let clock = self.clock;
+        Box::new(move || clock.now_ms())
     }
     /// Append the records not written yet.
     pub(crate) fn drain(&mut self, recorder: &Recorder) {
-        let _ = recorder;
-        unimplemented!()
+        let mut text = String::new();
+        recorder.write_jsonl(self.cursor, &mut text);
+        if let Some(last) = recorder.records_after(self.cursor).last() {
+            self.cursor = Some(last.seq());
+        }
+        self.write(&text);
     }
     /// Write a host `Error` record, unless the runtime just recorded the
     /// same message.
     pub(crate) fn error(&mut self, recorder: &Recorder, message: &str) {
-        let _ = (recorder, message);
-        unimplemented!()
+        self.drain(recorder);
+        let last = recorder.records_after(None).last();
+        if last.is_some_and(|r| r.kind() == RecordKind::Error && r.text() == Some(message)) {
+            return;
+        }
+        let seq = self.cursor.map_or(0, |c| c + 1);
+        self.cursor = Some(seq);
+        let t = self.clock.now_ms();
+        let message = serde_json::to_string(message).expect("string serializes");
+        let line = format!(
+            "{{\"seq\":{seq},\"frame\":{},\"kind\":\"Error\",\"t_ms\":{t:?},\"dur_ms\":0.0,\"data\":{{\"message\":{message}}}}}\n",
+            recorder.frame()
+        );
+        self.write(&line);
     }
     pub(crate) fn finish(&mut self) {
-        unimplemented!()
+        if let Err(e) = self.out.flush() {
+            eprintln!("Surface trace: {}: {e}", self.path.display());
+        }
+    }
+    fn write(&mut self, text: &str) {
+        if let Err(e) = self.out.write_all(text.as_bytes()) {
+            eprintln!("Surface trace: {}: {e}", self.path.display());
+        }
     }
 }
 
