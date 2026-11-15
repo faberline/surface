@@ -520,7 +520,7 @@ mod parity {
         lines
     }
 
-    /// Captured from `execute_bridge` on `origin/main` (`02197c2`).
+    /// Captured from `execute_bridge` on `origin/main` (`02197c2`), default build.
     const FIXTURES: &[&str] = &[
         r##"{"version":1,"id":1,"status":"ok","result":{"application":"Surface","methods":["capabilities","snapshot","query","activate","fill","set_value","key"],"role_names":"Surface Role enum names; for example TextInput","runtime":"surface","selection_offsets":"utf8_bytes","snapshot_schema":"surface.dom.v1","version":1}}"##,
         r##"{"version":1,"id":2,"status":"error","code":"no_focused_control","message":"focus a control first"}"##,
@@ -571,8 +571,39 @@ mod parity {
             }
         }
         assert_eq!(lines.len(), FIXTURES.len());
+        // The fixtures are from the default build, where serde_json sorts
+        // object keys. A workspace build with all features turns on
+        // serde_json `preserve_order`; there key order follows insertion
+        // for old and new code alike, so compare both sides with sorted keys.
+        let sorted = !serde_json::to_string(&json!({"b":0,"a":0}))
+            .unwrap()
+            .starts_with("{\"b\"");
         for (index, (line, fixture)) in lines.iter().zip(FIXTURES).enumerate() {
-            assert_eq!(line, fixture, "response {}", index + 1);
+            if sorted {
+                assert_eq!(line, fixture, "response {}", index + 1);
+            } else {
+                assert_eq!(
+                    canonical(line),
+                    canonical(fixture),
+                    "response {}",
+                    index + 1
+                );
+            }
         }
+    }
+    /// Compact JSON with object keys in sorted order.
+    fn canonical(line: &str) -> String {
+        fn sort(value: Value) -> Value {
+            match value {
+                Value::Object(map) => {
+                    let mut entries: Vec<_> = map.into_iter().collect();
+                    entries.sort_by(|a, b| a.0.cmp(&b.0));
+                    Value::Object(entries.into_iter().map(|(k, v)| (k, sort(v))).collect())
+                }
+                Value::Array(items) => Value::Array(items.into_iter().map(sort).collect()),
+                other => other,
+            }
+        }
+        serde_json::to_string(&sort(serde_json::from_str(line).unwrap())).unwrap()
     }
 }
