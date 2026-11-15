@@ -305,7 +305,7 @@ impl Server {
             let id = request.id;
             let (sender, receiver) = mpsc::sync_channel(1);
             let event = UserEvent::Devtools {
-                request,
+                request: Box::new(request),
                 reply: DevtoolsReply(sender),
             };
             if proxy.send_event(event).is_err() {

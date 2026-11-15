@@ -158,8 +158,9 @@ enum UserEvent {
     },
     /// A devtools protocol request from the native loopback transport.
     #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    /// Boxed, so `UserEvent` stays small (`clippy::result_large_err`).
     Devtools {
-        request: surface_devtools_protocol::Request,
+        request: Box<surface_devtools_protocol::Request>,
         reply: devtools::DevtoolsReply,
     },
     #[cfg(target_arch = "wasm32")]
@@ -581,7 +582,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             UserEvent::Bridge { request, reply } => self.bridge_request(event_loop, request, reply),
             #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
             UserEvent::Devtools { request, reply } => {
-                self.devtools_request(event_loop, request, reply)
+                self.devtools_request(event_loop, *request, reply)
             }
             #[cfg(target_arch = "wasm32")]
             UserEvent::Ready(Ok(gpu)) => {
