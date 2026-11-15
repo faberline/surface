@@ -165,3 +165,49 @@ for size-only styles. Any other style paints as `StyledText`, which carries
 the full `TextStyle` beside the same rectangle, clip, color and scroll data.
 `StyledText` is a new last variant of `PaintOp`. Consumers that match every
 variant must handle it.
+
+## Paint attribution (`surface.paint.v1`)
+
+With the `devtools` feature, `Runtime::export_paint()` returns the ops of
+the last frame, each with the node that drew it. An agent can then ask
+which node drew a rectangle. The feature is off by default; without it
+the runtime keeps nothing extra.
+
+```rust,ignore
+runtime.render(width, height, &mut measurer)?;
+let json = runtime.export_paint()?;
+```
+
+`runtime.paint_snapshot()` returns the typed `surface_app::PaintExport`.
+
+```json
+{
+  "schema": "surface.paint.v1",
+  "viewport": { "x": 0.0, "y": 0.0, "width": 120.0, "height": 100.0 },
+  "ops": [
+    { "owner": { "node": 1, "id": "ok" }, "op": { "Quad": { "rect": { ... }, ... } } },
+    { "owner": { "node": 2, "id": null }, "op": { "Text": { ... } } }
+  ]
+}
+```
+
+| Field | Contents |
+| --- | --- |
+| `schema` | Always `"surface.paint.v1"` |
+| `viewport` | The display list viewport |
+| `ops` | The ops `render` returned, in the same order |
+| `ops[i].owner.node` | Node index, the same index as in the `surface.dom.v1` `dom.nodes` array |
+| `ops[i].owner.id` | That node's stable ID, or `null` when it has none |
+| `ops[i].op` | The `PaintOp`, with the same JSON as in a display list |
+
+One node can own several ops: fill, border, state layer, focus ring, text,
+selection, underline and caret. `PaintOp` itself has no owner field.
+
+The export needs a current frame. Before the first `render`, and after a
+state, editing or scroll change drops the layout, `export_paint` returns an
+error and `paint_snapshot` returns `None`. Render again to capture it. This
+matches `layout` in version 1.
+
+In `surface`, `DisplayList::compile_attributed` returns the same list as
+`compile_with_interaction` plus a parallel owner list. The other `compile*`
+functions do not build an owner list.
