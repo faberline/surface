@@ -2,7 +2,8 @@
 
 The crate `surface-devtools-protocol` holds the wire types of the Surface
 devtools protocol. It is data and serde only. It depends on `serde` and
-`serde_json`, and on no other crate. No other crate uses it yet. The design is
+`serde_json`, and on no other crate. The executor in `surface-app` and the
+native transport in `surface-platform` use it, both behind `devtools`. The design is
 in [observability.md](observability.md) and
 [decision 0002](decisions/0002-devtools-protocol.md).
 
@@ -69,3 +70,50 @@ same lines; its fixture must be checked against this one.
 and `Ime(ImeEvent)` become struct variants (`{"type":"text","text":"a"}`),
 because an internally tagged enum cannot hold a bare string. The crate has no
 conversion to `Event`; that needs `surface-app` and comes with the executor.
+
+## Native transport
+
+A native app built with the `devtools` feature serves the protocol on a
+loopback socket when `SURFACE_DEVTOOLS_SESSION=<path>` is set (#131). The
+code is `crates/surface-platform/src/devtools/native_protocol.rs`. It is
+native only; there is no web transport yet. Without the feature nothing
+listens and `surface-platform` does not depend on this crate.
+
+- The listener binds `127.0.0.1:0` only. Each start makes a new 32-byte
+  random token.
+- The session file is created with `create_new` and mode 0600. An existing
+  file is never overwritten: the app fails to start and the file is kept.
+  On a normal exit the app removes the file if it still holds its own token
+  and pid. It holds one JSON object:
+  `{"protocol":"surface-devtools","version":1,"endpoint":"127.0.0.1:<port>","token":"<64 hex>","pid":<pid>,"application":"<title>"}`.
+- The jet bridge (`SURFACE_BRIDGE_SESSION`) is separate. Both may be set at
+  once; each has its own listener, token and session file.
+- A connection carries many requests. Each request is one line of the
+  envelope above with one more field, `"token"`. A wrong or missing token
+  gets `unauthorized` and the connection closes. The token is checked before
+  anything else runs.
+- Requests on one connection run in order. Each runs on the window event
+  loop through `Runtime::execute_devtools`. The host draws first, so queries
+  see current geometry, and draws again after an `Action.*` method. Before
+  the renderer exists the reply is `not_ready`. The host waits at most 5 s
+  for the event loop, then replies `host_timeout`.
+- Request cap 1 MiB per line. A longer line gets `too_large` with id 0, then
+  the connection closes, because the stream cannot be resynced.
+- Response cap 16 MiB per line. A larger reply is replaced by `too_large`
+  with the request id, and the connection stays usable.
+- Not JSON or no integer id: `invalid_params` (id 0 when the id cannot be
+  read). Version and method checks are the executor's.
+- A connection with no complete line for 60 s is closed. At most 8
+  connections are open at once.
+
+Example with a shell (`jq` reads the session file):
+
+```sh
+token=$(jq -r .token "$SURFACE_DEVTOOLS_SESSION")
+port=$(jq -r .endpoint "$SURFACE_DEVTOOLS_SESSION" | cut -d: -f2)
+printf '{"v":1,"id":1,"method":"Devtools.capabilities","token":"%s"}\n' "$token" | nc 127.0.0.1 "$port"
+```
+
+The e2e suite `devtools-native` (`cargo xtask web e2e devtools-native`)
+starts the native gallery with both session files and checks this over raw
+TCP.

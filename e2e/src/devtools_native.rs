@@ -219,19 +219,31 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
             before["layout"].is_object(),
             "snapshot has no layout; the host draws before a query"
         );
-        let checked_before = node(&before, "check")?["checked"].clone();
+        let check_before = node(&before, "check")?.clone();
 
         step(
             "DN6",
-            "Action.activate check toggles it; the next snapshot shows it",
+            "Action.activate check: mixed → checked → unchecked, seen in the next snapshots",
         );
         let result = client.ok(3, "Action.activate", json!({"id": "check"}))?;
         check_eq!(result["changed"], json!(true), "activate changed");
         let after = client.ok(4, "DOM.snapshot", json!({}))?;
-        let checked_after = node(&after, "check")?["checked"].clone();
+        check_eq!(
+            node(&after, "check")?["checked"],
+            json!(true),
+            "checked after activate"
+        );
         check!(
-            checked_after == json!(checked_before != json!(true)),
-            "check did not toggle: {checked_before} → {checked_after}"
+            after["dom"] != before["dom"],
+            "DOM did not change after activate (check was {check_before})"
+        );
+        // Checked → unchecked: a second activate shows a real toggle.
+        client.ok(41, "Action.activate", json!({"id": "check"}))?;
+        let again = client.ok(42, "DOM.snapshot", json!({}))?;
+        check_eq!(
+            node(&again, "check")?["checked"],
+            json!(false),
+            "checked after a second activate"
         );
 
         step("DN7", "protocol errors keep the connection usable");
@@ -266,7 +278,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
     terminate(&mut app).await;
     let mut evidence: Value = outcome?;
 
-    step("DN10", "--smoke run exits 0 and removes its session file");
+    step("DN9", "--smoke run exits 0 and removes its session file");
     let smoke_file = folder.join("smoke-session.json");
     let status = tokio::time::timeout(
         Duration::from_secs(30),
@@ -289,7 +301,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
     evidence["normal_shutdown_removes_session"] = json!(true);
 
     step(
-        "DN9",
+        "DN10",
         "an existing session file is kept: the app fails and the file is unchanged",
     );
     let existing = folder.join("existing-session.json");

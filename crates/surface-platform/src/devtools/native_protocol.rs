@@ -358,7 +358,9 @@ impl Server {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
-        let mut file = options.open(&path)?;
+        let mut file = options
+            .open(&path)
+            .map_err(|error| format!("session file {}: {error}", path.display()))?;
         let stop = Arc::new(AtomicBool::new(false));
         // From here on, `Drop` removes the file we created.
         let mut server = Self {
