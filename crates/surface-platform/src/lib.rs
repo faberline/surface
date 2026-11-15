@@ -1,4 +1,5 @@
 //! Thin desktop/browser window host. The application never sees platform events.
+mod clipboard;
 mod close;
 #[cfg(feature = "devtools")]
 mod devtools;
@@ -20,6 +21,7 @@ mod web_input;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;
+pub use clipboard::{Clipboard, ClipboardError};
 pub use wake::WakeHandle;
 use winit::event_loop::EventLoopProxy;
 use winit::{
