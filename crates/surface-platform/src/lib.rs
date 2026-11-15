@@ -1,6 +1,8 @@
 //! Thin desktop/browser window host. The application never sees platform events.
 mod clipboard;
 mod close;
+#[cfg(not(target_arch = "wasm32"))]
+mod cursor;
 #[cfg(feature = "devtools")]
 mod devtools;
 #[cfg(any(target_arch = "wasm32", test))]
