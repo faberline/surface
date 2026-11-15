@@ -185,6 +185,78 @@ mod tests {
         );
     }
 
+    fn up_down(
+        r: &mut PointerRoute,
+        button: Button,
+        mods: Modifiers,
+        pressed: bool,
+    ) -> PointerStep {
+        r.route_mouse(button, pressed, mods, AT, true)
+    }
+
+    #[test]
+    fn right_click_then_control_left_click_swallows_the_left_release() {
+        let mut r = PointerRoute::default();
+        same(
+            up_down(&mut r, Button::Secondary, none(), true),
+            secondary(),
+        );
+        same(
+            up_down(&mut r, Button::Secondary, none(), false),
+            PointerStep::Ignore,
+        );
+        same(up_down(&mut r, Button::Primary, ctrl(), true), secondary());
+        same(
+            up_down(&mut r, Button::Primary, ctrl(), false),
+            PointerStep::Ignore,
+        );
+    }
+
+    #[test]
+    fn control_left_then_right_with_either_release_order_sends_no_pointer_up() {
+        for left_first in [true, false] {
+            let mut r = PointerRoute::default();
+            same(up_down(&mut r, Button::Primary, ctrl(), true), secondary());
+            same(
+                up_down(&mut r, Button::Secondary, none(), true),
+                secondary(),
+            );
+            let order = if left_first {
+                [Button::Primary, Button::Secondary]
+            } else {
+                [Button::Secondary, Button::Primary]
+            };
+            for button in order {
+                same(up_down(&mut r, button, none(), false), PointerStep::Ignore);
+            }
+        }
+    }
+
+    #[test]
+    fn right_then_control_left_with_either_release_order_sends_no_pointer_up() {
+        for left_first in [true, false] {
+            let mut r = PointerRoute::default();
+            same(
+                up_down(&mut r, Button::Secondary, none(), true),
+                secondary(),
+            );
+            same(up_down(&mut r, Button::Primary, ctrl(), true), secondary());
+            let order = if left_first {
+                [Button::Primary, Button::Secondary]
+            } else {
+                [Button::Secondary, Button::Primary]
+            };
+            for button in order {
+                same(up_down(&mut r, button, none(), false), PointerStep::Ignore);
+            }
+            // The next plain click is primary again.
+            same(
+                up_down(&mut r, Button::Primary, none(), true),
+                PointerStep::Primary(Event::PointerDown { x: 3., y: 4. }),
+            );
+        }
+    }
+
     #[test]
     fn winit_buttons_map_to_surface_buttons() {
         assert_eq!(from_winit_button(MouseButton::Left), Button::Primary);
