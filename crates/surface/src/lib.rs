@@ -24,6 +24,7 @@ mod layout;
 mod microdom;
 mod motion;
 mod paint;
+mod scroll_extent;
 mod shape;
 mod style;
 mod text_layout;
@@ -33,6 +34,7 @@ pub use layout::{ComputedDom, ComputedNode, LayoutEngine, LayoutError, TextMeasu
 pub use microdom::{DomError, DomSnapshot, MicroDom, Node, NodeId, RangeValue, Role};
 pub use motion::{Easing, Transition};
 pub use paint::{DisplayList, InteractionState, PaintOp, TextDecoration};
+pub use scroll_extent::scroll_extent;
 pub use shape::Corners;
 pub use style::{Align, Color, Direction, Insets, Length, Position, Style};
 pub use text_layout::{TextCluster, TextLayout};
