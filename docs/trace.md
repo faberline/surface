@@ -43,8 +43,8 @@ let recorder = runtime.detach_trace();   // stop; keeps the records
 - `records_after(None)` reads everything held. `records_after(Some(n))`
   reads records with `seq > n`. A cursor older than the ring returns what
   is left.
-- `Recorder::record_present(t_ms, dur_ms)` is for the host. It is not
-  called yet.
+- `Recorder::record_present(t_ms, dur_ms)` is for the host. The native
+  host calls it (see Host trace file).
 
 ## Records
 
@@ -67,8 +67,8 @@ Each record has `seq`, `frame`, `kind`, `t_ms`, `dur_ms` and `data`.
 | `Rebuild` | the view rebuild | `nodes` |
 | `Layout` | `render`, layout and reveal (see below) | `nodes` |
 | `Paint` | `render`, motion and display list | `ops` |
-| `Present` | the host (later) | `{}` |
-| `Error` | an `AppError` from an input call, `flush` or `render` | `message` |
+| `Present` | the host | `{}` |
+| `Error` | an `AppError` from an input call, `flush` or `render`; a host error (see Host trace file) | `message` |
 
 The `Layout` span starts before the text-editing layout pass
 (`layout_editing`). It includes the reveal step, which scrolls the focused
@@ -124,9 +124,35 @@ order. Strings are escaped by `serde_json`. The export never contains
 The full pinned fixture is `CLICK_JSONL` in
 `crates/surface-app/tests/trace.rs`.
 
+## Host trace file
+
+Item O5, issue #129. The native host can write the trace to a file. It
+needs the `surface-platform` feature `devtools` (which turns on
+`surface-app/devtools`). The environment variable alone does nothing in a
+build without that feature.
+
+```sh
+SURFACE_TRACE=/path/to/trace.jsonl cargo run -p surface-material-gallery --features devtools -- --smoke
+```
+
+- `SURFACE_TRACE` unset or empty: no recorder, no file.
+- Set: the host attaches a `Recorder` with its own clock and writes JSON
+  lines. The file is created with `create_new` and mode 0600 (Unix). A file
+  that exists is an error naming the path; it is not overwritten. The run
+  fails before the window opens.
+- The host writes new records after each presented frame, on a host error
+  and when the loop exits. The file is not limited to the ring size.
+- `Present` spans from just before `renderer.render` to just after
+  `frame.present()`. It covers CPU time only, not GPU time. It has the
+  frame id of the `Paint` that came before it.
+- A host error writes an `Error` record. If the runtime already recorded
+  the same message, no second record is written.
+- `t_ms` of all records, including `Present`, is milliseconds since the
+  file was created.
+- wasm32 compiles with the feature and writes nothing.
+
 ## Not in this item
 
-- The host writing `Present` and host errors (O5).
 - Wire types and the protocol crate (O4).
 - Reading the trace over a transport (O9), the `log` facade (O16) and
   replay (O15).
