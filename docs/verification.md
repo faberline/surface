@@ -335,7 +335,10 @@ cap cargo xtask web e2e
 ```
 
 Suites: `smoke`, `ime`, `material`, `bridge-native`,
-`bridge-native-compact` and `bridge-web`. Name some to run only those.
+`bridge-native-compact`, `bridge-web` and `devtools-native`. Name some to
+run only those. `devtools-native` opens the native gallery window and
+speaks the devtools protocol over raw TCP; see
+[devtools-protocol.md](devtools-protocol.md#native-transport).
 `--no-build` reuses the last build. `SURFACE_CHROME` selects Chrome and
 `SURFACE_CHROME_ARGS` adds browser flags. Each browser suite starts its own
 local HTTP server on a free port; `--url` tests an already running server
