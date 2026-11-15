@@ -26,13 +26,17 @@ struct App {
     menu: Option<(f32, f32)>,
     log: Vec<Msg>,
     text: String,
+    /// No handler opens a menu, so state changes can only come from the press.
+    quiet: bool,
 }
 impl Application for App {
     type Message = Msg;
     fn update(&mut self, message: Msg) {
         self.log.push(message.clone());
         match message {
-            Msg::Context(name, p) => self.menu = (name != "field").then_some((p.x, p.y)),
+            Msg::Context(name, p) => {
+                self.menu = (!self.quiet && name != "field").then_some((p.x, p.y))
+            }
             Msg::Pick | Msg::Close => self.menu = None,
             Msg::Text(text) => self.text = text,
             Msg::Pressed(_) => {}
@@ -201,36 +205,40 @@ fn a_secondary_press_on_a_menu_item_does_nothing() {
 // Row 3: negative. A secondary press changes no pointer state.
 #[test]
 fn a_secondary_press_changes_no_pointer_state() {
-    let mut rt = runtime();
-    // Put the field in a known state: focused, with text.
+    // `quiet`: the handlers open no menu, so the whole snapshot must stay equal.
+    let mut rt = Runtime::new(App {
+        quiet: true,
+        ..App::default()
+    })
+    .unwrap();
+    rt.render(640., 480., &mut Metrics).unwrap();
     rt.activate("field").unwrap();
     rt.dispatch(Event::Text("hi".into())).unwrap();
     rt.render(640., 480., &mut Metrics).unwrap();
     let before = rt.snapshot();
-    let log_len = rt.app().log.len();
 
-    // A secondary press on the field (its handler opens no menu) moves
-    // neither the cursor nor focus.
+    // On the text field: neither cursor nor focus moves.
     secondary(&mut rt, 2., 90.);
-    assert_eq!(rt.app().log.len(), log_len + 1, "only the context message");
     assert_eq!(
         rt.snapshot().text_inputs,
         before.text_inputs,
         "value and cursor"
     );
+    assert_eq!(rt.snapshot().interaction, before.interaction);
+
+    // On a pressable row: its handler runs, on_press does not, and focus,
+    // hover and pressed stay as they were. A release after it activates nothing.
+    let log_len = rt.app().log.len();
+    secondary(&mut rt, 12., 10.);
     assert_eq!(
         rt.snapshot().interaction,
         before.interaction,
         "focus, hover, pressed"
     );
-
-    // A secondary press on a pressable row runs its handler, not on_press,
-    // and leaves nothing pressed. A release after it activates nothing.
-    secondary(&mut rt, 12., 10.);
-    assert_eq!(rt.snapshot().interaction.pressed, None);
-    rt.dispatch(Event::PointerUp { x: 12., y: 10. }).unwrap();
-    assert!(!rt.app().log.contains(&Msg::Pressed("row")));
     assert_eq!(rt.snapshot().text_inputs, before.text_inputs);
+    rt.dispatch(Event::PointerUp { x: 12., y: 10. }).unwrap();
+    assert_eq!(rt.app().log.len(), log_len + 1, "only the context message");
+    assert!(!rt.app().log.contains(&Msg::Pressed("row")));
 }
 
 #[test]

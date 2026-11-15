@@ -34,9 +34,10 @@ pub(crate) fn from_winit_button(button: MouseButton) -> Button {
 
 #[derive(Default)]
 pub(crate) struct PointerRoute {
-    /// The button whose press was turned into a secondary press and whose
-    /// release must not reach the runtime as `PointerUp`.
-    held: Option<Button>,
+    /// A left press was turned into a secondary press (Control+click on
+    /// macOS). Its release must not reach the runtime as `PointerUp`.
+    /// A right release is always dropped, so it needs no state.
+    left_held: bool,
 }
 
 impl PointerRoute {
@@ -49,26 +50,23 @@ impl PointerRoute {
         macos: bool,
     ) -> PointerStep {
         if pressed {
-            let secondary =
-                button == Button::Secondary || (button == Button::Primary && macos && mods.control);
-            if secondary {
-                // Keep the first held button: its release is the one to drop.
-                self.held.get_or_insert(button);
+            let control_click = button == Button::Primary && macos && mods.control;
+            if button == Button::Secondary || control_click {
+                self.left_held = control_click || self.left_held;
                 return PointerStep::Secondary(Event::SecondaryDown { x, y });
             }
             return match button {
-                Button::Primary => PointerStep::Primary(Event::PointerDown { x, y }),
+                Button::Primary => {
+                    self.left_held = false;
+                    PointerStep::Primary(Event::PointerDown { x, y })
+                }
                 _ => PointerStep::Ignore,
             };
         }
         match button {
-            Button::Secondary => PointerStep::Ignore,
-            Button::Primary if self.held == Some(Button::Primary) => {
-                self.held = None;
-                PointerStep::Ignore
-            }
+            Button::Primary if std::mem::take(&mut self.left_held) => PointerStep::Ignore,
             Button::Primary => PointerStep::Primary(Event::PointerUp { x, y }),
-            Button::Other => PointerStep::Ignore,
+            Button::Secondary | Button::Other => PointerStep::Ignore,
         }
     }
 }

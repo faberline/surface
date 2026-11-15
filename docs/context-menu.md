@@ -18,6 +18,8 @@ View::new(row).on_context_menu(|p| Msg::OpenMenu(p.x, p.y))
   outside it and Escape dismiss it.
 - A secondary press does not set pressed, hovered or focus, does not move a
   text cursor and does not start a drag. It cannot activate a control.
+- It does end an IME composition (the same as a left press does), because
+  a menu that opens takes focus from the field. The preedit text is dropped.
 - With a menu open, a secondary press outside it dismisses the menu and
   posts no context message. Inside it, nothing happens.
 - `menu_at` does not flip at the window edge. A menu near the edge can
