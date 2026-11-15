@@ -51,6 +51,16 @@ pub fn run(ws: &Workspace, mut args: Vec<String>) -> Result<()> {
             ],
         )?;
         cargo(ws, &["build", "-p", "jet-bridge", "--bin", "jet-bridge"])?;
+        cargo(
+            ws,
+            &[
+                "build",
+                "-p",
+                "surface-devtools",
+                "--bin",
+                "surface-devtools",
+            ],
+        )?;
     }
     let mut command = vec!["run", "-q", "-p", "surface-e2e", "--"];
     command.extend(args.iter().map(String::as_str));

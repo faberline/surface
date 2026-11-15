@@ -37,6 +37,7 @@ options:
   --url <url>           test an app already served at <url> instead (one browser suite at a time)
   --bridge-web <dir>    devtools material gallery (default: target/web/devtools/material-gallery)
   --jet-bridge <path>   jet-bridge binary (default: target/debug/jet-bridge)
+  --devtools-bin <path> surface-devtools client (default: target/debug/surface-devtools)
   --native-bin <path>   native gallery (default: target/debug/surface-material-gallery)
   --compact-bin <path>  compact native gallery (default: target/debug/examples/compact)
   --artifacts <dir>     screenshots and evidence (default: artifacts)
@@ -59,6 +60,7 @@ pub struct Env {
     url: Option<String>,
     bridge_web: PathBuf,
     jet_bridge: PathBuf,
+    devtools_bin: PathBuf,
     artifacts: PathBuf,
 }
 
@@ -86,6 +88,16 @@ impl Env {
             );
         }
         Ok(self.jet_bridge.clone())
+    }
+
+    pub fn devtools_bin(&self) -> Result<PathBuf> {
+        if !self.devtools_bin.is_file() {
+            bail!(
+                "no surface-devtools binary at {}; run `cargo xtask web e2e` or pass --devtools-bin",
+                self.devtools_bin.display()
+            );
+        }
+        Ok(self.devtools_bin.clone())
     }
 
     pub fn artifact(&self, name: &str) -> PathBuf {
@@ -117,6 +129,7 @@ fn parse(root: &Path) -> Result<(Env, Options)> {
         url: None,
         bridge_web: target.join("web/devtools/material-gallery"),
         jet_bridge: target.join("debug/jet-bridge"),
+        devtools_bin: target.join("debug/surface-devtools"),
         artifacts: root.join("artifacts"),
     };
     let mut options = Options {
@@ -145,6 +158,7 @@ fn parse(root: &Path) -> Result<(Env, Options)> {
             "--url" => env.url = Some(value()?),
             "--bridge-web" => env.bridge_web = value()?.into(),
             "--jet-bridge" => env.jet_bridge = value()?.into(),
+            "--devtools-bin" => env.devtools_bin = value()?.into(),
             "--native-bin" => options.native_bin = value()?.into(),
             "--compact-bin" => options.compact_bin = value()?.into(),
             "--artifacts" => env.artifacts = value()?.into(),
