@@ -192,6 +192,8 @@ struct Host<A: Application> {
     #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
     trace: Option<trace_file::TraceFile>,
     pointer: (f32, f32),
+    #[cfg(not(target_arch = "wasm32"))]
+    cursor: surface_app::CursorStyle,
     mods: key_order::Mods,
     #[cfg(not(target_arch = "wasm32"))]
     route: pointer_route::PointerRoute,
@@ -401,6 +403,8 @@ impl<A: Application> Host<A> {
             Err(error) => self.fail(event_loop, error),
         }
         self.sync_text_input();
+        #[cfg(not(target_arch = "wasm32"))]
+        self.sync_cursor();
     }
     fn sync_text_input(&mut self) {
         #[cfg(target_arch = "wasm32")]
@@ -515,6 +519,8 @@ impl<A: Application> Host<A> {
             }
         }
         self.sync_text_input();
+        #[cfg(not(target_arch = "wasm32"))]
+        self.sync_cursor();
     }
 }
 impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
@@ -751,7 +757,11 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 }
                 self.input(event_loop, Event::Blur)
             }
-            WindowEvent::CursorLeft { .. } => self.input(event_loop, Event::PointerLeave),
+            WindowEvent::CursorLeft { .. } => {
+                self.input(event_loop, Event::PointerLeave);
+                #[cfg(not(target_arch = "wasm32"))]
+                self.apply_cursor(surface_app::CursorStyle::Default);
+            }
             #[cfg(target_arch = "wasm32")]
             WindowEvent::KeyboardInput { event, .. } if event.state == ElementState::Pressed => {
                 let held = self.key_order.press(event);
@@ -827,6 +837,8 @@ pub fn run_with_wake<A: Application>(
         #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
         trace,
         pointer: (0., 0.),
+        #[cfg(not(target_arch = "wasm32"))]
+        cursor: surface_app::CursorStyle::Default,
         mods: key_order::Mods::default(),
         #[cfg(not(target_arch = "wasm32"))]
         route: pointer_route::PointerRoute::default(),
