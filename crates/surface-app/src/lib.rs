@@ -3,6 +3,7 @@
 mod bridge;
 mod context;
 mod controls;
+mod cursor;
 #[cfg(feature = "devtools")]
 mod devtools;
 mod editing;
@@ -18,6 +19,7 @@ mod snapshot;
 pub mod trace;
 pub use context::PointerPoint;
 pub use controls::Roving;
+pub use cursor::CursorStyle;
 pub use editing::{
     utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
     TextSelection,
@@ -51,6 +53,7 @@ pub struct View<M> {
     key: Option<KeyHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
+    cursor: Option<CursorStyle>,
 }
 /// A key handler. `Some(message)` consumes the press, `None` passes it on.
 type KeyHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<M>>;
@@ -68,6 +71,7 @@ impl<M> View<M> {
             key: None,
             context: None,
             stick: false,
+            cursor: None,
         }
     }
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -119,6 +123,12 @@ impl<M> View<M> {
     /// needs `clip(true)` and a stable id. Without `clip` the flag is ignored.
     pub fn stick_to_bottom(mut self, on: bool) -> Self {
         self.stick = on;
+        self
+    }
+    /// The mouse cursor over this node. It does not change the DOM, layout
+    /// or display list. Read it with `Runtime::cursor_at`.
+    pub fn cursor(mut self, cursor: CursorStyle) -> Self {
+        self.cursor = Some(cursor);
         self
     }
     /// Trap focus in this panel, dismiss on Escape/outside click, then restore focus.
@@ -242,6 +252,7 @@ struct Binding<M> {
     key: Option<KeyHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
+    cursor: Option<CursorStyle>,
 }
 
 /// Messages posted from inside `update` or from other code on the UI thread.
@@ -460,6 +471,7 @@ impl<A: Application> Runtime<A> {
                     key: view.key,
                     context: view.context,
                     stick: view.stick,
+                    cursor: view.cursor,
                 },
             );
             for child in view.children {
