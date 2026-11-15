@@ -24,6 +24,13 @@ the caret rectangle to `set_ime_cursor_area`, and routes preedit/commit
 events to the field that owns the IME session. Native clipboard commands
 use the OS clipboard through arboard.
 
+An app that wants to copy a string it owns, such as a chat reply, uses
+`surface_platform::Clipboard`. Create it once with `Clipboard::system()`,
+keep it in the app state, and call `set_text` from `update`. `get_text`
+reads it back. Both return `Result<_, ClipboardError>`. The handle is
+`Clone + Send + Sync` and needs no host. Tests use `Clipboard::memory()`.
+On the web `system()` returns `ClipboardError::Unsupported`.
+
 The web host uses a transparent textarea to receive browser input,
 composition and clipboard events. It is positioned at the GPU caret, so
 the browser can anchor its candidate popup. It does not paint the UI.
