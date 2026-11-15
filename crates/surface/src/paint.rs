@@ -154,6 +154,19 @@ impl Outline {
         }
     }
 }
+/// The ops of one compile and, for an attributed compile, their owners.
+struct Ops<'a> {
+    ops: Vec<PaintOp>,
+    owners: Option<&'a mut Vec<NodeId>>,
+}
+impl Ops<'_> {
+    fn push(&mut self, owner: NodeId, op: PaintOp) {
+        self.ops.push(op);
+        if let Some(owners) = self.owners.as_deref_mut() {
+            owners.push(owner);
+        }
+    }
+}
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DisplayList {
     pub viewport: Rect,
@@ -184,7 +197,44 @@ impl DisplayList {
         decorations: &BTreeMap<NodeId, TextDecoration>,
         interaction: InteractionState,
     ) -> Self {
-        let mut ops = Vec::new();
+        Self::compile_into(dom, computed, focused, decorations, interaction, None)
+    }
+    /// The list `compile_with_interaction` returns, plus the node that
+    /// produced each op: `owners.len() == ops.len()` and `owners[i]` owns
+    /// `ops[i]`. For devtools and tests; the other `compile*` functions do
+    /// not build the owner list.
+    pub fn compile_attributed(
+        dom: &MicroDom,
+        computed: &ComputedDom,
+        focused: Option<NodeId>,
+        decorations: &BTreeMap<NodeId, TextDecoration>,
+        interaction: InteractionState,
+    ) -> (Self, Vec<NodeId>) {
+        let mut owners = Vec::new();
+        let list = Self::compile_into(
+            dom,
+            computed,
+            focused,
+            decorations,
+            interaction,
+            Some(&mut owners),
+        );
+        (list, owners)
+    }
+    /// The one compile loop. `owners`, when present, gets the owner of each
+    /// op pushed.
+    fn compile_into(
+        dom: &MicroDom,
+        computed: &ComputedDom,
+        focused: Option<NodeId>,
+        decorations: &BTreeMap<NodeId, TextDecoration>,
+        interaction: InteractionState,
+        owners: Option<&mut Vec<NodeId>>,
+    ) -> Self {
+        let mut ops = Ops {
+            ops: Vec::new(),
+            owners,
+        };
         for id in &computed.paint_order {
             let n = dom.get(*id).expect("computed node belongs to DOM");
             let g = &computed.nodes[id.index()];
@@ -194,10 +244,13 @@ impl DisplayList {
             }
             let outline = Outline::of(s, g.bounds);
             if s.background.3 > 0 {
-                ops.push(outline.fill(g.bounds, g.clip, s.background));
+                ops.push(*id, outline.fill(g.bounds, g.clip, s.background));
             }
             if s.border_width > 0. && s.border_color.3 > 0 {
-                ops.push(outline.stroke(g.bounds, g.clip, s.border_width, s.border_color));
+                ops.push(
+                    *id,
+                    outline.stroke(g.bounds, g.clip, s.border_width, s.border_color),
+                );
             }
             if s.state_layer.3 > 0 && !n.is_disabled() {
                 let mut target = Some(*id);
@@ -214,11 +267,14 @@ impl DisplayList {
                 }
                 if opacity > 0 {
                     let c = s.state_layer;
-                    ops.push(outline.fill(
-                        g.bounds,
-                        g.clip,
-                        Color(c.0, c.1, c.2, (c.3 as u16 * opacity / 255) as u8),
-                    ));
+                    ops.push(
+                        *id,
+                        outline.fill(
+                            g.bounds,
+                            g.clip,
+                            Color(c.0, c.1, c.2, (c.3 as u16 * opacity / 255) as u8),
+                        ),
+                    );
                 }
             }
             if focused == Some(*id) {
@@ -231,16 +287,19 @@ impl DisplayList {
                         Rect::new(r.x, r.y, 2., r.height),
                         Rect::new(r.x + r.width - 2., r.y, 2., r.height),
                     ] {
-                        ops.push(PaintOp::Quad {
-                            rect: line,
-                            clip: g.clip,
-                            radius: 0.,
-                            color: s.foreground,
-                        });
+                        ops.push(
+                            *id,
+                            PaintOp::Quad {
+                                rect: line,
+                                clip: g.clip,
+                                radius: 0.,
+                                color: s.foreground,
+                            },
+                        );
                     }
                 } else {
                     // One inside stroke that follows the node shape.
-                    ops.push(outline.stroke(g.bounds, g.clip, 2., s.foreground));
+                    ops.push(*id, outline.stroke(g.bounds, g.clip, 2., s.foreground));
                 }
             }
             if let Some(text) = n.text_value() {
@@ -249,12 +308,15 @@ impl DisplayList {
                 let decoration = decorations.get(id);
                 if let Some(d) = decoration {
                     for r in &d.selection {
-                        ops.push(PaintOp::Quad {
-                            rect: *r,
-                            clip,
-                            radius: 0.,
-                            color: Color(103, 80, 164, 80),
-                        });
+                        ops.push(
+                            *id,
+                            PaintOp::Quad {
+                                rect: *r,
+                                clip,
+                                radius: 0.,
+                                color: Color(103, 80, 164, 80),
+                            },
+                        );
                     }
                 }
                 let editable = n.role() == Role::TextInput;
@@ -268,58 +330,73 @@ impl DisplayList {
                     } else {
                         ((0., 0.), true)
                     };
-                    ops.push(PaintOp::StyledText {
-                        rect,
-                        clip,
-                        text: text.to_owned(),
-                        style: text_style,
-                        color: s.foreground,
-                        scroll,
-                        multiline,
-                        editable,
-                    });
+                    ops.push(
+                        *id,
+                        PaintOp::StyledText {
+                            rect,
+                            clip,
+                            text: text.to_owned(),
+                            style: text_style,
+                            color: s.foreground,
+                            scroll,
+                            multiline,
+                            editable,
+                        },
+                    );
                 } else if editable {
-                    ops.push(PaintOp::EditableText {
-                        rect,
-                        clip,
-                        text: text.to_owned(),
-                        font_size: s.font_size,
-                        color: s.foreground,
-                        scroll: decoration.map(|d| d.scroll).unwrap_or_default(),
-                        multiline: decoration.is_some_and(|d| d.multiline),
-                    });
+                    ops.push(
+                        *id,
+                        PaintOp::EditableText {
+                            rect,
+                            clip,
+                            text: text.to_owned(),
+                            font_size: s.font_size,
+                            color: s.foreground,
+                            scroll: decoration.map(|d| d.scroll).unwrap_or_default(),
+                            multiline: decoration.is_some_and(|d| d.multiline),
+                        },
+                    );
                 } else {
-                    ops.push(PaintOp::Text {
-                        rect,
-                        clip,
-                        text: text.to_owned(),
-                        font_size: s.font_size,
-                        color: s.foreground,
-                    });
+                    ops.push(
+                        *id,
+                        PaintOp::Text {
+                            rect,
+                            clip,
+                            text: text.to_owned(),
+                            font_size: s.font_size,
+                            color: s.foreground,
+                        },
+                    );
                 }
                 if let Some(d) = decoration {
                     for r in &d.underline {
-                        ops.push(PaintOp::Quad {
-                            rect: *r,
-                            clip,
-                            radius: 0.,
-                            color: s.foreground,
-                        });
+                        ops.push(
+                            *id,
+                            PaintOp::Quad {
+                                rect: *r,
+                                clip,
+                                radius: 0.,
+                                color: s.foreground,
+                            },
+                        );
                     }
                     if let Some(caret) = d.caret {
-                        ops.push(PaintOp::Quad {
-                            rect: caret,
-                            clip,
-                            radius: 0.,
-                            color: s.foreground,
-                        });
+                        ops.push(
+                            *id,
+                            PaintOp::Quad {
+                                rect: caret,
+                                clip,
+                                radius: 0.,
+                                color: s.foreground,
+                            },
+                        );
                     }
                 }
             }
         }
         Self {
             viewport: computed.viewport,
-            ops,
+            ops: ops.ops,
         }
     }
 
