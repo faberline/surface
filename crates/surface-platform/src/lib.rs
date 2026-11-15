@@ -11,6 +11,9 @@ mod key_order;
 mod key_route;
 mod keyboard;
 mod motion;
+#[cfg(not(target_arch = "wasm32"))]
+#[allow(dead_code)]
+mod pointer_route;
 #[cfg(any(target_arch = "wasm32", test))]
 mod press_guard;
 #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
