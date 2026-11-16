@@ -1,6 +1,6 @@
 //! A small Material 3-inspired component set. Values remain renderer-independent.
 use surface::{Align, Color, Length, Node, Role, Style};
-use surface_app::View;
+use surface_app::{CursorStyle, View};
 mod components;
 pub mod motion;
 pub mod shape;
@@ -158,6 +158,7 @@ impl Theme {
             ),
         )
         .on_input(on_input)
+        .cursor(CursorStyle::Text)
     }
 }
 impl Default for Theme {
