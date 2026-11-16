@@ -369,7 +369,7 @@ mod tests {
         text: Option<&str>,
         mods: Modifiers,
     ) -> String {
-        let step = native_key(rt, key, text, mods);
+        let step = native_key(rt, key, text, mods, false);
         let shown = format!("{step:?}");
         match step {
             NativeStep::Field(FieldAction::Dispatch(event)) => {
@@ -389,7 +389,7 @@ mod tests {
         ime: bool,
         mods: Modifiers,
     ) -> WebStep {
-        let step = web_key(rt, key, key_code, ime, false, mods);
+        let step = web_key(rt, key, key_code, ime, false, mods, false);
         if let Some(event) = step.dispatch.clone() {
             rt.dispatch(event).unwrap();
         }
@@ -435,7 +435,7 @@ mod tests {
         let mut rt = runtime(true, true);
         assert!(!rt.input_snapshot().unwrap().composing);
         assert_eq!(
-            route_key(&mut rt, Some(KeyPress::new(Key::Enter, NONE)), true),
+            route_key(&mut rt, Some(KeyPress::new(Key::Enter, NONE)), true, true),
             KeyStep::Pass
         );
         assert_eq!(rt.app().calls.get(), 0);
@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn an_unmapped_key_skips_the_handler() {
         let mut rt = runtime(true, true);
-        assert_eq!(route_key(&mut rt, None, false), KeyStep::Pass);
+        assert_eq!(route_key(&mut rt, None, false, true), KeyStep::Pass);
         assert_eq!(rt.app().calls.get(), 0);
     }
 
@@ -504,7 +504,7 @@ mod tests {
         let mut rt = runtime(true, true);
         let step = web_press(&mut rt, "Enter", 13, true, NONE);
         assert!(!step.prevent_default && step.dispatch.is_none() && !step.sync);
-        let step = web_key(&mut rt, "Enter", 13, false, true, NONE);
+        let step = web_key(&mut rt, "Enter", 13, false, true, NONE, false);
         assert!(!step.prevent_default && step.dispatch.is_none() && !step.sync);
         assert_eq!(rt.app().calls.get(), 0);
     }
@@ -514,7 +514,7 @@ mod tests {
         let cmd = Modifiers { meta: true, ..NONE };
         let show = |multiline: bool, key: &str, mods: Modifiers| {
             let mut rt = runtime(multiline, false);
-            let s = web_key(&mut rt, key, 0, false, false, mods);
+            let s = web_key(&mut rt, key, 0, false, false, mods, false);
             format!("{} {:?} {}", s.prevent_default, s.dispatch, s.sync)
         };
         let cases = [
@@ -685,5 +685,122 @@ mod tests {
         assert!(dom_composing(true, 13, false));
         assert!(dom_composing(false, 13, true));
         assert!(dom_composing(false, 229, false), "Safari: keyCode 229");
+    }
+
+    // Shortcuts (#119).
+    #[derive(Clone, Debug, PartialEq)]
+    enum SMsg {
+        Palette,
+        PlainK,
+    }
+    struct SApp {
+        log: Vec<SMsg>,
+        field: bool,
+    }
+    impl Application for SApp {
+        type Message = SMsg;
+        fn update(&mut self, message: SMsg) {
+            self.log.push(message);
+        }
+        fn shortcuts(&self) -> Vec<surface_app::Shortcut<SMsg>> {
+            let k = Key::Character("k".into());
+            vec![
+                surface_app::Shortcut::new(k.clone(), CMD, SMsg::Palette),
+                surface_app::Shortcut::new(k, NONE, SMsg::PlainK),
+            ]
+        }
+        fn view(&self) -> View<SMsg> {
+            let node = if self.field {
+                View::new(Node::new(Role::TextInput, "F").id("f"))
+            } else {
+                View::new(Node::new(Role::Button, "B").id("f"))
+            };
+            node
+        }
+    }
+    const CMD: Modifiers = Modifiers {
+        meta: true,
+        ..NONE
+    };
+    const K: WinitKey = WinitKey::Character(winit::keyboard::SmolStr::new_inline("k"));
+    fn sruntime(field: bool, focus: bool) -> Runtime<SApp> {
+        let mut rt = Runtime::new(SApp {
+            log: Vec::new(),
+            field,
+        })
+        .unwrap();
+        if focus {
+            rt.activate("f").unwrap();
+        }
+        rt
+    }
+
+    #[test]
+    fn native_cmd_k_is_consumed_on_a_button_a_field_and_nothing() {
+        for (field, focus) in [(false, true), (true, true), (false, false)] {
+            let mut rt = sruntime(field, focus);
+            let step = native_key(&mut rt, &K, Some("k"), CMD, false);
+            assert!(matches!(step, NativeStep::Consumed), "{field} {focus}");
+            assert_eq!(rt.app().log, [SMsg::Palette]);
+        }
+    }
+
+    #[test]
+    fn native_plain_k_in_a_field_types_and_sends_no_shortcut() {
+        let mut rt = sruntime(true, true);
+        let step = native_key(&mut rt, &K, Some("k"), NONE, false);
+        assert!(
+            matches!(step, NativeStep::Field(FieldAction::Dispatch(Event::Text(ref t))) if t == "k"),
+            "{step:?}"
+        );
+        assert!(rt.app().log.is_empty());
+    }
+
+    #[test]
+    fn native_cmd_shift_k_does_not_match_cmd_k() {
+        let mut rt = sruntime(false, false);
+        let mods = Modifiers { shift: true, ..CMD };
+        let step = native_key(&mut rt, &K, Some("K"), mods, false);
+        assert!(matches!(step, NativeStep::Field(_)), "{step:?}");
+        assert!(rt.app().log.is_empty());
+    }
+
+    #[test]
+    fn native_composition_ignores_a_shortcut() {
+        let mut rt = sruntime(true, true);
+        rt.dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄓ".into(),
+            selection: None,
+        }))
+        .unwrap();
+        let step = native_key(&mut rt, &K, Some("k"), CMD, false);
+        assert!(matches!(step, NativeStep::Ignore), "{step:?}");
+        assert!(rt.app().log.is_empty());
+    }
+
+    #[test]
+    fn native_repeat_is_consumed_without_a_message() {
+        let mut rt = sruntime(false, false);
+        let step = native_key(&mut rt, &K, Some("k"), CMD, true);
+        assert!(matches!(step, NativeStep::Consumed), "{step:?}");
+        assert!(rt.app().log.is_empty());
+    }
+
+    #[test]
+    fn web_cmd_k_sends_nothing_and_keeps_the_browser_default() {
+        let mut rt = sruntime(true, true);
+        let step = web_key(&mut rt, "k", 75, false, false, CMD, false);
+        assert!(!step.prevent_default && step.dispatch.is_none() && step.error.is_none());
+        assert!(rt.app().log.is_empty());
+    }
+
+    #[test]
+    fn web_composition_flags_and_key_code_229_skip_everything() {
+        for (is, code, bridge) in [(true, 75, false), (false, 75, true), (false, 229, false)] {
+            let mut rt = sruntime(true, true);
+            let step = web_key(&mut rt, "k", code, is, bridge, CMD, false);
+            assert!(!step.prevent_default && step.dispatch.is_none());
+            assert!(rt.app().log.is_empty());
+        }
     }
 }
