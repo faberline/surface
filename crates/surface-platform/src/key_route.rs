@@ -724,7 +724,7 @@ mod tests {
             ]
         }
         fn view(&self) -> View<SMsg> {
-            let node = if self.field {
+            if self.field {
                 let field =
                     View::new(Node::new(Role::TextInput, "F").id("f")).on_input(|_| SMsg::PlainK);
                 if self.handler {
@@ -736,8 +736,7 @@ mod tests {
                 }
             } else {
                 View::new(Node::new(Role::Button, "B").id("f"))
-            };
-            node
+            }
         }
     }
     const CMD: Modifiers = Modifiers { meta: true, ..NONE };
