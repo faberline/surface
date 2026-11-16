@@ -703,10 +703,13 @@ mod tests {
     enum SMsg {
         Palette,
         PlainK,
+        Handled,
     }
     struct SApp {
         log: Vec<SMsg>,
         field: bool,
+        /// The text field's `on_key` consumes Cmd+K.
+        handler: bool,
     }
     impl Application for SApp {
         type Message = SMsg;
@@ -722,7 +725,15 @@ mod tests {
         }
         fn view(&self) -> View<SMsg> {
             let node = if self.field {
-                View::new(Node::new(Role::TextInput, "F").id("f")).on_input(|_| SMsg::PlainK)
+                let field =
+                    View::new(Node::new(Role::TextInput, "F").id("f")).on_input(|_| SMsg::PlainK);
+                if self.handler {
+                    field.on_key(|p| {
+                        (p.modifiers.meta && !p.modifiers.shift).then_some(SMsg::Handled)
+                    })
+                } else {
+                    field
+                }
             } else {
                 View::new(Node::new(Role::Button, "B").id("f"))
             };
@@ -735,12 +746,27 @@ mod tests {
         let mut rt = Runtime::new(SApp {
             log: Vec::new(),
             field,
+            handler: false,
         })
         .unwrap();
         if focus {
             rt.activate("f").unwrap();
         }
         rt
+    }
+
+    #[test]
+    fn native_a_consumed_on_key_wins_over_the_shortcut() {
+        let mut rt = Runtime::new(SApp {
+            log: Vec::new(),
+            field: true,
+            handler: true,
+        })
+        .unwrap();
+        rt.activate("f").unwrap();
+        let step = native_key(&mut rt, &K, Some("k"), CMD, false);
+        assert!(matches!(step, NativeStep::Consumed), "{step:?}");
+        assert_eq!(rt.app().log, [SMsg::Handled]);
     }
 
     #[test]
