@@ -23,16 +23,25 @@ pub(crate) fn route_key<A: Application>(
     runtime: &mut Runtime<A>,
     press: Option<KeyPress>,
     composing: bool,
+    shortcuts: bool,
 ) -> KeyStep {
     let Some(press) = press.filter(|_| !composing) else {
         return KeyStep::Pass;
     };
-    match runtime.key(&press) {
+    let result = match runtime.key(&press) {
+        Ok(false) if shortcuts => runtime.shortcut(&press),
+        other => other,
+    };
+    match result {
         Ok(true) => KeyStep::Consumed,
         Ok(false) => KeyStep::Pass,
         Err(error) => KeyStep::Fail(error.to_string()),
     }
 }
+
+/// Global shortcuts run on the native host only. The web host evaluates
+/// none (decision 0001, D-B; browsers reserve many chords).
+const NATIVE_SHORTCUTS: bool = cfg!(not(target_arch = "wasm32"));
 
 /// Map winit modifiers. Command is `meta`, Option is `alt`.
 pub(crate) fn from_winit_mods(state: ModifiersState) -> Modifiers {
@@ -200,13 +209,14 @@ pub(crate) fn native_key<A: Application>(
     key: &WinitKey,
     text: Option<&str>,
     mods: Modifiers,
+    repeat: bool,
 ) -> NativeStep {
     let input = runtime.input_snapshot();
     if input.as_ref().is_some_and(|i| i.composing) {
         return NativeStep::Ignore;
     }
-    let press = from_winit(key).map(|k| KeyPress::new(k, mods));
-    match route_key(runtime, press, false) {
+    let press = from_winit(key).map(|k| KeyPress::new(k, mods).with_repeat(repeat));
+    match route_key(runtime, press, false, NATIVE_SHORTCUTS) {
         KeyStep::Consumed => return NativeStep::Consumed,
         KeyStep::Fail(error) => return NativeStep::Fail(error),
         KeyStep::Pass => {}
@@ -238,13 +248,14 @@ pub(crate) fn web_key<A: Application>(
     is_composing: bool,
     bridge_composing: bool,
     mods: Modifiers,
+    repeat: bool,
 ) -> WebStep {
     if is_composing || bridge_composing {
         return WebStep::default();
     }
-    let press = from_dom(key).map(|k| KeyPress::new(k, mods));
+    let press = from_dom(key).map(|k| KeyPress::new(k, mods).with_repeat(repeat));
     let ime = dom_composing(is_composing, key_code, bridge_composing);
-    match route_key(runtime, press, ime) {
+    match route_key(runtime, press, ime, false) {
         KeyStep::Consumed => {
             return WebStep {
                 prevent_default: true,
@@ -711,17 +722,14 @@ mod tests {
         }
         fn view(&self) -> View<SMsg> {
             let node = if self.field {
-                View::new(Node::new(Role::TextInput, "F").id("f"))
+                View::new(Node::new(Role::TextInput, "F").id("f")).on_input(|_| SMsg::PlainK)
             } else {
                 View::new(Node::new(Role::Button, "B").id("f"))
             };
             node
         }
     }
-    const CMD: Modifiers = Modifiers {
-        meta: true,
-        ..NONE
-    };
+    const CMD: Modifiers = Modifiers { meta: true, ..NONE };
     const K: WinitKey = WinitKey::Character(winit::keyboard::SmolStr::new_inline("k"));
     fn sruntime(field: bool, focus: bool) -> Runtime<SApp> {
         let mut rt = Runtime::new(SApp {

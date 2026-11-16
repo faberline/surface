@@ -250,10 +250,12 @@ fn on_key_sees_the_repeat_flag() {
         fn update(&mut self, _: ()) {}
         fn view(&self) -> View<()> {
             let seen = (self.0).0.clone();
-            View::new(Node::new(Role::TextInput, "F").id("f")).on_key(move |p| {
-                seen.borrow_mut().push(p.repeat);
-                None
-            })
+            View::new(Node::new(Role::TextInput, "F").id("f"))
+                .on_input(|_| ())
+                .on_key(move |p| {
+                    seen.borrow_mut().push(p.repeat);
+                    None
+                })
         }
     }
     let seen = Seen(Rc::default());
