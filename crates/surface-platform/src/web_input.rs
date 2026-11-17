@@ -370,6 +370,7 @@ impl<A: Application> WebInput<A> {
                     key.is_composing(),
                     composing.get(),
                     mods,
+                    key.repeat(),
                 );
                 if let Some(error) = step.error {
                     web_sys::console::error_1(&error.into());

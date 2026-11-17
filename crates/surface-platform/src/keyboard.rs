@@ -16,6 +16,7 @@ impl<A: Application> Host<A> {
             &event.logical_key,
             event.text.as_deref(),
             self.mods,
+            event.repeat,
         );
         match step {
             NativeStep::Ignore | NativeStep::Field(FieldAction::Nothing) => {}

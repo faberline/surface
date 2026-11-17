@@ -25,7 +25,7 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
-pub use keys::{Key, KeyPress, Modifiers, TextAction};
+pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
 #[cfg(feature = "devtools")]
 pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
 pub use scroll_control::{ScrollMetrics, ScrollTarget};
@@ -161,6 +161,13 @@ pub trait Application: 'static {
         CloseDecision::Allow
     }
     fn view(&self) -> View<Self::Message>;
+    /// Global keyboard shortcuts, read each time a key arrives. A shortcut
+    /// sends its message whichever node has focus. The runtime does not
+    /// apply modal scope: return the table that fits the current state.
+    /// The default has none. See `Shortcut` and `Runtime::shortcut`.
+    fn shortcuts(&self) -> Vec<Shortcut<Self::Message>> {
+        Vec::new()
+    }
     /// A short text for a message in a devtools trace. The default returns
     /// `None`. The runtime calls it only while a trace recorder is attached
     /// (feature `devtools`).
@@ -643,6 +650,27 @@ impl<A: Application> Runtime<A> {
             }
             None => Ok(false),
         }
+    }
+    /// The host calls this after `key` returns `false`. Sends the message
+    /// of the first matching `Application::shortcuts` entry and returns
+    /// `true`. Returns `false` during an IME composition, with no match,
+    /// and for a chord a focused text field owns: any chord without Control
+    /// or Command, and Cmd/Ctrl with A, C, X, V, Z or Y. A repeated press
+    /// that matches is consumed and sends nothing.
+    pub fn shortcut(&mut self, press: &KeyPress) -> Result<bool, AppError> {
+        if self.editors.values().any(|editor| editor.is_composing()) {
+            return Ok(false);
+        }
+        if self.input_snapshot().is_some() && keys::field_owns(press) {
+            return Ok(false);
+        }
+        let Some(shortcut) = self.app.shortcuts().into_iter().find(|s| s.matches(press)) else {
+            return Ok(false);
+        };
+        if press.repeat {
+            return Ok(true);
+        }
+        self.message(Some(shortcut.message))
     }
     /// Semantic drivers and platform input use the same activation path.
     pub fn activate(&mut self, stable_id: &str) -> Result<bool, AppError> {
