@@ -376,7 +376,7 @@ fn compile_into<Op: CompileOp>(
         let g = &computed.nodes[id.index()];
         let s = n.style();
         let visible = has_area(g.bounds.intersect(g.clip));
-        for shadow in n.box_shadow_layers() {
+        for shadow in n.presented_box_shadow_layers(*id, focused, interaction) {
             shadow.contours(
                 g.bounds,
                 s.corner_radii(),

@@ -172,6 +172,7 @@ does not change application state.
 | `divider_with` / `vertical_divider` | Full, inset and middle-inset horizontal dividers and a vertical divider; 1 dp, `outline_variant`; no list or sheet integration yet |
 | `card` / `outlined_card` | Filled and outlined containers |
 | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
+| `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 | `search_bar` | Pill search bar with leading glyph, controlled text input and a clear button while the query is not empty; no search view, suggestions or placeholder yet |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
@@ -316,6 +317,35 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Cards
+
+Choose Elevated, Filled or Outlined in `MaterialCardOptions`. Give the
+card a stable ID, a localized name and a layout direction. `CardContent`
+holds optional media, title, subtitle, supporting text and body views.
+The card grows with its content. Actions wrap when the available width
+gets smaller. All three kinds use 12 dp corners. Outlined cards use a
+1 dp border. Elevated cards paint both Material shadow layers.
+
+Use `Theme::material_card` for a named group with separate actions.
+Tab reaches each enabled action. Use `Theme::material_action_card` for a
+single press or controlled toggle. The card exposes one named button.
+The application owns the toggle value. Enter and Space invoke the card.
+Use a localized name that gives users the information needed to act.
+Set `restore_focus_to` for a control that can take focus if the card
+or an action becomes unavailable.
+
+An actionable card in `CardInteraction::Rest` uses live hover, press
+and focus feedback. A caller can set `CardInteraction::Dragged` during
+captured drag. The Gallery moves a card between two slots. The Move
+button performs the same operation with a click or the keyboard.
+Cancelling a drag restores the original position.
+
+In Material Gallery, choose 色彩, then 卡片. Switch among all three
+variants and try the whole-card action, selection and reorder.
+
+[Material 3 card guidelines](https://m3.material.io/components/cards/guidelines) ·
+[Official Compose card guide](https://developer.android.com/develop/ui/compose/components/card)
 
 ## Carousels
 

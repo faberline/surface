@@ -179,9 +179,10 @@
       "spec": "https://m3.material.io/components/cards/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Filled and outlined containers"
+      "desktop_evidence": "Native headless Metal verifies all three variants in both themes, real shadow and outline paint, keyboard and focus, disabled behavior and 320 dp dark RTL with 200% text. Two replays produce seven identical PNGs across Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/d23c6994a20fb7210d4f5ddbe60cea719a0cb8d2/docs/evidence/md3/cards-v0.1.12",
+      "web_evidence": "Chrome WebGPU M78–M82 cover live hover, press and focus paint, toggle and disabled semantics, independent passive-card actions, pointer and touch reorder with cancellation, and wheel over card art at 320 dp dark RTL with 200% text.",
+      "implemented": "Elevated, Filled and Outlined cards with shared shape, color and elevation, structured slots, a whole-card press or controlled toggle, or a group with independent actions. The Gallery shows drag reorder and its equivalent button. Animated ripple, rounded descendant clipping, physical touch and live screen-reader speech remain open.",
+      "unit_evidence": "Card and shadow tests verify both palettes, token states, actual interaction paint order, accessible activation, focus fallback, compact wrap and optional shadow serialization."
     },
     {
       "id": "carousel",
