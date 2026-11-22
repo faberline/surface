@@ -1,0 +1,19 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.14s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/it.rs (/tmp/cargo-target/surface-surface-md3-public-capture-landing.gsfD7Nab/debug/deps/it-a4dd44ddde3c7eac)
+
+running 5 tests
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+test gpu_offscreen_bottom_corners_are_not_swapped ... ok
+test gpu_offscreen_per_corner_shapes ... ok
+test gpu_offscreen_capture_reads_rgba_in_both_formats ... ok
+test gpu_offscreen_paints_clips_rounding_text_and_order ... ok
+test gpu_offscreen_motion_animates_color_and_corners ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.36s
+

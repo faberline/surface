@@ -1,0 +1,77 @@
+diff --git a/crates/surface-platform/src/screenshot.rs b/crates/surface-platform/src/screenshot.rs
+index 552535e..630275a 100644
+--- a/crates/surface-platform/src/screenshot.rs
++++ b/crates/surface-platform/src/screenshot.rs
+@@ -96,14 +96,50 @@ impl Resolution {
+     }
+ }
+ 
++// Disposable DN15 negative controls. Never part of a product build.
++#[derive(Clone, Copy, PartialEq)]
++enum ScreenshotNegativeControl {
++    SwappedRedBlue,
++    StaleDefaultImage,
++    IgnoredMaxSide,
++}
++
++fn screenshot_negative_control() -> Option<ScreenshotNegativeControl> {
++    match std::env::var("SURFACE_SCREENSHOT_NEGATIVE_CONTROL").as_deref() {
++        Ok("swapped-red-blue") => Some(ScreenshotNegativeControl::SwappedRedBlue),
++        Ok("stale-default-image") => Some(ScreenshotNegativeControl::StaleDefaultImage),
++        Ok("ignored-max-side") => Some(ScreenshotNegativeControl::IgnoredMaxSide),
++        _ => None,
++    }
++}
++
++std::thread_local! {
++    static FIRST_DEFAULT_IMAGE: std::cell::RefCell<Option<Value>> = const {
++        std::cell::RefCell::new(None)
++    };
++}
++
+ pub(crate) fn capture(
+     renderer: &mut Renderer,
+     frame: &ExtendedDisplayList,
+     size: (u32, u32),
+     native_scale: f32,
+     id: u64,
+-    params: ScreenshotParams,
++    mut params: ScreenshotParams,
+ ) -> Reply {
++    let fault = screenshot_negative_control();
++    let cacheable = fault == Some(ScreenshotNegativeControl::StaleDefaultImage)
++        && params == ScreenshotParams::default();
++    if cacheable {
++        if let Some(result) = FIRST_DEFAULT_IMAGE.with(|entry| entry.borrow().clone()) {
++            eprintln!("[negative-control] returned the cached first default PNG");
++            return Reply::ok(id, result);
++        }
++    }
++    if fault == Some(ScreenshotNegativeControl::IgnoredMaxSide) && params.max_side.is_some() {
++        eprintln!("[negative-control] ignored max_side {:?}", params.max_side);
++        params.max_side = None;
++    }
+     let Some(resolution) = Resolution::new(
+         size,
+         native_scale,
+@@ -113,7 +149,19 @@ pub(crate) fn capture(
+         return Reply::error(id, ErrorCode::NotReady, "the window has no drawable size");
+     };
+     match renderer.capture_extended(frame, resolution.width, resolution.height, resolution.scale) {
+-        Ok(capture) => png_reply(id, &capture, resolution.scale, RESPONSE_CAP_BYTES as usize),
++        Ok(mut capture) => {
++            if fault == Some(ScreenshotNegativeControl::SwappedRedBlue) {
++                eprintln!("[negative-control] swapped red and blue in the rendered PNG");
++                for rgba in capture.rgba.chunks_exact_mut(4) {
++                    rgba.swap(0, 2);
++                }
++            }
++            let reply = png_reply(id, &capture, resolution.scale, RESPONSE_CAP_BYTES as usize);
++            if cacheable {
++                FIRST_DEFAULT_IMAGE.with(|entry| *entry.borrow_mut() = reply.result.clone());
++            }
++            reply
++        }
+         Err(error) => Reply::error(id, ErrorCode::RenderFailed, error.to_string()),
+     }
+ }

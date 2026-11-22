@@ -1,0 +1,14 @@
+case devtools-native ...
+  [DN1] devtools session file appears within 30 s: app pid, 127.0.0.1, mode 0600
+  [DN2] jet bridge session file coexists with its own endpoint and token
+  [DN3] wrong token and missing token → unauthorized, connection closed
+  [DN4] Devtools.capabilities over raw TCP
+  [DN5] DOM.snapshot on the same connection
+  [DN6] Action.activate check: mixed → checked → unchecked, seen in the next snapshots
+  [DN7] protocol errors keep the connection usable
+  [DN15] raw Page.screenshot: native viewport, PNG pixels, scale limit and fresh state
+case devtools-native ... FAILED after 1.4s: pixel 1,1: expected [20, 18, 24, 255], got [253, 247, 255, 255]
+  last step: DN15
+
+e2e result: 0 passed; 1 failed; 107 checks; artifacts in /private/tmp/surface-screenshot-negative.gicXmQVc/evidence/stale-default-image
+no case passed
