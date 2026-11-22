@@ -3,6 +3,8 @@ use surface::{Align, Color, Length, Node, Role, Style};
 use surface_app::{CursorStyle, View};
 pub mod adaptive;
 mod badge;
+mod bottom_sheet;
+mod bottom_sheet_motion;
 mod components;
 mod elevation;
 pub mod motion;
@@ -18,6 +20,11 @@ pub mod typography;
 mod vector_icon;
 mod wide_navigation_rail;
 pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
+pub use bottom_sheet::{
+    BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
+    BottomSheetState,
+};
+pub use bottom_sheet_motion::BottomSheetMotion;
 pub use components::{
     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
     FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,
