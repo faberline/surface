@@ -1,0 +1,12 @@
+case devtools-native ...
+  [DN1] devtools session file appears within 30 s: app pid, 127.0.0.1, mode 0600
+  [DN2] jet bridge session file coexists with its own endpoint and token
+  [DN3] wrong token and missing token → unauthorized, connection closed
+  [DN4] Devtools.capabilities over raw TCP
+  [DN25] raw Page.screenshot: native viewport, PNG pixels, scale limit and fresh state
+  [DN26] CLI screenshot outputs JSON or creates a private PNG once
+  [DN27] MCP page_screenshot returns a native PNG image
+  evidence: {"screenshot":{"format":"png","width":960,"height":800,"scale":1.0,"max_side":400,"colors_match":true,"reflects_theme_change":true,"cli_wrote_png_without_overwrite":true,"mcp_returned_image":true}}
+case devtools-native ... ok (7 steps, 128 checks, 2.2s)
+
+e2e result: 1 passed; 0 failed; 128 checks; artifacts in /tmp/surface-md3-screenshot-negative.46nJ9Hjr/scoped-evidence/baseline

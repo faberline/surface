@@ -1,0 +1,45 @@
+{
+  "final_source_manifest_sha256": "35432617227948815af94c72af575c408720442e56f57e182562bca4895af232",
+  "unzipped_source_patch_sha256": "1bb65698e01e5ee6030d8f1b50126278a42be04072bbbc27cb8e10f79d28814c",
+  "capture_and_metal_source_manifest_sha256": "fa6ccdfdc5cf1eed654ac3c7951ded91b6672524411d0c94c46bfd77bb8e2825",
+  "host": "Apple M1 Max, Metal, macOS 27.2.1 (26B131), rustc 1.96.1",
+  "workspace": {
+    "passed": 1409,
+    "failed": 0,
+    "ignored": 25,
+    "exit": 0
+  },
+  "metal_gpu": {
+    "passed": 12,
+    "failed": 0,
+    "ignored": 0,
+    "exit": 0
+  },
+  "feature_off": {
+    "command": "cap cargo tree --locked -p surface-platform --no-default-features -e normal",
+    "present": {
+      "png": false,
+      "surface-devtools-protocol": false
+    }
+  },
+  "final_combined_source_manifest_sha256": "6f4aaf1b707fc2cf9ea414b75f4b3102cf1360c456e8d82a04e6f2abbb8c5ce3",
+  "transport": {
+    "devtools-native": {
+      "steps": 27,
+      "checks": 353
+    },
+    "bridge-native": {
+      "steps": 23,
+      "checks": 95
+    },
+    "bridge-native-compact": {
+      "steps": 24,
+      "checks": 96
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 97
+    }
+  },
+  "transport_exit": 0
+}

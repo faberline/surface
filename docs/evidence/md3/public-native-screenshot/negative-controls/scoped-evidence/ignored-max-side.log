@@ -1,0 +1,11 @@
+case devtools-native ...
+  [DN1] devtools session file appears within 30 s: app pid, 127.0.0.1, mode 0600
+  [DN2] jet bridge session file coexists with its own endpoint and token
+  [DN3] wrong token and missing token → unauthorized, connection closed
+  [DN4] Devtools.capabilities over raw TCP
+  [DN25] raw Page.screenshot: native viewport, PNG pixels, scale limit and fresh state
+case devtools-native ... FAILED after 1.5s: max_side downscales: expected 400, got 960
+  last step: DN25
+
+e2e result: 0 passed; 1 failed; 61 checks; artifacts in /tmp/surface-md3-screenshot-negative.46nJ9Hjr/scoped-evidence/ignored-max-side
+no case passed

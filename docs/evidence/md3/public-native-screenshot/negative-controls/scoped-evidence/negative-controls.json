@@ -1,0 +1,81 @@
+{
+  "frozen_product_manifest_sha256": "fa6ccdfdc5cf1eed654ac3c7951ded91b6672524411d0c94c46bfd77bb8e2825",
+  "screenshot_assertions_unchanged": true,
+  "baseline": {
+    "exit_status": 0,
+    "steps": 7,
+    "checks": 128,
+    "light": {
+      "size": [
+        960,
+        800
+      ],
+      "pixel_1_1": [
+        253,
+        247,
+        255,
+        255
+      ],
+      "sha256": "56e24b4e527437a4ed3af1c85105d589d3f850edbc42b3a49f4e3087d21452dc"
+    },
+    "dark": {
+      "size": [
+        960,
+        800
+      ],
+      "pixel_1_1": [
+        20,
+        18,
+        24,
+        255
+      ],
+      "sha256": "af6a38594ba1a47a34b928aa27fcc7afa03dc2e37477ce377553131c8ff7d53b"
+    }
+  },
+  "swapped-red-blue": {
+    "exit_status": 1,
+    "step": "DN25",
+    "pixel": [
+      70,
+      476
+    ],
+    "expected": [
+      101,
+      85,
+      143,
+      255
+    ],
+    "actual": [
+      143,
+      85,
+      101,
+      255
+    ]
+  },
+  "stale-default-image": {
+    "exit_status": 1,
+    "step": "DN25",
+    "pixel": [
+      1,
+      1
+    ],
+    "expected": [
+      20,
+      18,
+      24,
+      255
+    ],
+    "actual": [
+      253,
+      247,
+      255,
+      255
+    ]
+  },
+  "ignored-max-side": {
+    "exit_status": 1,
+    "step": "DN25",
+    "requested": 400,
+    "actual": 960
+  }
+}
