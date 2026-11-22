@@ -1,0 +1,32 @@
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M1] Ready
+  [M2] radio arrows
+  [M3] segment manual focus, Space selects
+  [M4] check and switch
+  [M5] slider pointer and keys
+  [M6] light screenshot, theme → dark, dark screenshot
+  [M7] section 1
+  [M8] button updates on release
+  [M9] disabled action does nothing
+  [M10] filter chip on; input chip removed; screenshot
+  [M11] section 2, open dialog, textarea focused
+  [M12] insert draft; saved name unchanged
+  [M13] Escape closes dialog and restores focus
+  [M14] outside click dismisses without activating the tab
+  [M15] Tab through dialog with DOM host checks
+  [M16] three Tab / Shift+Tab cycles
+  [M17] dialog screenshot and DOM export
+  [M18] save the dialog
+  [M19] menu focus, arrows and Escape
+  [M20] 480×760 dialog fits; mobile screenshot
+  [M21] canvas corner click dismisses; section stays 2
+  [M22] no page errors; evidence JSON
+  evidence: {"check":"Checked","clicks":1,"dark":true,"dialog":false,"draft":"中文框架","enabled":true,"filter":true,"focused":"open-dialog","input_chip":false,"menu":false,"modal_wide_navigation_rail":{"actions":0,"dismissals":0,"open":false,"rail":0.0,"retain_inline":false,"rtl":false,"scrim":0.0,"scroll":null,"selected":"home","settling":false,"slide":0.0,"swipe":null,"swipe_settling":false,"text_scale":1.0},"name":"中文框架","nav":0,"radio":0,"section":2,"segment":1,"volume":100.0,"wide_navigation_rail":{"actions":0,"compact":true,"expanded":false,"mode":"bottom","rail":0.0,"rtl":false,"selected":"wide-rail-home","settling":false,"text_scale":1.0}}
+  [M24] inline rail reflows, keeps one selection, and hands focus to the compact bar
+  [M25] standalone modal follows mouse and touch swipes and releases at the right anchor
+  [M26] modal rail scrolls at 320×240 with 200% text and supports retained layout
+  [M27] Chrome keeps a named modal during drag and restores focus with Reduce Motion
+case material ... ok (26 steps, 328 checks, 11.5s)
+
+e2e result: 1 passed; 0 failed; 328 checks; artifacts in <batch>/browser-exact-1

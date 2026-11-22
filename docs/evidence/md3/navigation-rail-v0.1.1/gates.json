@@ -1,0 +1,43 @@
+{
+  "source_commit": "b58356033226e815c08566bdd1ed0dcf5589ee57",
+  "base_commit": "e9ada81387dc686b9a5257348e7e50c2410942e4",
+  "pull_request": "https://github.com/faberline/surface/pull/174",
+  "production_manifest_sha256": "a7397c5a8bfb3c47874d0105eb772f0014b1e1925ac70e16674f65c96f7e9e96",
+  "browser_fixture_manifest_sha256": "8d688a6c44c29edc5d7cf2a10ce41c518c1ce7840e59a16a9d3152efa0986656",
+  "native_replay_sha256": "c7b8397c7094ccd9ebc6bc2f3e028ebb1a53714ec69b88104d4e4adbcbdb2f20",
+  "workspace": {
+    "command": "cap sh scripts/check.sh",
+    "exit_status": 0,
+    "provenance": "passed",
+    "rustfmt": "passed",
+    "strict_clippy": "passed",
+    "wasm_checks": 3,
+    "rust_tests": {
+      "passed": 645,
+      "failed": 0,
+      "ignored": 6
+    }
+  },
+  "gpu_tests": {
+    "adapter": "Apple M1 Max Metal",
+    "tests": {
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "chrome_material": {
+    "browser": "Chrome 157.0.8103.79",
+    "steps": 26,
+    "checks": 328,
+    "failed": 0
+  },
+  "native_audit": {
+    "native_profiles": 6,
+    "pngs_with_matching_hash_and_size": 21,
+    "modal_profiles_with_trusted_appkit": 3,
+    "modal_profiles_sampled_during_closing": 3,
+    "uses_synthetic_winit_input": true,
+    "uses_scratch_only_page_screenshot": true
+  }
+}
