@@ -8,6 +8,7 @@ mod app_bar_search;
 mod badge;
 mod bottom_sheet;
 mod bottom_sheet_motion;
+mod card;
 mod carousel;
 mod carousel_layout;
 mod carousel_state;
@@ -38,6 +39,7 @@ pub use bottom_sheet::{
     BottomSheetState,
 };
 pub use bottom_sheet_motion::BottomSheetMotion;
+pub use card::{CardAction, CardContent, CardInteraction, MaterialCardOptions};
 pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientation};
 pub use carousel_layout::{CarouselLayout, CarouselSlot};
 pub use carousel_state::{CarouselInput, CarouselState};

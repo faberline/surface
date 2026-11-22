@@ -95,6 +95,8 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "no_box_shadows")]
     box_shadows: [BoxShadow; 2],
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    interaction_box_shadows: Option<Box<InteractionBoxShadows>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fill_contour: Option<crate::FillContour>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     current_page: Option<bool>,
@@ -139,6 +141,16 @@ pub struct Node {
     next_sibling: Option<NodeId>,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+struct InteractionBoxShadows {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    hovered: Option<[BoxShadow; 2]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pressed: Option<[BoxShadow; 2]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    focused: Option<[BoxShadow; 2]>,
+}
+
 fn no_box_shadows(layers: &[BoxShadow; 2]) -> bool {
     *layers == [BoxShadow::NONE; 2]
 }
@@ -148,6 +160,7 @@ impl Node {
         Self {
             stable_id: None,
             box_shadows: [BoxShadow::NONE; 2],
+            interaction_box_shadows: None,
             fill_contour: None,
             current_page: None,
             expanded: None,
@@ -188,6 +201,51 @@ impl Node {
     /// Return the authored drop shadows in paint order.
     pub fn box_shadow_layers(&self) -> [BoxShadow; 2] {
         self.box_shadows
+    }
+    /// Set two paint-only shadow layers for each interaction state. Pressed
+    /// wins over hovered, then focused. A missing override uses the base
+    /// shadows, as does a disabled node. Pass two [`BoxShadow::NONE`] layers
+    /// to remove the shadow in a state.
+    pub fn interaction_box_shadows(
+        mut self,
+        hovered: Option<[BoxShadow; 2]>,
+        pressed: Option<[BoxShadow; 2]>,
+        focused: Option<[BoxShadow; 2]>,
+    ) -> Self {
+        self.interaction_box_shadows =
+            (hovered.is_some() || pressed.is_some() || focused.is_some()).then(|| {
+                Box::new(InteractionBoxShadows {
+                    hovered,
+                    pressed,
+                    focused,
+                })
+            });
+        self
+    }
+
+    pub(crate) fn presented_box_shadow_layers(
+        &self,
+        id: NodeId,
+        focused: Option<NodeId>,
+        interaction: crate::InteractionState,
+    ) -> [BoxShadow; 2] {
+        let Some(layers) = self
+            .interaction_box_shadows
+            .as_deref()
+            .filter(|_| !self.disabled)
+        else {
+            return self.box_shadows;
+        };
+        let active = if interaction.pressed == Some(id) {
+            layers.pressed
+        } else if interaction.hovered == Some(id) {
+            layers.hovered
+        } else if focused == Some(id) {
+            layers.focused
+        } else {
+            None
+        };
+        active.unwrap_or(self.box_shadows)
     }
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());

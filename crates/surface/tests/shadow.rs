@@ -1,7 +1,8 @@
 use std::collections::BTreeMap;
 use surface::{
-    BoxShadow, Color, ComputedDom, Corners, DisplayList, Insets, InteractionState, LayoutEngine,
-    Length, MicroDom, Node, NodeId, PaintOp, Role, Style, TextMeasurer,
+    BoxShadow, Color, ComputedDom, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp,
+    Insets, InteractionState, LayoutEngine, Length, MicroDom, Node, NodeId, PaintOp, Role, Style,
+    TextMeasurer,
 };
 
 struct Metrics;
@@ -24,6 +25,13 @@ fn at(x: f32, y: f32) -> Insets {
 }
 
 fn scene(caster_y: f32, shadows: [BoxShadow; 2]) -> (MicroDom, NodeId, NodeId) {
+    interaction_scene(
+        caster_y,
+        Node::new(Role::Button, "Caster").box_shadows(shadows),
+    )
+}
+
+fn interaction_scene(caster_y: f32, node: Node) -> (MicroDom, NodeId, NodeId) {
     let mut dom = MicroDom::new(Node::new(Role::Window, "Window"));
     let clipper = dom
         .append(
@@ -40,18 +48,15 @@ fn scene(caster_y: f32, shadows: [BoxShadow; 2]) -> (MicroDom, NodeId, NodeId) {
     let caster = dom
         .append(
             clipper,
-            Node::new(Role::Button, "Caster")
-                .id("caster")
-                .box_shadows(shadows)
-                .styled(
-                    Style::row()
-                        .absolute(at(18., caster_y))
-                        .width(Length::Px(48.))
-                        .height(Length::Px(48.))
-                        .corners(Corners::new(8., 4., 12., 0.))
-                        .background(FACE)
-                        .clip(true),
-                ),
+            node.id("caster").styled(
+                Style::row()
+                    .absolute(at(18., caster_y))
+                    .width(Length::Px(48.))
+                    .height(Length::Px(48.))
+                    .corners(Corners::new(8., 4., 12., 0.))
+                    .background(FACE)
+                    .clip(true),
+            ),
         )
         .unwrap();
     (dom, clipper, caster)
@@ -78,6 +83,118 @@ fn stroke_width(op: &PaintOp) -> Option<f32> {
         PaintOp::Stroke { width, .. } | PaintOp::ShapeStroke { width, .. } => Some(*width),
         _ => None,
     }
+}
+
+#[test]
+fn interaction_shadows_follow_actual_state_in_both_paint_lists() {
+    let rest = Color::rgb(40, 60, 90);
+    let hover = Color::rgb(70, 60, 90);
+    let press = Color::rgb(100, 60, 90);
+    let focus = Color::rgb(130, 60, 90);
+    let layers = |color| [BoxShadow::new(0., 2., 0., 0., color), BoxShadow::NONE];
+    let node = Node::new(Role::Button, "Caster")
+        .box_shadows(layers(rest))
+        .interaction_box_shadows(
+            Some(layers(hover)),
+            Some(layers(press)),
+            Some(layers(focus)),
+        );
+
+    for (hovered, pressed, focused, disabled, expected) in [
+        (false, false, false, false, rest),
+        (false, false, true, false, focus),
+        (true, false, true, false, hover),
+        (true, true, true, false, press),
+        (true, true, true, true, rest),
+    ] {
+        let (dom, _, caster) = interaction_scene(8., node.clone().disabled(disabled));
+        let geometry = compute(&dom);
+        let interaction = InteractionState {
+            hovered: hovered.then_some(caster),
+            pressed: pressed.then_some(caster),
+        };
+        let focused = focused.then_some(caster);
+        let decorations = BTreeMap::new();
+        let (legacy, owners) =
+            DisplayList::compile_attributed(&dom, &geometry, focused, &decorations, interaction);
+        let (extended, extended_owners) = ExtendedDisplayList::compile_attributed(
+            &dom,
+            &geometry,
+            focused,
+            &decorations,
+            interaction,
+        );
+        assert_eq!(color(&legacy.ops[0]), expected);
+        assert_eq!(owners[0], caster);
+        assert_eq!(owners, extended_owners);
+        assert_eq!(
+            extended.into_ops(),
+            legacy
+                .ops
+                .into_iter()
+                .map(ExtendedPaintOp::Legacy)
+                .collect::<Vec<_>>()
+        );
+    }
+}
+
+#[test]
+fn a_state_shadow_changes_damage_without_changing_geometry() {
+    let base = [
+        BoxShadow::new(0., 2., 0., 0., Color::rgb(10, 20, 30)),
+        BoxShadow::NONE,
+    ];
+    let hover = [
+        BoxShadow::new(-12., 2., 0., 0., Color::rgb(10, 20, 30)),
+        BoxShadow::NONE,
+    ];
+    let (plain, _, _) = scene(8., base);
+    let node = Node::new(Role::Button, "Caster")
+        .box_shadows(base)
+        .interaction_box_shadows(Some(hover), None, Some(NO_SHADOW));
+    let (dom, _, caster) = interaction_scene(8., node);
+    let geometry = compute(&dom);
+    assert_eq!(geometry, compute(&plain));
+    let base_frame = DisplayList::compile(&dom, &geometry, None);
+    assert_eq!(base_frame, DisplayList::compile(&plain, &geometry, None));
+    let shadow_frame = |hovered, pressed| {
+        DisplayList::compile_with_interaction(
+            &dom,
+            &geometry,
+            None,
+            &BTreeMap::new(),
+            InteractionState { hovered, pressed },
+        )
+    };
+    let highlighted = shadow_frame(Some(caster), None);
+    assert_eq!(shadow_frame(Some(caster), Some(caster)), base_frame);
+    let bounds = geometry.nodes[caster.index()].bounds;
+    let new_halo = (bounds.x - 10., bounds.y + 12.);
+    for damage in [
+        highlighted.damage(&base_frame),
+        base_frame.damage(&highlighted),
+    ] {
+        assert!(damage
+            .iter()
+            .any(|rect| rect.contains(new_halo.0, new_halo.1)));
+    }
+    let focused_without_shadow = DisplayList::compile(&dom, &geometry, Some(caster));
+    assert_eq!(color(&focused_without_shadow.ops[0]), FACE);
+}
+
+#[test]
+fn interaction_overrides_round_trip_and_absent_overrides_keep_legacy_json() {
+    let plain = Node::new(Role::Dialog, "Card");
+    let legacy = serde_json::to_string(&plain).unwrap();
+    assert!(!legacy.contains("interaction_box_shadows"));
+    let decoded: Node = serde_json::from_str(&legacy).unwrap();
+    assert_eq!(decoded, plain);
+    let cleared = decoded.clone().interaction_box_shadows(None, None, None);
+    assert_eq!(serde_json::to_string(&cleared).unwrap(), legacy);
+    let styled = decoded.interaction_box_shadows(Some(NO_SHADOW), None, None);
+    let wire = serde_json::to_string(&styled).unwrap();
+    assert!(wire.contains("interaction_box_shadows"));
+    assert_eq!(serde_json::from_str::<Node>(&wire).unwrap(), styled);
 }
 
 #[test]

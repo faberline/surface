@@ -1,6 +1,7 @@
 mod app_bar_demo;
 mod badge_demo;
 mod bottom_sheet_demo;
+mod card_demo;
 mod carousel_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
@@ -15,6 +16,7 @@ mod wide_navigation_rail_demo;
 use app_bar_demo::{AppBarDemo, AppBarEvent};
 use badge_demo::{BadgeDemo, BadgeEvent};
 use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
+use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
@@ -61,6 +63,7 @@ pub struct Gallery {
     progress_demo: ProgressDemo,
     side_sheet_demo: SideSheetDemo,
     bottom_sheet_demo: BottomSheetDemo,
+    card_demo: CardDemo,
     carousel_demo: CarouselDemo,
     app_bar_demo: AppBarDemo,
     toolbar_demo: ToolbarDemo,
@@ -96,6 +99,7 @@ impl Default for Gallery {
             progress_demo: ProgressDemo::default(),
             side_sheet_demo: SideSheetDemo::default(),
             bottom_sheet_demo: BottomSheetDemo::default(),
+            card_demo: CardDemo::default(),
             carousel_demo: CarouselDemo::default(),
             app_bar_demo: AppBarDemo::default(),
             toolbar_demo: ToolbarDemo::default(),
@@ -117,6 +121,7 @@ pub enum Message {
     Progress(ProgressEvent),
     SideSheet(SideSheetEvent),
     BottomSheet(BottomSheetEvent),
+    Card(CardEvent),
     Carousel(CarouselEvent),
     AppBar(AppBarEvent),
     Toolbar(ToolbarEvent),
@@ -154,6 +159,9 @@ impl Application for Gallery {
         }
         if self.bottom_sheet_demo.visible() {
             return self.bottom_sheet_demo.text_scale();
+        }
+        if self.card_demo.visible() {
+            return self.card_demo.text_scale();
         }
         if self.carousel_demo.visible() {
             return self.carousel_demo.text_scale();
@@ -215,6 +223,7 @@ impl Application for Gallery {
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
+        self.card_demo.frame(&frame);
         let inline = self.wide_rail_demo.frame(&frame);
         let modal = self.modal_wide_rail_demo.frame(&frame);
         let snackbar = self.snackbar_demo.frame(&frame);
@@ -265,6 +274,9 @@ impl Application for Gallery {
                 if i != bottom_sheet_demo::SECTION {
                     self.bottom_sheet_demo.leave();
                 }
+                if i != card_demo::SECTION {
+                    self.card_demo.leave();
+                }
                 if i != carousel_demo::SECTION {
                     self.carousel_demo.leave();
                 }
@@ -289,6 +301,7 @@ impl Application for Gallery {
             Message::Progress(event) => self.progress_demo.update(event),
             Message::SideSheet(event) => self.side_sheet_demo.update(event),
             Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
+            Message::Card(event) => self.card_demo.update(event),
             Message::Carousel(event) => self.carousel_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
             Message::Toolbar(event) => self.toolbar_demo.update(event),
@@ -346,6 +359,9 @@ impl Application for Gallery {
         }
         if self.bottom_sheet_demo.visible() {
             return self.bottom_sheet_demo.view(&t, self.dark);
+        }
+        if self.card_demo.visible() {
+            return self.card_demo.view(&t, self.dark);
         }
         if self.carousel_demo.visible() {
             return self.carousel_demo.view(&t, self.dark);
@@ -836,6 +852,7 @@ impl Application for Gallery {
                 children.push(self.snackbar_demo.card(&t));
             }
             _ => {
+                children.push(CardDemo::show_button(&t));
                 children.push(self.badge_demo.card(&t));
                 let swatch = |id: &str, text: &str, background: Color, foreground: Color| {
                     View::new(
@@ -976,6 +993,7 @@ mod web {
             "progress": s.progress_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "side_sheet": s.side_sheet_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "bottom_sheet": s.bottom_sheet_demo.inspect(),
+            "cards": s.card_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
