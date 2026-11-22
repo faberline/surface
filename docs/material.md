@@ -149,6 +149,7 @@ does not change application state.
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
 | `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
 | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
+| `fab_menu` | Native floating actions or an anchored Web menu with one stable FAB, caller-owned open state, and focus return |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
@@ -321,6 +322,43 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## FAB menus
+
+Use `Theme::fab_menu` with a stable ID, the viewport, the trigger size,
+localized names, and the app's open state. Place the returned view at
+the original FAB location. The view reserves that square while the menu
+is open. Supply two to six related actions, each with a stable ID and an
+application message. The toggle, dismissal, and command messages let the
+application update the open state.
+
+Choose `NativeFloating` for the floating action pills. The square FAB
+changes into a round close button at the original top trailing corner.
+The close button is the first focus target. Tab moves from it through
+the enabled items in visual order. The list can scroll within a short
+viewport. It starts with the nearest action visible. Escape, outside
+input, the close button, and a chosen action can dismiss the menu.
+
+Choose `WebAnchored` for the conventional menu. The same square FAB
+reports its popup and expanded state. Focus starts at the first enabled
+item. ArrowDown without modifiers opens it. Arrow keys move between
+items. Tab and Shift+Tab dismiss the menu and continue from its opener.
+
+Keep one `FabMenuMotion` per menu. Pass the current open state and item
+IDs in visual order to `advance` from the detailed frame input callback.
+The retained state measures the original anchor. Floating items enter
+nearest to the close button first. Reduce Motion uses the settled
+geometry. Use `fab_menu_edge_margin` for the 16 or 24 dp placement margin.
+
+In Material Gallery, choose 動作, then 浮動動作選單. The scene selects the
+presentation for the platform. It also lets you switch presentations
+and place the Web anchor near the top or bottom.
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
+
+[Official FAB Menu specs](https://m3.material.io/components/fab-menu/specs) ·
+[Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.1a076cec8bc202c2.json) ·
+[FAB Menu accessibility](https://m3.material.io/components/fab-menu/accessibility) ·
+[Pinned Compose FAB Menu](https://github.com/androidx/androidx/blob/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButtonMenu.kt)
 
 ## Expressive icon floating action buttons
 

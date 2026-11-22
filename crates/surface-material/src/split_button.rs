@@ -724,7 +724,32 @@ fn render_menu<M: Clone + 'static>(
         (menu.items.len() as f32 * TOUCH + 2. * MENU_PADDING).max(motion.desired_menu_height());
     let position =
         place_split_button_popup(anchor, (MENU_WIDTH, desired_height), options.direction)?;
-    let id = options.id;
+    let panel = anchored_menu(
+        theme,
+        options.id,
+        menu.label,
+        position,
+        options.direction,
+        menu.items,
+    )
+    .modal_overlay(menu.on_dismiss)
+    .dismiss_modal_on_tab()
+    .modal_focus_fallback(fallback);
+    Some(if let Some(last) = options.restore_focus_to {
+        panel.restore_focus_in_subtree_on_removal(last)
+    } else {
+        panel
+    })
+}
+
+pub(super) fn anchored_menu<'a, M>(
+    theme: &Theme,
+    id: &str,
+    label: &str,
+    position: Rect,
+    direction: LayoutDirection,
+    items: impl IntoIterator<Item = SplitButtonMenuItem<'a, M>>,
+) -> View<M> {
     let content = View::new(
         Node::new(Role::Group, "")
             .id(format!("{id}-menu-content"))
@@ -735,12 +760,12 @@ fn render_menu<M: Clone + 'static>(
             ),
     )
     .children(
-        menu.items
+        items
             .into_iter()
-            .map(|item| menu_item(theme, options.direction, item)),
+            .map(|item| menu_item(theme, direction, item)),
     );
-    let panel = View::new(
-        Node::new(Role::Menu, menu.label)
+    View::new(
+        Node::new(Role::Menu, label)
             .id(format!("{id}-menu"))
             .tab_index(-1)
             .styled(menu_style(theme, position))
@@ -749,14 +774,6 @@ fn render_menu<M: Clone + 'static>(
     .children([content])
     .roving(Roving::vertical(false))
     .accessibility_scroll_pages()
-    .modal_overlay(menu.on_dismiss)
-    .dismiss_modal_on_tab()
-    .modal_focus_fallback(fallback);
-    Some(if let Some(last) = options.restore_focus_to {
-        panel.restore_focus_in_subtree_on_removal(last)
-    } else {
-        panel
-    })
 }
 
 fn menu_style(theme: &Theme, rect: Rect) -> Style {

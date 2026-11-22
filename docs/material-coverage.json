@@ -35,10 +35,12 @@
     {
       "id": "fab-menu",
       "spec": "https://m3.material.io/components/fab-menu/overview",
-      "status": "pending",
+      "status": "partial",
+      "implemented": "A stable FAB trigger with native floating pills and a Web anchored menu. Three palettes, three trigger sizes, keyboard and outside dismissal, focus restoration, clipped scrolling, responsive RTL and reduced motion. System high contrast, physical touch and live screen-reader speech remain open.",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Native headless Metal checks 36 size, palette, theme and count profiles, fixed placement, focus, and 320 dp dark RTL at 200% Chinese text. Two replays reproduced ten PNGs across Page.screenshot, CLI and MCP with zero visible windows. https://github.com/faberline/surface/tree/2a72a95dcc0eb8f36bdd736e6815f9c37372dc1d/docs/evidence/md3/fab-menu-v0.1.17",
+      "web_evidence": "Chrome WebGPU M106–M111 verifies the anchored and floating forms, focus and outside input, fully painted wrapped text and focus rings, ordered entry and exit, reversal and reduced motion. https://github.com/faberline/surface/tree/2a72a95dcc0eb8f36bdd736e6815f9c37372dc1d/docs/evidence/md3/fab-menu-v0.1.17",
+      "unit_evidence": "Material tests cover token geometry and color, two through six actions, the Web keyboard opener and focus fallback, compact scrolling, and motion reversal."
     },
     {
       "id": "floating-action-button",
