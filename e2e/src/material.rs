@@ -4,6 +4,8 @@
 
 #[path = "material_badge.rs"]
 mod material_badge;
+#[path = "material_drawer.rs"]
+mod material_drawer;
 #[path = "material_rail.rs"]
 mod material_rail;
 #[path = "material_snackbar.rs"]
@@ -19,7 +21,7 @@ use crate::{check, check_eq, Env};
 pub const STEPS: &[&str] = &[
     "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13", "M14", "M15",
     "M16", "M17", "M18", "M19", "M20", "M21", "M22", "M24", "M25", "M26", "M27", "M28", "M29",
-    "M30", "M31", "M32", "M33", "M34", "M35",
+    "M30", "M31", "M32", "M33", "M34", "M35", "M36", "M37", "M38", "M39", "M40",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -94,7 +96,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     }
     result?;
     material_snackbar::run(env, chrome, &url).await?;
-    material_badge::run(env, chrome, &url).await
+    material_badge::run(env, chrome, &url).await?;
+    material_drawer::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

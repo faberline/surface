@@ -1,11 +1,13 @@
 mod badge_demo;
 mod modal_wide_navigation_rail_demo;
+mod navigation_drawer_demo;
 mod rail_icons;
 mod snackbar_demo;
 mod wide_navigation_rail_demo;
 
 use badge_demo::{BadgeDemo, BadgeEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
+use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{AnimationFrame, AnimationUpdate, Application, View};
@@ -39,6 +41,7 @@ pub struct Gallery {
     modal_wide_rail_demo: ModalWideRailDemo,
     snackbar_demo: SnackbarDemo,
     badge_demo: BadgeDemo,
+    drawer_demo: DrawerDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -66,6 +69,7 @@ impl Default for Gallery {
             modal_wide_rail_demo: ModalWideRailDemo::default(),
             snackbar_demo: SnackbarDemo::default(),
             badge_demo: BadgeDemo::default(),
+            drawer_demo: DrawerDemo::default(),
         }
     }
 }
@@ -79,6 +83,7 @@ pub enum Message {
     Snackbar(SnackbarEvent),
     Badge(BadgeEvent),
     Drawer(usize),
+    DrawerDemo(DrawerDemoEvent),
     Nav(usize),
     Theme,
     Radio(usize),
@@ -101,6 +106,9 @@ impl Application for Gallery {
         "Surface · Material gallery"
     }
     fn text_scale(&self) -> f32 {
+        if self.drawer_demo.visible() {
+            return self.drawer_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -113,15 +121,21 @@ impl Application for Gallery {
     fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
-        self.section == wide_navigation_rail_demo::SECTION && (inline || modal)
+        let drawer = self.drawer_demo.viewport_changed(width, height);
+        (self.section == wide_navigation_rail_demo::SECTION && (inline || modal))
+            || (self.drawer_demo.visible() && drawer)
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
         let inline = self.wide_rail_demo.frame(&frame);
         let modal = self.modal_wide_rail_demo.frame(&frame);
         let snackbar = self.snackbar_demo.frame(&frame);
+        let drawer = self.drawer_demo.frame(&frame);
         AnimationUpdate {
-            rebuild: inline.rebuild || modal.rebuild || snackbar.rebuild,
-            request_next: inline.request_next || modal.request_next || snackbar.request_next,
+            rebuild: inline.rebuild || modal.rebuild || snackbar.rebuild || drawer.rebuild,
+            request_next: inline.request_next
+                || modal.request_next
+                || snackbar.request_next
+                || drawer.request_next,
         }
     }
     fn update(&mut self, m: Message) {
@@ -131,6 +145,9 @@ impl Application for Gallery {
                 if i != modal_wide_navigation_rail_demo::SECTION {
                     self.modal_wide_rail_demo.close();
                 }
+                if i != navigation_drawer_demo::SECTION {
+                    self.drawer_demo.leave();
+                }
             }
             Message::Rail(i) => self.rail = i,
             Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
@@ -139,6 +156,7 @@ impl Application for Gallery {
             Message::Snackbar(event) => self.snackbar_demo.update(event),
             Message::Badge(event) => self.badge_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
+            Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
@@ -181,6 +199,9 @@ impl Application for Gallery {
             selected,
             disabled: false,
         };
+        if self.drawer_demo.visible() {
+            return self.drawer_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -641,6 +662,7 @@ impl Application for Gallery {
                                 false,
                                 Message::Sheet(true),
                             ),
+                            self.drawer_demo.show_button(&t),
                         ]),
                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
                     ],
@@ -783,7 +805,8 @@ mod web {
             "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
             "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime),
             "snackbar": s.snackbar_demo.inspect(s.text_scale()),
-            "badges": s.badge_demo.inspect(s.text_scale(), s.dark)
+            "badges": s.badge_demo.inspect(s.text_scale(), s.dark),
+            "navigation_drawer": s.drawer_demo.inspect(s.text_scale(), &runtime)
         }).to_string()
     })
     }

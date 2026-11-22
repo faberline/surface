@@ -240,6 +240,50 @@ and the [AndroidX badge tokens](https://android.googlesource.com/platform/framew
 The [pinned AndroidX placement](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Badge.kt#104)
 sets the overlap with the top and trailing edges.
 
+## Navigation drawers
+
+Build destinations with `Theme::navigation_drawer_item_with_icon`. Give
+each one a stable ID, a localized label and a vector icon. Use
+`ChoiceState` to mark the current page and disabled destinations. The
+current page stays under application control. Set the same
+`LayoutDirection` on the drawer and its destinations.
+
+`Theme::standard_navigation_drawer_layout` places the drawer at logical
+start and leaves the rest of the space for the main content. Choose
+`StandardNavigationDrawerMode::Permanent` for an always-visible drawer.
+For `Dismissible`, keep the open flag in application state and pass the
+toggle's stable ID as `restore_focus_to`. Mark the toggle with
+`View::disclosure_expanded`. Closing the drawer restores focus to the
+toggle when a removed destination held it. Main content stays active
+while the drawer is open. Use `standard_navigation_drawer_sheet` for
+layouts where the application allocates the drawer's column.
+
+`Theme::modal_navigation_drawer_with_direction` places a dialog above the
+page. Keep a button to open it. Remove the dialog when you receive its
+dismiss message from Close, Escape or the scrim. The drawer keeps
+keyboard focus inside the dialog and restores the opener's focus when it
+closes. For either drawer, Up and Down move among enabled destinations.
+The destination list scrolls to reveal focus.
+
+To allow horizontal swipes, keep a `NavigationDrawerSwipe` in application
+state and mount `Theme::swipeable_modal_navigation_drawer` after the page
+content. Feed it the logical viewport through `set_viewport`, and the
+drag messages through `apply`. In `Application::animation_frame`, pass
+the frame clock and Reduce Motion flag to `advance`. Return its
+`AnimationUpdate` and apply any new open flag it returns. Call `reset`
+on explicit open, close or direction changes. The swipe uses the
+24 dp logical start edge when closed. The static modal builder leaves
+that edge free for the host.
+
+In Material Gallery, choose 浮層, then 導覽抽屜. The preview offers permanent,
+dismissible and modal drawers, right-to-left placement, dark mode and
+200% text. The 360 dp panel cap, 56 dp destination, 24 dp icon, logical
+corners and color roles follow the [AndroidX drawer tokens](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/NavigationDrawerTokens.kt).
+The swipe uses the 50% position threshold, 400 dp/s velocity threshold
+and 256 ms duration from the pinned [AndroidX drawer implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/NavigationDrawer.kt).
+Reduce Motion settles immediately. The older drawer builders remain
+available.
+
 ## Motion
 
 `surface_material::motion` holds the Material 3 motion tokens, copied from
