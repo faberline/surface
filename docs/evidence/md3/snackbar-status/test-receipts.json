@@ -1,0 +1,118 @@
+{
+  "source": {
+    "base_github_commit": "2725afd021230fd73df20582098a2587d2149a20",
+    "tree_paths": 658,
+    "original_forward_paths": 10,
+    "source_recovery_diff_empty": true,
+    "forward_roundtrip": true
+  },
+  "rust": {
+    "filename": "snackbar-workspace-verified.log",
+    "sha256": "0f626c0dc96badc290e58a9125cc5633d41955c539b75c80f0f980204ff647e5",
+    "passed": 1374,
+    "failed": 0,
+    "ignored": 25,
+    "exit": 0,
+    "command": "sh scripts/check.sh"
+  },
+  "chrome_focused": {
+    "filename": "snackbar-browser-status-focused.log",
+    "sha256": "cc987f7eca2b81465681a15d0847c14080bfe16d226958ce74ca1167d4a8729e",
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 156,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 1,
+        "checks": 104
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 1,
+        "checks": 52
+      }
+    ],
+    "exit": 0
+  },
+  "chrome_full": {
+    "filename": "snackbar-browser-status-full.log",
+    "sha256": "e71e7db12ee6f0b32c1cb41be8649c18ce7a7ea92f825afb79f9cc200e1cf64a",
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 24515,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 175,
+        "checks": 20602
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 65,
+        "checks": 3913
+      }
+    ],
+    "exit": 0
+  },
+  "runtime_receipt_digests": [
+    {
+      "filename": "native-snackbar/native-audit.json",
+      "sha256": "3305f730205b2f6871f7eb9fdd9e6cad422209aaf813d59d7340c46b83a50518"
+    },
+    {
+      "filename": "native-snackbar/final-evidence.sha256",
+      "sha256": "d31b0d0a0d915741fe1eff2f47c4d044cee2780d2b3077e142ae72c285b1f875"
+    },
+    {
+      "filename": "snackbar-browser-receipt.md",
+      "sha256": "12608e4084bbbfd2db22ceeaca604442b227f9c73990f4dcc9791c74c1d0e97b"
+    },
+    {
+      "filename": "snackbar-browser-artifacts.sha256",
+      "sha256": "b3e32dc740a47a3106b856741d2069cc4642d475e76a35771183ab197152487d"
+    }
+  ],
+  "historical_capture_matches": [
+    {
+      "png": "native-light-action.png",
+      "sha256": "68ad1e2d9291aedbf7c1bdc0396290c059852d1326fd1e8595cf6024ca751ed0",
+      "dimensions": [
+        960,
+        800
+      ]
+    },
+    {
+      "png": "native-dark-200-action.png",
+      "sha256": "74ec57cce444bda083466d1e5af0a91d868f8283cd79547c23b965fdb297de33",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    {
+      "png": "native-dark-200-after-undo.png",
+      "sha256": "64cb23739323f39846a8a48ba0ec2a0299d132973ecc67b2c093b2ff6d2b9c4e",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    {
+      "png": "native-dark-200-mcp.png",
+      "sha256": "74ec57cce444bda083466d1e5af0a91d868f8283cd79547c23b965fdb297de33",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    {
+      "png": "web-dark-200-close.png",
+      "sha256": "cfed2df6c9604a0017e2ff07aaf5ddf93c82c151a59f72d49010dfa30e00bd42",
+      "dimensions": [
+        640,
+        1008
+      ]
+    }
+  ]
+}
