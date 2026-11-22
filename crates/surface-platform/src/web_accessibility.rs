@@ -1,4 +1,5 @@
 //! Publish the canvas's current semantic tree to the browser.
+mod live_status;
 mod semantics;
 
 use crate::{key_route, UserEvent};
@@ -44,6 +45,7 @@ struct Published {
     generation: AccessibilityFrameId,
     visible: BTreeSet<NodeId>,
     editor: Option<NodeId>,
+    tree: Element,
 }
 
 pub(crate) struct WebAccessibility {
@@ -51,6 +53,7 @@ pub(crate) struct WebAccessibility {
     document: Document,
     targets: Rc<RefCell<BTreeMap<usize, Target>>>,
     published: Option<Published>,
+    live_status: live_status::LiveStatus,
     follow_focus: bool,
     projecting_focus: Rc<RefCell<Option<Element>>>,
     listeners: Vec<(&'static str, EventListener)>,
@@ -73,11 +76,14 @@ impl WebAccessibility {
                 "opacity:0;white-space:nowrap;pointer-events:none",
             ),
         )?;
+        let live_status = live_status::LiveStatus::new(browser, &document)?;
+        live_status.mount(&root)?;
         let mut bridge = Self {
             root,
             document,
             targets: Rc::default(),
             published: None,
+            live_status,
             follow_focus: false,
             projecting_focus: Rc::default(),
             listeners: Vec::new(),
@@ -168,8 +174,17 @@ impl WebAccessibility {
         canvas: &HtmlCanvasElement,
     ) -> Result<(), JsValue> {
         let generation = frame.generation();
+        let same_generation = self
+            .published
+            .as_ref()
+            .is_some_and(|old| old.generation == generation);
         let mut visible = BTreeSet::new();
         collect_visible(frame, frame.root(), &mut visible);
+        let statuses = visible
+            .iter()
+            .filter_map(|id| live_status::message(frame, *id))
+            .map(|(key, text)| (key.to_owned(), text.to_owned()))
+            .collect();
         let focused = frame.focused();
         let editor = focused.filter(|id| {
             frame
@@ -191,15 +206,29 @@ impl WebAccessibility {
                 editor,
                 &mut targets,
             )?;
-            self.root.set_text_content(None);
-            self.root.append_child(&tree)?;
+            // Put the live region inside the active modal. A browser may
+            // prune accessibility content outside an aria-modal dialog.
+            self.live_status.mount(if frame.modal_root().is_some() {
+                &tree
+            } else {
+                &self.root
+            })?;
+            if let Some(old) = &self.published {
+                self.root.replace_child(&tree, &old.tree)?;
+            } else {
+                self.root
+                    .insert_before(&tree, self.root.first_child().as_ref())?;
+            }
             *self.targets.borrow_mut() = targets;
             self.published = Some(Published {
                 generation,
                 visible,
                 editor,
+                tree,
             });
         }
+        self.live_status
+            .publish(frame, &statuses, same_generation)?;
         if keep_focus {
             let destination = focused
                 .and_then(|id| {
@@ -278,6 +307,11 @@ fn project<M>(
         frame.modal_root() == Some(id),
         children.is_empty(),
     )?;
+    if live_status::message(frame, id).is_some() {
+        // Keep this status readable where it was authored. The persistent
+        // region delivers text changes without re-announcing the new tree.
+        element.set_attribute("aria-live", "off")?;
+    }
     if let Some(stable_id) = source.node.stable_id() {
         element.set_attribute("data-surface-id", stable_id)?;
     }

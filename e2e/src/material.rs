@@ -4,6 +4,8 @@
 
 #[path = "material_rail.rs"]
 mod material_rail;
+#[path = "material_snackbar.rs"]
+mod material_snackbar;
 
 use anyhow::Result;
 use serde_json::{json, Value};
@@ -14,7 +16,8 @@ use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
     "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13", "M14", "M15",
-    "M16", "M17", "M18", "M19", "M20", "M21", "M22", "M24", "M25", "M26", "M27",
+    "M16", "M17", "M18", "M19", "M20", "M21", "M22", "M24", "M25", "M26", "M27", "M28", "M29",
+    "M30", "M31",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -87,7 +90,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
         let _ = env.write_json("material-failure.json", &dump);
         let _ = tab.screenshot(&env.artifact("material-failure.png")).await;
     }
-    result
+    result?;
+    material_snackbar::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

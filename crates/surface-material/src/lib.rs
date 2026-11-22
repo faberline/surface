@@ -6,6 +6,8 @@ mod components;
 mod elevation;
 pub mod motion;
 pub mod shape;
+mod snackbar;
+mod snackbar_state;
 mod tokens;
 pub mod typography;
 mod vector_icon;
@@ -15,6 +17,8 @@ pub use components::{
     IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition,
 };
 pub use elevation::Elevation;
+pub use snackbar::SnackbarOptions;
+pub use snackbar_state::{SnackbarDuration, SnackbarId, SnackbarQueue};
 pub use tokens::ColorScheme;
 pub use vector_icon::VectorIcon;
 pub use wide_navigation_rail::{

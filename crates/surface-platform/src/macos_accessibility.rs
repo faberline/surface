@@ -1,7 +1,7 @@
 //! Project the current application scope into the macOS accessibility tree.
 use accesskit::{
-    Action, ActionData, ActionRequest, AriaCurrent, Node, NodeId, Rect, Role, ScrollUnit, Toggled,
-    TreeId, TreeInfo, TreeUpdate,
+    Action, ActionData, ActionRequest, AriaCurrent, Live, Node, NodeId, Rect, Role, ScrollUnit,
+    Toggled, TreeId, TreeInfo, TreeUpdate,
 };
 use std::collections::BTreeMap;
 use surface::{NodeId as SurfaceId, Role as SurfaceRole};
@@ -32,6 +32,8 @@ pub(crate) struct Tree {
     generation: Option<AccessibilityFrameId>,
     ids: BTreeMap<SurfaceId, NodeId>,
     scroll_ids: BTreeMap<SurfaceId, NodeId>,
+    status_ids: BTreeMap<String, NodeId>,
+    modal_status_scope: Option<Option<String>>,
     targets: BTreeMap<NodeId, Targets>,
 }
 
@@ -40,6 +42,8 @@ impl Tree {
         self.generation = None;
         self.ids.clear();
         self.scroll_ids.clear();
+        self.status_ids.clear();
+        self.modal_status_scope = None;
         self.targets.clear();
     }
 
@@ -53,9 +57,18 @@ impl Tree {
         let same_generation = self.generation.as_ref() == Some(&generation);
         let root = frame.root();
         let modal = frame.modal_root();
+        let status_scope = modal.map(|id| frame.node(id).and_then(|node| node.node.stable_id()));
+        let same_status_scope = match status_scope {
+            None => self.modal_status_scope.is_none(),
+            Some(Some(key)) => {
+                self.modal_status_scope.as_ref().and_then(Option::as_deref) == Some(key)
+            }
+            Some(None) => same_generation && self.modal_status_scope == Some(None),
+        };
 
         let mut ids = BTreeMap::new();
         let mut scroll_ids = BTreeMap::new();
+        let mut status_ids = BTreeMap::new();
         let mut targets = BTreeMap::new();
         let mut nodes = Vec::new();
         let mut stack = vec![(root, false)];
@@ -81,10 +94,46 @@ impl Tree {
             let mut node = describe(&source);
             let focus = frame.focus_target(id);
             let press = frame.activation_target(id);
+            let pages: BTreeMap<_, _> = PAGE_ACTIONS
+                .into_iter()
+                .filter_map(|(action, direction)| {
+                    bounds?;
+                    frame
+                        .scroll_page_target(id, direction)
+                        .map(|target| (action, target))
+                })
+                .collect();
+            // AccessKit announces a live Status on insertion and on label
+            // changes. Retain only visible, passive IDs across rebuilds.
+            let stable_key = source.node.stable_id();
+            let status_key = stable_key.filter(|key| {
+                id != root
+                    && node.role() == Role::Status
+                    && !key.is_empty()
+                    && !source.node.is_disabled()
+                    && bounds.is_some()
+                    && frame.children(id).next().is_none()
+                    && focus.is_none()
+                    && press.is_none()
+                    && reveal.is_none()
+                    && pages.is_empty()
+            });
             let native_id = if id == root && modal.is_none() {
                 node.set_role(Role::Window);
                 WINDOW
-            } else if same_generation {
+            } else if let Some(key) = status_key {
+                let native_id = self
+                    .status_ids
+                    .get(key)
+                    .copied()
+                    .filter(|_| same_status_scope)
+                    .unwrap_or_else(|| self.allocate());
+                node.set_live(Live::Polite);
+                status_ids.insert(key.to_owned(), native_id);
+                native_id
+            } else if same_generation
+                && !stable_key.is_some_and(|key| self.status_ids.contains_key(key))
+            {
                 self.ids
                     .get(&id)
                     .copied()
@@ -109,14 +158,6 @@ impl Tree {
             }
 
             if let Some(bounds) = bounds {
-                let pages: BTreeMap<_, _> = PAGE_ACTIONS
-                    .into_iter()
-                    .filter_map(|(action, direction)| {
-                        frame
-                            .scroll_page_target(id, direction)
-                            .map(|target| (action, target))
-                    })
-                    .collect();
                 if !pages.is_empty() {
                     let area_id = if same_generation {
                         self.scroll_ids
@@ -176,6 +217,8 @@ impl Tree {
         self.generation = Some(generation);
         self.ids = ids;
         self.scroll_ids = scroll_ids;
+        self.status_ids = status_ids;
+        self.modal_status_scope = status_scope.map(|scope| scope.map(str::to_owned));
         self.targets = targets;
         TreeUpdate {
             nodes,
@@ -331,4 +374,171 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
         node.set_numeric_value_step(range.step);
     }
     node
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use surface::{Length, Node as SurfaceNode, Style, TextMeasurer};
+    use surface_app::{Event, View};
+
+    #[derive(Clone, Copy, Default)]
+    struct App {
+        notice: Option<&'static str>,
+        modal: bool,
+        focusable_notice: bool,
+    }
+
+    impl Application for App {
+        type Message = Self;
+
+        fn update(&mut self, state: Self) {
+            *self = state;
+        }
+
+        fn view(&self) -> View<Self> {
+            let button = View::new(
+                SurfaceNode::new(SurfaceRole::Button, "Action")
+                    .id("action")
+                    .text("Action"),
+            )
+            .on_press(*self)
+            .accessible_activation();
+            let status = self.notice.map(|message| {
+                let mut node = SurfaceNode::new(SurfaceRole::Status, message)
+                    .id("status")
+                    .text(message);
+                if self.focusable_notice {
+                    node = node.tab_index(0);
+                }
+                View::new(node)
+            });
+            let modal = self.modal.then(|| {
+                View::new(
+                    SurfaceNode::new(SurfaceRole::Dialog, "Settings")
+                        .id("settings")
+                        .styled(Style::column().height(Length::Px(60.))),
+                )
+                .modal(Self {
+                    modal: false,
+                    ..*self
+                })
+            });
+            View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop").styled(Style::column()))
+                .children(std::iter::once(button).chain(status).chain(modal))
+        }
+    }
+
+    struct Metrics;
+
+    impl TextMeasurer for Metrics {
+        fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
+            (text.chars().count() as f32 * size, size)
+        }
+    }
+
+    fn update(runtime: &mut Runtime<App>, tree: &mut Tree) -> TreeUpdate {
+        runtime.render(320., 240., &mut Metrics).unwrap();
+        tree.update(runtime.accessibility_frame().unwrap(), 1.)
+    }
+
+    fn named<'a>(update: &'a TreeUpdate, name: &str) -> (NodeId, &'a Node) {
+        update
+            .nodes
+            .iter()
+            .find_map(|(id, node)| (node.label() == Some(name)).then_some((*id, node)))
+            .unwrap()
+    }
+
+    #[test]
+    fn live_status_keeps_its_passive_identity_without_retaining_an_action() {
+        let initial = App {
+            notice: Some("Saved"),
+            ..App::default()
+        };
+        let mut runtime = Runtime::new(initial).unwrap();
+        let mut tree = Tree::default();
+        runtime.render(320., 240., &mut Metrics).unwrap();
+        runtime
+            .dispatch(Event::FocusNext { reverse: false })
+            .unwrap();
+        let first = update(&mut runtime, &mut tree);
+        let (status_id, status) = named(&first, "Saved");
+        assert_eq!(status.role(), Role::Status);
+        assert_eq!(status.live(), Some(Live::Polite));
+        assert!(!status.supports_action(Action::Focus));
+        assert!(!status.supports_action(Action::Click));
+        let old_action = named(&first, "Action").0;
+        assert_eq!(first.focus, old_action);
+
+        runtime.apply(initial).unwrap();
+        let unchanged = update(&mut runtime, &mut tree);
+        assert_eq!(named(&unchanged, "Saved").0, status_id);
+        assert_eq!(unchanged.focus, named(&unchanged, "Action").0);
+        assert_ne!(unchanged.focus, old_action);
+        assert!(!tree
+            .action(
+                &mut runtime,
+                ActionRequest {
+                    action: Action::Click,
+                    target_tree: TreeId::ROOT,
+                    target_node: old_action,
+                    data: None,
+                }
+            )
+            .unwrap());
+
+        runtime
+            .apply(App {
+                notice: Some("Updated"),
+                ..initial
+            })
+            .unwrap();
+        let changed = update(&mut runtime, &mut tree);
+        assert_eq!(named(&changed, "Updated").0, status_id);
+        assert_eq!(named(&changed, "Updated").1.live(), Some(Live::Polite));
+        assert_eq!(changed.focus, named(&changed, "Action").0);
+
+        runtime
+            .apply(App {
+                focusable_notice: true,
+                ..initial
+            })
+            .unwrap();
+        let active = update(&mut runtime, &mut tree);
+        let (active_id, active_node) = named(&active, "Saved");
+        assert_ne!(active_id, status_id);
+        assert!(active_node.supports_action(Action::Focus));
+        assert_eq!(active_node.live(), None);
+    }
+
+    #[test]
+    fn hidden_and_out_of_scope_statuses_start_a_new_live_identity_on_return() {
+        let shown = App {
+            notice: Some("Saved"),
+            ..App::default()
+        };
+        let mut runtime = Runtime::new(shown).unwrap();
+        let mut tree = Tree::default();
+        let first = named(&update(&mut runtime, &mut tree), "Saved").0;
+
+        runtime.apply(App::default()).unwrap();
+        let hidden = update(&mut runtime, &mut tree);
+        assert!(hidden.nodes.iter().all(|(_, node)| node.live().is_none()));
+        runtime.apply(shown).unwrap();
+        let restored = named(&update(&mut runtime, &mut tree), "Saved").0;
+        assert_ne!(restored, first);
+
+        runtime
+            .apply(App {
+                modal: true,
+                ..shown
+            })
+            .unwrap();
+        let scoped = update(&mut runtime, &mut tree);
+        assert!(scoped.nodes.iter().all(|(_, node)| node.live().is_none()));
+        runtime.apply(shown).unwrap();
+        let after_modal = named(&update(&mut runtime, &mut tree), "Saved").0;
+        assert_ne!(after_modal, restored);
+    }
 }
