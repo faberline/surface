@@ -476,7 +476,7 @@ impl TooltipDemo {
     }
 }
 
-fn gap_contains(anchor: Rect, popup: Rect, (x, y): (f32, f32)) -> bool {
+pub(crate) fn gap_contains(anchor: Rect, popup: Rect, (x, y): (f32, f32)) -> bool {
     let left = anchor.x.max(popup.x);
     let right = (anchor.x + anchor.width).min(popup.x + popup.width);
     let above = popup.y + popup.height <= anchor.y && y >= popup.y + popup.height && y <= anchor.y;

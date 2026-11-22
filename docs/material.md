@@ -147,6 +147,7 @@ does not change application state.
 | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
 | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+| `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
 | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
@@ -320,6 +321,37 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Expressive icon floating action buttons
+
+Use `Theme::expressive_fab` with a stable ID, a localized action name,
+and a `VectorIcon`. Regular, Medium and Large use 56, 80 and 96 dp faces.
+Each size supports the three direct and three tonal palettes. Choose
+standard or lowered elevation. The icon stays decorative. The button
+receives Tab focus and accepts keyboard, pointer and assistive activation.
+
+Keep one `ExpressiveFabMotion` per button. Opt into frame input and call
+`advance` from `Application::animation_frame_with_press_detail`. Pass the
+accepted press, hover target, and current visibility. The observation carries the
+original press point through a hold, release or cancellation. The ripple
+starts at that point and stays inside the rounded face. Reduce Motion uses
+the static press layer.
+
+Place the FAB in the page or its navigation area and leave space for the
+outside focus ring. Keep it mounted for visibility animation. When it hides
+or becomes disabled, the fallback ID lets focus move to another action.
+Use the existing plain tooltip with the same localized label for a visual
+name on hover or focus. Add a longer description only when it gives
+information beyond that name.
+
+The Gallery places the FAB at the logical trailing corner while the notes
+scroll. From 動作, choose 圖示浮動按鈕. The headless Gallery can replay the
+scene and capture PNGs.
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
+
+[Official FAB specs](https://m3.material.io/components/floating-action-button/specs) ·
+[Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.41587918e51cca98.json) ·
+[FAB accessibility](https://m3.material.io/components/floating-action-button/accessibility)
 
 ## Extended floating action buttons
 
@@ -722,7 +754,7 @@ exported DOM keeps the target corners.
 
 Known motion gaps:
 
-- Springs are not implemented.
+- Spring adoption remains limited across the catalog.
 - Layout and position changes (size, offset, scroll) do not animate.
 - Hover and press state-layer opacity does not animate. Paint picks that
   opacity from the interaction state, so it jumps. Only a change to the
@@ -734,8 +766,8 @@ Known motion gaps:
   `SURFACE_REDUCED_MOTION=1`. Only the browser follows the OS setting.
 - The Material emphasized path easing is a path curve. Surface uses the
   androidx cubic approximation of it.
-- `STATE_CHANGE` is not mapped to each component's official Material
-  duration and easing. Ripple and shape morphing are not implemented.
+- `STATE_CHANGE` uses a shared duration and easing. A general radial
+  ripple and shape morphing for the catalog remain open.
 - Other tokens and components do not use a transition yet.
 
 Motion does not complete the Material catalog. The coverage file keeps

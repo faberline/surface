@@ -610,6 +610,14 @@ impl<A: Application> Runtime<A> {
     }
 
     pub(crate) fn animate_application(&mut self) -> Result<(), crate::AppError> {
+        let hovered = if self.app.observes_frame_input() {
+            self.pointer_position
+                .and_then(|(x, y)| self.hit(x, y))
+                .and_then(|id| self.dom.get(id).ok()?.stable_id())
+        } else {
+            self.press_observation.clear();
+            None
+        };
         let frame = crate::AnimationFrame {
             now_ms: self.motion.now,
             reduced_motion: self.motion.reduced,
@@ -622,9 +630,12 @@ impl<A: Application> Runtime<A> {
             touch: self.touch.as_ref().map(|touch| touch.contact),
             touch_cancelled: std::mem::take(&mut self.touch_cancelled),
         };
+        let pressed = self.pressed.as_deref();
+        let press = self.press_observation.frame(pressed);
         let update = self
             .app
-            .animation_frame_with_press(frame, input, self.pressed.as_deref());
+            .animation_frame_with_press_detail(frame, input, pressed, press, hovered);
+        self.press_observation.clear_terminal();
         if let Some(touch) = &mut self.touch {
             touch.suppress_activation |= update.suppress_touch_activation;
         }

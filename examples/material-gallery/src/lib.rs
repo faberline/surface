@@ -5,6 +5,7 @@ mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
 mod extended_fab_demo;
+mod fab_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
@@ -23,6 +24,7 @@ use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
+use fab_demo::{FabDemo, FabEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -31,7 +33,8 @@ use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use split_demo::{SplitDemo, SplitEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{
-    AnimationFrame, AnimationUpdate, Application, FrameInput, InputAnimationUpdate, View,
+    AnimationFrame, AnimationUpdate, Application, FrameInput, FramePress, InputAnimationUpdate,
+    View,
 };
 use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
@@ -72,6 +75,7 @@ pub struct Gallery {
     button_group_demo: ButtonGroupDemo,
     split_demo: SplitDemo,
     extended_fab_demo: ExtendedFabDemo,
+    fab_demo: FabDemo,
     card_demo: CardDemo,
     carousel_demo: CarouselDemo,
     app_bar_demo: AppBarDemo,
@@ -111,6 +115,7 @@ impl Default for Gallery {
             button_group_demo: ButtonGroupDemo::default(),
             split_demo: SplitDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
+            fab_demo: FabDemo::default(),
             card_demo: CardDemo::default(),
             carousel_demo: CarouselDemo::default(),
             app_bar_demo: AppBarDemo::default(),
@@ -136,6 +141,7 @@ pub enum Message {
     ButtonGroup(ButtonGroupEvent),
     Split(SplitEvent),
     ExtendedFab(ExtendedFabEvent),
+    Fab(FabEvent),
     Card(CardEvent),
     Carousel(CarouselEvent),
     AppBar(AppBarEvent),
@@ -184,6 +190,9 @@ impl Application for Gallery {
         if self.extended_fab_demo.is_open() {
             return self.extended_fab_demo.text_scale();
         }
+        if self.fab_demo.is_open() {
+            return self.fab_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -218,6 +227,7 @@ impl Application for Gallery {
         let button_group = self.button_group_demo.viewport_changed(width);
         let split = self.split_demo.viewport_changed(width);
         let extended_fab = self.extended_fab_demo.viewport_changed(width, height);
+        let fab = self.fab_demo.viewport_changed(width, height);
         let carousel = self.carousel_demo.viewport_changed(width, height);
         let app_bar = self.app_bar_demo.viewport_changed(width);
         let toolbar = self.toolbar_demo.viewport_changed(width, height);
@@ -230,6 +240,7 @@ impl Application for Gallery {
             || button_group
             || split
             || extended_fab
+            || fab
             || carousel
             || app_bar
             || toolbar
@@ -240,9 +251,11 @@ impl Application for Gallery {
             || self.button_group_demo.visible()
             || self.split_demo.visible()
             || self.extended_fab_demo.is_open()
+            || self.fab_demo.is_open()
     }
     fn cancel_transient(&mut self) -> bool {
-        self.tooltip_demo.visible() && self.tooltip_demo.dismiss()
+        (self.tooltip_demo.visible() && self.tooltip_demo.dismiss())
+            || (self.fab_demo.is_open() && self.fab_demo.dismiss_tooltip())
     }
     fn animation_frame_with_input(
         &mut self,
@@ -268,6 +281,21 @@ impl Application for Gallery {
         update.animation.rebuild |= button_group.rebuild || split.rebuild || extended_fab.rebuild;
         update.animation.request_next |=
             button_group.request_next || split.request_next || extended_fab.request_next;
+        update
+    }
+    fn animation_frame_with_press_detail(
+        &mut self,
+        frame: AnimationFrame<'_>,
+        input: FrameInput<'_>,
+        pressed: Option<&str>,
+        press: Option<FramePress<'_>>,
+        hovered: Option<&str>,
+    ) -> InputAnimationUpdate {
+        let fab = self.fab_demo.frame(&frame, &input, pressed, press, hovered);
+        let mut update = self.animation_frame_with_press(frame, input, pressed);
+        update.animation.rebuild |= fab.animation.rebuild;
+        update.animation.request_next |= fab.animation.request_next;
+        update.suppress_touch_activation |= fab.suppress_touch_activation;
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
@@ -331,6 +359,9 @@ impl Application for Gallery {
                 if i != extended_fab_demo::SECTION {
                     self.extended_fab_demo.leave();
                 }
+                if i != fab_demo::SECTION {
+                    self.fab_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -361,6 +392,7 @@ impl Application for Gallery {
             Message::ButtonGroup(event) => self.button_group_demo.update(event),
             Message::Split(event) => self.split_demo.update(event),
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
+            Message::Fab(event) => self.fab_demo.update(event),
             Message::Card(event) => self.card_demo.update(event),
             Message::Carousel(event) => self.carousel_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
@@ -428,6 +460,9 @@ impl Application for Gallery {
         }
         if self.extended_fab_demo.is_open() {
             return self.extended_fab_demo.view(&t, self.dark);
+        }
+        if self.fab_demo.is_open() {
+            return self.fab_demo.view(&t, self.dark);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -547,6 +582,7 @@ impl Application for Gallery {
                     ButtonGroupDemo::show_button(&t),
                     SplitDemo::show_button(&t),
                     ExtendedFabDemo::show_button(&t),
+                    FabDemo::show_button(&t),
                 ]));
                 let nav_items = [
                     ("nav-home", "Home", "H"),
@@ -1069,6 +1105,7 @@ mod web {
             "button_group": s.button_group_demo.inspect(),
             "split_button": s.split_demo.inspect(),
             "extended_fab": s.extended_fab_demo.inspect(),
+            "expressive_fab": s.fab_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
