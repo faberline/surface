@@ -1,0 +1,291 @@
+{
+  "case_checks": {
+    "M179": 449,
+    "M180": 89,
+    "M181": 147,
+    "M182": 363,
+    "A69": 134,
+    "A70": 57,
+    "A71": 42,
+    "A72": 89
+  },
+  "profiles": {
+    "ltr": {
+      "endpoint_width_dp": [
+        96.0,
+        360.0
+      ],
+      "early_ms": [
+        11,
+        16,
+        20,
+        22
+      ],
+      "early_width_dp": [
+        105.0,
+        114.0,
+        123.0,
+        128.0
+      ],
+      "early_label_alpha": [
+        220,
+        189,
+        161,
+        147
+      ],
+      "early_label_ink": [
+        [
+          5087,
+          4043
+        ],
+        [
+          5103,
+          4050
+        ],
+        [
+          5123,
+          4069
+        ],
+        [
+          5141,
+          4084
+        ]
+      ],
+      "handoff_ms": [
+        50,
+        59,
+        60,
+        61,
+        70
+      ],
+      "handoff_label_alpha": [
+        10,
+        0,
+        0,
+        0,
+        8
+      ]
+    },
+    "rtl": {
+      "endpoint_width_dp": [
+        96.0,
+        360.0
+      ],
+      "early_ms": [
+        11,
+        16,
+        20,
+        22
+      ],
+      "early_width_dp": [
+        105.0,
+        114.0,
+        123.0,
+        128.0
+      ],
+      "early_label_alpha": [
+        220,
+        189,
+        161,
+        147
+      ],
+      "early_label_ink": [
+        [
+          5075,
+          4033
+        ],
+        [
+          5075,
+          4033
+        ],
+        [
+          5103,
+          4050
+        ],
+        [
+          5133,
+          4079
+        ]
+      ],
+      "handoff_ms": [
+        50,
+        59,
+        60,
+        61,
+        70
+      ],
+      "handoff_label_alpha": [
+        10,
+        0,
+        0,
+        0,
+        8
+      ]
+    }
+  },
+  "accessibility": [
+    {
+      "rtl": false,
+      "text_scale": 2,
+      "sample_ms": 18,
+      "width": 119.0,
+      "focus": "wide-rail-inbox",
+      "actions": 1,
+      "before": [
+        [
+          "wide-rail-toggle",
+          null,
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-home",
+          "page",
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-archive",
+          null,
+          null,
+          null
+        ],
+        [
+          "wide-rail-inbox",
+          null,
+          null,
+          "press"
+        ]
+      ],
+      "after": [
+        [
+          "wide-rail-toggle",
+          null,
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-home",
+          null,
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-archive",
+          null,
+          null,
+          null
+        ],
+        [
+          "wide-rail-inbox",
+          "page",
+          null,
+          "press"
+        ]
+      ]
+    },
+    {
+      "rtl": true,
+      "text_scale": 2,
+      "sample_ms": 18,
+      "width": 119.0,
+      "focus": "wide-rail-inbox",
+      "actions": 1,
+      "before": [
+        [
+          "wide-rail-toggle",
+          null,
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-home",
+          "page",
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-archive",
+          null,
+          null,
+          null
+        ],
+        [
+          "wide-rail-inbox",
+          null,
+          null,
+          "press"
+        ]
+      ],
+      "after": [
+        [
+          "wide-rail-toggle",
+          null,
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-home",
+          null,
+          null,
+          "press"
+        ],
+        [
+          "wide-rail-archive",
+          null,
+          null,
+          null
+        ],
+        [
+          "wide-rail-inbox",
+          "page",
+          null,
+          "press"
+        ]
+      ]
+    }
+  ],
+  "artifacts": {
+    "browser-material-modal-wide-rail.json": "c27064bc19d6922a135be2e5b692cc044f75aab746aade065aca3c81167fa0fe",
+    "browser-material-wide-rail.json": "9dcb108a72c9e1d81215c63259f1a16d0e35f5a5efddbf80530fca9daaa3f1fd",
+    "browser-wide-rail-item-motion-accessibility.json": "f013043f76551a26753cdbf155f77b606714c3543c4cbd98ce853ffca0a6f847",
+    "browser-wide-rail-item-motion.json": "ce03343ab6f966ea038852b004f8fe1c262f5de4148870a81a61db6f33b223a4",
+    "browser-wide-rail-motion.json": "4ad1ac854646a9e0a50087cb02b222296f5419ab6465e01e76db996503b036cd",
+    "material-modal-wide-rail-ax-320-focused-inbox.png": "4c243842ecb0bbe3c15476a136bb4b618198ed7d16a967f38bd617b9e567a40c",
+    "material-modal-wide-rail-retained-collapsed.png": "c95eb955f4ce92704329b1ffc4fabdf0da6acb58d5e82a96b1d7ac1866a7ae91",
+    "material-modal-wide-rail-retained-dark-rtl-320-scrolled.png": "648ee5ecd18fd2f02ef6ec1a4397c28cffb43052ccd12376c20416f934331f1f",
+    "material-modal-wide-rail-retained-dark-rtl-320.png": "725882765881d966efdef5e81bb6c9225633b391fa39b8e37e10fa5b86cf8299",
+    "material-modal-wide-rail-standalone-collapsed.png": "9e9e146e732f0dbd4971b55621e45c9d3dfd1369ee47e4df42b0daf8ace96396",
+    "material-modal-wide-rail-standalone-light-ltr.png": "6bf97f9d676878914b0bbeac90f93b6579a0570e95ea385610b790bf00d0f9e6",
+    "material-wide-rail-320-rtl-bottom.png": "4ea56cbf08c7def7fd58b2fead63b7f7e1877bb580382b0c447345285d3cdd2b",
+    "material-wide-rail-599-rtl-bottom.png": "11f66040feb1bdd0021467744daa155ed13b974077632921c93201131dc5e00c",
+    "material-wide-rail-600-rtl-expanded.png": "1e56db22dabd2eac3f375f731de140e7a7b2c52e045d6eb741c450d5e1e43523",
+    "material-wide-rail-600-rtl-restored.png": "a97fac162f2866e0fd41640a26a22bcf9eb2721d14f10a3f1b9e89c7093de73f",
+    "material-wide-rail-ax-320.png": "4507837481f95a9f7234c5af18377b12b86cc5ee4ba0cf2f2ce703fbcbbd8f37",
+    "material-wide-rail-ax-599.png": "11f66040feb1bdd0021467744daa155ed13b974077632921c93201131dc5e00c",
+    "material-wide-rail-ax-600.png": "1e56db22dabd2eac3f375f731de140e7a7b2c52e045d6eb741c450d5e1e43523",
+    "material-wide-rail-dark-rtl-collapsed-wrapped.png": "a02fa4f2078793d3fb7b57676be5816a4874dd3c7274a2c32d19382cc3287fb5",
+    "material-wide-rail-dark-rtl-expanded.png": "de5b14edb139bc5aa80b619d873b412921be6e005b41933e82b31274d3887a23",
+    "material-wide-rail-light-ltr-collapsed.png": "3a682fb360e7b1e398660ff261452668f563deca912129d2fc74089e2097cc1c",
+    "material-wide-rail-light-ltr-expanded.png": "bd8ff2a8cae6b1b6a3fb5d176afdd276783d34c83663c0455aedcba2b80ee388",
+    "material-wide-rail-motion-hidden-rtl-40ms.png": "8964cd610fd4225c297e269fb5206e31bf621f187471e77160e05dfe9a182d11",
+    "material-wide-rail-motion-hidden-rtl-before.png": "ab057a8a7f9ee98dac8d4af5feabd9221b09b1746d5f64bd01258bff86665bb0",
+    "material-wide-rail-motion-inline-40ms.png": "d25828659b587cbc6714698bedeb5abd2a2fadb155891935756b4ba80894d9af",
+    "material-wide-rail-motion-item-ltr-11ms.png": "be43b1c15cabdb86ec484b16b86f49f262e870913c0b1b0c5e72d09d4c31b712",
+    "material-wide-rail-motion-item-ltr-16ms.png": "af076d2198ce0ab124c0863880532acc8abf4409ff02541c3f42eb18db14b91c",
+    "material-wide-rail-motion-item-ltr-20ms.png": "26f15538fb90b8c0cb6f279eeb02d440a3b1456086c0b327517724661936c6a5",
+    "material-wide-rail-motion-item-ltr-22ms.png": "561f4f91d7db8750141937e245455a2549e720b704aa8898ad07062f288c37f3",
+    "material-wide-rail-motion-item-ltr-60ms.png": "0a45b88e41477757b0e4aa9271554ac09184ae66c51b7c654c71f7f170b776d6",
+    "material-wide-rail-motion-item-ltr-collapsed.png": "5cb7ffdb41b1e3636f63f829470d370c403415bb6ac61e47046615c4e7404d6f",
+    "material-wide-rail-motion-item-ltr-expanded.png": "95c338394ffc1fd440fa48133d33a1ebfd9b9c30ca5401fc8be2ca573e7e8b66",
+    "material-wide-rail-motion-item-rtl-11ms.png": "c6af47ea6e54259de5e7c755968ef0d29bf069a9f512446b845e8ff50890f5c5",
+    "material-wide-rail-motion-item-rtl-16ms.png": "3887e10b923b533f251bba1d4b5fa5e9f9ded98b0707a5d59871d40798d71d87",
+    "material-wide-rail-motion-item-rtl-20ms.png": "cae42d0458fb1dff0e7c6dc64c1ff8d4e874b12dfc1f0c687f6d6d3029d644aa",
+    "material-wide-rail-motion-item-rtl-22ms.png": "98b5276f8d4512f42e23b2ae35d0c2bb2e9e63c51e6a62bb4261b6cdc018de4e",
+    "material-wide-rail-motion-item-rtl-60ms.png": "6f9c0b7771d0a047823ac7629dd9135271323d95b666f655ed028eebf1016b5f",
+    "material-wide-rail-motion-item-rtl-collapsed.png": "d2b55aab02e5140c7868f670a05954a01f44f024e31d2023940e7240b227a384",
+    "material-wide-rail-motion-item-rtl-expanded.png": "79ea8dce25f04d9de1d6741f4393f9960d9fa59fe8d77904253c3fa725ec13a7",
+    "material-wide-rail-motion-retained-ltr-40ms.png": "5c72284aab20041bd475b5168451bfcf49273f6e2ff525bfd765bd664438f475",
+    "material-wide-rail-motion-retained-ltr-before.png": "6ebb4995fe6967881087c058dce0eaa2212c3509c17e0e7b6fc3c04e81c73be0"
+  }
+}

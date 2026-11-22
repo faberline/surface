@@ -1,0 +1,51 @@
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/wide_navigation_rail.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+e2e/src/wide_rail_motion.rs: OK
+e2e/src/wide_rail_item_motion.rs: OK
+index.html: OK
+surface_material_gallery-a0a11870efb34971.js: OK
+surface_material_gallery_bg-bdbefbba11cf943e.wasm: OK
+surface-web.json: OK
+index.html: OK
+surface_material_gallery-3d38a310ba77efa1.js: OK
+surface_material_gallery_bg-488c4d061a41d431.wasm: OK
+surface-web.json: OK
+crates/surface/src/layout.rs: OK
+crates/surface/src/lib.rs: OK
+crates/surface/src/microdom.rs: OK
+crates/surface-material/src/wide_navigation_rail.rs: OK
+crates/surface-material/src/wide_navigation_rail/item_motion.rs: OK
+examples/material-gallery/src/wide_navigation_rail_demo.rs: OK
+examples/material-gallery/src/modal_wide_navigation_rail_demo.rs: OK
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/wide_navigation_rail.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+e2e/src/wide_rail_motion.rs: OK
+e2e/src/wide_rail_item_motion.rs: OK
+0658d9d2f9ca8e4e380c5826a724ba78636534fb27e941979a9c161133622712  /tmp/cargo-target/surface-md3-rail-item-motion-8CHpI2LD-browser-focused/debug/surface-e2e
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M179] wide rail reflows the page and preserves navigation at 600, 599 and 320 dp
+  M179 checks: 449
+  [M180] modal wide rail overlays both collapse arrangements and scrolls a 320×240 WebGPU canvas
+  M180 checks: 89
+  [M181] wide rail reflows or slides, reverses in place, and honors live Reduce Motion
+  M181 checks: 147
+  [M182] wide rail destinations stay legible at early widths and fade through the layout change
+  M182 checks: 363
+case material ... ok (4 steps, 1050 checks, 22.0s)
+case web-accessibility ...
+  [A69] Chrome disclosure and current-page semantics survive rail and bottom navigation modes
+  A69 checks: 134
+  [A70] Chrome exposes a named modal scope, current destination and restored opener focus
+  A70 checks: 57
+  [A71] modal focus restores while the painted exit finishes
+  A71 checks: 42
+  [A72] one projected destination keeps focus and accepts one Enter during the wide rail transition
+  A72 checks: 89
+case web-accessibility ... ok (4 steps, 324 checks, 9.2s)
+
+e2e result: 2 passed; 0 failed; 1374 checks; artifacts in <batch>/browser-rail-item-exact-2

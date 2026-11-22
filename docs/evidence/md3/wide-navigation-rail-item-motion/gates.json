@@ -1,0 +1,51 @@
+{
+  "production_manifest_sha256": "97bb30b5aa0e1153a00ca7210c54bbdd791db0345a8058885b5862d70967fe38",
+  "canonical_browser_fixtures_sha256": "ac04e8dfb5a859937968533c46c2e01a25318b530774f11be220f4d43d35350e",
+  "source_manifest_sha256": "c62d2283c5d973b2d85c84afa19fa60313ee34bbdd6bfe6370566d4c5624d388",
+  "source_delta_gzip_sha256": "cd24b0518e581176614b03fc0fedb9e32ee35a74e7c5b76393be53ffa67f1c0b",
+  "native_replay_sha256": "ee3bc2b2a82a3b4a5cd436c008f0dcc05c5502054b74e296755df20de7a3900e",
+  "workspace": {
+    "command": "cap sh scripts/check.sh",
+    "exit_status": 0,
+    "provenance": "passed",
+    "rustfmt": "passed",
+    "strict_clippy": "passed",
+    "wasm_checks": 3,
+    "rust_tests": {
+      "passed": 1430,
+      "failed": 0,
+      "ignored": 25
+    }
+  },
+  "rail_rust_tests": {
+    "passed": 14,
+    "failed": 0,
+    "ignored": 0
+  },
+  "apple_m1_max_metal": {
+    "command": "cap sh scripts/check-gpu.sh",
+    "tests": {
+      "passed": 12,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "chrome_webgpu": {
+    "passed_suites": 2,
+    "failed_suites": 0,
+    "checks": 1374,
+    "material_steps": 4,
+    "accessibility_steps": 4
+  },
+  "native_cli_mcp_transport": {
+    "passed_suites": 4,
+    "failed_suites": 0,
+    "checks": 641,
+    "suites": [
+      "devtools-native",
+      "bridge-native",
+      "bridge-native-compact",
+      "bridge-web"
+    ]
+  }
+}
