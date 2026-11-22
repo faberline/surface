@@ -19,6 +19,8 @@ mod motion;
 mod pointer_route;
 #[cfg(any(target_arch = "wasm32", test))]
 mod press_guard;
+#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+mod screenshot;
 mod touch_route;
 #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
 mod trace_file;
@@ -102,6 +104,13 @@ struct Gpu {
     surface: wgpu::Surface<'static>,
     renderer: Renderer,
     config: wgpu::SurfaceConfiguration,
+}
+
+#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+struct PresentedFrame {
+    list: surface::ExtendedDisplayList,
+    size: (u32, u32),
+    scale: f32,
 }
 impl Gpu {
     async fn new(window: Arc<Window>) -> Result<Self, HostError> {
@@ -280,7 +289,20 @@ impl<A: Application> Host<A> {
             self.runtime.borrow().app().title(),
         );
         match result {
-            Ok(server) => self.devtools = server,
+            Ok(server) => {
+                let methods: &'static [&'static str] = if server.is_some()
+                    && self
+                        .gpu
+                        .as_ref()
+                        .is_some_and(|gpu| screenshot::supports_format(gpu.config.format))
+                {
+                    &[surface_devtools_protocol::PAGE_SCREENSHOT]
+                } else {
+                    &[]
+                };
+                self.runtime.borrow_mut().set_host_methods(methods);
+                self.devtools = server;
+            }
             Err(error) => self.fail(event_loop, error),
         }
     }
@@ -292,7 +314,11 @@ impl<A: Application> Host<A> {
         request: surface_devtools_protocol::Request,
         reply: devtools::DevtoolsReply,
     ) {
-        use surface_devtools_protocol::{ErrorCode, Reply};
+        use surface_devtools_protocol::{ErrorCode, Reply, PAGE_SCREENSHOT};
+        if request.method == PAGE_SCREENSHOT {
+            reply.send(self.screenshot(event_loop, request));
+            return;
+        }
         if self.gpu.is_none() || self.window.is_none() {
             reply.send(Reply::error(
                 request.id,
@@ -327,6 +353,67 @@ impl<A: Application> Host<A> {
         }
         reply.send(response);
     }
+
+    #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+    fn screenshot(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        request: surface_devtools_protocol::Request,
+    ) -> surface_devtools_protocol::Reply {
+        use surface_devtools_protocol::{ErrorCode, Reply, VERSION};
+
+        if request.v != VERSION {
+            return Reply::error(
+                request.id,
+                ErrorCode::UnsupportedVersion,
+                format!("use protocol version {VERSION}"),
+            );
+        }
+        let params = match screenshot::params(&request.params) {
+            Ok(params) => params,
+            Err(message) => return Reply::error(request.id, ErrorCode::InvalidParams, message),
+        };
+        let (window, gpu) =
+            match screenshot::ready(self.window.as_ref(), self.gpu.as_ref(), request.id) {
+                Ok(ready) => ready,
+                Err(reply) => return reply,
+            };
+        if !screenshot::supports_format(gpu.config.format) {
+            return Reply::error(
+                request.id,
+                ErrorCode::RenderFailed,
+                "the window uses an unsupported screenshot color format",
+            );
+        }
+        if window.is_minimized() == Some(true) || window.is_visible() == Some(false) {
+            return Reply::error(request.id, ErrorCode::NotReady, "the window is not visible");
+        }
+        let mut presented = None;
+        self.draw_frame(event_loop, Some(&mut presented));
+        if self.error.is_some() {
+            return Reply::error(
+                request.id,
+                ErrorCode::RenderFailed,
+                "the application renderer failed",
+            );
+        }
+        let (Some(gpu), Some(frame)) = (&mut self.gpu, presented) else {
+            return Reply::error(
+                request.id,
+                ErrorCode::NotReady,
+                "no frame was presented for capture",
+            );
+        };
+        screenshot::capture(
+            &mut gpu.renderer,
+            &frame.list,
+            frame.size,
+            frame.scale,
+            request.id,
+            params,
+        )
+    }
+
     #[cfg(feature = "devtools")]
     fn bridge_request(
         &mut self,
@@ -616,6 +703,20 @@ impl<A: Application> Host<A> {
         }
     }
     fn draw(&mut self, event_loop: &ActiveEventLoop) {
+        self.draw_frame(
+            event_loop,
+            #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+            None,
+        );
+    }
+
+    fn draw_frame(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))] presented: Option<
+            &mut Option<PresentedFrame>,
+        >,
+    ) {
         let (Some(window), Some(gpu)) = (&self.window, &mut self.gpu) else {
             return;
         };
@@ -677,6 +778,14 @@ impl<A: Application> Host<A> {
             return;
         }
         frame.present();
+        #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+        if let Some(presented) = presented {
+            *presented = Some(PresentedFrame {
+                list,
+                size: (size.width, size.height),
+                scale,
+            });
+        }
         self.frames += 1;
         #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
         if let (Some(trace), Some(start)) = (&mut self.trace, present_start) {

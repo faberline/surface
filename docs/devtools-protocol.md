@@ -93,7 +93,8 @@ listens and `surface-platform` does not depend on this crate.
   gets `unauthorized` and the connection closes. The token is checked before
   anything else runs.
 - Requests on one connection run in order. Each runs on the window event
-  loop through `Runtime::execute_devtools`. The host draws first, so queries
+  loop. The host runs its own methods and forwards other requests to
+  `Runtime::execute_devtools`. The host draws first, so queries
   see current geometry, and draws again after an `Action.*` method. Before
   the renderer exists the reply is `not_ready`. The host waits at most 5 s
   for the event loop, then replies `host_timeout`.
@@ -118,12 +119,33 @@ The e2e suite `devtools-native` (`cargo xtask web e2e devtools-native`)
 starts the native gallery with both session files and checks this over raw
 TCP.
 
+## Native screenshots
+
+`Page.screenshot` returns the drawing commands from the frame the native
+host just presented, rendered as PNG. This keeps the capture at the same
+logical layout as the window. Check `Devtools.capabilities` for support.
+
+```json
+{"v":1,"id":8,"method":"Page.screenshot","params":{"max_side":1200},"token":"<session token>"}
+```
+
+`scale` is output pixels per logical unit. It defaults to the window
+scale. `max_side` limits the longer edge. It defaults to 4096 and accepts
+1 through 8192. The result contains `format` (`"png"`), `width`,
+`height`, the effective `scale`, and `data_base64`.
+
+A window without a drawable frame returns `not_ready`. A failed render
+or PNG encoding returns `render_failed`. If the PNG would exceed the
+response cap, the reply uses `too_large` and suggests a smaller
+`max_side`. The application returns the PNG in the reply. It writes no
+screenshot file.
+
 ## Client: `surface-devtools`
 
 The crate `surface-devtools` (`crates/surface-devtools`, #132) is a CLI and
-an MCP server in one binary. It depends on `surface-devtools-protocol` and
-`serde_json` only: no `surface`, `surface-app`, `wgpu`, `winit` or Jet. It
-speaks the native transport above.
+an MCP server in one binary. It uses the protocol crate and small
+dependencies for JSON, base64 and file output. It speaks the native
+transport above.
 
 ```sh
 cap cargo build --locked -p surface-devtools
@@ -135,9 +157,13 @@ surface-devtools action activate <id>
 surface-devtools action fill <id> <text>
 surface-devtools action set-value <id> <number>
 surface-devtools action key tab [--extend] [--by-word]
+surface-devtools page screenshot --max-side 1200 --out surface.png
 surface-devtools mcp
 ```
 
+- A screenshot command with `--out` writes a private PNG to a new
+  file and returns the metadata. If the file exists, the command fails.
+  Omit `--out` to print the JSON result with `data_base64`.
 - Output is the JSON `result` on stdout. Exit codes: 0 ok; 1 protocol error,
   with the error code on stderr; 2 usage error; 3 session, app or
   connection failure.
@@ -154,6 +180,9 @@ surface-devtools mcp
   `action_set_value`). Descriptions come from the capabilities. A tool call
   is forwarded only when its method is listed there. A protocol error is a
   tool result with `isError: true`.
+- The MCP tool `page_screenshot` accepts optional `scale` and `max_side`.
+  It returns an `image/png` content block followed by a text block with
+  the image metadata.
 - The command layer uses a small `Connection` trait. Native TCP is the only
   implementation; a web transport is out of scope until decision 0001 D-B
   lifts.
@@ -163,5 +192,5 @@ surface-devtools mcp
 client does not use that list: it works from `Devtools.capabilities` at run
 time.
 
-The e2e suite `devtools-native` also drives the app through this binary
-(steps DN11 to DN14). `cargo xtask web e2e` builds it first.
+The e2e suite `devtools-native` drives the app through this binary and
+checks raw, CLI and MCP screenshots. `cargo xtask web e2e` builds it first.

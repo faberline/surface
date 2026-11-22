@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 
 [features]
-devtools = ["surface-app/bridge", "surface-app/devtools", "dep:jet-bridge-protocol", "dep:serde_json", "dep:getrandom", "dep:js-sys", "dep:surface-devtools-protocol"]
+devtools = ["surface-app/bridge", "surface-app/devtools", "dep:jet-bridge-protocol", "dep:serde_json", "dep:getrandom", "dep:js-sys", "dep:surface-devtools-protocol", "dep:base64", "dep:png"]
 macos-accessibility = ["dep:accesskit", "dep:accesskit_winit"]
 
 [dependencies]
@@ -25,7 +25,9 @@ workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 pollster.workspace = true
 arboard = { version = "3.6", default-features = false }
+base64 = { version = "0.22", optional = true }
 getrandom = { version = "0.3", optional = true }
+png = { version = "0.18", optional = true }
 surface-devtools-protocol = { workspace = true, optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]

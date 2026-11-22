@@ -7,6 +7,7 @@
 pub mod cli;
 pub mod connection;
 pub mod mcp;
+mod screenshot;
 pub mod session;
 
 use connection::{ClientError, Connection};
@@ -86,6 +87,9 @@ pub fn run_with(
     match parsed.command {
         cli::Command::Call { method, params } => {
             cli::execute_call(conn.as_mut(), &method, params, out, err)
+        }
+        cli::Command::SaveScreenshot { params, path } => {
+            cli::execute_screenshot(conn.as_mut(), params, Path::new(&path), out, err)
         }
         cli::Command::Mcp => match mcp::McpServer::new().serve(conn.as_mut(), input, out) {
             Ok(()) => 0,

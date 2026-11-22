@@ -165,6 +165,35 @@ fn capabilities_lists_the_executor_methods() {
     let caps: surface_devtools_protocol::Capabilities = serde_json::from_value(result).unwrap();
     assert_eq!(caps.version, VERSION);
 }
+
+#[test]
+fn capabilities_advertises_native_capture_only_when_the_host_installs_it() {
+    use surface_devtools_protocol::PAGE_SCREENSHOT;
+
+    let mut runtime = runtime();
+    runtime.set_host_methods(&[PAGE_SCREENSHOT]);
+    let result = ok(&mut runtime, "Devtools.capabilities", json!({}));
+    assert_eq!(
+        result["methods"],
+        json!(METHODS
+            .into_iter()
+            .chain([PAGE_SCREENSHOT])
+            .collect::<Vec<_>>())
+    );
+    assert_eq!(
+        result["domains"],
+        json!(["Devtools", "DOM", "Action", "Page"])
+    );
+    assert_eq!(
+        err(&mut runtime, PAGE_SCREENSHOT, json!({})).0,
+        ErrorCode::UnknownMethod
+    );
+
+    runtime.set_host_methods(&[]);
+    let result = ok(&mut runtime, "Devtools.capabilities", json!({}));
+    assert_eq!(result["methods"], json!(METHODS));
+}
+
 #[test]
 fn capabilities_rejects_another_version_and_unknown_methods() {
     let mut runtime = runtime();

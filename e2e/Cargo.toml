@@ -8,7 +8,9 @@ description = "Browser and bridge end-to-end journeys for Surface, driven throug
 
 [dependencies]
 anyhow = "1"
+base64 = "0.22"
 jet-bridge.workspace = true
+png = "0.18"
 serde.workspace = true
 serde_json.workspace = true
 tokio = { version = "1.40", features = ["rt-multi-thread", "macros", "process", "time", "io-util", "sync", "fs"] }
