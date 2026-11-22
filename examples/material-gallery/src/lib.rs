@@ -1,6 +1,7 @@
 mod badge_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
+mod progress_demo;
 mod rail_icons;
 mod snackbar_demo;
 mod wide_navigation_rail_demo;
@@ -8,6 +9,7 @@ mod wide_navigation_rail_demo;
 use badge_demo::{BadgeDemo, BadgeEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
+use progress_demo::{ProgressDemo, ProgressEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{AnimationFrame, AnimationUpdate, Application, View};
@@ -42,6 +44,7 @@ pub struct Gallery {
     snackbar_demo: SnackbarDemo,
     badge_demo: BadgeDemo,
     drawer_demo: DrawerDemo,
+    progress_demo: ProgressDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -70,6 +73,7 @@ impl Default for Gallery {
             snackbar_demo: SnackbarDemo::default(),
             badge_demo: BadgeDemo::default(),
             drawer_demo: DrawerDemo::default(),
+            progress_demo: ProgressDemo::default(),
         }
     }
 }
@@ -84,6 +88,7 @@ pub enum Message {
     Badge(BadgeEvent),
     Drawer(usize),
     DrawerDemo(DrawerDemoEvent),
+    Progress(ProgressEvent),
     Nav(usize),
     Theme,
     Radio(usize),
@@ -109,6 +114,9 @@ impl Application for Gallery {
         if self.drawer_demo.visible() {
             return self.drawer_demo.text_scale();
         }
+        if self.progress_demo.visible() {
+            return self.progress_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -122,20 +130,28 @@ impl Application for Gallery {
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
+        let progress = self.progress_demo.viewport_changed(width);
         (self.section == wide_navigation_rail_demo::SECTION && (inline || modal))
             || (self.drawer_demo.visible() && drawer)
+            || (self.progress_demo.visible() && progress)
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
         let inline = self.wide_rail_demo.frame(&frame);
         let modal = self.modal_wide_rail_demo.frame(&frame);
         let snackbar = self.snackbar_demo.frame(&frame);
         let drawer = self.drawer_demo.frame(&frame);
+        let progress = self.progress_demo.frame(&frame);
         AnimationUpdate {
-            rebuild: inline.rebuild || modal.rebuild || snackbar.rebuild || drawer.rebuild,
+            rebuild: inline.rebuild
+                || modal.rebuild
+                || snackbar.rebuild
+                || drawer.rebuild
+                || progress.rebuild,
             request_next: inline.request_next
                 || modal.request_next
                 || snackbar.request_next
-                || drawer.request_next,
+                || drawer.request_next
+                || progress.request_next,
         }
     }
     fn update(&mut self, m: Message) {
@@ -148,6 +164,9 @@ impl Application for Gallery {
                 if i != navigation_drawer_demo::SECTION {
                     self.drawer_demo.leave();
                 }
+                if i != progress_demo::SECTION {
+                    self.progress_demo.leave();
+                }
             }
             Message::Rail(i) => self.rail = i,
             Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
@@ -157,6 +176,7 @@ impl Application for Gallery {
             Message::Badge(event) => self.badge_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
+            Message::Progress(event) => self.progress_demo.update(event),
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
@@ -201,6 +221,9 @@ impl Application for Gallery {
         };
         if self.drawer_demo.visible() {
             return self.drawer_demo.view(&t, self.dark);
+        }
+        if self.progress_demo.visible() {
+            return self.progress_demo.view(&t, self.dark);
         }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
@@ -359,6 +382,7 @@ impl Application for Gallery {
                                 true,
                                 Message::Click,
                             ),
+                            ProgressDemo::show_button(&t),
                         ]),
                         t.row([
                             t.chip(
@@ -806,7 +830,8 @@ mod web {
             "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime),
             "snackbar": s.snackbar_demo.inspect(s.text_scale()),
             "badges": s.badge_demo.inspect(s.text_scale(), s.dark),
-            "navigation_drawer": s.drawer_demo.inspect(s.text_scale(), &runtime)
+            "navigation_drawer": s.drawer_demo.inspect(s.text_scale(), &runtime),
+            "progress": s.progress_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() })
         }).to_string()
     })
     }

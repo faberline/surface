@@ -284,6 +284,35 @@ and 256 ms duration from the pinned [AndroidX drawer implementation](https://and
 Reduce Motion settles immediately. The older drawer builders remain
 available.
 
+## Progress indicators
+
+Use `Theme::linear_progress_indicator` or `Theme::circular_progress_indicator`
+to show the progress of an operation. Give `ProgressIndicatorOptions` a
+stable ID and a localized operation name. The indicator tells assistive
+technology the value in `ProgressState::Determinate`. Use
+`ProgressState::Indeterminate` until an actual value is known. Both
+states are read-only and stay out of the Tab order.
+
+Choose `ProgressShape::Flat` or `ProgressShape::Wavy`. The linear builder
+takes the available width and a `LayoutDirection`. Its nominal width is
+240 dp. Flat bars are 4 dp high and wavy bars are 10 dp high. The fill
+and the round stop marker follow the logical direction. Circular
+indicators are 40 dp or 48 dp in diameter. Their determinate fill starts
+at twelve o'clock and moves clockwise.
+
+The application owns the value and clock. Pass elapsed milliseconds
+from a monotonic timer, and keep requesting frames while an unknown
+progress or wavy indicator is visible. Pass the user's Reduce Motion
+preference. The unknown state keeps a visible static frame under that
+preference. The wavy shape uses sampled vector contours on both
+renderers. The existing `Theme::linear_progress` builder remains available.
+
+In Material Gallery, choose 動作, then 進度指示器. Change the progress mode,
+value, direction, motion, theme and text size. The sample uses the
+[Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
+the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
+and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
 ## Motion
 
 `surface_material::motion` holds the Material 3 motion tokens, copied from

@@ -16,7 +16,7 @@ use accesskit::{
 };
 use accesskit_consumer::{FilterResult, FullNodeId, NodeRef, Tree};
 use objc2::{
-    ClassType, DeclaredClass, declare_class, msg_send_id,
+    ClassType, DeclaredClass, declare_class, msg_send, msg_send_id,
     mutability::InteriorMutable,
     rc::Id,
     runtime::{AnyObject, Sel},
@@ -1145,6 +1145,19 @@ declare_class!(
                 attributes = unsafe { attributes.arrayByAddingObject(current) };
             }
             attributes
+        }
+
+        #[method(respondsToSelector:)]
+        fn responds_to_selector(&self, selector: Sel) -> bool {
+            // AppKit's legacy AXValue query can infer writability from the
+            // setter selector even when isAccessibilitySelectorAllowed denies it.
+            if selector == sel!(setAccessibilityValue:)
+                && self.resolve(|node| node.role() == Role::ProgressIndicator).unwrap_or(false)
+            {
+                false
+            } else {
+                unsafe { msg_send![super(self), respondsToSelector: selector] }
+            }
         }
 
         #[method_id(accessibilityAttributeValue:)]
