@@ -1,0 +1,121 @@
+{
+  "source": {
+    "base_github_commit": "2725afd021230fd73df20582098a2587d2149a20",
+    "tree_paths": 657,
+    "original_forward_paths": 12,
+    "source_recovery_diff_empty": true,
+    "forward_roundtrip": true
+  },
+  "rust": {
+    "filename": "navigation-rail-workspace-verified.log",
+    "sha256": "eb9c4528b43795acf2ca4f7e97577d9d67924de77ec14c69422106778066d6b6",
+    "passed": 1373,
+    "failed": 0,
+    "ignored": 25,
+    "exit": 0,
+    "command": "sh scripts/check.sh"
+  },
+  "chrome_focused": {
+    "filename": "navigation-rail-browser-focused.log",
+    "sha256": "80990eea59d4b4c4e1b61e426847f247269243a0f7e7bce52274a08b56591a75",
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 430,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 1,
+        "checks": 382
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 1,
+        "checks": 48
+      }
+    ]
+  },
+  "chrome_full": {
+    "filename": "navigation-rail-browser-full.log",
+    "sha256": "93e5a690d2018753a9bd0b212709969016e2740398f0a9cd144677db72ea45b7",
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 24357,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 174,
+        "checks": 20491
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 64,
+        "checks": 3866
+      }
+    ],
+    "exit": 0
+  },
+  "runtime_receipt_digests": [
+    {
+      "filename": "native-navigation-rail/native-audit.json",
+      "sha256": "4a3131002231ef1daa9bc42b81e168d99a185e111f74913564fec07595269892"
+    },
+    {
+      "filename": "native-navigation-rail/final-evidence.sha256",
+      "sha256": "3cdeaae7a7379b7d23103f7e11d871220d497e2e211a298253108750ff604afe"
+    },
+    {
+      "filename": "navigation-rail-browser-receipt.md",
+      "sha256": "26fbae379b11b1eccb6b9e0b5cf4bf8bef54acc46a9fae7073e94764909d5e23"
+    },
+    {
+      "filename": "navigation-rail-browser-focused-artifacts.sha256",
+      "sha256": "2a1651c52bae533335240d3018f5f2be6bdca88f5b5a907aed9278a8f8ccc8c1"
+    },
+    {
+      "filename": "navigation-rail-browser-full-artifacts.sha256",
+      "sha256": "e63ab8a6f49a04af14f23d46ad416e4491ffeca6cfdb65e52fd43cafefa8f8ea"
+    }
+  ],
+  "historical_capture_matches": [
+    {
+      "png": "native-light-ltr.png",
+      "sha256": "2eeca6d8ce0794d5fc52305efc0615ac1849b9a28e32cc90e7925de26569a909",
+      "dimensions": [
+        960,
+        800
+      ]
+    },
+    {
+      "png": "native-dark-rtl-200.png",
+      "sha256": "0bf4217d27e7a5fd9fe4cb15fd80f71ac75941ff3ae7fcd4c8b2830517bb6077",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    {
+      "png": "native-dark-rtl-200-selected.png",
+      "sha256": "3813866d1b79ea65b652b144ffcab56f2698e6a139d573704524d0ca67fdba23",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    {
+      "png": "native-dark-rtl-200-mcp.png",
+      "sha256": "3813866d1b79ea65b652b144ffcab56f2698e6a139d573704524d0ca67fdba23",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    {
+      "png": "web-dark-rtl-200.png",
+      "sha256": "c8b95254b21e1f12488d0c3adba4f39836915aa1196b2bbd9cd6d3247ca141cd",
+      "dimensions": [
+        640,
+        1408
+      ]
+    }
+  ]
+}
