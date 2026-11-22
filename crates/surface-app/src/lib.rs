@@ -67,6 +67,7 @@ pub struct View<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
@@ -110,6 +111,7 @@ impl<M> View<M> {
             value: None,
             roving: None,
             dismiss: None,
+            dismiss_on_tab: false,
             modal_focus_fallback: None,
             cancel_within: None,
             key: None,
@@ -228,6 +230,11 @@ impl<M> View<M> {
     /// Report whether this control opens or collapses a panel.
     pub fn disclosure_expanded(mut self, expanded: bool) -> Self {
         self.node = self.node.disclosure_expanded(expanded);
+        self
+    }
+    /// Mark this button as a menu trigger and report whether its menu is open.
+    pub fn menu_expanded(mut self, expanded: bool) -> Self {
+        self.node = self.node.menu_expanded(expanded);
         self
     }
     /// Report current-page state without making the control a toggle.
@@ -396,6 +403,12 @@ impl<M> View<M> {
     pub fn modal_overlay(mut self, dismiss: M) -> Self {
         self.dismiss = Some(dismiss);
         self.modal_layer = Some(ModalLayer::Panel);
+        self
+    }
+    /// Let Tab and Shift+Tab dismiss this modal menu. The same key continues
+    /// traversal from the restored opener when only this scope closes.
+    pub fn dismiss_modal_on_tab(mut self) -> Self {
+        self.dismiss_on_tab = true;
         self
     }
     /// Preserve focus when this modal closes and its opener is gone. First
@@ -598,6 +611,7 @@ struct Binding<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
@@ -974,6 +988,7 @@ impl<A: Application> Runtime<A> {
                     value: view.value,
                     roving: view.roving,
                     dismiss: view.dismiss,
+                    dismiss_on_tab: view.dismiss_on_tab,
                     modal_focus_fallback: view.modal_focus_fallback,
                     cancel_within: view.cancel_within,
                     key: view.key,
@@ -1413,6 +1428,9 @@ impl<A: Application> Runtime<A> {
             Event::FocusNext { reverse } => {
                 if self.has_captured_drag() {
                     self.cancel_pointer()?;
+                }
+                if self.dismiss_tab_scope()? {
+                    return Ok(true);
                 }
                 let controls: Vec<_> = self
                     .dom

@@ -46,6 +46,9 @@ pub(super) fn element(
     if let Some(expanded) = node.expanded_state() {
         set_bool(&element, "aria-expanded", expanded)?;
     }
+    if node.has_menu_popup() {
+        element.set_attribute("aria-haspopup", "menu")?;
+    }
     let current_page = node.is_current_page();
     if current_page == Some(true) {
         element.set_attribute("aria-current", "page")?;

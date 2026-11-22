@@ -1,7 +1,7 @@
 //! Project the current application scope into the macOS accessibility tree.
 use accesskit::{
-    Action, ActionData, ActionRequest, AriaCurrent, Live, Node, NodeId, Rect, Role, ScrollUnit,
-    Toggled, TreeId, TreeInfo, TreeUpdate,
+    Action, ActionData, ActionRequest, AriaCurrent, HasPopup, Live, Node, NodeId, Rect, Role,
+    ScrollUnit, Toggled, TreeId, TreeInfo, TreeUpdate,
 };
 use std::collections::BTreeMap;
 use surface::{NodeId as SurfaceId, Role as SurfaceRole};
@@ -378,6 +378,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
     if let Some(expanded) = authored.expanded_state() {
         node.set_expanded(expanded);
     }
+    if authored.has_menu_popup() {
+        node.set_has_popup(HasPopup::Menu);
+    }
     if let Some(value) = authored.is_checked() {
         node.set_toggled(if authored.is_mixed() {
             Toggled::Mixed
@@ -406,6 +409,7 @@ mod tests {
         tooltip: bool,
         modal: bool,
         focusable_notice: bool,
+        menu_expanded: Option<bool>,
     }
 
     impl Application for App {
@@ -424,6 +428,22 @@ mod tests {
             .on_press(*self)
             .accessible_activation()
             .described_by("action-tip");
+            let menu_controls = self.menu_expanded.map(|expanded| {
+                [
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Button, "Commands")
+                            .id("commands")
+                            .text("Commands"),
+                    )
+                    .menu_expanded(expanded),
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Button, "Details")
+                            .id("details")
+                            .text("Details"),
+                    )
+                    .disclosure_expanded(expanded),
+                ]
+            });
             let status = self.notice.map(|message| {
                 let mut node = SurfaceNode::new(SurfaceRole::Status, message)
                     .id("status")
@@ -454,6 +474,7 @@ mod tests {
             View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop").styled(Style::column()))
                 .children(
                     std::iter::once(button)
+                        .chain(menu_controls.into_iter().flatten())
                         .chain(status)
                         .chain(modal)
                         .chain(tooltip),
@@ -480,6 +501,28 @@ mod tests {
             .iter()
             .find_map(|(id, node)| (node.label() == Some(name)).then_some((*id, node)))
             .unwrap()
+    }
+
+    #[test]
+    fn an_accesskit_menu_trigger_reports_popup_and_expansion() {
+        let mut runtime = Runtime::new(App::default()).unwrap();
+        let mut tree = Tree::default();
+        for open in [false, true] {
+            runtime
+                .apply(App {
+                    menu_expanded: Some(open),
+                    ..App::default()
+                })
+                .unwrap();
+            let view = update(&mut runtime, &mut tree);
+            let trigger = named(&view, "Commands").1;
+            assert_eq!(trigger.role(), Role::Button);
+            assert_eq!(trigger.is_expanded(), Some(open));
+            assert_eq!(trigger.has_popup(), Some(HasPopup::Menu));
+            let disclosure = named(&view, "Details").1;
+            assert_eq!(disclosure.is_expanded(), Some(open));
+            assert_eq!(disclosure.has_popup(), None);
+        }
     }
 
     #[test]

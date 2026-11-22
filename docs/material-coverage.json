@@ -9,8 +9,8 @@
       "status": "partial",
       "variant_review": "pending",
       "desktop_evidence": "Native headless Metal verifies 40 size, kind, shape and theme settings, 320 dp dark RTL at 200%, first-enabled focus, disabled skip, keyboard selection and command overflow. Two replays produce nine identical PNGs across Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/84e69640dd0773e411bdb5fee5feb1f4d0e2b508/docs/evidence/md3/button-groups-v0.1.13",
-      "web_evidence": "Chrome WebGPU M83–M88 cover actual pixels, adjacent width redistribution, cancellation and Reduce Motion, Connected shape, first-enabled roving and required selection, compact RTL scroll, and focus when a command moves inline.",
-      "implemented": "Standard commands and toggles, Connected toggles, five sizes, round and square shape, controlled single/multiple/required selection, first-enabled focus, adaptive one-row layout and trailing command overflow. System high contrast, menu popup hints and Tab dismissal, physical touch and live screen-reader speech remain open.",
+      "web_evidence": "Chrome WebGPU M83–M88 cover actual pixels, adjacent width redistribution, cancellation and Reduce Motion, Connected shape, first-enabled roving and required selection, compact RTL scroll, and focus when a command moves inline. M94 verifies menu popup hints and forward and reverse Tab dismissal. https://github.com/faberline/surface/tree/d42e6a99fac981dc80197aa4e9f92b040820b011/docs/evidence/md3/split-button-v0.1.14",
+      "implemented": "Standard commands and toggles, Connected toggles, five sizes, round and square shape, controlled single/multiple/required selection, first-enabled focus, adaptive one-row layout and trailing command overflow. Overflow exposes a menu popup hint and supports Tab dismissal in both directions. System high contrast, physical touch and live screen-reader speech remain open.",
       "unit_evidence": "Material and Runtime tests cover accepted press lifecycle, old and new roving policies, RTL layout, width motion and clipped focus reveal, required selection and modal fallback."
     },
     {
@@ -68,10 +68,12 @@
     {
       "id": "split-button",
       "spec": "https://m3.material.io/components/split-button",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Native headless Metal covers 40 size, appearance and theme settings, 320 dp dark RTL at 200%, keyboard command selection and focus return, disabled actions, and above or below menu placement. Two replays produce 12 identical PNGs across Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/d42e6a99fac981dc80197aa4e9f92b040820b011/docs/evidence/md3/split-button-v0.1.14",
+      "web_evidence": "Chrome WebGPU M89–M93 covers actual paint, independent pointer and keyboard actions, popup accessibility, forward and reverse Tab, rotating contours, Reduce Motion and compact XL in dark RTL at 200%. https://github.com/faberline/surface/tree/d42e6a99fac981dc80197aa4e9f92b040820b011/docs/evidence/md3/split-button-v0.1.14",
+      "implemented": "Five sizes, four appearances, three leading content forms, independent actions and an optional anchored command menu. Large text can wrap with matched face heights. RTL mirrors the layout and chevron turn. System high contrast, touch ripple, physical touch and live screen-reader speech remain open.",
+      "unit_evidence": "Material tests cover layout and paint, chevron motion, popup placement, keyboard focus and disabled actions. Runtime and platform tests cover Tab dismissal, the menu wire fields and AccessKit popup semantics."
     },
     {
       "id": "date-pickers",

@@ -24,6 +24,8 @@ mod material_rail;
 mod material_side_sheet;
 #[path = "material_snackbar.rs"]
 mod material_snackbar;
+#[path = "material_split_button.rs"]
+mod material_split_button;
 #[path = "material_toolbar.rs"]
 mod material_toolbar;
 #[path = "material_tooltip.rs"]
@@ -43,7 +45,7 @@ pub const STEPS: &[&str] = &[
     "M43", "M44", "M45", "M46", "M47", "M48", "M49", "M50", "M51", "M52", "M53", "M54", "M55",
     "M56", "M57", "M58", "M59", "M60", "M61", "M62", "M63", "M64", "M65", "M66", "M67", "M68",
     "M69", "M70", "M71", "M72", "M73", "M74", "M75", "M76", "M77", "M78", "M79", "M80", "M81",
-    "M82", "M83", "M84", "M85", "M86", "M87", "M88",
+    "M82", "M83", "M84", "M85", "M86", "M87", "M88", "M89", "M90", "M91", "M92", "M93", "M94",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -128,7 +130,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_tooltip::run(env, chrome, &url).await?;
     material_carousel::run(env, chrome, &url).await?;
     material_card::run(env, chrome, &url).await?;
-    material_button_group::run(env, chrome, &url).await
+    material_button_group::run(env, chrome, &url).await?;
+    material_split_button::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

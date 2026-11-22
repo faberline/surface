@@ -145,6 +145,7 @@ does not change application state.
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
 | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
+| `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
@@ -319,6 +320,38 @@ value, direction, motion, theme and text size. The sample uses the
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
 
+## Split buttons
+
+Use `Theme::split_button` with a stable ID, the available logical width
+and the layout direction. Choose ExtraSmall, Small, Medium, Large or
+ExtraLarge and use the Elevated, Filled, Tonal or Outlined appearance.
+Supply text, an icon with a spoken name, or both for the leading action.
+The trailing button has its own name and opens related options. Each
+enabled action has a Tab stop. The faces grow to the same height when
+large text wraps.
+
+The application controls open state and each button's availability.
+Use `SplitButtonMenu` for a built-in command menu or supply a custom
+disclosure. The command menu aligns to the trailing face in the
+layout's logical direction. It can move above the row and scroll when
+the viewport needs more room. Enter or Space opens it, Arrow keys move
+focus, and Escape returns focus to the trigger. Tab closes the menu
+and continues keyboard traversal in the chosen direction.
+
+Keep one `SplitButtonMotion` per mounted button. Opt into frame input
+and pass the frame, pointer input, accepted press and open state to
+`advance`. The trailing chevron turns toward the split as it opens.
+Reduce Motion selects the endpoint immediately.
+
+In Material Gallery, choose 動作, then 分割按鈕. The example can place
+the control near the bottom to show how its menu flips. Run the scene
+in headless mode to replay it and capture PNGs without opening a window.
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
+
+[Material 3 split button specs](https://m3.material.io/components/split-button/specs) ·
+[Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.624e8f2da4007fc8.json) ·
+[Menu button keyboard and semantics](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/)
+
 ## Button groups
 
 Use `Theme::button_group` with stable item IDs and the available logical
@@ -350,6 +383,8 @@ starts at the right edge and can scroll horizontally. Keep the popup
 open flag in the application and handle command activation and dismissal
 there. On resize, close the popup when its trigger leaves the layout.
 Focus can follow the same command back into the row.
+The overflow trigger reports a menu popup. Tab closes the menu and
+continues from the trigger.
 
 The extra-small resting inner corner follows the 8 dp value from the
 published token export. The guideline text lists 4 dp. In Material

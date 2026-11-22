@@ -24,6 +24,9 @@ pub mod shape;
 mod side_sheet;
 mod snackbar;
 mod snackbar_state;
+mod split_button;
+mod split_button_layout;
+mod split_button_motion;
 mod standard_navigation_drawer;
 mod tokens;
 mod toolbar;
@@ -67,6 +70,12 @@ pub use side_sheet::{
 };
 pub use snackbar::SnackbarOptions;
 pub use snackbar_state::{SnackbarDuration, SnackbarId, SnackbarQueue};
+pub use split_button::{
+    SplitButtonAppearance, SplitButtonContent, SplitButtonLeading, SplitButtonMenu,
+    SplitButtonMenuItem, SplitButtonOptions, SplitButtonSize,
+};
+pub use split_button_layout::{place_split_button_popup, SplitButtonAnchor};
+pub use split_button_motion::SplitButtonMotion;
 pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };

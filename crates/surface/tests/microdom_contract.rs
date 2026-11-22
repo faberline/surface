@@ -81,6 +81,40 @@ fn snapshots_are_byte_stable_across_independent_builds() {
 }
 
 #[test]
+fn menu_popup_uses_the_existing_expanded_and_disclosure_wire_fields() {
+    let button = Node::new(Role::Button, "Actions");
+    let plain = serde_json::to_value(&button).unwrap();
+    assert!(plain.get("expanded").is_none());
+    assert!(plain.get("disclosure").is_none());
+
+    for open in [false, true] {
+        let menu = button.clone().menu_expanded(open);
+        assert_eq!(menu.expanded_state(), Some(open));
+        assert!(menu.has_menu_popup());
+        let disclosure = button.clone().disclosure_expanded(open);
+        assert_eq!(disclosure.expanded_state(), Some(open));
+        assert!(!disclosure.has_menu_popup());
+
+        let mut expected = plain.clone();
+        expected["expanded"] = open.into();
+        assert_eq!(serde_json::to_value(&menu).unwrap(), expected);
+        assert_eq!(
+            serde_json::from_value::<Node>(expected.clone()).unwrap(),
+            menu
+        );
+        expected["disclosure"] = true.into();
+        assert_eq!(serde_json::to_value(&disclosure).unwrap(), expected);
+        assert_eq!(
+            serde_json::from_value::<Node>(expected).unwrap(),
+            disclosure
+        );
+    }
+    let non_button = Node::new(Role::Group, "Menu").menu_expanded(true);
+    assert_eq!(non_button.expanded_state(), None);
+    assert!(!non_button.has_menu_popup());
+}
+
+#[test]
 fn snapshot_has_golden_bytes() {
     let dom = MicroDom::new(Node::new(Role::Window, "App").id("app"));
     let json = serde_json::to_string(&dom.snapshot()).unwrap();

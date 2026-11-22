@@ -315,6 +315,31 @@ impl<A: Application> Runtime<A> {
             .and_then(|b| b.dismiss.clone());
         self.message(message).map(|_| true)
     }
+    /// Deliver the top scope's opt-in dismiss message. Consume the key if
+    /// an IME composition owns it or the app does not return to the parent.
+    pub(crate) fn dismiss_tab_scope(&mut self) -> Result<bool, AppError> {
+        let Some(dismiss) = self
+            .active_scope_root()
+            .and_then(|id| self.bindings.get(&id))
+            .filter(|binding| binding.dismiss_on_tab)
+            .and_then(|binding| binding.dismiss.clone())
+        else {
+            return Ok(false);
+        };
+        if self.has_pending_composition() {
+            return Ok(true);
+        }
+        let containing_depth = self.scopes.len() - 1;
+        let containing_id = self
+            .scopes
+            .iter()
+            .rev()
+            .nth(1)
+            .map(|scope| scope.id.clone());
+        self.message(Some(dismiss))?;
+        Ok(self.scopes.len() != containing_depth
+            || self.scopes.last().map(|scope| &scope.id) != containing_id.as_ref())
+    }
     pub(crate) fn navigate_control(&mut self, key: EditKey) -> Result<bool, AppError> {
         let Some(id) = self.focused_node() else {
             return Ok(false);
