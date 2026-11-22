@@ -144,6 +144,7 @@ does not change application state.
 | API | Current behavior |
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
+| `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
@@ -317,6 +318,46 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Button groups
+
+Use `Theme::button_group` with stable item IDs and the available logical
+width. Standard groups fit their content and can mix commands and
+toggles. Connected groups fill their allocated width with a common
+appearance and use toggles. Both types stay on one row and support
+ExtraSmall, Small, Medium, Large and ExtraLarge. Text and icon-only
+buttons use the size tokens and at least a 48 dp touch target.
+Connected faces share a height when large text needs more room.
+
+The application owns selected IDs and updates its state on an item
+message. Choose command, single or multiple selection. A required
+selection keeps at least one currently selected item. Tab enters on the
+first enabled item. Arrow keys move focus and mirror in RTL. Enter and
+Space activate the focused item.
+
+Keep one `ButtonGroupMotion` per mounted group. Opt into frame input and
+call `advance` from `Application::animation_frame_with_press`. Pass the
+current pressed stable ID from the runtime. A Standard press aims to grow
+the pressed face by 15% of its resting width using spare width from the
+adjacent buttons. The spring can pass that target before settling if
+the neighbors have more room. A Connected press changes its shape.
+Reduce Motion keeps Standard widths stable and lets the interaction
+state change immediately.
+
+Supply `ButtonGroupOverflow` to open a trailing command menu when the
+row runs out of width. Toggles stay in the row. A constrained RTL row
+starts at the right edge and can scroll horizontally. Keep the popup
+open flag in the application and handle command activation and dismissal
+there. On resize, close the popup when its trigger leaves the layout.
+Focus can follow the same command back into the row.
+
+The extra-small resting inner corner follows the 8 dp value from the
+published token export. The guideline text lists 4 dp. In Material
+Gallery, choose 動作, then 按鈕群組.
+
+[Material 3 button group specs](https://m3.material.io/components/button-groups/specs) ·
+[Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.082d7fd6e058b011.json) ·
+[Accessibility](https://m3.material.io/components/button-groups/accessibility)
 
 ## Cards
 

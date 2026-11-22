@@ -622,7 +622,9 @@ impl<A: Application> Runtime<A> {
             touch: self.touch.as_ref().map(|touch| touch.contact),
             touch_cancelled: std::mem::take(&mut self.touch_cancelled),
         };
-        let update = self.app.animation_frame_with_input(frame, input);
+        let update = self
+            .app
+            .animation_frame_with_press(frame, input, self.pressed.as_deref());
         if let Some(touch) = &mut self.touch {
             touch.suppress_activation |= update.suppress_touch_activation;
         }

@@ -1,6 +1,7 @@
 mod app_bar_demo;
 mod badge_demo;
 mod bottom_sheet_demo;
+mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
 mod modal_wide_navigation_rail_demo;
@@ -16,6 +17,7 @@ mod wide_navigation_rail_demo;
 use app_bar_demo::{AppBarDemo, AppBarEvent};
 use badge_demo::{BadgeDemo, BadgeEvent};
 use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
+use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
@@ -63,6 +65,7 @@ pub struct Gallery {
     progress_demo: ProgressDemo,
     side_sheet_demo: SideSheetDemo,
     bottom_sheet_demo: BottomSheetDemo,
+    button_group_demo: ButtonGroupDemo,
     card_demo: CardDemo,
     carousel_demo: CarouselDemo,
     app_bar_demo: AppBarDemo,
@@ -99,6 +102,7 @@ impl Default for Gallery {
             progress_demo: ProgressDemo::default(),
             side_sheet_demo: SideSheetDemo::default(),
             bottom_sheet_demo: BottomSheetDemo::default(),
+            button_group_demo: ButtonGroupDemo::default(),
             card_demo: CardDemo::default(),
             carousel_demo: CarouselDemo::default(),
             app_bar_demo: AppBarDemo::default(),
@@ -121,6 +125,7 @@ pub enum Message {
     Progress(ProgressEvent),
     SideSheet(SideSheetEvent),
     BottomSheet(BottomSheetEvent),
+    ButtonGroup(ButtonGroupEvent),
     Card(CardEvent),
     Carousel(CarouselEvent),
     AppBar(AppBarEvent),
@@ -160,6 +165,9 @@ impl Application for Gallery {
         if self.bottom_sheet_demo.visible() {
             return self.bottom_sheet_demo.text_scale();
         }
+        if self.button_group_demo.visible() {
+            return self.button_group_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -191,6 +199,7 @@ impl Application for Gallery {
         let progress = self.progress_demo.viewport_changed(width);
         let side_sheet = self.side_sheet_demo.viewport_changed(width, height);
         let bottom_sheet = self.bottom_sheet_demo.viewport_changed(height);
+        let button_group = self.button_group_demo.viewport_changed(width);
         let carousel = self.carousel_demo.viewport_changed(width, height);
         let app_bar = self.app_bar_demo.viewport_changed(width);
         let toolbar = self.toolbar_demo.viewport_changed(width, height);
@@ -200,13 +209,14 @@ impl Application for Gallery {
             || (self.progress_demo.visible() && progress)
             || (self.side_sheet_demo.visible() && side_sheet)
             || (self.bottom_sheet_demo.visible() && bottom_sheet)
+            || button_group
             || carousel
             || app_bar
             || toolbar
             || tooltip
     }
     fn observes_frame_input(&self) -> bool {
-        self.tooltip_demo.visible()
+        self.tooltip_demo.visible() || self.button_group_demo.visible()
     }
     fn cancel_transient(&mut self) -> bool {
         self.tooltip_demo.visible() && self.tooltip_demo.dismiss()
@@ -220,6 +230,18 @@ impl Application for Gallery {
         let other = self.animation_frame(frame);
         update.animation.rebuild |= other.rebuild;
         update.animation.request_next |= other.request_next;
+        update
+    }
+    fn animation_frame_with_press(
+        &mut self,
+        frame: AnimationFrame<'_>,
+        input: FrameInput<'_>,
+        pressed: Option<&str>,
+    ) -> InputAnimationUpdate {
+        let button_group = self.button_group_demo.frame(&frame, pressed);
+        let mut update = self.animation_frame_with_input(frame, input);
+        update.animation.rebuild |= button_group.rebuild;
+        update.animation.request_next |= button_group.request_next;
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
@@ -274,6 +296,9 @@ impl Application for Gallery {
                 if i != bottom_sheet_demo::SECTION {
                     self.bottom_sheet_demo.leave();
                 }
+                if i != button_group_demo::SECTION {
+                    self.button_group_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -301,6 +326,7 @@ impl Application for Gallery {
             Message::Progress(event) => self.progress_demo.update(event),
             Message::SideSheet(event) => self.side_sheet_demo.update(event),
             Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
+            Message::ButtonGroup(event) => self.button_group_demo.update(event),
             Message::Card(event) => self.card_demo.update(event),
             Message::Carousel(event) => self.carousel_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
@@ -359,6 +385,9 @@ impl Application for Gallery {
         }
         if self.bottom_sheet_demo.visible() {
             return self.bottom_sheet_demo.view(&t, self.dark);
+        }
+        if self.button_group_demo.visible() {
+            return self.button_group_demo.view(&t, self.dark);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -475,6 +504,7 @@ impl Application for Gallery {
                     AppBarDemo::show_button(&t),
                     ToolbarDemo::show_button(&t),
                     CarouselDemo::show_button(&t),
+                    ButtonGroupDemo::show_button(&t),
                 ]));
                 let nav_items = [
                     ("nav-home", "Home", "H"),
@@ -994,6 +1024,7 @@ mod web {
             "side_sheet": s.side_sheet_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "bottom_sheet": s.bottom_sheet_demo.inspect(),
             "cards": s.card_demo.inspect(),
+            "button_group": s.button_group_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),

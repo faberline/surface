@@ -33,9 +33,17 @@ impl Roving {
         }
     }
 }
+
+#[derive(Clone, Copy)]
+pub(crate) struct RovingGroup {
+    pub(crate) options: Roving,
+    pub(crate) first_enabled_on_entry: bool,
+}
+
 pub(crate) struct FocusScope {
     id: String,
     restore: Option<String>,
+    fallback: Option<String>,
 }
 pub(crate) struct RangeDrag {
     id: String,
@@ -73,7 +81,7 @@ impl<A: Application> Runtime<A> {
                 .active_scope_root()
                 .is_none_or(|root| self.descendant(id, root))
     }
-    fn group(&self, id: NodeId) -> Option<(NodeId, Roving)> {
+    fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
         let mut parent = self.dom.get(id).ok()?.parent();
         while let Some(id) = parent {
             if let Some(options) = self.bindings.get(&id).and_then(|b| b.roving) {
@@ -84,12 +92,21 @@ impl<A: Application> Runtime<A> {
         None
     }
     fn members(&self, group: NodeId) -> Vec<NodeId> {
+        let measured = self.computed.as_ref().filter(|_| {
+            self.bindings[&group]
+                .roving
+                .is_some_and(|group| group.first_enabled_on_entry)
+        });
         self.dom
             .iter()
             .filter(|(id, node)| {
                 node.is_tab_stop()
                     && self.in_scope(*id)
                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
+                    && measured.is_none_or(|layout| {
+                        let bounds = layout.nodes[id.index()].bounds;
+                        bounds.width > 0. && bounds.height > 0.
+                    })
             })
             .map(|(id, _)| id)
             .collect()
@@ -98,17 +115,25 @@ impl<A: Application> Runtime<A> {
         if !self.in_scope(id) {
             return false;
         }
-        let Some((group, _)) = self.group(id) else {
+        let Some((group, options)) = self.group(id) else {
             return true;
         };
         let members = self.members(group);
         let current = self.focused_node().filter(|id| members.contains(id));
-        let selected = members.iter().copied().find(|id| {
-            self.dom
-                .get(*id)
-                .is_ok_and(|n| n.is_selected() == Some(true) || n.is_checked() == Some(true))
-        });
-        current.or(selected).or_else(|| members.first().copied()) == Some(id)
+        let entry = || {
+            if !options.first_enabled_on_entry {
+                let selected = members.iter().copied().find(|id| {
+                    self.dom.get(*id).is_ok_and(|n| {
+                        n.is_selected() == Some(true) || n.is_checked() == Some(true)
+                    })
+                });
+                if selected.is_some() {
+                    return selected;
+                }
+            }
+            members.first().copied()
+        };
+        current.or_else(entry) == Some(id)
     }
     pub(crate) fn scope_entry(&self) -> Option<String> {
         self.dom
@@ -176,10 +201,29 @@ impl<A: Application> Runtime<A> {
         }
         while self.scopes.len() > common {
             let scope = self.scopes.pop().expect("scope exists");
-            self.focused = scope.restore.filter(|key| self.focusable_in_scope(key));
+            self.focused = scope
+                .restore
+                .filter(|key| self.focusable_in_scope(key))
+                .or_else(|| {
+                    let fallback = scope.fallback?;
+                    self.focused
+                        .as_ref()
+                        .filter(|key| self.focusable_in_scope(key))
+                        .cloned()
+                        .or_else(|| self.focusable_in_scope(&fallback).then_some(fallback))
+                });
+        }
+        let fallback = |key: &str| {
+            self.dom
+                .by_id(key)
+                .and_then(|id| self.bindings.get(&id)?.modal_focus_fallback.clone())
+        };
+        for scope in &mut self.scopes {
+            scope.fallback = fallback(&scope.id);
         }
         for id in panels.into_iter().skip(common) {
             self.scopes.push(FocusScope {
+                fallback: fallback(&id),
                 id,
                 restore: self.focused.clone(),
             });
@@ -305,7 +349,7 @@ impl<A: Application> Runtime<A> {
                 return Ok(true);
             }
         }
-        let Some((group, options)) = self
+        let Some((group, roving)) = self
             .bindings
             .get(&id)
             .and_then(|b| b.roving.map(|options| (id, options)))
@@ -313,6 +357,7 @@ impl<A: Application> Runtime<A> {
         else {
             return Ok(false);
         };
+        let options = roving.options;
         let members = self.members(group);
         if members.is_empty() {
             return Ok(false);
