@@ -34,6 +34,31 @@ pub struct ScrollMetrics {
     pub stuck: bool,
 }
 
+/// A vertical wheel or trackpad scroll in logical pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct VerticalScroll {
+    /// Positive moves down through the content. Negative moves up.
+    pub delta: f32,
+    /// The scroll offset before this event.
+    pub offset: f32,
+    /// The largest scroll offset at the current layout.
+    pub max_offset: f32,
+}
+
+/// The amount a vertical scroll hook takes and the message it dispatches.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct VerticalScrollResponse<M> {
+    /// Use the sign of the offered delta. The runtime bounds this amount by
+    /// that delta. A non-finite amount or one in the opposite direction takes
+    /// no scroll from the view.
+    pub consumed: f32,
+    /// Dispatched after the remaining scroll is saved.
+    pub message: M,
+}
+
+pub(crate) type VerticalScrollHandler<M> =
+    Rc<dyn Fn(VerticalScroll) -> Option<VerticalScrollResponse<M>>>;
+
 pub(crate) type Pending = Rc<RefCell<Vec<(String, ScrollTarget)>>>;
 
 #[derive(Default)]

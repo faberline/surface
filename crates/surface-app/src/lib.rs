@@ -40,7 +40,7 @@ pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
 pub use motion::{ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
 pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
-pub use scroll_control::{ScrollMetrics, ScrollTarget};
+pub use scroll_control::{ScrollMetrics, ScrollTarget, VerticalScroll, VerticalScrollResponse};
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
     cell::{Cell, RefCell},
@@ -66,6 +66,7 @@ pub struct View<M> {
     key: Option<KeyHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
+    vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
     cursor: Option<CursorStyle>,
     drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
@@ -104,6 +105,7 @@ impl<M> View<M> {
             key: None,
             context: None,
             stick: false,
+            vertical_scroll: None,
             cursor: None,
             drag_bindings: captured_drag::Bindings::default(),
             accessible_activation: false,
@@ -297,6 +299,19 @@ impl<M> View<M> {
         self.stick = on;
         self
     }
+
+    /// Let a clipped view with a stable ID take part of a vertical wheel or
+    /// trackpad scroll. Return `None` to leave the whole delta with the view.
+    /// Only the enabled scroll target in the current interaction scope receives
+    /// the hook. It runs for nonzero finite vertical deltas, even at either
+    /// end of the scroll range. Nested scroll targets do not bubble the event.
+    pub fn on_vertical_scroll(
+        mut self,
+        handler: impl Fn(VerticalScroll) -> Option<VerticalScrollResponse<M>> + 'static,
+    ) -> Self {
+        self.vertical_scroll = Some(Rc::new(handler));
+        self
+    }
     /// The mouse cursor over this node. It does not change the DOM, layout
     /// or display list. Read it with `Runtime::cursor_at`.
     pub fn cursor(mut self, cursor: CursorStyle) -> Self {
@@ -476,6 +491,7 @@ struct Binding<M> {
     key: Option<KeyHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
+    vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
     cursor: Option<CursorStyle>,
     drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
@@ -789,6 +805,7 @@ impl<A: Application> Runtime<A> {
                 || view.roving.is_some()
                 || view.dismiss.is_some()
                 || view.stick
+                || view.vertical_scroll.is_some()
                 || view.accessible_scroll
                 || view.accessible_scroll_pages
                 || !view.drag_bindings.is_empty())
@@ -831,6 +848,7 @@ impl<A: Application> Runtime<A> {
                     key: view.key,
                     context: view.context,
                     stick: view.stick,
+                    vertical_scroll: view.vertical_scroll,
                     cursor: view.cursor,
                     drag_bindings: view.drag_bindings,
                     accessible_activation: view.accessible_activation,
@@ -1384,7 +1402,8 @@ impl<A: Application> Runtime<A> {
                     .copied();
                 let Some(id) = target else { return Ok(false) };
                 let g = &computed.nodes[id.index()];
-                let s = self.dom.get(id)?.style();
+                let node = self.dom.get(id)?;
+                let s = node.style();
                 let extent = self.dom.children(id).fold(
                     (g.bounds.width, g.bounds.height),
                     |(w, h), child| {
@@ -1395,9 +1414,31 @@ impl<A: Application> Runtime<A> {
                         )
                     },
                 );
+                let max_x = (extent.0 - g.bounds.width).max(0.);
+                let max_y = (extent.1 - g.bounds.height).max(0.);
+                let response = if delta_y != 0. && !node.is_disabled() {
+                    self.bindings[&id]
+                        .vertical_scroll
+                        .as_ref()
+                        .and_then(|scroll| {
+                            scroll(VerticalScroll {
+                                delta: delta_y,
+                                offset: s.scroll_y,
+                                max_offset: max_y,
+                            })
+                        })
+                } else {
+                    None
+                };
+                let consumed = response
+                    .as_ref()
+                    .map(|response| response.consumed)
+                    .filter(|consumed| consumed.is_finite())
+                    .unwrap_or(0.)
+                    .clamp(delta_y.min(0.), delta_y.max(0.));
                 let offset = (
-                    (s.scroll_x + delta_x).clamp(0., (extent.0 - g.bounds.width).max(0.)),
-                    (s.scroll_y + delta_y).clamp(0., (extent.1 - g.bounds.height).max(0.)),
+                    (s.scroll_x + delta_x).clamp(0., max_x),
+                    (s.scroll_y + (delta_y - consumed)).clamp(0., max_y),
                 );
                 let key = self.stable(id).expect("scroll node has ID");
                 self.scroll.insert(key, offset);
@@ -1407,6 +1448,7 @@ impl<A: Application> Runtime<A> {
                 self.dom.set_style(id, style)?;
                 self.computed = None;
                 self.ime_area = None;
+                self.message(response.map(|response| response.message))?;
                 Ok(true)
             }
         }
