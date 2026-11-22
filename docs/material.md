@@ -148,6 +148,7 @@ does not change application state.
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
+| `carousel` | Multi-browse, two free-scroll layouts, two Hero alignments and full-screen paging with adaptive card sizes and logical focus navigation |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -315,6 +316,39 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Carousels
+
+Choose a `CarouselKind` from MultiBrowse, Uncontained,
+UncontainedMultiAspectRatio, HeroStart, HeroCenter or FullScreen.
+Set the allocated width, height, scroll axis and layout direction in
+`CarouselOptions`. Give `CarouselLayout::new` the same options and the
+item aspect ratios in display order. Mixed ratios range from 9:16 to
+16:9. Use the vertical axis for a portrait full-screen carousel.
+
+Keep one `CarouselState` in the application. Pass the layout, state and
+items to `Theme::carousel`. Each item has a stable ID, passive content,
+a localized action name and an activation message. Include the item’s
+position and count in its name. Forward `CarouselInput` to `state.apply`.
+Call `state.advance` from `Application::animation_frame` with the host
+clock and Reduce Motion preference. When the viewport or motion
+preference changes, rebuild `CarouselLayout` with that value.
+
+The contained layouts snap after wheel or captured drag input. The
+uncontained layouts scroll freely. Arrow keys follow the scroll axis
+and mirror horizontal movement in RTL. Home, End and Page Up or Down
+reveal the target before giving it focus. Enter and Space invoke the
+focused item. Offscreen and undersized cards leave the focus order.
+Horizontal carousels inside a scrolling page let the page keep vertical
+wheel input. Offer a separate action that opens the complete vertical
+list. The Gallery list returns focus to the control that opened it.
+
+In Material Gallery, choose 動作, then 輪播. Use the layout chips to
+switch among all six arrangements. Art inside the cards has a rectangular
+clip. Rounded descendant clips and photo rendering remain open.
+
+[Material 3 carousel specs](https://m3.material.io/components/carousel/specs) ·
+[Android carousel guide](https://developer.android.com/develop/ui/compose/components/carousel)
 
 ## Tooltips
 

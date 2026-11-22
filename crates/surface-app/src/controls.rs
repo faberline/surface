@@ -1,5 +1,17 @@
 use crate::{AppError, Application, EditKey, ModalLayer, Runtime};
+use std::rc::Rc;
 use surface::{Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
+
+/// Mount or update a named control, then focus it without activating it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FocusNavigation<M> {
+    /// Stable ID of the enabled control to focus after the rebuild.
+    pub target: String,
+    /// Message that runs before the runtime checks the target.
+    pub message: M,
+}
+
+pub(crate) type FocusNavigationHandler<M> = Rc<dyn Fn(EditKey) -> Option<FocusNavigation<M>>>;
 
 /// One tab stop per group. Arrows move within it and skip disabled controls.
 #[derive(Clone, Copy, Debug)]
@@ -276,6 +288,22 @@ impl<A: Application> Runtime<A> {
             };
             let id = self.stable(id).expect("slider has ID");
             return self.set_value(&id, value);
+        }
+        if self.in_scope(id) && node.is_focusable() && !self.has_pending_composition() {
+            if let Some(navigation) = self.bindings[&id]
+                .focus_navigation
+                .as_ref()
+                .and_then(|navigate| navigate(key))
+            {
+                self.apply(navigation.message)?;
+                if self.dom.by_id(&navigation.target).is_some_and(|target| {
+                    self.in_scope(target) && self.dom.get(target).is_ok_and(Node::is_focusable)
+                }) {
+                    self.focused = Some(navigation.target);
+                    self.layout_focus = None;
+                }
+                return Ok(true);
+            }
         }
         let Some((group, options)) = self
             .bindings

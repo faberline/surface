@@ -186,10 +186,12 @@
     {
       "id": "carousel",
       "spec": "https://m3.material.io/components/carousel/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Native headless Metal exercises all six arrangements, offscreen keyboard focus, Show All and 320 dp dark RTL at 200% text. Two replays yield eight identical PNGs across Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/edf190321420eac0c59818624c800b6fd1c7f9b2/docs/evidence/md3/carousels-v0.1.11",
+      "web_evidence": "Chrome WebGPU M73–M77 cover actual paint and clipping, horizontal and vertical wheel, keyboard focus, Show All, mouse and touch dragging, touch cancellation and 320 dp dark RTL with Reduce Motion. See the v0.1.11 evidence.",
+      "implemented": "Multi-browse, uncontained, mixed aspect ratios, start and centered Hero, and vertical or horizontal full-screen. Caller-owned state controls visibility, resizing, snapping and activation. Rounded descendant clips, photo rendering, physical touch and live screen reader speech remain open.",
+      "unit_evidence": "Carousel geometry and controller tests cover thin viewports, logical RTL and Reduce Motion, free scroll, snap, focus, and held wheel and drag. Runtime tests verify split wheel routing and programmatic focus across rebuilds."
     },
     {
       "id": "checkbox",
