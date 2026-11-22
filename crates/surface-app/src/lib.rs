@@ -306,8 +306,18 @@ impl<M> View<M> {
     /// the hook. It runs for nonzero finite vertical deltas, even at either
     /// end of the scroll range. Nested scroll targets do not bubble the event.
     pub fn on_vertical_scroll(
-        mut self,
+        self,
         handler: impl Fn(VerticalScroll) -> Option<VerticalScrollResponse<M>> + 'static,
+    ) -> Self {
+        self.on_vertical_scroll_with_focus(move |scroll, _| handler(scroll))
+    }
+
+    /// Like [`Self::on_vertical_scroll`], with the stable ID of the current
+    /// focus target when there is one. The focus target may be outside the
+    /// scroll view, for example in a toolbar beside it.
+    pub fn on_vertical_scroll_with_focus(
+        mut self,
+        handler: impl Fn(VerticalScroll, Option<&str>) -> Option<VerticalScrollResponse<M>> + 'static,
     ) -> Self {
         self.vertical_scroll = Some(Rc::new(handler));
         self
@@ -1421,11 +1431,14 @@ impl<A: Application> Runtime<A> {
                         .vertical_scroll
                         .as_ref()
                         .and_then(|scroll| {
-                            scroll(VerticalScroll {
-                                delta: delta_y,
-                                offset: s.scroll_y,
-                                max_offset: max_y,
-                            })
+                            scroll(
+                                VerticalScroll {
+                                    delta: delta_y,
+                                    offset: s.scroll_y,
+                                    max_offset: max_y,
+                                },
+                                self.focused(),
+                            )
                         })
                 } else {
                     None

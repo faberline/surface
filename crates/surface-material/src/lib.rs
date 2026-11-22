@@ -19,6 +19,8 @@ mod snackbar;
 mod snackbar_state;
 mod standard_navigation_drawer;
 mod tokens;
+mod toolbar;
+mod toolbar_scroll;
 pub mod typography;
 mod vector_icon;
 mod wide_navigation_rail;
@@ -51,6 +53,11 @@ pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
 pub use tokens::ColorScheme;
+pub use toolbar::{
+    ToolbarButtonOptions, ToolbarContent, ToolbarKind, ToolbarOptions, ToolbarPalette,
+    ToolbarVisibility,
+};
+pub use toolbar_scroll::{ToolbarScroll, ToolbarScrollBehavior};
 pub use vector_icon::VectorIcon;
 pub use wide_navigation_rail::{
     ModalWideNavigationRailCollapse, ModalWideNavigationRailOptions,
