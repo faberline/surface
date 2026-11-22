@@ -4,6 +4,7 @@ mod bottom_sheet_demo;
 mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
+mod extended_fab_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
@@ -21,6 +22,7 @@ use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
 use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
+use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -69,6 +71,7 @@ pub struct Gallery {
     bottom_sheet_demo: BottomSheetDemo,
     button_group_demo: ButtonGroupDemo,
     split_demo: SplitDemo,
+    extended_fab_demo: ExtendedFabDemo,
     card_demo: CardDemo,
     carousel_demo: CarouselDemo,
     app_bar_demo: AppBarDemo,
@@ -107,6 +110,7 @@ impl Default for Gallery {
             bottom_sheet_demo: BottomSheetDemo::default(),
             button_group_demo: ButtonGroupDemo::default(),
             split_demo: SplitDemo::default(),
+            extended_fab_demo: ExtendedFabDemo::default(),
             card_demo: CardDemo::default(),
             carousel_demo: CarouselDemo::default(),
             app_bar_demo: AppBarDemo::default(),
@@ -131,6 +135,7 @@ pub enum Message {
     BottomSheet(BottomSheetEvent),
     ButtonGroup(ButtonGroupEvent),
     Split(SplitEvent),
+    ExtendedFab(ExtendedFabEvent),
     Card(CardEvent),
     Carousel(CarouselEvent),
     AppBar(AppBarEvent),
@@ -176,6 +181,9 @@ impl Application for Gallery {
         if self.split_demo.visible() {
             return self.split_demo.text_scale();
         }
+        if self.extended_fab_demo.is_open() {
+            return self.extended_fab_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -209,6 +217,7 @@ impl Application for Gallery {
         let bottom_sheet = self.bottom_sheet_demo.viewport_changed(height);
         let button_group = self.button_group_demo.viewport_changed(width);
         let split = self.split_demo.viewport_changed(width);
+        let extended_fab = self.extended_fab_demo.viewport_changed(width, height);
         let carousel = self.carousel_demo.viewport_changed(width, height);
         let app_bar = self.app_bar_demo.viewport_changed(width);
         let toolbar = self.toolbar_demo.viewport_changed(width, height);
@@ -220,13 +229,17 @@ impl Application for Gallery {
             || (self.bottom_sheet_demo.visible() && bottom_sheet)
             || button_group
             || split
+            || extended_fab
             || carousel
             || app_bar
             || toolbar
             || tooltip
     }
     fn observes_frame_input(&self) -> bool {
-        self.tooltip_demo.visible() || self.button_group_demo.visible() || self.split_demo.visible()
+        self.tooltip_demo.visible()
+            || self.button_group_demo.visible()
+            || self.split_demo.visible()
+            || self.extended_fab_demo.is_open()
     }
     fn cancel_transient(&mut self) -> bool {
         self.tooltip_demo.visible() && self.tooltip_demo.dismiss()
@@ -250,9 +263,11 @@ impl Application for Gallery {
     ) -> InputAnimationUpdate {
         let button_group = self.button_group_demo.frame(&frame, pressed);
         let split = self.split_demo.frame(&frame, &input, pressed);
+        let extended_fab = self.extended_fab_demo.frame(&frame, &input, pressed);
         let mut update = self.animation_frame_with_input(frame, input);
-        update.animation.rebuild |= button_group.rebuild || split.rebuild;
-        update.animation.request_next |= button_group.request_next || split.request_next;
+        update.animation.rebuild |= button_group.rebuild || split.rebuild || extended_fab.rebuild;
+        update.animation.request_next |=
+            button_group.request_next || split.request_next || extended_fab.request_next;
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
@@ -313,6 +328,9 @@ impl Application for Gallery {
                 if i != split_demo::SECTION {
                     self.split_demo.leave();
                 }
+                if i != extended_fab_demo::SECTION {
+                    self.extended_fab_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -342,6 +360,7 @@ impl Application for Gallery {
             Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
             Message::ButtonGroup(event) => self.button_group_demo.update(event),
             Message::Split(event) => self.split_demo.update(event),
+            Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Card(event) => self.card_demo.update(event),
             Message::Carousel(event) => self.carousel_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
@@ -406,6 +425,9 @@ impl Application for Gallery {
         }
         if self.split_demo.visible() {
             return self.split_demo.view(&t, self.dark);
+        }
+        if self.extended_fab_demo.is_open() {
+            return self.extended_fab_demo.view(&t, self.dark);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -524,6 +546,7 @@ impl Application for Gallery {
                     CarouselDemo::show_button(&t),
                     ButtonGroupDemo::show_button(&t),
                     SplitDemo::show_button(&t),
+                    ExtendedFabDemo::show_button(&t),
                 ]));
                 let nav_items = [
                     ("nav-home", "Home", "H"),
@@ -1045,6 +1068,7 @@ mod web {
             "cards": s.card_demo.inspect(),
             "button_group": s.button_group_demo.inspect(),
             "split_button": s.split_demo.inspect(),
+            "extended_fab": s.extended_fab_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),

@@ -147,6 +147,7 @@ does not change application state.
 | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
 | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+| `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
@@ -319,6 +320,44 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Extended floating action buttons
+
+Use `Theme::extended_fab` for the main action of a page. Choose Small,
+Medium, or Large. Choose Tonal Primary, Tonal Secondary, Tonal Tertiary,
+Primary, Secondary, or Tertiary. Pass the visible action label, an optional
+icon, and the available logical width. Choose standard or lowered elevation.
+The button keeps its stable ID and
+accessible name while it changes size. A text-only action keeps its label
+when the application requests collapse.
+
+The application controls expansion, visibility, and placement. Anchor the
+view to the page edge or the center of a bottom slot and leave room for its
+focus ring. Supply a stable fallback control for focus when the action is
+disabled or hidden. On a narrow page, pass the actual space available so
+large labels can wrap. Surface mirrors the icon and label for RTL.
+
+Keep one `ExtendedFabMotion` per action. Opt into frame input and call
+`advance` with the animation frame, input, accepted press, effective
+expanded state, and visible state. For a text-only action, pass true as
+the effective expanded state. Keep the component mounted during
+visibility changes. Reduce Motion uses the current endpoints.
+
+To follow scroll, store `ExtendedFabScroll` in the application state.
+Call its `apply` in the scroll region's vertical observer. It uses body
+travel, allows the body to scroll, and updates expansion after 40 dp of
+downward travel or the first real reverse travel.
+
+In Material Gallery, choose 動作, then 延伸浮動按鈕. Scroll the notes to
+collapse or extend the action. Run the same scene in headless mode to
+capture PNGs without opening a window.
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
+
+The size-specific minimum widths follow the pinned Expressive styles.
+The general Material placement drawing gives an 80 dp minimum.
+[Material 3 Extended FAB specs](https://m3.material.io/components/extended-fab/specs) ·
+[Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.36500f77b86d20a5.json) ·
+[Pinned Expressive sizes](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/lib/java/com/google/android/material/floatingactionbutton/res/values/styles.xml#L282-L330)
 
 ## Split buttons
 

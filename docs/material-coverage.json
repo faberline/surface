@@ -25,10 +25,12 @@
     {
       "id": "extended-fab",
       "spec": "https://m3.material.io/components/extended-fab/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Native headless Metal covers 36 size, palette and theme profiles in both forms. The compact dark RTL profile checks 320 dp at 200% Chinese text. Semantic keys exercise the same named action and focus fallback. Two runs reproduce 18 PNGs across Page.screenshot, CLI and MCP with zero visible windows. https://github.com/faberline/surface/tree/4d9e1e7704a496e7d150cc108e337ef59eea4354/docs/evidence/md3/extended-fab-v0.1.15",
+      "web_evidence": "Chrome WebGPU M95–M99 verifies rendered palette and shadow, Chrome accessibility, trusted input, body travel and width animation, interruption, Reduce Motion, 320 dp dark RTL at 200%, and focus when the action hides. https://github.com/faberline/surface/tree/4d9e1e7704a496e7d150cc108e337ef59eea4354/docs/evidence/md3/extended-fab-v0.1.15",
+      "implemented": "Small, Medium and Large Expressive sizes, six palettes, standard and lowered elevation, text-only or icon and label, a stable disabled-aware action, adaptive label wrap, and controlled expansion and visibility. Shared radial ripple, destination transform, system high contrast, physical touch and live screen-reader speech remain open.",
+      "unit_evidence": "Material tests cover 36 token profiles, measured adaptive layout and clip containment, interaction paint, disabled and hidden input, focus recovery, motion timing and reversal, Reduce Motion and real scroll bounds."
     },
     {
       "id": "fab-menu",
