@@ -1,0 +1,25 @@
+{
+  "command": "sh scripts/check.sh",
+  "exit": 0,
+  "product_manifest_sha256": "ab509500c45db5eeea805051223354fc28da203cc725f1603467cdda316a0096",
+  "e2e_manifest_sha256": "b0b60aeb4e23147cca3c95e46391af20d74211d097d7dec6558c33e2dfd15d63",
+  "material_regression_manifest_sha256": "83b04e10d5c90ace87330476483f2a0ce7441b1fb9cbc15aa7b494d6e9270382",
+  "workspace_log_sha256": "a8f11e7576d4a3e4624875ae69fbe74837bfbc76fa0ecc8b44c153e4655df9b6",
+  "rust_test_harnesses": 234,
+  "rust_tests": {
+    "passed": 1397,
+    "failed": 0,
+    "ignored": 25,
+    "measured": 0,
+    "filtered_out": 0
+  },
+  "browser_harness_rust_tests": 14,
+  "gates": [
+    "provenance",
+    "format",
+    "strict Clippy across workspace targets and features",
+    "Rust workspace tests",
+    "Gallery and showcase WASM",
+    "ui-runtime WASM consumer with and without default features"
+  ]
+}
