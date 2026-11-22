@@ -123,6 +123,9 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
         .current_dir(&env.root)
         .env("SURFACE_DEVTOOLS_SESSION", &devtools_file)
         .env("SURFACE_BRIDGE_SESSION", &bridge_file)
+        // The PNG comparison spans separate requests after a checkbox
+        // activation. Hold the state static while comparing the transports.
+        .env("SURFACE_REDUCED_MOTION", "1")
         .stdout(Stdio::null())
         .stderr(Stdio::from(append(&diagnostic)?))
         .kill_on_drop(true)
@@ -388,6 +391,12 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
         let (raw, _) = Screenshot::from_reply(&raw_result)?;
         let cli_png = screenshot_cli(&tool, &session_arg, folder, &mut transcripts)?;
         let mcp_png = screenshot_mcp(&mcp)?;
+        std::fs::write(
+            env.artifact("devtools-native-screenshot-scaled.png"),
+            &raw.png,
+        )?;
+        std::fs::write(env.artifact("devtools-native-screenshot-cli.png"), &cli_png)?;
+        std::fs::write(env.artifact("devtools-native-screenshot-mcp.png"), &mcp_png)?;
         check!(
             raw.png == cli_png,
             "raw and CLI PNGs differ for the same frame"
@@ -396,8 +405,6 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
             raw.png == mcp_png,
             "raw and MCP PNGs differ for the same frame"
         );
-        std::fs::write(env.artifact("devtools-native-screenshot-cli.png"), &cli_png)?;
-        std::fs::write(env.artifact("devtools-native-screenshot-mcp.png"), &mcp_png)?;
         check!(
             !transcripts.contains(&token),
             "the client printed the session token"
