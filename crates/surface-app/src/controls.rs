@@ -1,5 +1,5 @@
-use crate::{AppError, Application, EditKey, Runtime};
-use surface::{Direction, NodeId, RangeValue, Rect, Role};
+use crate::{AppError, Application, EditKey, ModalLayer, Runtime};
+use surface::{Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
 
 /// One tab stop per group. Arrows move within it and skip disabled controls.
 #[derive(Clone, Copy, Debug)]
@@ -31,23 +31,35 @@ pub(crate) struct RangeDrag {
     range: RangeValue,
 }
 
-impl<A: Application> Runtime<A> {
-    fn descendant(&self, mut id: NodeId, parent: NodeId) -> bool {
-        loop {
-            if id == parent {
-                return true;
-            }
-            let Some(next) = self.dom.get(id).ok().and_then(|n| n.parent()) else {
-                return false;
-            };
-            id = next;
+pub(crate) fn descendant(dom: &MicroDom, mut id: NodeId, parent: NodeId) -> bool {
+    loop {
+        if id == parent {
+            return true;
         }
+        let Some(next) = dom.get(id).ok().and_then(Node::parent) else {
+            return false;
+        };
+        id = next;
+    }
+}
+
+impl<A: Application> Runtime<A> {
+    pub(crate) fn descendant(&self, id: NodeId, parent: NodeId) -> bool {
+        descendant(&self.dom, id, parent)
+    }
+    pub(crate) fn active_scope_root(&self) -> Option<NodeId> {
+        self.scopes.last().and_then(|s| self.dom.by_id(&s.id))
+    }
+    pub(crate) fn has_interaction_binding(&self, id: NodeId) -> bool {
+        self.bindings
+            .get(&id)
+            .is_some_and(super::Binding::accepts_interaction)
     }
     pub(crate) fn in_scope(&self, id: NodeId) -> bool {
-        self.scopes
-            .last()
-            .and_then(|s| self.dom.by_id(&s.id))
-            .is_none_or(|root| self.descendant(id, root))
+        self.has_interaction_binding(id)
+            && self
+                .active_scope_root()
+                .is_none_or(|root| self.descendant(id, root))
     }
     fn group(&self, id: NodeId) -> Option<(NodeId, Roving)> {
         let mut parent = self.dom.get(id).ok()?.parent();
@@ -99,13 +111,43 @@ impl<A: Application> Runtime<A> {
                     .and_then(|id| self.stable(id))
             })
     }
-    pub(crate) fn reconcile_controls(&mut self) {
+    fn focusable_in_scope(&self, key: &str) -> bool {
+        self.dom
+            .by_id(key)
+            .is_some_and(|id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
+    }
+
+    pub(crate) fn reconcile_controls(&mut self, focus_after_removal: Option<String>) {
         let old_focus = self.focused.clone();
-        let panels: Vec<_> = self
-            .dom
-            .paint_order()
+        // Bindings follow the current tree's preorder. Later sibling layers
+        // cover earlier siblings. A nested layer always follows its parent.
+        self.modal_layers.clear();
+        self.modal_layers.extend(
+            self.bindings
+                .iter()
+                .filter_map(|(&id, binding)| binding.visual_overlay.then_some((None, id))),
+        );
+        self.modal_layers
+            .extend(self.bindings.iter().filter_map(|(&panel, binding)| {
+                if !binding.accepts_interaction() {
+                    return None;
+                }
+                binding.dismiss.as_ref()?;
+                let backdrop = match binding.modal_layer? {
+                    ModalLayer::BackdropParent => self.dom.get(panel).ok()?.parent(),
+                    ModalLayer::Panel => None,
+                };
+                Some((backdrop, panel))
+            }));
+        let mut order = self.dom.paint_order();
+        self.dom.apply_modal_layers(&mut order, &self.modal_layers);
+        let panels: Vec<_> = order
             .into_iter()
-            .filter(|id| self.bindings.get(id).is_some_and(|b| b.dismiss.is_some()))
+            .filter(|id| {
+                self.bindings
+                    .get(id)
+                    .is_some_and(|b| b.accepts_interaction() && b.dismiss.is_some())
+            })
             .filter_map(|id| self.stable(id))
             .collect();
         let common = self
@@ -115,13 +157,14 @@ impl<A: Application> Runtime<A> {
             .zip(&panels)
             .take_while(|(a, b)| a == b)
             .count();
+        let same_scope = common == self.scopes.len() && common == panels.len();
+        if !same_scope {
+            self.layout_focus = None;
+            self.clear_modal_pointer();
+        }
         while self.scopes.len() > common {
             let scope = self.scopes.pop().expect("scope exists");
-            self.focused = scope.restore.filter(|key| {
-                self.dom.by_id(key).is_some_and(|id| {
-                    self.in_scope(id) && self.dom.get(id).is_ok_and(|n| n.is_focusable())
-                })
-            });
+            self.focused = scope.restore.filter(|key| self.focusable_in_scope(key));
         }
         for id in panels.into_iter().skip(common) {
             self.scopes.push(FocusScope {
@@ -129,6 +172,27 @@ impl<A: Application> Runtime<A> {
                 restore: self.focused.clone(),
             });
             self.focused = self.scope_entry();
+        }
+        if same_scope {
+            if let Some(suppression) = self
+                .focused_node()
+                .and_then(|id| self.bindings.get(&id)?.interaction_suppression.as_ref())
+            {
+                self.focused = suppression
+                    .focus_fallback
+                    .as_ref()
+                    .filter(|key| self.focusable_in_scope(key))
+                    .cloned();
+                self.layout_focus = None;
+            } else if let Some(target) = focus_after_removal.filter(|target| {
+                self.focused_node()
+                    .and_then(|id| self.dom.get(id).ok())
+                    .is_none_or(|node| !node.is_focusable())
+                    && self.focusable_in_scope(target)
+            }) {
+                self.focused = Some(target);
+                self.layout_focus = None;
+            }
         }
         if self.scopes.last().is_some() && self.focused_node().is_none_or(|id| !self.in_scope(id)) {
             self.focused = self.scope_entry();
@@ -150,13 +214,40 @@ impl<A: Application> Runtime<A> {
             self.range_drag = None;
         }
     }
-    pub(crate) fn outside_scope(&self, x: f32, y: f32) -> bool {
-        let Some(id) = self.scopes.last().and_then(|s| self.dom.by_id(&s.id)) else {
+    pub(crate) fn clear_modal_pointer(&mut self) {
+        self.modal_outside = false;
+        self.pressed = None;
+        self.hovered = None;
+        self.text_drag = None;
+        self.range_drag = None;
+    }
+    pub(crate) fn outside_scope(&self, x: f32, y: f32, hit: Option<NodeId>) -> bool {
+        let Some(root) = self.active_scope_root() else {
             return false;
         };
-        self.computed.as_ref().is_some_and(|c| {
-            let g = &c.nodes[id.index()];
-            !g.bounds.intersect(g.clip).contains(x, y)
+        self.computed.as_ref().is_some_and(|layout| {
+            let contains = |id: NodeId| {
+                let geometry = &layout.nodes[id.index()];
+                geometry.bounds.intersect(geometry.clip).contains(x, y)
+            };
+            if contains(root) {
+                return false;
+            }
+            if self.bindings[&root].modal_layer.is_none() {
+                return true;
+            }
+            // A painted or scrollable positioned descendant is part of the
+            // modal even at a blank point. A transparent spacer is not.
+            hit.is_none()
+                && !self.dom.iter().any(|(id, node)| {
+                    let style = node.style();
+                    style.position != Position::Flow
+                        && (style.clip
+                            || style.background.3 > 0
+                            || (style.border_width > 0. && style.border_color.3 > 0))
+                        && contains(id)
+                        && self.descendant(id, root)
+                })
         })
     }
     pub(crate) fn dismiss_scope(&mut self) -> Result<bool, AppError> {
@@ -199,6 +290,12 @@ impl<A: Application> Runtime<A> {
             return Ok(false);
         }
         let index = members.iter().position(|node| *node == id);
+        let reversed = self.dom.get(group)?.is_row_reversed();
+        let key = match (key, options.direction, reversed) {
+            (EditKey::Left, Direction::Row, true) => EditKey::Right,
+            (EditKey::Right, Direction::Row, true) => EditKey::Left,
+            _ => key,
+        };
         let next = match (key, options.direction) {
             (EditKey::Home, _) => 0,
             (EditKey::End, _) => members.len() - 1,

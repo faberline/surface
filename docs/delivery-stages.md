@@ -1,5 +1,14 @@
 # Delivery stages
 
+## Component releases
+
+Land each verified Material component through its own pull request to
+`main`. Include required shared changes and name their purpose in the
+pull request. Verify the native and browser behavior on that exact
+source. Publish a GitHub source release from the merge commit after
+both hosted CI jobs pass on it. Keep the full framework milestone
+separate from the component release series.
+
 ## Current checkpoint: surface@0.1.0
 
 [Milestone](https://github.com/faberline/surface/milestone/1) · [Landing issue #5](https://github.com/faberline/surface/issues/5)

@@ -1,6 +1,7 @@
-use surface::{Color, Role, TextMeasurer};
-use surface_app::{Application, EditKey, Event, Runtime, View};
-use surface_material::{ChoiceState, Theme};
+use surface::{Color, ExtendedPaintOp, PaintOp, Rect, Role, TextMeasurer};
+use surface_app::{AccessibilityActivationResult, Application, EditKey, Event, Runtime, View};
+use surface_material::{typography, ChoiceState, NavigationRailItem, Theme, VectorIcon};
+use surface_wgpu::TextSystem;
 
 type Build = Box<dyn Fn(&Theme) -> View<()>>;
 struct App(bool, Build);
@@ -99,6 +100,8 @@ fn roles_and_state() {
     let node = |id: &str| r.dom().get(r.dom().by_id(id).unwrap()).unwrap();
     assert_eq!(node("a").is_selected(), Some(true));
     assert_eq!(node("b").is_selected(), Some(false));
+    assert_eq!(node("a").is_current_page(), None);
+    assert_eq!(node("b").is_current_page(), None);
     assert!(node("c").is_disabled());
     assert!(!node("a").is_disabled());
 }
@@ -210,4 +213,244 @@ fn arrow_keys_move_focus() {
     // Down again skips the disabled `c` and wraps to `a`.
     r.dispatch(down).unwrap();
     assert_eq!(r.focused(), Some("a"));
+}
+
+const SETTINGS: &str = "全部使用者設定";
+const SETTINGS_NAME: &str = "全部使用者設定，管理帳號";
+const DESTINATIONS: [(&str, &str, &str); 3] = [
+    ("settings", SETTINGS, SETTINGS_NAME),
+    ("disabled", "封存", " "),
+    ("search", "搜尋", "搜尋檔案"),
+];
+
+struct VectorRail {
+    theme: Theme,
+    scale: f32,
+    icon: VectorIcon,
+    selected: usize,
+    activations: usize,
+}
+
+impl VectorRail {
+    fn new(theme: Theme, scale: f32) -> Self {
+        Self {
+            theme,
+            scale,
+            icon: VectorIcon::new([[2., 3.], [22., 3.], [12., 21.]]).unwrap(),
+            selected: 0,
+            activations: 0,
+        }
+    }
+}
+
+impl Application for VectorRail {
+    type Message = usize;
+
+    fn update(&mut self, index: usize) {
+        self.selected = index;
+        self.activations += 1;
+    }
+
+    fn text_scale(&self) -> f32 {
+        self.scale
+    }
+
+    fn view(&self) -> View<usize> {
+        self.theme.page([self.theme.navigation_rail(
+            "compact-rail",
+            "主要導覽",
+            DESTINATIONS
+                .into_iter()
+                .enumerate()
+                .map(|(index, (id, label, accessible_name))| {
+                    self.theme
+                        .navigation_rail_item_with_icon(NavigationRailItem {
+                            id,
+                            label,
+                            accessible_name,
+                            icon: &self.icon,
+                            state: ChoiceState {
+                                selected: self.selected == index,
+                                disabled: index == 1,
+                            },
+                            message: index,
+                        })
+                }),
+        )])
+    }
+}
+
+#[test]
+fn vector_rail_keeps_classic_geometry_and_wraps_real_chinese_glyphs_at_200_percent() {
+    let mut fonts = TextSystem::default();
+    for theme in [Theme::light(), Theme::dark()] {
+        let mut normal = Runtime::new(VectorRail::new(theme, 1.)).unwrap();
+        normal.render(320., 560., &mut fonts).unwrap();
+        assert_eq!(bounds(&normal, "search").height, 64.);
+        let mut large = Runtime::new(VectorRail::new(theme, 2.)).unwrap();
+        let frame = large.render_extended(320., 560., &mut fonts).unwrap();
+        assert_eq!(bounds(&large, "compact-rail").width, 80.);
+        let settings = bounds(&large, "settings");
+        assert!(settings.height > bounds(&normal, "settings").height);
+        assert!(settings.y + settings.height <= bounds(&large, "disabled").y);
+
+        let layout = large.computed().unwrap();
+        for (id, fill, ink) in [
+            (
+                "settings",
+                theme.colors.secondary_container,
+                theme.colors.on_secondary_container,
+            ),
+            ("disabled", Color::TRANSPARENT, theme.outline),
+            (
+                "search",
+                Color::TRANSPARENT,
+                theme.colors.on_surface_variant,
+            ),
+        ] {
+            let destination = large.dom().by_id(id).unwrap();
+            let indicator = large.dom().children(destination).next().unwrap();
+            let icon = large.dom().children(indicator).next().unwrap();
+            let indicator_rect = layout.nodes[indicator.index()].bounds;
+            let icon_rect = layout.nodes[icon.index()].bounds;
+            assert_eq!((indicator_rect.width, indicator_rect.height), (56., 32.));
+            assert_eq!(
+                icon_rect,
+                Rect::new(indicator_rect.x + 16., indicator_rect.y + 4., 24., 24.)
+            );
+            assert_eq!(large.dom().get(indicator).unwrap().style().background, fill);
+            assert!(frame.ops().iter().any(|op| match op {
+                ExtendedPaintOp::FillPath(path) => {
+                    path.rect() == Rect::new(icon_rect.x + 2., icon_rect.y + 3., 20., 18.)
+                        && path.clip() == icon_rect
+                        && path.color() == ink
+                }
+                _ => false,
+            }));
+        }
+
+        let (label, clip, style) = frame
+            .ops()
+            .iter()
+            .find_map(|op| match op {
+                ExtendedPaintOp::Legacy(PaintOp::StyledText {
+                    rect,
+                    clip,
+                    text,
+                    style,
+                    ..
+                }) if text == SETTINGS => Some((*rect, *clip, style)),
+                _ => None,
+            })
+            .expect("the caller's visible label paints");
+        assert_eq!(style, &typography::LABEL_MEDIUM.scaled(2.));
+        assert!(label.height >= style.line_height_px() * 2.);
+        assert_eq!(label.intersect(clip), label);
+        assert_eq!(label.intersect(settings), label);
+
+        for id in ["disabled", "search"] {
+            let item = large.dom().by_id(id).unwrap();
+            let label = large.dom().children(item).nth(1).unwrap();
+            let geometry = &layout.nodes[label.index()];
+            assert_eq!(geometry.bounds.height, style.line_height_px(), "{id}");
+            assert_eq!(
+                geometry.bounds.intersect(bounds(&large, id)),
+                geometry.bounds
+            );
+        }
+    }
+}
+
+#[test]
+fn named_vector_rail_has_one_press_per_enabled_destination_and_manual_vertical_focus() {
+    let mut runtime = Runtime::new(VectorRail::new(Theme::light(), 2.)).unwrap();
+    let mut fonts = TextSystem::default();
+    runtime.render(320., 560., &mut fonts).unwrap();
+
+    let rail = runtime.dom().by_id("compact-rail").unwrap();
+    let settings = runtime.dom().by_id("settings").unwrap();
+    let disabled = runtime.dom().by_id("disabled").unwrap();
+    let search = runtime.dom().by_id("search").unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    assert_eq!(frame.node(rail).unwrap().node.role(), Role::Navigation);
+    assert_eq!(
+        frame.children(rail).collect::<Vec<_>>(),
+        [settings, disabled, search]
+    );
+    for (id, name, selected, enabled) in [
+        (settings, SETTINGS_NAME, true, true),
+        (disabled, "封存", false, false),
+        (search, "搜尋檔案", false, true),
+    ] {
+        let node = frame.node(id).unwrap().node;
+        assert_eq!(node.role(), Role::Button);
+        assert_eq!(node.name(), name);
+        assert_eq!(node.is_selected(), Some(selected));
+        assert_eq!(node.is_current_page(), Some(selected));
+        assert_eq!(node.is_disabled(), !enabled);
+        assert_eq!(frame.activation_target(id).is_some(), enabled);
+        assert!(frame.children(id).next().is_none());
+    }
+
+    runtime
+        .dispatch(Event::FocusNext { reverse: false })
+        .unwrap();
+    assert_eq!(runtime.focused(), Some("settings"));
+    for (key, focus) in [
+        (EditKey::Down, "search"),
+        (EditKey::Down, "settings"),
+        (EditKey::Up, "search"),
+    ] {
+        runtime
+            .dispatch(Event::Edit {
+                key,
+                extend: false,
+                by_word: false,
+            })
+            .unwrap();
+        assert_eq!(runtime.focused(), Some(focus));
+    }
+    assert_eq!(runtime.app().selected, 0);
+    assert_eq!(runtime.app().activations, 0);
+
+    runtime.render(320., 560., &mut fonts).unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    let action = frame.activation_target(search).unwrap();
+    assert_eq!(
+        runtime.accessibility_activate(&action).unwrap(),
+        AccessibilityActivationResult::Activated
+    );
+    assert_eq!(runtime.app().selected, 2);
+    assert_eq!(runtime.app().activations, 1);
+    assert_eq!(runtime.focused(), Some("search"));
+    assert_eq!(
+        runtime.accessibility_activate(&action).unwrap(),
+        AccessibilityActivationResult::Rejected
+    );
+
+    runtime.render(320., 560., &mut fonts).unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    assert_eq!(
+        frame.node(settings).unwrap().node.is_selected(),
+        Some(false)
+    );
+    assert_eq!(frame.node(search).unwrap().node.is_selected(), Some(true));
+    assert_eq!(
+        frame.node(settings).unwrap().node.is_current_page(),
+        Some(false)
+    );
+    assert_eq!(
+        frame.node(search).unwrap().node.is_current_page(),
+        Some(true)
+    );
+    for (id, expected) in [(settings, 2), (disabled, 2)] {
+        runtime.render(320., 560., &mut fonts).unwrap();
+        let label = runtime.dom().children(id).nth(1).unwrap();
+        let rect = runtime.computed().unwrap().nodes[label.index()].bounds;
+        let (x, y) = (rect.x + rect.width / 2., rect.y + rect.height - 1.);
+        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
+        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
+        assert_eq!(runtime.app().activations, expected);
+    }
+    assert_eq!(runtime.app().selected, 0);
 }

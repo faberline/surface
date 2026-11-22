@@ -9,6 +9,24 @@ pub enum FontFamily {
     Named(String),
 }
 
+/// How a node participates in an application's text size preference.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextScaling {
+    /// Scale typography and keep the node's layout constraints.
+    #[default]
+    Scale,
+    /// Allow a fixed height to become a minimum height when text grows.
+    Expand,
+    /// Keep the size of a symbol represented by a font glyph.
+    Fixed,
+}
+
+impl TextScaling {
+    pub(crate) fn is_default(&self) -> bool {
+        *self == Self::default()
+    }
+}
+
 /// The complete set of text attributes a renderer needs to shape a run.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct TextStyle {
@@ -25,6 +43,13 @@ pub struct TextStyle {
     pub family: FontFamily,
 }
 impl TextStyle {
+    /// Scale the lengths that shape text. Keep font family and weight.
+    pub fn scaled(mut self, factor: f32) -> Self {
+        self.font_size *= factor;
+        self.line_height = self.line_height.map(|height| height * factor);
+        self.letter_spacing *= factor;
+        self
+    }
     pub const WEIGHT_REGULAR: u16 = 400;
     pub const WEIGHT_MEDIUM: u16 = 500;
     pub const WEIGHT_BOLD: u16 = 700;

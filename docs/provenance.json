@@ -60,6 +60,26 @@
       }
     }
   },
+  "accesskit_macos": {
+    "repository": "https://github.com/AccessKit/accesskit",
+    "source_path": "adapters/macos",
+    "commit": "f3026222559c7f5f46d8f25cb7404de68eb149f0",
+    "release": "0.27.2",
+    "archive_sha256": "123828ceeec755b05255e3976cb0852993202de98a0626c97dd8d34246991f84",
+    "license": "MIT OR Apache-2.0; node.rs includes Chromium BSD-licensed code",
+    "local_path": "third-party/accesskit-macos",
+    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
+  },
+  "accesskit_winit": {
+    "repository": "https://github.com/AccessKit/accesskit",
+    "source_path": "adapters/winit",
+    "commit": "f3026222559c7f5f46d8f25cb7404de68eb149f0",
+    "release": "0.34.2",
+    "archive_sha256": "cd4ab4437b520ff03088fbe48676a11e7d44a929535e64b31432c1073e48dbcc",
+    "license": "Apache-2.0",
+    "local_path": "third-party/accesskit-winit",
+    "note": "The library source is unchanged. Its normalized manifest points to the local accesskit-macos copy. LICENSE-APACHE is from the upstream commit."
+  },
   "material_shapes": {
     "source": "androidx ShapeTokens.kt (androidx-main)",
     "files": [

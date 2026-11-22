@@ -40,7 +40,7 @@ pub(crate) type Pending = Rc<RefCell<Vec<(String, ScrollTarget)>>>;
 pub(crate) struct State {
     /// The largest vertical offset at the last render, for stick containers.
     last_max: BTreeMap<String, f32>,
-    metrics: BTreeMap<String, ScrollMetrics>,
+    pub(crate) metrics: BTreeMap<String, ScrollMetrics>,
 }
 
 impl<M> Queue<M> {

@@ -19,23 +19,32 @@ pub use props::Props;
 pub use snapshot::SurfaceSnapshot;
 pub use surface_node::{SurfaceNode, SurfaceNodeKind, SurfaceProps, SurfaceRect};
 
+mod fill_contour;
 mod geometry;
 mod layout;
 mod microdom;
 mod motion;
 mod paint;
+mod path_geometry;
 mod scroll_extent;
+mod shadow;
 mod shape;
 mod style;
 mod text_layout;
 mod typography;
+pub use fill_contour::{FillContour, PathFill};
 pub use geometry::Rect;
-pub use layout::{ComputedDom, ComputedNode, LayoutEngine, LayoutError, TextMeasurer};
+pub use layout::{
+    ComputedDom, ComputedNode, LayoutEngine, LayoutError, MeasuredGroupLayout, TextMeasurer,
+};
 pub use microdom::{DomError, DomSnapshot, MicroDom, Node, NodeId, RangeValue, Role};
 pub use motion::{Easing, Transition};
-pub use paint::{DisplayList, InteractionState, PaintOp, TextDecoration};
+pub use paint::{
+    DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp, TextDecoration,
+};
 pub use scroll_extent::scroll_extent;
+pub use shadow::BoxShadow;
 pub use shape::Corners;
 pub use style::{Align, Color, Direction, Insets, Length, Position, Style};
 pub use text_layout::{TextCluster, TextLayout};
-pub use typography::{FontFamily, TextStyle};
+pub use typography::{FontFamily, TextScaling, TextStyle};

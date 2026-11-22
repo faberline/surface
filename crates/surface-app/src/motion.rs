@@ -374,6 +374,212 @@ impl Motion {
     }
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct ScalarSpring {
+    start: f64,
+    rate: f64,
+    damping_ratio: f64,
+    initial: [f64; 2],
+}
+
+impl ScalarSpring {
+    const THRESHOLD: f64 = 0.01;
+
+    pub(crate) fn new(stiffness: f32, damping_ratio: f32, initial: [f64; 2], start: f64) -> Self {
+        Self {
+            start,
+            rate: f64::from(stiffness).sqrt(),
+            damping_ratio: f64::from(damping_ratio),
+            initial,
+        }
+    }
+
+    pub(crate) fn sample(self, now: f64) -> Option<[f64; 2]> {
+        let seconds = ((now - self.start) / 1000.).max(0.);
+        let [position, velocity] = self.initial;
+        let offset = position - 1.;
+        if self.damping_ratio < 1. {
+            let damping = self.rate * self.damping_ratio;
+            let frequency = self.rate * (1. - self.damping_ratio * self.damping_ratio).sqrt();
+            let sine_weight = (velocity + damping * offset) / frequency;
+            // The envelope bounds every later oscillation. A crossing of
+            // the target itself does not end an underdamped spring.
+            let envelope = offset.hypot(sine_weight);
+            let duration = ((envelope / Self::THRESHOLD).ln() / damping * 1000.).floor() / 1000.;
+            if seconds >= duration {
+                return None;
+            }
+            let (sin, cos) = (frequency * seconds).sin_cos();
+            let displacement = offset * cos + sine_weight * sin;
+            let slope = frequency * (-offset * sin + sine_weight * cos);
+            let decay = (-damping * seconds).exp();
+            return Some([
+                1. + displacement * decay,
+                (slope - damping * displacement) * decay,
+            ]);
+        }
+        let phase = seconds * self.rate;
+        if phase > 100. {
+            return None;
+        }
+        let slope = velocity + self.rate * offset;
+        let decay = (-phase).exp();
+        let pose = [
+            1. + (offset + slope * seconds) * decay,
+            (velocity - slope * phase) * decay,
+        ];
+        ((1. - pose[0]).abs() > Self::THRESHOLD || pose[1].abs() > Self::THRESHOLD * self.rate)
+            .then_some(pose)
+    }
+}
+
+const STANDARD_FAST_SPATIAL: (f32, f32) = (1400., 0.9);
+
+/// Presets from the Material 3 Standard motion scheme.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ToggleSpring {
+    StandardDefaultSpatial,
+    StandardFastSpatial,
+    StandardDefaultEffects,
+}
+
+impl ToggleSpring {
+    fn parameters(self) -> (f32, f32) {
+        match self {
+            Self::StandardDefaultSpatial => (700., 0.9),
+            Self::StandardFastSpatial => STANDARD_FAST_SPATIAL,
+            Self::StandardDefaultEffects => (1600., 1.),
+        }
+    }
+}
+
+/// Sample an app-controlled transition from its current position and velocity.
+/// Use the same preset for this track throughout its lifetime.
+#[derive(Default)]
+pub struct ToggleMotion(BinarySpring);
+
+impl ToggleMotion {
+    pub fn new(target: bool) -> Self {
+        let mut motion = Self::default();
+        motion.0.snap(target);
+        motion
+    }
+
+    /// Start settling from a gesture's current fraction and velocity.
+    /// Progress is clamped to `0..=1`. Express velocity in fractions per
+    /// second, with a positive value moving toward 1. Sample with the same
+    /// preset to continue the motion. Nonfinite input snaps to the target.
+    pub fn start_from(
+        target: bool,
+        progress: f32,
+        velocity_per_second: f32,
+        now_ms: f64,
+        spring: ToggleSpring,
+    ) -> Self {
+        let mut motion = Self::new(target);
+        if progress.is_finite() && velocity_per_second.is_finite() && now_ms.is_finite() {
+            motion.0.start(
+                target,
+                [
+                    f64::from(progress.clamp(0., 1.)),
+                    f64::from(velocity_per_second),
+                ],
+                now_ms,
+                spring.parameters(),
+            );
+        }
+        motion
+    }
+
+    /// Return the current fraction in 0..=1 and whether to request another frame.
+    /// Reduced Motion and frames without a finite clock snap to the target.
+    pub fn sample(
+        &mut self,
+        target: bool,
+        now_ms: Option<f64>,
+        reduced_motion: bool,
+        spring: ToggleSpring,
+    ) -> (f32, bool) {
+        self.sample_parameters(target, now_ms, reduced_motion, spring.parameters())
+    }
+
+    fn sample_parameters(
+        &mut self,
+        target: bool,
+        now_ms: Option<f64>,
+        reduced_motion: bool,
+        parameters: (f32, f32),
+    ) -> (f32, bool) {
+        let Some(now_ms) = now_ms.filter(|time| time.is_finite() && !reduced_motion) else {
+            self.0.snap(target);
+            return (if target { 1. } else { 0. }, false);
+        };
+        self.0.aim(target, now_ms, parameters);
+        self.0.finish(now_ms);
+        (
+            self.0.pose(now_ms)[0].clamp(0., 1.) as f32,
+            self.0.running(),
+        )
+    }
+}
+
+#[derive(Default)]
+pub(crate) struct BinarySpring {
+    target: bool,
+    spring: Option<ScalarSpring>,
+}
+
+impl BinarySpring {
+    pub(crate) fn pose(&self, now: f64) -> [f64; 2] {
+        let [position, velocity] = self
+            .spring
+            .and_then(|spring| spring.sample(now))
+            .unwrap_or([1., 0.]);
+        if self.target {
+            [position, velocity]
+        } else {
+            [1. - position, -velocity]
+        }
+    }
+
+    pub(crate) fn aim(&mut self, target: bool, now: f64, parameters: (f32, f32)) {
+        if self.target == target {
+            return;
+        }
+        self.start(target, self.pose(now), now, parameters);
+    }
+
+    fn start(
+        &mut self,
+        target: bool,
+        [position, velocity]: [f64; 2],
+        now: f64,
+        (stiffness, damping): (f32, f32),
+    ) {
+        let initial = if target {
+            [position, velocity]
+        } else {
+            [1. - position, -velocity]
+        };
+        self.target = target;
+        self.spring = Some(ScalarSpring::new(stiffness, damping, initial, now));
+    }
+
+    pub(crate) fn snap(&mut self, target: bool) {
+        self.target = target;
+        self.spring = None;
+    }
+
+    pub(crate) fn finish(&mut self, now: f64) {
+        self.spring = self.spring.filter(|spring| spring.sample(now).is_some());
+    }
+
+    pub(crate) fn running(&self) -> bool {
+        self.spring.is_some()
+    }
+}
+
 impl<A: Application> Runtime<A> {
     /// Set the host's monotonic clock in milliseconds.
     ///
@@ -397,7 +603,25 @@ impl<A: Application> Runtime<A> {
     ///
     /// Hosts should render again on the next frame while this is true.
     pub fn needs_frame(&self) -> bool {
-        self.motion.running && !self.motion.reduced
+        self.animation_request_next || (self.motion.running && !self.motion.reduced)
+    }
+    pub(crate) fn input_time_ms(&self) -> Option<f64> {
+        self.motion.now
+    }
+
+    pub(crate) fn animate_application(&mut self) -> Result<(), crate::AppError> {
+        let update = self.app.animation_frame(crate::AnimationFrame {
+            now_ms: self.motion.now,
+            reduced_motion: self.motion.reduced,
+            dom: &self.dom,
+            layout: self.computed.as_ref(),
+        });
+        self.animation_request_next = update.request_next;
+        self.animation_rebuild_pending |= update.rebuild;
+        if self.animation_rebuild_pending {
+            self.rebuild()?;
+        }
+        Ok(())
     }
     /// Replace animated values in the display copy with presented ones.
     /// Layout has already used the target styles.

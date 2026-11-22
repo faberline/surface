@@ -1,7 +1,34 @@
 //! Material 3 shape tokens, from androidx `ShapeTokens.kt` (androidx-main).
 //!
-//! `start` and `end` assume left-to-right text. They are not mirrored for RTL.
+//! The original start and end constants keep their left-to-right meaning.
+//! Use the direction-aware helpers for layouts that mirror their logical edges.
 use surface::Corners;
+
+/// Direction of a component's logical start and end edges.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LayoutDirection {
+    #[default]
+    LeftToRight,
+    RightToLeft,
+}
+
+pub const fn start(radius: f32, direction: LayoutDirection) -> Corners {
+    match direction {
+        LayoutDirection::LeftToRight => Corners::start(radius),
+        LayoutDirection::RightToLeft => Corners::end(radius),
+    }
+}
+
+pub const fn end(radius: f32, direction: LayoutDirection) -> Corners {
+    match direction {
+        LayoutDirection::LeftToRight => Corners::end(radius),
+        LayoutDirection::RightToLeft => Corners::start(radius),
+    }
+}
+
+pub const fn large_end(direction: LayoutDirection) -> Corners {
+    end(16., direction)
+}
 
 pub const NONE: Corners = Corners::all(0.);
 pub const EXTRA_SMALL: Corners = Corners::all(4.);

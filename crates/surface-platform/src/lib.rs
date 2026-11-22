@@ -12,14 +12,19 @@ mod ime_session;
 mod key_order;
 mod key_route;
 mod keyboard;
+#[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+mod macos_accessibility;
 mod motion;
 #[cfg(not(target_arch = "wasm32"))]
 mod pointer_route;
 #[cfg(any(target_arch = "wasm32", test))]
 mod press_guard;
+mod touch_route;
 #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
 mod trace_file;
 mod wake;
+#[cfg(target_arch = "wasm32")]
+mod web_accessibility;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
 pub use clipboard::{Clipboard, ClipboardError};
@@ -157,6 +162,10 @@ unsafe impl Send for SendProxy {}
 unsafe impl Sync for SendProxy {}
 enum UserEvent {
     Wake,
+    #[cfg(target_os = "macos")]
+    MacReducedMotion,
+    #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+    AccessKit(accesskit_winit::Event),
     #[cfg(feature = "devtools")]
     Bridge {
         request: jet_bridge_protocol::Request,
@@ -171,6 +180,16 @@ enum UserEvent {
     },
     #[cfg(target_arch = "wasm32")]
     Ready(Result<Box<Gpu>, HostError>),
+    #[cfg(target_arch = "wasm32")]
+    VerifyWebFocus,
+    #[cfg(target_arch = "wasm32")]
+    WebAccessibility(web_accessibility::Action),
+}
+#[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+impl From<accesskit_winit::Event> for UserEvent {
+    fn from(event: accesskit_winit::Event) -> Self {
+        Self::AccessKit(event)
+    }
 }
 struct Host<A: Application> {
     runtime: Rc<RefCell<Runtime<A>>>,
@@ -192,6 +211,7 @@ struct Host<A: Application> {
     #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
     trace: Option<trace_file::TraceFile>,
     pointer: (f32, f32),
+    touch: touch_route::TouchRoute,
     #[cfg(not(target_arch = "wasm32"))]
     cursor: surface_app::CursorStyle,
     mods: key_order::Mods,
@@ -205,7 +225,17 @@ struct Host<A: Application> {
     #[cfg(target_arch = "wasm32")]
     web_input: Option<web_input::WebInput<A>>,
     #[cfg(target_arch = "wasm32")]
+    web_accessibility: Option<web_accessibility::WebAccessibility>,
+    #[cfg(target_arch = "wasm32")]
     reduced_motion: Option<motion::ReducedMotionWatch>,
+    #[cfg(target_os = "macos")]
+    _mac_reduced_motion: motion::MacReducedMotionWatch,
+    #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+    accessibility_adapter: Option<accesskit_winit::Adapter>,
+    #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+    accessibility_tree: macos_accessibility::Tree,
+    #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+    accessibility_geometry: Option<(winit::dpi::PhysicalSize<u32>, f32)>,
     #[cfg(not(target_arch = "wasm32"))]
     clipboard: Option<arboard::Clipboard>,
     #[cfg(not(target_arch = "wasm32"))]
@@ -392,7 +422,26 @@ impl<A: Application> Host<A> {
         event_loop.exit();
     }
     fn input(&mut self, event_loop: &ActiveEventLoop, event: Event) {
-        let result = self.runtime.borrow_mut().dispatch(event);
+        #[cfg(target_arch = "wasm32")]
+        if matches!(event, Event::PointerDown { .. }) {
+            if let Some(tree) = &mut self.web_accessibility {
+                tree.follow_focus(false);
+            }
+        }
+        self.dispatch_input(event_loop, |runtime| runtime.dispatch(event));
+    }
+    fn dispatch_input(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        action: impl FnOnce(&mut Runtime<A>) -> Result<bool, surface_app::AppError>,
+    ) {
+        let result = {
+            let mut runtime = self.runtime.borrow_mut();
+            if let Some(now) = self.clock.now_ms() {
+                runtime.set_time(now);
+            }
+            action(&mut runtime)
+        };
         match result {
             Ok(true) => {
                 if let Some(window) = &self.window {
@@ -405,6 +454,142 @@ impl<A: Application> Host<A> {
         self.sync_text_input();
         #[cfg(not(target_arch = "wasm32"))]
         self.sync_cursor();
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn verify_web_focus(&mut self, event_loop: &ActiveEventLoop) {
+        use winit::platform::web::WindowExtWebSys;
+        let canvas_focused = self
+            .window
+            .as_ref()
+            .and_then(|window| window.canvas())
+            .is_some_and(|canvas| {
+                web_sys::window()
+                    .and_then(|browser| browser.document())
+                    .and_then(|document| document.active_element())
+                    .is_some_and(|active| active == *canvas.as_ref())
+            });
+        if canvas_focused
+            || self
+                .web_input
+                .as_ref()
+                .is_some_and(|input| input.owns_focus())
+            || self
+                .web_accessibility
+                .as_ref()
+                .is_some_and(|tree| tree.owns_focus())
+        {
+            return;
+        }
+        self.touch.reset();
+        if let Some(tree) = &mut self.web_accessibility {
+            tree.follow_focus(false);
+        }
+        self.input(event_loop, Event::Blur);
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn web_accessibility_action(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        action: web_accessibility::Action,
+    ) {
+        use surface_app::{AccessibilityActivationResult, AccessibilityFocusResult};
+        use web_accessibility::Action;
+        if matches!(action, Action::Press(_))
+            && self.runtime.borrow().accessibility_frame().is_none()
+        {
+            self.draw(event_loop);
+            if self.closing || self.error.is_some() {
+                return;
+            }
+        }
+        let mut follow_focus = false;
+        self.dispatch_input(event_loop, |runtime| match action {
+            Action::Focus(target) => {
+                let result = runtime.accessibility_focus(&target)?;
+                follow_focus = matches!(
+                    result,
+                    AccessibilityFocusResult::Moved | AccessibilityFocusResult::Unchanged
+                );
+                Ok(matches!(
+                    result,
+                    AccessibilityFocusResult::Moved | AccessibilityFocusResult::Rebuilt
+                ))
+            }
+            Action::Press(target) => {
+                let result = runtime.accessibility_activate(&target)?;
+                follow_focus = result == AccessibilityActivationResult::Activated;
+                Ok(matches!(
+                    result,
+                    AccessibilityActivationResult::Activated
+                        | AccessibilityActivationResult::Rebuilt
+                ))
+            }
+            Action::Key(source, press, event) => runtime.accessibility_key(&source, &press, event),
+        });
+        if follow_focus {
+            if let Some(tree) = &mut self.web_accessibility {
+                tree.follow_focus(true);
+            }
+        }
+    }
+    #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+    fn publish_accessibility(&mut self, size: winit::dpi::PhysicalSize<u32>, scale: f32) {
+        let Some(adapter) = &mut self.accessibility_adapter else {
+            return;
+        };
+        let runtime = self.runtime.borrow();
+        let Some(frame) = runtime.accessibility_frame() else {
+            return;
+        };
+        adapter.update_if_active(|| {
+            self.accessibility_geometry = Some((size, scale));
+            self.accessibility_tree.update(frame, scale)
+        });
+    }
+
+    #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+    fn accessibility_event(&mut self, event_loop: &ActiveEventLoop, event: accesskit_winit::Event) {
+        use accesskit_winit::WindowEvent::{
+            AccessibilityDeactivated, ActionRequested, InitialTreeRequested,
+        };
+        let Some(window) = self
+            .window
+            .as_ref()
+            .filter(|window| window.id() == event.window_id)
+        else {
+            return;
+        };
+        if self.closing {
+            return;
+        }
+        match event.window_event {
+            InitialTreeRequested => {
+                self.accessibility_tree.reset();
+                self.accessibility_geometry = None;
+                window.request_redraw();
+            }
+            ActionRequested(request) => {
+                if self.accessibility_geometry != Some(drawable_size(window)) || !window.has_focus()
+                {
+                    return;
+                }
+                let result = self
+                    .accessibility_tree
+                    .action(&mut self.runtime.borrow_mut(), request);
+                match result {
+                    Ok(true) => {
+                        window.request_redraw();
+                        self.sync_text_input();
+                    }
+                    Ok(false) => {}
+                    Err(error) => self.fail(event_loop, error),
+                }
+            }
+            AccessibilityDeactivated => {
+                self.accessibility_tree.reset();
+                self.accessibility_geometry = None;
+            }
+        }
     }
     fn sync_text_input(&mut self) {
         #[cfg(target_arch = "wasm32")]
@@ -446,7 +631,7 @@ impl<A: Application> Host<A> {
             if let Some(now) = self.clock.now_ms() {
                 runtime.set_time(now);
             }
-            let result = runtime.render(
+            let result = runtime.render_extended(
                 size.width as f32 / scale,
                 size.height as f32 / scale,
                 &mut gpu.renderer.text,
@@ -484,9 +669,9 @@ impl<A: Application> Host<A> {
         let view = frame.texture.create_view(&Default::default());
         #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
         let present_start = self.trace.as_ref().map(|t| t.clock.now_ms());
-        if let Err(error) = gpu
-            .renderer
-            .render(&list, &view, size.width, size.height, scale)
+        if let Err(error) =
+            gpu.renderer
+                .render_extended(&list, &view, size.width, size.height, scale)
         {
             self.fail(event_loop, error);
             return;
@@ -519,8 +704,28 @@ impl<A: Application> Host<A> {
             }
         }
         self.sync_text_input();
+        #[cfg(target_arch = "wasm32")]
+        {
+            use winit::platform::web::WindowExtWebSys;
+            let canvas = self.window.as_ref().and_then(|window| window.canvas());
+            if let (Some(tree), Some(canvas)) = (&mut self.web_accessibility, canvas) {
+                let result = self
+                    .runtime
+                    .borrow()
+                    .accessibility_frame()
+                    .map(|frame| tree.publish(&frame, &canvas));
+                if let Some(Err(error)) = result {
+                    self.fail(
+                        event_loop,
+                        format!("browser accessibility bridge: {error:?}"),
+                    );
+                }
+            }
+        }
         #[cfg(not(target_arch = "wasm32"))]
         self.sync_cursor();
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        self.publish_accessibility(size, scale);
     }
 }
 impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
@@ -531,6 +736,8 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         let attributes = Window::default_attributes()
             .with_title(self.runtime.borrow().app().title())
             .with_inner_size(LogicalSize::new(self.options.width, self.options.height));
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        let attributes = attributes.with_visible(false);
         #[cfg(target_arch = "wasm32")]
         let attributes = {
             use wasm_bindgen::JsCast;
@@ -555,11 +762,31 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
         };
         self.window = Some(window.clone());
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        {
+            self.accessibility_adapter = Some(accesskit_winit::Adapter::with_event_loop_proxy(
+                event_loop,
+                &window,
+                self.proxy.clone(),
+            ));
+            window.set_visible(true);
+        }
         #[cfg(target_arch = "wasm32")]
         match web_input::WebInput::new(self.runtime.clone(), window.clone()) {
             Ok(input) => self.web_input = Some(input),
             Err(error) => {
                 self.fail(event_loop, format!("browser input bridge: {error:?}"));
+                return;
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
+        match web_accessibility::WebAccessibility::new(self.proxy.clone()) {
+            Ok(tree) => self.web_accessibility = Some(tree),
+            Err(error) => {
+                self.fail(
+                    event_loop,
+                    format!("browser accessibility bridge: {error:?}"),
+                );
                 return;
             }
         }
@@ -592,6 +819,21 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
             UserEvent::Wake => self.wake_app(event_loop),
+            #[cfg(target_os = "macos")]
+            UserEvent::MacReducedMotion => {
+                let changed = motion::update_preference(
+                    &mut self.runtime.borrow_mut(),
+                    motion::reduced_motion_from_env(),
+                    motion::system_reduced_motion(),
+                );
+                if changed {
+                    if let Some(window) = &self.window {
+                        window.request_redraw();
+                    }
+                }
+            }
+            #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+            UserEvent::AccessKit(event) => self.accessibility_event(event_loop, event),
             #[cfg(feature = "devtools")]
             UserEvent::Bridge { request, reply } => self.bridge_request(event_loop, request, reply),
             #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
@@ -611,6 +853,12 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
             #[cfg(target_arch = "wasm32")]
             UserEvent::Ready(Err(error)) => self.fail(event_loop, error),
+            #[cfg(target_arch = "wasm32")]
+            UserEvent::VerifyWebFocus => self.verify_web_focus(event_loop),
+            #[cfg(target_arch = "wasm32")]
+            UserEvent::WebAccessibility(action) => {
+                self.web_accessibility_action(event_loop, action)
+            }
         }
     }
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
@@ -620,6 +868,13 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         self.exit_if_app_closed(event_loop);
     }
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        if let (Some(window), Some(adapter)) = (
+            self.window.as_ref().filter(|window| window.id() == _id),
+            &mut self.accessibility_adapter,
+        ) {
+            adapter.process_event(window, &event);
+        }
         // The web backend sends a key press before its modifier change.
         // Any other event first handles the held key, which keeps the order.
         #[cfg(target_arch = "wasm32")]
@@ -633,6 +888,8 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             WindowEvent::CloseRequested => self.close_requested(event_loop),
             WindowEvent::RedrawRequested => self.draw(event_loop),
             WindowEvent::Resized(size) => {
+                self.touch.reset();
+                self.dispatch_input(event_loop, Runtime::pointer_geometry_changed);
                 if let Some(gpu) = &mut self.gpu {
                     gpu.resize(size.width, size.height);
                 }
@@ -641,11 +898,16 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 }
             }
             WindowEvent::ScaleFactorChanged { .. } => {
+                self.touch.reset();
+                self.dispatch_input(event_loop, Runtime::pointer_geometry_changed);
                 if let Some(window) = &self.window {
                     window.request_redraw();
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
+                if self.touch.active() {
+                    return;
+                }
                 let scale = self
                     .window
                     .as_ref()
@@ -662,6 +924,9 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
             #[cfg(not(target_arch = "wasm32"))]
             WindowEvent::MouseInput { state, button, .. } => {
+                if self.touch.active() {
+                    return;
+                }
                 let step = self.route.route_mouse(
                     pointer_route::from_winit_button(button),
                     state == ElementState::Pressed,
@@ -671,8 +936,12 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 );
                 match step {
                     pointer_route::PointerStep::Primary(event)
-                    | pointer_route::PointerStep::Secondary(event) => self.input(event_loop, event),
-                    pointer_route::PointerStep::Ignore => {}
+                        if self.touch.mouse_primary(state) =>
+                    {
+                        self.input(event_loop, event);
+                    }
+                    pointer_route::PointerStep::Secondary(event) => self.input(event_loop, event),
+                    _ => {}
                 }
             }
             #[cfg(target_arch = "wasm32")]
@@ -681,6 +950,9 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 button: MouseButton::Left,
                 ..
             } => {
+                if !self.touch.mouse_primary(state) {
+                    return;
+                }
                 let (x, y) = self.pointer;
                 self.input(
                     event_loop,
@@ -692,24 +964,22 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 );
             }
             WindowEvent::Touch(touch) => {
-                let scale = self
-                    .window
-                    .as_ref()
-                    .map(|w| w.scale_factor() as f32)
-                    .unwrap_or(1.);
-                let (x, y) = (
-                    touch.location.x as f32 / scale,
-                    touch.location.y as f32 / scale,
-                );
-                match touch.phase {
-                    winit::event::TouchPhase::Started => {
-                        self.input(event_loop, Event::PointerDown { x, y })
+                let scale = self.window.as_ref().map(|w| w.scale_factor()).unwrap_or(1.);
+                match self.touch.route(touch, scale) {
+                    touch_route::TouchStep::Pointer(release @ Event::PointerUp { .. }) => {
+                        self.dispatch_input(event_loop, |runtime| {
+                            let released = runtime.dispatch(release)?;
+                            Ok(runtime.dispatch(Event::PointerLeave)? || released)
+                        });
                     }
-                    winit::event::TouchPhase::Ended => {
-                        self.input(event_loop, Event::PointerUp { x, y })
+                    touch_route::TouchStep::Pointer(event) => self.input(event_loop, event),
+                    touch_route::TouchStep::Cancel => {
+                        self.dispatch_input(event_loop, |runtime| {
+                            let changed = runtime.cancel_pointer()?;
+                            Ok(runtime.dispatch(Event::PointerLeave)? || changed)
+                        });
                     }
-                    winit::event::TouchPhase::Cancelled => self.input(event_loop, Event::Cancel),
-                    _ => {}
+                    touch_route::TouchStep::Ignore => {}
                 }
             }
             WindowEvent::MouseWheel { delta, .. } => {
@@ -746,16 +1016,15 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
             WindowEvent::Focused(false) => {
                 #[cfg(target_arch = "wasm32")]
-                // Canvas -> input host keeps focus inside this application.
-                // The canvas blur can run before the textarea's focus event.
-                if self
-                    .web_input
-                    .as_ref()
-                    .is_some_and(|input| input.owns_focus())
                 {
-                    return;
+                    let _ = self.proxy.send_event(UserEvent::VerifyWebFocus);
                 }
-                self.input(event_loop, Event::Blur)
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    self.touch.reset();
+                    self.route = pointer_route::PointerRoute::default();
+                    self.input(event_loop, Event::Blur);
+                }
             }
             WindowEvent::CursorLeft { .. } => {
                 self.input(event_loop, Event::PointerLeave);
@@ -818,10 +1087,22 @@ pub fn run_with_wake<A: Application>(
             .borrow_mut()
             .attach_trace(surface_app::trace::Recorder::new(trace.recorder_clock()));
     }
-    #[cfg(not(target_arch = "wasm32"))]
+    #[cfg(all(not(target_arch = "wasm32"), not(target_os = "macos")))]
     if motion::reduced_motion_from_env() {
         runtime.borrow_mut().set_reduced_motion(true);
     }
+    #[cfg(target_os = "macos")]
+    let mac_reduced_motion = {
+        motion::update_preference(
+            &mut runtime.borrow_mut(),
+            motion::reduced_motion_from_env(),
+            motion::system_reduced_motion(),
+        );
+        let proxy = event_loop.create_proxy();
+        motion::MacReducedMotionWatch::new(move || {
+            let _ = proxy.send_event(UserEvent::MacReducedMotion);
+        })
+    };
     let host = Host {
         runtime,
         options,
@@ -837,6 +1118,7 @@ pub fn run_with_wake<A: Application>(
         #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
         trace,
         pointer: (0., 0.),
+        touch: touch_route::TouchRoute::default(),
         #[cfg(not(target_arch = "wasm32"))]
         cursor: surface_app::CursorStyle::Default,
         mods: key_order::Mods::default(),
@@ -850,7 +1132,17 @@ pub fn run_with_wake<A: Application>(
         #[cfg(target_arch = "wasm32")]
         web_input: None,
         #[cfg(target_arch = "wasm32")]
+        web_accessibility: None,
+        #[cfg(target_arch = "wasm32")]
         reduced_motion: None,
+        #[cfg(target_os = "macos")]
+        _mac_reduced_motion: mac_reduced_motion,
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        accessibility_adapter: None,
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        accessibility_tree: macos_accessibility::Tree::default(),
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        accessibility_geometry: None,
         #[cfg(not(target_arch = "wasm32"))]
         clipboard: None,
         #[cfg(not(target_arch = "wasm32"))]
@@ -872,6 +1164,10 @@ pub fn run_with_wake<A: Application>(
             trace.finish();
         }
         host.gpu = None;
+        #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
+        {
+            host.accessibility_adapter = None;
+        }
         host.window = None;
         if let Some(window) = window {
             let state = if window.strong_count() == 0 { 1 } else { 2 };

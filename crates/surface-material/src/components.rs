@@ -1,5 +1,12 @@
-use crate::{motion::STATE_CHANGE, shape, tokens::blend, typography, Theme};
-use surface::{Align, Color, Corners, Insets, Length, Node, RangeValue, Role, Style};
+use crate::{
+    motion::STATE_CHANGE,
+    shape::{self, LayoutDirection},
+    tokens::blend,
+    typography,
+    vector_icon::VectorIconSize,
+    Theme, VectorIcon,
+};
+use surface::{Align, Color, Corners, Insets, Length, Node, RangeValue, Role, Style, TextScaling};
 use surface_app::{CursorStyle, Roving, View};
 
 #[derive(Clone, Copy, Debug)]
@@ -13,6 +20,27 @@ pub enum ButtonKind {
 pub struct ChoiceState {
     pub selected: bool,
     pub disabled: bool,
+}
+
+/// App-controlled destination with separate visible and accessible labels.
+pub struct NavigationRailItem<'a, M> {
+    pub id: &'a str,
+    pub label: &'a str,
+    /// A blank accessible name uses the visible label.
+    pub accessible_name: &'a str,
+    pub icon: &'a VectorIcon,
+    pub state: ChoiceState,
+    pub message: M,
+}
+
+impl<M> NavigationRailItem<'_, M> {
+    pub(crate) fn name(&self) -> &str {
+        if self.accessible_name.trim().is_empty() {
+            self.label
+        } else {
+            self.accessible_name
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CheckValue {
@@ -115,6 +143,44 @@ fn nav_label<M>(text: &str, color: Color) -> View<M> {
 }
 fn box_view<M>(style: Style) -> View<M> {
     View::new(Node::new(Role::Group, "").styled(style))
+}
+
+fn navigation_inks(theme: &Theme, state: ChoiceState) -> (Color, Color) {
+    if state.disabled {
+        (theme.outline, theme.outline)
+    } else if state.selected {
+        (theme.colors.on_secondary_container, theme.colors.on_surface)
+    } else {
+        (
+            theme.colors.on_surface_variant,
+            theme.colors.on_surface_variant,
+        )
+    }
+}
+
+fn navigation_indicator(theme: &Theme, width: f32, selected: bool) -> Style {
+    Style::row()
+        .align(Align::Center)
+        .justify(Align::Center)
+        .width(Length::Px(width))
+        .height(Length::Px(32.))
+        .corners(shape::FULL)
+        .background(if selected {
+            theme.colors.secondary_container
+        } else {
+            Color::TRANSPARENT
+        })
+        .transition(STATE_CHANGE)
+}
+
+fn navigation_item_style(theme: &Theme, label_color: Color, height: f32) -> Style {
+    Style::column()
+        .align(Align::Center)
+        .justify(Align::Center)
+        .gap(4.)
+        .height(Length::Px(height))
+        .foreground(theme.primary)
+        .state_layer(label_color)
 }
 fn segment_corners(position: SegmentPosition) -> Corners {
     match position {
@@ -296,6 +362,28 @@ impl Theme {
         disabled: bool,
         message: M,
     ) -> View<M> {
+        self.icon_button_with_text_scaling(
+            id,
+            name,
+            (icon, TextScaling::Scale),
+            kind,
+            selected,
+            disabled,
+            message,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn icon_button_with_text_scaling<M>(
+        &self,
+        id: &str,
+        name: &str,
+        (icon, scaling): (&str, TextScaling),
+        kind: IconButtonKind,
+        selected: Option<bool>,
+        disabled: bool,
+        message: M,
+    ) -> View<M> {
         let on = selected == Some(true);
         let toggle = selected.is_some();
         let c = self.colors;
@@ -346,12 +434,13 @@ impl Theme {
         if let Some(v) = selected {
             node = node.selected(v);
         }
+        let ink = if disabled { self.outline } else { foreground };
+        let symbol = Node::new(Role::Text, icon)
+            .text(icon)
+            .text_scaling(scaling)
+            .styled(Style::default().font_size(24.).foreground(ink));
         let view = View::new(node)
-            .children([box_view(visual).children([label(
-                icon,
-                if disabled { self.outline } else { foreground },
-                24.,
-            )])])
+            .children([box_view(visual).children([View::new(symbol)])])
             .on_press(message);
         if disabled {
             view
@@ -702,50 +791,48 @@ impl Theme {
         state: ChoiceState,
         message: M,
     ) -> View<M> {
-        let (icon_color, label_color) = if state.disabled {
-            (self.outline, self.outline)
-        } else if state.selected {
-            (self.colors.on_secondary_container, self.colors.on_surface)
-        } else {
-            (
-                self.colors.on_surface_variant,
-                self.colors.on_surface_variant,
-            )
-        };
-        let indicator = box_view(
-            Style::row()
-                .align(Align::Center)
-                .justify(Align::Center)
-                .width(Length::Px(64.))
-                .height(Length::Px(32.))
-                .corners(shape::FULL)
-                .background(if state.selected {
-                    self.colors.secondary_container
-                } else {
-                    Color::TRANSPARENT
-                })
-                .transition(STATE_CHANGE),
-        )
-        .children([label(icon, icon_color, 24.)]);
+        let (icon_color, label_color) = navigation_inks(self, state);
+        let indicator = box_view(navigation_indicator(self, 64., state.selected))
+            .children([label(icon, icon_color, 24.)]);
         View::new(
             Node::new(Role::Button, name)
                 .id(id)
                 .selected(state.selected)
                 .disabled(state.disabled)
-                .styled(
-                    Style::column()
-                        .align(Align::Center)
-                        .justify(Align::Center)
-                        .gap(4.)
-                        .height(Length::Px(80.))
-                        .grow(1.)
-                        .foreground(self.primary)
-                        .state_layer(label_color),
-                ),
+                .styled(navigation_item_style(self, label_color, 80.).grow(1.)),
         )
         .children([indicator, nav_label(name, label_color)])
         .on_press(message)
     }
+
+    /// Build a bottom navigation destination with a 24 dp vector icon.
+    pub fn navigation_bar_item_with_icon<M>(&self, item: NavigationRailItem<'_, M>) -> View<M> {
+        let (icon_color, label_color) = navigation_inks(self, item.state);
+        let mut indicator_style = navigation_indicator(self, 64., item.state.selected);
+        indicator_style.max_width = Length::Percent(1.);
+        let indicator = box_view(indicator_style)
+            .children([item.icon.view(VectorIconSize::Dp24, icon_color)])
+            .without_interaction(None);
+        let mut style = navigation_item_style(self, label_color, 80.).grow(1.);
+        style.min_width = 48.;
+        View::new(
+            Node::new(Role::Button, item.name())
+                .id(item.id)
+                .selected(item.state.selected)
+                .disabled(item.state.disabled)
+                .current_page(item.state.selected)
+                .text_scaling(TextScaling::Expand)
+                .shrink_to_fit_width()
+                .styled(style),
+        )
+        .children([
+            indicator,
+            nav_label(item.label, label_color).without_interaction(None),
+        ])
+        .on_press(item.message)
+        .accessible_activation()
+    }
+
     pub fn navigation_bar<M>(
         &self,
         id: &str,
@@ -764,6 +851,35 @@ impl Theme {
         .children(items)
         .roving(Roving::horizontal(false))
     }
+
+    /// Lay out bottom destinations in reading order for the given direction.
+    /// Physical arrow keys follow the displayed direction.
+    pub fn navigation_bar_with_direction<M>(
+        &self,
+        id: &str,
+        name: &str,
+        direction: LayoutDirection,
+        items: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        let node = Node::new(Role::Navigation, name)
+            .id(id)
+            .text_scaling(TextScaling::Expand)
+            .styled(
+                Style::row()
+                    .align(Align::Center)
+                    .width(Length::Percent(1.))
+                    .height(Length::Px(80.))
+                    .background(self.colors.surface_container),
+            );
+        let node = match direction {
+            LayoutDirection::LeftToRight => node,
+            LayoutDirection::RightToLeft => node.reverse_row(),
+        };
+        View::new(node)
+            .children(items)
+            .roving(Roving::horizontal(false))
+    }
+
     pub fn navigation_rail_item<M>(
         &self,
         id: &str,
@@ -772,51 +888,51 @@ impl Theme {
         state: ChoiceState,
         message: M,
     ) -> View<M> {
-        let (icon_color, label_color) = if state.disabled {
-            (self.outline, self.outline)
-        } else if state.selected {
-            (self.colors.on_secondary_container, self.colors.on_surface)
-        } else {
-            (
-                self.colors.on_surface_variant,
-                self.colors.on_surface_variant,
-            )
-        };
-        let indicator = box_view(
-            Style::row()
-                .align(Align::Center)
-                .justify(Align::Center)
-                .width(Length::Px(56.))
-                .height(Length::Px(32.))
-                .corners(shape::FULL)
-                .background(if state.selected {
-                    self.colors.secondary_container
-                } else {
-                    Color::TRANSPARENT
-                })
-                .transition(STATE_CHANGE),
-        )
-        .children([label(icon, icon_color, 24.)]);
+        let (icon_color, label_color) = navigation_inks(self, state);
+        let indicator = box_view(navigation_indicator(self, 56., state.selected))
+            .children([label(icon, icon_color, 24.)]);
         View::new(
             Node::new(Role::Button, name)
                 .id(id)
                 .selected(state.selected)
                 .disabled(state.disabled)
                 .styled(
-                    Style::column()
-                        .align(Align::Center)
-                        .justify(Align::Center)
-                        .gap(4.)
+                    navigation_item_style(self, label_color, 64.)
                         .width(Length::Percent(1.))
-                        .height(Length::Px(64.))
-                        .padding(4.)
-                        .foreground(self.primary)
-                        .state_layer(label_color),
+                        .padding(4.),
                 ),
         )
         .children([indicator, nav_label(name, label_color)])
         .on_press(message)
     }
+
+    /// Build a compact rail destination with a 24 dp vector icon.
+    /// The icon and label are visual parts of one accessible button.
+    pub fn navigation_rail_item_with_icon<M>(&self, item: NavigationRailItem<'_, M>) -> View<M> {
+        let (icon_color, label_color) = navigation_inks(self, item.state);
+        let indicator = box_view(navigation_indicator(self, 56., item.state.selected))
+            .children([item.icon.view(VectorIconSize::Dp24, icon_color)])
+            .without_interaction(None);
+        let style = navigation_item_style(self, label_color, 64.)
+            .width(Length::Percent(1.))
+            .padding(2.);
+        View::new(
+            Node::new(Role::Button, item.name())
+                .id(item.id)
+                .selected(item.state.selected)
+                .disabled(item.state.disabled)
+                .current_page(item.state.selected)
+                .text_scaling(TextScaling::Expand)
+                .styled(style),
+        )
+        .children([
+            indicator,
+            nav_label(item.label, label_color).without_interaction(None),
+        ])
+        .on_press(item.message)
+        .accessible_activation()
+    }
+
     pub fn navigation_rail<M>(
         &self,
         id: &str,

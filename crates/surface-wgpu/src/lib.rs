@@ -1,10 +1,14 @@
 //! One ordered wgpu renderer for native GPU surfaces and browser WebGPU.
+mod path;
 mod text;
 use glyphon::{
     Cache, Resolution, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use std::borrow::Cow;
-use surface::{Color, Corners, DisplayList, PaintOp, Rect, TextStyle};
+use surface::{
+    Color, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PathFill, Rect,
+    TextStyle,
+};
 pub use text::TextSystem;
 use wgpu::util::DeviceExt;
 
@@ -25,6 +29,16 @@ pub enum RenderError {
     #[error("capture readback failed: {0}")]
     Readback(String),
 }
+/// Error returned by the renderer's extended display-list entry points.
+#[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
+pub enum ExtendedRenderError {
+    #[error(transparent)]
+    Render(#[from] RenderError),
+    #[error("this renderer does not support an operation in the extended display list")]
+    UnsupportedOperation,
+}
+
 /// Largest width or height `Renderer::capture` accepts.
 pub const MAX_CAPTURE_SIDE: u32 = 8192;
 /// Tightly packed RGBA8 pixels, row 0 at the top.
@@ -65,9 +79,60 @@ const ATTRS: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![0=>Float32x2,
 fn corner_array(c: &Corners) -> [f32; 4] {
     [c.top_left, c.top_right, c.bottom_right, c.bottom_left]
 }
+fn color_channels(color: Color, srgb: bool) -> [f32; 4] {
+    let channel = |byte: u8| {
+        let c = byte as f32 / 255.;
+        if !srgb {
+            c
+        } else if c <= 0.04045 {
+            c / 12.92
+        } else {
+            ((c + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    [
+        channel(color.0),
+        channel(color.1),
+        channel(color.2),
+        color.3 as f32 / 255.,
+    ]
+}
+
+#[derive(Clone, Copy)]
+struct RasterSpace {
+    width: u32,
+    height: u32,
+    scale: f32,
+}
+
+impl RasterSpace {
+    fn scissor(self, clip: Rect) -> Option<[u32; 4]> {
+        let left = (clip.x * self.scale).floor().max(0.).min(self.width as f32) as u32;
+        let top = (clip.y * self.scale)
+            .floor()
+            .max(0.)
+            .min(self.height as f32) as u32;
+        let right = ((clip.x + clip.width) * self.scale)
+            .ceil()
+            .max(left as f32)
+            .min(self.width as f32) as u32;
+        let bottom = ((clip.y + clip.height) * self.scale)
+            .ceil()
+            .max(top as f32)
+            .min(self.height as f32) as u32;
+        (right > left && bottom > top).then(|| [left, top, right - left, bottom - top])
+    }
+}
+
+enum RenderOp<'a> {
+    Legacy(&'a PaintOp),
+    Fill(&'a PathFill),
+}
+
 enum Draw {
     Quad { start: u32, clip: Rect },
     Text(usize),
+    Fill { index: u32, clip: Rect },
 }
 /// The paint-time view shared by `Text`, `EditableText` and `StyledText`.
 struct TextRun<'a> {
@@ -142,6 +207,7 @@ pub struct Renderer {
     pub queue: wgpu::Queue,
     pub text: TextSystem,
     pipeline: wgpu::RenderPipeline,
+    path_pipeline: Option<path::Pipeline>,
     atlas: TextAtlas,
     viewport: Viewport,
     cache: SwashCache,
@@ -235,6 +301,7 @@ impl Renderer {
             queue,
             text: TextSystem::default(),
             pipeline,
+            path_pipeline: None,
             atlas,
             viewport,
             cache: SwashCache::new(),
@@ -348,15 +415,72 @@ impl Renderer {
         height: u32,
         scale: f32,
     ) -> Result<(), RenderError> {
+        self.render_ops(
+            list.ops.iter().map(|op| Ok(RenderOp::Legacy(op))),
+            target,
+            width,
+            height,
+            scale,
+        )
+    }
+
+    /// Paint an ordered display list including vector fills.
+    pub fn render_extended(
+        &mut self,
+        list: &ExtendedDisplayList,
+        target: &wgpu::TextureView,
+        width: u32,
+        height: u32,
+        scale: f32,
+    ) -> Result<(), ExtendedRenderError> {
+        self.render_ops(
+            list.ops().iter().map(|op| match op {
+                ExtendedPaintOp::Legacy(op) => Ok(RenderOp::Legacy(op)),
+                ExtendedPaintOp::FillPath(fill) => Ok(RenderOp::Fill(fill)),
+                _ => Err(ExtendedRenderError::UnsupportedOperation),
+            }),
+            target,
+            width,
+            height,
+            scale,
+        )
+    }
+
+    fn render_ops<'a, E: From<RenderError>>(
+        &mut self,
+        ops: impl IntoIterator<Item = Result<RenderOp<'a>, E>>,
+        target: &wgpu::TextureView,
+        width: u32,
+        height: u32,
+        scale: f32,
+    ) -> Result<(), E> {
         if width == 0 || height == 0 || !scale.is_finite() || scale <= 0. {
-            return Err(RenderError::Dimensions);
+            return Err(RenderError::Dimensions.into());
         }
         self.viewport
             .update(&self.queue, Resolution { width, height });
         let mut vertices = Vec::new();
         let mut draws = Vec::new();
+        let space = RasterSpace {
+            width,
+            height,
+            scale,
+        };
+        let mut paths = path::Frame::default();
         let mut buffers = Vec::new();
-        for op in &list.ops {
+        for op in ops {
+            let op = match op? {
+                RenderOp::Legacy(op) => op,
+                RenderOp::Fill(fill) => {
+                    if let Some(index) = paths.push(fill, space, self.srgb) {
+                        draws.push(Draw::Fill {
+                            index,
+                            clip: fill.clip(),
+                        });
+                    }
+                    continue;
+                }
+            };
             match op {
                 PaintOp::Quad { .. }
                 | PaintOp::Stroke { .. }
@@ -399,26 +523,11 @@ impl Renderer {
                     for (u, v) in [(0., 0.), (1., 0.), (0., 1.), (0., 1.), (1., 0.), (1., 1.)] {
                         let x = (rect.x + u * rect.width) * scale;
                         let y = (rect.y + v * rect.height) * scale;
-                        let channel = |byte: u8| {
-                            let c = byte as f32 / 255.;
-                            if !self.srgb {
-                                c
-                            } else if c <= 0.04045 {
-                                c / 12.92
-                            } else {
-                                ((c + 0.055) / 1.055).powf(2.4)
-                            }
-                        };
                         vertices.push(Vertex {
                             position: [x / width as f32 * 2. - 1., 1. - y / height as f32 * 2.],
                             local: [u * rect.width, v * rect.height],
                             size: [rect.width, rect.height],
-                            color: [
-                                channel(color.0),
-                                channel(color.1),
-                                channel(color.2),
-                                color.3 as f32 / 255.,
-                            ],
+                            color: color_channels(*color, self.srgb),
                             radius,
                             stroke,
                         });
@@ -454,33 +563,43 @@ impl Renderer {
                             None,
                         ));
                     }
-                    self.text_renderers[index].prepare(
-                        &self.device,
-                        &self.queue,
-                        &mut self.text.fonts,
-                        &mut self.atlas,
-                        &self.viewport,
-                        [TextArea {
-                            buffer: &buffers[index],
-                            left: (rect.x - scroll.0) * scale,
-                            top: (rect.y - scroll.1) * scale,
-                            scale,
-                            bounds: TextBounds {
-                                left: (clip.x * scale).floor() as i32,
-                                top: (clip.y * scale).floor() as i32,
-                                right: ((clip.x + clip.width) * scale).ceil() as i32,
-                                bottom: ((clip.y + clip.height) * scale).ceil() as i32,
-                            },
-                            default_color: glyphon::Color::rgba(color.0, color.1, color.2, color.3),
-                            custom_glyphs: &[],
-                        }],
-                        &mut self.cache,
-                    )?;
+                    self.text_renderers[index]
+                        .prepare(
+                            &self.device,
+                            &self.queue,
+                            &mut self.text.fonts,
+                            &mut self.atlas,
+                            &self.viewport,
+                            [TextArea {
+                                buffer: &buffers[index],
+                                left: (rect.x - scroll.0) * scale,
+                                top: (rect.y - scroll.1) * scale,
+                                scale,
+                                bounds: TextBounds {
+                                    left: (clip.x * scale).floor() as i32,
+                                    top: (clip.y * scale).floor() as i32,
+                                    right: ((clip.x + clip.width) * scale).ceil() as i32,
+                                    bottom: ((clip.y + clip.height) * scale).ceil() as i32,
+                                },
+                                default_color: glyphon::Color::rgba(
+                                    color.0, color.1, color.2, color.3,
+                                ),
+                                custom_glyphs: &[],
+                            }],
+                            &mut self.cache,
+                        )
+                        .map_err(RenderError::from)?;
                     draws.push(Draw::Text(index));
                 }
             }
         }
         // wgpu disallows an empty buffer, but a list containing only text is valid.
+        let path_buffers = (!paths.is_empty()).then(|| {
+            let pipeline = self
+                .path_pipeline
+                .get_or_insert_with(|| path::Pipeline::new(&self.device, self.format));
+            (paths.upload(&self.device, pipeline), pipeline)
+        });
         let empty_vertex = Vertex::zeroed();
         let vertex_buffer = self
             .device
@@ -516,31 +635,28 @@ impl Renderer {
             for draw in draws {
                 match draw {
                     Draw::Quad { start, clip } => {
-                        let left = (clip.x * scale).floor().max(0.).min(width as f32) as u32;
-                        let top = (clip.y * scale).floor().max(0.).min(height as f32) as u32;
-                        let right = ((clip.x + clip.width) * scale)
-                            .ceil()
-                            .max(left as f32)
-                            .min(width as f32) as u32;
-                        let bottom = ((clip.y + clip.height) * scale)
-                            .ceil()
-                            .max(top as f32)
-                            .min(height as f32) as u32;
-                        if right <= left || bottom <= top {
+                        let Some([left, top, width, height]) = space.scissor(clip) else {
                             continue;
-                        }
-                        pass.set_scissor_rect(left, top, right - left, bottom - top);
+                        };
+                        pass.set_scissor_rect(left, top, width, height);
                         pass.set_pipeline(&self.pipeline);
                         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
                         pass.draw(start..start + 6, 0..1);
                     }
+                    Draw::Fill { index, clip } => {
+                        let Some([left, top, width, height]) = space.scissor(clip) else {
+                            continue;
+                        };
+                        if let Some((buffers, pipeline)) = &path_buffers {
+                            pass.set_scissor_rect(left, top, width, height);
+                            buffers.draw(&mut pass, pipeline, index);
+                        }
+                    }
                     Draw::Text(index) => {
                         pass.set_scissor_rect(0, 0, width, height);
-                        self.text_renderers[index].render(
-                            &self.atlas,
-                            &self.viewport,
-                            &mut pass,
-                        )?;
+                        self.text_renderers[index]
+                            .render(&self.atlas, &self.viewport, &mut pass)
+                            .map_err(RenderError::from)?;
                     }
                 }
             }

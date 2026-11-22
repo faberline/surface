@@ -1,9 +1,15 @@
+mod modal_wide_navigation_rail_demo;
+mod rail_icons;
+mod wide_navigation_rail_demo;
+
+use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
-use surface_app::{Application, View};
+use surface_app::{AnimationFrame, AnimationUpdate, Application, View};
 use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
-    IconButtonKind, LoadingKind, SegmentPosition, Theme,
+    IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition, Theme,
 };
+use wide_navigation_rail_demo::{WideRailDemo, WideRailEvent};
 
 pub struct Gallery {
     pub section: usize,
@@ -24,6 +30,9 @@ pub struct Gallery {
     pub rail: usize,
     pub drawer: usize,
     pub nav: usize,
+    rail_large_text: bool,
+    wide_rail_demo: WideRailDemo,
+    modal_wide_rail_demo: ModalWideRailDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -46,6 +55,9 @@ impl Default for Gallery {
             rail: 0,
             drawer: 0,
             nav: 0,
+            rail_large_text: false,
+            wide_rail_demo: WideRailDemo::default(),
+            modal_wide_rail_demo: ModalWideRailDemo::default(),
         }
     }
 }
@@ -53,6 +65,9 @@ impl Default for Gallery {
 pub enum Message {
     Section(usize),
     Rail(usize),
+    RailLargeText,
+    WideRail(WideRailEvent),
+    ModalWideRail(ModalWideRailEvent),
     Drawer(usize),
     Nav(usize),
     Theme,
@@ -75,10 +90,38 @@ impl Application for Gallery {
     fn title(&self) -> &str {
         "Surface · Material gallery"
     }
+    fn text_scale(&self) -> f32 {
+        if self.rail_large_text {
+            2.
+        } else {
+            1.
+        }
+    }
+    fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
+        let inline = self.wide_rail_demo.viewport_changed(width);
+        let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
+        self.section == wide_navigation_rail_demo::SECTION && (inline || modal)
+    }
+    fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
+        let inline = self.wide_rail_demo.frame(&frame);
+        let modal = self.modal_wide_rail_demo.frame(&frame);
+        AnimationUpdate {
+            rebuild: inline.rebuild || modal.rebuild,
+            request_next: inline.request_next || modal.request_next,
+        }
+    }
     fn update(&mut self, m: Message) {
         match m {
-            Message::Section(i) => self.section = i,
+            Message::Section(i) => {
+                self.section = i;
+                if i != modal_wide_navigation_rail_demo::SECTION {
+                    self.modal_wide_rail_demo.close();
+                }
+            }
             Message::Rail(i) => self.rail = i,
+            Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
+            Message::WideRail(event) => self.wide_rail_demo.update(event),
+            Message::ModalWideRail(event) => self.modal_wide_rail_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
@@ -508,20 +551,21 @@ impl Application for Gallery {
                             "nav-rail",
                             "Destinations",
                             [
-                                ("rail-home", "Home", "H"),
-                                ("rail-search", "Search", "S"),
-                                ("rail-more", "More", "M"),
+                                ("rail-home", "Home", rail_icons::Destination::Home.icon()),
+                                ("rail-search", "Search", rail_icons::search()),
+                                ("rail-more", "More", rail_icons::more()),
                             ]
                             .into_iter()
                             .enumerate()
                             .map(|(i, (id, name, icon))| {
-                                t.navigation_rail_item(
+                                t.navigation_rail_item_with_icon(NavigationRailItem {
                                     id,
-                                    name,
+                                    label: name,
+                                    accessible_name: name,
                                     icon,
-                                    choice(self.rail == i),
-                                    Message::Rail(i),
-                                )
+                                    state: choice(self.rail == i),
+                                    message: Message::Rail(i),
+                                })
                             }),
                         )],
                     ),
@@ -551,6 +595,8 @@ impl Application for Gallery {
                         )],
                     ),
                 );
+                children.push(self.wide_rail_demo.card(&t, self.rail_large_text));
+                children.push(self.modal_wide_rail_demo.card(&t, self.rail_large_text));
             }
             2 => {
                 children.push(t.card(
@@ -674,6 +720,9 @@ impl Application for Gallery {
                 Message::Sheet(false),
             ));
         }
+        if self.section == modal_wide_navigation_rail_demo::SECTION {
+            children.extend(self.modal_wide_rail_demo.layer(&t));
+        }
         t.page(children)
     }
 }
@@ -711,7 +760,10 @@ mod web {
         APP.with(|a|{
         let a=a.borrow();let runtime=a.as_ref().expect("started").borrow();let s=runtime.app();
         serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
-            "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused()}).to_string()
+            "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused(),
+            "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
+            "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime)
+        }).to_string()
     })
     }
     #[wasm_bindgen]

@@ -7,6 +7,7 @@ repository.workspace = true
 
 [features]
 devtools = ["surface-app/bridge", "surface-app/devtools", "dep:jet-bridge-protocol", "dep:serde_json", "dep:getrandom", "dep:js-sys", "dep:surface-devtools-protocol"]
+macos-accessibility = ["dep:accesskit", "dep:accesskit_winit"]
 
 [dependencies]
 surface.workspace = true
@@ -26,6 +27,14 @@ pollster.workspace = true
 arboard = { version = "3.6", default-features = false }
 getrandom = { version = "0.3", optional = true }
 surface-devtools-protocol = { workspace = true, optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+accesskit = { version = "0.25.2", optional = true }
+accesskit_winit = { version = "=0.34.2", path = "../../third-party/accesskit-winit", default-features = false, features = ["rwh_06"], optional = true }
+block2 = "0.6"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSAccessibility", "NSWorkspace"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSNotification", "NSString", "NSOperation", "block2"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "=0.2.129"

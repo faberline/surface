@@ -1,10 +1,11 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "examples/showcase", "examples/material-gallery", "xtask", "e2e"]
+exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
 default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 authors = ["Faberline contributors"]

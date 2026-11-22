@@ -1,7 +1,8 @@
 use crate::{AppError, Application, EditKey, Event, ImeEvent, Runtime, TextEditor, TextSelection};
 use std::collections::BTreeMap;
 use surface::{
-    ComputedDom, MicroDom, NodeId, Rect, Role, TextDecoration, TextLayout, TextMeasurer,
+    ComputedDom, Length, MicroDom, NodeId, Rect, Role, TextDecoration, TextLayout, TextMeasurer,
+    TextScaling,
 };
 
 pub(crate) struct EditingGeometry {
@@ -224,12 +225,43 @@ impl<A: Application> Runtime<A> {
         &mut self,
         width: f32,
         height: f32,
+        text_scale: f32,
         measurer: &mut impl TextMeasurer,
     ) -> Result<(MicroDom, BTreeMap<NodeId, TextDecoration>, ComputedDom), AppError> {
         let mut display = self.dom.clone();
         for (key, editor) in &self.editors {
             if let Some(id) = display.by_id(key) {
                 display.set_text(id, editor.display_value())?;
+            }
+        }
+        if text_scale != 1. {
+            for (id, node) in self.dom.iter() {
+                let scaling = node.text_scaling_mode();
+                if scaling == TextScaling::Fixed {
+                    continue;
+                }
+                let has_text = node.text_value().is_some() || node.role() == Role::TextInput;
+                let expand = scaling == TextScaling::Expand && text_scale > 1.;
+                if !has_text && !expand {
+                    continue;
+                }
+                let mut style = node.style().clone();
+                if has_text {
+                    let text_style = style.text_style().scaled(text_scale);
+                    if expand && node.role() == Role::TextInput {
+                        style.min_height = style.min_height.max(
+                            text_style.line_height_px() + 2. * (style.padding + style.border_width),
+                        );
+                    }
+                    style = style.with_text_style(text_style);
+                }
+                if expand {
+                    if let Length::Px(height) = style.height {
+                        style.min_height = style.min_height.max(height);
+                        style.height = Length::Auto;
+                    }
+                }
+                display.set_style(id, style)?;
             }
         }
         let computed = self.layout.compute(&display, width, height, measurer)?;

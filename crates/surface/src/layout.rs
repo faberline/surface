@@ -1,5 +1,6 @@
 //! Retained Taffy layout with renderer-supplied text measurement.
-use crate::{Align, Direction, Length, MicroDom, NodeId, Position, Rect, Style, TextStyle};
+use crate::{Align, Direction, Length, MicroDom, Node, NodeId, Position, Rect, Style, TextStyle};
+use std::sync::Arc;
 use taffy::prelude as t;
 
 /// A renderer must use the same font metrics here and during text painting.
@@ -68,6 +69,39 @@ pub trait TextMeasurer {
         }
     }
 }
+/// Measure a group as a single layout item and place its direct decorative leaves.
+///
+/// The children keep their authored semantics and paint order. The group
+/// owns placement and the usual ancestor and group clipping applies. Measured
+/// sizes and placed rectangles must be finite and have nonnegative dimensions.
+pub trait MeasuredGroupLayout: std::fmt::Debug + Send + Sync {
+    /// Return the group's desired content size within the available width.
+    fn measure(
+        &self,
+        children: &[&Node],
+        available_width: Option<f32>,
+        fonts: &mut dyn TextMeasurer,
+    ) -> (f32, f32);
+
+    /// Return one group-relative rectangle per child in authored order.
+    /// `size` is the group's final outer size, including any style padding.
+    fn place(
+        &self,
+        children: &[&Node],
+        size: (f32, f32),
+        fonts: &mut dyn TextMeasurer,
+    ) -> Vec<Rect>;
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct MeasuredGroup(pub(crate) Arc<dyn MeasuredGroupLayout>);
+
+impl PartialEq for MeasuredGroup {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum LayoutError {
     #[error("viewport must be finite and positive")]
@@ -81,10 +115,42 @@ pub enum LayoutError {
 struct Input {
     text: Option<String>,
     style: Style,
+    shrink: bool,
+    reverse_row: bool,
     children: Vec<NodeId>,
+    measured: bool,
 }
+
+impl Input {
+    fn taffy_style(&self) -> t::Style {
+        style(&self.style, self.shrink, self.reverse_row)
+    }
+}
+enum MeasureContext {
+    Text(String, TextStyle),
+    Group(NodeId),
+}
+
+fn valid_size(width: f32, height: f32) -> bool {
+    width.is_finite() && height.is_finite() && width >= 0. && height >= 0.
+}
+
+fn valid_placement(rect: Rect) -> bool {
+    valid_size(rect.width, rect.height)
+        && rect.x.is_finite()
+        && rect.y.is_finite()
+        && (rect.x + rect.width).is_finite()
+        && (rect.y + rect.height).is_finite()
+}
+
+fn measured_children(dom: &MicroDom, id: NodeId) -> Vec<&Node> {
+    dom.children(id)
+        .map(|child| dom.get(child).expect("valid measured group child"))
+        .collect()
+}
+
 pub struct LayoutEngine {
-    tree: t::TaffyTree<(String, TextStyle)>,
+    tree: t::TaffyTree<MeasureContext>,
     ids: Vec<t::NodeId>,
     previous: Vec<Input>,
     viewport: Option<t::NodeId>,
@@ -114,11 +180,23 @@ pub struct ComputedDom {
 impl ComputedDom {
     /// Last-painted visible enabled control wins. Containers do not steal input.
     pub fn hit_test(&self, dom: &MicroDom, x: f32, y: f32) -> Option<NodeId> {
+        self.hit_test_where(dom, x, y, |_| true)
+    }
+
+    /// Find the last-painted visible enabled control accepted by `eligible`.
+    pub fn hit_test_where(
+        &self,
+        dom: &MicroDom,
+        x: f32,
+        y: f32,
+        mut eligible: impl FnMut(NodeId) -> bool,
+    ) -> Option<NodeId> {
         self.paint_order.iter().rev().copied().find(|id| {
             let n = &self.nodes[id.index()];
             dom.get(*id).is_ok_and(|node| node.is_focusable())
                 && n.bounds.contains(x, y)
                 && n.clip.contains(x, y)
+                && eligible(*id)
         })
     }
 
@@ -137,6 +215,7 @@ impl ComputedDom {
             .collect()
     }
 }
+
 fn dimension(value: Length) -> t::Dimension {
     match value {
         Length::Auto => t::Dimension::Auto,
@@ -179,7 +258,7 @@ fn valid(s: &Style) -> bool {
                 Length::Px(v) | Length::Percent(v) => v.is_finite(),
             })
 }
-fn style(s: &Style) -> t::Style {
+fn style(s: &Style, shrink: bool, reverse_row: bool) -> t::Style {
     let offset = |v| match v {
         Length::Auto => t::LengthPercentageAuto::Auto,
         Length::Px(v) => t::LengthPercentageAuto::Length(v),
@@ -215,6 +294,7 @@ fn style(s: &Style) -> t::Style {
             height: dimension(s.max_height),
         },
         flex_direction: match s.direction {
+            Direction::Row if reverse_row => t::FlexDirection::RowReverse,
             Direction::Row => t::FlexDirection::Row,
             Direction::Column => t::FlexDirection::Column,
         },
@@ -235,7 +315,7 @@ fn style(s: &Style) -> t::Style {
         },
         padding: t::Rect::length(s.padding),
         flex_grow: s.grow,
-        flex_shrink: 0.,
+        flex_shrink: if shrink { 1. } else { 0. },
         ..Default::default()
     }
 }
@@ -255,17 +335,38 @@ impl LayoutEngine {
             .map(|(id, n)| Input {
                 text: n.text_value().map(str::to_owned),
                 style: n.style().clone(),
+                reverse_row: n.is_row_reversed(),
+                shrink: n.parent().and_then(|id| dom.get(id).ok()).is_some_and(
+                    |parent| match parent.style().direction {
+                        Direction::Row => n.can_shrink_width(),
+                        Direction::Column => false,
+                    },
+                ),
                 children: dom.children(id).collect(),
+                measured: n.measured_group_layout().is_some(),
             })
             .collect();
+        let mut has_measured_groups = false;
         for (i, n) in input.iter().enumerate() {
+            has_measured_groups |= n.measured;
             if !valid(&n.style) {
+                return Err(LayoutError::InvalidStyle(i));
+            }
+            if n.measured
+                && n.children.iter().any(|id| {
+                    let child = &input[id.index()];
+                    child.style.position != Position::Flow
+                        || !child.children.is_empty()
+                        || child.measured
+                })
+            {
                 return Err(LayoutError::InvalidStyle(i));
             }
         }
         let topology_changed = self.previous.len() != input.len()
             || self.previous.iter().zip(&input).any(|(a, b)| {
                 a.children != b.children
+                    || a.measured != b.measured
                     || (a.style.position == Position::Fixed)
                         != (b.style.position == Position::Fixed)
             });
@@ -273,13 +374,19 @@ impl LayoutEngine {
             self.tree = t::TaffyTree::new();
             self.ids.clear();
             self.viewport = Some(self.tree.new_leaf(t::Style::default())?);
-            for n in &input {
-                self.ids.push(self.tree.new_leaf_with_context(
-                    style(&n.style),
-                    (n.text.clone().unwrap_or_default(), n.style.text_style()),
-                )?);
+            for ((id, _), n) in dom.iter().zip(&input) {
+                let context = if n.measured {
+                    MeasureContext::Group(id)
+                } else {
+                    MeasureContext::Text(n.text.clone().unwrap_or_default(), n.style.text_style())
+                };
+                self.ids
+                    .push(self.tree.new_leaf_with_context(n.taffy_style(), context)?);
             }
             for (i, n) in input.iter().enumerate() {
+                if n.measured {
+                    continue;
+                }
                 let children: Vec<_> = n
                     .children
                     .iter()
@@ -302,19 +409,26 @@ impl LayoutEngine {
                 .set_children(self.viewport.expect("viewport exists"), &children)?;
         } else {
             for (i, (a, b)) in self.previous.iter().zip(&input).enumerate() {
-                if style(&a.style) != style(&b.style) {
-                    self.tree.set_style(self.ids[i], style(&b.style))?;
+                if a.taffy_style() != b.taffy_style() {
+                    self.tree.set_style(self.ids[i], b.taffy_style())?;
                 }
-                if a.text != b.text || !a.style.same_text_style(&b.style) {
+                if b.measured {
+                    // The layout may read properties beyond the text and
+                    // flex inputs, such as the child's icon or paint style.
+                    self.tree.mark_dirty(self.ids[i])?;
+                } else if a.text != b.text || !a.style.same_text_style(&b.style) {
                     self.tree.set_node_context(
                         self.ids[i],
-                        Some((b.text.clone().unwrap_or_default(), b.style.text_style())),
+                        Some(MeasureContext::Text(
+                            b.text.clone().unwrap_or_default(),
+                            b.style.text_style(),
+                        )),
                     )?;
                 }
             }
         }
         // Root auto size fills the host viewport. Explicit sizes are respected.
-        let mut root_style = style(&input[0].style);
+        let mut root_style = input[0].taffy_style();
         // The viewport wrapper only positions scene roots. Keeping the normal
         // root absolute avoids a second flex intrinsic-measurement pass and
         // preserves caches for unchanged siblings inside that root.
@@ -345,6 +459,7 @@ impl LayoutEngine {
         if self.tree.style(viewport_id)? != &viewport_style {
             self.tree.set_style(viewport_id, viewport_style)?;
         }
+        let mut invalid_measurement = None;
         self.tree.compute_layout_with_measure(
             viewport_id,
             t::Size {
@@ -357,8 +472,20 @@ impl LayoutEngine {
                     _ => None,
                 });
                 let (w, h) = match context {
-                    Some((text, style)) if !text.is_empty() => {
+                    Some(MeasureContext::Text(text, style)) if !text.is_empty() => {
                         measurer.measure_text(text, style, limit)
+                    }
+                    Some(MeasureContext::Group(id)) => {
+                        let group = dom.get(*id).expect("valid measured group");
+                        let layout = group.measured_group_layout().expect("measured group");
+                        let children = measured_children(dom, *id);
+                        let limit = limit.filter(|width| width.is_finite() && *width >= 0.);
+                        let (w, h) = layout.measure(&children, limit, measurer);
+                        if !valid_size(w, h) {
+                            invalid_measurement.get_or_insert(id.index());
+                            return t::Size::ZERO;
+                        }
+                        (w, h)
                     }
                     _ => (0., 0.),
                 };
@@ -369,9 +496,17 @@ impl LayoutEngine {
             },
         )?;
         self.previous = input;
+        if let Some(index) = invalid_measurement {
+            return Err(LayoutError::InvalidStyle(index));
+        }
         let viewport = Rect::new(0., 0., width, height);
         let mut nodes = Vec::with_capacity(dom.len());
+        let mut placements = Vec::<Option<Rect>>::new();
+        if has_measured_groups {
+            placements.resize(dom.len(), None);
+        }
         for (id, n) in dom.iter() {
+            let placement = placements.get(id.index()).copied().flatten();
             let layout = self.tree.layout(self.ids[id.index()])?;
             let (x, y, clip) = if n.style().position == Position::Fixed {
                 (0., 0., viewport)
@@ -390,16 +525,40 @@ impl LayoutEngine {
             } else {
                 (0., 0., viewport)
             };
-            nodes.push(ComputedNode {
-                id,
-                bounds: Rect::new(
-                    x + layout.location.x,
-                    y + layout.location.y,
-                    layout.size.width,
-                    layout.size.height,
-                ),
-                clip,
-            });
+            let (local_y, height) = placement
+                .map_or((layout.location.y, layout.size.height), |rect| {
+                    (rect.y, rect.height)
+                });
+            let (local_x, width) = placement
+                .map_or((layout.location.x, layout.size.width), |rect| {
+                    (rect.x, rect.width)
+                });
+            let bounds = Rect::new(
+                x + local_x + n.horizontal_slide() * width,
+                y + local_y,
+                width,
+                height,
+            );
+            if placement.is_some() && !valid_placement(bounds) {
+                return Err(LayoutError::InvalidStyle(
+                    n.parent().expect("placed child has a group").index(),
+                ));
+            }
+            if let Some(layout) = n.measured_group_layout() {
+                if !valid_placement(bounds) {
+                    return Err(LayoutError::InvalidStyle(id.index()));
+                }
+                let children = measured_children(dom, id);
+                let rects = layout.place(&children, (bounds.width, bounds.height), measurer);
+                if rects.len() != children.len() || rects.iter().any(|rect| !valid_placement(*rect))
+                {
+                    return Err(LayoutError::InvalidStyle(id.index()));
+                }
+                for (child, rect) in dom.children(id).zip(rects) {
+                    placements[child.index()] = Some(rect);
+                }
+            }
+            nodes.push(ComputedNode { id, bounds, clip });
         }
         let paint_order = dom.paint_order();
         Ok(ComputedDom {
