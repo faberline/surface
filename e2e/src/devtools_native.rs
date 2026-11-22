@@ -10,6 +10,8 @@
 //! (issue #132, O8): the CLI, MCP over stdio, error exit codes and a stale
 //! session file.
 //! DN15 to DN17 capture native PNGs over TCP, CLI and MCP (issue #155).
+//! The separate `devtools-headless` case checks the same three transports
+//! against the Gallery's windowless host.
 
 use anyhow::{anyhow, bail, Context, Result};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
@@ -32,10 +34,20 @@ pub const STEPS: &[&str] = &[
 ];
 
 const NAME: &str = "devtools-native";
+const HEADLESS_NAME: &str = "devtools-headless";
+
+pub const HEADLESS_STEPS: &[&str] = &["DH1", "DH2", "DH3"];
 
 pub async fn run(env: &Env, bin: &Path) -> Result<()> {
-    let folder = temp_folder()?;
+    let folder = temp_folder(NAME)?;
     let result = run_in(env, bin, &folder).await;
+    let _ = std::fs::remove_dir_all(&folder);
+    result
+}
+
+pub async fn run_headless(env: &Env, bin: &Path) -> Result<()> {
+    let folder = temp_folder(HEADLESS_NAME)?;
+    let result = run_headless_in(env, bin, &folder).await;
     let _ = std::fs::remove_dir_all(&folder);
     result
 }
@@ -112,6 +124,111 @@ async fn wait_for_session(app: &mut Child, path: &Path) -> Result<Value> {
         }
         tokio::time::sleep(Duration::from_millis(50)).await;
     }
+}
+
+async fn run_headless_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
+    let session_path = folder.join("devtools-session.json");
+    let tool = env.devtools_bin()?;
+    let diagnostic = File::create(env.artifact("devtools-headless-stderr.log"))?;
+    let mut app = Command::new(bin)
+        .args(["--headless", "--width", "720", "--height", "640"])
+        .current_dir(&env.root)
+        .env("SURFACE_DEVTOOLS_SESSION", &session_path)
+        .env_remove("DISPLAY")
+        .env_remove("WAYLAND_DISPLAY")
+        .env_remove("WAYLAND_SOCKET")
+        .stdout(Stdio::null())
+        .stderr(Stdio::from(diagnostic))
+        .kill_on_drop(true)
+        .spawn()
+        .with_context(|| format!("starting {} --headless", bin.display()))?;
+    let outcome = async {
+        step(
+            "DH1",
+            "headless Gallery accepts an authenticated DevTools connection",
+        );
+        let session = wait_for_session(&mut app, &session_path).await?;
+        check_eq!(
+            session["pid"].as_u64(),
+            app.id().map(u64::from),
+            "session pid"
+        );
+        let endpoint = session["endpoint"].as_str().context("no endpoint")?;
+        check!(
+            endpoint.starts_with("127.0.0.1:"),
+            "session is not on loopback"
+        );
+        let token = session["token"].as_str().context("no token")?;
+        let mut client = Connection::open(endpoint, token)?;
+        let caps = client.ok(1, "Devtools.capabilities", json!({}))?;
+        check_eq!(caps["version"], json!(1), "capabilities version");
+        let methods = caps["methods"]
+            .as_array()
+            .context("no capabilities methods")?;
+        for method in ["DOM.snapshot", "Action.activate", "Page.screenshot"] {
+            check!(
+                methods.iter().any(|entry| entry == method),
+                "capabilities lack {method}"
+            );
+        }
+
+        step(
+            "DH2",
+            "an agent action renders a real 720 × 640 PNG without a window",
+        );
+        let activated = client.ok(2, "Action.activate", json!({"id": "section-1"}))?;
+        check_eq!(activated["changed"], json!(true), "activate action section");
+        let snapshot = client.ok(3, "DOM.snapshot", json!({}))?;
+        node(&snapshot, "filled")?;
+        let result = client.ok(4, "Page.screenshot", json!({}))?;
+        let (shot, scale) = Screenshot::from_reply(&result)?;
+        check_eq!((shot.width, shot.height), (720, 640), "headless PNG size");
+        check_eq!(scale, 1.0, "headless screenshot scale");
+        shot.verify_viewport(&snapshot, scale)?;
+        let background = shot.pixel(1, 1)?;
+        shot.verify_color(
+            1,
+            1,
+            &node(&snapshot, "surface-page")?["style"]["background"],
+        )?;
+        check!(
+            shot.pixels.chunks_exact(4).any(|pixel| pixel != background),
+            "headless PNG contains only the background color"
+        );
+        std::fs::write(env.artifact("devtools-headless-screenshot.png"), &shot.png)?;
+
+        step(
+            "DH3",
+            "stock CLI and MCP return the same headless PNG as raw TCP",
+        );
+        let result = client.ok(5, "Page.screenshot", json!({"max_side": 400}))?;
+        let (scaled, _) = Screenshot::from_reply(&result)?;
+        let session_arg = session_path.to_str().context("non-UTF-8 session path")?;
+        let mut transcript = String::new();
+        let cli_png = screenshot_cli(&tool, session_arg, folder, &mut transcript)?;
+        let mcp = mcp_session(&tool, session_arg, &mut transcript)?;
+        let mcp_png = screenshot_mcp(&mcp)?;
+        check!(scaled.png == cli_png, "raw and CLI headless PNGs differ");
+        check!(scaled.png == mcp_png, "raw and MCP headless PNGs differ");
+        check!(
+            !transcript.contains(token),
+            "the client printed the session token"
+        );
+        Ok(json!({
+            "width": shot.width,
+            "height": shot.height,
+            "scale": scale,
+            "capabilities": methods,
+            "action_rendered": true,
+            "screenshot_transports_match": true,
+        }))
+    }
+    .await;
+    terminate(&mut app).await;
+    let evidence: Value = outcome?;
+    env.write_json("devtools-headless-result.json", &evidence)?;
+    println!("  evidence: {evidence}");
+    Ok(())
 }
 
 async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
@@ -389,7 +506,12 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
         let mut client = Connection::open(&endpoint, &token)?;
         let raw_result = client.ok(163, "Page.screenshot", json!({"max_side": 400}))?;
         let (raw, _) = Screenshot::from_reply(&raw_result)?;
+        step(
+            "DN16",
+            "CLI screenshot outputs JSON or creates a private PNG once",
+        );
         let cli_png = screenshot_cli(&tool, &session_arg, folder, &mut transcripts)?;
+        step("DN17", "MCP page_screenshot returns a native PNG image");
         let mcp_png = screenshot_mcp(&mcp)?;
         std::fs::write(
             env.artifact("devtools-native-screenshot-scaled.png"),
@@ -750,10 +872,6 @@ fn screenshot_cli(
     folder: &Path,
     transcript: &mut String,
 ) -> Result<Vec<u8>> {
-    step(
-        "DN16",
-        "CLI screenshot outputs JSON or creates a private PNG once",
-    );
     let (code, out, _) = cli(
         tool,
         session,
@@ -809,7 +927,6 @@ fn screenshot_cli(
 }
 
 fn screenshot_mcp(mcp: &[Value]) -> Result<Vec<u8>> {
-    step("DN17", "MCP page_screenshot returns a native PNG image");
     let tool = mcp[1]["result"]["tools"]
         .as_array()
         .and_then(|tools| tools.iter().find(|tool| tool["name"] == "page_screenshot"))
@@ -866,11 +983,11 @@ fn append(path: &Path) -> Result<File> {
     Ok(std::fs::OpenOptions::new().append(true).open(path)?)
 }
 
-fn temp_folder() -> Result<std::path::PathBuf> {
+fn temp_folder(name: &str) -> Result<std::path::PathBuf> {
     let nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_nanos();
-    let dir = std::env::temp_dir().join(format!("surface-{NAME}-{}-{nanos}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("surface-{name}-{}-{nanos}", std::process::id()));
     std::fs::create_dir_all(&dir)?;
     Ok(dir)
 }

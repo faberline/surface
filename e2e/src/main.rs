@@ -27,7 +27,7 @@ const USAGE: &str = "\
 usage: surface-e2e [options] [suite...]
 
 suites: smoke ime material bridge-native bridge-native-compact bridge-web
-        devtools-native
+        devtools-native devtools-headless
         (default: all of them, in that order)
 
 options:
@@ -43,7 +43,7 @@ options:
   --artifacts <dir>     screenshots and evidence (default: artifacts)
 ";
 
-const SUITES: [&str; 7] = [
+const SUITES: [&str; 8] = [
     "smoke",
     "ime",
     "material",
@@ -51,6 +51,7 @@ const SUITES: [&str; 7] = [
     "bridge-native-compact",
     "bridge-web",
     "devtools-native",
+    "devtools-headless",
 ];
 
 /// Paths shared by every suite.
@@ -195,6 +196,7 @@ fn expected_steps(suite: &str) -> &'static [&'static str] {
         "bridge-native" => bridge::NATIVE_STEPS,
         "bridge-native-compact" => bridge::NATIVE_OVERFLOW_STEPS,
         "devtools-native" => devtools_native::STEPS,
+        "devtools-headless" => devtools_native::HEADLESS_STEPS,
         _ => bridge::WEB_STEPS,
     }
 }
@@ -231,6 +233,7 @@ async fn run_suite(
             .await
         }
         "devtools-native" => devtools_native::run(env, &options.native_bin).await,
+        "devtools-headless" => devtools_native::run_headless(env, &options.native_bin).await,
         "bridge-native-compact" => {
             bridge::native(
                 env,

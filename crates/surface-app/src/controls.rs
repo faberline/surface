@@ -117,7 +117,7 @@ impl<A: Application> Runtime<A> {
             .is_some_and(|id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
     }
 
-    pub(crate) fn reconcile_controls(&mut self, focus_after_removal: Option<String>) {
+    pub(crate) fn reconcile_controls(&mut self, focus_after_removal: Vec<String>) {
         let old_focus = self.focused.clone();
         // Bindings follow the current tree's preorder. Later sibling layers
         // cover earlier siblings. A nested layer always follows its parent.
@@ -184,7 +184,7 @@ impl<A: Application> Runtime<A> {
                     .filter(|key| self.focusable_in_scope(key))
                     .cloned();
                 self.layout_focus = None;
-            } else if let Some(target) = focus_after_removal.filter(|target| {
+            } else if let Some(target) = focus_after_removal.into_iter().find(|target| {
                 self.focused_node()
                     .and_then(|id| self.dom.get(id).ok())
                     .is_none_or(|node| !node.is_focusable())

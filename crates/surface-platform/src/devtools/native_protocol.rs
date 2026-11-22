@@ -28,7 +28,7 @@ use winit::event_loop::EventLoopProxy;
 pub(crate) const ENV: &str = "SURFACE_DEVTOOLS_SESSION";
 /// The `protocol` field of the session file.
 const PROTOCOL: &str = "surface-devtools";
-/// How long a connection thread waits for the event loop.
+/// How long a connection thread waits for the runtime host.
 const HOST_TIMEOUT: Duration = Duration::from_secs(5);
 /// A connection with no complete request line for this long is closed.
 const IDLE_TIMEOUT: Duration = Duration::from_secs(60);
@@ -39,7 +39,7 @@ const POLL: Duration = Duration::from_millis(200);
 /// Open connections at one time. More are refused.
 const MAX_CONNECTIONS: usize = 8;
 
-/// The reply channel of one `UserEvent::Devtools`.
+/// The reply channel for one native DevTools request.
 pub(crate) struct DevtoolsReply(mpsc::SyncSender<Reply>);
 impl DevtoolsReply {
     pub(crate) fn send(self, reply: Reply) {
@@ -291,36 +291,72 @@ pub(crate) struct Server {
     stop: Arc<AtomicBool>,
     worker: Option<JoinHandle<()>>,
 }
+
+type PendingRequest = (Request, DevtoolsReply);
+
+fn forward_to_host(
+    request: Request,
+    submit: impl FnOnce(Request, DevtoolsReply) -> Result<(), (ErrorCode, &'static str)>,
+) -> Reply {
+    let id = request.id;
+    let (sender, receiver) = mpsc::sync_channel(1);
+    if let Err((code, message)) = submit(request, DevtoolsReply(sender)) {
+        return Reply::error(id, code, message);
+    }
+    receiver.recv_timeout(HOST_TIMEOUT).unwrap_or_else(|_| {
+        Reply::error(
+            id,
+            ErrorCode::HostTimeout,
+            "the application did not reply; a submitted action may already have run",
+        )
+    })
+}
+
 impl Server {
+    pub(crate) fn session_path() -> Option<PathBuf> {
+        std::env::var_os(ENV).map(PathBuf::from)
+    }
+
+    /// Queue authenticated requests for a host that owns its runtime on the current thread.
+    pub(crate) fn start_queued(
+        path: PathBuf,
+        application: &str,
+    ) -> Result<(Self, mpsc::Receiver<PendingRequest>), Box<dyn std::error::Error>> {
+        let (sender, receiver) = mpsc::sync_channel(MAX_CONNECTIONS);
+        let server = Self::start(path, application, move |request| {
+            forward_to_host(request, |request, reply| {
+                sender
+                    .try_send((request, reply))
+                    .map_err(|error| match error {
+                        mpsc::TrySendError::Full(_) => {
+                            (ErrorCode::NotReady, "the application is busy")
+                        }
+                        mpsc::TrySendError::Disconnected(_) => {
+                            (ErrorCode::HostClosed, "the application host closed")
+                        }
+                    })
+            })
+        })?;
+        Ok((server, receiver))
+    }
+
     /// Start when `SURFACE_DEVTOOLS_SESSION` is set. Requests go to the event
     /// loop as `UserEvent::Devtools`.
     pub(crate) fn install(
         proxy: EventLoopProxy<UserEvent>,
         application: &str,
     ) -> Result<Option<Self>, HostError> {
-        let Some(path) = std::env::var_os(ENV).map(PathBuf::from) else {
+        let Some(path) = Self::session_path() else {
             return Ok(None);
         };
         let dispatch = move |request: Request| {
-            let id = request.id;
-            let (sender, receiver) = mpsc::sync_channel(1);
-            let event = UserEvent::Devtools {
-                request: Box::new(request),
-                reply: DevtoolsReply(sender),
-            };
-            if proxy.send_event(event).is_err() {
-                return Reply::error(
-                    id,
-                    ErrorCode::HostClosed,
-                    "the application event loop closed",
-                );
-            }
-            receiver.recv_timeout(HOST_TIMEOUT).unwrap_or_else(|_| {
-                Reply::error(
-                    id,
-                    ErrorCode::HostTimeout,
-                    "the application did not reply; a submitted action may already have run",
-                )
+            forward_to_host(request, |request, reply| {
+                proxy
+                    .send_event(UserEvent::Devtools {
+                        request: Box::new(request),
+                        reply,
+                    })
+                    .map_err(|_| (ErrorCode::HostClosed, "the application event loop closed"))
             })
         };
         Self::start(path, application, dispatch)
@@ -616,6 +652,43 @@ mod tests {
             assert_eq!(reader.read_line(&mut rest).unwrap(), 0, "closed");
         }
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn queued_host_only_receives_authenticated_requests() {
+        let dir = folder("queued");
+        let path = dir.join("session.json");
+        let (server, pending) = Server::start_queued(path.clone(), "Headless").unwrap();
+        let info = session(&path);
+        let mut untrusted = connect(&info);
+        let mut reader = BufReader::new(untrusted.try_clone().unwrap());
+        let rejected = call(
+            &mut untrusted,
+            &mut reader,
+            r#"{"v":1,"id":1,"method":"DOM.snapshot","token":"wrong"}"#,
+        );
+        assert_eq!(rejected["error"]["code"], "unauthorized");
+        assert!(matches!(pending.try_recv(), Err(mpsc::TryRecvError::Empty)));
+
+        let mut trusted = connect(&info);
+        let mut reader = BufReader::new(trusted.try_clone().unwrap());
+        let line = json!({"v":1,"id":2,"method":"DOM.snapshot","token":info["token"]}).to_string();
+        std::thread::scope(|scope| {
+            scope.spawn(move || {
+                let (request, reply) = pending.recv_timeout(HOST_TIMEOUT).unwrap();
+                reply.send(fake(request));
+            });
+            let result = call(&mut trusted, &mut reader, &line);
+            assert_eq!(
+                result,
+                json!({"id":2,"ok":true,"result":{"method":"DOM.snapshot"}})
+            );
+        });
+        let closed = call(&mut trusted, &mut reader, &line);
+        assert_eq!(closed["error"]["code"], "host_closed");
+        drop(server);
+        assert!(!path.exists());
+        std::fs::remove_dir(dir).unwrap();
     }
 
     #[test]

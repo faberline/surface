@@ -123,15 +123,17 @@ TCP.
 
 `Page.screenshot` returns the drawing commands from the frame the native
 host just presented, rendered as PNG. This keeps the capture at the same
-logical layout as the window. Check `Devtools.capabilities` for support.
+logical layout as the window or headless viewport. Check
+`Devtools.capabilities` for support.
 
 ```json
 {"v":1,"id":8,"method":"Page.screenshot","params":{"max_side":1200},"token":"<session token>"}
 ```
 
 `scale` is output pixels per logical unit. It defaults to the window
-scale. `max_side` limits the longer edge. It defaults to 4096 and accepts
-1 through 8192. The result contains `format` (`"png"`), `width`,
+scale, or 1 in headless mode. `max_side` limits the longer edge. It
+defaults to 4096 and accepts 1 through 8192. The result contains
+`format` (`"png"`), `width`,
 `height`, the effective `scale`, and `data_base64`.
 
 A window without a drawable frame returns `not_ready`. A failed render
@@ -139,6 +141,38 @@ or PNG encoding returns `render_failed`. If the PNG would exceed the
 response cap, the reply uses `too_large` and suggests a smaller
 `max_side`. The application returns the PNG in the reply. It writes no
 screenshot file.
+
+### Headless native Gallery
+
+Launch the Gallery with `--headless` to test without a window.
+It uses the native GPU, a fixed logical viewport, and Reduce Motion.
+The authenticated session supports semantic input, DOM snapshots, and
+PNG capture. OS input and platform accessibility need a windowed test.
+
+Set `CARGO_TARGET_DIR` as required by the local Rust build instructions.
+Build the Gallery and the client, then run them from the same shell.
+
+```sh
+cap cargo build --locked -p surface-material-gallery -p surface-devtools \
+    --features surface-material-gallery/devtools --bins
+surface_session_dir=$(mktemp -d /tmp/surface-headless.XXXXXXXX)
+export SURFACE_DEVTOOLS_SESSION="$surface_session_dir/session.json"
+"$CARGO_TARGET_DIR/debug/surface-material-gallery" --headless --width 320 --height 480 &
+surface_gallery_pid=$!
+trap 'kill "$surface_gallery_pid" 2>/dev/null || true' EXIT
+for attempt in $(seq 1 100); do
+    test -s "$SURFACE_DEVTOOLS_SESSION" && break
+    sleep 0.1
+done
+"$CARGO_TARGET_DIR/debug/surface-devtools" page screenshot \
+    --out "$surface_session_dir/gallery.png"
+```
+
+The same session works with `surface-devtools mcp` and its
+`page_screenshot` tool.
+
+Run `cap cargo xtask web e2e devtools-headless` to check semantic input
+and compare PNGs from the raw API, CLI and MCP.
 
 ## Client: `surface-devtools`
 
