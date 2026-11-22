@@ -1,0 +1,98 @@
+warning: hiding a lifetime that's elided elsewhere is confusing
+  --> third-party/cosmic-text/src/attrs.rs:92:22
+   |
+92 |     pub fn as_family(&self) -> Family {
+   |                      ^^^^^     ^^^^^^ the same lifetime is hidden here
+   |                      |
+   |                      the lifetime is elided here
+   |
+   = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   = note: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+help: use `'_` for type paths
+   |
+92 |     pub fn as_family(&self) -> Family<'_> {
+   |                                      ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> third-party/cosmic-text/src/attrs.rs:273:21
+    |
+273 |     pub fn as_attrs(&self) -> Attrs {
+    |                     ^^^^^     ^^^^^ the same lifetime is hidden here
+    |                     |
+    |                     the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+    |
+273 |     pub fn as_attrs(&self) -> Attrs<'_> {
+    |                                    ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> third-party/cosmic-text/src/attrs.rs:305:21
+    |
+305 |     pub fn defaults(&self) -> Attrs {
+    |                     ^^^^^     ^^^^^ the same lifetime is hidden here
+    |                     |
+    |                     the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+    |
+305 |     pub fn defaults(&self) -> Attrs<'_> {
+    |                                    ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> third-party/cosmic-text/src/attrs.rs:332:21
+    |
+332 |     pub fn get_span(&self, index: usize) -> Attrs {
+    |                     ^^^^^                   ^^^^^ the same lifetime is hidden here
+    |                     |
+    |                     the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+    |
+332 |     pub fn get_span(&self, index: usize) -> Attrs<'_> {
+    |                                                  ++++
+
+warning: hiding a lifetime that's elided elsewhere is confusing
+   --> third-party/cosmic-text/src/buffer.rs:825:24
+    |
+825 |     pub fn layout_runs(&self) -> LayoutRunIter {
+    |                        ^^^^^     ^^^^^^^^^^^^^ the same lifetime is hidden here
+    |                        |
+    |                        the lifetime is elided here
+    |
+    = help: the same lifetime is referred to in inconsistent ways, making the signature confusing
+help: use `'_` for type paths
+    |
+825 |     pub fn layout_runs(&self) -> LayoutRunIter<'_> {
+    |                                               ++++
+
+warning: `cosmic-text` (lib) generated 5 warnings (run `cargo fix --lib -p cosmic-text` to apply 5 suggestions)
+   Compiling surface-material v0.1.0 (/private/tmp/surface-md3-modal-wide-rail.AWzuk6hZ/repo/crates/surface-material)
+    Finished `test` profile [unoptimized] target(s) in 1.62s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/modal_wide_navigation_rail.rs (/tmp/cargo-target/surface-md3-modal-wide-rail-AWzuk6hZ-material/debug/deps/modal_wide_navigation_rail-fca5bbf4a814d2f9)
+
+running 1 test
+test focused_scaled_inbox_stays_fully_visible_at_320_by_240 ... FAILED
+
+failures:
+
+---- focused_scaled_inbox_stays_fully_visible_at_320_by_240 stdout ----
+
+thread 'focused_scaled_inbox_stays_fully_visible_at_320_by_240' (561253) panicked at crates/surface-material/tests/modal_wide_navigation_rail.rs:447:5:
+assertion `left == right` failed
+  left: Rect { x: 0.0, y: 156.0, width: 320.0, height: 84.0 }
+ right: Rect { x: 0.0, y: 156.0, width: 320.0, height: 112.0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    focused_scaled_inbox_stays_fully_visible_at_320_by_240
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p surface-material --test modal_wide_navigation_rail`

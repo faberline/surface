@@ -1,0 +1,74 @@
+case web-accessibility ...
+  [A1] the browser tree exposes Material roles, states and ranges
+  [A2] a projected focus request rejoins keyboard navigation
+  [A3] an opted-in press changes state and a retired element is inert
+  [A4] modal contains the only exposed controls and one editable host
+  [A5] background clicks cannot reset a draft and Cancel restores the opener
+  [A6] fully clipped controls cannot receive accessible presses
+  [A7] connected single-select exposes a named radio group and checked states
+  [A8] connected multi-select exposes independent pressed states
+  [A9] standard group exposes a menu trigger and scoped menu actions
+  [A10] time dial exposes its modal, current unit, range and accessible alternatives
+  [A11] date range exposes selected endpoints, interior dates, fields and restored focus
+  [A12] collapsing the top app bar preserves one heading and both named buttons
+  [A13] the top app bar overflow exposes a scoped and actionable menu
+  [A14] linear indicators expose names and report a value only when known
+  [A15] Expressive wavy indicators expose the same read-only progress semantics
+  [A16] Expressive circular indicators expose read-only progress and its updated value
+  [A17] linear progress bounds follow the canvas and preserve input routing
+  [A18] Expressive loading exposes named progress in both container variants
+  [A19] Expressive icon buttons expose names, checked state and disabled state
+  [A20] common buttons expose action, toggle and disabled semantics
+  [A21] animated outline keeps the checkbox role and focus
+  [A22] Extended FAB keeps one named action and focus in both sizes
+  [A23] Expressive Extended FAB keeps one named action across sizes and content modes
+  [A29] Extended FAB vectors keep one named action and preserve keyboard focus
+  [A24] FAB menu publishes staged actions and removes them at the start of closing
+  [A25] FAB toggle keeps its press, expanded state and current rectangle while the face morphs
+  [A30] FAB menu vectors keep one action and retiring pixels leave keyboard and accessibility
+  [A26] ordinary FABs keep named press actions and focus across elevation changes
+  [A28] a decorative FAB vector leaves one named control and no extra Tab stop
+  [A27] a scroll-hidden FAB retires its press and Tab stop until it is shown again
+  [A31] floating toolbar exposes its name, orientation, buttons and one Tab stop
+  [A32] paired toolbar keeps the FAB and transfers focus as the rail retires
+  [A33] scroll retirement preserves the named list and recovers focus in both toolbar layouts
+  [A34] sliding the whole toolbar retires focus, Tab stops and stale projected actions
+  [A35] docked toolbar exposes logical order and skips Copy as arrows follow physical positions
+  [A36] embedded Save shares one toolbar stop and keeps logical order in RTL and stacked fallback
+  [A37] docked overflow scopes fresh menu actions and restores focus as the hidden set changes
+  [A38] docked scroll hide retires input and keeps the overflow anchor available during modal scrolling
+  [A39] docked toggles keep their names, state, and choices across inline and overflow layouts
+  [A40] floating toggle keeps its state while projected focus follows the core or the separate FAB
+  [A41] decorative badge announces one localized button and preserves focus through count changes
+  [A42] the selected navigation button has one full unread name and one action
+  [A43] moving a badge into view leaves one localized button, focus stop and action
+  [A44] both separators report their axis and leave Tab and activation to adjacent buttons
+  [A45] a list with separators exposes one action and retains passive row information
+  [A46] leading icons and initials leave one named row action and no additional focus targets
+  [A47] the decorative square image keeps one localized owner for pointer and keyboard
+  [A48] rounded thumbnails keep one row action and stay outside the browser accessibility tree
+  [A49] the primary and trailing buttons keep separate states and logical keyboard stops
+  [A50] a mixed trailing checkbox exposes its own state, focus and action beside its primary button
+  [A51] the trailing switch exposes checked state and a separate action with real keyboard focus
+  [A52] checkbox validation describes the action and clears independently on controlled updates
+  [A53] labeled switches expose one named action, read their checked and disabled state, and retain focus after updates
+  [A54] both switch names, actions and checked states update on the initial visual frame and keep focus during travel
+  [A55] thumb artwork leaves only the named switch and its independent row actions
+  [A56] named radio groups, one AX action, checked state and disabled arrow skip
+  [A57] radio selection and browser focus update without waiting for the painted dots
+  [A58] a named list radio row has one focus target, with disabled skip and wrapped selection
+  [A59] two named slider thumbs report live and locked bounds and retain logical Tab order
+  [A60] stepped tick and pressed artwork leave the same two named slider stops and browser values
+  [A61] extra-large continuous range exposes two names, exact values and stable RTL Tab order
+  [A62] formatted ARIA values preserve the named Chrome sliders and their live numeric bounds
+  [A63] Chrome exposes the modal Search editor, enabled result actions, and a no-results status
+  [A64] Chrome rail preserves the current page on focus movement and retires old targets
+  [A65] Snackbar keeps the opener focused and exposes two independent accessibility presses
+  [A66] named Chrome modal drawer groups destinations and restores browser focus
+  [A67] Chrome drawer changes the current page only on activation and preserves legacy states
+  [A68] drawer preview preserves background focus and committed scope survives a held closing swipe
+  [A69] Chrome disclosure and current-page semantics survive rail and bottom navigation modes
+  [A70] Chrome exposes a named modal scope, current destination and restored opener focus
+case web-accessibility ... ok (70 steps, 4338 checks, 80.9s)
+
+failed: material

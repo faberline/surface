@@ -1,0 +1,288 @@
+{
+  "dialog": {
+    "nodeId": "24",
+    "ignored": false,
+    "role": {
+      "type": "role",
+      "value": "dialog"
+    },
+    "chromeRole": {
+      "type": "internalRole",
+      "value": 35
+    },
+    "name": {
+      "type": "computedString",
+      "value": "模態導覽列",
+      "sources": [
+        {
+          "type": "relatedElement",
+          "attribute": "aria-labelledby"
+        },
+        {
+          "type": "attribute",
+          "value": {
+            "type": "computedString",
+            "value": "模態導覽列"
+          },
+          "attribute": "aria-label",
+          "attributeValue": {
+            "type": "string",
+            "value": "模態導覽列"
+          }
+        },
+        {
+          "type": "attribute",
+          "attribute": "title",
+          "superseded": true
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "modal",
+        "value": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    ],
+    "parentId": "23",
+    "childIds": [
+      "25",
+      "30"
+    ],
+    "backendDOMNodeId": 24
+  },
+  "navigation": {
+    "nodeId": "30",
+    "ignored": false,
+    "role": {
+      "type": "role",
+      "value": "navigation"
+    },
+    "chromeRole": {
+      "type": "internalRole",
+      "value": 130
+    },
+    "name": {
+      "type": "computedString",
+      "value": "工作區目的地",
+      "sources": [
+        {
+          "type": "relatedElement",
+          "attribute": "aria-labelledby"
+        },
+        {
+          "type": "attribute",
+          "value": {
+            "type": "computedString",
+            "value": "工作區目的地"
+          },
+          "attribute": "aria-label",
+          "attributeValue": {
+            "type": "string",
+            "value": "工作區目的地"
+          }
+        },
+        {
+          "type": "attribute",
+          "attribute": "title",
+          "superseded": true
+        }
+      ]
+    },
+    "properties": [],
+    "parentId": "24",
+    "childIds": [
+      "31",
+      "32",
+      "33",
+      "34",
+      "35"
+    ],
+    "backendDOMNodeId": 30
+  },
+  "close": {
+    "nodeId": "26",
+    "ignored": false,
+    "role": {
+      "type": "role",
+      "value": "button"
+    },
+    "chromeRole": {
+      "type": "internalRole",
+      "value": 9
+    },
+    "name": {
+      "type": "computedString",
+      "value": "關閉導覽列",
+      "sources": [
+        {
+          "type": "relatedElement",
+          "attribute": "aria-labelledby"
+        },
+        {
+          "type": "attribute",
+          "value": {
+            "type": "computedString",
+            "value": "關閉導覽列"
+          },
+          "attribute": "aria-label",
+          "attributeValue": {
+            "type": "string",
+            "value": "關閉導覽列"
+          }
+        },
+        {
+          "type": "contents",
+          "value": {
+            "type": "computedString",
+            "value": "×"
+          },
+          "superseded": true
+        },
+        {
+          "type": "attribute",
+          "attribute": "title",
+          "superseded": true
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "focusable",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "focused",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      }
+    ],
+    "parentId": "25",
+    "childIds": [
+      "27"
+    ],
+    "backendDOMNodeId": 26
+  },
+  "archive": {
+    "nodeId": "32",
+    "ignored": false,
+    "role": {
+      "type": "role",
+      "value": "button"
+    },
+    "chromeRole": {
+      "type": "internalRole",
+      "value": 9
+    },
+    "name": {
+      "type": "computedString",
+      "value": "封存",
+      "sources": [
+        {
+          "type": "relatedElement",
+          "attribute": "aria-labelledby"
+        },
+        {
+          "type": "attribute",
+          "value": {
+            "type": "computedString",
+            "value": "封存"
+          },
+          "attribute": "aria-label",
+          "attributeValue": {
+            "type": "string",
+            "value": "封存"
+          }
+        },
+        {
+          "type": "contents",
+          "superseded": true
+        },
+        {
+          "type": "attribute",
+          "attribute": "title",
+          "superseded": true
+        }
+      ]
+    },
+    "properties": [
+      {
+        "name": "disabled",
+        "value": {
+          "type": "boolean",
+          "value": true
+        }
+      }
+    ],
+    "parentId": "30",
+    "childIds": [],
+    "backendDOMNodeId": 32
+  },
+  "actions": [
+    [
+      "modal-wide-rail-home",
+      "page",
+      null,
+      "press"
+    ],
+    [
+      "modal-wide-rail-archive",
+      null,
+      null,
+      null
+    ],
+    [
+      "modal-wide-rail-inbox",
+      null,
+      null,
+      "press"
+    ],
+    [
+      "modal-wide-rail-reports",
+      null,
+      null,
+      "press"
+    ],
+    [
+      "modal-wide-rail-settings",
+      null,
+      null,
+      "press"
+    ]
+  ],
+  "compact_drawable": [
+    320,
+    240
+  ],
+  "compact_inbox_bounds": [
+    0.0,
+    128.0,
+    320.0,
+    112.0
+  ],
+  "compact_navigation_bounds": [
+    0.0,
+    120.0,
+    320.0,
+    120.0
+  ],
+  "restored_focus": "modal-wide-rail-open",
+  "inline_current": "modal-wide-rail-inline-inbox",
+  "end_state": {
+    "actions": 1,
+    "dismissals": 1,
+    "open": false,
+    "retain_inline": true,
+    "rtl": true,
+    "scroll": null,
+    "selected": "inbox",
+    "text_scale": 2.0
+  }
+}

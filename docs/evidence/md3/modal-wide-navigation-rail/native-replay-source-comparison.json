@@ -1,0 +1,51 @@
+{
+  "tested_material_manifest_sha256": "0f34d29d637655caa327070cc8ac923d5c8cf7ee74015f80d83189e184848e43",
+  "canonical_material_manifest_sha256": "ed0626e4d8fb0000f3057d0b164beaaebcab3e9904962d891c62067527a60bfa",
+  "gallery_manifest_sha256": "82e0f739f78d933014d4d08e1d32ee49c20df593822d8fcc8e0bea6c46b5b673",
+  "common_files_and_symlinks": 673,
+  "common_inventory_sha256": "d5fed7e916e3473f53e1e365b91b7e1f7da7f3b383dffb35022dfc5d199e19a2",
+  "excluded_generated_directories": [
+    ".git",
+    "artifacts",
+    "target"
+  ],
+  "non_runtime_differences": {
+    "crates/surface-material/tests/modal_wide_navigation_rail.rs": {
+      "tested": [
+        "file",
+        "db7398b357297c8c1728c14d353309ebbb949b20bf4397e81d09d04771278510"
+      ],
+      "canonical": [
+        "file",
+        "eb6d78e415eef2a741ccc78ebda2691b876ed838e22f74b66a7954c91cf10e10"
+      ]
+    },
+    "docs/material-coverage.json": {
+      "tested": [
+        "file",
+        "4bb14cf3dde23ffe69eade546bf460a6a3ad9154e427bc208566f695d35f54d7"
+      ],
+      "canonical": [
+        "file",
+        "37a6de0e848b8ce1a44d7a44d78e6c1e90d1111ccb0098a7deb4da5e44727cbb"
+      ]
+    },
+    "e2e/src/modal_wide_navigation_rail.rs": {
+      "tested": [
+        "file",
+        "335591d59f7338c937fabac6ddfd66f1802466362f9de4a7cee2d45be568b572"
+      ],
+      "canonical": [
+        "file",
+        "6fb3aeb9e8ee1876a760883640a0d54a070655e0987d52b4cf6946daf9a0bc46"
+      ]
+    },
+    "examples/material-gallery/examples/public_screenshot_gallery.rs": {
+      "tested": [
+        "file",
+        "261a40b5635a8df17fa9456187831bac96bb43e412ed6130ad661c5359c69295"
+      ],
+      "canonical": null
+    }
+  }
+}

@@ -1,0 +1,26 @@
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+crates/surface-material/src/lib.rs: OK
+crates/surface-material/src/navigation_drawer.rs: OK
+crates/surface-material/src/wide_navigation_rail.rs: OK
+crates/surface-material/tests/modal_wide_navigation_rail.rs: OK
+examples/material-gallery/src/lib.rs: OK
+examples/material-gallery/src/modal_wide_navigation_rail_demo.rs: OK
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+index.html: OK
+surface_material_gallery-32b75d03580263d6.js: OK
+surface_material_gallery_bg-d18885683c5e8a55.wasm: OK
+surface-web.json: OK
+b4b6c22182c2b993d3ed4906de362ca3c11a7ec8a417494fddfcfe33aff0cf0a  <cargo-target>/debug/surface-e2e
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M180] modal wide rail overlays both collapse arrangements and scrolls a 320×240 WebGPU canvas
+case material ... ok (1 steps, 82 checks, 4.2s)
+case web-accessibility ...
+  [A70] Chrome exposes a named modal scope, current destination and restored opener focus
+case web-accessibility ... ok (1 steps, 66 checks, 2.4s)
+
+e2e result: 2 passed; 0 failed; 148 checks; artifacts in <scratch>

@@ -1,0 +1,204 @@
+index.html: OK
+surface_material_gallery-0fcadb723d208046.js: OK
+surface_material_gallery_bg-775448b9e01fcb6d.wasm: OK
+surface-web.json: OK
+crates/surface-material/src/lib.rs: OK
+crates/surface-material/src/navigation_drawer.rs: OK
+crates/surface-material/src/wide_navigation_rail.rs: OK
+crates/surface-material/tests/modal_wide_navigation_rail.rs: OK
+examples/material-gallery/src/lib.rs: OK
+examples/material-gallery/src/modal_wide_navigation_rail_demo.rs: OK
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+index.html: OK
+surface_material_gallery-32b75d03580263d6.js: OK
+surface_material_gallery_bg-d18885683c5e8a55.wasm: OK
+surface-web.json: OK
+d118c80f8f306a851882398ddf6b3b638d3a7832217e257fe3d0c7f775361aed  <cargo-target>/debug/surface-e2e
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M1] Ready
+  [M31] header and canvas fit narrow and wide viewports
+  [M2] radio arrows
+  [M3] segment manual focus, Space selects
+  [M4] check and switch
+  [M5] slider pointer and keys
+  [M6] light screenshot, theme → dark, dark screenshot
+  [M7] section 1
+  [M8] button updates on release
+  [M9] disabled action does nothing
+  [M10] filter chip on; input chip removed; screenshot
+  [M23] extended FAB pointer, keyboard and disabled
+  [M24] extended FAB in a narrow viewport
+  [M25] restore desktop viewport
+  [M11] section 2, open dialog, textarea focused
+  [M12] insert draft; saved name unchanged
+  [M13] Escape closes dialog and restores focus
+  [M14] outside click dismisses without activating the tab
+  [M15] Tab through dialog with DOM host checks
+  [M16] three Tab / Shift+Tab cycles
+  [M17] dialog screenshot and DOM export
+  [M18] save the dialog
+  [M19] menu focus, arrows and Escape
+  [M20] 480×760 dialog fits; mobile screenshot
+  [M21] canvas corner click dismisses; section stays 2
+  [M27] modal side sheet traps focus and scrolls with keyboard and wheel
+  [M28] outside click dismisses side sheet without background activation
+  [M29] 320 by 240 modal side sheet keeps close action reachable
+  [M30] narrow sheet Escape closes and restores focus
+  [M32] long menu item pages without losing roving focus
+  [M33] partly clipped menu pages without skipping text
+  [M34] scrollable bottom sheet supports keyboard and wheel
+  [M35] outside click dismisses without background activation
+  [M36] 320 by 240 canvas: tab reveals the close control
+  [M37] 160 by 80 canvas: pointer closes revealed control
+  [M38] 24-hour input keeps both invalid drafts and reveals the first error
+  [M39] 320 by 240 canvas reveals the invalid field and confirmation actions
+  [M43] 160 by 240 canvas wraps actions and keeps both inputs reachable
+  [M40] 12-hour input rejects 0 and 13 and maps noon and midnight
+  [M41] Escape discards time edits and restores focus to the opener
+  [M42] holding Confirm during Chrome composition does not save on release
+  [M44] date grid uses Monday first and disables days outside the policy
+  [M45] calendar arrows skip unavailable days and cross into March
+  [M46] calendar remains reachable on a 320 by 240 canvas and after resizing
+  [M47] date input preserves bad text and never submits an older calendar date
+  [M48] Confirm preserves live date composition and the held press never replays
+  [M49] Escape and Cancel leave the saved leap day intact and restore focus
+  [M50] delayed hover opens the tooltip and hovering its content keeps it open
+  [M51] Escape dismisses hover without moving the pointer and clicks still reach a covered button
+  [M52] keyboard focus opens after a delay and Escape keeps focus in place
+  [M53] modal opening removes a tooltip from the previous focus scope
+  [M54] mixed text stays inside a narrow viewport and repositions on resize
+  [M55] split actions have separate 48dp targets and a 2dp gap
+  [M56] menu keyboard navigation skips disabled items and restores the opener
+  [M57] outside clicks dismiss the menu and a disabled primary leaves its menu available
+  [M58] 320 by 240 menu pages through long content without changing item focus
+  [M59] RTL mirrors the two visual segments and preserves logical Tab order
+  [M60] floating action menu keeps focus on its trigger when opened
+  [M61] Tab and arrows reach actions and skip the disabled item
+  [M62] short-window scrolling reveals the actions and close target
+  [M123] FAB menu paints bottom-first entry and top-first retreat
+  [M124] reduced motion opens and closes the menu without advancing the clock
+  [M63] uncontained carousel previews overflow the row without widening the page
+  [M64] wheel axes stay independent and keyboard reveals a selected card
+  [M65] same-size Latin and CJK samples paint three weights
+  [M66] letter spacing moves rendered Han glyphs at the same font size
+  [M67] a narrower card wraps only the wider spacing
+  [M68] the spaced editor shares hit positions, selection and IME caret
+  [M69] the light raised card fades and respects its ancestor clip
+  [M70] the dark raised card fades and respects its ancestor clip
+  [M71] hover raises the action card and press returns it to rest
+  [M72] circular progress paints a hollow ring and round gaps in both themes
+  [M73] the determinate value updates and the ring still fits a narrow window
+  [M74] the indeterminate ring changes on scheduled frames
+  [M75] live Reduce Motion freezes the circle and normal motion resumes
+  [M98] flat linear bars paint the gap, caps and trailing stop in both themes and directions
+  [M99] the updated bar fits a narrow viewport and paints the new value
+  [M100] the indeterminate bars change on scheduled frames
+  [M101] browser Reduce Motion freezes the linear indicator and resumes its clock
+  [M102] Expressive curves, cap and gap pixels in both themes
+  [M103] the 320 px layout fits and known progress goes flat near completion
+  [M104] WebGPU animates the busy wave and honors live reduced motion
+  [M105] Expressive circle has crests and troughs, a hollow center and a busy track
+  [M106] both circular modes animate and stop when Chrome sets reduced motion
+  [M107] the resized circle updates and follows the allocated diameter
+  [M108] both Expressive loading kinds draw filled shapes in both themes
+  [M109] unknown progress animates and live Reduce Motion freezes both variants
+  [M110] value updates in a narrow window and the compact sample fits
+  [M111] Expressive icon faces and touch targets use their own dimensions
+  [M112] pointer press changes corners and cancellation restores the face
+  [M113] narrow icons keep their touch targets and keyboard order
+  [M114] five Expressive button sizes render with their Material styles
+  [M115] press shapes and keyboard activation work at 320 dp
+  [M116] logical icons mirror and enlarged labels remain inside their faces
+  [M117] shadow and outline paint through intermediate frames without moving the target
+  [M76] pointer drag moves the partial sheet before release
+  [M77] keyboard collapse settles, and Reduce Motion goes straight to its anchor
+  [M78] the resized sheet scrolls, traps focus, and restores its opener
+  [M79] the touch handle tracks, cancels safely, and swipes down to dismiss
+  [M80] scrim dismisses without opening a background control
+  [M81] single-select spacing and arrow keys skip disabled items
+  [M82] a held press cancels and multi-select keeps one required item
+  [M83] 200 percent text reflows and a narrower width stacks the group
+  [M84] pressed width grows within the same row and release stays on the held action
+  [M85] overflow tracks live width and supports click, keyboard and cancellation
+  [M86] menu-only fallback keeps enlarged actions reachable in a small window
+  [M87] the 24-hour dial previews both rings and commits minute precision on release
+  [M88] switching entry mode keeps valid time and invalid keyboard drafts separate
+  [M89] a compact dial with enlarged text keeps controls reachable after resize
+  [M90] date range selection crosses a month, paints the band and keeps same-day selection
+  [M91] both date inputs keep bad text, link errors and preserve composition
+  [M92] enlarged calendar and two inputs remain reachable after shrinking
+  [M93] the medium bar collapses on scroll and starts opening on reversal
+  [M94] the large bar waits for the top, and the pinned bar retains its height
+  [M95] enlarged right-to-left controls remain usable after collapse and resize
+  [M96] Page Up reopens the large bar on an exact landing at the top
+  [M97] app bar overflow preserves 48 dp targets, keyboard access and focus on resize
+  [M118] Extended FAB mirrors its expanded layout and collapses on Enter
+  [M119] 320 dp Extended FAB keeps focus, a centered icon and a single action
+  [M120] Extended FAB reflows and fades a label from logical start
+  [M121] three Expressive Extended FAB sizes use symmetric size springs
+  [M122] narrow Expressive FAB keeps its glyph at 200 percent text and has a named label-only action
+  [M133] Extended FABs keep a filled vector through logical direction, size and reversal
+  [M134] 320 dp at 200 percent text keeps the vector through pointer, keyboard and Reduced Motion
+  [M127] four FAB sizes paint the standard, lowered and flat elevation presets
+  [M132] FAB vectors use centered 24, 28 and 36 dp allocations with intact negative space
+  [M128] FAB hover, focus and held press redirect the shadow with no jump
+  [M129] 320 dp FABs keep the 48 dp hit target and snap with Reduced Motion
+  [M130] nested wheel input hides the FAB going down and returns it on reversal in both themes
+  [M131] a 320 dp viewport keeps the FAB reachable and snaps with Reduced Motion
+  [M138] Floating toolbar draws both axes, palettes and reading directions in both themes
+  [M139] 320 dp floating toolbar keeps one keyboard stop, accepts pointer input, and keeps focus on fallback
+  [M140] paired floating toolbar paints both axes and FAB placements
+  [M141] compact paired toolbar reverses smoothly, keeps keyboard focus, and snaps with Reduced Motion
+  [M142] nested scroll consumes 40 dp and reverses the expandable tool rail
+  [M143] compact RTL floating toolbar handles FAB focus, page keys and fixed expansion
+  [M144] whole floating toolbar follows wheel travel and settles after idle
+  [M145] top and RTL side exits preserve accessibility in compact layouts and Reduced Motion
+  [M146] docked toolbar mirrors its full-width row and keeps unclipped targets at 320 dp
+  [M147] docked Expressive palettes paint a primary action within the same 64 dp bar
+  [M148] docked actions keep their anchor and touch targets as commands move to More
+  [M149] docked toolbar follows consumed body scrolling and clips its emphasized motion
+  [M150] docked toggle paints its checked face and keeps the state in overflow
+  [M151] floating toggles paint both palettes and retire partially revealed targets
+  [M152] badge paint follows the logical artwork edge and leaves the button's hit target in place
+  [M153] the navigation badge follows the icon without changing the destination's target
+  [M154] a measured cap clears the scroll edges and follows its own button offscreen
+  [M155] Material dividers paint the logical insets and 1 or 8 dp lines in either axis
+  [M156] Material list rows keep their logical slots and wrap enlarged CJK text
+  [M157] fixed leading icons and initials paint with both themes and mirror their slots
+  [M158] landscape, portrait and square sources fill the same leading square without distortion
+  [M159] the two Material video thumbnail sizes keep a proportional crop and rounded corners
+  [M160] trailing icons and independent targets paint, mirror and route pointer events
+  [M161] the trailing checkbox paints three states and routes pointer input independently
+  [M162] the trailing switch paints and mirrors both states, and accepts pointer input independently
+  [M163] checkbox validation paints its error roles and keeps each action independent
+  [M164] the labeled switch paints Material geometry and treats the caption and track as one action
+  [M165] both switch thumbs paint deterministic press, spring and Reduced Motion frames
+  [M166] switch thumb artwork paints only when centered and large enough for the fixed vector
+  [M167] Material radio geometry, four value/enable states and press cancellation
+  [M168] fixed-time WebGPU pixels show departing, arriving and Reduced Motion radio dots
+  [M169] whole list rows paint centered radio dots, wrap labels and keep one hit target
+  [M170] two Material range handles use one segmented rail, nearest drag and logical RTL keys
+  [M171] stepped Material ticks mirror through the gaps and thumb paint narrows with focus and capture
+  [M172] five track sizes paint and the compact RTL continuous slider keeps exact values
+  [M173] localized value indicator follows the active slider and leaves on release or cancellation
+  [M174] docked Search expands at 320 dp and keeps its query, focus, and Chinese composition route
+  [M125] FAB menu toggle morphs three sizes from a fixed logical-end envelope
+  [M126] compact FAB toggle keeps keyboard focus and snaps with Reduced Motion
+  [M135] the menu toggle paints document and close vectors across sizes and reversal
+  [M136] live and retired vector rows fade as one layer while preserving the paper cutout
+  [M137] the 160 dp vector menu snaps under Reduced Motion and stays keyboard reachable
+  [M175] classic vertical rail keeps its vector and Chinese label geometry at 200%
+  [M176] Snackbar paints bottom placement, inverse ink and compact 48 dp actions
+  [M177] modal drawer mirrors the scrim and reveals a wrapped Chinese row below a fixed header
+  [M178] trusted mouse and touch reveal and dismiss the drawer in both directions
+  [M179] wide rail reflows the page and preserves navigation at 600, 599 and 320 dp
+  [M180] modal wide rail overlays both collapse arrangements and scrolls a 320×240 WebGPU canvas
+  [M26] failure dump: state, active element, DOM export, screenshot
+case material ... FAILED after 366.9s: modal panel spans the canvas height: expected 240.0, got 760.0
+  last step: M26
+
+e2e result: 0 passed; 1 failed; 21512 checks; artifacts in <scratch>/browser-full-material-final
+no case passed
