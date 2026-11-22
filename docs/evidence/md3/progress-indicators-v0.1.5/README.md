@@ -82,3 +82,18 @@ cap "$CARGO_TARGET_DIR/debug/surface-e2e" \
     --web-root "$CARGO_TARGET_DIR/web/release" \
     --artifacts "$scratch_dir/web-results" material
 ```
+
+## Existing macOS slider
+
+The [comparison](native/ax-slider-compatibility.json) ran the same
+AppKit queries in the v0.1.4 Gallery and this candidate. Both reported
+the volume slider's AXValue as writable and kept the Gallery running.
+Both returned success from the public setter, and the Gallery volume
+stayed at its original value of 40.
+
+Build both Gallery binaries with `devtools` and launch each with its
+own `SURFACE_DEVTOOLS_SESSION`. Use the CLI's Tab action to focus
+`volume` in the initial section. Compile
+`native/read-slider-ax.swift` with `xcrun swiftc` and run it with the
+Gallery PID and a requested value of 65. Read `volume` with
+`surface-devtools dom snapshot` before and after the probe.
