@@ -1,5 +1,8 @@
 //! Retained Taffy layout with renderer-supplied text measurement.
-use crate::{Align, Direction, Length, MicroDom, Node, NodeId, Position, Rect, Style, TextStyle};
+use crate::{
+    microdom::AbsoluteOverlayFit, Align, Direction, Length, MicroDom, Node, NodeId,
+    OverlayBoundary, OverlayHorizontalEdge, Position, Rect, Style, TextStyle,
+};
 use std::sync::Arc;
 use taffy::prelude as t;
 
@@ -216,6 +219,62 @@ impl ComputedDom {
     }
 }
 
+fn overlay_owner(dom: &MicroDom, id: NodeId, owner_id: &str) -> Option<NodeId> {
+    let owner = dom.by_id(owner_id)?;
+    if owner >= id {
+        return None;
+    }
+    let owner_node = dom.get(owner).ok()?;
+    let mut branch = id;
+    loop {
+        if branch == owner {
+            return Some(owner);
+        }
+        let node = dom.get(branch).ok()?;
+        if node.style().position == Position::Fixed {
+            return None;
+        }
+        let parent = node.parent()?;
+        if Some(parent) == owner_node.parent()
+            && owner < branch
+            && owner_node.style().position != Position::Fixed
+        {
+            return Some(owner);
+        }
+        branch = parent;
+    }
+}
+
+fn fit_overlay(
+    bounds: Rect,
+    clip: Rect,
+    owner: &ComputedNode,
+    fit: &AbsoluteOverlayFit,
+) -> Option<Rect> {
+    let visible_owner = owner.bounds.intersect(owner.clip).intersect(clip);
+    if visible_owner.width <= 0. || visible_owner.height <= 0. {
+        return None;
+    }
+    let fit_to_owner = fit.boundary == OverlayBoundary::Owner;
+    let horizontal = if fit_to_owner && bounds.width <= visible_owner.width {
+        visible_owner
+    } else {
+        clip
+    };
+    let top = if fit_to_owner && bounds.height <= visible_owner.height {
+        visible_owner.y
+    } else {
+        clip.y
+    };
+    let x = match fit.edge {
+        OverlayHorizontalEdge::Left => bounds.x.max(horizontal.x),
+        OverlayHorizontalEdge::Right => {
+            bounds.x.min(horizontal.x + horizontal.width - bounds.width)
+        }
+    };
+    Some(Rect::new(x, bounds.y.max(top), bounds.width, bounds.height))
+}
+
 fn dimension(value: Length) -> t::Dimension {
     match value {
         Length::Auto => t::Dimension::Auto,
@@ -347,8 +406,11 @@ impl LayoutEngine {
             })
             .collect();
         let mut has_measured_groups = false;
-        for (i, n) in input.iter().enumerate() {
+        let mut has_overlay_fits = false;
+        for ((id, node), n) in dom.iter().zip(&input) {
+            let i = id.index();
             has_measured_groups |= n.measured;
+            has_overlay_fits |= node.absolute_overlay_fit().is_some();
             if !valid(&n.style) {
                 return Err(LayoutError::InvalidStyle(i));
             }
@@ -505,10 +567,11 @@ impl LayoutEngine {
         if has_measured_groups {
             placements.resize(dom.len(), None);
         }
+        let mut hidden_overlays = has_overlay_fits.then(|| Vec::with_capacity(dom.len()));
         for (id, n) in dom.iter() {
             let placement = placements.get(id.index()).copied().flatten();
             let layout = self.tree.layout(self.ids[id.index()])?;
-            let (x, y, clip) = if n.style().position == Position::Fixed {
+            let (x, y, mut clip) = if n.style().position == Position::Fixed {
                 (0., 0., viewport)
             } else if let Some(parent) = n.parent() {
                 let p: &ComputedNode = &nodes[parent.index()];
@@ -533,12 +596,33 @@ impl LayoutEngine {
                 .map_or((layout.location.x, layout.size.width), |rect| {
                     (rect.x, rect.width)
                 });
-            let bounds = Rect::new(
+            let mut bounds = Rect::new(
                 x + local_x + n.horizontal_slide() * width,
                 y + local_y,
                 width,
                 height,
             );
+            if let Some(hidden_overlays) = &mut hidden_overlays {
+                let mut hidden = n
+                    .parent()
+                    .is_some_and(|parent| hidden_overlays[parent.index()]);
+                if let Some(fit) = n.absolute_overlay_fit().filter(|_| !hidden) {
+                    let fitted = overlay_owner(dom, id, &fit.owner_id)
+                        .and_then(|owner| nodes.get(owner.index()))
+                        .and_then(|owner| fit_overlay(bounds, clip, owner, fit));
+                    if let Some(fitted) = fitted {
+                        bounds = fitted;
+                    } else {
+                        hidden = true;
+                    }
+                }
+                if hidden {
+                    // Keep the suppression through fixed descendants, which
+                    // would otherwise start a fresh clip at the viewport.
+                    clip = Rect::default();
+                }
+                hidden_overlays.push(hidden);
+            }
             if placement.is_some() && !valid_placement(bounds) {
                 return Err(LayoutError::InvalidStyle(
                     n.parent().expect("placed child has a group").index(),

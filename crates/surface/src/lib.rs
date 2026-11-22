@@ -37,7 +37,10 @@ pub use geometry::Rect;
 pub use layout::{
     ComputedDom, ComputedNode, LayoutEngine, LayoutError, MeasuredGroupLayout, TextMeasurer,
 };
-pub use microdom::{DomError, DomSnapshot, MicroDom, Node, NodeId, RangeValue, Role};
+pub use microdom::{
+    DomError, DomSnapshot, MicroDom, Node, NodeId, OverlayBoundary, OverlayHorizontalEdge,
+    RangeValue, Role,
+};
 pub use motion::{Easing, Transition};
 pub use paint::{
     DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp, TextDecoration,

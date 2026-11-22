@@ -1,10 +1,11 @@
 use crate::{
+    badge::badge_headroom,
     motion::STATE_CHANGE,
     shape::{self, LayoutDirection},
     tokens::blend,
     typography,
     vector_icon::VectorIconSize,
-    Theme, VectorIcon,
+    BadgeBoundary, BadgeContent, BadgedAnchorOptions, Theme, VectorIcon,
 };
 use surface::{Align, Color, Corners, Insets, Length, Node, RangeValue, Role, Style, TextScaling};
 use surface_app::{CursorStyle, Roving, View};
@@ -33,8 +34,8 @@ pub struct NavigationRailItem<'a, M> {
     pub message: M,
 }
 
-impl<M> NavigationRailItem<'_, M> {
-    pub(crate) fn name(&self) -> &str {
+impl<'a, M> NavigationRailItem<'a, M> {
+    pub(crate) fn name(&self) -> &'a str {
         if self.accessible_name.trim().is_empty() {
             self.label
         } else {
@@ -42,6 +43,29 @@ impl<M> NavigationRailItem<'_, M> {
         }
     }
 }
+
+/// Artwork for a bottom navigation destination with a badge.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum NavigationBarIcon<'a> {
+    Glyph(&'a str),
+    Vector(&'a VectorIcon),
+}
+
+/// App-controlled bottom navigation destination with badge content.
+pub struct BadgedNavigationBarItem<'a, M> {
+    pub id: &'a str,
+    /// The visible destination label.
+    pub label: &'a str,
+    /// Include the full localized badge meaning. A blank name uses the label.
+    pub accessible_name: &'a str,
+    pub icon: NavigationBarIcon<'a>,
+    pub badge: BadgeContent<'a>,
+    pub state: ChoiceState,
+    /// Match the direction of the containing navigation bar.
+    pub direction: LayoutDirection,
+    pub message: M,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CheckValue {
     Unchecked,
@@ -158,12 +182,14 @@ fn navigation_inks(theme: &Theme, state: ChoiceState) -> (Color, Color) {
     }
 }
 
+const NAVIGATION_INDICATOR_HEIGHT: f32 = 32.;
+
 fn navigation_indicator(theme: &Theme, width: f32, selected: bool) -> Style {
     Style::row()
         .align(Align::Center)
         .justify(Align::Center)
         .width(Length::Px(width))
-        .height(Length::Px(32.))
+        .height(Length::Px(NAVIGATION_INDICATOR_HEIGHT))
         .corners(shape::FULL)
         .background(if selected {
             theme.colors.secondary_container
@@ -807,29 +833,129 @@ impl Theme {
 
     /// Build a bottom navigation destination with a 24 dp vector icon.
     pub fn navigation_bar_item_with_icon<M>(&self, item: NavigationRailItem<'_, M>) -> View<M> {
-        let (icon_color, label_color) = navigation_inks(self, item.state);
-        let mut indicator_style = navigation_indicator(self, 64., item.state.selected);
+        self.navigation_bar_destination_with_artwork(
+            item.id,
+            item.label,
+            item.name(),
+            item.state,
+            item.message,
+            |ink, indicator_style| {
+                box_view(indicator_style).children([item.icon.view(VectorIconSize::Dp24, ink)])
+            },
+        )
+    }
+
+    /// Place a badge on the top-trailing edge of a destination's 24 dp icon.
+    ///
+    /// Adding or removing the badge preserves focus, hit area, and flow size.
+    /// Text badges overlap the artwork by 4 dp vertically. This leaves
+    /// the icon visible. The destination can grow at larger text sizes.
+    /// Use the clearance variant near a clipped edge.
+    pub fn navigation_bar_item_with_badge<M>(
+        &self,
+        item: BadgedNavigationBarItem<'_, M>,
+    ) -> View<M> {
+        self.badged_navigation_bar_item(item, None)
+    }
+
+    /// Fit the measured badge inside the clip or visible destination.
+    pub fn navigation_bar_item_with_badge_clearance<M>(
+        &self,
+        item: BadgedNavigationBarItem<'_, M>,
+        boundary: BadgeBoundary,
+    ) -> View<M> {
+        self.badged_navigation_bar_item(item, Some(boundary))
+    }
+
+    fn badged_navigation_bar_item<M>(
+        &self,
+        item: BadgedNavigationBarItem<'_, M>,
+        clearance: Option<BadgeBoundary>,
+    ) -> View<M> {
+        let name = if item.accessible_name.trim().is_empty() {
+            item.label
+        } else {
+            item.accessible_name
+        };
+        self.navigation_bar_destination_with_artwork(
+            item.id,
+            item.label,
+            name,
+            item.state,
+            item.message,
+            |ink, indicator_style| {
+                let size = VectorIconSize::Dp24.dp();
+                let art = match item.icon {
+                    NavigationBarIcon::Glyph(glyph) => box_view(
+                        Style::row()
+                            .width(Length::Px(size))
+                            .height(Length::Px(size))
+                            .align(Align::Center)
+                            .justify(Align::Center)
+                            .clip(true),
+                    )
+                    .children([View::new(
+                        Node::new(Role::Group, "")
+                            .text(glyph)
+                            .text_scaling(TextScaling::Fixed)
+                            .styled(
+                                Style::default()
+                                    .font_size(size)
+                                    .line_height(size)
+                                    .foreground(ink),
+                            ),
+                    )]),
+                    NavigationBarIcon::Vector(icon) => icon.view(VectorIconSize::Dp24, ink),
+                };
+                let options = BadgedAnchorOptions {
+                    direction: item.direction,
+                    ..Default::default()
+                };
+                let anchor = self.navigation_badged_anchor(
+                    art,
+                    item.badge,
+                    options,
+                    clearance.map(|boundary| (item.id, boundary)),
+                );
+                let art_top_inset = (NAVIGATION_INDICATOR_HEIGHT - size) * 0.5;
+                box_view(Style::column().align(Align::Center)).children([
+                    badge_headroom(art_top_inset),
+                    box_view(indicator_style).children([anchor]),
+                ])
+            },
+        )
+    }
+
+    fn navigation_bar_destination_with_artwork<M>(
+        &self,
+        id: &str,
+        label: &str,
+        name: &str,
+        state: ChoiceState,
+        message: M,
+        build_indicator: impl FnOnce(Color, Style) -> View<M>,
+    ) -> View<M> {
+        let (icon_color, label_color) = navigation_inks(self, state);
+        let mut indicator_style = navigation_indicator(self, 64., state.selected);
         indicator_style.max_width = Length::Percent(1.);
-        let indicator = box_view(indicator_style)
-            .children([item.icon.view(VectorIconSize::Dp24, icon_color)])
-            .without_interaction(None);
+        let indicator = build_indicator(icon_color, indicator_style).without_interaction(None);
         let mut style = navigation_item_style(self, label_color, 80.).grow(1.);
         style.min_width = 48.;
         View::new(
-            Node::new(Role::Button, item.name())
-                .id(item.id)
-                .selected(item.state.selected)
-                .disabled(item.state.disabled)
-                .current_page(item.state.selected)
+            Node::new(Role::Button, name)
+                .id(id)
+                .selected(state.selected)
+                .disabled(state.disabled)
+                .current_page(state.selected)
                 .text_scaling(TextScaling::Expand)
                 .shrink_to_fit_width()
                 .styled(style),
         )
         .children([
             indicator,
-            nav_label(item.label, label_color).without_interaction(None),
+            nav_label(label, label_color).without_interaction(None),
         ])
-        .on_press(item.message)
+        .on_press(message)
         .accessible_activation()
     }
 
