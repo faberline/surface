@@ -101,9 +101,10 @@
       "spec": "https://m3.material.io/components/progress-indicators/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Linear only: determinate and indeterminate, 240 by 4; indeterminate position follows the application phase. No circular indicator"
+      "desktop_evidence": "Native Metal Gallery covers light, dark, and 320 and 260 dp RTL at 200% text. AppKit verifies read-only values, no stale range and page scrolling. Page.screenshot, CLI and MCP returned the same 320 dp PNG. https://github.com/faberline/surface/tree/6de6525fba714252fc0ec9e2053c7d1c3eca7b8d/docs/evidence/md3/progress-indicators-v0.1.5",
+      "web_evidence": "Chrome WebGPU M41–M44 verify painted geometry, the accessible name and numeric range, live motion and reduced motion, RTL, 200% text, reflow and wheel scrolling. See the v0.1.5 evidence.",
+      "implemented": "Flat and wavy linear and circular indicators for known and unknown progress. Linear follows the logical direction and the caller's available width. Circular advances clockwise. The caller owns progress and elapsed time. Wavy paint uses sampled vector contours. Live screen-reader speech and virtual focus during animation remain unverified.",
+      "unit_evidence": "md3_linear_progress, md3_circular_progress and linear_progress cover tokens, paint geometry, bounds, input clamping, motion, read-only semantics and the legacy API."
     },
     {
       "id": "navigation-bar",

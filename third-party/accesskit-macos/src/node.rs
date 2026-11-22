@@ -16,7 +16,7 @@ use accesskit::{
 };
 use accesskit_consumer::{FilterResult, FullNodeId, NodeRef, Tree};
 use objc2::{
-    ClassType, DeclaredClass, declare_class, msg_send_id,
+    ClassType, DeclaredClass, declare_class, msg_send, msg_send_id,
     mutability::InteriorMutable,
     rc::Id,
     runtime::{AnyObject, Sel},
@@ -1147,6 +1147,19 @@ declare_class!(
             attributes
         }
 
+        #[method(accessibilityIsAttributeSettable:)]
+        fn accessibility_is_attribute_settable(&self, attr: &NSString) -> bool {
+            // AppKit's legacy AXValue query can infer writability from the
+            // setter selector even when isAccessibilitySelectorAllowed denies it.
+            if attr == ns_string!("AXValue")
+                && self.resolve(|node| node.role() == Role::ProgressIndicator).unwrap_or(false)
+            {
+                false
+            } else {
+                unsafe { msg_send![super(self), accessibilityIsAttributeSettable: attr] }
+            }
+        }
+
         #[method_id(accessibilityAttributeValue:)]
         fn accessibility_attribute_value(&self, attr: &NSString) -> Option<Id<NSString>> {
             self.resolve(|node| {
@@ -1378,6 +1391,9 @@ declare_class!(
                 }
                 if selector == sel!(accessibilityAttributeNames) {
                     return node.data().invalid().is_some() || NodeWrapper(node).aria_current_value().is_some();
+                }
+                if selector == sel!(accessibilityIsAttributeSettable:) {
+                    return node.role() == Role::ProgressIndicator;
                 }
                 if selector == sel!(accessibilityAttributeValue:) {
                     return node.has_braille_label()

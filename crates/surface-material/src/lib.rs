@@ -7,6 +7,7 @@ mod components;
 mod elevation;
 pub mod motion;
 mod navigation_drawer;
+mod progress_indicator;
 pub mod shape;
 mod snackbar;
 mod snackbar_state;
@@ -25,6 +26,7 @@ pub use elevation::Elevation;
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
+pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
 pub use snackbar::SnackbarOptions;
 pub use snackbar_state::{SnackbarDuration, SnackbarId, SnackbarQueue};
 pub use standard_navigation_drawer::{
