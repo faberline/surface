@@ -1,0 +1,50 @@
+{
+  "step": "M20",
+  "observed_first_failure": "case material ... FAILED after 31.4s: timed out after 30s waiting for `(s => s.dialog)(JSON.parse(window.gallery.inspect()))`",
+  "first_attempt_result": "e2e result: 4 passed; 1 failed; 331 checks; artifacts in /tmp/surface-md3-split-button-chrome.dniqdkvH",
+  "first_attempt_frame": {
+    "dialog_open": false,
+    "menu_open": false,
+    "focused": null,
+    "active_element": "surface"
+  },
+  "wide_viewport": {
+    "x": 0.0,
+    "y": 0.0,
+    "width": 1100.0,
+    "height": 1056.0
+  },
+  "compact_viewport": {
+    "x": 0,
+    "y": 0,
+    "width": 480,
+    "height": 716
+  },
+  "wide_open_dialog_bounds": {
+    "x": 52.0,
+    "y": 308.0,
+    "width": 80.0,
+    "height": 48.0
+  },
+  "compact_open_dialog_bounds": {
+    "x": 52,
+    "y": 344,
+    "width": 80,
+    "height": 48
+  },
+  "wide_open_dialog_center": [
+    92.0,
+    332.0
+  ],
+  "wide_center_misses_compact_target_by_dp": 12.0,
+  "fixture_order": [
+    "tab.viewport(480, 760)",
+    "click(tab, \"open-dialog\")",
+    "until(tab, \"s.dialog\")"
+  ],
+  "assessment": "The snapshots and exact retry are consistent with a stale layout during resize. The first run did not record the dispatched click coordinates.",
+  "identical_source_manifest_sha256": "a77de14a0c65fea6221e670de7c42a6d30513163607639fed96ccfc32c52da83",
+  "identical_binary_manifest_sha256": "659f2d9a7eaa6090cb1f12f15f184cfe090098517d45a0bfc4bba126e3aea5d8",
+  "retry_passed_m20": true,
+  "retry_result": "e2e result: 5 passed; 0 failed; 5120 checks; artifacts in /tmp/surface-md3-split-button-chrome.oAsKsmNw"
+}

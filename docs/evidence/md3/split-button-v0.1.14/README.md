@@ -11,7 +11,7 @@ shasum -a 256 -c "$evidence_dir/web/browser-source.sha256"
 cap sh scripts/check.sh
 ```
 
-The workspace gate passed 836 tests. The five renderer tests ran
+The workspace gate passed 839 tests. The five renderer tests ran
 separately and passed on Apple Metal. The manual clipboard test did
 not run.
 
@@ -40,6 +40,7 @@ can use Metal.
 ```sh
 export PATH="$HOME/.cargo/bin:$PATH"
 export CARGO_BUILD_JOBS=2
+export CARGO_TARGET_DIR=/tmp/cargo-target/surface-split-button-replay
 scratch_dir=$(mktemp -d /tmp/surface-split-button-replay.XXXXXXXX)
 cap cargo build --locked -p surface-material-gallery -p surface-devtools \
     --features surface-material-gallery/devtools --bins
@@ -63,20 +64,57 @@ suite passed 93 steps and 4,872 checks. The six new steps ran 436
 checks. The 320 dp label stayed at least 7.5 dp inside the rounded
 face.
 
+The first local run timed out in the existing dialog resize case.
+An identical retry passed all five suites.
+[Timing note](web/m20-resize-timing.json)
+
 [Browser report](web/browser-material-split-button.json) ·
 [Five-suite log](web/headless-results.txt) ·
 [In-motion chevron](web/material-split-button-rtl-turning-chevron.png) ·
 [Dark RTL 200%](web/material-split-button-compact-dark-rtl-xl.png)
 
+### Replay all five headless suites
+
+Run this from the Surface source checkout named by the tested source commit.
+Keep the evidence folder separate from that checkout. Use Apple Metal and
+Chrome for a replay comparable to the local report. Install the
+`wasm32-unknown-unknown` Rust target and put the matching `wasm-bindgen`
+CLI and `wasm-opt` on `PATH`. The hosted workflow uses Rust 1.96.1,
+wasm-bindgen 0.2.129 and Binaryen 133.
+
 ```sh
+export PATH="$HOME/.cargo/bin:$PATH"
+export CARGO_BUILD_JOBS=2
+export CARGO_TARGET_DIR=/tmp/cargo-target/surface-split-button-replay
+scratch_dir=$(mktemp -d /tmp/surface-split-button-replay.XXXXXXXX)
+
 cap cargo build --locked -p surface-e2e --bin surface-e2e
+cap cargo xtask web build showcase --release --no-compress
 cap cargo xtask web build material-gallery --release --no-compress
+cap cargo xtask web build material-gallery --release --features devtools \
+    --out "$CARGO_TARGET_DIR/web/devtools/material-gallery" --no-compress
+cap cargo build --locked -p surface-material-gallery --features devtools \
+    --bin surface-material-gallery
+cap cargo build --locked -p surface-devtools --bin surface-devtools
+cap cargo build --locked -p jet-bridge --bin jet-bridge
+
+unset SURFACE_CHROME_ARGS
 cap "$CARGO_TARGET_DIR/debug/surface-e2e" \
     --chrome "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
     --chrome-arg --headless=new \
     --web-root "$CARGO_TARGET_DIR/web/release" \
-    --artifacts "$scratch_dir/web-results" material
+    --bridge-web "$CARGO_TARGET_DIR/web/devtools/material-gallery" \
+    --jet-bridge "$CARGO_TARGET_DIR/debug/jet-bridge" \
+    --devtools-bin "$CARGO_TARGET_DIR/debug/surface-devtools" \
+    --native-bin "$CARGO_TARGET_DIR/debug/surface-material-gallery" \
+    --artifacts "$scratch_dir/web-results" \
+    smoke ime material bridge-web devtools-headless
 ```
+
+The browser cases and the Jet Bridge web case start Chrome headlessly.
+The `devtools-headless` case starts the native Gallery with
+`--headless`. The hosted workflow also runs the three windowed suites
+under Xvfb.
 
 Live VoiceOver speech and physical touch need a platform session.
 System high contrast and animated touch ripple remain shared gaps.
