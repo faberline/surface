@@ -139,9 +139,10 @@
       "spec": "https://m3.material.io/components/bottom-sheets/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Standard sheet with handle and top corners; modal sheet at the bottom with focus trap, Escape and outside-click dismiss"
+      "desktop_evidence": "Six headless macOS Metal cases check light, dark and a 320 dp viewport at 200% text. They verify bottom placement, paint, keyboard focus, contained scroll and identical Page.screenshot, CLI and MCP PNGs. https://github.com/faberline/surface/tree/8ec36b31d89eb1096c21ce0a833560033aba0efc/docs/evidence/md3/bottom-sheets-v0.1.7",
+      "web_evidence": "Headless Chrome WebGPU M50–M55 check standard interaction, modal isolation, focus restoration, snap positions, 200% Chinese text, wheel scroll, trusted mouse and touch drag, cancel, and Reduce Motion.",
+      "implemented": "Bottom-anchored standard and modal sheets with controlled peek, expanded and closed states, accessible fixed controls, scrollable content and vertical handle drag. Standard drag collapses to peek. Modal drag can dismiss. An additional independent half-expanded anchor, nested content-to-sheet drag handoff, Android predictive back, physical touch and live VoiceOver remain open.",
+      "unit_evidence": "Bottom-sheet layout, motion and vertical drag tests cover narrow geometry, accessibility, focus, thresholds, cancel, and stable gesture identity."
     },
     {
       "id": "side-sheets",

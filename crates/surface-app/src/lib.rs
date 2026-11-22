@@ -2,6 +2,7 @@
 mod accessibility;
 #[cfg(feature = "bridge")]
 mod bridge;
+mod captured_drag;
 mod context;
 mod controls;
 mod cursor;
@@ -12,7 +13,6 @@ mod editing;
 mod editing_runtime;
 mod focus_scroll;
 mod frame_paint;
-mod horizontal_drag;
 mod keys;
 mod motion;
 #[cfg(feature = "devtools")]
@@ -27,6 +27,7 @@ pub use accessibility::{
     AccessibilityScrollDirection, AccessibilityScrollPageTarget, AccessibilityScrollResult,
     AccessibilityScrollTarget,
 };
+pub use captured_drag::{HorizontalDrag, HorizontalDragSession, VerticalDrag, VerticalDragSession};
 pub use context::PointerPoint;
 pub use controls::Roving;
 pub use cursor::CursorStyle;
@@ -35,7 +36,6 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
-pub use horizontal_drag::{HorizontalDrag, HorizontalDragSession};
 pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
 pub use motion::{ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
@@ -67,7 +67,7 @@ pub struct View<M> {
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     cursor: Option<CursorStyle>,
-    horizontal_drag: Option<horizontal_drag::Binding<M>>,
+    drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
     focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
@@ -105,7 +105,7 @@ impl<M> View<M> {
             context: None,
             stick: false,
             cursor: None,
-            horizontal_drag: None,
+            drag_bindings: captured_drag::Bindings::default(),
             accessible_activation: false,
             focus_after_removal: Vec::new(),
             protect_composition_on_press: false,
@@ -183,10 +183,30 @@ impl<M> View<M> {
         session: HorizontalDragSession,
         update: impl Fn(HorizontalDrag, Rect) -> M + 'static,
     ) -> Self {
-        self.horizontal_drag = Some(horizontal_drag::Binding {
-            session,
-            update: Rc::new(update),
-        });
+        self.drag_bindings.set_horizontal(session, update);
+        self
+    }
+
+    /// Track vertical motion after the pointer passes the drag threshold.
+    /// Use this on a dedicated handle to leave content scrolling separate.
+    pub fn on_vertical_drag(
+        self,
+        session: VerticalDragSession,
+        update: impl Fn(VerticalDrag) -> M + 'static,
+    ) -> Self {
+        self.on_vertical_drag_with_bounds(session, move |drag, _| update(drag))
+    }
+
+    /// Track a vertical drag and report the region's rendered bounds at the
+    /// primary press. The original unclipped bounds stay fixed across moves,
+    /// rebuilds, and release or cancellation. When the region has both bindings,
+    /// the dominant axis at the drag threshold chooses one gesture.
+    pub fn on_vertical_drag_with_bounds(
+        mut self,
+        session: VerticalDragSession,
+        update: impl Fn(VerticalDrag, Rect) -> M + 'static,
+    ) -> Self {
+        self.drag_bindings.set_vertical(session, update);
         self
     }
 
@@ -457,7 +477,7 @@ struct Binding<M> {
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     cursor: Option<CursorStyle>,
-    horizontal_drag: Option<horizontal_drag::Binding<M>>,
+    drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
     focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
@@ -521,7 +541,7 @@ pub struct Runtime<A: Application> {
     text_drag: Option<String>,
     scopes: Vec<controls::FocusScope>,
     range_drag: Option<controls::RangeDrag>,
-    horizontal_drag: Option<horizontal_drag::Tracking>,
+    captured_drag: Option<captured_drag::Tracking>,
     pointer_geometry_current: bool,
     modal_layers: Vec<(Option<NodeId>, NodeId)>,
     accessibility: Option<accessibility::Revision>,
@@ -562,7 +582,7 @@ impl<A: Application> Runtime<A> {
             text_drag: None,
             scopes: Vec::new(),
             range_drag: None,
-            horizontal_drag: None,
+            captured_drag: None,
             pointer_geometry_current: false,
             modal_layers: Vec::new(),
             accessibility: None,
@@ -626,17 +646,17 @@ impl<A: Application> Runtime<A> {
             || self.text_drag.is_some()
             || self.modal_outside;
         self.clear_modal_pointer();
-        self.cancel_horizontal_drag().map(|drag| changed || drag)
+        self.cancel_drag().map(|drag| changed || drag)
     }
 
     /// Invalidate pointer geometry before the next resize or scale redraw.
     pub fn pointer_geometry_changed(&mut self) -> Result<bool, AppError> {
         self.pointer_geometry_current = false;
-        self.cancel_horizontal_drag()
+        self.cancel_drag()
     }
 
     fn has_captured_drag(&self) -> bool {
-        self.horizontal_drag.is_some()
+        self.captured_drag.is_some()
     }
 
     fn drag_scope(&self) -> Option<&str> {
@@ -661,8 +681,7 @@ impl<A: Application> Runtime<A> {
     pub fn pointer_preserves_composition(&self, x: f32, y: f32) -> bool {
         let hit = self.hit(x, y);
         self.protects_pointer_composition(hit)
-            || (self.has_pending_composition()
-                && self.horizontal_drag_candidate(hit, x, y).is_some())
+            || (self.has_pending_composition() && self.drag_candidate(hit, x, y).is_some())
     }
     fn protects_pointer_composition(&self, hit: Option<NodeId>) -> bool {
         if let Some(id) = hit {
@@ -676,7 +695,7 @@ impl<A: Application> Runtime<A> {
                 (binding.protect_composition_on_press
                     && self.in_scope(*id)
                     && self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
-                    || (binding.horizontal_drag.is_some() && self.in_horizontal_drag_scope(*id))
+                    || (!binding.drag_bindings.is_empty() && self.in_drag_scope(*id))
             })
     }
     /// A handle for posting messages that run after the current update.
@@ -739,7 +758,7 @@ impl<A: Application> Runtime<A> {
             self.accessibility = Some(accessibility::Revision::default());
             self.animation_rebuild_pending = false;
         } else {
-            self.discard_horizontal_drag();
+            self.discard_drag();
             if self.active_scope_root().is_some() {
                 self.clear_modal_pointer();
             }
@@ -752,7 +771,7 @@ impl<A: Application> Runtime<A> {
             },
         );
         result?;
-        self.reconcile_horizontal_drag_binding()
+        self.reconcile_drag_binding()
     }
     fn rebuild_view(&mut self) -> Result<(), AppError> {
         fn add<M>(
@@ -772,7 +791,7 @@ impl<A: Application> Runtime<A> {
                 || view.stick
                 || view.accessible_scroll
                 || view.accessible_scroll_pages
-                || view.horizontal_drag.is_some())
+                || !view.drag_bindings.is_empty())
                 && node.stable_id().is_none()
             {
                 return Err(AppError::MissingId(node.name().to_owned()));
@@ -813,7 +832,7 @@ impl<A: Application> Runtime<A> {
                     context: view.context,
                     stick: view.stick,
                     cursor: view.cursor,
-                    horizontal_drag: view.horizontal_drag,
+                    drag_bindings: view.drag_bindings,
                     accessible_activation: view.accessible_activation,
                     focus_after_removal: view.focus_after_removal,
                     protect_composition_on_press: view.protect_composition_on_press,
@@ -1145,12 +1164,12 @@ impl<A: Application> Runtime<A> {
                 if self.protects_pointer_composition(hit) {
                     return Ok(false);
                 }
-                let drag = self.horizontal_drag_candidate(hit, x, y);
+                let drag = self.drag_candidate(hit, x, y);
                 if let Some(id) = drag {
                     if self.has_pending_composition() {
                         return Ok(false);
                     }
-                    self.begin_horizontal_drag(id, x, y);
+                    self.begin_drag(id, x, y);
                 } else {
                     self.cancel_composition();
                 }
@@ -1180,8 +1199,8 @@ impl<A: Application> Runtime<A> {
                 self.secondary_down(x, y)
             }
             Event::PointerUp { x, y } => {
-                let horizontal_tap = self.horizontal_drag.is_some();
-                if self.update_horizontal_drag(x, y, true)? {
+                let drag_tap = self.captured_drag.is_some();
+                if self.update_drag(x, y, true)? {
                     return Ok(true);
                 }
                 if self.range_drag.is_some() {
@@ -1205,7 +1224,7 @@ impl<A: Application> Runtime<A> {
                     .filter(|pressed| hit.as_ref() == Some(pressed))
                 {
                     // An unclaimed gesture still acts as the original tap.
-                    if horizontal_tap {
+                    if drag_tap {
                         self.cancel_composition();
                     }
                     self.activate_id(&pressed).map(|_| true)
@@ -1270,7 +1289,7 @@ impl<A: Application> Runtime<A> {
                 by_word: false,
             }),
             Event::PointerMove { x, y } => {
-                if self.update_horizontal_drag(x, y, false)? {
+                if self.update_drag(x, y, false)? {
                     return Ok(true);
                 }
                 let hover = self.hit(x, y).and_then(|id| self.stable(id));
@@ -1287,7 +1306,7 @@ impl<A: Application> Runtime<A> {
                 if self.focused.as_ref() != Some(&id) {
                     return Ok(false);
                 }
-                let cancelled = self.cancel_horizontal_drag()?;
+                let cancelled = self.cancel_drag()?;
                 self.editing_event(Event::Ime(event))
                     .map(|handled| handled || cancelled)
             }
@@ -1312,7 +1331,7 @@ impl<A: Application> Runtime<A> {
             }
             Event::SetValue { id, value } => self.set_value(&id, value),
             event @ Event::Ime(_) => {
-                let cancelled = self.cancel_horizontal_drag()?;
+                let cancelled = self.cancel_drag()?;
                 self.editing_event(event)
                     .map(|handled| handled || cancelled)
             }

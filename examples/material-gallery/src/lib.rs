@@ -1,4 +1,5 @@
 mod badge_demo;
+mod bottom_sheet_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
@@ -8,6 +9,7 @@ mod snackbar_demo;
 mod wide_navigation_rail_demo;
 
 use badge_demo::{BadgeDemo, BadgeEvent};
+use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -48,6 +50,7 @@ pub struct Gallery {
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     side_sheet_demo: SideSheetDemo,
+    bottom_sheet_demo: BottomSheetDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -78,6 +81,7 @@ impl Default for Gallery {
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             side_sheet_demo: SideSheetDemo::default(),
+            bottom_sheet_demo: BottomSheetDemo::default(),
         }
     }
 }
@@ -94,6 +98,7 @@ pub enum Message {
     DrawerDemo(DrawerDemoEvent),
     Progress(ProgressEvent),
     SideSheet(SideSheetEvent),
+    BottomSheet(BottomSheetEvent),
     Nav(usize),
     Theme,
     Radio(usize),
@@ -125,6 +130,9 @@ impl Application for Gallery {
         if self.side_sheet_demo.visible() {
             return self.side_sheet_demo.text_scale();
         }
+        if self.bottom_sheet_demo.visible() {
+            return self.bottom_sheet_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -140,10 +148,12 @@ impl Application for Gallery {
         let drawer = self.drawer_demo.viewport_changed(width, height);
         let progress = self.progress_demo.viewport_changed(width);
         let side_sheet = self.side_sheet_demo.viewport_changed(width, height);
+        let bottom_sheet = self.bottom_sheet_demo.viewport_changed(height);
         (self.section == wide_navigation_rail_demo::SECTION && (inline || modal))
             || (self.drawer_demo.visible() && drawer)
             || (self.progress_demo.visible() && progress)
             || (self.side_sheet_demo.visible() && side_sheet)
+            || (self.bottom_sheet_demo.visible() && bottom_sheet)
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
         let inline = self.wide_rail_demo.frame(&frame);
@@ -152,19 +162,22 @@ impl Application for Gallery {
         let drawer = self.drawer_demo.frame(&frame);
         let progress = self.progress_demo.frame(&frame);
         let side_sheet = self.side_sheet_demo.frame(&frame);
+        let bottom_sheet = self.bottom_sheet_demo.frame(&frame);
         AnimationUpdate {
             rebuild: inline.rebuild
                 || modal.rebuild
                 || snackbar.rebuild
                 || drawer.rebuild
                 || progress.rebuild
-                || side_sheet.rebuild,
+                || side_sheet.rebuild
+                || bottom_sheet.rebuild,
             request_next: inline.request_next
                 || modal.request_next
                 || snackbar.request_next
                 || drawer.request_next
                 || progress.request_next
-                || side_sheet.request_next,
+                || side_sheet.request_next
+                || bottom_sheet.request_next,
         }
     }
     fn update(&mut self, m: Message) {
@@ -183,6 +196,9 @@ impl Application for Gallery {
                 if i != side_sheet_demo::SECTION {
                     self.side_sheet_demo.leave();
                 }
+                if i != bottom_sheet_demo::SECTION {
+                    self.bottom_sheet_demo.leave();
+                }
             }
             Message::Rail(i) => self.rail = i,
             Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
@@ -194,6 +210,7 @@ impl Application for Gallery {
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
             Message::SideSheet(event) => self.side_sheet_demo.update(event),
+            Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
@@ -244,6 +261,9 @@ impl Application for Gallery {
         }
         if self.side_sheet_demo.visible() {
             return self.side_sheet_demo.view(&t, self.dark);
+        }
+        if self.bottom_sheet_demo.visible() {
+            return self.bottom_sheet_demo.view(&t, self.dark);
         }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
@@ -709,6 +729,7 @@ impl Application for Gallery {
                             self.drawer_demo.show_button(&t),
                             SideSheetDemo::show_button(&t),
                         ]),
+                        BottomSheetDemo::show_button(&t),
                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
                     ],
                 ));
@@ -853,7 +874,8 @@ mod web {
             "badges": s.badge_demo.inspect(s.text_scale(), s.dark),
             "navigation_drawer": s.drawer_demo.inspect(s.text_scale(), &runtime),
             "progress": s.progress_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
-            "side_sheet": s.side_sheet_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() })
+            "side_sheet": s.side_sheet_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
+            "bottom_sheet": s.bottom_sheet_demo.inspect()
         }).to_string()
     })
     }

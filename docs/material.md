@@ -145,7 +145,7 @@ does not change application state.
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
-| `bottom_sheet` / `modal_bottom_sheet` | Standard and modal sheet; top extra-large corners; drag-handle visual; modal scrim, focus trap and Escape/outside dismiss; light and dark; no drag gesture, snap points or animation |
+| `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
 | `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
@@ -312,6 +312,39 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Bottom sheets
+
+Use `Theme::bottom_sheet_layout` to anchor supplementary content to the
+bottom edge. Supply a `BottomSheetOptions`, a `BottomSheetState` and
+`BottomSheetContent`. The caller owns the state and both action messages.
+Use `Closed`, `Peek` or `Expanded`. Supply equal heights to open directly
+to Expanded. Fit both heights to the available layout.
+
+A standard sheet keeps the uncovered page interactive. A modal sheet
+dims the page, limits focus to the dialog, and closes on an outside
+press. Both have a keyboard-operated handle and a Close button. Escape
+closes a standard sheet from inside the sheet. Escape closes the active
+modal first. Focus returns to the opener when the sheet closes. The
+header stays fixed while the heading and body scroll below it.
+
+Use `Theme::bottom_sheet_with_motion` to enable vertical drag on the
+handle. Give `BottomSheetMotion::new` the same heights and presentation.
+Call `set_state` when the application changes state. Forward handle
+events to `apply`. Call `advance` on the frame clock and commit its
+returned state in the same update. Upward drag expands. Downward drag
+collapses a standard sheet or can dismiss a modal. The motion uses
+Material durations and honors Reduce Motion. Content scrolling has its
+own target below the handle.
+
+In Material Gallery, choose 浮層, then 底部面板. Try both presentations,
+open directly to Expanded, and turn on large text in a narrow viewport.
+The original `bottom_sheet` and `modal_bottom_sheet` builders remain
+available.
+
+[Material 3 bottom sheets](https://m3.material.io/components/bottom-sheets/overview) ·
+[MDC 1.14.0 behavior](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/BottomSheet.md) ·
+[MDC 1.14.0 styles](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/lib/java/com/google/android/material/bottomsheet/res/values/styles.xml)
 
 ## Side sheets
 
