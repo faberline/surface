@@ -2,6 +2,7 @@
 use surface::{Align, Color, Length, Node, Role, Style};
 use surface_app::{CursorStyle, View};
 pub mod adaptive;
+mod badge;
 mod components;
 mod elevation;
 pub mod motion;
@@ -12,9 +13,11 @@ mod tokens;
 pub mod typography;
 mod vector_icon;
 mod wide_navigation_rail;
+pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
 pub use components::{
-    ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
-    IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition,
+    BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
+    FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,
+    SegmentPosition,
 };
 pub use elevation::Elevation;
 pub use snackbar::SnackbarOptions;

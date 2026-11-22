@@ -66,6 +66,30 @@ impl RangeValue {
         }
     }
 }
+/// Physical edge to clear when positioning an absolute decoration.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OverlayHorizontalEdge {
+    Left,
+    Right,
+}
+
+/// Bounds used to keep an absolute decoration clear of the top and one edge.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum OverlayBoundary {
+    /// Use the inherited clip, including the viewport.
+    Clip,
+    /// Use the visible owner on each axis where the overlay fits. Otherwise,
+    /// fall back to the inherited clip for that axis.
+    Owner,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct AbsoluteOverlayFit {
+    pub(crate) owner_id: String,
+    pub(crate) edge: OverlayHorizontalEdge,
+    pub(crate) boundary: OverlayBoundary,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node {
     #[serde(default, skip_serializing_if = "no_box_shadows")]
@@ -82,6 +106,8 @@ pub struct Node {
     horizontal_slide: f32,
     #[serde(skip)]
     measured_group: Option<crate::layout::MeasuredGroup>,
+    #[serde(skip)]
+    absolute_overlay_fit: Option<AbsoluteOverlayFit>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     shrink_to_fit_width: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -128,6 +154,7 @@ impl Node {
             disclosure: false,
             horizontal_slide: 0.,
             measured_group: None,
+            absolute_overlay_fit: None,
             shrink_to_fit_width: false,
             reverse_row: false,
             text_scaling: TextScaling::default(),
@@ -216,6 +243,34 @@ impl Node {
     }
     pub(crate) fn measured_group_layout(&self) -> Option<&dyn crate::MeasuredGroupLayout> {
         self.measured_group.as_ref().map(|group| group.0.as_ref())
+    }
+    /// Move an absolute decoration clear of the top and a physical edge.
+    ///
+    /// Measure the node first, then translate the subtree without resizing
+    /// it or increasing its parent's scroll extent. An oversized decoration
+    /// can still clip at its opposite edges. Keep decorative children passive.
+    ///
+    /// The named owner must be an ancestor or a preceding sibling of this
+    /// node or one of its ancestors in the same viewport layer. Hide the
+    /// decoration when the owner's bounds are outside the inherited clip.
+    /// This setting applies only to absolute positioning and stays off wire.
+    pub fn fit_absolute_overlay(
+        mut self,
+        owner_id: impl Into<String>,
+        edge: OverlayHorizontalEdge,
+        boundary: OverlayBoundary,
+    ) -> Self {
+        self.absolute_overlay_fit = Some(AbsoluteOverlayFit {
+            owner_id: owner_id.into(),
+            edge,
+            boundary,
+        });
+        self
+    }
+    pub(crate) fn absolute_overlay_fit(&self) -> Option<&AbsoluteOverlayFit> {
+        self.absolute_overlay_fit
+            .as_ref()
+            .filter(|_| self.style.position == crate::Position::Absolute)
     }
     /// Let this child give up width in a flex row when space runs out.
     /// A column keeps its usual height behavior. A child with space

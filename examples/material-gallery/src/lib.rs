@@ -1,8 +1,10 @@
+mod badge_demo;
 mod modal_wide_navigation_rail_demo;
 mod rail_icons;
 mod snackbar_demo;
 mod wide_navigation_rail_demo;
 
+use badge_demo::{BadgeDemo, BadgeEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
@@ -36,6 +38,7 @@ pub struct Gallery {
     wide_rail_demo: WideRailDemo,
     modal_wide_rail_demo: ModalWideRailDemo,
     snackbar_demo: SnackbarDemo,
+    badge_demo: BadgeDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -62,6 +65,7 @@ impl Default for Gallery {
             wide_rail_demo: WideRailDemo::default(),
             modal_wide_rail_demo: ModalWideRailDemo::default(),
             snackbar_demo: SnackbarDemo::default(),
+            badge_demo: BadgeDemo::default(),
         }
     }
 }
@@ -73,6 +77,7 @@ pub enum Message {
     WideRail(WideRailEvent),
     ModalWideRail(ModalWideRailEvent),
     Snackbar(SnackbarEvent),
+    Badge(BadgeEvent),
     Drawer(usize),
     Nav(usize),
     Theme,
@@ -96,7 +101,10 @@ impl Application for Gallery {
         "Surface · Material gallery"
     }
     fn text_scale(&self) -> f32 {
-        if self.rail_large_text || self.snackbar_demo.large_text() {
+        if self.rail_large_text
+            || self.snackbar_demo.large_text()
+            || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
+        {
             2.
         } else {
             1.
@@ -129,6 +137,7 @@ impl Application for Gallery {
             Message::WideRail(event) => self.wide_rail_demo.update(event),
             Message::ModalWideRail(event) => self.modal_wide_rail_demo.update(event),
             Message::Snackbar(event) => self.snackbar_demo.update(event),
+            Message::Badge(event) => self.badge_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
@@ -639,6 +648,7 @@ impl Application for Gallery {
                 children.push(self.snackbar_demo.card(&t));
             }
             _ => {
+                children.push(self.badge_demo.card(&t));
                 let swatch = |id: &str, text: &str, background: Color, foreground: Color| {
                     View::new(
                         Node::new(Role::Group, text).id(id).styled(
@@ -772,7 +782,8 @@ mod web {
             "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused(),
             "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
             "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime),
-            "snackbar": s.snackbar_demo.inspect(s.text_scale())
+            "snackbar": s.snackbar_demo.inspect(s.text_scale()),
+            "badges": s.badge_demo.inspect(s.text_scale(), s.dark)
         }).to_string()
     })
     }

@@ -171,6 +171,7 @@ does not change application state.
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 | `search_bar` | Pill search bar with leading glyph, controlled text input and a clear button while the query is not empty; no search view, suggestions or placeholder yet |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
+| `badge` / `badged_anchor` | Passive dot, short label or count. An attached badge follows the logical top trailing edge of its anchor. |
 
 The short `button`, `tonal_button`, `disabled_button` and `checkbox`
 methods call the same implementations. Button and chip containers paint
@@ -208,6 +209,36 @@ The Snackbar sizes, inverse colors, typography and action layout follow the
 The [AndroidX host](https://android.googlesource.com/platform/frameworks/support/+/3a4444a5b801bb899ca38bb982b83be53c169090/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SnackbarHost.kt)
 defines the timing reference. The Gallery adds a short entrance animation.
 It settles immediately with Reduce Motion.
+
+## Badges
+
+`Theme::badge` makes a standalone badge. The dot is 6 dp. A label uses
+Label Small typography and a 16 dp minimum height. The colors use Error
+and On Error, and the container uses fully rounded corners. Large text
+can grow the label. Use a localized name to describe the status.
+
+`Theme::badged_anchor` attaches a dot, short label or count to a
+control. It can also keep the badge hidden. The parent passes the current
+value and direction. Use the anchor's accessible name to give the full
+localized status, such as “Inbox, 1,200 unread messages”. Count badges
+display `999+` above 999. The anchor keeps its focus, dimensions and
+actions.
+
+`Theme::badged_anchor_with_clearance` fits the measured badge into
+the visible clip. `BadgeBoundary::Owner` limits any axis where the badge
+fits the owner. The badge stops painting while its owner is fully
+outside the visible clip. For a navigation bar destination, use
+`navigation_bar_item_with_badge` or its clearance variant. The destination
+accepts a vector or glyph icon and a name separate from its visible label.
+Navigation labels and counts overlap the icon by up to 4 dp.
+At larger text sizes, these destinations reserve room above the icon.
+Use the same builder with `BadgeContent::Hidden` for the other
+destinations in that bar to align their icons.
+
+The variant and size references are the [Material 3 badge catalog](https://m3.material.io/components/badges/overview)
+and the [AndroidX badge tokens](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/BadgeTokens.kt).
+The [pinned AndroidX placement](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Badge.kt#104)
+sets the overlap with the top and trailing edges.
 
 ## Motion
 
