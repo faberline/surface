@@ -119,9 +119,10 @@
       "spec": "https://m3.material.io/components/navigation-drawer/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Standard drawer and modal drawer; selected row indicator; press and arrow-key focus movement; modal focus trap and dismiss"
+      "desktop_evidence": "Native Metal Gallery covers light, dark and 320 dp RTL at 200% text. AppKit exposes the current page, disabled destinations and focus. Page.screenshot, CLI and MCP returned the same compact PNG. https://github.com/faberline/surface/tree/5dcfa89206122ae9e1f6afc69fecf2382116b0ea/docs/evidence/md3/navigation-drawer-v0.1.4",
+      "web_evidence": "Chrome WebGPU M36–M40 cover shared layout, modal focus and scrim, narrow RTL labels, mouse and touch edge swipes, cancellation, resize and Reduce Motion. See the v0.1.4 evidence.",
+      "implemented": "Permanent and dismissible standard drawers share space with the page. Modal drawers support close, Escape, scrim dismissal and optional swipes. Vector destinations expose the current page and wrap on large text. Lists scroll via wheel, keyboard and accessibility actions. Vertical touch panning and predictive back remain open. Physical touch and live VoiceOver speech remain unverified.",
+      "unit_evidence": "directional_navigation_drawer, standard_navigation_drawer and navigation_drawer tests cover tokens, focus, disabled items, shared layout, scrolling, gestures and legacy builders."
     },
     {
       "id": "navigation-rail",

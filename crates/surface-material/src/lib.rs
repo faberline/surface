@@ -6,9 +6,11 @@ mod badge;
 mod components;
 mod elevation;
 pub mod motion;
+mod navigation_drawer;
 pub mod shape;
 mod snackbar;
 mod snackbar_state;
+mod standard_navigation_drawer;
 mod tokens;
 pub mod typography;
 mod vector_icon;
@@ -20,8 +22,14 @@ pub use components::{
     SegmentPosition,
 };
 pub use elevation::Elevation;
+pub use navigation_drawer::{
+    ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
+};
 pub use snackbar::SnackbarOptions;
 pub use snackbar_state::{SnackbarDuration, SnackbarId, SnackbarQueue};
+pub use standard_navigation_drawer::{
+    StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
+};
 pub use tokens::ColorScheme;
 pub use vector_icon::VectorIcon;
 pub use wide_navigation_rail::{
