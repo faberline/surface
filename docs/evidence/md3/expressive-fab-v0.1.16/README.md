@@ -3,7 +3,8 @@
 The baseline is Surface v0.1.15 at
 `b3a9d824da58e3e65acd6a27674fa934e6bf0707`. Check out
 `v0.1.16` to reproduce this batch. Set `evidence_dir` to this
-directory and run these commands from the source checkout.
+directory and run these commands from the source checkout. The
+local runs tested source inputs from PR head `7da4d780f8535fb79e600a97c51d0fd5be6fdaed`.
 
 ```sh
 shasum -a 256 -c "$evidence_dir/native/native-source.sha256"
@@ -52,9 +53,10 @@ diff -qr "$scratch_dir/native-1" "$scratch_dir/native-2"
 
 M100–M105 check the Expressive face, actual clipped ripple pixels,
 reduced motion, touch and keyboard activation, Chrome accessibility,
-tooltip behavior, compact RTL placement during scroll, and
-interrupted visibility motion. The trusted pointer and touch events in
-this replay use Chrome's test driver.
+tooltip behavior, compact RTL placement during scroll, and entry
+and exit motion. Chrome's test driver sends trusted pointer and touch
+events. The Rust motion test checks reversal during a transition.
+[Visibility reversal test](https://github.com/faberline/surface/blob/7da4d780f8535fb79e600a97c51d0fd5be6fdaed/crates/surface-material/tests/fab_motion.rs#L223)
 
 Chrome 157 used Apple Metal 3. All five local suites passed
 5,909 checks. Material passed 104 steps and 5,661 checks. The
