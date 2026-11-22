@@ -148,6 +148,7 @@ does not change application state.
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
+| `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
 | `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
@@ -314,6 +315,40 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Tooltips
+
+Use `Theme::plain_tooltip` for descriptive text. Give the anchor
+`View::described_by` with the tooltip's stable ID. The web proxy and
+AccessKit use that description while the tooltip is visible. Focus
+stays on the anchor. Use `Theme::rich_tooltip` with an action view to
+open a named nonmodal dialog. Put that view after the trigger in
+document order so Tab can reach its action. The caller owns the
+action and dismissal.
+
+Supply anchor and viewport bounds in logical pixels. On the first
+frame, omit `TooltipOptions::measured_size`. Read the tooltip's
+measured bounds from the next layout and supply the size on rebuild.
+The first layout measures without paint or input. Placement starts
+above by default, flips when needed, and clamps to the viewport.
+Invalidate the measurement when content, text scale or viewport changes.
+
+`TooltipState` controls one active anchor. Opt into
+`Application::observes_frame_input` and forward pointer, focus and
+touch state from `animation_frame_with_input`. Include the visible
+popup and the gap next to its anchor in the hover region. Hover and
+long press wait 500 ms in Surface. Focus and explicit rich activation
+open immediately. The input hook suppresses a long press's original
+activation. Escape dismisses transient content after IME and modal
+handling. The caller can use `cancel_transient` to dismiss even when
+the hovered anchor did not take focus.
+
+In Material Gallery, choose 浮層, then 提示泡泡. Try both anchors at the
+top and bottom, with and without the caret.
+
+[Material 3 Tooltips](https://m3.material.io/components/tooltips/specs) ·
+[Pinned Compose layout](https://android.googlesource.com/platform/frameworks/support/+/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Tooltip.kt) ·
+[W3C hover and focus guidance](https://www.w3.org/WAI/WCAG22/Understanding/content-on-hover-or-focus.html)
 
 ## Toolbars
 

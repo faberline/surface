@@ -12,6 +12,7 @@ mod drag_motion;
 mod editing;
 mod editing_runtime;
 mod focus_scroll;
+mod frame_input;
 mod frame_paint;
 mod keys;
 mod motion;
@@ -36,6 +37,7 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
+pub use frame_input::{FrameInput, InputAnimationUpdate, TouchContact};
 pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
 pub use motion::{ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
@@ -70,6 +72,7 @@ pub struct View<M> {
     cursor: Option<CursorStyle>,
     drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
+    description: Option<String>,
     focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
     accessible_scroll: bool,
@@ -109,6 +112,7 @@ impl<M> View<M> {
             cursor: None,
             drag_bindings: captured_drag::Bindings::default(),
             accessible_activation: false,
+            description: None,
             focus_after_removal: Vec::new(),
             protect_composition_on_press: false,
             accessible_scroll: false,
@@ -225,6 +229,12 @@ impl<M> View<M> {
     /// Let a platform accessibility action invoke this view's press binding.
     pub fn accessible_activation(mut self) -> Self {
         self.accessible_activation = true;
+        self
+    }
+    /// Use a visible tooltip in the current scope to describe this view.
+    /// The target ID refers to a `Role::Tooltip` view.
+    pub fn described_by(mut self, target: impl Into<String>) -> Self {
+        self.description = Some(target.into());
         self
     }
     /// Let a platform accessibility action reveal this view without pressing it.
@@ -401,6 +411,29 @@ pub trait Application: 'static {
     fn animation_frame(&mut self, _frame: AnimationFrame<'_>) -> AnimationUpdate {
         AnimationUpdate::default()
     }
+    /// Ask the host for a frame when a pointer moves over passive content.
+    /// Override this together with [`Self::animation_frame_with_input`] when
+    /// the current view uses pointer or touch position to draw.
+    fn observes_frame_input(&self) -> bool {
+        false
+    }
+    /// Advance motion with the latest input, including positions over
+    /// non-focusable content. By default this calls [`Self::animation_frame`].
+    fn animation_frame_with_input(
+        &mut self,
+        frame: AnimationFrame<'_>,
+        _input: FrameInput<'_>,
+    ) -> InputAnimationUpdate {
+        InputAnimationUpdate {
+            animation: self.animation_frame(frame),
+            suppress_touch_activation: false,
+        }
+    }
+    /// Handle Escape for transient application UI outside modal scopes.
+    /// Return true when the runtime should rebuild the view.
+    fn cancel_transient(&mut self) -> bool {
+        false
+    }
     fn view(&self) -> View<Self::Message>;
     /// Global keyboard shortcuts, read each time a key arrives. A shortcut
     /// sends its message whichever node has focus. The runtime does not
@@ -505,6 +538,7 @@ struct Binding<M> {
     cursor: Option<CursorStyle>,
     drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
+    description: Option<String>,
     focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
     accessible_scroll: bool,
@@ -559,6 +593,9 @@ pub struct Runtime<A: Application> {
     focused: Option<String>,
     pressed: Option<String>,
     hovered: Option<String>,
+    pointer_position: Option<(f32, f32)>,
+    touch: Option<frame_input::ActiveTouch>,
+    touch_cancelled: bool,
     scroll: BTreeMap<String, (f32, f32)>,
     scroll_state: scroll_control::State,
     editors: BTreeMap<String, TextEditor>,
@@ -600,6 +637,9 @@ impl<A: Application> Runtime<A> {
             focused: None,
             pressed: None,
             hovered: None,
+            pointer_position: None,
+            touch: None,
+            touch_cancelled: false,
             scroll: BTreeMap::new(),
             scroll_state: scroll_control::State::default(),
             editors: BTreeMap::new(),
@@ -666,7 +706,9 @@ impl<A: Application> Runtime<A> {
 
     /// Cancel a pointer sequence without invoking a destination or dismissal.
     pub fn cancel_pointer(&mut self) -> Result<bool, AppError> {
-        let changed = self.pressed.is_some()
+        let touch_changed = self.cancel_touch_contact();
+        let changed = touch_changed
+            || self.pressed.is_some()
             || self.hovered.is_some()
             || self.range_drag.is_some()
             || self.text_drag.is_some()
@@ -678,7 +720,13 @@ impl<A: Application> Runtime<A> {
     /// Invalidate pointer geometry before the next resize or scale redraw.
     pub fn pointer_geometry_changed(&mut self) -> Result<bool, AppError> {
         self.pointer_geometry_current = false;
-        self.cancel_drag()
+        let pointer_changed = self.pointer_position.take().is_some();
+        let cancelled = if self.touch.is_some() {
+            self.cancel_pointer()?
+        } else {
+            self.cancel_drag()?
+        };
+        Ok(cancelled || (pointer_changed && self.app.observes_frame_input()))
     }
 
     fn has_captured_drag(&self) -> bool {
@@ -785,7 +833,7 @@ impl<A: Application> Runtime<A> {
             self.animation_rebuild_pending = false;
         } else {
             self.discard_drag();
-            if self.active_scope_root().is_some() {
+            if self.cancel_touch_contact() || self.active_scope_root().is_some() {
                 self.clear_modal_pointer();
             }
         }
@@ -862,6 +910,7 @@ impl<A: Application> Runtime<A> {
                     cursor: view.cursor,
                     drag_bindings: view.drag_bindings,
                     accessible_activation: view.accessible_activation,
+                    description: view.description,
                     focus_after_removal: view.focus_after_removal,
                     protect_composition_on_press: view.protect_composition_on_press,
                     accessible_scroll: view.accessible_scroll,
@@ -1175,14 +1224,25 @@ impl<A: Application> Runtime<A> {
             .map(|changed| changed || focus_changed)
     }
     pub fn dispatch(&mut self, event: Event) -> Result<bool, AppError> {
+        self.dispatch_with(event, Self::dispatch_observed_event)
+    }
+    fn dispatch_with(
+        &mut self,
+        event: Event,
+        dispatch: impl FnOnce(&mut Self, Event) -> Result<bool, AppError>,
+    ) -> Result<bool, AppError> {
         #[cfg(feature = "devtools")]
         let span = self.trace_event(&event);
-        let result = self.dispatch_event(event);
+        let result = dispatch(self, event);
         #[cfg(feature = "devtools")]
         self.trace_input_end(span, &result);
         result
     }
-    fn dispatch_event(&mut self, event: Event) -> Result<bool, AppError> {
+    fn dispatch_event(
+        &mut self,
+        event: Event,
+        suppress_touch_activation: bool,
+    ) -> Result<bool, AppError> {
         match event {
             Event::PointerDown { x, y } => {
                 if self.has_captured_drag() {
@@ -1238,13 +1298,18 @@ impl<A: Application> Runtime<A> {
                     return result;
                 }
                 if std::mem::take(&mut self.modal_outside) {
-                    return if self.outside_scope(x, y, self.hit(x, y)) {
+                    return if !suppress_touch_activation && self.outside_scope(x, y, self.hit(x, y))
+                    {
                         self.dismiss_scope()
                     } else {
                         Ok(true)
                     };
                 }
                 self.text_drag = None;
+                if suppress_touch_activation {
+                    self.pressed = None;
+                    return Ok(true);
+                }
                 let hit = self.hit(x, y).and_then(|id| self.stable(id));
                 if let Some(pressed) = self
                     .pressed
@@ -1382,6 +1447,10 @@ impl<A: Application> Runtime<A> {
                 }
                 if let Some(message) = self.cancel_within_focus() {
                     return self.message(Some(message));
+                }
+                if self.active_scope_root().is_none() && self.app.cancel_transient() {
+                    self.flush()?;
+                    return Ok(true);
                 }
                 self.dismiss_scope().map(|handled| handled || pointer)
             }

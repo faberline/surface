@@ -514,12 +514,16 @@ impl<A: Application> Host<A> {
     }
     fn input(&mut self, event_loop: &ActiveEventLoop, event: Event) {
         #[cfg(target_arch = "wasm32")]
+        self.stop_following_web_focus_on_press(&event);
+        self.dispatch_input(event_loop, |runtime| runtime.dispatch(event));
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn stop_following_web_focus_on_press(&mut self, event: &Event) {
         if matches!(event, Event::PointerDown { .. }) {
             if let Some(tree) = &mut self.web_accessibility {
                 tree.follow_focus(false);
             }
         }
-        self.dispatch_input(event_loop, |runtime| runtime.dispatch(event));
     }
     fn dispatch_input(
         &mut self,
@@ -1079,13 +1083,16 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             WindowEvent::Touch(touch) => {
                 let scale = self.window.as_ref().map(|w| w.scale_factor()).unwrap_or(1.);
                 match self.touch.route(touch, scale) {
-                    touch_route::TouchStep::Pointer(release @ Event::PointerUp { .. }) => {
-                        self.dispatch_input(event_loop, |runtime| {
-                            let released = runtime.dispatch(release)?;
-                            Ok(runtime.dispatch(Event::PointerLeave)? || released)
+                    touch_route::TouchStep::Pointer(event) => {
+                        #[cfg(target_arch = "wasm32")]
+                        self.stop_following_web_focus_on_press(&event);
+                        let released = matches!(event, Event::PointerUp { .. });
+                        self.dispatch_input(event_loop, move |runtime| {
+                            let changed = runtime.dispatch_touch(event)?;
+                            let left = released && runtime.dispatch(Event::PointerLeave)?;
+                            Ok(changed || left)
                         });
                     }
-                    touch_route::TouchStep::Pointer(event) => self.input(event_loop, event),
                     touch_route::TouchStep::Cancel => {
                         self.dispatch_input(event_loop, |runtime| {
                             let changed = runtime.cancel_pointer()?;

@@ -320,10 +320,12 @@
     {
       "id": "tooltips",
       "spec": "https://m3.material.io/components/tooltips/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Headless macOS Metal verifies plain and actionable rich tooltips in light and 320 dp dark RTL at 200% text. It checks focus, edge placement, caret, and real paint. Repeat runs produced identical PNGs across Page.screenshot, CLI and MCP. AccessKit tests verify the description link and help property. https://github.com/faberline/surface/tree/03da3b33ea66171ae9474e98d437db6760c9a824/docs/evidence/md3/tooltips-v0.1.10",
+      "web_evidence": "Headless Chrome WebGPU M69–M72 verify delayed hover, pointer across the gap, Escape and rearm, the browser accessibility description, nonmodal action focus, 320 dp RTL 200% paint and trusted touch long press without a release click.",
+      "implemented": "Anchored plain and rich tooltips with caller-owned state, optional caret and title, automatic vertical flip and viewport clamp, focus and hover persistence, touch long press suppression and dismissal. Tooltip transitions, physical device touch and live screen-reader speech remain open.",
+      "unit_evidence": "Placement, layout, Runtime input and accessibility tests cover measurement, focus fallback, description scope, timing, cancellation and regular tap preservation."
     }
   ],
   "foundations": {

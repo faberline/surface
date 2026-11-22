@@ -610,14 +610,24 @@ impl<A: Application> Runtime<A> {
     }
 
     pub(crate) fn animate_application(&mut self) -> Result<(), crate::AppError> {
-        let update = self.app.animation_frame(crate::AnimationFrame {
+        let frame = crate::AnimationFrame {
             now_ms: self.motion.now,
             reduced_motion: self.motion.reduced,
             dom: &self.dom,
             layout: self.computed.as_ref(),
-        });
-        self.animation_request_next = update.request_next;
-        self.animation_rebuild_pending |= update.rebuild;
+        };
+        let input = crate::FrameInput {
+            pointer: self.pointer_position,
+            focused: self.focused.as_deref(),
+            touch: self.touch.as_ref().map(|touch| touch.contact),
+            touch_cancelled: std::mem::take(&mut self.touch_cancelled),
+        };
+        let update = self.app.animation_frame_with_input(frame, input);
+        if let Some(touch) = &mut self.touch {
+            touch.suppress_activation |= update.suppress_touch_activation;
+        }
+        self.animation_request_next = update.animation.request_next;
+        self.animation_rebuild_pending |= update.animation.rebuild;
         if self.animation_rebuild_pending {
             self.rebuild()?;
         }

@@ -232,6 +232,22 @@ impl<M> AccessibilityFrame<'_, M> {
         })
     }
 
+    /// Resolve the enabled, visible tooltip that describes a node in this frame.
+    pub fn description_target(&self, id: NodeId) -> Option<NodeId> {
+        let binding = self.bindings.get(&id).filter(|b| b.accepts_interaction())?;
+        let target = self.dom.by_id(binding.description.as_deref()?)?;
+        let source = self.node(id)?;
+        if source.node.is_disabled() || !has_visible_bounds(&source) {
+            return None;
+        }
+        let tooltip = self.node(target)?;
+        (target != id
+            && tooltip.node.role() == Role::Tooltip
+            && !tooltip.node.is_disabled()
+            && has_visible_bounds(&tooltip))
+        .then_some(target)
+    }
+
     /// Whether this named group uses roving focus within the current tree.
     /// This describes the group boundary rather than a focus or press action.
     pub fn is_named_roving_group(&self, id: NodeId) -> bool {
@@ -387,11 +403,12 @@ fn offers_press(role: Role) -> bool {
 }
 
 fn focusable(node: &AccessibilityNode<'_>) -> bool {
+    node.node.is_focusable() && node.node.stable_id().is_some() && has_visible_bounds(node)
+}
+
+fn has_visible_bounds(node: &AccessibilityNode<'_>) -> bool {
     let visible = node.layout.bounds.intersect(node.layout.clip);
-    node.node.is_focusable()
-        && node.node.stable_id().is_some()
-        && visible.width > 0.
-        && visible.height > 0.
+    visible.width > 0. && visible.height > 0.
 }
 
 impl<A: Application> Runtime<A> {

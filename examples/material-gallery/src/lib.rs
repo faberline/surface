@@ -8,6 +8,7 @@ mod rail_icons;
 mod side_sheet_demo;
 mod snackbar_demo;
 mod toolbar_demo;
+mod tooltip_demo;
 mod wide_navigation_rail_demo;
 
 use app_bar_demo::{AppBarDemo, AppBarEvent};
@@ -19,12 +20,15 @@ use progress_demo::{ProgressDemo, ProgressEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
-use surface_app::{AnimationFrame, AnimationUpdate, Application, View};
+use surface_app::{
+    AnimationFrame, AnimationUpdate, Application, FrameInput, InputAnimationUpdate, View,
+};
 use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
     IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition, Theme,
 };
 use toolbar_demo::{ToolbarDemo, ToolbarEvent};
+use tooltip_demo::{TooltipDemo, TooltipEvent};
 use wide_navigation_rail_demo::{WideRailDemo, WideRailEvent};
 
 pub struct Gallery {
@@ -57,6 +61,7 @@ pub struct Gallery {
     bottom_sheet_demo: BottomSheetDemo,
     app_bar_demo: AppBarDemo,
     toolbar_demo: ToolbarDemo,
+    tooltip_demo: TooltipDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -90,6 +95,7 @@ impl Default for Gallery {
             bottom_sheet_demo: BottomSheetDemo::default(),
             app_bar_demo: AppBarDemo::default(),
             toolbar_demo: ToolbarDemo::default(),
+            tooltip_demo: TooltipDemo::default(),
         }
     }
 }
@@ -109,6 +115,7 @@ pub enum Message {
     BottomSheet(BottomSheetEvent),
     AppBar(AppBarEvent),
     Toolbar(ToolbarEvent),
+    Tooltip(TooltipEvent),
     Nav(usize),
     Theme,
     Radio(usize),
@@ -149,6 +156,9 @@ impl Application for Gallery {
         if self.toolbar_demo.visible() {
             return self.toolbar_demo.text_scale();
         }
+        if self.tooltip_demo.visible() {
+            return self.tooltip_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -167,6 +177,7 @@ impl Application for Gallery {
         let bottom_sheet = self.bottom_sheet_demo.viewport_changed(height);
         let app_bar = self.app_bar_demo.viewport_changed(width);
         let toolbar = self.toolbar_demo.viewport_changed(width, height);
+        let tooltip = self.tooltip_demo.viewport_changed(width, height);
         (self.section == wide_navigation_rail_demo::SECTION && (inline || modal))
             || (self.drawer_demo.visible() && drawer)
             || (self.progress_demo.visible() && progress)
@@ -174,6 +185,24 @@ impl Application for Gallery {
             || (self.bottom_sheet_demo.visible() && bottom_sheet)
             || app_bar
             || toolbar
+            || tooltip
+    }
+    fn observes_frame_input(&self) -> bool {
+        self.tooltip_demo.visible()
+    }
+    fn cancel_transient(&mut self) -> bool {
+        self.tooltip_demo.visible() && self.tooltip_demo.dismiss()
+    }
+    fn animation_frame_with_input(
+        &mut self,
+        frame: AnimationFrame<'_>,
+        input: FrameInput<'_>,
+    ) -> InputAnimationUpdate {
+        let mut update = self.tooltip_demo.frame(&frame, input);
+        let other = self.animation_frame(frame);
+        update.animation.rebuild |= other.rebuild;
+        update.animation.request_next |= other.request_next;
+        update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
         let inline = self.wide_rail_demo.frame(&frame);
@@ -229,6 +258,9 @@ impl Application for Gallery {
                 if i != toolbar_demo::SECTION {
                     self.toolbar_demo.leave();
                 }
+                if i != tooltip_demo::SECTION {
+                    self.tooltip_demo.leave();
+                }
             }
             Message::Rail(i) => self.rail = i,
             Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
@@ -243,6 +275,7 @@ impl Application for Gallery {
             Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
             Message::Toolbar(event) => self.toolbar_demo.update(event),
+            Message::Tooltip(event) => self.tooltip_demo.update(event),
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
             Message::Radio(i) => self.radio = i,
@@ -302,6 +335,9 @@ impl Application for Gallery {
         }
         if self.toolbar_demo.visible() {
             return self.toolbar_demo.view(&t, self.dark);
+        }
+        if self.tooltip_demo.visible() {
+            return self.tooltip_demo.view(&t, self.dark);
         }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
@@ -769,6 +805,7 @@ impl Application for Gallery {
                             SideSheetDemo::show_button(&t),
                         ]),
                         BottomSheetDemo::show_button(&t),
+                        TooltipDemo::show_button(&t),
                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
                     ],
                 ));
@@ -916,7 +953,8 @@ mod web {
             "side_sheet": s.side_sheet_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "bottom_sheet": s.bottom_sheet_demo.inspect(),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
-            "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() })
+            "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
+            "tooltip": s.tooltip_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() })
         }).to_string()
     })
     }

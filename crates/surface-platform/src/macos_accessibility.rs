@@ -71,6 +71,7 @@ impl Tree {
         let mut status_ids = BTreeMap::new();
         let mut targets = BTreeMap::new();
         let mut nodes = Vec::new();
+        let mut descriptions = Vec::new();
         let mut stack = vec![(root, false)];
         while let Some((id, visited)) = stack.pop() {
             if !visited {
@@ -190,6 +191,9 @@ impl Tree {
             }
 
             node.set_children(children);
+            if let Some(description) = frame.description_target(id) {
+                descriptions.push((nodes.len(), description));
+            }
             nodes.push((native_id, node));
             ids.insert(id, native_id);
             targets.insert(
@@ -201,6 +205,20 @@ impl Tree {
                     pages: BTreeMap::new(),
                 },
             );
+        }
+        for (index, description) in descriptions {
+            if let Some(id) = ids.get(&description) {
+                let anchor = &mut nodes[index].1;
+                anchor.set_described_by([*id]);
+                // The macOS adapter exposes description text as AXHelp.
+                // It does not derive the text from the ID relation.
+                if let Some(tooltip) = frame.node(description) {
+                    let text = tooltip.node.text_value().unwrap_or(tooltip.node.name());
+                    if !text.trim().is_empty() {
+                        anchor.set_description(text);
+                    }
+                }
+            }
         }
         if modal.is_some() {
             let mut window = Node::new(Role::Window);
@@ -332,7 +350,7 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
     };
     let mut node = Node::new(role);
     let label = match authored.role() {
-        SurfaceRole::Text | SurfaceRole::Heading | SurfaceRole::Status => {
+        SurfaceRole::Text | SurfaceRole::Heading | SurfaceRole::Status | SurfaceRole::Tooltip => {
             authored.text_value().unwrap_or(authored.name())
         }
         _ => authored.name(),
@@ -385,6 +403,7 @@ mod tests {
     #[derive(Clone, Copy, Default)]
     struct App {
         notice: Option<&'static str>,
+        tooltip: bool,
         modal: bool,
         focusable_notice: bool,
     }
@@ -403,7 +422,8 @@ mod tests {
                     .text("Action"),
             )
             .on_press(*self)
-            .accessible_activation();
+            .accessible_activation()
+            .described_by("action-tip");
             let status = self.notice.map(|message| {
                 let mut node = SurfaceNode::new(SurfaceRole::Status, message)
                     .id("status")
@@ -424,8 +444,20 @@ mod tests {
                     ..*self
                 })
             });
+            let tooltip = self.tooltip.then(|| {
+                View::new(
+                    SurfaceNode::new(SurfaceRole::Tooltip, "")
+                        .id("action-tip")
+                        .text("Open the item"),
+                )
+            });
             View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop").styled(Style::column()))
-                .children(std::iter::once(button).chain(status).chain(modal))
+                .children(
+                    std::iter::once(button)
+                        .chain(status)
+                        .chain(modal)
+                        .chain(tooltip),
+                )
         }
     }
 
@@ -448,6 +480,35 @@ mod tests {
             .iter()
             .find_map(|(id, node)| (node.label() == Some(name)).then_some((*id, node)))
             .unwrap()
+    }
+
+    #[test]
+    fn tooltip_description_resolves_to_the_published_accesskit_node() {
+        let mut runtime = Runtime::new(App {
+            tooltip: true,
+            ..App::default()
+        })
+        .unwrap();
+        let mut tree = Tree::default();
+        let shown = update(&mut runtime, &mut tree);
+        let (id, tooltip) = named(&shown, "Open the item");
+        assert_eq!(tooltip.role(), Role::Tooltip);
+        assert_eq!(named(&shown, "Action").1.described_by(), &[id]);
+        assert_eq!(
+            named(&shown, "Action").1.description(),
+            Some("Open the item")
+        );
+        assert!(!tooltip.supports_action(Action::Focus));
+        assert!(!tooltip.supports_action(Action::Click));
+
+        runtime.apply(App::default()).unwrap();
+        let closed = update(&mut runtime, &mut tree);
+        assert!(named(&closed, "Action").1.described_by().is_empty());
+        assert_eq!(named(&closed, "Action").1.description(), None);
+        assert!(!closed
+            .nodes
+            .iter()
+            .any(|(_, node)| node.role() == Role::Tooltip));
     }
 
     #[test]
