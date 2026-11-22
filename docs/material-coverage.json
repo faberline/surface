@@ -267,8 +267,8 @@
       "spec": "https://m3.material.io/components/snackbar/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": "Material Gallery M28 through M31 cover timed text, FIFO, keyboard and pointer actions, focus, polite live-region delivery and 320 dp dark RTL at 200% text.",
+      "desktop_evidence": "The v0.1.2 Gallery ran on macOS Metal in light, dark and 320 dp RTL at 200% text. It checked autonomous expiry, focus, separate actions and AppKit announcement requests. https://github.com/faberline/surface/tree/7d768aaa530c3cac71d3e5547a89b52d646fba93/docs/evidence/md3/snackbar-v0.1.2",
+      "web_evidence": "Material Gallery M28 through M31 cover timed text, FIFO, keyboard and pointer actions, focus, polite live-region delivery and 320 dp dark RTL at 200% text. See the v0.1.2 evidence for the Chrome WebGPU run.",
       "implemented": "Text-only status, one text action, independent accessible Close icon, measured inline or stacked layout, M3 inverse colors and Level 3 elevation. Optional client-owned FIFO supports short, long, indefinite and accessibility-adjusted deadlines. The sample uses a nonmodal bottom placement and a Reduce Motion-aware entrance. Live speech and full host motion qualification remain open."
     },
     {
