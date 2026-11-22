@@ -112,3 +112,16 @@ The workspace passed strict Clippy, provenance, formatting, 672 Rust
 tests and all three WASM checks. Six were ignored in the routine
 Rust run. Five separate offscreen GPU tests passed on Apple M1 Max Metal.
 [Workspace log](workspace-check.log) · [Metal log](metal-check.log)
+
+## Merged source
+
+Snackbar merged as PR #176 at
+`d508799747252376a8222fba87b427a044619ba0`.
+The merge tree matches the PR head
+`dd2197701a4fa2ecb57a70948cbabe9ebff03c61` byte for byte.
+All 281 release source hashes matched again after the merge.
+[Pull request](https://github.com/faberline/surface/pull/176) · [Merged source](https://github.com/faberline/surface/commit/d508799747252376a8222fba87b427a044619ba0)
+
+Both hosted jobs passed on this exact main push. The same jobs passed
+at the pull request head.
+[Main CI](https://github.com/faberline/surface/actions/runs/45021507370) · [PR CI](https://github.com/faberline/surface/actions/runs/45020856877)
