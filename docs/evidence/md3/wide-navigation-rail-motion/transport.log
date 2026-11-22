@@ -1,0 +1,112 @@
+case devtools-native ...
+  [DN1] devtools session file appears within 30 s: app pid, 127.0.0.1, mode 0600
+  [DN2] jet bridge session file coexists with its own endpoint and token
+  [DN3] wrong token and missing token → unauthorized, connection closed
+  [DN4] Devtools.capabilities over raw TCP
+  [DN5] DOM.snapshot on the same connection
+  [DN6] Action.activate check: mixed → checked → unchecked, seen in the next snapshots
+  [DN7] protocol errors keep the connection usable
+  [DN15] An invalid 24-hour value focuses the hour and names the error
+  [DN16] Repair and confirm the 24-hour value
+  [DN17] Cancel a 12-hour edit and restore focus
+  [DN18] Open the calendar on the saved date
+  [DN19] Select leap day and confirm the calendar draft
+  [DN20] Invalid typed date stays visible with a field error
+  [DN21] Save a corrected date and cancel a later edit
+  [DN22] Run the primary action and reject a disabled primary
+  [DN23] Open the secondary menu and restore its exact opener with Escape
+  [DN24] Choose a short item with its primary disabled
+  [DN25] raw Page.screenshot: native viewport, PNG pixels, scale limit and fresh state
+  [DN11] the surface-devtools CLI: capabilities, snapshot, query, activate
+  [DN12] MCP over stdio: initialize, tools/list, one tools/call
+  [DN13] protocol error exits 1 with the code on stderr; a usage error exits 2
+  [DN26] CLI screenshot outputs JSON or creates a private PNG once
+  [DN27] MCP page_screenshot returns a native PNG image
+  [DN8] session token never appears in diagnostics
+  [DN14] after the app exits, the CLI reports a stale session file and exits 3
+  [DN9] --smoke run exits 0 and removes its session file
+  [DN10] an existing session file is kept: the app fails and the file is unchanged
+  evidence: {"endpoint_loopback":true,"capabilities":["Devtools.capabilities","DOM.snapshot","DOM.query","Action.activate","Action.fill","Action.setValue","Action.key","Page.screenshot"],"activate_toggled":true,"bridge_coexists":true,"unauthorized_closes":true,"time_input":{"invalid_hour_error":"請用數字 0 至 9 輸入 0 到 23 小時。","saved_value":"時間：23:30","cancel_restored_focus":"open-time-12"},"date_picker":{"initial_focus":"date-picker-1-day-2024-02-28","leap_day_saved":"日期：2024 年 2 月 29 日","invalid_date_error":"請輸入存在的日期。","corrected_date_saved":"日期：2024 年 3 月 1 日","cancel_restored_focus":"open-date"},"split_button":{"primary_count":1,"disabled_primary_rejected":true,"collapses_on_escape":true,"escape_restored_focus":"split-main-menu","menu_item_activated":"split-menu-2-item-first","selection_restored_focus":"split-disabled-menu"},"screenshot":{"format":"png","width":960,"height":800,"scale":1.0,"max_side":400,"colors_match":true,"reflects_theme_change":true,"cli_wrote_png_without_overwrite":true,"mcp_returned_image":true},"cli_drove_the_app":true,"mcp_listed_and_called":true,"stale_session_exit_3":true,"normal_shutdown_removes_session":true,"existing_file_kept":true}
+case devtools-native ... ok (27 steps, 353 checks, 6.8s)
+case bridge-native ...
+  [BN1] session file appears within 30 s with the app pid
+  [BN2] session file mode is 0600
+  [BN3] wrong token over TCP → unauthorized (id 91)
+  [B1] MCP initialize: protocol 2025-06-18, server jet-bridge-ui
+  [B2] tools/list = the seven ui_* tools
+  [B3] ui_capabilities: runtime Surface and bridge version 1
+  [B4] CLI snapshot: version, nodes, layout, root width
+  [B5] Tab reaches volume without a cycle; range then visible
+  [B6] ui_set_value volume 67 → 65
+  [B7] CLI activate check → checked
+  [B8] removed node → missing_node
+  [B9] activate filled; disabled action rejected
+  [B10] open dialog; query TextInput 名稱 → dialog-name only
+  [B11] CLI fill Chinese text; UTF-8 cursor
+  [B12] background control → outside_modal
+  [B13] Tab loop over MCP and CLI: cancel → save → name
+  [B14] save → saved name; focus open-dialog
+  [B15] fill removed dialog-name → missing_node
+  [B16] reopen, fill draft, Escape → saved name kept
+  [B17] unknown tool → invalid application tool arguments
+  [B18] MCP server exits with code 0
+  [BN4] session token never appears in diagnostics
+  [BN5] --smoke run exits 0 and removes its session file
+  evidence: {"mode":"bridge-native","tools":7,"saved_name":"中文橋接🦀","focus_restored":true,"controlled_range":65,"stale_node_rejected":true,"disabled_rejected":true,"modal_scope_enforced":true,"cli_mcp_share_state":true,"matching_layout":true,"tab_reaches_scrolled_controls":true,"tab_order":["theme","section-0","check","enabled","radio-0","segment-0","volume"],"initial_range_clipped":false,"private_descriptor":true,"normal_shutdown_removes_descriptor":true}
+case bridge-native ... ok (23 steps, 95 checks, 3.7s)
+case bridge-native-compact ...
+  [BN1] session file appears within 30 s with the app pid
+  [BN2] session file mode is 0600
+  [BN3] wrong token over TCP → unauthorized (id 91)
+  [B1] MCP initialize: protocol 2025-06-18, server jet-bridge-ui
+  [B2] tools/list = the seven ui_* tools
+  [B3] ui_capabilities: runtime Surface and bridge version 1
+  [B4] CLI snapshot: version, nodes, layout, root width
+  [B19] the range starts clipped
+  [B5] Tab reaches volume without a cycle; range then visible
+  [B6] ui_set_value volume 67 → 65
+  [B7] CLI activate check → checked
+  [B8] removed node → missing_node
+  [B9] activate filled; disabled action rejected
+  [B10] open dialog; query TextInput 名稱 → dialog-name only
+  [B11] CLI fill Chinese text; UTF-8 cursor
+  [B12] background control → outside_modal
+  [B13] Tab loop over MCP and CLI: cancel → save → name
+  [B14] save → saved name; focus open-dialog
+  [B15] fill removed dialog-name → missing_node
+  [B16] reopen, fill draft, Escape → saved name kept
+  [B17] unknown tool → invalid application tool arguments
+  [B18] MCP server exits with code 0
+  [BN4] session token never appears in diagnostics
+  [BN5] --smoke run exits 0 and removes its session file
+  evidence: {"mode":"bridge-native-compact","tools":7,"saved_name":"中文橋接🦀","focus_restored":true,"controlled_range":65,"stale_node_rejected":true,"disabled_rejected":true,"modal_scope_enforced":true,"cli_mcp_share_state":true,"matching_layout":true,"tab_reaches_scrolled_controls":true,"tab_order":["theme","section-0","check","enabled","radio-0","segment-0","volume"],"initial_range_clipped":true,"private_descriptor":true,"normal_shutdown_removes_descriptor":true}
+case bridge-native-compact ... ok (24 steps, 96 checks, 4.3s)
+case bridge-web ...
+  [BW1] bb launch; #status reaches Ready within 40 s
+  [BW2] window.__jet_bridge.version = 1
+  [BW3] version 999 → unsupported_version (id 92)
+  [B1] MCP initialize: protocol 2025-06-18, server jet-bridge-ui
+  [B2] tools/list = the seven ui_* tools
+  [B3] ui_capabilities: runtime Surface and bridge version 1
+  [B4] CLI snapshot: version, nodes, layout, root width
+  [B19] the range starts clipped
+  [B5] Tab reaches volume without a cycle; range then visible
+  [B6] ui_set_value volume 67 → 65
+  [B7] CLI activate check → checked
+  [B8] removed node → missing_node
+  [B9] activate filled; disabled action rejected
+  [B10] open dialog; query TextInput 名稱 → dialog-name only
+  [B11] CLI fill Chinese text; UTF-8 cursor
+  [B12] background control → outside_modal
+  [B13] Tab loop over MCP and CLI: cancel → save → name
+  [B14] save → saved name; focus open-dialog
+  [B15] fill removed dialog-name → missing_node
+  [B16] reopen, fill draft, Escape → saved name kept
+  [B17] unknown tool → invalid application tool arguments
+  [BW4] bb screenshot writes a PNG
+  [B18] MCP server exits with code 0
+  [BW5] bb shutdown → owned browser exits within 10 s
+  evidence: {"mode":"web","tools":7,"saved_name":"中文橋接🦀","focus_restored":true,"controlled_range":65,"stale_node_rejected":true,"disabled_rejected":true,"modal_scope_enforced":true,"cli_mcp_share_state":true,"matching_layout":true,"tab_reaches_scrolled_controls":true,"tab_order":["theme","section-0","check","enabled","radio-0","segment-0","volume"],"initial_range_clipped":true,"webgpu_ready":true,"owned_browser_exited":true}
+case bridge-web ... ok (24 steps, 97 checks, 4.9s)
+
+e2e result: 4 passed; 0 failed; 641 checks; artifacts in <scratch>/transport-regression-final

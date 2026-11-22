@@ -1,0 +1,48 @@
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/wide_navigation_rail.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+e2e/src/wide_rail_motion.rs: OK
+index.html: OK
+surface_material_gallery-f360138b9138a152.js: OK
+surface_material_gallery_bg-a3b0679c4afde346.wasm: OK
+surface-web.json: OK
+index.html: OK
+surface_material_gallery-346dc5187053f839.js: OK
+surface_material_gallery_bg-b3422a70cc934d0a.wasm: OK
+surface-web.json: OK
+crates/surface/src/layout.rs: OK
+crates/surface/src/microdom.rs: OK
+crates/surface-app/src/lib.rs: OK
+crates/surface-app/src/motion.rs: OK
+crates/surface-material/src/lib.rs: OK
+crates/surface-material/src/wide_navigation_rail.rs: OK
+crates/surface-material/src/wide_navigation_rail/motion.rs: OK
+examples/material-gallery/src/lib.rs: OK
+examples/material-gallery/src/wide_navigation_rail_demo.rs: OK
+examples/material-gallery/src/modal_wide_navigation_rail_demo.rs: OK
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/wide_navigation_rail.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+e2e/src/wide_rail_motion.rs: OK
+c140b1e42c35a5cf72f48d5649533269c7ea3daead2f77c0a053c72dc874c851  <cargo-target>/debug/surface-e2e
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M179] wide rail reflows the page and preserves navigation at 600, 599 and 320 dp
+  M179 checks: 449
+  [M180] modal wide rail overlays both collapse arrangements and scrolls a 320×240 WebGPU canvas
+  M180 checks: 89
+  [M181] wide rail reflows or slides, reverses in place, and honors live Reduce Motion
+  M181 checks: 146
+case material ... ok (3 steps, 686 checks, 14.1s)
+case web-accessibility ...
+  [A69] Chrome disclosure and current-page semantics survive rail and bottom navigation modes
+  A69 checks: 134
+  [A70] Chrome exposes a named modal scope, current destination and restored opener focus
+  A70 checks: 57
+  [A71] modal focus restores while the painted exit finishes
+  A71 checks: 42
+case web-accessibility ... ok (3 steps, 235 checks, 6.4s)
+
+e2e result: 2 passed; 0 failed; 921 checks; artifacts in <scratch>/browser-motion-containment-final

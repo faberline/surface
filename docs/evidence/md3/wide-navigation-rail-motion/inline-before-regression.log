@@ -1,0 +1,17 @@
+running 1 test
+
+thread 'moving_inline_rail_contains_the_wrapped_inbox_in_a_gallery_row' (965259) panicked at crates/surface-material/tests/wide_navigation_rail.rs:629:9:
+assertion `left == right` failed: LeftToRight rail Rect { x: 52.0, y: 92.0, width: 175.0, height: 306.0 }
+  left: Rect { x: 52.0, y: 342.0, width: 175.0, height: 56.0 }
+ right: Rect { x: 52.0, y: 342.0, width: 175.0, height: 92.0 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test moving_inline_rail_contains_the_wrapped_inbox_in_a_gallery_row ... FAILED
+
+failures:
+
+failures:
+    moving_inline_rail_contains_the_wrapped_inbox_in_a_gallery_row
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p surface-material --test wide_navigation_rail`
