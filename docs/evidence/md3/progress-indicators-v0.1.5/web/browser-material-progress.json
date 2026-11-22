@@ -1,0 +1,787 @@
+{
+  "browser": "Chrome/157.0.8103.79",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "known": {
+    "quarter_ax": [
+      {
+        "id": "progress-linear-flat",
+        "name": "線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "線形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-linear-wavy",
+        "name": "波形線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "波形線形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-flat",
+        "name": "圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "圓形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-wavy",
+        "name": "波形圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "波形圓形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      }
+    ],
+    "zero_ax": [
+      {
+        "id": "progress-linear-flat",
+        "name": "線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.0,
+          "step": 0.01
+        },
+        "chrome_value": 0.0,
+        "projected": {
+          "count": 1,
+          "label": "線形進度",
+          "now": "0",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-linear-wavy",
+        "name": "波形線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.0,
+          "step": 0.01
+        },
+        "chrome_value": 0.0,
+        "projected": {
+          "count": 1,
+          "label": "波形線形進度",
+          "now": "0",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-flat",
+        "name": "圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.0,
+          "step": 0.01
+        },
+        "chrome_value": 0.0,
+        "projected": {
+          "count": 1,
+          "label": "圓形進度",
+          "now": "0",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-wavy",
+        "name": "波形圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.0,
+          "step": 0.01
+        },
+        "chrome_value": 0.0,
+        "projected": {
+          "count": 1,
+          "label": "波形圓形進度",
+          "now": "0",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      }
+    ],
+    "three_quarters_ax": [
+      {
+        "id": "progress-linear-flat",
+        "name": "線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.75,
+          "step": 0.01
+        },
+        "chrome_value": 0.75,
+        "projected": {
+          "count": 1,
+          "label": "線形進度",
+          "now": "0.75",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-linear-wavy",
+        "name": "波形線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.75,
+          "step": 0.01
+        },
+        "chrome_value": 0.75,
+        "projected": {
+          "count": 1,
+          "label": "波形線形進度",
+          "now": "0.75",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-flat",
+        "name": "圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.75,
+          "step": 0.01
+        },
+        "chrome_value": 0.75,
+        "projected": {
+          "count": 1,
+          "label": "圓形進度",
+          "now": "0.75",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-wavy",
+        "name": "波形圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.75,
+          "step": 0.01
+        },
+        "chrome_value": 0.75,
+        "projected": {
+          "count": 1,
+          "label": "波形圓形進度",
+          "now": "0.75",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      }
+    ],
+    "complete_ax": [
+      {
+        "id": "progress-linear-flat",
+        "name": "線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 1.0,
+          "step": 0.01
+        },
+        "chrome_value": 1.0,
+        "projected": {
+          "count": 1,
+          "label": "線形進度",
+          "now": "1",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-linear-wavy",
+        "name": "波形線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 1.0,
+          "step": 0.01
+        },
+        "chrome_value": 1.0,
+        "projected": {
+          "count": 1,
+          "label": "波形線形進度",
+          "now": "1",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-flat",
+        "name": "圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 1.0,
+          "step": 0.01
+        },
+        "chrome_value": 1.0,
+        "projected": {
+          "count": 1,
+          "label": "圓形進度",
+          "now": "1",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-wavy",
+        "name": "波形圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 1.0,
+          "step": 0.01
+        },
+        "chrome_value": 1.0,
+        "projected": {
+          "count": 1,
+          "label": "波形圓形進度",
+          "now": "1",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      }
+    ],
+    "linear_pixels": {
+      "active": [
+        101,
+        85,
+        143
+      ],
+      "gap": [
+        248,
+        242,
+        250
+      ],
+      "track": [
+        232,
+        222,
+        248
+      ],
+      "stop": [
+        101,
+        85,
+        143
+      ],
+      "round_cap_corner": [
+        248,
+        242,
+        250
+      ]
+    },
+    "circular_pixels": {
+      "active": [
+        101,
+        85,
+        143
+      ],
+      "track": [
+        232,
+        222,
+        248
+      ],
+      "hole": [
+        248,
+        242,
+        250
+      ],
+      "gap": [
+        248,
+        242,
+        250
+      ]
+    },
+    "wave_pixels": {
+      "linear_centers": [
+        7.0,
+        7.5,
+        7.75,
+        7.5,
+        7.5,
+        7.0,
+        6.25,
+        5.25,
+        4.25,
+        3.25,
+        2.5,
+        2.0,
+        1.75,
+        2.0,
+        2.0,
+        2.75,
+        3.25
+      ],
+      "linear_spread_dp": 6.0,
+      "circular_radii": [
+        21.25,
+        20.5,
+        19.75,
+        19.0,
+        18.5,
+        19.25,
+        20.5,
+        21.25,
+        21.5,
+        21.75,
+        21.5,
+        20.75,
+        19.5,
+        19.25,
+        18.75
+      ],
+      "circular_spread_dp": 3.25
+    },
+    "tab_controls": [
+      "progress-demo-back",
+      "progress-mode-known",
+      "progress-mode-unknown",
+      "progress-motion",
+      "progress-rtl",
+      "progress-scale",
+      "progress-value-0",
+      "progress-value-100",
+      "progress-value-25",
+      "progress-value-75",
+      "theme"
+    ]
+  },
+  "unknown": {
+    "ax": [
+      {
+        "id": "progress-linear-flat",
+        "name": "線形進度",
+        "authored_range": null,
+        "chrome_value": null,
+        "projected": {
+          "count": 1,
+          "label": "線形進度",
+          "now": null,
+          "min": null,
+          "max": null,
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-linear-wavy",
+        "name": "波形線形進度",
+        "authored_range": null,
+        "chrome_value": null,
+        "projected": {
+          "count": 1,
+          "label": "波形線形進度",
+          "now": null,
+          "min": null,
+          "max": null,
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-flat",
+        "name": "圓形進度",
+        "authored_range": null,
+        "chrome_value": null,
+        "projected": {
+          "count": 1,
+          "label": "圓形進度",
+          "now": null,
+          "min": null,
+          "max": null,
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-wavy",
+        "name": "波形圓形進度",
+        "authored_range": null,
+        "chrome_value": null,
+        "projected": {
+          "count": 1,
+          "label": "波形圓形進度",
+          "now": null,
+          "min": null,
+          "max": null,
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      }
+    ],
+    "css_pixel_ink_counts": [
+      376,
+      412,
+      52,
+      59
+    ]
+  },
+  "motion": {
+    "live_clock_interval_ms": [
+      117.10000000149012,
+      283.1000000014901
+    ],
+    "unknown_live_changed_pixels": [
+      1650,
+      2624,
+      1090,
+      1821
+    ],
+    "known_live_changed_pixels": [
+      0,
+      1569,
+      0,
+      545
+    ],
+    "unknown_reduced_changed_pixels": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "known_reduced_changed_pixels": [
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "compact": {
+    "linear_pixels": {
+      "active": [
+        207,
+        189,
+        254
+      ],
+      "gap": [
+        29,
+        27,
+        32
+      ],
+      "track": [
+        74,
+        68,
+        88
+      ],
+      "stop": [
+        207,
+        189,
+        254
+      ],
+      "round_cap_corner": [
+        29,
+        27,
+        32
+      ]
+    },
+    "circular_pixels": {
+      "active": [
+        207,
+        189,
+        254
+      ],
+      "track": [
+        74,
+        68,
+        88
+      ],
+      "hole": [
+        29,
+        27,
+        32
+      ],
+      "gap": [
+        29,
+        27,
+        32
+      ]
+    },
+    "wave_pixels": {
+      "linear_centers": [
+        7.0,
+        7.5,
+        7.5,
+        7.75,
+        7.5,
+        7.0,
+        6.25,
+        5.5,
+        4.25,
+        3.25,
+        2.75,
+        2.0,
+        2.0,
+        1.75,
+        2.0,
+        2.5,
+        3.25
+      ],
+      "linear_spread_dp": 6.0,
+      "circular_radii": [
+        21.25,
+        20.5,
+        19.75,
+        19.0,
+        18.5,
+        19.25,
+        20.5,
+        21.25,
+        21.5,
+        21.75,
+        21.5,
+        20.75,
+        19.5,
+        19.25,
+        18.75
+      ],
+      "circular_spread_dp": 3.25
+    },
+    "ax": [
+      {
+        "id": "progress-linear-flat",
+        "name": "線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "線形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-linear-wavy",
+        "name": "波形線形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "波形線形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-flat",
+        "name": "圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "圓形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      },
+      {
+        "id": "progress-circular-wavy",
+        "name": "波形圓形進度",
+        "authored_range": {
+          "min": 0.0,
+          "max": 1.0,
+          "value": 0.25,
+          "step": 0.01
+        },
+        "chrome_value": 0.25,
+        "projected": {
+          "count": 1,
+          "label": "波形圓形進度",
+          "now": "0.25",
+          "min": "0",
+          "max": "1",
+          "tab": null,
+          "action": null,
+          "controls": 0
+        }
+      }
+    ],
+    "text_scale": 2.0,
+    "linear_320_width": 240.0,
+    "linear_260_width": 204.0,
+    "linear_260_pixels": {
+      "active": [
+        207,
+        189,
+        254
+      ],
+      "gap": [
+        29,
+        27,
+        32
+      ],
+      "track": [
+        74,
+        68,
+        88
+      ],
+      "stop": [
+        207,
+        189,
+        254
+      ],
+      "round_cap_corner": [
+        29,
+        27,
+        32
+      ]
+    },
+    "short_viewport_scroll": {
+      "before": [
+        104.0,
+        630.0,
+        48.0,
+        48.0
+      ],
+      "revealed": [
+        104.0,
+        404.0,
+        48.0,
+        48.0
+      ],
+      "active": [
+        207,
+        189,
+        254
+      ]
+    }
+  },
+  "errors": []
+}
