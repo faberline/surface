@@ -16,6 +16,8 @@ mod material_card;
 mod material_carousel;
 #[path = "material_drawer.rs"]
 mod material_drawer;
+#[path = "material_extended_fab.rs"]
+mod material_extended_fab;
 #[path = "material_progress.rs"]
 mod material_progress;
 #[path = "material_rail.rs"]
@@ -46,6 +48,7 @@ pub const STEPS: &[&str] = &[
     "M56", "M57", "M58", "M59", "M60", "M61", "M62", "M63", "M64", "M65", "M66", "M67", "M68",
     "M69", "M70", "M71", "M72", "M73", "M74", "M75", "M76", "M77", "M78", "M79", "M80", "M81",
     "M82", "M83", "M84", "M85", "M86", "M87", "M88", "M89", "M90", "M91", "M92", "M93", "M94",
+    "M95", "M96", "M97", "M98", "M99",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -131,7 +134,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_carousel::run(env, chrome, &url).await?;
     material_card::run(env, chrome, &url).await?;
     material_button_group::run(env, chrome, &url).await?;
-    material_split_button::run(env, chrome, &url).await
+    material_split_button::run(env, chrome, &url).await?;
+    material_extended_fab::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

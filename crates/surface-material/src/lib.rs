@@ -17,6 +17,8 @@ mod carousel_layout;
 mod carousel_state;
 mod components;
 mod elevation;
+mod extended_fab;
+mod extended_fab_motion;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
@@ -60,6 +62,11 @@ pub use components::{
     SegmentPosition,
 };
 pub use elevation::Elevation;
+pub use extended_fab::{
+    ExtendedFabAppearance, ExtendedFabContent, ExtendedFabElevation, ExtendedFabOptions,
+    ExtendedFabSize,
+};
+pub use extended_fab_motion::{ExtendedFabMotion, ExtendedFabScroll};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
