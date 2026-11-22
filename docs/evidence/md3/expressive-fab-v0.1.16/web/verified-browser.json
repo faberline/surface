@@ -1,0 +1,60 @@
+{
+  "browser": "Chrome/157.0.8103.79",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "material_steps": 104,
+  "headless_cases": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "case_results": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34,
+      "elapsed_seconds": 1.5
+    },
+    "ime": {
+      "steps": 19,
+      "checks": 44,
+      "elapsed_seconds": 0.5
+    },
+    "material": {
+      "steps": 104,
+      "checks": 5661,
+      "elapsed_seconds": 146.8
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94,
+      "elapsed_seconds": 4.1
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76,
+      "elapsed_seconds": 1.7
+    }
+  },
+  "total_checks": 5909,
+  "material_page_errors": {
+    "browser-material-bottom-sheet.json": 0,
+    "browser-material-toolbar.json": 0,
+    "browser-material-tooltip.json": 0,
+    "browser-material-app-bar.json": 0,
+    "browser-material.json": 0,
+    "browser-material-fab.json": 0,
+    "browser-material-split-button.json": 0,
+    "browser-material-carousel.json": 0,
+    "browser-material-side-sheet.json": 0,
+    "browser-material-progress.json": 0,
+    "browser-material-extended-fab.json": 0,
+    "browser-material-button-group.json": 0,
+    "browser-material-card.json": 0
+  },
+  "remaining_browser_pids": []
+}
