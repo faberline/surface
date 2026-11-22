@@ -1,0 +1,35 @@
+   Compiling bitflags v2.13.2
+   Compiling core-foundation v0.9.4
+   Compiling hashbrown v0.17.1
+   Compiling core-graphics-types v0.1.3
+   Compiling metal v0.31.0
+   Compiling indexmap v2.14.2
+   Compiling naga v24.0.0
+   Compiling wgpu-types v24.0.0
+   Compiling wgpu-hal v24.0.4
+   Compiling rustybuzz v0.14.1
+   Compiling wgpu-core v24.0.5
+   Compiling cosmic-text v0.12.1
+   Compiling surface-app v0.1.2 (/private/tmp/surface-md3-snackbar-candidate.YOiMzpxj/repo/crates/surface-app)
+   Compiling wgpu v24.0.5
+   Compiling glyphon v0.8.0
+   Compiling surface-wgpu v0.1.2 (/private/tmp/surface-md3-snackbar-candidate.YOiMzpxj/repo/crates/surface-wgpu)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.34s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/it.rs (/tmp/cargo-target/surface-surface-md3-snackbar-candidate.YOiMzpxj/debug/deps/it-e5d22f8225d41977)
+
+running 5 tests
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+test gpu_offscreen_bottom_corners_are_not_swapped ... ok
+test gpu_offscreen_per_corner_shapes ... ok
+test gpu_offscreen_capture_reads_rgba_in_both_formats ... ok
+test gpu_offscreen_paints_clips_rounding_text_and_order ... ok
+test gpu_offscreen_motion_animates_color_and_corners ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.35s
+
