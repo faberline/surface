@@ -60,6 +60,14 @@ AppKit observation and the screenshot command. Apply it to a copy of the
 replayed checkout. [Native overlay](native-qa.patch.gz) ·
 [Overlay input hashes](native-qa-inputs.json)
 
+The [automated replay bundle](drawer-native-replay.tar.gz) contains the
+original runner, auditor and their helpers. Extract it under `/tmp`.
+From the extracted bundle, pass the replayed product directory and the
+path to `native-qa.patch.gz` to
+`sh build-and-run.sh`. From an Accessibility-authorized Mac terminal,
+the runner builds and executes the same four native journeys. The
+`--prepare-only` option checks the overlay and runner inputs.
+
 ```sh
 gzip -dc "$evidence_dir/native-qa.patch.gz" | git apply --whitespace=nowarn
 cap cargo build --locked -p surface-material-gallery \
