@@ -84,3 +84,15 @@ cap cargo build --locked -p surface-e2e --bin surface-e2e
 Set `evidence_dir` to this evidence directory and `browser_output` to a
 new temporary directory. The Metal check needs a real non-fallback
 adapter.
+
+## Merged source
+
+Surface merged PR #177 at
+`e7fa1d407c97a0d992ccce42994b7a08e1d6d987`.
+The merge tree is byte-identical to the tested PR head
+`0422a16c318a7868386fd598feb567378b176ac7`.
+All 288 checksums matched again on the merge.
+[Pull request](https://github.com/faberline/surface/pull/177) · [Source commit](https://github.com/faberline/surface/commit/e7fa1d407c97a0d992ccce42994b7a08e1d6d987)
+
+Both hosted jobs passed on the merged main push.
+[Main CI](https://github.com/faberline/surface/actions/runs/45024894234) · [PR CI](https://github.com/faberline/surface/actions/runs/45024241692)
