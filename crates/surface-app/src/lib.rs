@@ -30,7 +30,7 @@ pub use accessibility::{
 };
 pub use captured_drag::{HorizontalDrag, HorizontalDragSession, VerticalDrag, VerticalDragSession};
 pub use context::PointerPoint;
-pub use controls::Roving;
+pub use controls::{FocusNavigation, Roving};
 pub use cursor::CursorStyle;
 pub use editing::{
     utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
@@ -42,7 +42,10 @@ pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
 pub use motion::{ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
 pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
-pub use scroll_control::{ScrollMetrics, ScrollTarget, VerticalScroll, VerticalScrollResponse};
+pub use scroll_control::{
+    HorizontalScroll, HorizontalScrollResponse, ScrollMetrics, ScrollTarget, VerticalScroll,
+    VerticalScrollResponse,
+};
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
     cell::{Cell, RefCell},
@@ -66,9 +69,11 @@ pub struct View<M> {
     dismiss: Option<M>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
+    focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
+    horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
     cursor: Option<CursorStyle>,
     drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
@@ -106,9 +111,11 @@ impl<M> View<M> {
             dismiss: None,
             cancel_within: None,
             key: None,
+            focus_navigation: None,
             context: None,
             stick: false,
             vertical_scroll: None,
+            horizontal_scroll: None,
             cursor: None,
             drag_bindings: captured_drag::Bindings::default(),
             accessible_activation: false,
@@ -285,6 +292,16 @@ impl<M> View<M> {
         self.key = Some(Rc::new(handler));
         self
     }
+
+    /// Handle navigation from this focused control. The message may mount
+    /// the named target. The runtime moves focus after the resulting rebuild.
+    pub fn on_focus_navigation(
+        mut self,
+        handler: impl Fn(EditKey) -> Option<FocusNavigation<M>> + 'static,
+    ) -> Self {
+        self.focus_navigation = Some(Rc::new(handler));
+        self
+    }
     /// Handle Escape when focus is in this subtree without opening a modal.
     /// A captured drag, IME composition or active modal takes precedence.
     pub fn on_cancel_within(mut self, message: M) -> Self {
@@ -330,6 +347,21 @@ impl<M> View<M> {
         handler: impl Fn(VerticalScroll, Option<&str>) -> Option<VerticalScrollResponse<M>> + 'static,
     ) -> Self {
         self.vertical_scroll = Some(Rc::new(handler));
+        self
+    }
+
+    /// Handle the horizontal wheel delta over this clipped view with a stable ID.
+    /// The handler also receives the current focus ID, if there is one.
+    /// Nested clip masks do not take horizontal input away from this handler.
+    /// Vertical input can still reach a scrollable child or a clipped ancestor.
+    /// Attach a vertical hook here to handle both axes on this view.
+    /// Return `None` to use the runtime's ordinary horizontal scrolling.
+    pub fn on_horizontal_scroll(
+        mut self,
+        handler: impl Fn(HorizontalScroll, Option<&str>) -> Option<HorizontalScrollResponse<M>>
+            + 'static,
+    ) -> Self {
+        self.horizontal_scroll = Some(Rc::new(handler));
         self
     }
     /// The mouse cursor over this node. It does not change the DOM, layout
@@ -532,9 +564,11 @@ struct Binding<M> {
     dismiss: Option<M>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
+    focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
+    horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
     cursor: Option<CursorStyle>,
     drag_bindings: captured_drag::Bindings<M>,
     accessible_activation: bool,
@@ -864,6 +898,7 @@ impl<A: Application> Runtime<A> {
                 || view.dismiss.is_some()
                 || view.stick
                 || view.vertical_scroll.is_some()
+                || view.horizontal_scroll.is_some()
                 || view.accessible_scroll
                 || view.accessible_scroll_pages
                 || !view.drag_bindings.is_empty())
@@ -904,9 +939,11 @@ impl<A: Application> Runtime<A> {
                     dismiss: view.dismiss,
                     cancel_within: view.cancel_within,
                     key: view.key,
+                    focus_navigation: view.focus_navigation,
                     context: view.context,
                     stick: view.stick,
                     vertical_scroll: view.vertical_scroll,
+                    horizontal_scroll: view.horizontal_scroll,
                     cursor: view.cursor,
                     drag_bindings: view.drag_bindings,
                     accessible_activation: view.accessible_activation,
@@ -1459,80 +1496,7 @@ impl<A: Application> Runtime<A> {
                 y,
                 delta_x,
                 delta_y,
-            } => {
-                if !delta_x.is_finite() || !delta_y.is_finite() {
-                    return Ok(false);
-                }
-                let Some(computed) = &self.computed else {
-                    return Ok(false);
-                };
-                let target = computed
-                    .paint_order
-                    .iter()
-                    .rev()
-                    .find(|id| {
-                        let n = self.dom.get(**id).expect("valid node");
-                        let g = &computed.nodes[id.index()];
-                        n.style().clip
-                            && self.in_scope(**id)
-                            && n.stable_id().is_some()
-                            && g.bounds.intersect(g.clip).contains(x, y)
-                    })
-                    .copied();
-                let Some(id) = target else { return Ok(false) };
-                let g = &computed.nodes[id.index()];
-                let node = self.dom.get(id)?;
-                let s = node.style();
-                let extent = self.dom.children(id).fold(
-                    (g.bounds.width, g.bounds.height),
-                    |(w, h), child| {
-                        let r = computed.nodes[child.index()].bounds;
-                        (
-                            w.max(r.x + r.width - g.bounds.x + s.scroll_x + s.padding),
-                            h.max(r.y + r.height - g.bounds.y + s.scroll_y + s.padding),
-                        )
-                    },
-                );
-                let max_x = (extent.0 - g.bounds.width).max(0.);
-                let max_y = (extent.1 - g.bounds.height).max(0.);
-                let response = if delta_y != 0. && !node.is_disabled() {
-                    self.bindings[&id]
-                        .vertical_scroll
-                        .as_ref()
-                        .and_then(|scroll| {
-                            scroll(
-                                VerticalScroll {
-                                    delta: delta_y,
-                                    offset: s.scroll_y,
-                                    max_offset: max_y,
-                                },
-                                self.focused(),
-                            )
-                        })
-                } else {
-                    None
-                };
-                let consumed = response
-                    .as_ref()
-                    .map(|response| response.consumed)
-                    .filter(|consumed| consumed.is_finite())
-                    .unwrap_or(0.)
-                    .clamp(delta_y.min(0.), delta_y.max(0.));
-                let offset = (
-                    (s.scroll_x + delta_x).clamp(0., max_x),
-                    (s.scroll_y + (delta_y - consumed)).clamp(0., max_y),
-                );
-                let key = self.stable(id).expect("scroll node has ID");
-                self.scroll.insert(key, offset);
-                let mut style = s.clone();
-                style.scroll_x = offset.0;
-                style.scroll_y = offset.1;
-                self.dom.set_style(id, style)?;
-                self.computed = None;
-                self.ime_area = None;
-                self.message(response.map(|response| response.message))?;
-                Ok(true)
-            }
+            } => self.dispatch_wheel((x, y), (delta_x, delta_y)),
         }
     }
 }

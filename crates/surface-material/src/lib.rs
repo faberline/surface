@@ -8,6 +8,9 @@ mod app_bar_search;
 mod badge;
 mod bottom_sheet;
 mod bottom_sheet_motion;
+mod carousel;
+mod carousel_layout;
+mod carousel_state;
 mod components;
 mod elevation;
 pub mod motion;
@@ -35,6 +38,9 @@ pub use bottom_sheet::{
     BottomSheetState,
 };
 pub use bottom_sheet_motion::BottomSheetMotion;
+pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientation};
+pub use carousel_layout::{CarouselLayout, CarouselSlot};
+pub use carousel_state::{CarouselInput, CarouselState};
 pub use components::{
     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
     FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,

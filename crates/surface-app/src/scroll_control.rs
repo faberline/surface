@@ -59,6 +59,33 @@ pub struct VerticalScrollResponse<M> {
 pub(crate) type VerticalScrollHandler<M> =
     Rc<dyn Fn(VerticalScroll, Option<&str>) -> Option<VerticalScrollResponse<M>>>;
 
+/// A horizontal wheel or trackpad scroll in logical pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HorizontalScroll {
+    /// Positive scrolls to the physical right. Negative scrolls left.
+    pub delta: f32,
+    /// The runtime's horizontal offset before this event.
+    pub offset: f32,
+    /// The largest horizontal offset at the current layout.
+    pub max_offset: f32,
+    /// The monotonic host clock at dispatch, if the host set one.
+    pub now_ms: Option<f64>,
+}
+
+/// The horizontal wheel result from an opted-in view.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct HorizontalScrollResponse<M> {
+    /// Set the runtime offset to this absolute position, clamped to the
+    /// scroll range. `None` leaves the offset with the application. The
+    /// runtime ignores a non-finite value and still delivers the message.
+    pub offset: Option<f32>,
+    /// Dispatched after both wheel offsets are saved.
+    pub message: M,
+}
+
+pub(crate) type HorizontalScrollHandler<M> =
+    Rc<dyn Fn(HorizontalScroll, Option<&str>) -> Option<HorizontalScrollResponse<M>>>;
+
 pub(crate) type Pending = Rc<RefCell<Vec<(String, ScrollTarget)>>>;
 
 #[derive(Default)]
@@ -84,6 +111,219 @@ fn finite(target: ScrollTarget) -> bool {
 }
 
 impl<A: Application> Runtime<A> {
+    pub(crate) fn dispatch_wheel(
+        &mut self,
+        point: (f32, f32),
+        delta: (f32, f32),
+    ) -> Result<bool, AppError> {
+        if !delta.0.is_finite() || !delta.1.is_finite() {
+            return Ok(false);
+        }
+        let Some(computed) = &self.computed else {
+            return Ok(false);
+        };
+        let Some(target) = computed
+            .paint_order
+            .iter()
+            .rev()
+            .copied()
+            .find(|&id| self.wheel_target_at(computed, id, point))
+        else {
+            return Ok(false);
+        };
+        let marked = self
+            .wheel_ancestors(computed, target, point)
+            .find(|id| self.bindings[id].horizontal_scroll.is_some());
+        if let Some(horizontal) = marked {
+            return self.dispatch_split_wheel(target, horizontal, point, delta);
+        }
+
+        let (max_x, max_y) = self.wheel_limits(computed, target);
+        let scroll_x = self.dom.get(target)?.style().scroll_x;
+        let (y, message) = self.vertical_wheel(target, delta.1, max_y);
+        self.save_wheel_offsets(target, ((scroll_x + delta.0).clamp(0., max_x), y))?;
+        self.computed = None;
+        self.ime_area = None;
+        self.message(message)?;
+        Ok(true)
+    }
+
+    fn dispatch_split_wheel(
+        &mut self,
+        target: NodeId,
+        horizontal: NodeId,
+        point: (f32, f32),
+        delta: (f32, f32),
+    ) -> Result<bool, AppError> {
+        let computed = self.computed.as_ref().expect("wheel has current geometry");
+        let horizontal_result = (delta.0 != 0. && !self.dom.get(horizontal)?.is_disabled())
+            .then(|| self.horizontal_wheel(computed, horizontal, delta.0));
+        let vertical_result = if delta.1 != 0. {
+            self.vertical_wheel_target(computed, target, point)
+                .map(|id| {
+                    let (offset, message) =
+                        self.vertical_wheel(id, delta.1, self.wheel_limits(computed, id).1);
+                    (id, offset, message)
+                })
+        } else {
+            None
+        };
+        let handled = horizontal_result.is_some() || vertical_result.is_some();
+        let mut messages = [None, None];
+        if let Some((offset, message)) = horizontal_result {
+            if let Some(x) = offset {
+                let y = self.dom.get(horizontal)?.style().scroll_y;
+                self.save_wheel_offsets(horizontal, (x, y))?;
+            }
+            messages[0] = message;
+        }
+        if let Some((id, y, message)) = vertical_result {
+            let style = self.dom.get(id)?.style();
+            if y != style.scroll_y {
+                self.save_wheel_offsets(id, (style.scroll_x, y))?;
+            }
+            messages[1] = message;
+        }
+        if handled {
+            self.computed = None;
+            self.ime_area = None;
+        }
+        if messages.iter().any(Option::is_some) {
+            for message in messages.into_iter().flatten() {
+                self.queue.post(message);
+            }
+            self.flush()?;
+        }
+        Ok(handled)
+    }
+
+    fn wheel_target_at(&self, computed: &ComputedDom, id: NodeId, point: (f32, f32)) -> bool {
+        let node = self.dom.get(id).expect("valid wheel node");
+        let geometry = &computed.nodes[id.index()];
+        node.style().clip
+            && self.in_scope(id)
+            && node.stable_id().is_some()
+            && geometry
+                .bounds
+                .intersect(geometry.clip)
+                .contains(point.0, point.1)
+    }
+
+    fn wheel_ancestors<'a>(
+        &'a self,
+        computed: &'a ComputedDom,
+        start: NodeId,
+        point: (f32, f32),
+    ) -> impl Iterator<Item = NodeId> + 'a {
+        std::iter::successors(Some(start), |id| self.dom.get(*id).ok()?.parent())
+            .filter(move |&id| self.wheel_target_at(computed, id, point))
+    }
+
+    fn vertical_wheel_target(
+        &self,
+        computed: &ComputedDom,
+        target: NodeId,
+        point: (f32, f32),
+    ) -> Option<NodeId> {
+        self.wheel_ancestors(computed, target, point).find(|id| {
+            let binding = &self.bindings[id];
+            let enabled = self.dom.get(*id).is_ok_and(|node| !node.is_disabled());
+            (enabled && binding.vertical_scroll.is_some())
+                || (binding.horizontal_scroll.is_none() && self.wheel_limits(computed, *id).1 > 0.)
+        })
+    }
+
+    fn wheel_limits(&self, computed: &ComputedDom, id: NodeId) -> (f32, f32) {
+        let bounds = computed.nodes[id.index()].bounds;
+        let style = self.dom.get(id).expect("valid wheel node").style();
+        let (width, height) =
+            self.dom
+                .children(id)
+                .fold((bounds.width, bounds.height), |(width, height), child| {
+                    let r = computed.nodes[child.index()].bounds;
+                    (
+                        width.max(r.x + r.width - bounds.x + style.scroll_x + style.padding),
+                        height.max(r.y + r.height - bounds.y + style.scroll_y + style.padding),
+                    )
+                });
+        (
+            (width - bounds.width).max(0.),
+            (height - bounds.height).max(0.),
+        )
+    }
+
+    fn horizontal_wheel(
+        &self,
+        computed: &ComputedDom,
+        id: NodeId,
+        delta: f32,
+    ) -> (Option<f32>, Option<A::Message>) {
+        let offset = self.dom.get(id).expect("valid wheel node").style().scroll_x;
+        let max_offset = self.wheel_limits(computed, id).0;
+        let scroll = self.bindings[&id]
+            .horizontal_scroll
+            .as_ref()
+            .expect("marked wheel node");
+        let input = HorizontalScroll {
+            delta,
+            offset,
+            max_offset,
+            now_ms: self.input_time_ms(),
+        };
+        match scroll(input, self.focused()) {
+            Some(response) => (
+                response
+                    .offset
+                    .filter(|value| value.is_finite())
+                    .map(|value| value.clamp(0., max_offset)),
+                Some(response.message),
+            ),
+            None => (Some((offset + delta).clamp(0., max_offset)), None),
+        }
+    }
+
+    fn vertical_wheel(&self, id: NodeId, delta: f32, max_offset: f32) -> (f32, Option<A::Message>) {
+        let node = self.dom.get(id).expect("valid wheel node");
+        let offset = node.style().scroll_y;
+        let response = if delta != 0. && !node.is_disabled() {
+            self.bindings[&id]
+                .vertical_scroll
+                .as_ref()
+                .and_then(|scroll| {
+                    scroll(
+                        VerticalScroll {
+                            delta,
+                            offset,
+                            max_offset,
+                        },
+                        self.focused(),
+                    )
+                })
+        } else {
+            None
+        };
+        let consumed = response
+            .as_ref()
+            .map(|response| response.consumed)
+            .filter(|consumed| consumed.is_finite())
+            .unwrap_or(0.)
+            .clamp(delta.min(0.), delta.max(0.));
+        (
+            (offset + (delta - consumed)).clamp(0., max_offset),
+            response.map(|response| response.message),
+        )
+    }
+
+    fn save_wheel_offsets(&mut self, id: NodeId, offset: (f32, f32)) -> Result<(), AppError> {
+        let key = self.stable(id).expect("scroll node has ID");
+        self.scroll.insert(key, offset);
+        let mut style = self.dom.get(id)?.style().clone();
+        style.scroll_x = offset.0;
+        style.scroll_y = offset.1;
+        self.dom.set_style(id, style)?;
+        Ok(())
+    }
+
     /// Move a scroll container at the next `render`. Returns `false`, and
     /// does nothing, for an unknown id, a node that is not a `clip` scroller
     /// or a non-finite offset.
