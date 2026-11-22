@@ -146,10 +146,12 @@
     {
       "id": "side-sheets",
       "spec": "https://m3.material.io/components/side-sheets/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Nine headless macOS Metal cases check paint, adaptive layout, focus, disabled controls and scrolling. The 320 dp RTL case at 200% text verifies identical PNGs from Page.screenshot, CLI and MCP. An earlier AppKit run verifies native close, focus return and page scroll. https://github.com/faberline/surface/tree/e41b71f78385cad97cb3129eb64bb2e8cb657f89/docs/evidence/md3/side-sheets-v0.1.6",
+      "web_evidence": "Headless Chrome WebGPU M45–M49 cover 24 combinations, modal accessibility and focus, keyboard and pointer input, drag cancellation, Reduce Motion and 200% Chinese text.",
+      "implemented": "Standard overlay, standard coplanar and modal side sheets with docked or detached placement at either logical edge. Includes scoped dismissal, focus restore, optional drag and compatibility with compact layout fallback. Live VoiceOver speech, physical touch, vertical finger panning and Android predictive back remain open.",
+      "unit_evidence": "Side sheet and runtime tests cover panel geometry, scroll, surface tokens, Escape scope, focus fallback, reduced motion and drag thresholds."
     },
     {
       "id": "app-bars",

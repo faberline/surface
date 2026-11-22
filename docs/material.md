@@ -313,6 +313,45 @@ value, direction, motion, theme and text size. The sample uses the
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
 
+## Side sheets
+
+Use `Theme::side_sheet` to present supplemental content beside the main
+view. Keep the open flag and both views in the app. Give the sheet a
+stable ID, a localized heading, a Close label and a focus return target.
+Send the app's dismissal message when a user closes the sheet.
+
+Choose a presentation and geometry.
+
+| Presentation | Behavior |
+| --- | --- |
+| `StandardOverlay` | Covers one part of the page. The uncovered main content stays active. |
+| `StandardCoplanar` | Reserves space for the sheet and reflows the main view. |
+| `Modal` | Places a scrim behind the dialog, blocks the main view and keeps focus in the dialog. |
+
+All three presentations support `Docked` and `Detached` styles. The
+panel is up to 256 dp wide. Detached panels leave 16 dp of space at the
+outer edges. The edge is relative to the writing direction. `End` is
+right in LTR and left in RTL. Choose `Start` for the other edge.
+
+The content scrolls below the fixed heading. Escape closes a standard
+sheet from inside the sheet. An active modal takes priority for Escape.
+Modal sheets also close on an outside click. When the sheet closes, the
+runtime returns focus to the opener or the standard sheet's supplied
+focus target.
+
+To enable animated opening and horizontal drag dismissal, use
+`Theme::side_sheet_with_motion` and keep one `SideSheetMotion` per
+sheet. Call `set_open` on a programmatic state change. Pass horizontal
+drag events and their measured travel distance to `apply`. Call
+`advance` with the app frame time and Reduce Motion preference and
+apply any returned open state. The app still owns its state.
+
+In Material Gallery, choose 浮層, then 側邊面板. The sample switches from
+coplanar to modal below 600 dp. Apps can choose their own adaptive
+presentation. The variants follow [Material 3 side sheets](https://m3.material.io/components/side-sheets/overview)
+and the [MDC Android 1.14.0 implementation](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/SideSheet.md).
+The size, color and elevation come from the [pinned tokens](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/lib/java/com/google/android/material/sidesheet/res/values/tokens.xml).
+
 ## Motion
 
 `surface_material::motion` holds the Material 3 motion tokens, copied from
@@ -386,6 +425,8 @@ the motion foundation at `partial`.
 
 ## Gallery and evidence
 
+Use the [headless native Gallery](devtools-protocol.md#headless-native-gallery)
+for tests and PNG capture without a window.
 Run `cap cargo run --locked -p surface-material-gallery` for a native window.
 Run `cargo xtask web dev material-gallery` for the browser. See
 [web build](web-build.md). The same `Gallery` state and view drive both.

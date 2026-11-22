@@ -5,6 +5,8 @@ mod close;
 mod cursor;
 #[cfg(feature = "devtools")]
 mod devtools;
+#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+mod headless;
 #[cfg(any(target_arch = "wasm32", test))]
 mod host_style;
 #[cfg(not(target_arch = "wasm32"))]
@@ -30,6 +32,8 @@ mod web_accessibility;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
 pub use clipboard::{Clipboard, ClipboardError};
+#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+pub use headless::run_headless_runtime;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 use surface_app::{Application, Event, Runtime};
 use surface_wgpu::Renderer;

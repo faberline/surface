@@ -9,6 +9,7 @@ pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
 pub mod shape;
+mod side_sheet;
 mod snackbar;
 mod snackbar_state;
 mod standard_navigation_drawer;
@@ -27,6 +28,10 @@ pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
+pub use side_sheet::{
+    SideSheetContent, SideSheetEdge, SideSheetMotion, SideSheetOptions, SideSheetPresentation,
+    SideSheetStyle,
+};
 pub use snackbar::SnackbarOptions;
 pub use snackbar_state::{SnackbarDuration, SnackbarId, SnackbarQueue};
 pub use standard_navigation_drawer::{

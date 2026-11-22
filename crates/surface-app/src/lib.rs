@@ -62,13 +62,14 @@ pub struct View<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<Roving>,
     dismiss: Option<M>,
+    cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     cursor: Option<CursorStyle>,
     horizontal_drag: Option<horizontal_drag::Binding<M>>,
     accessible_activation: bool,
-    focus_after_removal: Option<String>,
+    focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
     accessible_scroll: bool,
     accessible_scroll_pages: bool,
@@ -99,13 +100,14 @@ impl<M> View<M> {
             value: None,
             roving: None,
             dismiss: None,
+            cancel_within: None,
             key: None,
             context: None,
             stick: false,
             cursor: None,
             horizontal_drag: None,
             accessible_activation: false,
-            focus_after_removal: None,
+            focus_after_removal: Vec::new(),
             protect_composition_on_press: false,
             accessible_scroll: false,
             accessible_scroll_pages: false,
@@ -125,7 +127,23 @@ impl<M> View<M> {
     /// When the focused control is removed or disabled, move focus to an
     /// enabled target in the same scope. This does not press the target.
     pub fn restore_focus_on_removal(mut self, target: impl Into<String>) -> Self {
-        self.focus_after_removal = Some(target.into());
+        self.focus_after_removal = vec![target.into()];
+        self
+    }
+
+    /// Give focusable views in this subtree a fallback when removed or disabled.
+    /// The runtime tries the view's own target first. It then tries this
+    /// fallback if the first target cannot receive focus in the current scope.
+    pub fn restore_focus_in_subtree_on_removal(mut self, target: impl Into<String>) -> Self {
+        fn apply<M>(view: &mut View<M>, target: &str) {
+            if view.node.is_focusable() && !view.focus_after_removal.iter().any(|id| id == target) {
+                view.focus_after_removal.push(target.to_owned());
+            }
+            for child in &mut view.children {
+                apply(child, target);
+            }
+        }
+        apply(&mut self, &target.into());
         self
     }
 
@@ -233,6 +251,12 @@ impl<M> View<M> {
     /// called during an IME composition. See `KeyPress`.
     pub fn on_key(mut self, handler: impl Fn(&KeyPress) -> Option<M> + 'static) -> Self {
         self.key = Some(Rc::new(handler));
+        self
+    }
+    /// Handle Escape when focus is in this subtree without opening a modal.
+    /// A captured drag, IME composition or active modal takes precedence.
+    pub fn on_cancel_within(mut self, message: M) -> Self {
+        self.cancel_within = Some(message);
         self
     }
     /// Handle a secondary press (right click, or Control+click on macOS)
@@ -428,13 +452,14 @@ struct Binding<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<Roving>,
     dismiss: Option<M>,
+    cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     cursor: Option<CursorStyle>,
     horizontal_drag: Option<horizontal_drag::Binding<M>>,
     accessible_activation: bool,
-    focus_after_removal: Option<String>,
+    focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
     accessible_scroll: bool,
     accessible_scroll_pages: bool,
@@ -783,6 +808,7 @@ impl<A: Application> Runtime<A> {
                     value: view.value,
                     roving: view.roving,
                     dismiss: view.dismiss,
+                    cancel_within: view.cancel_within,
                     key: view.key,
                     context: view.context,
                     stick: view.stick,
@@ -818,7 +844,9 @@ impl<A: Application> Runtime<A> {
         let focus_after_removal = self
             .focused_node()
             .filter(|id| self.in_scope(*id))
-            .and_then(|id| self.bindings.get(&id)?.focus_after_removal.clone());
+            .and_then(|id| self.bindings.get(&id))
+            .map(|binding| binding.focus_after_removal.clone())
+            .unwrap_or_default();
         self.dom = dom;
         self.bindings = bindings;
         self.reconcile_editors();
@@ -992,6 +1020,18 @@ impl<A: Application> Runtime<A> {
     }
     fn focused_node(&self) -> Option<NodeId> {
         self.dom.by_id(self.focused.as_deref()?)
+    }
+    fn cancel_within_focus(&self) -> Option<A::Message> {
+        if self.active_scope_root().is_some() {
+            return None;
+        }
+        let mut id = self.focused_node().filter(|id| self.in_scope(*id))?;
+        loop {
+            if let Some(message) = self.bindings.get(&id)?.cancel_within.clone() {
+                return Some(message);
+            }
+            id = self.dom.get(id).ok()?.parent()?;
+        }
     }
     fn message(&mut self, message: Option<A::Message>) -> Result<bool, AppError> {
         if let Some(message) = message {
@@ -1291,10 +1331,12 @@ impl<A: Application> Runtime<A> {
                 let composing = self.has_pending_composition();
                 self.cancel_composition();
                 if composing {
-                    Ok(true)
-                } else {
-                    self.dismiss_scope().map(|handled| handled || pointer)
+                    return Ok(true);
                 }
+                if let Some(message) = self.cancel_within_focus() {
+                    return self.message(Some(message));
+                }
+                self.dismiss_scope().map(|handled| handled || pointer)
             }
             Event::Scroll {
                 x,
