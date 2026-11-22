@@ -1,4 +1,4 @@
-use surface::{Insets, Length, Node, Role, Style, TextMeasurer};
+use surface::{GridRole, Insets, Length, Node, Role, Style, TextMeasurer};
 use surface_app::{Application, Runtime, View};
 
 #[derive(Clone, Copy)]
@@ -139,5 +139,157 @@ fn description_requires_a_current_visible_tooltip_in_scope() {
             .unwrap()
             .description_target(trigger)
             .is_none());
+    }
+}
+
+#[derive(Clone, Copy)]
+enum FormatHint {
+    Visible,
+    Missing,
+    Blank,
+    Focusable,
+    Disabled,
+    Suppressed,
+    Clipped,
+    OutsideModal,
+}
+
+impl Application for FormatHint {
+    type Message = Self;
+
+    fn update(&mut self, message: Self) {
+        *self = message;
+    }
+
+    fn view(&self) -> View<Self> {
+        let field = View::new(
+            Node::new(Role::TextInput, "Event date")
+                .id("date")
+                .text("2026-11-23")
+                .described_by_text("format"),
+        )
+        .on_input(|_| Self::Visible);
+        let field = if matches!(self, Self::OutsideModal) {
+            View::new(Node::new(Role::Dialog, "Edit date").id("dialog"))
+                .modal(Self::Visible)
+                .children([field])
+        } else {
+            field
+        };
+        let format = match self {
+            Self::Blank => " ",
+            _ => "YYYY-MM-DD",
+        };
+        let mut hint = Node::new(Role::Text, "Date format")
+            .id("format")
+            .text(format)
+            .styled(Style::default().height(Length::Px(20.)))
+            .disabled(matches!(self, Self::Disabled));
+        if matches!(self, Self::Focusable) {
+            hint = hint.tab_index(0);
+        }
+        if matches!(self, Self::Clipped) {
+            hint = hint.styled(Style::default().width(Length::Px(100.)).fixed(Insets {
+                left: Length::Px(-200.),
+                ..Default::default()
+            }));
+        }
+        let mut hint = View::new(hint);
+        if matches!(self, Self::Suppressed) {
+            hint = hint.without_interaction(None);
+        }
+        let date = View::new(
+            Node::new(Role::Button, "Monday, November 23, 2026")
+                .id("today")
+                .text("23")
+                .grid_role(GridRole::GridCell)
+                .current_date(true)
+                .selected(false),
+        )
+        .on_press(Self::Visible)
+        .accessible_activation();
+        View::new(Node::new(Role::Window, "Dates").styled(Style::column())).children(
+            [field, date]
+                .into_iter()
+                .chain((!matches!(self, Self::Missing)).then_some(hint)),
+        )
+    }
+}
+
+#[test]
+fn date_field_describes_itself_with_current_static_text() {
+    use FormatHint::*;
+
+    let mut runtime = Runtime::new(Visible).unwrap();
+    runtime.render(320., 240., &mut Metrics).unwrap();
+    let field = runtime.dom().by_id("date").unwrap();
+    let hint = runtime.dom().by_id("format").unwrap();
+    let date = runtime.dom().by_id("today").unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    assert_eq!(frame.description_target(field), Some(hint));
+    assert!(!frame.accepts_focus(hint));
+    assert!(frame.activation_target(hint).is_none());
+    assert!(frame.activation_target(date).is_some());
+
+    for scene in [
+        Missing,
+        Blank,
+        Focusable,
+        Disabled,
+        Suppressed,
+        Clipped,
+        OutsideModal,
+    ] {
+        runtime.apply(scene).unwrap();
+        runtime.render(320., 240., &mut Metrics).unwrap();
+        let field = runtime.dom().by_id("date").unwrap();
+        assert!(runtime
+            .accessibility_frame()
+            .unwrap()
+            .description_target(field)
+            .is_none());
+    }
+}
+
+#[cfg(feature = "devtools")]
+#[test]
+fn devtools_exposes_grid_state_and_text_reference_through_the_existing_methods() {
+    use serde_json::json;
+    use surface_devtools_protocol::{Request, VERSION};
+
+    let mut runtime = Runtime::new(FormatHint::Visible).unwrap();
+    let mut call = |method: &str, params| {
+        runtime
+            .execute_devtools(Request {
+                v: VERSION,
+                id: 1,
+                method: method.into(),
+                params,
+            })
+            .result
+            .unwrap()
+    };
+    let snapshot = call("DOM.snapshot", json!({}));
+    assert_eq!(snapshot["version"], 1);
+    for id in ["today", "date", "format"] {
+        let query = call("DOM.query", json!({"id": id}));
+        let node = snapshot["dom"]["nodes"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|node| node["stable_id"] == id)
+            .unwrap();
+        assert_eq!(query["matches"][0]["node"], *node);
+        match id {
+            "today" => {
+                assert_eq!(node["role"], "Button");
+                assert_eq!(node["grid_role"], "GridCell");
+                assert_eq!(node["current_date"], true);
+                assert_eq!(node["selected"], false);
+            }
+            "date" => assert_eq!(node["described_by_text"], "format"),
+            "format" => assert_eq!(node["text"], "YYYY-MM-DD"),
+            _ => unreachable!(),
+        }
     }
 }

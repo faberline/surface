@@ -38,8 +38,8 @@ pub use layout::{
     ComputedDom, ComputedNode, LayoutEngine, LayoutError, MeasuredGroupLayout, TextMeasurer,
 };
 pub use microdom::{
-    DomError, DomSnapshot, MicroDom, Node, NodeId, OverlayBoundary, OverlayHorizontalEdge,
-    RangeValue, Role,
+    DomError, DomSnapshot, GridRole, MicroDom, Node, NodeId, OverlayBoundary,
+    OverlayHorizontalEdge, RangeValue, Role,
 };
 pub use motion::{Easing, Transition};
 pub use paint::{

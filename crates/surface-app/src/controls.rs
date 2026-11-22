@@ -11,7 +11,7 @@ pub struct FocusNavigation<M> {
     pub message: M,
 }
 
-pub(crate) type FocusNavigationHandler<M> = Rc<dyn Fn(EditKey) -> Option<FocusNavigation<M>>>;
+pub(crate) type FocusNavigationHandler<M> = Rc<dyn Fn(EditKey, bool) -> Option<FocusNavigation<M>>>;
 
 /// One tab stop per group. Arrows move within it and skip disabled controls.
 #[derive(Clone, Copy, Debug)]
@@ -146,6 +146,13 @@ impl<A: Application> Runtime<A> {
         })
     }
     pub(crate) fn scope_entry(&self) -> Option<String> {
+        if let Some(target) = self
+            .active_scope_root()
+            .and_then(|id| self.bindings.get(&id)?.modal_initial_focus.as_deref())
+            .filter(|key| self.focusable_in_scope(key))
+        {
+            return Some(target.to_owned());
+        }
         self.dom
             .iter()
             .find(|(id, n)| n.is_tab_stop() && self.tab_stop(*id, None))
@@ -363,7 +370,11 @@ impl<A: Application> Runtime<A> {
             Ok(TabDismissal::Consumed)
         }
     }
-    pub(crate) fn navigate_control(&mut self, key: EditKey) -> Result<bool, AppError> {
+    pub(crate) fn navigate_control(
+        &mut self,
+        key: EditKey,
+        extend: bool,
+    ) -> Result<bool, AppError> {
         let Some(id) = self.focused_node() else {
             return Ok(false);
         };
@@ -385,7 +396,7 @@ impl<A: Application> Runtime<A> {
             if let Some(navigation) = self.bindings[&id]
                 .focus_navigation
                 .as_ref()
-                .and_then(|navigate| navigate(key))
+                .and_then(|navigate| navigate(key, extend))
             {
                 self.apply(navigation.message)?;
                 if self.dom.by_id(&navigation.target).is_some_and(|target| {

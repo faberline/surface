@@ -3,7 +3,7 @@
 #![cfg(feature = "devtools")]
 use serde_json::{json, Value};
 use surface::{Node, RangeValue, Role, Style, TextMeasurer};
-use surface_app::{Application, DomExport, Event, ImeEvent, Runtime, TextOptions, View};
+use surface_app::{Application, DomExport, Event, ImeEvent, Key, Runtime, TextOptions, View};
 use surface_devtools_protocol::{ErrorCode, Reply, Request, VERSION};
 
 #[derive(Default)]
@@ -11,12 +11,15 @@ struct App {
     name: String,
     volume: f64,
     dialog: bool,
+    submit_on_enter: bool,
+    submissions: usize,
 }
 #[derive(Clone)]
 enum Message {
     Name(String),
     Volume(f64),
     Dialog(bool),
+    Submit,
 }
 impl Application for App {
     type Message = Message;
@@ -25,17 +28,26 @@ impl Application for App {
             Message::Name(name) => self.name = name,
             Message::Volume(value) => self.volume = value,
             Message::Dialog(open) => self.dialog = open,
+            Message::Submit => self.submissions += 1,
         }
     }
     fn view(&self) -> View<Message> {
+        let name = View::new(
+            Node::new(Role::TextInput, "姓名")
+                .id("name")
+                .text(&self.name),
+        )
+        .on_input(Message::Name)
+        .on_press(Message::Dialog(true));
+        let name = if self.submit_on_enter {
+            name.on_key(|press| {
+                (press.key == Key::Enter && press.modifiers.is_empty()).then_some(Message::Submit)
+            })
+        } else {
+            name
+        };
         let mut children = vec![
-            View::new(
-                Node::new(Role::TextInput, "姓名")
-                    .id("name")
-                    .text(&self.name),
-            )
-            .on_input(Message::Name)
-            .on_press(Message::Dialog(true)),
+            name,
             View::new(
                 Node::new(Role::TextInput, "Read only")
                     .id("readonly")
@@ -403,6 +415,38 @@ fn action_key_edits_the_focused_field() {
         json!({"key":"tab","extend":true}),
     );
     assert_eq!(runtime.focused(), Some("name"));
+}
+#[test]
+fn action_enter_routes_to_single_line_key_handler_after_composition() {
+    let mut runtime = Runtime::new(App {
+        submit_on_enter: true,
+        ..App::default()
+    })
+    .unwrap();
+    runtime.render(320., 240., &mut Metrics).unwrap();
+    ok(
+        &mut runtime,
+        "Action.fill",
+        json!({"id":"name","value":"2024/02/"}),
+    );
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "２９".into(),
+            selection: Some((6, 6)),
+        }))
+        .unwrap();
+    let (code, message) = rejected(&mut runtime, "Action.key", json!({"key":"enter"}));
+    assert_eq!(code, ErrorCode::NotReady);
+    assert!(message.starts_with("composition_active: "));
+    assert_eq!(runtime.app().submissions, 0);
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Commit("２９".into())))
+        .unwrap();
+    assert_eq!(runtime.app().name, "2024/02/２９");
+    assert_eq!(runtime.app().submissions, 0);
+    ok(&mut runtime, "Action.key", json!({"key":"enter"}));
+    assert_eq!(runtime.app().submissions, 1);
+    assert!(!runtime.app().dialog);
 }
 #[test]
 fn action_key_rejects_no_focus_read_only_and_unknown_keys() {

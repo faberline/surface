@@ -38,6 +38,23 @@ pub enum Role {
     List,
     ListItem,
 }
+
+/// An accessibility role for a grid or one of its parts. The node's base
+/// [`Role`] still determines input and focus behavior.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum GridRole {
+    Grid,
+    Row,
+    ColumnHeader,
+    GridCell,
+}
+
+impl GridRole {
+    fn applies_to(self, role: Role) -> bool {
+        role == Role::Group || (self == Self::GridCell && role == Role::Button)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct RangeValue {
     pub min: f64,
@@ -101,6 +118,12 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     current_page: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    grid_role: Option<GridRole>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    current_date: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    described_by_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     expanded: Option<bool>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     disclosure: bool,
@@ -118,6 +141,8 @@ pub struct Node {
     text_scaling: TextScaling,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     focus_color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    state_layer_alphas: Option<[u8; 3]>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     focus_outline_from_parent: bool,
     pub(crate) stable_id: Option<String>,
@@ -163,6 +188,9 @@ impl Node {
             interaction_box_shadows: None,
             fill_contour: None,
             current_page: None,
+            grid_role: None,
+            current_date: false,
+            described_by_text: None,
             expanded: None,
             disclosure: false,
             horizontal_slide: 0.,
@@ -172,6 +200,7 @@ impl Node {
             reverse_row: false,
             text_scaling: TextScaling::default(),
             focus_color: None,
+            state_layer_alphas: None,
             focus_outline_from_parent: false,
             role,
             name: name.into(),
@@ -360,6 +389,15 @@ impl Node {
             None => Some(self.style.foreground),
         }
     }
+    /// Set the state layer opacity on the 0–255 scale. This does not change
+    /// the focus outline.
+    pub fn state_layer_alphas(mut self, hover: u8, focus: u8, press: u8) -> Self {
+        self.state_layer_alphas = Some([hover, focus, press]);
+        self
+    }
+    pub(crate) fn resolved_state_layer_alphas(&self) -> [u8; 3] {
+        self.state_layer_alphas.unwrap_or([20, 0, 31])
+    }
     /// Mark whether this navigation destination represents the current page.
     pub fn current_page(mut self, value: bool) -> Self {
         self.current_page = Some(value);
@@ -369,6 +407,32 @@ impl Node {
     /// `None` means the destination does not declare this state.
     pub fn is_current_page(&self) -> Option<bool> {
         self.current_page
+    }
+    /// Give a group a grid role, or give a button the grid cell role. Use the
+    /// button for a cell that can receive focus and activate.
+    pub fn grid_role(mut self, role: GridRole) -> Self {
+        self.grid_role = role.applies_to(self.role).then_some(role);
+        self
+    }
+    pub fn accessibility_grid_role(&self) -> Option<GridRole> {
+        self.grid_role.filter(|role| role.applies_to(self.role))
+    }
+    /// Mark a grid cell as today's date, independently of selection and focus.
+    pub fn current_date(mut self, value: bool) -> Self {
+        self.current_date = value;
+        self
+    }
+    pub fn is_current_date(&self) -> bool {
+        self.current_date && self.accessibility_grid_role() == Some(GridRole::GridCell)
+    }
+    /// Describe this node with a visible, nonfocusable text node in its scope.
+    /// Supply the stable ID of that node.
+    pub fn described_by_text(mut self, target: impl Into<String>) -> Self {
+        self.described_by_text = Some(target.into());
+        self
+    }
+    pub fn description_text_target(&self) -> Option<&str> {
+        self.described_by_text.as_deref()
     }
     /// Set the open or closed state of a button that controls a disclosure.
     pub fn disclosure_expanded(mut self, value: bool) -> Self {

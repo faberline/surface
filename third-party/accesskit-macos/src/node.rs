@@ -420,6 +420,16 @@ impl NodeWrapper<'_> {
     pub(crate) fn is_item_like(&self) -> bool {
         self.0.is_item_like() && self.0.role() != Role::Tab
     }
+
+    fn exposes_selected(&self) -> bool {
+        self.is_item_like() || (self.0.role() == Role::GridCell && self.0.is_selectable())
+    }
+
+    fn grid_rows(&self) -> impl Iterator<Item = NodeRef<'_>> + '_ {
+        self.0
+            .filtered_children(filter)
+            .filter(|node| node.role() == Role::Row)
+    }
 }
 
 // derived from objc2 0.6 `AnyObject::downcast_ref`
@@ -505,11 +515,24 @@ declare_class!(
                 if !wrapper.is_container_with_selectable_children() {
                     return None;
                 }
-                let platform_nodes = node
-                    .items(filter)
-                    .filter(|item| item.is_selected() == Some(true))
-                    .map(|child| context.get_or_create_platform_node(child.id()))
-                    .collect::<Vec<Id<PlatformNode>>>();
+                let project = |child: NodeRef| context.get_or_create_platform_node(child.id());
+                let platform_nodes = if node.role() == Role::Grid {
+                    wrapper
+                        .grid_rows()
+                        .flat_map(|row| row.filtered_children(filter))
+                        .filter(|cell| {
+                            cell.role() == Role::GridCell
+                                && cell.is_selectable()
+                                && cell.is_selected() == Some(true)
+                        })
+                        .map(project)
+                        .collect()
+                } else {
+                    node.items(filter)
+                        .filter(|item| item.is_selected() == Some(true))
+                        .map(project)
+                        .collect()
+                };
                 Some(NSArray::from_vec(platform_nodes))
             })
             .flatten()
@@ -1097,7 +1120,7 @@ declare_class!(
         fn is_selected(&self) -> bool {
             self.resolve(|node| {
                 let wrapper = NodeWrapper(node);
-                wrapper.is_item_like()
+                wrapper.exposes_selected()
                     && node.is_selectable()
                     && node.is_selected().unwrap_or(false)
             })
@@ -1195,10 +1218,12 @@ declare_class!(
                 if !wrapper.is_container_with_selectable_children() {
                     return None;
                 }
-                let platform_nodes = node
-                    .items(filter)
-                    .map(|child| context.get_or_create_platform_node(child.id()))
-                    .collect::<Vec<Id<PlatformNode>>>();
+                let project = |child: NodeRef| context.get_or_create_platform_node(child.id());
+                let platform_nodes = if node.role() == Role::Grid {
+                    wrapper.grid_rows().map(project).collect()
+                } else {
+                    node.items(filter).map(project).collect()
+                };
                 Some(NSArray::from_vec(platform_nodes))
             })
             .flatten()
@@ -1367,7 +1392,7 @@ declare_class!(
                 }
                 if selector == sel!(isAccessibilitySelected) {
                     let wrapper = NodeWrapper(node);
-                    return wrapper.is_item_like();
+                    return wrapper.exposes_selected();
                 }
                 if selector == sel!(accessibilityRows)
                     || selector == sel!(accessibilitySelectedRows)

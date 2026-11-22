@@ -22,6 +22,8 @@ struct App {
     mounted: bool,
     modal: bool,
     presses: usize,
+    year_step: bool,
+    preferred_modal_focus: Option<&'static str>,
 }
 
 impl Application for App {
@@ -39,12 +41,17 @@ impl Application for App {
     }
 
     fn view(&self) -> View<Message> {
-        let start = button("start").on_focus_navigation(|key| {
-            (key == EditKey::Right).then(|| FocusNavigation {
-                target: "next".into(),
-                message: Message::Mount,
+        let navigation = || FocusNavigation {
+            target: "next".into(),
+            message: Message::Mount,
+        };
+        let start = if self.year_step {
+            button("start").on_focus_navigation_with_extend(move |key, extend| {
+                (key == EditKey::PageDown && extend).then(navigation)
             })
-        });
+        } else {
+            button("start").on_focus_navigation(move |key| (key == EditKey::Right).then(navigation))
+        };
         let next = self.mounted.then(|| {
             [
                 View::new(
@@ -67,9 +74,22 @@ impl Application for App {
         )
         .children(std::iter::once(start).chain(next.into_iter().flatten()));
         let modal = self.modal.then(|| {
-            View::new(Node::new(Role::Dialog, "Modal").id("modal"))
-                .children([button("close").on_press(Message::Close)])
-                .modal_overlay(Message::Close)
+            let panel = View::new(Node::new(Role::Dialog, "Modal").id("modal"))
+                .children([
+                    button("close").on_press(Message::Close),
+                    button("preferred").on_press(Message::Press),
+                    View::new(
+                        Node::new(Role::Button, "Disabled")
+                            .id("disabled")
+                            .disabled(true),
+                    ),
+                ])
+                .modal_overlay(Message::Close);
+            if let Some(target) = self.preferred_modal_focus {
+                panel.modal_initial_focus(target)
+            } else {
+                panel
+            }
         });
         View::new(Node::new(Role::Window, "Test")).children(std::iter::once(body).chain(modal))
     }
@@ -138,5 +158,51 @@ fn navigation_cannot_focus_a_disabled_target_or_cross_the_new_modal_scope() {
         assert!(runtime.dom().by_id("next").is_some());
         assert_eq!(runtime.focused(), Some(focused));
         assert_eq!(runtime.app().presses, 0);
+    }
+}
+
+#[test]
+fn extended_navigation_preserves_shift_on_page_keys() {
+    let mut runtime = Runtime::new(App {
+        year_step: true,
+        ..App::default()
+    })
+    .unwrap();
+    runtime.activate("start").unwrap();
+    for extend in [false, true] {
+        assert_eq!(
+            runtime
+                .dispatch(Event::Edit {
+                    key: EditKey::PageDown,
+                    extend,
+                    by_word: false,
+                })
+                .unwrap(),
+            extend
+        );
+    }
+    assert_eq!(runtime.focused(), Some("next"));
+    assert_eq!(runtime.app().presses, 0);
+}
+
+#[test]
+fn modal_entry_uses_an_enabled_descendant_and_falls_back() {
+    for (target, expected) in [
+        ("preferred", "preferred"),
+        ("disabled", "close"),
+        ("missing", "close"),
+        ("start", "close"),
+    ] {
+        let mut runtime = Runtime::new(App {
+            destination: Destination::OutsideModal,
+            preferred_modal_focus: Some(target),
+            ..App::default()
+        })
+        .unwrap();
+        runtime.activate("start").unwrap();
+        assert!(right(&mut runtime));
+        assert_eq!(runtime.focused(), Some(expected));
+        assert!(runtime.dispatch(Event::Cancel).unwrap());
+        assert_eq!(runtime.focused(), Some("start"));
     }
 }

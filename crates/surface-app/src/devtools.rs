@@ -14,7 +14,7 @@
 //! | `invalid_role`, `wrong_role`, `invalid_value` | `invalid_params` |
 //! | `composition_active`, `no_focused_control` | `not_ready` |
 //! | `read_only`, `serialization_failed` | `action_failed` |
-use crate::{AppError, Application, EditKey, Event, Runtime};
+use crate::{AppError, Application, EditKey, Event, KeyPress, Modifiers, Runtime};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -397,6 +397,18 @@ impl<A: Application> Runtime<A> {
                         "read_only",
                         "the focused field is read-only",
                     ));
+                }
+                if matches!(key, Key::Enter) && input.is_some() && !multiline {
+                    let press = KeyPress::new(
+                        crate::Key::Enter,
+                        Modifiers {
+                            shift: extend,
+                            ..Modifiers::default()
+                        },
+                    );
+                    if self.key(&press)? {
+                        return Ok(json!({"changed":true,"focused":self.focused}));
+                    }
                 }
                 let event = match key {
                     Key::Tab => Event::FocusNext { reverse: extend },

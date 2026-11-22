@@ -4,7 +4,7 @@ use accesskit::{
     ScrollUnit, Toggled, TreeId, TreeInfo, TreeUpdate,
 };
 use std::collections::BTreeMap;
-use surface::{NodeId as SurfaceId, Role as SurfaceRole};
+use surface::{GridRole, NodeId as SurfaceId, Role as SurfaceRole};
 use surface_app::{
     AccessibilityActivationResult, AccessibilityActivationTarget, AccessibilityFocusResult,
     AccessibilityFocusTarget, AccessibilityFrame, AccessibilityFrameId, AccessibilityNode,
@@ -212,8 +212,8 @@ impl Tree {
                 anchor.set_described_by([*id]);
                 // The macOS adapter exposes description text as AXHelp.
                 // It does not derive the text from the ID relation.
-                if let Some(tooltip) = frame.node(description) {
-                    let text = tooltip.node.text_value().unwrap_or(tooltip.node.name());
+                if let Some(target) = frame.node(description) {
+                    let text = target.node.text_value().unwrap_or(target.node.name());
                     if !text.trim().is_empty() {
                         anchor.set_description(text);
                     }
@@ -318,35 +318,41 @@ fn bounds(rect: surface::Rect, scale: f32) -> Option<Rect> {
 
 fn describe(source: &AccessibilityNode<'_>) -> Node {
     let authored = source.node;
-    let role = match authored.role() {
-        SurfaceRole::Group if authored.name().is_empty() => Role::GenericContainer,
-        SurfaceRole::Group => Role::Group,
-        SurfaceRole::Window => Role::Window,
-        SurfaceRole::Heading => Role::Heading,
-        SurfaceRole::Text => Role::Label,
-        SurfaceRole::Button => Role::Button,
-        SurfaceRole::Checkbox => Role::CheckBox,
-        SurfaceRole::TextInput if source.text_options.is_some_and(|text| text.multiline) => {
-            Role::MultilineTextInput
-        }
-        SurfaceRole::TextInput => Role::TextInput,
-        SurfaceRole::Navigation => Role::Navigation,
-        SurfaceRole::Radio => Role::RadioButton,
-        SurfaceRole::RadioGroup => Role::RadioGroup,
-        SurfaceRole::Switch => Role::Switch,
-        SurfaceRole::Slider => Role::Slider,
-        SurfaceRole::Tab => Role::Tab,
-        SurfaceRole::TabList => Role::TabList,
-        SurfaceRole::Menu => Role::Menu,
-        SurfaceRole::MenuItem if authored.is_checked().is_some() => Role::MenuItemCheckBox,
-        SurfaceRole::MenuItem => Role::MenuItem,
-        SurfaceRole::Dialog => Role::Dialog,
-        SurfaceRole::Progress => Role::ProgressIndicator,
-        SurfaceRole::Status => Role::Status,
-        SurfaceRole::Separator => Role::GenericContainer,
-        SurfaceRole::Tooltip => Role::Tooltip,
-        SurfaceRole::List => Role::List,
-        SurfaceRole::ListItem => Role::ListItem,
+    let role = match authored.accessibility_grid_role() {
+        Some(GridRole::Grid) => Role::Grid,
+        Some(GridRole::Row) => Role::Row,
+        Some(GridRole::ColumnHeader) => Role::ColumnHeader,
+        Some(GridRole::GridCell) => Role::GridCell,
+        None => match authored.role() {
+            SurfaceRole::Group if authored.name().is_empty() => Role::GenericContainer,
+            SurfaceRole::Group => Role::Group,
+            SurfaceRole::Window => Role::Window,
+            SurfaceRole::Heading => Role::Heading,
+            SurfaceRole::Text => Role::Label,
+            SurfaceRole::Button => Role::Button,
+            SurfaceRole::Checkbox => Role::CheckBox,
+            SurfaceRole::TextInput if source.text_options.is_some_and(|text| text.multiline) => {
+                Role::MultilineTextInput
+            }
+            SurfaceRole::TextInput => Role::TextInput,
+            SurfaceRole::Navigation => Role::Navigation,
+            SurfaceRole::Radio => Role::RadioButton,
+            SurfaceRole::RadioGroup => Role::RadioGroup,
+            SurfaceRole::Switch => Role::Switch,
+            SurfaceRole::Slider => Role::Slider,
+            SurfaceRole::Tab => Role::Tab,
+            SurfaceRole::TabList => Role::TabList,
+            SurfaceRole::Menu => Role::Menu,
+            SurfaceRole::MenuItem if authored.is_checked().is_some() => Role::MenuItemCheckBox,
+            SurfaceRole::MenuItem => Role::MenuItem,
+            SurfaceRole::Dialog => Role::Dialog,
+            SurfaceRole::Progress => Role::ProgressIndicator,
+            SurfaceRole::Status => Role::Status,
+            SurfaceRole::Separator => Role::GenericContainer,
+            SurfaceRole::Tooltip => Role::Tooltip,
+            SurfaceRole::List => Role::List,
+            SurfaceRole::ListItem => Role::ListItem,
+        },
     };
     let mut node = Node::new(role);
     let label = match authored.role() {
@@ -372,7 +378,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
     if let Some(selected) = authored.is_selected() {
         node.set_selected(selected);
     }
-    if authored.is_current_page() == Some(true) {
+    if authored.is_current_date() {
+        node.set_aria_current(AriaCurrent::Date);
+    } else if role != Role::GridCell && authored.is_current_page() == Some(true) {
         node.set_aria_current(AriaCurrent::Page);
     }
     if let Some(expanded) = authored.expanded_state() {
@@ -490,7 +498,7 @@ mod tests {
         }
     }
 
-    fn update(runtime: &mut Runtime<App>, tree: &mut Tree) -> TreeUpdate {
+    fn update<A: Application>(runtime: &mut Runtime<A>, tree: &mut Tree) -> TreeUpdate {
         runtime.render(320., 240., &mut Metrics).unwrap();
         tree.update(runtime.accessibility_frame().unwrap(), 1.)
     }
@@ -501,6 +509,131 @@ mod tests {
             .iter()
             .find_map(|(id, node)| (node.label() == Some(name)).then_some((*id, node)))
             .unwrap()
+    }
+
+    struct Calendar(bool);
+
+    impl Application for Calendar {
+        type Message = bool;
+
+        fn update(&mut self, selected: bool) {
+            self.0 = selected;
+        }
+
+        fn view(&self) -> View<bool> {
+            let grid = View::new(
+                SurfaceNode::new(SurfaceRole::Group, "November 2026")
+                    .grid_role(GridRole::Grid)
+                    .styled(Style::column()),
+            )
+            .children([
+                View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Weekdays").grid_role(GridRole::Row),
+                )
+                .children([View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Monday")
+                        .grid_role(GridRole::ColumnHeader)
+                        .text("Mo"),
+                )]),
+                View::new(SurfaceNode::new(SurfaceRole::Group, "Week 4").grid_role(GridRole::Row))
+                    .children([
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Button, "Monday, November 23, 2026")
+                                .id("today")
+                                .grid_role(GridRole::GridCell)
+                                .text("23")
+                                .selected(self.0)
+                                .current_date(true),
+                        )
+                        .on_press(true)
+                        .accessible_activation(),
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Button, "Tuesday, November 24, 2026")
+                                .id("unavailable")
+                                .grid_role(GridRole::GridCell)
+                                .text("24")
+                                .disabled(true),
+                        )
+                        .on_press(true)
+                        .accessible_activation(),
+                    ]),
+            ]);
+            View::new(SurfaceNode::new(SurfaceRole::Window, "Dates").styled(Style::column()))
+                .children([
+                    grid,
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::TextInput, "Due date")
+                            .id("due-date")
+                            .text("2026-11-23")
+                            .described_by_text("format"),
+                    )
+                    .on_input(|_| false),
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Text, "")
+                            .id("format")
+                            .text("YYYY-MM-DD"),
+                    ),
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Button, "Schedule")
+                            .id("schedule")
+                            .text("Schedule")
+                            .current_page(true),
+                    ),
+                ])
+        }
+    }
+
+    #[test]
+    fn accesskit_calendar_projects_date_roles_state_and_editor_help() {
+        let mut runtime = Runtime::new(Calendar(false)).unwrap();
+        let mut tree = Tree::default();
+        let frame = update(&mut runtime, &mut tree);
+        let grid = named(&frame, "November 2026").1;
+        let (header_row_id, header_row) = named(&frame, "Weekdays");
+        let (row_id, row) = named(&frame, "Week 4");
+        let (column_id, column) = named(&frame, "Monday");
+        let (today_id, today) = named(&frame, "Monday, November 23, 2026");
+        let (disabled_id, disabled) = named(&frame, "Tuesday, November 24, 2026");
+        assert_eq!(grid.role(), Role::Grid);
+        assert_eq!(row.role(), Role::Row);
+        assert_eq!(column.role(), Role::ColumnHeader);
+        assert_eq!(grid.children(), [header_row_id, row_id]);
+        assert_eq!(header_row.children(), [column_id]);
+        assert_eq!(row.children(), [today_id, disabled_id]);
+        assert_eq!(today.role(), Role::GridCell);
+        assert_eq!(today.aria_current(), Some(AriaCurrent::Date));
+        assert_eq!(today.is_selected(), Some(false));
+        assert!(today.supports_action(Action::Focus));
+        assert!(today.supports_action(Action::Click));
+        assert_eq!(disabled.is_selected(), None);
+        assert!(!disabled.supports_action(Action::Focus));
+        assert!(!disabled.supports_action(Action::Click));
+
+        let format = named(&frame, "YYYY-MM-DD").0;
+        let field = named(&frame, "Due date").1;
+        assert_eq!(field.described_by(), [format]);
+        assert_eq!(field.description(), Some("YYYY-MM-DD"));
+        assert_eq!(
+            named(&frame, "Schedule").1.aria_current(),
+            Some(AriaCurrent::Page)
+        );
+
+        assert!(tree
+            .action(
+                &mut runtime,
+                ActionRequest {
+                    action: Action::Click,
+                    target_tree: TreeId::ROOT,
+                    target_node: today_id,
+                    data: None,
+                }
+            )
+            .unwrap());
+        let frame = update(&mut runtime, &mut tree);
+        let (current, selected) = named(&frame, "Monday, November 23, 2026");
+        assert_eq!(frame.focus, current);
+        assert_eq!(selected.is_selected(), Some(true));
+        assert_eq!(selected.aria_current(), Some(AriaCurrent::Date));
     }
 
     #[test]

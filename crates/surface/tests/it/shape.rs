@@ -286,6 +286,53 @@ fn state_layer_follows_corners() {
 }
 
 #[test]
+fn custom_state_layer_uses_parent_press_focus_and_hover() {
+    let mut dom = MicroDom::new(Node::new(Role::Window, "Test"));
+    let button = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Button, "Day")
+                .styled(sized(100., 40.))
+                .focus_color(Color::TRANSPARENT),
+        )
+        .unwrap();
+    dom.append(
+        button,
+        Node::new(Role::Group, "")
+            .styled(
+                sized(100., 40.)
+                    .state_layer(Color::rgb(10, 20, 30))
+                    .corners(Corners::top(10.)),
+            )
+            .state_layer_alphas(20, 26, 51),
+    )
+    .unwrap();
+    let computed = LayoutEngine::default()
+        .compute(&dom, 400., 300., &mut Metrics)
+        .unwrap();
+    for (focused, pressed, alpha) in [
+        (None, None, 20),
+        (Some(button), None, 26),
+        (Some(button), Some(button), 51),
+    ] {
+        let list = DisplayList::compile_with_interaction(
+            &dom,
+            &computed,
+            focused,
+            &Default::default(),
+            InteractionState {
+                hovered: Some(button),
+                pressed,
+            },
+        );
+        assert!(matches!(
+            list.ops.as_slice(),
+            [PaintOp::Shape { color, .. }] if *color == Color(10, 20, 30, alpha)
+        ));
+    }
+}
+
+#[test]
 fn focus_ring_keeps_legacy_quads_and_follows_corners() {
     let foreground = Color::rgb(1, 2, 3);
     let clip = Rect::new(0., 0., 400., 300.);

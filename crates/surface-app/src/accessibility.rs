@@ -232,20 +232,37 @@ impl<M> AccessibilityFrame<'_, M> {
         })
     }
 
-    /// Resolve the enabled, visible tooltip that describes a node in this frame.
+    /// Resolve the visible text or tooltip that describes a node in this frame.
+    /// Prefer a valid static text reference to a tooltip.
     pub fn description_target(&self, id: NodeId) -> Option<NodeId> {
         let binding = self.bindings.get(&id).filter(|b| b.accepts_interaction())?;
-        let target = self.dom.by_id(binding.description.as_deref()?)?;
+        let static_text = self.dom.get(id).ok()?.description_text_target();
+        let tooltip = binding.description.as_deref();
+        if static_text.is_none() && tooltip.is_none() {
+            return None;
+        }
         let source = self.node(id)?;
         if source.node.is_disabled() || !has_visible_bounds(&source) {
             return None;
         }
-        let tooltip = self.node(target)?;
-        (target != id
-            && tooltip.node.role() == Role::Tooltip
-            && !tooltip.node.is_disabled()
-            && has_visible_bounds(&tooltip))
-        .then_some(target)
+        let resolve = |key: &str, role| {
+            let target = self.dom.by_id(key)?;
+            let description = self.node(target)?;
+            let node = description.node;
+            (target != id
+                && node.role() == role
+                && !node.is_disabled()
+                && has_visible_bounds(&description)
+                && (role != Role::Text
+                    || (!node.is_focusable()
+                        && node
+                            .text_value()
+                            .is_some_and(|text| !text.trim().is_empty()))))
+            .then_some(target)
+        };
+        static_text
+            .and_then(|key| resolve(key, Role::Text))
+            .or_else(|| resolve(tooltip?, Role::Tooltip))
     }
 
     /// Whether this named group uses roving focus within the current tree.

@@ -412,15 +412,18 @@ fn compile_into<Op: CompileOp>(
             );
         }
         if s.state_layer.3 > 0 && !n.is_disabled() {
+            let [hover_alpha, focus_alpha, press_alpha] = n.resolved_state_layer_alphas();
             let mut target = Some(*id);
             let mut opacity = 0;
             while let Some(id) = target {
                 if interaction.pressed == Some(id) {
-                    opacity = 31;
+                    opacity = press_alpha;
                     break;
                 }
-                if interaction.hovered == Some(id) {
-                    opacity = 20;
+                if focus_alpha > 0 && focused == Some(id) {
+                    opacity = focus_alpha;
+                } else if opacity == 0 && interaction.hovered == Some(id) {
+                    opacity = hover_alpha;
                 }
                 target = dom.get(id).ok().and_then(|n| n.parent());
             }
@@ -431,7 +434,12 @@ fn compile_into<Op: CompileOp>(
                     outline.fill(
                         g.bounds,
                         g.clip,
-                        Color(c.0, c.1, c.2, (c.3 as u16 * opacity / 255) as u8),
+                        Color(
+                            c.0,
+                            c.1,
+                            c.2,
+                            (u16::from(c.3) * u16::from(opacity) / 255) as u8,
+                        ),
                     ),
                 );
             }

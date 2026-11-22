@@ -71,6 +71,7 @@ pub struct View<M> {
     dismiss: Option<M>,
     dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
+    modal_initial_focus: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
@@ -115,6 +116,7 @@ impl<M> View<M> {
             dismiss: None,
             dismiss_on_tab: false,
             modal_focus_fallback: None,
+            modal_initial_focus: None,
             cancel_within: None,
             key: None,
             focus_navigation: None,
@@ -321,8 +323,16 @@ impl<M> View<M> {
     /// Handle navigation from this focused control. The message may mount
     /// the named target. The runtime moves focus after the resulting rebuild.
     pub fn on_focus_navigation(
-        mut self,
+        self,
         handler: impl Fn(EditKey) -> Option<FocusNavigation<M>> + 'static,
+    ) -> Self {
+        self.on_focus_navigation_with_extend(move |key, _| handler(key))
+    }
+    /// Handle a navigation key and its Shift modifier. The target can
+    /// appear in the view after the message runs.
+    pub fn on_focus_navigation_with_extend(
+        mut self,
+        handler: impl Fn(EditKey, bool) -> Option<FocusNavigation<M>> + 'static,
     ) -> Self {
         self.focus_navigation = Some(Rc::new(handler));
         self
@@ -418,6 +428,12 @@ impl<M> View<M> {
     /// below the modal, then try the given stable ID in that scope.
     pub fn modal_focus_fallback(mut self, target: impl Into<String>) -> Self {
         self.modal_focus_fallback = Some(target.into());
+        self
+    }
+    /// Prefer a focusable descendant with this stable ID on modal entry.
+    /// If it is unavailable, use the first reachable control.
+    pub fn modal_initial_focus(mut self, target: impl Into<String>) -> Self {
+        self.modal_initial_focus = Some(target.into());
         self
     }
     /// Wrap this modal panel in its backdrop. Keep owned popups inside the
@@ -631,6 +647,7 @@ struct Binding<M> {
     dismiss: Option<M>,
     dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
+    modal_initial_focus: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
@@ -1013,6 +1030,7 @@ impl<A: Application> Runtime<A> {
                     dismiss: view.dismiss,
                     dismiss_on_tab: view.dismiss_on_tab,
                     modal_focus_fallback: view.modal_focus_fallback,
+                    modal_initial_focus: view.modal_initial_focus,
                     cancel_within: view.cancel_within,
                     key: view.key,
                     focus_navigation: view.focus_navigation,
@@ -1566,7 +1584,7 @@ impl<A: Application> Runtime<A> {
                     .and_then(|id| self.dom.get(id).ok())
                     .is_some_and(|n| n.role() != Role::TextInput)
                 {
-                    self.navigate_control(key)
+                    self.navigate_control(key, extend)
                 } else {
                     self.editing_event(Event::Edit {
                         key,
