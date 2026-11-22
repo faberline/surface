@@ -157,10 +157,12 @@
     {
       "id": "app-bars",
       "spec": "https://m3.material.io/components/app-bars/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Headless macOS Metal verifies the five top app bar layouts, two title sizes with and without subtitles, centered title, search entry and dialog, keyboard focus, and 320 dp dark RTL at 200% text. Two runs produced identical PNGs and matching Page.screenshot, CLI and MCP bytes. https://github.com/faberline/surface/tree/857d022fdc3a2b1768a40d8c6efcf1ac3d4ab22e/docs/evidence/md3/app-bars-v0.1.8",
+      "web_evidence": "Headless Chrome WebGPU M56–M62 verify layout, painted centering and tint, actual wheel delta sharing, keyboard and disabled controls, editable search and contextual action focus, and dark RTL at 320 dp and 200% text.",
+      "implemented": "Small, center-aligned, medium flexible, large flexible and search top app bars. The flexible bars support pinned, enter-always and exit-until-collapsed wheel behavior. Search opens a named, keyboard-focused modal. The gallery exercises a caller-controlled contextual action bar. Full hide and reveal for regular bars, kinetic scrolling and settling, Search View transition animation, physical touch and live VoiceOver remain open.",
+      "unit_evidence": "App-bar layout and scroll tests cover token sizes, title centering and containment, focus identity, scroll delta consumption, boundary handling, and preservation of default Runtime routing."
     },
     {
       "id": "badges",

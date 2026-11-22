@@ -2,6 +2,9 @@
 use surface::{Align, Color, Length, Node, Role, Style};
 use surface_app::{CursorStyle, View};
 pub mod adaptive;
+mod app_bar;
+mod app_bar_scroll;
+mod app_bar_search;
 mod badge;
 mod bottom_sheet;
 mod bottom_sheet_motion;
@@ -19,6 +22,9 @@ mod tokens;
 pub mod typography;
 mod vector_icon;
 mod wide_navigation_rail;
+pub use app_bar::{AppBarContent, AppBarKind, AppBarOptions};
+pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
+pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
 pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
 pub use bottom_sheet::{
     BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
