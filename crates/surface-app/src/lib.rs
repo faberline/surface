@@ -37,7 +37,9 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
-pub use frame_input::{FrameInput, InputAnimationUpdate, TouchContact};
+pub use frame_input::{
+    FrameInput, FramePress, FramePressPhase, InputAnimationUpdate, TouchContact,
+};
 pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
 pub use motion::{ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
@@ -510,6 +512,22 @@ pub trait Application: 'static {
     ) -> InputAnimationUpdate {
         self.animation_frame_with_input(frame, input)
     }
+    /// Also observe the accepted down position, last press outcome, and live
+    /// hovered target while [`Self::observes_frame_input`] returns true.
+    /// Hover uses the current layout and active input scope.
+    /// A release or cancellation is reported once, including a complete tap
+    /// between two frames. If several presses arrive before a frame, only the
+    /// latest is retained. The default keeps the existing pressed-ID callback.
+    fn animation_frame_with_press_detail(
+        &mut self,
+        frame: AnimationFrame<'_>,
+        input: FrameInput<'_>,
+        pressed: Option<&str>,
+        _press: Option<FramePress<'_>>,
+        _hovered: Option<&str>,
+    ) -> InputAnimationUpdate {
+        self.animation_frame_with_press(frame, input, pressed)
+    }
     /// Handle Escape for transient application UI outside modal scopes.
     /// Return true when the runtime should rebuild the view.
     fn cancel_transient(&mut self) -> bool {
@@ -679,6 +697,7 @@ pub struct Runtime<A: Application> {
     pressed: Option<String>,
     hovered: Option<String>,
     pointer_position: Option<(f32, f32)>,
+    press_observation: frame_input::PressObservation,
     touch: Option<frame_input::ActiveTouch>,
     touch_cancelled: bool,
     scroll: BTreeMap<String, (f32, f32)>,
@@ -723,6 +742,7 @@ impl<A: Application> Runtime<A> {
             pressed: None,
             hovered: None,
             pointer_position: None,
+            press_observation: frame_input::PressObservation::default(),
             touch: None,
             touch_cancelled: false,
             scroll: BTreeMap::new(),
@@ -909,6 +929,9 @@ impl<A: Application> Runtime<A> {
         self.rebuild()
     }
     fn rebuild(&mut self) -> Result<(), AppError> {
+        if !self.app.observes_frame_input() {
+            self.press_observation.clear();
+        }
         #[cfg(feature = "devtools")]
         let start = self.trace_now();
         self.accessibility = None;
@@ -1352,6 +1375,18 @@ impl<A: Application> Runtime<A> {
                 if self.protects_pointer_composition(hit) {
                     return Ok(false);
                 }
+                let press_bounds = if self.app.observes_frame_input() {
+                    hit.and_then(|id| {
+                        self.computed
+                            .as_ref()?
+                            .nodes
+                            .get(id.index())
+                            .map(|node| node.bounds)
+                    })
+                } else {
+                    self.press_observation.clear();
+                    None
+                };
                 let drag = self.drag_candidate(hit, x, y);
                 if let Some(id) = drag {
                     if self.has_pending_composition() {
@@ -1367,6 +1402,10 @@ impl<A: Application> Runtime<A> {
                     return Ok(true);
                 }
                 self.pressed = hit.and_then(|id| self.stable(id));
+                if let Some((id, bounds)) = self.pressed.as_deref().zip(press_bounds) {
+                    let time = self.input_time_ms();
+                    self.press_observation.accept(id, (x, y), bounds, time);
+                }
                 self.hovered = self.pressed.clone();
                 if drag.is_none() {
                     // Blank clicks within a modal must not release its focus scope.
@@ -1392,6 +1431,7 @@ impl<A: Application> Runtime<A> {
                     return Ok(true);
                 }
                 if self.range_drag.is_some() {
+                    self.press_observation.release();
                     let result = self.range_pointer(x);
                     self.range_drag = None;
                     self.pressed = None;
@@ -1416,6 +1456,7 @@ impl<A: Application> Runtime<A> {
                     .take()
                     .filter(|pressed| hit.as_ref() == Some(pressed))
                 {
+                    self.press_observation.release();
                     // An unclaimed gesture still acts as the original tap.
                     if drag_tap {
                         self.cancel_composition();

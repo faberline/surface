@@ -19,6 +19,8 @@ mod components;
 mod elevation;
 mod extended_fab;
 mod extended_fab_motion;
+mod fab;
+mod fab_motion;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
@@ -67,6 +69,11 @@ pub use extended_fab::{
     ExtendedFabSize,
 };
 pub use extended_fab_motion::{ExtendedFabMotion, ExtendedFabScroll};
+pub use fab::{
+    ExpressiveFabAppearance, ExpressiveFabContent, ExpressiveFabElevation, ExpressiveFabOptions,
+    ExpressiveFabSize,
+};
+pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };

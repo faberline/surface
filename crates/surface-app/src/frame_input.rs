@@ -1,4 +1,5 @@
 use crate::{AnimationUpdate, AppError, Application, Event, Runtime};
+use surface::Rect;
 
 /// A held primary touch contact in logical window coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -21,6 +22,103 @@ pub struct FrameInput<'a> {
     /// A held contact was cancelled since the previous frame. A normal
     /// release does not set this flag.
     pub touch_cancelled: bool,
+}
+
+/// Stage of a primary pointer press accepted by the runtime.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FramePressPhase {
+    /// The primary pointer is still held on this accepted sequence.
+    Held,
+    /// The matching release completed the primary pointer interaction.
+    Released,
+    /// The press lost its target or ended without completing the interaction.
+    Cancelled,
+}
+
+/// The last accepted mouse or touch press. Positions and bounds are the
+/// logical window geometry at pointer down, even if the pointer has moved.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct FramePress<'a> {
+    pub id: &'a str,
+    pub position: (f32, f32),
+    pub bounds: Rect,
+    /// The host's last supplied time when the press was accepted.
+    pub started_ms: Option<f64>,
+    /// Distinguishes successive presses, including on the same stable ID.
+    pub sequence: u64,
+    pub phase: FramePressPhase,
+}
+
+#[derive(Default)]
+pub(crate) struct PressObservation {
+    sequence: u64,
+    current: Option<ObservedPress>,
+}
+
+struct ObservedPress {
+    id: String,
+    position: (f32, f32),
+    bounds: Rect,
+    started_ms: Option<f64>,
+    phase: FramePressPhase,
+}
+
+impl PressObservation {
+    pub(crate) fn clear(&mut self) {
+        self.current = None;
+    }
+
+    pub(crate) fn accept(
+        &mut self,
+        id: &str,
+        position: (f32, f32),
+        bounds: Rect,
+        started_ms: Option<f64>,
+    ) {
+        self.sequence = self.sequence.wrapping_add(1);
+        self.current = Some(ObservedPress {
+            id: id.to_owned(),
+            position,
+            bounds,
+            started_ms,
+            phase: FramePressPhase::Held,
+        });
+    }
+
+    pub(crate) fn release(&mut self) {
+        if let Some(press) = self
+            .current
+            .as_mut()
+            .filter(|press| press.phase == FramePressPhase::Held)
+        {
+            press.phase = FramePressPhase::Released;
+        }
+    }
+
+    pub(crate) fn frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
+        let press = self.current.as_mut()?;
+        if press.phase == FramePressPhase::Held && pressed != Some(press.id.as_str()) {
+            press.phase = FramePressPhase::Cancelled;
+        }
+        Some(FramePress {
+            id: &press.id,
+            position: press.position,
+            bounds: press.bounds,
+            started_ms: press.started_ms,
+            sequence: self.sequence,
+            phase: press.phase,
+        })
+    }
+
+    pub(crate) fn clear_terminal(&mut self) {
+        if self
+            .current
+            .as_ref()
+            .is_some_and(|press| press.phase != FramePressPhase::Held)
+        {
+            self.current = None;
+        }
+    }
 }
 
 /// What the application needs after observing frame input.
