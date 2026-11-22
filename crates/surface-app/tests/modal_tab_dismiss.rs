@@ -1,5 +1,5 @@
 use surface::{Length, Node, Role, Style, TextMeasurer};
-use surface_app::{Application, Event, Key, KeyPress, Modifiers, Runtime, View};
+use surface_app::{Application, Event, Key, KeyPress, Modifiers, Roving, Runtime, View};
 
 #[derive(Clone, Copy)]
 enum Message {
@@ -15,6 +15,10 @@ struct App {
     open: bool,
     nested: bool,
     retain_menu: bool,
+    opener_without_tab_stop: bool,
+    collapsed_neighbors: bool,
+    mount_on_close: bool,
+    roving_after: bool,
     dismissals: usize,
     activations: usize,
 }
@@ -53,15 +57,42 @@ impl Application for App {
         } else {
             Role::Group
         };
-        let container = View::new(Node::new(container_role, "Container").id("container")).children(
-            [
-                control(Role::Button, "before", Message::Run),
-                control(Role::Button, "opener", Message::Open).menu_expanded(self.open),
-                control(Role::Button, "after", Message::Run),
-            ]
-            .into_iter()
-            .chain(menu),
-        );
+        let opener = if self.opener_without_tab_stop {
+            Node::new(Role::Button, "opener").id("opener").tab_index(-1)
+        } else {
+            Node::new(Role::Button, "opener").id("opener")
+        };
+        let mut controls = vec![
+            control(Role::Button, "first", Message::Run),
+            control(Role::Button, "before", Message::Run),
+        ];
+        if self.collapsed_neighbors {
+            controls.push(collapsed("collapsed-before"));
+        }
+        controls.push(button(opener, Message::Open).menu_expanded(self.open));
+        if self.collapsed_neighbors {
+            controls.push(collapsed("collapsed-after"));
+        }
+        if self.mount_on_close && self.dismissals > 0 {
+            controls.push(control(Role::Button, "mounted", Message::Run));
+        }
+        let after = control(Role::Button, "after", Message::Run);
+        if self.roving_after {
+            let collapsed = Node::new(Role::Button, "Hidden selection")
+                .id("collapsed-selection")
+                .selected(true)
+                .styled(Style::row().height(Length::Px(0.)));
+            controls.push(
+                View::new(Node::new(Role::Group, "Choices").id("choices"))
+                    .roving(Roving::horizontal(false))
+                    .children([View::new(collapsed), after]),
+            );
+        } else {
+            controls.push(after);
+        }
+        controls.push(control(Role::Button, "last", Message::Run));
+        let container = View::new(Node::new(container_role, "Container").id("container"))
+            .children(controls.into_iter().chain(menu));
         let container = if self.nested {
             container
                 .modal_overlay(Message::CloseContaining)
@@ -75,12 +106,20 @@ impl Application for App {
 }
 
 fn control(role: Role, id: &str, message: Message) -> View<Message> {
+    button(Node::new(role, id).id(id), message)
+}
+
+fn button(node: Node, message: Message) -> View<Message> {
+    View::new(node.styled(Style::row().height(Length::Px(32.)))).on_press(message)
+}
+
+fn collapsed(id: &str) -> View<Message> {
     View::new(
-        Node::new(role, id)
+        Node::new(Role::Button, id)
             .id(id)
-            .styled(Style::row().height(Length::Px(32.))),
+            .styled(Style::row().height(Length::Px(0.))),
     )
-    .on_press(message)
+    .on_press(Message::Run)
 }
 
 struct Metrics;
@@ -144,6 +183,60 @@ fn a_nested_close_traverses_the_containing_scope_without_dismissing_it() {
     assert_eq!(runtime.focused(), Some("after"));
     assert_eq!(runtime.app().dismissals, 1);
     assert!(runtime.activate("outside").is_err());
+    assert_eq!(runtime.app().activations, 0);
+}
+
+#[test]
+fn dismissing_tabs_from_the_position_of_a_programmatic_only_opener() {
+    for (reverse, next) in [(false, "after"), (true, "before")] {
+        let mut runtime = open(App {
+            opt_in: true,
+            nested: true,
+            opener_without_tab_stop: true,
+            ..App::default()
+        });
+        assert!(runtime.dispatch(Event::FocusNext { reverse }).unwrap());
+        assert_eq!(runtime.focused(), Some(next));
+        assert!(runtime.app().nested);
+        assert_eq!(runtime.app().dismissals, 1);
+    }
+}
+
+#[test]
+fn dismissing_tab_skips_previously_measured_zero_extent() {
+    for (reverse, mount_on_close, next) in [
+        (false, false, "after"),
+        (true, false, "before"),
+        (false, true, "mounted"),
+    ] {
+        let mut runtime = open(App {
+            opt_in: true,
+            collapsed_neighbors: true,
+            mount_on_close,
+            ..App::default()
+        });
+        let layout = runtime.snapshot().layout.unwrap();
+        for key in ["collapsed-before", "collapsed-after"] {
+            let id = runtime.dom().by_id(key).unwrap();
+            assert_eq!(layout.nodes[id.index()].bounds.height, 0.);
+        }
+        assert!(runtime.dispatch(Event::FocusNext { reverse }).unwrap());
+        assert_eq!(runtime.focused(), Some(next));
+        assert_eq!(runtime.app().activations, 0);
+    }
+}
+
+#[test]
+fn dismissing_tab_enters_a_roving_group_after_skipping_its_collapsed_selection() {
+    let mut runtime = open(App {
+        opt_in: true,
+        roving_after: true,
+        ..App::default()
+    });
+    assert!(runtime
+        .dispatch(Event::FocusNext { reverse: false })
+        .unwrap());
+    assert_eq!(runtime.focused(), Some("after"));
     assert_eq!(runtime.app().activations, 0);
 }
 
