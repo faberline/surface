@@ -1,0 +1,22 @@
+case devtools-native ...
+  [DN1] devtools session file appears within 30 s: app pid, 127.0.0.1, mode 0600
+  [DN2] jet bridge session file coexists with its own endpoint and token
+  [DN3] wrong token and missing token → unauthorized, connection closed
+  [DN4] Devtools.capabilities over raw TCP
+  [DN5] DOM.snapshot on the same connection
+  [DN6] Action.activate check: mixed → checked → unchecked, seen in the next snapshots
+  [DN7] protocol errors keep the connection usable
+  [DN15] raw Page.screenshot: native viewport, PNG pixels, scale limit and fresh state
+  [DN11] the surface-devtools CLI: capabilities, snapshot, query, activate
+  [DN12] MCP over stdio: initialize, tools/list, DOM snapshot and screenshot
+  [DN13] protocol error exits 1 with the code on stderr; a usage error exits 2
+  [DN16] CLI screenshot outputs JSON or creates a private PNG once
+  [DN17] MCP page_screenshot returns a native PNG image
+  [DN8] session token never appears in diagnostics
+  [DN14] after the app exits, the CLI reports a stale session file and exits 3
+  [DN9] --smoke run exits 0 and removes its session file
+  [DN10] an existing session file is kept: the app fails and the file is unchanged
+  evidence: {"endpoint_loopback":true,"capabilities":["Devtools.capabilities","DOM.snapshot","DOM.query","Action.activate","Action.fill","Action.setValue","Action.key","Page.screenshot"],"activate_toggled":true,"bridge_coexists":true,"unauthorized_closes":true,"screenshot":{"format":"png","width":960,"height":800,"scale":1.0,"max_side":400,"colors_match":true,"reflects_theme_change":true},"screenshot_transports_match":true,"cli_drove_the_app":true,"mcp_listed_and_called":true,"stale_session_exit_3":true,"normal_shutdown_removes_session":true,"existing_file_kept":true}
+case devtools-native ... ok (17 steps, 192 checks, 2.7s)
+
+e2e result: 1 passed; 0 failed; 192 checks; artifacts in /private/tmp/surface-screenshot-negative-final.y2XcrIeC/evidence/baseline

@@ -1,0 +1,93 @@
+{
+  "baseline": {
+    "exit": 0,
+    "steps": 17,
+    "checks": 192,
+    "render": {
+      "endpoint_loopback": true,
+      "capabilities": [
+        "Devtools.capabilities",
+        "DOM.snapshot",
+        "DOM.query",
+        "Action.activate",
+        "Action.fill",
+        "Action.setValue",
+        "Action.key",
+        "Page.screenshot"
+      ],
+      "activate_toggled": true,
+      "bridge_coexists": true,
+      "unauthorized_closes": true,
+      "screenshot": {
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0,
+        "max_side": 400,
+        "colors_match": true,
+        "reflects_theme_change": true
+      },
+      "screenshot_transports_match": true,
+      "cli_drove_the_app": true,
+      "mcp_listed_and_called": true,
+      "stale_session_exit_3": true,
+      "normal_shutdown_removes_session": true,
+      "existing_file_kept": true
+    },
+    "pngs": {
+      "-raw": {
+        "width_height": [
+          960,
+          800
+        ],
+        "sha256": "107e72636e413af169a5c36346bc53e309318861f1ddfde99142755cb06eb1b8"
+      },
+      "-toggled": {
+        "width_height": [
+          960,
+          800
+        ],
+        "sha256": "b9a0359a9a8353ae2654e3d49f72b8b68e94d1843b44e51cf0d69b1548c940e2"
+      },
+      "-scaled": {
+        "width_height": [
+          400,
+          333
+        ],
+        "sha256": "9967e9d4308deda8da629f05a21d015fc29cb1baaadcf2e4af2baa9d9041423f"
+      },
+      "-cli": {
+        "width_height": [
+          400,
+          333
+        ],
+        "sha256": "9967e9d4308deda8da629f05a21d015fc29cb1baaadcf2e4af2baa9d9041423f"
+      },
+      "-mcp": {
+        "width_height": [
+          400,
+          333
+        ],
+        "sha256": "9967e9d4308deda8da629f05a21d015fc29cb1baaadcf2e4af2baa9d9041423f"
+      }
+    }
+  },
+  "swapped-red-blue": {
+    "exit": 1,
+    "step": "DN15",
+    "checks": 61,
+    "assertion": "pixel 70,332: expected [101, 85, 143, 255], got [143, 85, 101, 255]"
+  },
+  "stale-default-image": {
+    "exit": 1,
+    "step": "DN15",
+    "checks": 107,
+    "assertion": "pixel 1,1: expected [20, 18, 24, 255], got [253, 247, 255, 255]"
+  },
+  "ignored-max-side": {
+    "exit": 1,
+    "step": "DN15",
+    "checks": 83,
+    "assertion": "max_side downscales: expected 400, got 960"
+  }
+}

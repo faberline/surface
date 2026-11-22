@@ -60,3 +60,6 @@ The same native test caught three injected faults in a disposable
 checkout. It rejected swapped color channels, a stale theme and an
 ignored size limit. With the faults disabled, the same binary passed
 all 192 checks. [Fault controls and replay](negative-controls/README.md)
+
+The [final runner replay](final/README.md) records the unchanged product
+and the settled-frame comparison at the final pull request source.
