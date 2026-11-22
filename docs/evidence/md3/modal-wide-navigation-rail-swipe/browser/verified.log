@@ -1,0 +1,60 @@
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/drawer_swipe.rs: OK
+e2e/src/wide_navigation_rail.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+e2e/src/wide_rail_motion.rs: OK
+e2e/src/wide_rail_item_motion.rs: OK
+e2e/src/modal_wide_rail_swipe.rs: OK
+index.html: OK
+surface_material_gallery-39928e12143c4956.js: OK
+surface_material_gallery_bg-bbb44f6fa433fd2e.wasm: OK
+surface-web.json: OK
+index.html: OK
+surface_material_gallery-d7ee08a20292dcaa.js: OK
+surface_material_gallery_bg-6bdf6049563472cf.wasm: OK
+surface-web.json: OK
+crates/surface-app/src/lib.rs: OK
+crates/surface-app/src/horizontal_drag.rs: OK
+crates/surface-app/src/motion.rs: OK
+crates/surface-material/src/lib.rs: OK
+crates/surface-material/src/wide_navigation_rail.rs: OK
+crates/surface-material/src/wide_navigation_rail/swipe.rs: OK
+examples/material-gallery/src/lib.rs: OK
+examples/material-gallery/src/modal_wide_navigation_rail_demo.rs: OK
+e2e/src/material.rs: OK
+e2e/src/web_accessibility.rs: OK
+e2e/src/drawer_swipe.rs: OK
+e2e/src/wide_navigation_rail.rs: OK
+e2e/src/modal_wide_navigation_rail.rs: OK
+e2e/src/wide_rail_motion.rs: OK
+e2e/src/wide_rail_item_motion.rs: OK
+e2e/src/modal_wide_rail_swipe.rs: OK
+71236d413434948862f76b65e95a61d1a892139b9a09de908ca77065d8ead1fb  /tmp/cargo-target/surface-md3-wide-rail-swipe-6D29AF7D-browser-focused/debug/surface-e2e
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M179] wide rail reflows the page and preserves navigation at 600, 599 and 320 dp
+  M179 checks: 449
+  [M180] modal wide rail overlays both collapse arrangements and scrolls a 320×240 WebGPU canvas
+  M180 checks: 89
+  [M181] wide rail reflows or slides, reverses in place, and honors live Reduce Motion
+  M181 checks: 147
+  [M182] wide rail destinations stay legible at early widths and fade through the layout change
+  M182 checks: 363
+  [M183] standalone modal rail follows a mirrored swipe, cancels safely and dismisses once
+  M183 checks: 199
+case material ... ok (5 steps, 1249 checks, 30.6s)
+case web-accessibility ...
+  [A69] Chrome disclosure and current-page semantics survive rail and bottom navigation modes
+  A69 checks: 134
+  [A70] Chrome exposes a named modal scope, current destination and restored opener focus
+  A70 checks: 57
+  [A71] modal focus restores while the painted exit finishes
+  A71 checks: 42
+  [A72] one projected destination keeps focus and accepts one Enter during the wide rail transition
+  A72 checks: 89
+  [A73] held swipe keeps Chrome modal scope and reduced motion commits one close
+  A73 checks: 49
+case web-accessibility ... ok (5 steps, 373 checks, 11.0s)
+
+e2e result: 2 passed; 0 failed; 1622 checks; artifacts in <batch>/browser-rail-swipe-exact-2

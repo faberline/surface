@@ -1,0 +1,51 @@
+{
+  "production_manifest_sha256": "94d55d3426a0b9c2e790a728876e1a688b9b03e58920c733984455bc65308579",
+  "source_manifest_sha256": "345c2903545c3ff84664ab1a9a8c1d0f2114bc539608f60c614b5d5e05ad6e95",
+  "source_delta_gzip_sha256": "a065e85ceb09de3a2affde0e9cfc039b4bfb56b4c3d4145f76bf8f9fdec31270",
+  "browser_fixtures_sha256": "20152a2645bff88f6a7581edb74c62c885a81d35de36588d28f300016d39e2c6",
+  "native_replay_sha256": "d05eb73958de59a043df0afda43be22ffc3d92d33c1c8d49bd560170e3b4a0e6",
+  "workspace": {
+    "command": "cap sh scripts/check.sh",
+    "exit_status": 0,
+    "provenance": "passed",
+    "rustfmt": "passed",
+    "strict_clippy": "passed",
+    "wasm_checks": 3,
+    "rust_tests": {
+      "passed": 1435,
+      "failed": 0,
+      "ignored": 25
+    }
+  },
+  "surface_app_scoped_tests": {
+    "passed": 32,
+    "failed": 0,
+    "ignored": 0
+  },
+  "surface_material_all_features": {
+    "passed": 559,
+    "failed": 0,
+    "ignored": 0
+  },
+  "apple_m1_max_metal": {
+    "command": "cap sh scripts/check-gpu.sh",
+    "tests": {
+      "passed": 12,
+      "failed": 0,
+      "ignored": 0
+    }
+  },
+  "chrome_webgpu": {
+    "passed_suites": 2,
+    "failed_suites": 0,
+    "checks": 1622,
+    "material_cases": 5,
+    "accessibility_cases": 5,
+    "new_checks": 248
+  },
+  "screenshot_and_bridge": {
+    "passed_suites": 4,
+    "failed_suites": 0,
+    "checks": 641
+  }
+}
