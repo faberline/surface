@@ -1,6 +1,8 @@
 use surface::{Color, Role, TextMeasurer};
 use surface_app::{Application, EditKey, Event, Runtime, View};
-use surface_material::{ChoiceState, Theme};
+use surface_material::{
+    shape::LayoutDirection, ChoiceState, NavigationRailItem, Theme, VectorIcon,
+};
 
 type Build = Box<dyn Fn(&Theme) -> View<()>>;
 struct App(bool, Build);
@@ -245,4 +247,71 @@ fn arrow_keys_move_focus() {
     })
     .unwrap();
     assert_eq!(r.focused(), Some("b"));
+}
+
+#[test]
+fn compact_vector_destinations_follow_physical_arrows_in_rtl() {
+    let build: Build = Box::new(|theme| {
+        let icon = VectorIcon::new([[2., 3.], [22., 3.], [12., 21.]]).unwrap();
+        let items = [
+            ("home", "首頁"),
+            ("archive", "封存"),
+            ("search", "搜尋"),
+            ("settings", "設定"),
+        ]
+        .into_iter()
+        .map(|(id, label)| {
+            theme.navigation_bar_item_with_icon(NavigationRailItem {
+                id,
+                label,
+                accessible_name: "",
+                icon: &icon,
+                state: ChoiceState {
+                    selected: id == "home",
+                    disabled: id == "archive",
+                },
+                message: (),
+            })
+        });
+        theme.page([theme.navigation_bar_with_direction(
+            "compact",
+            "主要導覽",
+            LayoutDirection::RightToLeft,
+            items,
+        )])
+    });
+    let mut runtime = Runtime::new(App(true, build)).unwrap();
+    runtime.render(320., 240., &mut Metrics).unwrap();
+    let home = runtime
+        .dom()
+        .get(runtime.dom().by_id("home").unwrap())
+        .unwrap();
+    assert_eq!(home.name(), "首頁");
+    assert_eq!(home.is_current_page(), Some(true));
+    for (right, left) in [
+        ("home", "archive"),
+        ("archive", "search"),
+        ("search", "settings"),
+    ] {
+        assert!(bounds(&runtime, right).x > bounds(&runtime, left).x);
+        assert!(bounds(&runtime, right).width >= 48.);
+    }
+    runtime
+        .dispatch(Event::FocusNext { reverse: false })
+        .unwrap();
+    assert_eq!(runtime.focused(), Some("home"));
+    for (key, id) in [
+        (EditKey::Left, "search"),
+        (EditKey::Left, "settings"),
+        (EditKey::Right, "search"),
+    ] {
+        runtime
+            .dispatch(Event::Edit {
+                key,
+                extend: false,
+                by_word: false,
+            })
+            .unwrap();
+        assert_eq!(runtime.focused(), Some(id));
+    }
 }

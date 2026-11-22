@@ -20,12 +20,12 @@ impl<A: Application> Runtime<A> {
     /// dismissed. It never sets `pressed`, `hovered`, `focused`, the text
     /// cursor or a drag, so a secondary press cannot activate a control.
     pub(crate) fn secondary_down(&mut self, x: f32, y: f32) -> Result<bool, AppError> {
+        let mut node = self.hit(x, y);
         self.cancel_composition();
-        if self.outside_scope(x, y) {
+        if self.outside_scope(x, y, node) {
             return self.dismiss_scope();
         }
-        let mut node = self.hit(x, y);
-        while let Some(id) = node {
+        while let Some(id) = node.filter(|id| self.in_scope(*id)) {
             if let Some(handler) = self.bindings.get(&id).and_then(|b| b.context.clone()) {
                 return self.message(Some(handler(PointerPoint { x, y })));
             }

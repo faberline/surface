@@ -1,7 +1,8 @@
 //! An indexed semantic tree. No browser DOM objects or renderer handles live here.
-use crate::Style;
+use crate::{BoxShadow, Color, Direction, Style, TextScaling};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct NodeId(u32);
@@ -67,6 +68,30 @@ impl RangeValue {
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node {
+    #[serde(default, skip_serializing_if = "no_box_shadows")]
+    box_shadows: [BoxShadow; 2],
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) fill_contour: Option<crate::FillContour>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    current_page: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    expanded: Option<bool>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    disclosure: bool,
+    #[serde(skip)]
+    horizontal_slide: f32,
+    #[serde(skip)]
+    measured_group: Option<crate::layout::MeasuredGroup>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    shrink_to_fit_width: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    reverse_row: bool,
+    #[serde(default, skip_serializing_if = "TextScaling::is_default")]
+    text_scaling: TextScaling,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    focus_color: Option<Color>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    focus_outline_from_parent: bool,
     pub(crate) stable_id: Option<String>,
     pub(crate) role: Role,
     pub(crate) name: String,
@@ -87,10 +112,27 @@ pub struct Node {
     last_child: Option<NodeId>,
     next_sibling: Option<NodeId>,
 }
+
+fn no_box_shadows(layers: &[BoxShadow; 2]) -> bool {
+    *layers == [BoxShadow::NONE; 2]
+}
+
 impl Node {
     pub fn new(role: Role, name: impl Into<String>) -> Self {
         Self {
             stable_id: None,
+            box_shadows: [BoxShadow::NONE; 2],
+            fill_contour: None,
+            current_page: None,
+            expanded: None,
+            disclosure: false,
+            horizontal_slide: 0.,
+            measured_group: None,
+            shrink_to_fit_width: false,
+            reverse_row: false,
+            text_scaling: TextScaling::default(),
+            focus_color: None,
+            focus_outline_from_parent: false,
             role,
             name: name.into(),
             text: None,
@@ -111,9 +153,127 @@ impl Node {
         self.stable_id = Some(id.into());
         self
     }
+    /// Set two drop shadows in back-to-front order. Shadows affect paint only.
+    pub fn box_shadows(mut self, layers: [BoxShadow; 2]) -> Self {
+        self.box_shadows = layers;
+        self
+    }
+    /// Return the authored drop shadows in paint order.
+    pub fn box_shadow_layers(&self) -> [BoxShadow; 2] {
+        self.box_shadows
+    }
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
         self
+    }
+    /// Draw one closed fill relative to the node's origin after its paths.
+    /// The ancestor clip applies. The fill adds no layout or input area and
+    /// does not create a semantic child.
+    pub fn fill_contour(mut self, contour: crate::FillContour) -> Self {
+        self.fill_contour = Some(contour);
+        self
+    }
+    /// Paint this node's focus outline while its immediate parent is focused.
+    /// The parent's own outline can be hidden with a transparent focus color.
+    /// This marker does not give the visual node keyboard or platform focus.
+    pub fn focus_outline_from_parent(mut self) -> Self {
+        self.focus_outline_from_parent = true;
+        self
+    }
+    pub(crate) fn paints_focus_outline(&self, id: NodeId, focused: Option<NodeId>) -> bool {
+        focused.is_some_and(|focus| {
+            focus == id || (self.focus_outline_from_parent && self.parent() == Some(focus))
+        })
+    }
+    /// Lay out a row from right to left. Its children keep their logical
+    /// source order for accessibility and focus navigation.
+    pub fn reverse_row(mut self) -> Self {
+        self.reverse_row = true;
+        self
+    }
+    pub fn is_row_reversed(&self) -> bool {
+        self.reverse_row && self.style.direction == Direction::Row
+    }
+    /// Offset the computed subtree horizontally by a fraction of this node's
+    /// measured width. Positive values move it right. Sibling positions and
+    /// measured sizes stay the same. Paint and input use the moved geometry.
+    pub fn slide_horizontally(mut self, fraction: f32) -> Self {
+        if fraction.is_finite() {
+            self.horizontal_slide = fraction.clamp(-1., 1.);
+        }
+        self
+    }
+    pub(crate) fn horizontal_slide(&self) -> f32 {
+        self.horizontal_slide
+    }
+    /// Measure this node as a single item and place its direct decorative leaves.
+    ///
+    /// Children must be flow leaves. Each receives a rectangle relative to
+    /// this group. The callback is runtime-only and is not serialized.
+    pub fn measured_group(mut self, layout: impl crate::MeasuredGroupLayout + 'static) -> Self {
+        self.measured_group = Some(crate::layout::MeasuredGroup(Arc::new(layout)));
+        self
+    }
+    pub(crate) fn measured_group_layout(&self) -> Option<&dyn crate::MeasuredGroupLayout> {
+        self.measured_group.as_ref().map(|group| group.0.as_ref())
+    }
+    /// Let this child give up width in a flex row when space runs out.
+    /// A column keeps its usual height behavior. A child with space
+    /// available keeps its natural width or its specified width.
+    pub fn shrink_to_fit_width(mut self) -> Self {
+        self.shrink_to_fit_width = true;
+        self
+    }
+    pub fn can_shrink_width(&self) -> bool {
+        self.shrink_to_fit_width
+    }
+    pub fn text_scaling(mut self, scaling: TextScaling) -> Self {
+        self.text_scaling = scaling;
+        self
+    }
+    pub fn text_scaling_mode(&self) -> TextScaling {
+        self.text_scaling
+    }
+    /// Set the focus outline color without changing the node's text color.
+    /// When omitted, the outline uses the foreground color.
+    /// A transparent focus color hides the outline.
+    pub fn focus_color(mut self, color: Color) -> Self {
+        self.focus_color = Some(color);
+        self
+    }
+    pub(crate) fn focus_outline_color(&self) -> Option<Color> {
+        match self.focus_color {
+            Some(color) => (color.3 > 0).then_some(color),
+            None => Some(self.style.foreground),
+        }
+    }
+    /// Mark whether this navigation destination represents the current page.
+    pub fn current_page(mut self, value: bool) -> Self {
+        self.current_page = Some(value);
+        self
+    }
+    /// The current-page state if the destination declares it.
+    /// `None` means the destination does not declare this state.
+    pub fn is_current_page(&self) -> Option<bool> {
+        self.current_page
+    }
+    /// Set the open or closed state of a button that controls a disclosure.
+    pub fn disclosure_expanded(mut self, value: bool) -> Self {
+        self.expanded = (self.role == Role::Button).then_some(value);
+        self.disclosure = self.expanded.is_some();
+        self
+    }
+    /// The open or closed state of a button, if declared.
+    pub fn expanded_state(&self) -> Option<bool> {
+        if self.role == Role::Button {
+            self.expanded
+        } else {
+            None
+        }
+    }
+    /// Whether this button opens a menu.
+    pub fn has_menu_popup(&self) -> bool {
+        !self.disclosure && self.expanded_state().is_some()
     }
     pub fn styled(mut self, style: Style) -> Self {
         self.style = style;
@@ -309,14 +469,25 @@ impl MicroDom {
         n.text = Some(text.into());
         Ok(())
     }
+    pub fn snapshot_version(&self) -> u32 {
+        Self::version_for_nodes(&self.nodes)
+    }
+    fn version_for_nodes(nodes: &[Node]) -> u32 {
+        if nodes.iter().any(|node| node.fill_contour.is_some()) {
+            // This is the fill contour version used by the extended scene format.
+            4
+        } else {
+            1
+        }
+    }
     pub fn snapshot(&self) -> DomSnapshot {
         DomSnapshot {
-            version: 1,
+            version: self.snapshot_version(),
             nodes: self.nodes.clone(),
         }
     }
     pub fn from_snapshot(snapshot: DomSnapshot) -> Result<MicroDom, DomError> {
-        if snapshot.version != 1 {
+        if snapshot.version != Self::version_for_nodes(&snapshot.nodes) {
             return Err(DomError::UnsupportedVersion(snapshot.version));
         }
         let nodes = snapshot.nodes;
@@ -412,6 +583,104 @@ impl MicroDom {
             visit(self, id, &mut out);
         }
         out
+    }
+
+    /// Rearrange this DOM's paint order around explicit modal layers. Supply
+    /// `(backdrop, panel)` pairs from back to front. A backdrop, if present,
+    /// must be the panel's immediate parent. Invalid or reused endpoints are
+    /// ignored.
+    ///
+    /// All background nodes keep their relative order and paint first. Each
+    /// layer paints its backdrop, panel subtree, then the fixed descendants
+    /// of its panel in their existing order. A nested layer is painted
+    /// separately. Other children of a backdrop do not belong to its layer.
+    pub fn apply_modal_layers(
+        &self,
+        paint_order: &mut Vec<NodeId>,
+        layers: &[(Option<NodeId>, NodeId)],
+    ) {
+        if layers.is_empty() {
+            return;
+        }
+
+        #[derive(Clone, Copy)]
+        enum PaintPass {
+            Backdrop(usize),
+            Panel(usize),
+            Flow(usize),
+            Fixed(usize),
+        }
+        #[derive(Default)]
+        struct Layer {
+            backdrop: Option<NodeId>,
+            panel: Option<NodeId>,
+            flow: Vec<NodeId>,
+            fixed: Vec<NodeId>,
+        }
+
+        let mut passes = vec![None; self.len()];
+        let mut ordered = Vec::with_capacity(layers.len());
+        for &(backdrop, panel) in layers {
+            let Ok(node) = self.get(panel) else { continue };
+            if passes[panel.index()].is_some()
+                || backdrop
+                    .is_some_and(|id| node.parent() != Some(id) || passes[id.index()].is_some())
+            {
+                continue;
+            }
+            let index = ordered.len();
+            passes[panel.index()] = Some(PaintPass::Panel(index));
+            if let Some(backdrop) = backdrop {
+                passes[backdrop.index()] = Some(PaintPass::Backdrop(index));
+            }
+            ordered.push(Layer::default());
+        }
+        if ordered.is_empty() {
+            return;
+        }
+
+        fn assign(
+            dom: &MicroDom,
+            id: NodeId,
+            inherited: Option<PaintPass>,
+            passes: &mut [Option<PaintPass>],
+        ) {
+            let explicit = passes[id.index()];
+            let effective = match (explicit, inherited) {
+                (Some(PaintPass::Panel(index)), _) => Some(PaintPass::Flow(index)),
+                (_, Some(PaintPass::Flow(index)))
+                    if dom.get(id).expect("valid node").style().position
+                        == crate::Position::Fixed =>
+                {
+                    Some(PaintPass::Fixed(index))
+                }
+                (_, inherited) => inherited,
+            };
+            passes[id.index()] = explicit.or(effective);
+            for child in dom.children(id) {
+                assign(dom, child, effective, passes);
+            }
+        }
+        assign(self, self.root(), None, &mut passes);
+
+        paint_order.retain(|&id| {
+            let Some(pass) = passes[id.index()] else {
+                return true;
+            };
+            match pass {
+                PaintPass::Backdrop(index) => ordered[index].backdrop = Some(id),
+                PaintPass::Panel(index) => ordered[index].panel = Some(id),
+                PaintPass::Flow(index) => ordered[index].flow.push(id),
+                PaintPass::Fixed(index) => ordered[index].fixed.push(id),
+            }
+            false
+        });
+        for layer in ordered {
+            paint_order.extend(layer.backdrop);
+            paint_order.extend(layer.panel);
+            paint_order.extend(layer.flow);
+            paint_order.extend(layer.fixed);
+        }
     }
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

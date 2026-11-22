@@ -128,9 +128,9 @@
       "spec": "https://m3.material.io/components/navigation-rail/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Rail with items, 56 by 32 active indicator on the selected item; controlled selection; press and arrow-key focus movement. 80 wide"
+      "desktop_evidence": "The Gallery exercises classic, wide and modal rails. Prior Metal and AppKit evidence is at https://github.com/faberline/surface/tree/0755876dde5e682c160d5da9bf9f58e5f4556526/docs/evidence/md3/modal-wide-navigation-rail-swipe.",
+      "web_evidence": "The Material browser journey exercises the rail with real Chrome events. Prior WebGPU replay and measurements are in the same checkpoint.",
+      "implemented": "Classic 80 dp rail with vector destinations, current-page semantics and controlled selection. Inline wide and modal wide modes mirror in RTL and animate the panel and its items. The standalone modal swipes to dismiss. The compact Gallery changes to a bottom bar and preserves selection and focus. Predictive back, direct vertical touch scrolling and live VoiceOver speech remain open."
     },
     {
       "id": "bottom-sheets",

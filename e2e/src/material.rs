@@ -2,6 +2,9 @@
 //! menus, Tab cycles and mobile sizing.
 //! Port of `scripts/browser-material.mjs` (M1–M23 in issue #62).
 
+#[path = "material_rail.rs"]
+mod material_rail;
+
 use anyhow::Result;
 use serde_json::{json, Value};
 
@@ -11,7 +14,7 @@ use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
     "M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "M13", "M14", "M15",
-    "M16", "M17", "M18", "M19", "M20", "M21", "M22",
+    "M16", "M17", "M18", "M19", "M20", "M21", "M22", "M24", "M25", "M26", "M27",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -310,7 +313,7 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
     let evidence = json!({"browser": chrome.version, "driver": "jet-bridge CDP", "state": state(tab).await?, "errors": errors});
     env.write_json("browser-material.json", &evidence)?;
     println!("  evidence: {}", evidence["state"]);
-    Ok(())
+    material_rail::journey(env, tab).await
 }
 
 #[cfg(test)]

@@ -146,7 +146,7 @@ does not change application state.
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
 | `bottom_sheet` / `modal_bottom_sheet` | Standard and modal sheet; top extra-large corners; drag-handle visual; modal scrim, focus trap and Escape/outside dismiss; light and dark; no drag gesture, snap points or animation |
-| `navigation_rail` | Three to seven destinations in an 80-pixel column; selected and disabled destination; 56x32 active indicator; arrow keys; light and dark; text-glyph icons, no badge, menu button, FAB slot, expanded rail or ripple |
+| `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
 | `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
@@ -274,3 +274,49 @@ Open gaps include the remaining families and variants, rounded
 clipping and RTL mirroring for shapes, heavier font faces and rendered
 letter spacing, elevation, finished animation, touch refinements and
 platform accessibility. See [verification](verification.md).
+### Wide navigation rail
+
+Place `Theme::wide_navigation_rail` and the page in a row.
+Give the rail and its destinations the same
+`WideNavigationRailMode`. Use stable destination IDs and give
+each button a localized name. The expanded layout uses the
+logical start for its icon. Let the page fill the remaining width.
+
+For animation, keep a `WideNavigationRailMotion` in the app.
+Call `advance` from `Application::animation_frame` and return
+its `AnimationUpdate`. Pass `frame()` to
+`Theme::animated_wide_navigation_rail`. Pass `frame().rail` to
+`Theme::animated_wide_navigation_rail_item_with_icon`.
+The icon and indicator move together. The label keeps its
+compact wrap and fades through zero before moving beside the icon.
+Use the same destination IDs when the layout switches to a bottom
+navigation bar.
+
+### Modal wide navigation rail
+
+Mount the rail after the page content. An optional collapsed rail
+stays in the page. Use distinct IDs for its destinations and the
+active modal. A stable opener ID lets focus return after dismissal.
+Close, Escape or a scrim tap sends the dismiss message.
+
+Use `WideNavigationRailMotionKind::Modal` for animation. The
+`Retain` variant grows over the collapsed rail. The `Hide`
+variant slides from the logical start edge. Use
+`Theme::swipeable_modal_wide_navigation_rail` to add swipe
+dismissal to the standalone variant. Store a
+`WideNavigationRailSwipe` in the app. Pass the viewport to
+`set_viewport` and forward the gesture and measured panel width
+to `apply`.
+
+The panel keeps its width, named scope and current page during
+dragging. The scrim fades with visible width. A slow release
+uses half the panel width. A release of at least 125 dp per second
+uses its direction. Call `advance` from the animation frame.
+When it returns a dismissal, close the app state and call
+`WideNavigationRailMotion::snap(false)`. Reduce Motion settles
+the endpoint immediately. Escape during a drag cancels it.
+
+Predictive back and direct vertical touch scrolling remain open.
+[Material navigation rail](https://m3.material.io/components/navigation-rail/overview)
+· [AndroidX modal anchors](https://github.com/androidx/androidx/blob/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WideNavigationRail.kt#L1249-L1324)
+· [AndroidX release threshold](https://github.com/androidx/androidx/blob/268d841a45644cadf438fc335c793869728449ec/compose/foundation/foundation/src/commonMain/kotlin/androidx/compose/foundation/gestures/AnchoredDraggable.kt#L1535-L1541)

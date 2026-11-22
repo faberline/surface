@@ -15,7 +15,7 @@ crate-type = ["cdylib", "rlib"]
 surface.workspace = true
 surface-app.workspace = true
 surface-material.workspace = true
-surface-platform.workspace = true
+surface-platform = { workspace = true, features = ["macos-accessibility"] }
 serde_json.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

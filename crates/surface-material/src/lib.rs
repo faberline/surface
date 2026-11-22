@@ -1,16 +1,27 @@
 //! A small Material 3-inspired component set. Values remain renderer-independent.
 use surface::{Align, Color, Length, Node, Role, Style};
 use surface_app::{CursorStyle, View};
+pub mod adaptive;
 mod components;
+mod elevation;
 pub mod motion;
 pub mod shape;
 mod tokens;
 pub mod typography;
+mod vector_icon;
+mod wide_navigation_rail;
 pub use components::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
-    IconButtonKind, LoadingKind, SegmentPosition,
+    IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition,
 };
+pub use elevation::Elevation;
 pub use tokens::ColorScheme;
+pub use vector_icon::VectorIcon;
+pub use wide_navigation_rail::{
+    ModalWideNavigationRailCollapse, ModalWideNavigationRailOptions,
+    ModalWideNavigationRailSwipeOptions, WideNavigationRailMode, WideNavigationRailMotion,
+    WideNavigationRailMotionFrame, WideNavigationRailMotionKind, WideNavigationRailSwipe,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Theme {

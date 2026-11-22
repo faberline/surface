@@ -1,4 +1,5 @@
 //! Platform-independent Rust application state and input routing.
+mod accessibility;
 #[cfg(feature = "bridge")]
 mod bridge;
 mod context;
@@ -6,9 +7,12 @@ mod controls;
 mod cursor;
 #[cfg(feature = "devtools")]
 mod devtools;
+mod drag_motion;
 mod editing;
 mod editing_runtime;
 mod focus_scroll;
+mod frame_paint;
+mod horizontal_drag;
 mod keys;
 mod motion;
 #[cfg(feature = "devtools")]
@@ -17,6 +21,12 @@ mod scroll_control;
 mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
+pub use accessibility::{
+    AccessibilityActivationResult, AccessibilityActivationTarget, AccessibilityFocusResult,
+    AccessibilityFocusTarget, AccessibilityFrame, AccessibilityFrameId, AccessibilityNode,
+    AccessibilityScrollDirection, AccessibilityScrollPageTarget, AccessibilityScrollResult,
+    AccessibilityScrollTarget,
+};
 pub use context::PointerPoint;
 pub use controls::Roving;
 pub use cursor::CursorStyle;
@@ -25,7 +35,9 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
+pub use horizontal_drag::{HorizontalDrag, HorizontalDragSession};
 pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
+pub use motion::{ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
 pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
 pub use scroll_control::{ScrollMetrics, ScrollTarget};
@@ -36,8 +48,8 @@ use std::{
     rc::Rc,
 };
 use surface::{
-    ComputedDom, DisplayList, DomError, LayoutEngine, LayoutError, MicroDom, Node, NodeId, Role,
-    TextMeasurer,
+    ComputedDom, DisplayList, DomError, ExtendedDisplayList, LayoutEngine, LayoutError, MicroDom,
+    Node, NodeId, Rect, Role, TextMeasurer,
 };
 
 /// One view of application state. Messages return through `Application::update`.
@@ -54,7 +66,26 @@ pub struct View<M> {
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     cursor: Option<CursorStyle>,
+    horizontal_drag: Option<horizontal_drag::Binding<M>>,
+    accessible_activation: bool,
+    focus_after_removal: Option<String>,
+    protect_composition_on_press: bool,
+    accessible_scroll: bool,
+    accessible_scroll_pages: bool,
+    interaction_suppression: Option<Rc<InteractionSuppression>>,
+    visual_overlay: bool,
+    modal_layer: Option<ModalLayer>,
 }
+struct InteractionSuppression {
+    focus_fallback: Option<String>,
+}
+
+#[derive(Clone, Copy)]
+enum ModalLayer {
+    BackdropParent,
+    Panel,
+}
+
 /// A key handler. `Some(message)` consumes the press, `None` passes it on.
 type KeyHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<M>>;
 impl<M> View<M> {
@@ -72,6 +103,15 @@ impl<M> View<M> {
             context: None,
             stick: false,
             cursor: None,
+            horizontal_drag: None,
+            accessible_activation: false,
+            focus_after_removal: None,
+            protect_composition_on_press: false,
+            accessible_scroll: false,
+            accessible_scroll_pages: false,
+            interaction_suppression: None,
+            visual_overlay: false,
+            modal_layer: None,
         }
     }
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -80,6 +120,94 @@ impl<M> View<M> {
     }
     pub fn on_press(mut self, message: M) -> Self {
         self.activate = Some(message);
+        self
+    }
+    /// When the focused control is removed or disabled, move focus to an
+    /// enabled target in the same scope. This does not press the target.
+    pub fn restore_focus_on_removal(mut self, target: impl Into<String>) -> Self {
+        self.focus_after_removal = Some(target.into());
+        self
+    }
+
+    /// Keep this subtree in layout and paint while excluding it from
+    /// pointer input, focus traversal and accessibility actions.
+    ///
+    /// When a focused descendant becomes unavailable, move focus to the
+    /// given stable ID if it can receive focus in the current scope.
+    /// An outer suppression governs any nested subtrees it covers.
+    pub fn without_interaction(mut self, focus_fallback: Option<&str>) -> Self {
+        self.interaction_suppression = Some(Rc::new(InteractionSuppression {
+            focus_fallback: focus_fallback.map(str::to_owned),
+        }));
+        self
+    }
+    /// Paint this subtree above ordinary content and below modal paint layers.
+    /// The overlay and its descendants stay out of input, focus and
+    /// accessibility. This does not open a focus scope.
+    pub fn visual_overlay(mut self) -> Self {
+        self.visual_overlay = true;
+        self.without_interaction(None)
+    }
+    /// Track horizontal motion after the pointer passes the drag threshold.
+    pub fn on_horizontal_drag(
+        self,
+        session: HorizontalDragSession,
+        update: impl Fn(HorizontalDrag) -> M + 'static,
+    ) -> Self {
+        self.on_horizontal_drag_with_bounds(session, move |drag, _| update(drag))
+    }
+    /// Track a horizontal drag and report the region's rendered bounds at
+    /// the primary press. The original unclipped bounds stay fixed across
+    /// moves, rebuilds, and release or cancellation. Use them when the
+    /// gesture's anchor depends on the measured size of a moving region.
+    pub fn on_horizontal_drag_with_bounds(
+        mut self,
+        session: HorizontalDragSession,
+        update: impl Fn(HorizontalDrag, Rect) -> M + 'static,
+    ) -> Self {
+        self.horizontal_drag = Some(horizontal_drag::Binding {
+            session,
+            update: Rc::new(update),
+        });
+        self
+    }
+
+    /// Report whether this control opens or collapses a panel.
+    pub fn disclosure_expanded(mut self, expanded: bool) -> Self {
+        self.node = self.node.disclosure_expanded(expanded);
+        self
+    }
+    /// Report current-page state without making the control a toggle.
+    pub fn current_page(mut self, current: bool) -> Self {
+        self.node = self.node.current_page(current);
+        self
+    }
+    /// Let a platform accessibility action invoke this view's press binding.
+    pub fn accessible_activation(mut self) -> Self {
+        self.accessible_activation = true;
+        self
+    }
+    /// Let a platform accessibility action reveal this view without pressing it.
+    pub fn accessibility_scroll_into_view(mut self) -> Self {
+        self.accessible_scroll = true;
+        self
+    }
+    /// Let a platform accessibility action scroll this viewport by one page.
+    pub fn accessibility_scroll_pages(mut self) -> Self {
+        self.accessible_scroll_pages = true;
+        self
+    }
+    /// Leave the current editor and its pending IME replacement in place
+    /// when primary or secondary click, Tab navigation, or normal
+    /// activation would enter this control during composition.
+    ///
+    /// Use this on controls that hide the editor. A press is ignored until
+    /// the user finishes or cancels composition. If layout is invalidated,
+    /// pointer presses wait for fresh geometry while an enabled protected
+    /// control is in scope. Accessibility actions already protect
+    /// composition without this option.
+    pub fn protect_composition_on_press(mut self) -> Self {
+        self.protect_composition_on_press = true;
         self
     }
     pub fn on_input(mut self, handler: impl Fn(String) -> M + 'static) -> Self {
@@ -136,6 +264,21 @@ impl<M> View<M> {
         self.dismiss = Some(dismiss);
         self
     }
+    /// Open a modal without a backdrop, such as a fixed menu. This panel
+    /// and its descendants form one layer above background content.
+    pub fn modal_overlay(mut self, dismiss: M) -> Self {
+        self.dismiss = Some(dismiss);
+        self.modal_layer = Some(ModalLayer::Panel);
+        self
+    }
+    /// Wrap this modal panel in its backdrop. Keep owned popups inside the
+    /// panel's view subtree so the runtime can resolve their current owner.
+    /// The panel needs a stable ID for focus and dismissal.
+    pub fn modal_with_backdrop(mut self, backdrop: Node, dismiss: M) -> Self {
+        self.dismiss = Some(dismiss);
+        self.modal_layer = Some(ModalLayer::BackdropParent);
+        Self::new(backdrop).children([self])
+    }
 }
 /// The app's answer to a close request.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -143,6 +286,21 @@ pub enum CloseDecision {
     Allow,
     Cancel,
 }
+/// Time and the last valid geometry available before drawing a frame.
+pub struct AnimationFrame<'a> {
+    pub now_ms: Option<f64>,
+    pub reduced_motion: bool,
+    pub dom: &'a MicroDom,
+    pub layout: Option<&'a ComputedDom>,
+}
+
+/// What an application needs after advancing its animation.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct AnimationUpdate {
+    pub rebuild: bool,
+    pub request_next: bool,
+}
+
 pub trait Application: 'static {
     type Message: Clone + 'static;
     fn title(&self) -> &str {
@@ -159,6 +317,20 @@ pub trait Application: 'static {
     /// is open or after a failed save. The default allows the close.
     fn close_requested(&mut self) -> CloseDecision {
         CloseDecision::Allow
+    }
+
+    /// Text scale applied during layout. A nonfinite or nonpositive value uses 1.
+    fn text_scale(&self) -> f32 {
+        1.
+    }
+    /// Report a change of the logical viewport before layout.
+    /// Return true when the application's view must be rebuilt.
+    fn viewport_changed(&mut self, _width: f32, _height: f32) -> bool {
+        false
+    }
+    /// Advance frame-driven application motion.
+    fn animation_frame(&mut self, _frame: AnimationFrame<'_>) -> AnimationUpdate {
+        AnimationUpdate::default()
     }
     fn view(&self) -> View<Self::Message>;
     /// Global keyboard shortcuts, read each time a key arrives. A shortcut
@@ -260,6 +432,21 @@ struct Binding<M> {
     context: Option<context::ContextHandler<M>>,
     stick: bool,
     cursor: Option<CursorStyle>,
+    horizontal_drag: Option<horizontal_drag::Binding<M>>,
+    accessible_activation: bool,
+    focus_after_removal: Option<String>,
+    protect_composition_on_press: bool,
+    accessible_scroll: bool,
+    accessible_scroll_pages: bool,
+    interaction_suppression: Option<Rc<InteractionSuppression>>,
+    visual_overlay: bool,
+    modal_layer: Option<ModalLayer>,
+}
+
+impl<M> Binding<M> {
+    fn accepts_interaction(&self) -> bool {
+        self.interaction_suppression.is_none()
+    }
 }
 
 /// Messages posted from inside `update` or from other code on the UI thread.
@@ -309,6 +496,16 @@ pub struct Runtime<A: Application> {
     text_drag: Option<String>,
     scopes: Vec<controls::FocusScope>,
     range_drag: Option<controls::RangeDrag>,
+    horizontal_drag: Option<horizontal_drag::Tracking>,
+    pointer_geometry_current: bool,
+    modal_layers: Vec<(Option<NodeId>, NodeId)>,
+    accessibility: Option<accessibility::Revision>,
+    pending_accessibility_scroll: Option<accessibility::PendingScroll>,
+    app_viewport: Option<(f32, f32)>,
+    viewport_rebuild_pending: bool,
+    animation_rebuild_pending: bool,
+    animation_request_next: bool,
+    layout_text_scale: f32,
     modal_outside: bool,
     layout_focus: Option<String>,
     layout_viewport: Option<(f32, f32)>,
@@ -338,6 +535,16 @@ impl<A: Application> Runtime<A> {
             text_drag: None,
             scopes: Vec::new(),
             range_drag: None,
+            horizontal_drag: None,
+            pointer_geometry_current: false,
+            modal_layers: Vec::new(),
+            accessibility: None,
+            pending_accessibility_scroll: None,
+            app_viewport: None,
+            viewport_rebuild_pending: false,
+            animation_rebuild_pending: false,
+            animation_request_next: false,
+            layout_text_scale: 1.,
             modal_outside: false,
             layout_focus: None,
             layout_viewport: None,
@@ -361,6 +568,87 @@ impl<A: Application> Runtime<A> {
     }
     pub fn focused(&self) -> Option<&str> {
         self.focused.as_deref()
+    }
+
+    /// Record a logical viewport change. This runs before frame layout.
+    pub fn set_viewport(&mut self, width: f32, height: f32) -> Result<bool, AppError> {
+        if !width.is_finite() || !height.is_finite() || width <= 0. || height <= 0. {
+            return Ok(false);
+        }
+        let mut changed = false;
+        if self.app_viewport != Some((width, height)) {
+            changed = self.pointer_geometry_changed()?;
+            self.viewport_rebuild_pending |= self.app.viewport_changed(width, height);
+            self.app_viewport = Some((width, height));
+        }
+        if self.viewport_rebuild_pending {
+            self.rebuild()?;
+            self.viewport_rebuild_pending = false;
+            changed = true;
+        }
+        Ok(changed)
+    }
+
+    /// Cancel a pointer sequence without invoking a destination or dismissal.
+    pub fn cancel_pointer(&mut self) -> Result<bool, AppError> {
+        let changed = self.pressed.is_some()
+            || self.hovered.is_some()
+            || self.range_drag.is_some()
+            || self.text_drag.is_some()
+            || self.modal_outside;
+        self.clear_modal_pointer();
+        self.cancel_horizontal_drag().map(|drag| changed || drag)
+    }
+
+    /// Invalidate pointer geometry before the next resize or scale redraw.
+    pub fn pointer_geometry_changed(&mut self) -> Result<bool, AppError> {
+        self.pointer_geometry_current = false;
+        self.cancel_horizontal_drag()
+    }
+
+    fn has_captured_drag(&self) -> bool {
+        self.horizontal_drag.is_some()
+    }
+
+    fn drag_scope(&self) -> Option<&str> {
+        self.active_scope_root()
+            .and_then(|id| self.dom.get(id).ok()?.stable_id())
+    }
+
+    fn protects_composition(&self, id: NodeId) -> bool {
+        self.bindings
+            .get(&id)
+            .is_some_and(|b| b.protect_composition_on_press)
+            && self.has_pending_composition()
+    }
+    fn has_pending_composition(&self) -> bool {
+        self.editors
+            .values()
+            .any(|editor| editor.composition().is_some())
+    }
+    /// Whether a press at these logical coordinates is guarded while an
+    /// IME replacement is pending. Hosts can consult this before a native
+    /// focus transfer would end composition. This does not dispatch the press.
+    pub fn pointer_preserves_composition(&self, x: f32, y: f32) -> bool {
+        let hit = self.hit(x, y);
+        self.protects_pointer_composition(hit)
+            || (self.has_pending_composition()
+                && self.horizontal_drag_candidate(hit, x, y).is_some())
+    }
+    fn protects_pointer_composition(&self, hit: Option<NodeId>) -> bool {
+        if let Some(id) = hit {
+            return self.protects_composition(id);
+        }
+        // IME events invalidate the old text layout and hit geometry. A
+        // press arriving before redraw might be on a protected control.
+        self.computed.is_none()
+            && self.has_pending_composition()
+            && self.bindings.iter().any(|(id, binding)| {
+                (binding.protect_composition_on_press
+                    && self.in_scope(*id)
+                    && self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
+                    || (binding.horizontal_drag.is_some() && self.in_horizontal_drag_scope(*id))
+            })
     }
     /// A handle for posting messages that run after the current update.
     pub fn queue(&self) -> Queue<A::Message> {
@@ -416,7 +704,17 @@ impl<A: Application> Runtime<A> {
     fn rebuild(&mut self) -> Result<(), AppError> {
         #[cfg(feature = "devtools")]
         let start = self.trace_now();
+        self.accessibility = None;
         let result = self.rebuild_view();
+        if result.is_ok() {
+            self.accessibility = Some(accessibility::Revision::default());
+            self.animation_rebuild_pending = false;
+        } else {
+            self.discard_horizontal_drag();
+            if self.active_scope_root().is_some() {
+                self.clear_modal_pointer();
+            }
+        }
         #[cfg(feature = "devtools")]
         self.trace_span(
             start,
@@ -424,7 +722,8 @@ impl<A: Application> Runtime<A> {
                 nodes: self.dom.len() as u32,
             },
         );
-        result
+        result?;
+        self.reconcile_horizontal_drag_binding()
     }
     fn rebuild_view(&mut self) -> Result<(), AppError> {
         fn add<M>(
@@ -433,13 +732,18 @@ impl<A: Application> Runtime<A> {
             parent: Option<NodeId>,
             bindings: &mut BTreeMap<NodeId, Binding<M>>,
             disabled: bool,
+            inherited_suppression: Option<&Rc<InteractionSuppression>>,
         ) -> Result<(), AppError> {
             let disabled = disabled || view.node.is_disabled();
+            let suppression = inherited_suppression.or(view.interaction_suppression.as_ref());
             let node = view.node.disabled(disabled);
             if (node.is_focusable()
                 || view.roving.is_some()
                 || view.dismiss.is_some()
-                || view.stick)
+                || view.stick
+                || view.accessible_scroll
+                || view.accessible_scroll_pages
+                || view.horizontal_drag.is_some())
                 && node.stable_id().is_none()
             {
                 return Err(AppError::MissingId(node.name().to_owned()));
@@ -479,17 +783,26 @@ impl<A: Application> Runtime<A> {
                     context: view.context,
                     stick: view.stick,
                     cursor: view.cursor,
+                    horizontal_drag: view.horizontal_drag,
+                    accessible_activation: view.accessible_activation,
+                    focus_after_removal: view.focus_after_removal,
+                    protect_composition_on_press: view.protect_composition_on_press,
+                    accessible_scroll: view.accessible_scroll,
+                    accessible_scroll_pages: view.accessible_scroll_pages,
+                    visual_overlay: view.visual_overlay,
+                    modal_layer: view.modal_layer,
+                    interaction_suppression: suppression.cloned(),
                 },
             );
             for child in view.children {
-                add(child, dom, Some(id), bindings, disabled)?;
+                add(child, dom, Some(id), bindings, disabled, suppression)?;
             }
             Ok(())
         }
         let view = self.app.view();
         let mut dom = MicroDom::new(view.node.clone());
         let mut bindings = BTreeMap::new();
-        add(view, &mut dom, None, &mut bindings, false)?;
+        add(view, &mut dom, None, &mut bindings, false, None)?;
         for (key, (x, y)) in &self.scroll {
             if let Some(id) = dom.by_id(key) {
                 let mut style = dom.get(id)?.style().clone();
@@ -498,9 +811,15 @@ impl<A: Application> Runtime<A> {
                 dom.set_style(id, style)?;
             }
         }
+        let focus_after_removal = self
+            .focused_node()
+            .filter(|id| self.in_scope(*id))
+            .and_then(|id| self.bindings.get(&id)?.focus_after_removal.clone());
         self.dom = dom;
         self.bindings = bindings;
         self.reconcile_editors();
+        self.computed = None;
+        self.reconcile_controls(focus_after_removal);
         if self.focused.as_ref().is_some_and(|key| {
             self.dom
                 .by_id(key)
@@ -509,12 +828,11 @@ impl<A: Application> Runtime<A> {
         }) {
             self.focused = None;
         }
-        self.computed = None;
-        self.reconcile_controls();
-        self.hovered = self
-            .hovered
-            .take()
-            .filter(|key| self.dom.by_id(key).is_some());
+        self.hovered = self.hovered.take().filter(|key| {
+            self.dom
+                .by_id(key)
+                .is_some_and(|id| self.has_interaction_binding(id))
+        });
         self.pressed = self.pressed.take().filter(|key| {
             self.dom
                 .by_id(key)
@@ -522,42 +840,113 @@ impl<A: Application> Runtime<A> {
         });
         Ok(())
     }
+
     pub fn render(
         &mut self,
         width: f32,
         height: f32,
         measurer: &mut impl TextMeasurer,
     ) -> Result<DisplayList, AppError> {
-        let result = self.render_frame(width, height, measurer);
-        #[cfg(feature = "devtools")]
-        self.trace_error(&result);
-        result
+        self.render_with(width, height, measurer)
     }
-    fn render_frame(
+
+    /// Render one frame with the extended renderer's geometry and shadows.
+    pub fn render_extended(
         &mut self,
         width: f32,
         height: f32,
         measurer: &mut impl TextMeasurer,
-    ) -> Result<DisplayList, AppError> {
+    ) -> Result<ExtendedDisplayList, AppError> {
+        self.render_with(width, height, measurer)
+    }
+
+    fn render_with<P: frame_paint::FramePaint>(
+        &mut self,
+        width: f32,
+        height: f32,
+        measurer: &mut impl TextMeasurer,
+    ) -> Result<P, AppError> {
+        let result = self.render_frame(width, height, measurer);
+        self.pointer_geometry_current = result.is_ok();
+        if result.is_err() {
+            // Roll back a live gesture without replacing the render error.
+            let _ = self.cancel_pointer();
+            self.animation_request_next = false;
+            self.computed = None;
+            self.ime_area = None;
+            self.pending_accessibility_scroll = None;
+        }
+        self.accessibility_rendered(result.is_ok());
+        #[cfg(feature = "devtools")]
+        self.trace_error(&result);
+        result
+    }
+    fn render_frame<P: frame_paint::FramePaint>(
+        &mut self,
+        width: f32,
+        height: f32,
+        measurer: &mut impl TextMeasurer,
+    ) -> Result<P, AppError> {
+        self.set_viewport(width, height)?;
+        if width.is_finite() && height.is_finite() && width > 0. && height > 0. {
+            self.animate_application()?;
+        }
+        let text_scale = self.app.text_scale();
+        let text_scale = if text_scale.is_finite() && text_scale > 0. {
+            text_scale
+        } else {
+            1.
+        };
+
         #[cfg(feature = "devtools")]
         let start = self.trace_now();
         let (mut display_dom, mut decorations, mut computed) =
-            self.layout_editing(width, height, measurer)?;
-        if self.focused != self.layout_focus || self.layout_viewport != Some((width, height)) {
+            self.layout_editing(width, height, text_scale, measurer)?;
+        if self.focused != self.layout_focus
+            || self.layout_viewport != Some((width, height))
+            || self.layout_text_scale != text_scale
+        {
             if let Some(focused) = self.focused_node() {
                 for ancestor in self.scroll_ancestors(focused) {
                     if self.reveal_in(focused, ancestor, &computed)? {
                         (display_dom, decorations, computed) =
-                            self.layout_editing(width, height, measurer)?;
+                            self.layout_editing(width, height, text_scale, measurer)?;
                     }
                 }
             }
             self.layout_focus.clone_from(&self.focused);
             self.layout_viewport = Some((width, height));
+            self.layout_text_scale = text_scale;
+        }
+        if let Some(pending) = self.pending_accessibility_scroll.take() {
+            match pending {
+                accessibility::PendingScroll::IntoView(target) => {
+                    if let Some(target) = self.check_accessibility_reveal(&target, &computed) {
+                        for ancestor in self.scroll_ancestors(target) {
+                            if !self.in_scope(ancestor) {
+                                break;
+                            }
+                            if self.reveal_in(target, ancestor, &computed)? {
+                                (display_dom, decorations, computed) =
+                                    self.layout_editing(width, height, text_scale, measurer)?;
+                            }
+                        }
+                    }
+                }
+                accessibility::PendingScroll::Page(target) => {
+                    if self.apply_accessibility_scroll_page(&target, &computed)? {
+                        (display_dom, decorations, computed) =
+                            self.layout_editing(width, height, text_scale, measurer)?;
+                    }
+                }
+            }
         }
         if self.apply_scroll_control(&computed)? {
-            (display_dom, decorations, computed) = self.layout_editing(width, height, measurer)?;
+            (display_dom, decorations, computed) =
+                self.layout_editing(width, height, text_scale, measurer)?;
         }
+        self.dom
+            .apply_modal_layers(&mut computed.paint_order, &self.modal_layers);
         #[cfg(feature = "devtools")]
         self.trace_span(
             start,
@@ -573,15 +962,9 @@ impl<A: Application> Runtime<A> {
             hovered: self.hovered.as_ref().and_then(|id| self.dom.by_id(id)),
             pressed: self.pressed.as_ref().and_then(|id| self.dom.by_id(id)),
         };
-        let list = DisplayList::compile_with_interaction(
-            &display_dom,
-            &computed,
-            focused,
-            &decorations,
-            interaction,
-        );
+        let list = P::compile(&display_dom, &computed, focused, &decorations, interaction);
         #[cfg(feature = "devtools")]
-        self.trace_paint(start, list.ops.len());
+        self.trace_paint(start, list.len());
         #[cfg(feature = "devtools")]
         {
             // Moved, not copied: keeping the frame allocates nothing.
@@ -598,8 +981,7 @@ impl<A: Application> Runtime<A> {
     fn hit(&self, x: f32, y: f32) -> Option<NodeId> {
         self.computed
             .as_ref()?
-            .hit_test(&self.dom, x, y)
-            .filter(|id| self.in_scope(*id))
+            .hit_test_where(&self.dom, x, y, |id| self.in_scope(id))
     }
     fn stable(&self, id: NodeId) -> Option<String> {
         self.dom.get(id).ok()?.stable_id().map(str::to_owned)
@@ -687,6 +1069,9 @@ impl<A: Application> Runtime<A> {
             .by_id(stable_id)
             .filter(|id| self.in_scope(*id) && self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
             .ok_or_else(|| AppError::MissingControl(stable_id.to_owned()))?;
+        if self.protects_composition(id) {
+            return Ok(false);
+        }
         let focus_changed = self.focused.as_deref() != Some(stable_id);
         if focus_changed {
             self.cancel_composition();
@@ -709,23 +1094,52 @@ impl<A: Application> Runtime<A> {
     fn dispatch_event(&mut self, event: Event) -> Result<bool, AppError> {
         match event {
             Event::PointerDown { x, y } => {
-                self.cancel_composition();
-                self.modal_outside = self.outside_scope(x, y);
+                if self.has_captured_drag() {
+                    self.cancel_pointer()?;
+                }
+                let hit = self.hit(x, y);
+                if self.protects_pointer_composition(hit) {
+                    return Ok(false);
+                }
+                let drag = self.horizontal_drag_candidate(hit, x, y);
+                if let Some(id) = drag {
+                    if self.has_pending_composition() {
+                        return Ok(false);
+                    }
+                    self.begin_horizontal_drag(id, x, y);
+                } else {
+                    self.cancel_composition();
+                }
+                self.modal_outside = self.outside_scope(x, y, hit);
                 if self.modal_outside {
                     self.pressed = None;
                     return Ok(true);
                 }
-                self.pressed = self.hit(x, y).and_then(|id| self.stable(id));
+                self.pressed = hit.and_then(|id| self.stable(id));
                 self.hovered = self.pressed.clone();
-                self.focused = self.pressed.clone();
-                if self.start_range_drag() {
-                    return self.range_pointer(x);
+                if drag.is_none() {
+                    // Blank clicks within a modal must not release its focus scope.
+                    if self.pressed.is_some() || self.active_scope_root().is_none() {
+                        self.focused = self.pressed.clone();
+                    }
+                    if self.start_range_drag() {
+                        return self.range_pointer(x);
+                    }
+                    self.place_text_cursor(x, y, false);
                 }
-                self.place_text_cursor(x, y, false);
                 Ok(true)
             }
-            Event::SecondaryDown { x, y } => self.secondary_down(x, y),
+            Event::SecondaryDown { x, y } => {
+                if self.protects_pointer_composition(self.hit(x, y)) {
+                    return Ok(false);
+                }
+                self.secondary_down(x, y)
+            }
             Event::PointerUp { x, y } => {
+                let horizontal_tap = self.horizontal_drag.is_some();
+                if self.update_horizontal_drag(x, y, true)? {
+                    return Ok(true);
+                }
                 if self.range_drag.is_some() {
                     let result = self.range_pointer(x);
                     self.range_drag = None;
@@ -733,7 +1147,7 @@ impl<A: Application> Runtime<A> {
                     return result;
                 }
                 if std::mem::take(&mut self.modal_outside) {
-                    return if self.outside_scope(x, y) {
+                    return if self.outside_scope(x, y, self.hit(x, y)) {
                         self.dismiss_scope()
                     } else {
                         Ok(true)
@@ -746,13 +1160,19 @@ impl<A: Application> Runtime<A> {
                     .take()
                     .filter(|pressed| hit.as_ref() == Some(pressed))
                 {
+                    // An unclaimed gesture still acts as the original tap.
+                    if horizontal_tap {
+                        self.cancel_composition();
+                    }
                     self.activate_id(&pressed).map(|_| true)
                 } else {
                     Ok(true)
                 }
             }
             Event::FocusNext { reverse } => {
-                self.cancel_composition();
+                if self.has_captured_drag() {
+                    self.cancel_pointer()?;
+                }
                 let controls: Vec<_> = self
                     .dom
                     .iter()
@@ -767,6 +1187,7 @@ impl<A: Application> Runtime<A> {
                     .filter_map(|(id, _)| self.stable(id))
                     .collect();
                 if controls.is_empty() {
+                    self.cancel_composition();
                     self.focused = self.scope_entry();
                     return Ok(true);
                 }
@@ -780,6 +1201,14 @@ impl<A: Application> Runtime<A> {
                     (None, true) => controls.len() - 1,
                     (None, false) => 0,
                 };
+                if self
+                    .dom
+                    .by_id(&controls[next])
+                    .is_some_and(|id| self.protects_composition(id))
+                {
+                    return Ok(false);
+                }
+                self.cancel_composition();
                 self.focused = Some(controls[next].clone());
                 Ok(true)
             }
@@ -797,6 +1226,9 @@ impl<A: Application> Runtime<A> {
                 by_word: false,
             }),
             Event::PointerMove { x, y } => {
+                if self.update_horizontal_drag(x, y, false)? {
+                    return Ok(true);
+                }
                 let hover = self.hit(x, y).and_then(|id| self.stable(id));
                 let changed = self.hovered != hover;
                 self.hovered = hover;
@@ -811,7 +1243,9 @@ impl<A: Application> Runtime<A> {
                 if self.focused.as_ref() != Some(&id) {
                     return Ok(false);
                 }
+                let cancelled = self.cancel_horizontal_drag()?;
                 self.editing_event(Event::Ime(event))
+                    .map(|handled| handled || cancelled)
             }
             Event::Edit {
                 key,
@@ -833,21 +1267,29 @@ impl<A: Application> Runtime<A> {
                 }
             }
             Event::SetValue { id, value } => self.set_value(&id, value),
-            event @ (Event::Ime(_)
-            | Event::InputValue { .. }
-            | Event::Select { .. }
-            | Event::Blur) => self.editing_event(event),
+            event @ Event::Ime(_) => {
+                let cancelled = self.cancel_horizontal_drag()?;
+                self.editing_event(event)
+                    .map(|handled| handled || cancelled)
+            }
+            event @ (Event::InputValue { .. } | Event::Select { .. }) => self.editing_event(event),
+            Event::Blur => {
+                let pointer = self.cancel_pointer()?;
+                self.editing_event(Event::Blur)
+                    .map(|changed| pointer || changed)
+            }
             Event::Cancel => {
-                self.pressed = None;
-                self.text_drag = None;
-                self.range_drag = None;
-                self.modal_outside = false;
-                let composing = self.editors.values().any(|e| e.is_composing());
+                let dragging = self.has_captured_drag();
+                let pointer = self.cancel_pointer()?;
+                if dragging {
+                    return Ok(true);
+                }
+                let composing = self.has_pending_composition();
                 self.cancel_composition();
                 if composing {
                     Ok(true)
                 } else {
-                    self.dismiss_scope()
+                    self.dismiss_scope().map(|handled| handled || pointer)
                 }
             }
             Event::Scroll {
