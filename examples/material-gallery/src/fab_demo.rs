@@ -557,7 +557,7 @@ fn chip(theme: &Theme, id: &str, label: &str, selected: bool, message: Message) 
         .accessible_activation()
 }
 
-fn add_icon() -> VectorIcon {
+pub(crate) fn add_icon() -> VectorIcon {
     static ICON: OnceLock<VectorIcon> = OnceLock::new();
     ICON.get_or_init(|| {
         VectorIcon::new([

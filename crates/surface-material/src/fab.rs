@@ -71,7 +71,7 @@ impl Theme {
         motion: &ExpressiveFabMotion,
     ) -> View<M> {
         let pose = FabPose::from(options.size);
-        let face = fab_face(self, options, pose, &content.icon, motion);
+        let face = fab_face(self, options, pose, &content.icon, motion, None);
         fab_action(
             options,
             pose.side,
@@ -83,10 +83,10 @@ impl Theme {
 }
 
 #[derive(Clone, Copy)]
-struct FabPose {
-    side: f32,
-    radius: f32,
-    icon: f32,
+pub(super) struct FabPose {
+    pub(super) side: f32,
+    pub(super) radius: f32,
+    pub(super) icon: f32,
 }
 
 impl From<ExpressiveFabSize> for FabPose {
@@ -121,7 +121,7 @@ impl FabPose {
     }
 }
 
-fn fab_action<M>(
+pub(super) fn fab_action<M>(
     options: ExpressiveFabOptions<'_>,
     side: f32,
     face: View<M>,
@@ -157,12 +157,13 @@ fn fab_action<M>(
     }
 }
 
-fn fab_face<M>(
+pub(super) fn fab_face<M>(
     theme: &Theme,
     options: ExpressiveFabOptions<'_>,
     pose: FabPose,
     icon: &VectorIcon,
     motion: &ExpressiveFabMotion,
+    colors: Option<(Color, Color)>,
 ) -> View<M> {
     let mode = motion.interaction();
     let opacity = motion.visibility_opacity();
@@ -177,7 +178,7 @@ fn fab_face<M>(
         (false, ExpressiveFabElevation::Lowered, true) => Elevation::Level2,
         (false, ExpressiveFabElevation::Lowered, false) => Elevation::Level1,
     };
-    let (fill, ink) = fab_colors(theme, options);
+    let (fill, ink) = colors.unwrap_or_else(|| fab_colors(theme, options));
     let corners = Corners::all(pose.radius);
     let shadows = theme.elevation(level).map(|mut shadow| {
         shadow.color = tint(shadow.color, opacity);
@@ -252,7 +253,7 @@ fn fab_face<M>(
     View::new(background).children(layer.into_iter().chain(ripple).chain(icon).chain(indicator))
 }
 
-fn fab_colors(theme: &Theme, options: ExpressiveFabOptions<'_>) -> (Color, Color) {
+pub(super) fn fab_colors(theme: &Theme, options: ExpressiveFabOptions<'_>) -> (Color, Color) {
     let c = theme.colors;
     if options.disabled {
         return (tint(c.on_surface, 0.12), tint(c.on_surface, 0.38));

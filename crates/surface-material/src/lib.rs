@@ -20,6 +20,9 @@ mod elevation;
 mod extended_fab;
 mod extended_fab_motion;
 mod fab;
+mod fab_menu;
+mod fab_menu_layout;
+mod fab_menu_motion;
 mod fab_motion;
 pub mod motion;
 mod navigation_drawer;
@@ -73,6 +76,14 @@ pub use fab::{
     ExpressiveFabAppearance, ExpressiveFabContent, ExpressiveFabElevation, ExpressiveFabOptions,
     ExpressiveFabSize,
 };
+pub use fab_menu::{
+    FabMenuAppearance, FabMenuContent, FabMenuItem, FabMenuOptions, FabMenuPresentation,
+};
+pub use fab_menu_layout::{
+    fab_menu_edge_margin, place_fab_menu_floating, place_fab_menu_trigger, place_fab_menu_web,
+    FAB_MENU_LIST_INSET,
+};
+pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
 pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,

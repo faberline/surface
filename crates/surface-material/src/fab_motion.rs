@@ -46,8 +46,8 @@ struct Wave {
 }
 
 #[derive(Clone, Copy)]
-struct Spring {
-    position: f64,
+pub(super) struct Spring {
+    pub(super) position: f64,
     velocity: f64,
 }
 
@@ -244,18 +244,18 @@ impl ExpressiveFabMotion {
 }
 
 impl Spring {
-    const fn new(position: f64) -> Self {
+    pub(super) const fn new(position: f64) -> Self {
         Self {
             position,
             velocity: 0.,
         }
     }
 
-    fn resting_at(self, target: f64) -> bool {
+    pub(super) fn resting_at(self, target: f64) -> bool {
         self.position == target && self.velocity == 0.
     }
 
-    fn advance(&mut self, target: f64, seconds: f64, stiffness: f64, damping: f64) {
+    pub(super) fn advance(&mut self, target: f64, seconds: f64, stiffness: f64, damping: f64) {
         if self.resting_at(target) || seconds == 0. {
             return;
         }
