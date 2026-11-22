@@ -65,8 +65,9 @@ pub struct View<M> {
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     value: Option<Rc<dyn Fn(f64) -> M>>,
-    roving: Option<Roving>,
+    roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    modal_focus_fallback: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
@@ -109,6 +110,7 @@ impl<M> View<M> {
             value: None,
             roving: None,
             dismiss: None,
+            modal_focus_fallback: None,
             cancel_within: None,
             key: None,
             focus_navigation: None,
@@ -280,7 +282,21 @@ impl<M> View<M> {
         self
     }
     pub fn roving(mut self, options: Roving) -> Self {
-        self.roving = Some(options);
+        self.roving = Some(controls::RovingGroup {
+            options,
+            first_enabled_on_entry: false,
+        });
+        self
+    }
+
+    /// Enter this group at its first enabled tab stop in logical order.
+    /// Either Tab direction enters at the same stop. The current member
+    /// keeps the group's tab stop until focus moves out of the group.
+    pub fn roving_first(mut self, options: Roving) -> Self {
+        self.roving = Some(controls::RovingGroup {
+            options,
+            first_enabled_on_entry: true,
+        });
         self
     }
     /// Handle key presses while this node has focus. The handler runs
@@ -382,6 +398,13 @@ impl<M> View<M> {
         self.modal_layer = Some(ModalLayer::Panel);
         self
     }
+    /// Preserve focus when this modal closes and its opener is gone. First
+    /// try the previously focused control if it still exists in the scope
+    /// below the modal, then try the given stable ID in that scope.
+    pub fn modal_focus_fallback(mut self, target: impl Into<String>) -> Self {
+        self.modal_focus_fallback = Some(target.into());
+        self
+    }
     /// Wrap this modal panel in its backdrop. Keep owned popups inside the
     /// panel's view subtree so the runtime can resolve their current owner.
     /// The panel needs a stable ID for focus and dismissal.
@@ -460,6 +483,19 @@ pub trait Application: 'static {
             animation: self.animation_frame(frame),
             suppress_touch_activation: false,
         }
+    }
+    /// Observe the stable ID of the accepted primary mouse or touch press.
+    /// It is present while the press is pending and clears after release,
+    /// cancellation, or loss of the target. Events completed before the
+    /// frame leave no pending press. The default calls
+    /// [`Self::animation_frame_with_input`].
+    fn animation_frame_with_press(
+        &mut self,
+        frame: AnimationFrame<'_>,
+        input: FrameInput<'_>,
+        _pressed: Option<&str>,
+    ) -> InputAnimationUpdate {
+        self.animation_frame_with_input(frame, input)
     }
     /// Handle Escape for transient application UI outside modal scopes.
     /// Return true when the runtime should rebuild the view.
@@ -560,8 +596,9 @@ struct Binding<M> {
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     value: Option<Rc<dyn Fn(f64) -> M>>,
-    roving: Option<Roving>,
+    roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    modal_focus_fallback: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
@@ -937,6 +974,7 @@ impl<A: Application> Runtime<A> {
                     value: view.value,
                     roving: view.roving,
                     dismiss: view.dismiss,
+                    modal_focus_fallback: view.modal_focus_fallback,
                     cancel_within: view.cancel_within,
                     key: view.key,
                     focus_navigation: view.focus_navigation,
@@ -980,6 +1018,12 @@ impl<A: Application> Runtime<A> {
             .and_then(|id| self.bindings.get(&id))
             .map(|binding| binding.focus_after_removal.clone())
             .unwrap_or_default();
+        let pressed_role = self
+            .pressed
+            .as_deref()
+            .and_then(|key| self.dom.by_id(key))
+            .and_then(|id| self.dom.get(id).ok())
+            .map(Node::role);
         self.dom = dom;
         self.bindings = bindings;
         self.reconcile_editors();
@@ -999,9 +1043,13 @@ impl<A: Application> Runtime<A> {
                 .is_some_and(|id| self.has_interaction_binding(id))
         });
         self.pressed = self.pressed.take().filter(|key| {
-            self.dom
-                .by_id(key)
-                .is_some_and(|id| self.dom.get(id).is_ok_and(|n| n.is_focusable()))
+            self.dom.by_id(key).is_some_and(|id| {
+                self.in_scope(id)
+                    && self
+                        .dom
+                        .get(id)
+                        .is_ok_and(|node| node.is_focusable() && Some(node.role()) == pressed_role)
+            })
         });
         Ok(())
     }
