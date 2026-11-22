@@ -170,6 +170,7 @@ does not change application state.
 | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 | `search_bar` | Pill search bar with leading glyph, controlled text input and a clear button while the query is not empty; no search view, suggestions or placeholder yet |
+| `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
 
 The short `button`, `tonal_button`, `disabled_button` and `checkbox`
 methods call the same implementations. Button and chip containers paint
@@ -184,6 +185,29 @@ revealed from its inner scroll container to its outer container. A viewport
 resize also reveals focus. Fixed overlays do not move the background.
 Repeated frames preserve a deliberate manual scroll when focus and viewport
 have not changed. A target larger than its viewport is aligned at its start.
+
+## Snackbar
+
+Place `Theme::snackbar` near the bottom of the app, above bottom
+navigation. Supply localized labels for the action and the optional Close
+icon. Both controls send their own messages. `SnackbarOptions` can set
+right-to-left layout, put the action on a separate line, or restore focus
+to a caller-chosen control when a focused Snackbar action goes away.
+
+`SnackbarQueue` is optional state for showing one message at a time.
+Pass the same monotonic clock to enqueue, act, dismiss and check expiry.
+Short messages stay for four seconds. Long messages stay for ten seconds.
+Messages with an action stay available until an explicit action or
+dismissal. The app owns the clock, placement, timeout adjustments and
+action result. Use each returned `SnackbarId` for both its view ID and
+its interaction messages.
+
+The visual reference is [Material 3 Snackbar](https://m3.material.io/components/snackbar/overview).
+The Snackbar sizes, inverse colors, typography and action layout follow the
+[AndroidX Snackbar](https://android.googlesource.com/platform/frameworks/support/+/3a4444a5b801bb899ca38bb982b83be53c169090/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Snackbar.kt).
+The [AndroidX host](https://android.googlesource.com/platform/frameworks/support/+/3a4444a5b801bb899ca38bb982b83be53c169090/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SnackbarHost.kt)
+defines the timing reference. The Gallery adds a short entrance animation.
+It settles immediately with Reduce Motion.
 
 ## Motion
 

@@ -1,8 +1,10 @@
 mod modal_wide_navigation_rail_demo;
 mod rail_icons;
+mod snackbar_demo;
 mod wide_navigation_rail_demo;
 
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
+use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{AnimationFrame, AnimationUpdate, Application, View};
 use surface_material::{
@@ -33,6 +35,7 @@ pub struct Gallery {
     rail_large_text: bool,
     wide_rail_demo: WideRailDemo,
     modal_wide_rail_demo: ModalWideRailDemo,
+    snackbar_demo: SnackbarDemo,
 }
 impl Default for Gallery {
     fn default() -> Self {
@@ -58,6 +61,7 @@ impl Default for Gallery {
             rail_large_text: false,
             wide_rail_demo: WideRailDemo::default(),
             modal_wide_rail_demo: ModalWideRailDemo::default(),
+            snackbar_demo: SnackbarDemo::default(),
         }
     }
 }
@@ -68,6 +72,7 @@ pub enum Message {
     RailLargeText,
     WideRail(WideRailEvent),
     ModalWideRail(ModalWideRailEvent),
+    Snackbar(SnackbarEvent),
     Drawer(usize),
     Nav(usize),
     Theme,
@@ -91,7 +96,7 @@ impl Application for Gallery {
         "Surface · Material gallery"
     }
     fn text_scale(&self) -> f32 {
-        if self.rail_large_text {
+        if self.rail_large_text || self.snackbar_demo.large_text() {
             2.
         } else {
             1.
@@ -105,9 +110,10 @@ impl Application for Gallery {
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
         let inline = self.wide_rail_demo.frame(&frame);
         let modal = self.modal_wide_rail_demo.frame(&frame);
+        let snackbar = self.snackbar_demo.frame(&frame);
         AnimationUpdate {
-            rebuild: inline.rebuild || modal.rebuild,
-            request_next: inline.request_next || modal.request_next,
+            rebuild: inline.rebuild || modal.rebuild || snackbar.rebuild,
+            request_next: inline.request_next || modal.request_next || snackbar.request_next,
         }
     }
     fn update(&mut self, m: Message) {
@@ -122,6 +128,7 @@ impl Application for Gallery {
             Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
             Message::WideRail(event) => self.wide_rail_demo.update(event),
             Message::ModalWideRail(event) => self.modal_wide_rail_demo.update(event),
+            Message::Snackbar(event) => self.snackbar_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::Nav(i) => self.nav = i,
             Message::Theme => self.dark = !self.dark,
@@ -629,6 +636,7 @@ impl Application for Gallery {
                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
                     ],
                 ));
+                children.push(self.snackbar_demo.card(&t));
             }
             _ => {
                 let swatch = |id: &str, text: &str, background: Color, foreground: Color| {
@@ -664,6 +672,7 @@ impl Application for Gallery {
                 ]);
             }
         }
+        children.extend(self.snackbar_demo.layer(&t));
         if self.dialog {
             children.push(t.dialog_with(
                 "rename-dialog",
@@ -762,7 +771,8 @@ mod web {
         serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
             "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused(),
             "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
-            "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime)
+            "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime),
+            "snackbar": s.snackbar_demo.inspect(s.text_scale())
         }).to_string()
     })
     }
