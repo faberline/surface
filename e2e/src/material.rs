@@ -18,6 +18,8 @@ mod material_rail;
 mod material_side_sheet;
 #[path = "material_snackbar.rs"]
 mod material_snackbar;
+#[path = "material_toolbar.rs"]
+mod material_toolbar;
 
 use anyhow::Result;
 use serde_json::{json, Value};
@@ -31,7 +33,7 @@ pub const STEPS: &[&str] = &[
     "M16", "M17", "M18", "M19", "M20", "M21", "M22", "M24", "M25", "M26", "M27", "M28", "M29",
     "M30", "M31", "M32", "M33", "M34", "M35", "M36", "M37", "M38", "M39", "M40", "M41", "M42",
     "M43", "M44", "M45", "M46", "M47", "M48", "M49", "M50", "M51", "M52", "M53", "M54", "M55",
-    "M56", "M57", "M58", "M59", "M60", "M61", "M62",
+    "M56", "M57", "M58", "M59", "M60", "M61", "M62", "M63", "M64", "M65", "M66", "M67", "M68",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -111,7 +113,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_progress::run(env, chrome, &url).await?;
     material_side_sheet::run(env, chrome, &url).await?;
     material_bottom_sheet::run(env, chrome, &url).await?;
-    material_app_bar::run(env, chrome, &url).await
+    material_app_bar::run(env, chrome, &url).await?;
+    material_toolbar::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

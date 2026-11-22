@@ -57,7 +57,7 @@ pub struct VerticalScrollResponse<M> {
 }
 
 pub(crate) type VerticalScrollHandler<M> =
-    Rc<dyn Fn(VerticalScroll) -> Option<VerticalScrollResponse<M>>>;
+    Rc<dyn Fn(VerticalScroll, Option<&str>) -> Option<VerticalScrollResponse<M>>>;
 
 pub(crate) type Pending = Rc<RefCell<Vec<(String, ScrollTarget)>>>;
 

@@ -310,10 +310,12 @@
     {
       "id": "toolbars",
       "spec": "https://m3.material.io/components/toolbars/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Headless macOS Metal covers three toolbar forms in two palettes and dark RTL at 320 dp with 200% text. It checks arrow focus, disabled and toggle state, shared overflow focus, and compact paired FAB placement. Two runs produced the same 12 PNGs. Compact captures match across Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/7e240e82743d6c1b2542ea88630596a4c5ae8c69/docs/evidence/md3/toolbars-v0.1.9",
+      "web_evidence": "Headless Chrome WebGPU M63–M68 verify palette paint, docked and floating positions, RTL and vertical keyboard focus, modal overflow, 40 dp scroll concealment, reverse reveal, focus protection and 320 dp paired placement.",
+      "implemented": "Docked top and bottom placement and horizontal or vertical floating toolbars. Standard and Vibrant palettes, named action groups, selected and disabled actions, optional adjacent FAB, controlled expanded, collapsed and hidden states, and a focus-aware wheel policy. Toolbar-specific accessibility roles, system touch-exploration detection, kinetic settling, animated visibility, physical touch and live VoiceOver remain open.",
+      "unit_evidence": "Toolbar layout, scroll policy and Runtime tests verify compact margins, wrapping, focus fallback, arrow direction, consumed content travel and default scroll compatibility."
     },
     {
       "id": "tooltips",
