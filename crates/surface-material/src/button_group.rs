@@ -497,7 +497,7 @@ fn group_button<M>(
         button = button.checked(checked);
     }
     if let Some(expanded) = state.expanded {
-        button = button.disclosure_expanded(expanded);
+        button = button.menu_expanded(expanded);
     }
     let button = View::new(button)
         .children([face])
@@ -687,4 +687,5 @@ fn overflow_menu<M: Clone>(
     .roving(Roving::vertical(false))
     .accessibility_scroll_pages()
     .modal(on_dismiss)
+    .dismiss_modal_on_tab()
 }

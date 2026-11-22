@@ -1,5 +1,5 @@
 use crate::{AppError, Application, EditKey, ModalLayer, Runtime};
-use std::rc::Rc;
+use std::{collections::BTreeSet, rc::Rc};
 use surface::{Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
 
 /// Mount or update a named control, then focus it without activating it.
@@ -45,6 +45,13 @@ pub(crate) struct FocusScope {
     restore: Option<String>,
     fallback: Option<String>,
 }
+
+pub(crate) enum TabDismissal {
+    Standard,
+    Resume { collapsed: BTreeSet<String> },
+    Consumed,
+}
+
 pub(crate) struct RangeDrag {
     id: String,
     bounds: Rect,
@@ -91,34 +98,31 @@ impl<A: Application> Runtime<A> {
         }
         None
     }
-    fn members(&self, group: NodeId) -> Vec<NodeId> {
-        let measured = self.computed.as_ref().filter(|_| {
-            self.bindings[&group]
-                .roving
-                .is_some_and(|group| group.first_enabled_on_entry)
-        });
+    fn members(&self, group: NodeId, collapsed: Option<&BTreeSet<String>>) -> Vec<NodeId> {
+        let measure_members = self.bindings[&group]
+            .roving
+            .is_some_and(|group| group.first_enabled_on_entry);
         self.dom
             .iter()
             .filter(|(id, node)| {
                 node.is_tab_stop()
                     && self.in_scope(*id)
                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
-                    && measured.is_none_or(|layout| {
-                        let bounds = layout.nodes[id.index()].bounds;
-                        bounds.width > 0. && bounds.height > 0.
-                    })
+                    && collapsed
+                        .is_none_or(|ids| node.stable_id().is_none_or(|key| !ids.contains(key)))
+                    && (!measure_members || self.has_tab_extent(*id))
             })
             .map(|(id, _)| id)
             .collect()
     }
-    pub(crate) fn tab_stop(&self, id: NodeId) -> bool {
+    pub(crate) fn tab_stop(&self, id: NodeId, collapsed: Option<&BTreeSet<String>>) -> bool {
         if !self.in_scope(id) {
             return false;
         }
         let Some((group, options)) = self.group(id) else {
             return true;
         };
-        let members = self.members(group);
+        let members = self.members(group, collapsed);
         let current = self.focused_node().filter(|id| members.contains(id));
         let entry = || {
             if !options.first_enabled_on_entry {
@@ -135,10 +139,16 @@ impl<A: Application> Runtime<A> {
         };
         current.or_else(entry) == Some(id)
     }
+    pub(crate) fn has_tab_extent(&self, id: NodeId) -> bool {
+        self.computed.as_ref().is_none_or(|layout| {
+            let bounds = layout.nodes[id.index()].bounds;
+            bounds.width > 0. && bounds.height > 0.
+        })
+    }
     pub(crate) fn scope_entry(&self) -> Option<String> {
         self.dom
             .iter()
-            .find(|(id, n)| n.is_tab_stop() && self.tab_stop(*id))
+            .find(|(id, n)| n.is_tab_stop() && self.tab_stop(*id, None))
             .and_then(|(id, _)| self.stable(id))
             .or_else(|| {
                 self.scopes
@@ -315,6 +325,44 @@ impl<A: Application> Runtime<A> {
             .and_then(|b| b.dismiss.clone());
         self.message(message).map(|_| true)
     }
+    /// Deliver the top scope's opt-in dismiss message. Consume the key if
+    /// an IME composition owns it or the app does not return to the parent.
+    pub(crate) fn dismiss_tab_scope(&mut self) -> Result<TabDismissal, AppError> {
+        let Some(dismiss) = self
+            .active_scope_root()
+            .and_then(|id| self.bindings.get(&id))
+            .filter(|binding| binding.dismiss_on_tab)
+            .and_then(|binding| binding.dismiss.clone())
+        else {
+            return Ok(TabDismissal::Standard);
+        };
+        if self.has_pending_composition() {
+            return Ok(TabDismissal::Consumed);
+        }
+        let containing_depth = self.scopes.len() - 1;
+        let containing_id = self
+            .scopes
+            .iter()
+            .rev()
+            .nth(1)
+            .map(|scope| scope.id.clone());
+        // Closing the menu discards its layout. Keep the last known size
+        // exclusions by stable ID until the containing scope lays out again.
+        let collapsed = self
+            .dom
+            .iter()
+            .filter(|(id, _)| !self.has_tab_extent(*id))
+            .filter_map(|(_, node)| node.stable_id().map(str::to_owned))
+            .collect();
+        self.message(Some(dismiss))?;
+        if self.scopes.len() == containing_depth
+            && self.scopes.last().map(|scope| &scope.id) == containing_id.as_ref()
+        {
+            Ok(TabDismissal::Resume { collapsed })
+        } else {
+            Ok(TabDismissal::Consumed)
+        }
+    }
     pub(crate) fn navigate_control(&mut self, key: EditKey) -> Result<bool, AppError> {
         let Some(id) = self.focused_node() else {
             return Ok(false);
@@ -358,7 +406,7 @@ impl<A: Application> Runtime<A> {
             return Ok(false);
         };
         let options = roving.options;
-        let members = self.members(group);
+        let members = self.members(group, None);
         if members.is_empty() {
             return Ok(false);
         }

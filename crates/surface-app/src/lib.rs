@@ -67,6 +67,7 @@ pub struct View<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
@@ -110,6 +111,7 @@ impl<M> View<M> {
             value: None,
             roving: None,
             dismiss: None,
+            dismiss_on_tab: false,
             modal_focus_fallback: None,
             cancel_within: None,
             key: None,
@@ -228,6 +230,11 @@ impl<M> View<M> {
     /// Report whether this control opens or collapses a panel.
     pub fn disclosure_expanded(mut self, expanded: bool) -> Self {
         self.node = self.node.disclosure_expanded(expanded);
+        self
+    }
+    /// Mark this button as a menu trigger and report whether its menu is open.
+    pub fn menu_expanded(mut self, expanded: bool) -> Self {
+        self.node = self.node.menu_expanded(expanded);
         self
     }
     /// Report current-page state without making the control a toggle.
@@ -396,6 +403,12 @@ impl<M> View<M> {
     pub fn modal_overlay(mut self, dismiss: M) -> Self {
         self.dismiss = Some(dismiss);
         self.modal_layer = Some(ModalLayer::Panel);
+        self
+    }
+    /// Let Tab and Shift+Tab dismiss this modal menu. The same key continues
+    /// traversal from the restored opener when only this scope closes.
+    pub fn dismiss_modal_on_tab(mut self) -> Self {
+        self.dismiss_on_tab = true;
         self
     }
     /// Preserve focus when this modal closes and its opener is gone. First
@@ -598,6 +611,7 @@ struct Binding<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
@@ -974,6 +988,7 @@ impl<A: Application> Runtime<A> {
                     value: view.value,
                     roving: view.roving,
                     dismiss: view.dismiss,
+                    dismiss_on_tab: view.dismiss_on_tab,
                     modal_focus_fallback: view.modal_focus_fallback,
                     cancel_within: view.cancel_within,
                     key: view.key,
@@ -1414,43 +1429,55 @@ impl<A: Application> Runtime<A> {
                 if self.has_captured_drag() {
                     self.cancel_pointer()?;
                 }
+                let collapsed = match self.dismiss_tab_scope()? {
+                    controls::TabDismissal::Standard => None,
+                    controls::TabDismissal::Resume { collapsed } => Some(collapsed),
+                    controls::TabDismissal::Consumed => return Ok(true),
+                };
                 let controls: Vec<_> = self
                     .dom
                     .iter()
-                    .filter(|(id, n)| {
-                        self.tab_stop(*id)
-                            && n.is_tab_stop()
-                            && self.computed.as_ref().is_none_or(|c| {
-                                let g = &c.nodes[id.index()];
-                                g.bounds.width > 0. && g.bounds.height > 0.
-                            })
+                    .filter_map(|(id, node)| {
+                        let key = node.stable_id()?;
+                        (node.is_tab_stop()
+                            && self.has_tab_extent(id)
+                            && !collapsed.as_ref().is_some_and(|ids| ids.contains(key))
+                            && self.tab_stop(id, collapsed.as_ref()))
+                        .then_some(id)
                     })
-                    .filter_map(|(id, _)| self.stable(id))
                     .collect();
                 if controls.is_empty() {
                     self.cancel_composition();
-                    self.focused = self.scope_entry();
+                    self.focused = match &collapsed {
+                        None => self.scope_entry(),
+                        Some(ids) => self.focused.take().filter(|key| !ids.contains(key)),
+                    };
                     return Ok(true);
                 }
-                let current = self
-                    .focused
-                    .as_ref()
-                    .and_then(|id| controls.iter().position(|x| x == id));
+                let current = self.focused_node();
+                let relative = || {
+                    // A programmatically focused opener still anchors Tab
+                    // on dismissal even when it is not itself a Tab stop.
+                    let anchor = collapsed.as_ref().and(current)?;
+                    if reverse {
+                        controls.iter().rposition(|id| *id < anchor)
+                    } else {
+                        controls.iter().position(|id| *id > anchor)
+                    }
+                };
+                let current = current.and_then(|id| controls.iter().position(|key| *key == id));
                 let next = match (current, reverse) {
                     (Some(i), true) => (i + controls.len() - 1) % controls.len(),
                     (Some(i), false) => (i + 1) % controls.len(),
-                    (None, true) => controls.len() - 1,
-                    (None, false) => 0,
+                    (None, true) => relative().unwrap_or(controls.len() - 1),
+                    (None, false) => relative().unwrap_or(0),
                 };
-                if self
-                    .dom
-                    .by_id(&controls[next])
-                    .is_some_and(|id| self.protects_composition(id))
-                {
+                let next = controls[next];
+                if self.protects_composition(next) {
                     return Ok(false);
                 }
                 self.cancel_composition();
-                self.focused = Some(controls[next].clone());
+                self.focused = self.stable(next);
                 Ok(true)
             }
             Event::Activate => {

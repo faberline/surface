@@ -376,6 +376,12 @@ impl Node {
         self.disclosure = self.expanded.is_some();
         self
     }
+    /// Mark this button as a menu trigger and report whether its menu is open.
+    pub fn menu_expanded(mut self, value: bool) -> Self {
+        self.expanded = (self.role == Role::Button).then_some(value);
+        self.disclosure = false;
+        self
+    }
     /// The open or closed state of a button, if declared.
     pub fn expanded_state(&self) -> Option<bool> {
         if self.role == Role::Button {

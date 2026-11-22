@@ -10,6 +10,7 @@ mod progress_demo;
 mod rail_icons;
 mod side_sheet_demo;
 mod snackbar_demo;
+mod split_demo;
 mod toolbar_demo;
 mod tooltip_demo;
 mod wide_navigation_rail_demo;
@@ -25,6 +26,7 @@ use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
+use split_demo::{SplitDemo, SplitEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{
     AnimationFrame, AnimationUpdate, Application, FrameInput, InputAnimationUpdate, View,
@@ -66,6 +68,7 @@ pub struct Gallery {
     side_sheet_demo: SideSheetDemo,
     bottom_sheet_demo: BottomSheetDemo,
     button_group_demo: ButtonGroupDemo,
+    split_demo: SplitDemo,
     card_demo: CardDemo,
     carousel_demo: CarouselDemo,
     app_bar_demo: AppBarDemo,
@@ -103,6 +106,7 @@ impl Default for Gallery {
             side_sheet_demo: SideSheetDemo::default(),
             bottom_sheet_demo: BottomSheetDemo::default(),
             button_group_demo: ButtonGroupDemo::default(),
+            split_demo: SplitDemo::default(),
             card_demo: CardDemo::default(),
             carousel_demo: CarouselDemo::default(),
             app_bar_demo: AppBarDemo::default(),
@@ -126,6 +130,7 @@ pub enum Message {
     SideSheet(SideSheetEvent),
     BottomSheet(BottomSheetEvent),
     ButtonGroup(ButtonGroupEvent),
+    Split(SplitEvent),
     Card(CardEvent),
     Carousel(CarouselEvent),
     AppBar(AppBarEvent),
@@ -168,6 +173,9 @@ impl Application for Gallery {
         if self.button_group_demo.visible() {
             return self.button_group_demo.text_scale();
         }
+        if self.split_demo.visible() {
+            return self.split_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -200,6 +208,7 @@ impl Application for Gallery {
         let side_sheet = self.side_sheet_demo.viewport_changed(width, height);
         let bottom_sheet = self.bottom_sheet_demo.viewport_changed(height);
         let button_group = self.button_group_demo.viewport_changed(width);
+        let split = self.split_demo.viewport_changed(width);
         let carousel = self.carousel_demo.viewport_changed(width, height);
         let app_bar = self.app_bar_demo.viewport_changed(width);
         let toolbar = self.toolbar_demo.viewport_changed(width, height);
@@ -210,13 +219,14 @@ impl Application for Gallery {
             || (self.side_sheet_demo.visible() && side_sheet)
             || (self.bottom_sheet_demo.visible() && bottom_sheet)
             || button_group
+            || split
             || carousel
             || app_bar
             || toolbar
             || tooltip
     }
     fn observes_frame_input(&self) -> bool {
-        self.tooltip_demo.visible() || self.button_group_demo.visible()
+        self.tooltip_demo.visible() || self.button_group_demo.visible() || self.split_demo.visible()
     }
     fn cancel_transient(&mut self) -> bool {
         self.tooltip_demo.visible() && self.tooltip_demo.dismiss()
@@ -239,9 +249,10 @@ impl Application for Gallery {
         pressed: Option<&str>,
     ) -> InputAnimationUpdate {
         let button_group = self.button_group_demo.frame(&frame, pressed);
+        let split = self.split_demo.frame(&frame, &input, pressed);
         let mut update = self.animation_frame_with_input(frame, input);
-        update.animation.rebuild |= button_group.rebuild;
-        update.animation.request_next |= button_group.request_next;
+        update.animation.rebuild |= button_group.rebuild || split.rebuild;
+        update.animation.request_next |= button_group.request_next || split.request_next;
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
@@ -299,6 +310,9 @@ impl Application for Gallery {
                 if i != button_group_demo::SECTION {
                     self.button_group_demo.leave();
                 }
+                if i != split_demo::SECTION {
+                    self.split_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -327,6 +341,7 @@ impl Application for Gallery {
             Message::SideSheet(event) => self.side_sheet_demo.update(event),
             Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
             Message::ButtonGroup(event) => self.button_group_demo.update(event),
+            Message::Split(event) => self.split_demo.update(event),
             Message::Card(event) => self.card_demo.update(event),
             Message::Carousel(event) => self.carousel_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
@@ -388,6 +403,9 @@ impl Application for Gallery {
         }
         if self.button_group_demo.visible() {
             return self.button_group_demo.view(&t, self.dark);
+        }
+        if self.split_demo.visible() {
+            return self.split_demo.view(&t, self.dark);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -505,6 +523,7 @@ impl Application for Gallery {
                     ToolbarDemo::show_button(&t),
                     CarouselDemo::show_button(&t),
                     ButtonGroupDemo::show_button(&t),
+                    SplitDemo::show_button(&t),
                 ]));
                 let nav_items = [
                     ("nav-home", "Home", "H"),
@@ -1025,6 +1044,7 @@ mod web {
             "bottom_sheet": s.bottom_sheet_demo.inspect(),
             "cards": s.card_demo.inspect(),
             "button_group": s.button_group_demo.inspect(),
+            "split_button": s.split_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
