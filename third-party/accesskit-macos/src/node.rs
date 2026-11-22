@@ -1147,16 +1147,16 @@ declare_class!(
             attributes
         }
 
-        #[method(accessibilityIsAttributeSettable:)]
-        fn accessibility_is_attribute_settable(&self, attr: &NSString) -> bool {
+        #[method(respondsToSelector:)]
+        fn responds_to_selector(&self, selector: Sel) -> bool {
             // AppKit's legacy AXValue query can infer writability from the
             // setter selector even when isAccessibilitySelectorAllowed denies it.
-            if attr == ns_string!("AXValue")
+            if selector == sel!(setAccessibilityValue:)
                 && self.resolve(|node| node.role() == Role::ProgressIndicator).unwrap_or(false)
             {
                 false
             } else {
-                unsafe { msg_send![super(self), accessibilityIsAttributeSettable: attr] }
+                unsafe { msg_send![super(self), respondsToSelector: selector] }
             }
         }
 
@@ -1391,9 +1391,6 @@ declare_class!(
                 }
                 if selector == sel!(accessibilityAttributeNames) {
                     return node.data().invalid().is_some() || NodeWrapper(node).aria_current_value().is_some();
-                }
-                if selector == sel!(accessibilityIsAttributeSettable:) {
-                    return node.role() == Role::ProgressIndicator;
                 }
                 if selector == sel!(accessibilityAttributeValue:) {
                     return node.has_braille_label()
