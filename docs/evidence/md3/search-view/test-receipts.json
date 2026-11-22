@@ -1,0 +1,132 @@
+{
+  "source": {
+    "published_classic_checkpoint": "b457ea7e2f4d65f75ac2b7e66e247481b9f13989",
+    "classic_tree_sha256": "d1c6adecf9e4397259a34bfd844f4a0b3bf18ecf2fc9470d8dfc1e5b1b974f78",
+    "tree_sha256": "8788ca594976d65e993fc69dd12ae043c398a468c47fe583f80d8906822fa45b",
+    "tree_paths": 654,
+    "original_forward_patch_sha256": "73e765427726f3ea393eee18be3231b430156717c5f266d05721e8d42bf9a795",
+    "matches_original_tree_and_forward_roundtrip": true,
+    "verified_partial_manifest_counts": {
+      "product.sha256": 19,
+      "workspace-e2e.sha256": 2,
+      "e2e.sha256": 39,
+      "focused-e2e.sha256": 3
+    }
+  },
+  "rust": {
+    "filename": "search-view-workspace-verified-final.log",
+    "sha256": "f3b27dda43c831d3011ec70694709e9fee41d6bb4382ee26f1362c8408c165b5",
+    "exit": 0,
+    "command": "sh scripts/check.sh",
+    "passed": 1370,
+    "failed": 0,
+    "ignored": 25
+  },
+  "chrome_focused": {
+    "filename": "search-view-browser-verified-focused.log",
+    "sha256": "c351847657cdac33502528f90a2e77539a845f997f6abba352a2f17c204fa95b",
+    "exit": 0,
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 188,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 1,
+        "checks": 143
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 1,
+        "checks": 45
+      }
+    ]
+  },
+  "chrome_full": {
+    "filename": "search-view-browser-verified-full.log",
+    "sha256": "2d8ae37c832aa3d12fb723891a0243b506a199e36429cf584f8b9e45d112ce94",
+    "exit": 0,
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 23904,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 173,
+        "checks": 20102
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 63,
+        "checks": 3802
+      }
+    ]
+  },
+  "browser_hardware": "Chrome 157.0.8103.79, Apple Metal 3 WebGPU",
+  "historical_manifests": {
+    "browser_artifacts": "9ffe37d84443a21520ca853fc0be7f41e518958d01a317dc28342ab9fb315207",
+    "browser_fixtures": "5f9e6f10cd92ce178e9fdcc2db1aabbb3d9e50c239f32b14f462878f3fa73c18",
+    "browser_runner_and_bundles": "6abf5837690a01a5bff437630c0e6ab4bc124adf018644cbde1c6e8c5df20fce",
+    "native_evidence": "5a47b77d02088490b1ce26d18092924cd5ed9858442f70e8ae631687e5c23857",
+    "native_audit": "56def1c305d51e40465b87be371328c9b1cd42100956943a4290a9bc9717f14d",
+    "native_audit_paths": "Capture paths are relative to the historical native evidence directory.",
+    "native_build_source": "94f88f3737079d2fbd8251dcf50202a86ced84012da41a9d962ee956b5eda334"
+  },
+  "historical_captures": {
+    "native-320-dark-rtl-200.png": {
+      "source": "verified-query-scroll/compact-dark-rtl-2x-highlight-choice.png",
+      "sha256": "97b03ffb606bdab4c4638ab8b0f197aa1d1a833687f279639d53ee47bba5ce3c",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    "native-cli.png": {
+      "source": "verified-query-scroll/compact-dark-rtl-2x-expanded.png",
+      "sha256": "76dd8111b55ec0770774eb6e2a084463693f203aeb2702fd403c9d7bafa0f6ae",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    "native-mcp.png": {
+      "source": "verified-query-scroll/compact-dark-mcp.png",
+      "sha256": "76dd8111b55ec0770774eb6e2a084463693f203aeb2702fd403c9d7bafa0f6ae",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    "web-docked.png": {
+      "source": "browser-search-view-verified-focused/material-search-view-light-ltr-docked.png",
+      "sha256": "a825e98019793b2bc5edfedf4e0a8ff35ca639e1c2013aeb281efd84592f6851",
+      "dimensions": [
+        1920,
+        1688
+      ]
+    },
+    "web-replaced-query.png": {
+      "source": "browser-search-view-verified-focused/material-search-view-long-query-replaced.png",
+      "sha256": "29e3a981054778eb97038f43047ea5351a0f783367193215013bbce33110fe22",
+      "dimensions": [
+        640,
+        1408
+      ]
+    },
+    "browser-material-search-view.json": {
+      "source": "browser-search-view-verified-focused/browser-material-search-view.json",
+      "sha256": "46f8b5eb7093c98d2bb06ffe7d6de89c12659dfb40f37984cccaba7a1bdbcee7"
+    },
+    "browser-search-view-accessibility.json": {
+      "source": "browser-search-view-verified-focused/browser-search-view-accessibility.json",
+      "sha256": "1befb91921de45af4e4b5e5b6af08a174de142955042c5caf3cc3dcac911ac31"
+    }
+  },
+  "metal_offscreen": {
+    "filename": "search-view-metal-verified-final.log",
+    "sha256": "e170955638d99c96dfa46578fd9637e68f7c70673bea2a1e32407e1892a3e992",
+    "exit": 0,
+    "command": "sh scripts/check-gpu.sh",
+    "passed": 12
+  }
+}

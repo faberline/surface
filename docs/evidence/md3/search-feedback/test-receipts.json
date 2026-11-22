@@ -1,0 +1,121 @@
+{
+  "source": {
+    "published_classic_checkpoint": "b457ea7e2f4d65f75ac2b7e66e247481b9f13989",
+    "classic_tree_sha256": "d1c6adecf9e4397259a34bfd844f4a0b3bf18ecf2fc9470d8dfc1e5b1b974f78",
+    "tree_sha256": "4cb2ac5f7879b4fc4b56efec5a8efed2a73cc09e3e8b248b18b96ca38f27cbc4",
+    "tree_paths": 655,
+    "original_forward_patch_sha256": "598a8ec94ef3763b000a54879e9a02cdbc3f5a53c56edb77cf0ce4b1078043fc",
+    "matches_original_tree_and_forward_roundtrip": true,
+    "verified_partial_manifest_counts": {
+      "product.sha256": 21,
+      "workspace-e2e.sha256": 2,
+      "e2e.sha256": 39,
+      "focused-e2e.sha256": 3
+    }
+  },
+  "rust": {
+    "filename": "search-feedback-workspace-verified.log",
+    "sha256": "7f16153f45a98820d8a96d6a49b8b80946d9f87569ba30ce4ae6bff9fec44b61",
+    "exit": 0,
+    "command": "sh scripts/check.sh",
+    "passed": 1370,
+    "failed": 0,
+    "ignored": 25
+  },
+  "chrome_focused": {
+    "filename": "search-feedback-browser-focused.log",
+    "sha256": "404652e673a3eaacca960448f28ebbc5f6aa0819fcd116b90b204ada6b18b97d",
+    "exit": 0,
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 209,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 1,
+        "checks": 143
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 1,
+        "checks": 66
+      }
+    ]
+  },
+  "chrome_full": {
+    "filename": "search-feedback-browser-full.log",
+    "sha256": "1ba85a3c5581b779933edad32553a94feebea52e31d57c3a1d0ac001f404da61",
+    "exit": 0,
+    "cases_passed": 2,
+    "cases_failed": 0,
+    "checks": 23925,
+    "suites": [
+      {
+        "suite": "material",
+        "steps": 173,
+        "checks": 20102
+      },
+      {
+        "suite": "web-accessibility",
+        "steps": 63,
+        "checks": 3823
+      }
+    ]
+  },
+  "browser_hardware": "Chrome 157.0.8103.79, Apple Metal 3 WebGPU",
+  "historical_manifests": {
+    "browser_artifacts": "b5dd4a0a0bdfa41c4dda44834443725f16813df810867b815d76e2cebab98a74",
+    "browser_fixtures": "2efa20e1debfc3cb8931520ecb0c9094eca2717bc8e070bd38fe0ab3cff57641",
+    "browser_runner_and_bundles": "1d6b34abb12c9fe216cd69fe98d1cac1ab2e3feac8b4f576b077723640a63dce",
+    "native_evidence": "26db3bfcf826a37e563f45e2f7417d27d2aa0039b29ed5863c556a7488b48bd1",
+    "native_audit": "fe94fe716a94070888ca7219cd49fe1d2d03d7ac5bbad3ece2a2e08dffcc6bf5",
+    "native_audit_paths": "Capture paths are relative to the historical native evidence directory.",
+    "native_build_source": "11ddeb420406d7260ca24fee88ec3c3303417b8fa016615e2ad55297f5ef9b84"
+  },
+  "historical_captures": {
+    "native-first-result.png": {
+      "source": "verified/search-feedback-first-result.png",
+      "sha256": "ae4089a078da97735e58da193d36badf99a6db3756cc3a8e40b28ec335f57886",
+      "dimensions": [
+        960,
+        800
+      ]
+    },
+    "native-second-result.png": {
+      "source": "verified/search-feedback-second-result.png",
+      "sha256": "88994addabf4eb74f63c77f74330358c0bdd51e5f804e7469395116bd06a7410",
+      "dimensions": [
+        960,
+        800
+      ]
+    },
+    "native-320-dark-rtl-200.png": {
+      "source": "verified/search-feedback-resized.png",
+      "sha256": "97b03ffb606bdab4c4638ab8b0f197aa1d1a833687f279639d53ee47bba5ce3c",
+      "dimensions": [
+        320,
+        640
+      ]
+    },
+    "native-appkit-requests.tsv": {
+      "source": "verified/appkit-requests.tsv",
+      "sha256": "a79c2df1d1af0688080f228bc442a8794b966106df5a28a6955505abc95d5d92"
+    },
+    "web-dark-rtl-200.png": {
+      "source": "browser-search-feedback-focused/material-search-view-dark-rtl-200-expanded.png",
+      "sha256": "294f0f81988eb1d1841b13762ae74fa7b6219da0000e285fbcee9184596572ba",
+      "dimensions": [
+        640,
+        1408
+      ]
+    },
+    "browser-material-search-view.json": {
+      "source": "browser-search-feedback-focused/browser-material-search-view.json",
+      "sha256": "46f8b5eb7093c98d2bb06ffe7d6de89c12659dfb40f37984cccaba7a1bdbcee7"
+    },
+    "browser-search-view-accessibility.json": {
+      "source": "browser-search-feedback-focused/browser-search-view-accessibility.json",
+      "sha256": "80363614def84012b2089353b7604fc89ef64b00c7713363fb6b8614989343ef"
+    }
+  }
+}
