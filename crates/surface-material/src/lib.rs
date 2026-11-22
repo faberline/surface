@@ -21,6 +21,8 @@ mod standard_navigation_drawer;
 mod tokens;
 mod toolbar;
 mod toolbar_scroll;
+mod tooltip;
+mod tooltip_state;
 pub mod typography;
 mod vector_icon;
 mod wide_navigation_rail;
@@ -58,6 +60,8 @@ pub use toolbar::{
     ToolbarVisibility,
 };
 pub use toolbar_scroll::{ToolbarScroll, ToolbarScrollBehavior};
+pub use tooltip::{place_tooltip, TooltipKind, TooltipOptions, TooltipPlacement, TooltipSide};
+pub use tooltip_state::{TooltipInput, TooltipState, TooltipUpdate};
 pub use vector_icon::VectorIcon;
 pub use wide_navigation_rail::{
     ModalWideNavigationRailCollapse, ModalWideNavigationRailOptions,

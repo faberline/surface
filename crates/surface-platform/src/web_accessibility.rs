@@ -44,6 +44,7 @@ struct Target {
 struct Published {
     generation: AccessibilityFrameId,
     visible: BTreeSet<NodeId>,
+    descriptions: BTreeMap<NodeId, NodeId>,
     editor: Option<NodeId>,
     tree: Element,
 }
@@ -180,6 +181,13 @@ impl WebAccessibility {
             .is_some_and(|old| old.generation == generation);
         let mut visible = BTreeSet::new();
         collect_visible(frame, frame.root(), &mut visible);
+        let descriptions: BTreeMap<_, _> = visible
+            .iter()
+            .filter_map(|id| {
+                let target = frame.description_target(*id)?;
+                visible.contains(&target).then_some((*id, target))
+            })
+            .collect();
         let statuses = visible
             .iter()
             .filter_map(|id| live_status::message(frame, *id))
@@ -195,7 +203,10 @@ impl WebAccessibility {
             || (self.follow_focus
                 && self.document.active_element().as_ref() == Some(canvas.unchecked_ref()));
         if self.published.as_ref().is_none_or(|old| {
-            old.generation != generation || old.visible != visible || old.editor != editor
+            old.generation != generation
+                || old.visible != visible
+                || old.descriptions != descriptions
+                || old.editor != editor
         }) {
             let mut targets = BTreeMap::new();
             let tree = project(
@@ -204,6 +215,7 @@ impl WebAccessibility {
                 frame.root(),
                 &visible,
                 editor,
+                &descriptions,
                 &mut targets,
             )?;
             // Put the live region inside the active modal. A browser may
@@ -220,9 +232,13 @@ impl WebAccessibility {
                     .insert_before(&tree, self.root.first_child().as_ref())?;
             }
             *self.targets.borrow_mut() = targets;
+            if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
+                describe_by(&textbox, editor.and_then(|id| descriptions.get(&id)))?;
+            }
             self.published = Some(Published {
                 generation,
                 visible,
+                descriptions,
                 editor,
                 tree,
             });
@@ -294,6 +310,7 @@ fn project<M>(
     id: NodeId,
     visible: &BTreeSet<NodeId>,
     editor: Option<NodeId>,
+    descriptions: &BTreeMap<NodeId, NodeId>,
     targets: &mut BTreeMap<usize, Target>,
 ) -> Result<Element, JsValue> {
     let source = frame.node(id).expect("visible nodes belong to the frame");
@@ -314,6 +331,12 @@ fn project<M>(
     }
     if let Some(stable_id) = source.node.stable_id() {
         element.set_attribute("data-surface-id", stable_id)?;
+    }
+    if source.node.role() == Role::Tooltip {
+        element.set_id(&tooltip_id(id));
+    }
+    if let Some(description) = descriptions.get(&id) {
+        describe_by(&element, Some(description))?;
     }
     if let Some(focus) = frame.focus_target(id) {
         let press = frame.activation_target(id);
@@ -336,10 +359,29 @@ fn project<M>(
             element.set_attribute("aria-owns", TEXT_INPUT)?;
             continue;
         }
-        let child_element = project(document, frame, child, visible, editor, targets)?;
+        let child_element = project(
+            document,
+            frame,
+            child,
+            visible,
+            editor,
+            descriptions,
+            targets,
+        )?;
         element.append_child(&child_element)?;
     }
     Ok(element)
+}
+
+fn tooltip_id(id: NodeId) -> String {
+    format!("surface-accessibility-tooltip-{}", id.index())
+}
+
+fn describe_by(element: &Element, target: Option<&NodeId>) -> Result<(), JsValue> {
+    match target {
+        Some(id) => element.set_attribute("aria-describedby", &tooltip_id(*id)),
+        None => element.remove_attribute("aria-describedby"),
+    }
 }
 
 fn projected_key(event: &KeyboardEvent) -> Option<(KeyPress, Option<Event>)> {
