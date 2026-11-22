@@ -513,6 +513,8 @@ pub struct Runtime<A: Application> {
     #[cfg(feature = "devtools")]
     trace: Option<trace::Recorder>,
     #[cfg(feature = "devtools")]
+    host_methods: &'static [&'static str],
+    #[cfg(feature = "devtools")]
     paint_frame: Option<paint_export::PaintFrame>,
 }
 impl<A: Application> Runtime<A> {
@@ -551,6 +553,8 @@ impl<A: Application> Runtime<A> {
             motion: motion::Motion::default(),
             #[cfg(feature = "devtools")]
             trace: None,
+            #[cfg(feature = "devtools")]
+            host_methods: &[],
             #[cfg(feature = "devtools")]
             paint_frame: None,
         };

@@ -1,6 +1,7 @@
 //! Unit tests of the surface-devtools client (issue #132, O8).
 //!
 //! Row numbers refer to the Acceptance table of the issue.
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
 use std::io::{BufRead, BufReader, Cursor, Write};
 use std::net::TcpListener;
@@ -176,6 +177,44 @@ fn args_reject_bad_input() {
         vec!["dom", "query", "--role"],
         vec!["dom", "snapshot", "--session"],
         vec!["dom", "snapshot", "--bogus"],
+    ] {
+        assert!(parse_args(&strings(&bad)).is_err(), "accepted {bad:?}");
+    }
+}
+
+#[test]
+fn args_parse_screenshot_settings_only_for_screenshot() {
+    assert_eq!(
+        call_of(&["page", "screenshot"]),
+        ("Page.screenshot".into(), json!({}))
+    );
+    assert_eq!(
+        parse_args(&strings(&[
+            "page",
+            "screenshot",
+            "--scale",
+            "1.5",
+            "--max-side",
+            "400",
+            "--out",
+            "app.png",
+        ]))
+        .unwrap()
+        .command,
+        Command::SaveScreenshot {
+            params: json!({"scale": 1.5, "max_side": 400}),
+            path: "app.png".into()
+        }
+    );
+    for bad in [
+        vec!["page", "screenshot", "--scale", "NaN"],
+        vec!["page", "screenshot", "--scale", "0"],
+        vec!["page", "screenshot", "--max-side", "0"],
+        vec!["page", "screenshot", "--max-side", "8193"],
+        vec!["page", "screenshot", "--out", "--max-side"],
+        vec!["page", "screenshot", "--out"],
+        vec!["page", "screenshot", "--out", ""],
+        vec!["dom", "snapshot", "--out", "app.png"],
     ] {
         assert!(parse_args(&strings(&bad)).is_err(), "accepted {bad:?}");
     }
@@ -502,6 +541,70 @@ fn ok_reply_prints_the_result_json_and_exits_zero() {
     assert_eq!(requests[0].v, 1);
 }
 
+const TEST_PNG: &str =
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGMIX1rwHwAFLwJsnDrLYwAAAABJRU5ErkJggg==";
+
+fn screenshot_result() -> Value {
+    json!({"format": "png", "width": 1, "height": 1, "scale": 1.0, "data_base64": TEST_PNG})
+}
+
+#[test]
+fn screenshot_cli_streams_json_or_saves_a_private_new_png() {
+    let folder = tempfile::tempdir().unwrap();
+    let path = folder.path().join("frame.png");
+    let file_args = ["page", "screenshot", "--out", path.to_str().unwrap()];
+    let result = screenshot_result();
+    let response = || Reply::ok(0, result.clone());
+
+    let (code, out, err, requests) = run_fake(&["page", "screenshot"], vec![response()]);
+    assert_eq!(code, 0, "{err}");
+    assert_eq!(serde_json::from_str::<Value>(&out).unwrap(), result);
+    assert_eq!(requests[0].method, "Page.screenshot");
+
+    let (code, out, err, requests) = run_fake(&file_args, vec![response()]);
+    assert_eq!(code, 0, "{err}");
+    assert_eq!(
+        serde_json::from_str::<Value>(&out).unwrap(),
+        json!({"format": "png", "width": 1, "height": 1, "scale": 1.0, "path": path})
+    );
+    assert_eq!(requests[0].params, json!({}));
+    assert_eq!(
+        std::fs::read(&path).unwrap(),
+        STANDARD.decode(TEST_PNG).unwrap()
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        assert_eq!(
+            std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+
+    std::fs::write(&path, b"existing").unwrap();
+    let (code, out, err, _) = run_fake(&file_args, vec![response()]);
+    assert_eq!(code, EXIT_CLIENT, "{err}");
+    assert!(out.is_empty());
+    assert_eq!(std::fs::read(&path).unwrap(), b"existing");
+    assert_eq!(std::fs::read_dir(folder.path()).unwrap().count(), 1);
+}
+
+#[test]
+fn invalid_screenshot_reply_writes_no_file() {
+    let folder = tempfile::tempdir().unwrap();
+    let path = folder.path().join("frame.png");
+    let mut malformed = screenshot_result();
+    malformed["width"] = json!(2);
+    let (code, out, err, _) = run_fake(
+        &["page", "screenshot", "--out", path.to_str().unwrap()],
+        vec![Reply::ok(0, malformed)],
+    );
+    assert_eq!(code, EXIT_CLIENT);
+    assert!(err.contains("does not match its metadata"));
+    assert!(out.is_empty());
+    assert_eq!(std::fs::read_dir(folder.path()).unwrap().count(), 0);
+}
+
 #[test]
 fn protocol_error_exits_non_zero_and_prints_the_code_on_stderr() {
     // Negative control: a CLI that exits 0 here must fail this test.
@@ -640,6 +743,55 @@ fn mcp_tools_call_forwards_one_request() {
 }
 
 #[test]
+fn mcp_screenshot_returns_an_image_and_metadata_when_advertised() {
+    let mut server = McpServer::new();
+    let mut capabilities = capabilities_reply();
+    capabilities.result.as_mut().unwrap()["methods"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!("Page.screenshot"));
+    let mut fake = Fake::new(vec![capabilities, Reply::ok(0, screenshot_result())]);
+    let tools = rpc(
+        &mut server,
+        &mut fake,
+        json!({"jsonrpc":"2.0","id":1,"method":"tools/list"}),
+    );
+    let schema = tools["result"]["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|tool| tool["name"] == "page_screenshot")
+        .unwrap();
+    assert_eq!(
+        schema["inputSchema"]["properties"]["scale"]["type"],
+        "number"
+    );
+    assert_eq!(
+        schema["inputSchema"]["properties"]["max_side"]["default"],
+        4096
+    );
+
+    let reply = rpc(
+        &mut server,
+        &mut fake,
+        json!({"jsonrpc":"2.0","id":2,"method":"tools/call","params":{
+            "name":"page_screenshot","arguments":{"max_side":400}}}),
+    );
+    assert_eq!(reply["result"]["isError"], false);
+    assert_eq!(
+        reply["result"]["content"][0],
+        json!({"type":"image","mimeType":"image/png","data":TEST_PNG})
+    );
+    let metadata = reply["result"]["content"][1]["text"].as_str().unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(metadata).unwrap(),
+        json!({"format":"png","width":1,"height":1,"scale":1.0})
+    );
+    assert_eq!(fake.requests[1].method, "Page.screenshot");
+    assert_eq!(fake.requests[1].params, json!({"max_side":400}));
+}
+
+#[test]
 fn mcp_protocol_error_is_a_tool_error() {
     let mut server = McpServer::new();
     let mut fake = Fake::new(vec![
@@ -666,7 +818,7 @@ fn mcp_unknown_tool_is_not_sent_to_the_app() {
         &mut server,
         &mut fake,
         json!({"jsonrpc":"2.0","id":5,"method":"tools/call","params":{
-            "name":"trace_read","arguments":{}}}),
+            "name":"page_screenshot","arguments":{}}}),
     );
     assert_eq!(reply["error"]["code"], -32602);
     assert_eq!(fake.requests.len(), 1, "only the capabilities request");

@@ -11,8 +11,10 @@ name = "surface-devtools"
 path = "src/main.rs"
 
 [dependencies]
+base64 = "0.22"
 surface-devtools-protocol.workspace = true
 serde_json.workspace = true
+tempfile = "3"
 
 [lints]
 workspace = true

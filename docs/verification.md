@@ -12,6 +12,22 @@ The library does not encode PNG. The GPU test
 `gpu_offscreen_capture_reads_rgba_in_both_formats` saves `gpu-capture.png`
 through the test-only `png` dev-dependency. Refs #126.
 
+## Native DevTools screenshot
+
+Run this on a Mac with a usable Metal adapter. The native Gallery journey
+compares pixels to the expected Material colors, checks that theme changes
+appear in the next PNG, and checks the scaled dimensions. It compares the
+bytes from the raw API, CLI and MCP on the same frame. The CLI test also
+checks the private file mode and an existing destination.
+
+```sh
+cap sh scripts/check-gpu.sh
+cap cargo xtask web e2e devtools-native bridge-native bridge-native-compact bridge-web
+```
+
+The suite writes the native and scaled captures to its artifact directory.
+See the [protocol and commands](devtools-protocol.md#native-screenshots).
+
 ## Native close smoke (real device only)
 
 Recorded on 2026-11-13, on macOS (Darwin 25.5.0, Apple Silicon, Metal). This

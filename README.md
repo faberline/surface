@@ -70,6 +70,11 @@ seven semantic operations. They read the Rust tree and send normal state
 updates. Surface imports only the small protocol crate. See the
 [application bridge](docs/application-bridge.md) for setup and live tests.
 
+On desktop the native DevTools protocol also serves `Page.screenshot`.
+An agent can save a frame with `surface-devtools page screenshot` or
+request `page_screenshot` over MCP. See the
+[native screenshot setup](docs/devtools-protocol.md#native-screenshots).
+
 Long, growing CJK text is measured in [perf-long-text](docs/perf-long-text.md).
 
 ## Write an app

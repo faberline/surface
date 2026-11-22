@@ -198,6 +198,11 @@ impl Call {
 }
 
 impl<A: Application> Runtime<A> {
+    /// Advertise methods that the host handles before calling the executor.
+    pub fn set_host_methods(&mut self, methods: &'static [&'static str]) {
+        self.host_methods = methods;
+    }
+
     /// Run one devtools request. A rejected request changes no state.
     pub fn execute_devtools(&mut self, request: Request) -> Reply {
         if request.v != VERSION {
@@ -218,8 +223,9 @@ impl<A: Application> Runtime<A> {
     }
 
     fn devtools_capabilities(&self) -> Result<Value, Failure> {
+        let methods = METHODS.into_iter().chain(self.host_methods.iter().copied());
         let mut domains: Vec<String> = Vec::new();
-        for method in METHODS {
+        for method in methods.clone() {
             let domain = method.split('.').next().unwrap_or(method);
             if !domains.iter().any(|known| known == domain) {
                 domains.push(domain.into());
@@ -228,7 +234,7 @@ impl<A: Application> Runtime<A> {
         let capabilities = Capabilities {
             version: VERSION,
             domains,
-            methods: METHODS.iter().map(|method| method.to_string()).collect(),
+            methods: methods.map(str::to_owned).collect(),
             limits: Limits {
                 request_bytes: REQUEST_CAP_BYTES,
                 response_bytes: RESPONSE_CAP_BYTES,

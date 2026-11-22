@@ -3866,8 +3866,10 @@ dependencies = [
 name = "surface-devtools"
 version = "0.1.1"
 dependencies = [
+ "base64 0.22.1",
  "serde_json",
  "surface-devtools-protocol",
+ "tempfile",
 ]
 
 [[package]]
@@ -3883,7 +3885,9 @@ name = "surface-e2e"
 version = "0.1.1"
 dependencies = [
  "anyhow",
+ "base64 0.22.1",
  "jet-bridge",
+ "png 0.18.1",
  "serde",
  "serde_json",
  "tokio",
@@ -3919,6 +3923,7 @@ dependencies = [
  "accesskit",
  "accesskit_winit",
  "arboard",
+ "base64 0.22.1",
  "block2 0.6.2",
  "getrandom 0.3.4",
  "jet-bridge-protocol",
@@ -3926,6 +3931,7 @@ dependencies = [
  "objc2 0.6.5",
  "objc2-app-kit 0.3.2",
  "objc2-foundation 0.3.2",
+ "png 0.18.1",
  "pollster",
  "serde_json",
  "surface",

@@ -1,9 +1,11 @@
 //! Argument parsing and the command layer.
-use crate::connection::Connection;
+use crate::connection::{ClientError, Connection};
+use crate::screenshot;
 use crate::{EXIT_CLIENT, EXIT_PROTOCOL};
 use serde_json::{json, Map, Value};
 use std::io::Write;
-use surface_devtools_protocol::{Request, VERSION};
+use std::path::Path;
+use surface_devtools_protocol::{Request, PAGE_SCREENSHOT, SCREENSHOT_MAX_SIDE, VERSION};
 
 pub const USAGE: &str = "\
 usage: surface-devtools [--session <file>] <command>
@@ -18,15 +20,18 @@ commands:
   action fill <id> <text>
   action set-value <id> <number>
   action key <key> [--extend] [--by-word]
+  page screenshot [--scale <number>] [--max-side <pixels>] [--out <file.png>]
   mcp                       serve MCP over stdio
 
 Output is JSON on stdout. Exit codes: 0 ok, 1 protocol error (code on
-stderr), 2 usage, 3 session, app or connection failure.";
+stderr), 2 usage, 3 session, app, connection or output file failure.";
 
 #[derive(Debug, PartialEq)]
 pub enum Command {
     /// One protocol call.
     Call { method: String, params: Value },
+    /// Capture a page and save a PNG to a new local path.
+    SaveScreenshot { params: Value, path: String },
     /// Serve MCP over stdio.
     Mcp,
 }
@@ -45,7 +50,15 @@ fn usage<T>(message: impl Into<String>) -> Result<T, UsageError> {
 }
 
 /// Flags that take a value, and flags that do not.
-const VALUE_FLAGS: [&str; 4] = ["--session", "--id", "--role", "--name"];
+const VALUE_FLAGS: [&str; 7] = [
+    "--session",
+    "--id",
+    "--role",
+    "--name",
+    "--scale",
+    "--max-side",
+    "--out",
+];
 const SWITCHES: [&str; 2] = ["--extend", "--by-word"];
 
 pub fn parse_args(args: &[String]) -> Result<Parsed, UsageError> {
@@ -60,7 +73,10 @@ pub fn parse_args(args: &[String]) -> Result<Parsed, UsageError> {
         } else if arg == "--" {
             literal = true;
         } else if let Some(flag) = VALUE_FLAGS.iter().find(|flag| **flag == arg) {
-            match iter.next() {
+            match iter
+                .next()
+                .filter(|value| arg != "--out" || !value.starts_with("--"))
+            {
                 Some(value) => values.push((flag, value)),
                 None => return usage(format!("{arg} needs a value")),
             }
@@ -102,9 +118,10 @@ pub fn parse_args(args: &[String]) -> Result<Parsed, UsageError> {
                 json!({"key": key, "extend": extend, "by_word": by_word}),
             )
         }
+        ["page", "screenshot"] => parse_screenshot(&mut values)?,
         [] => return usage("no command"),
-        ["dom"] | ["action"] => return usage("missing operation"),
-        ["dom", op, ..] | ["action", op, ..] => {
+        ["dom"] | ["action"] | ["page"] => return usage("missing operation"),
+        ["dom", op, ..] | ["action", op, ..] | ["page", op, ..] => {
             return usage(format!("unknown or incomplete operation {op:?}"))
         }
         [other, ..] => return usage(format!("unknown command {other:?}")),
@@ -116,6 +133,36 @@ pub fn parse_args(args: &[String]) -> Result<Parsed, UsageError> {
         return usage(format!("{flag} does not apply to this command"));
     }
     Ok(Parsed { session, command })
+}
+
+fn parse_screenshot(values: &mut Vec<(&str, &str)>) -> Result<Command, UsageError> {
+    let mut params = Map::new();
+    if let Some(scale) = take_value(values, "--scale")? {
+        let scale = scale
+            .parse::<f32>()
+            .ok()
+            .filter(|scale| scale.is_finite() && *scale > 0.)
+            .ok_or_else(|| UsageError("--scale needs a positive finite number".into()))?;
+        params.insert("scale".into(), json!(scale));
+    }
+    if let Some(max_side) = take_value(values, "--max-side")? {
+        let max_side = max_side
+            .parse::<u32>()
+            .ok()
+            .filter(|max_side| (1..=SCREENSHOT_MAX_SIDE).contains(max_side))
+            .ok_or_else(|| {
+                UsageError(format!(
+                    "--max-side needs a whole number from 1 to {SCREENSHOT_MAX_SIDE}"
+                ))
+            })?;
+        params.insert("max_side".into(), json!(max_side));
+    }
+    let params = Value::Object(params);
+    match take_value(values, "--out")? {
+        Some(path) if path.is_empty() => usage("--out needs a file path"),
+        Some(path) => Ok(Command::SaveScreenshot { params, path }),
+        None => Ok(call(PAGE_SCREENSHOT, params)),
+    }
 }
 
 fn call(method: &str, params: Value) -> Command {
@@ -159,6 +206,29 @@ pub fn execute_call(
     out: &mut dyn Write,
     err: &mut dyn Write,
 ) -> i32 {
+    execute(conn, method, params, out, err, Ok)
+}
+
+pub(crate) fn execute_screenshot(
+    conn: &mut dyn Connection,
+    params: Value,
+    path: &Path,
+    out: &mut dyn Write,
+    err: &mut dyn Write,
+) -> i32 {
+    execute(conn, PAGE_SCREENSHOT, params, out, err, |result| {
+        screenshot::save_png(result, path)
+    })
+}
+
+fn execute(
+    conn: &mut dyn Connection,
+    method: &str,
+    params: Value,
+    out: &mut dyn Write,
+    err: &mut dyn Write,
+    finish: impl FnOnce(Value) -> Result<Value, ClientError>,
+) -> i32 {
     let request = Request {
         v: VERSION,
         id: 1,
@@ -166,11 +236,16 @@ pub fn execute_call(
         params,
     };
     match conn.call(&request) {
-        Ok(reply) if reply.ok => {
-            let result = reply.result.unwrap_or(Value::Null);
-            let _ = writeln!(out, "{result}");
-            0
-        }
+        Ok(reply) if reply.ok => match finish(reply.result.unwrap_or(Value::Null)) {
+            Ok(result) => {
+                let _ = writeln!(out, "{result}");
+                0
+            }
+            Err(error) => {
+                let _ = writeln!(err, "surface-devtools: {error}");
+                EXIT_CLIENT
+            }
+        },
         Ok(reply) => {
             let (code, message) = reply
                 .error

@@ -16,13 +16,16 @@ pub const DEFAULT_RING_SIZE: u64 = 4096;
 pub const SCHEMA_DOM: &str = "surface.dom.v1";
 pub const SCHEMA_TRACE: &str = "surface.trace.v1";
 pub const SCHEMA_PAINT: &str = "surface.paint.v1";
+pub const PAGE_SCREENSHOT: &str = "Page.screenshot";
+pub const SCREENSHOT_DEFAULT_MAX_SIDE: u32 = 4096;
+pub const SCREENSHOT_MAX_SIDE: u32 = 8192;
 /// Methods this version of the crate knows. Later issues extend the list.
 pub const METHODS: &[&str] = &[
     "Devtools.capabilities",
     "Trace.start",
     "Trace.stop",
     "Trace.read",
-    "Page.screenshot",
+    PAGE_SCREENSHOT,
     "Input.dispatch",
     "Wait.for",
 ];
@@ -95,6 +98,27 @@ pub struct Request {
 }
 fn empty_params() -> Value {
     Value::Object(Default::default())
+}
+
+/// Optional parameters for `Page.screenshot`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ScreenshotParams {
+    /// Output pixels per logical pixel. Defaults to the window scale.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale: Option<f32>,
+    /// Limit for the longer image side in pixels. Defaults to 4096.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_side: Option<u32>,
+}
+
+/// PNG data and effective dimensions for one native Surface frame.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ScreenshotResult {
+    pub format: String,
+    pub width: u32,
+    pub height: u32,
+    pub scale: f32,
+    pub data_base64: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

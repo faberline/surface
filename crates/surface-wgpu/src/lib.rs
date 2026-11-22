@@ -318,6 +318,31 @@ impl Renderer {
         height: u32,
         scale: f32,
     ) -> Result<Capture, RenderError> {
+        self.capture_with(width, height, |renderer, target| {
+            renderer.render(list, target, width, height, scale)
+        })
+    }
+
+    /// Render an extended frame offscreen in the renderer's own format and
+    /// read back RGBA8.
+    pub fn capture_extended(
+        &mut self,
+        list: &ExtendedDisplayList,
+        width: u32,
+        height: u32,
+        scale: f32,
+    ) -> Result<Capture, ExtendedRenderError> {
+        self.capture_with(width, height, |renderer, target| {
+            renderer.render_extended(list, target, width, height, scale)
+        })
+    }
+
+    fn capture_with<E: From<RenderError>>(
+        &mut self,
+        width: u32,
+        height: u32,
+        draw: impl FnOnce(&mut Self, &wgpu::TextureView) -> Result<(), E>,
+    ) -> Result<Capture, E> {
         Capture::check_size(width, height)?;
         let limit = self.device.limits().max_texture_dimension_2d;
         if width > limit || height > limit {
@@ -325,7 +350,8 @@ impl Renderer {
                 width,
                 height,
                 max: limit,
-            });
+            }
+            .into());
         }
         let size = wgpu::Extent3d {
             width,
@@ -342,13 +368,7 @@ impl Renderer {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
-        self.render(
-            list,
-            &texture.create_view(&Default::default()),
-            width,
-            height,
-            scale,
-        )?;
+        draw(self, &texture.create_view(&Default::default()))?;
         let row = width as usize * 4;
         let padded = row.next_multiple_of(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize);
         let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {

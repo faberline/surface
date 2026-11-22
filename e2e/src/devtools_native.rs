@@ -2,18 +2,21 @@
 //! transport (issue #131, O7).
 //!
 //! Starts the native material gallery with `SURFACE_DEVTOOLS_SESSION`, reads
-//! the session file and speaks raw newline-delimited JSON over TCP. There is
-//! no client binary. The jet bridge runs next to it, with its own session
+//! the session file and speaks raw newline-delimited JSON over TCP. The
+//! Jet bridge runs next to it, with its own session
 //! file. No real key or mouse input is sent.
 //!
 //! DN11 to DN14 drive the same app through the `surface-devtools` binary
 //! (issue #132, O8): the CLI, MCP over stdio, error exit codes and a stale
 //! session file.
+//! DN15 to DN17 capture native PNGs over TCP, CLI and MCP (issue #155).
 
 use anyhow::{anyhow, bail, Context, Result};
+use base64::{engine::general_purpose::STANDARD, Engine as _};
 use serde_json::{json, Value};
+use std::collections::HashSet;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Cursor, Write};
 use std::net::TcpStream;
 use std::path::Path;
 use std::process::Stdio;
@@ -25,7 +28,7 @@ use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
     "DN1", "DN2", "DN3", "DN4", "DN5", "DN6", "DN7", "DN8", "DN9", "DN10", "DN11", "DN12", "DN13",
-    "DN14",
+    "DN14", "DN15", "DN16", "DN17",
 ];
 
 const NAME: &str = "devtools-native";
@@ -179,6 +182,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
                 json!({"v":1,"id":91,"method":"Devtools.capabilities","token":"wrong-token"}),
             ),
             (92, json!({"v":1,"id":92,"method":"Devtools.capabilities"})),
+            (93, json!({"v":1,"id":93,"method":"Page.screenshot"})),
         ] {
             let mut bad = Connection::open(&endpoint, "")?;
             let reply = bad.line(&line.to_string())?;
@@ -196,7 +200,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
         let caps = client.ok(1, "Devtools.capabilities", json!({}))?;
         check_eq!(caps["version"].as_u64(), Some(1), "capabilities version");
         let methods = caps["methods"].as_array().context("no methods")?;
-        for method in ["DOM.snapshot", "Action.activate"] {
+        for method in ["DOM.snapshot", "Action.activate", "Page.screenshot"] {
             check!(
                 methods.iter().any(|m| m == method),
                 "capabilities lack {method}: {caps}"
@@ -265,6 +269,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
             "unknown method code"
         );
         client.ok(7, "Devtools.capabilities", json!({}))?;
+        let screenshot = screenshot_protocol(&mut client, env)?;
         drop(client);
 
         let tool = env.devtools_bin()?;
@@ -326,7 +331,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
 
         step(
             "DN12",
-            "MCP over stdio: initialize, tools/list, one tools/call",
+            "MCP over stdio: initialize, tools/list, DOM snapshot and screenshot",
         );
         let mcp = mcp_session(&tool, &session_arg, &mut transcripts)?;
         check_eq!(
@@ -340,6 +345,7 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
             "dom_snapshot",
             "dom_query",
             "action_activate",
+            "page_screenshot",
         ] {
             check!(
                 tools.iter().any(|t| t["name"] == name),
@@ -376,6 +382,22 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
         check!(errors.contains("missing_node"), "stderr: {errors}");
         let (code, _, _) = run(&mut transcripts, &["action", "fill", "only-an-id"])?;
         check_eq!(code, 2, "usage error exit code");
+
+        let mut client = Connection::open(&endpoint, &token)?;
+        let raw_result = client.ok(163, "Page.screenshot", json!({"max_side": 400}))?;
+        let (raw, _) = Screenshot::from_reply(&raw_result)?;
+        let cli_png = screenshot_cli(&tool, &session_arg, folder, &mut transcripts)?;
+        let mcp_png = screenshot_mcp(&mcp)?;
+        check!(
+            raw.png == cli_png,
+            "raw and CLI PNGs differ for the same frame"
+        );
+        check!(
+            raw.png == mcp_png,
+            "raw and MCP PNGs differ for the same frame"
+        );
+        std::fs::write(env.artifact("devtools-native-screenshot-cli.png"), &cli_png)?;
+        std::fs::write(env.artifact("devtools-native-screenshot-mcp.png"), &mcp_png)?;
         check!(
             !transcripts.contains(&token),
             "the client printed the session token"
@@ -391,6 +413,8 @@ async fn run_in(env: &Env, bin: &Path, folder: &Path) -> Result<()> {
             "activate_toggled": true,
             "bridge_coexists": true,
             "unauthorized_closes": true,
+            "screenshot": screenshot,
+            "screenshot_transports_match": true,
         }))
     }
     .await;
@@ -497,8 +521,7 @@ fn cli(
     Ok((output.status.code().unwrap_or(-1), out, err))
 }
 
-/// `initialize`, `tools/list` and `tools/call dom_snapshot` over the stdio of
-/// `surface-devtools mcp`. Returns the three responses.
+/// Initialize, list tools and call two methods through `surface-devtools mcp`.
 fn mcp_session(tool: &Path, session: &str, transcript: &mut String) -> Result<Vec<Value>> {
     let mut child = std::process::Command::new(tool)
         .args(["--session", session, "mcp"])
@@ -515,6 +538,8 @@ fn mcp_session(tool: &Path, session: &str, transcript: &mut String) -> Result<Ve
         json!({"jsonrpc":"2.0","id":2,"method":"tools/list"}),
         json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{
             "name":"dom_snapshot","arguments":{}}}),
+        json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{
+            "name":"page_screenshot","arguments":{"max_side":400}}}),
     ];
     {
         let mut stdin = child.stdin.take().context("no stdin")?;
@@ -534,10 +559,285 @@ fn mcp_session(tool: &Path, session: &str, transcript: &mut String) -> Result<Ve
         .context("mcp output is one JSON value per line")?;
     check_eq!(
         responses.len(),
-        3,
+        4,
         "mcp responses (a notification gets none)"
     );
     Ok(responses)
+}
+
+struct Screenshot {
+    png: Vec<u8>,
+    pixels: Vec<u8>,
+    width: u32,
+    height: u32,
+}
+
+impl Screenshot {
+    fn decode(png: Vec<u8>) -> Result<Self> {
+        let mut reader = png::Decoder::new(Cursor::new(&png)).read_info()?;
+        let mut pixels = vec![0; reader.output_buffer_size().context("PNG is too large")?];
+        let frame = reader.next_frame(&mut pixels)?;
+        check_eq!(frame.color_type, png::ColorType::Rgba, "PNG color type");
+        check_eq!(frame.bit_depth, png::BitDepth::Eight, "PNG bit depth");
+        pixels.truncate(frame.buffer_size());
+        Ok(Self {
+            png,
+            pixels,
+            width: frame.width,
+            height: frame.height,
+        })
+    }
+
+    fn from_reply(result: &Value) -> Result<(Self, f64)> {
+        let data = result["data_base64"]
+            .as_str()
+            .context("no screenshot data")?;
+        let screenshot = Self::decode(STANDARD.decode(data)?)?;
+        let scale = screenshot.verify_metadata(result)?;
+        Ok((screenshot, scale))
+    }
+
+    fn verify_metadata(&self, metadata: &Value) -> Result<f64> {
+        check_eq!(metadata["format"], json!("png"), "screenshot format");
+        check_eq!(metadata["width"], json!(self.width), "decoded PNG width");
+        check_eq!(metadata["height"], json!(self.height), "decoded PNG height");
+        let scale = metadata["scale"].as_f64().context("no screenshot scale")?;
+        check!(scale.is_finite() && scale > 0.0, "invalid scale {scale}");
+        Ok(scale)
+    }
+
+    fn verify_viewport(&self, snapshot: &Value, scale: f64) -> Result<()> {
+        let viewport = &snapshot["layout"]["viewport"];
+        for (axis, pixels) in [("width", self.width), ("height", self.height)] {
+            let logical = viewport[axis].as_f64().context("no viewport dimension")?;
+            let expected = (logical * scale).round();
+            check!(
+                (f64::from(pixels) - expected).abs() <= 1.0,
+                "PNG {axis} {pixels} does not match viewport {logical} at scale {scale}"
+            );
+        }
+        Ok(())
+    }
+
+    fn pixel(&self, x: u32, y: u32) -> Result<&[u8]> {
+        check!(
+            x < self.width && y < self.height,
+            "pixel {x},{y} is outside the PNG"
+        );
+        let offset = (y as usize * self.width as usize + x as usize) * 4;
+        Ok(&self.pixels[offset..offset + 4])
+    }
+
+    fn verify_color(&self, x: u32, y: u32, color: &Value) -> Result<()> {
+        let expected: [u8; 4] = serde_json::from_value(color.clone()).context("no DOM color")?;
+        let actual = self.pixel(x, y)?;
+        check!(
+            actual.iter().zip(expected).all(|(a, e)| a.abs_diff(e) <= 1),
+            "pixel {x},{y}: expected {expected:?}, got {actual:?}"
+        );
+        Ok(())
+    }
+}
+
+fn screenshot_protocol(client: &mut Connection, env: &Env) -> Result<Value> {
+    step(
+        "DN15",
+        "raw Page.screenshot: native viewport, PNG pixels, scale limit and fresh state",
+    );
+    // The action section includes a filled Material button with distinct R/B
+    // bytes. Reading a solid interior pixel catches an incorrect BGRA swizzle.
+    client.ok(150, "Action.activate", json!({"id": "section-1"}))?;
+    let snapshot = client.ok(151, "DOM.snapshot", json!({}))?;
+    let result = client.ok(152, "Page.screenshot", json!({}))?;
+    let (light, scale) = Screenshot::from_reply(&result)?;
+    light.verify_viewport(&snapshot, scale)?;
+    let mut colors = HashSet::new();
+    check!(
+        light.pixels.chunks_exact(4).any(|pixel| {
+            colors.insert(pixel);
+            colors.len() >= 8
+        }),
+        "screenshot has fewer than eight colors"
+    );
+    let fill = node(&snapshot, "filled")?["first_child"]
+        .as_u64()
+        .context("filled button has no visual child")? as usize;
+    let bounds = &snapshot["layout"]["nodes"][fill]["bounds"];
+    let x = bounds["x"].as_f64().context("no button x")?
+        + bounds["width"].as_f64().context("no button width")? * 0.2;
+    let y = bounds["y"].as_f64().context("no button y")?
+        + bounds["height"].as_f64().context("no button height")? * 0.5;
+    let color = &snapshot["dom"]["nodes"][fill]["style"]["background"];
+    check!(color[0] != color[2], "fill must distinguish red and blue");
+    light.verify_color((x * scale) as u32, (y * scale) as u32, color)?;
+    light.verify_color(
+        1,
+        1,
+        &node(&snapshot, "surface-page")?["style"]["background"],
+    )?;
+    std::fs::write(env.artifact("devtools-native-screenshot.png"), &light.png)?;
+
+    let result = client.ok(153, "Page.screenshot", json!({"scale": 1.0}))?;
+    let (logical, logical_scale) = Screenshot::from_reply(&result)?;
+    check_eq!(logical_scale, 1.0, "explicit screenshot scale");
+    logical.verify_viewport(&snapshot, logical_scale)?;
+
+    let result = client.ok(154, "Page.screenshot", json!({"max_side": 400}))?;
+    let (small, small_scale) = Screenshot::from_reply(&result)?;
+    check_eq!(small.width.max(small.height), 400, "max_side downscales");
+    check!(small_scale < scale, "max_side did not reduce the scale");
+    small.verify_viewport(&snapshot, small_scale)?;
+
+    let wrong_version = json!({
+        "v": 2, "id": 162, "method": "Page.screenshot", "token": client.token,
+    });
+    let reply = client.line(&wrong_version.to_string())?;
+    check_eq!(
+        reply["error"]["code"],
+        json!("unsupported_version"),
+        "screenshot still checks protocol version"
+    );
+    for (id, params) in [(155, json!({"max_side": 0})), (156, json!({"scale": -1.0}))] {
+        let reply = client.call(id, "Page.screenshot", params)?;
+        check_eq!(
+            reply["error"]["code"],
+            json!("invalid_params"),
+            "bad screenshot params"
+        );
+    }
+    client.ok(157, "Action.activate", json!({"id": "theme"}))?;
+    // Capture first, so a DOM query cannot refresh stale pixels.
+    let result = client.ok(158, "Page.screenshot", json!({}))?;
+    let (dark, dark_scale) = Screenshot::from_reply(&result)?;
+    let dark_snapshot = client.ok(159, "DOM.snapshot", json!({}))?;
+    dark.verify_viewport(&dark_snapshot, dark_scale)?;
+    dark.verify_color(
+        1,
+        1,
+        &node(&dark_snapshot, "surface-page")?["style"]["background"],
+    )?;
+    check!(
+        light.pixel(1, 1)? != dark.pixel(1, 1)?,
+        "screenshot kept the old theme"
+    );
+    std::fs::write(
+        env.artifact("devtools-native-screenshot-toggled.png"),
+        &dark.png,
+    )?;
+    client.ok(160, "Action.activate", json!({"id": "theme"}))?;
+    client.ok(161, "Action.activate", json!({"id": "section-0"}))?;
+    Ok(json!({
+        "format": "png",
+        "width": light.width,
+        "height": light.height,
+        "scale": scale,
+        "max_side": small.width.max(small.height),
+        "colors_match": true,
+        "reflects_theme_change": true,
+    }))
+}
+
+fn screenshot_cli(
+    tool: &Path,
+    session: &str,
+    folder: &Path,
+    transcript: &mut String,
+) -> Result<Vec<u8>> {
+    step(
+        "DN16",
+        "CLI screenshot outputs JSON or creates a private PNG once",
+    );
+    let (code, out, _) = cli(
+        tool,
+        session,
+        &["page", "screenshot", "--max-side", "400"],
+        transcript,
+    )?;
+    check_eq!(code, 0, "CLI screenshot JSON exit code");
+    let result = serde_json::from_str(&out).context("CLI screenshot JSON")?;
+    let (stdout, _) = Screenshot::from_reply(&result)?;
+    check_eq!(stdout.width.max(stdout.height), 400, "CLI JSON PNG size");
+
+    let path = folder.join("cli-screenshot.png");
+    let dest = path.to_str().context("non-UTF-8 test output path")?;
+    let args = ["page", "screenshot", "--max-side", "400", "--out", dest];
+    let (code, out, _) = cli(tool, session, &args, transcript)?;
+    check_eq!(code, 0, "CLI screenshot file exit code");
+    let metadata: Value = serde_json::from_str(&out).context("CLI PNG file metadata")?;
+    check_eq!(metadata["path"], json!(dest), "CLI screenshot output path");
+    let screenshot = Screenshot::decode(std::fs::read(&path)?)?;
+    screenshot.verify_metadata(&metadata)?;
+    check_eq!(
+        screenshot.width.max(screenshot.height),
+        400,
+        "CLI file PNG size"
+    );
+    check!(
+        metadata.get("data_base64").is_none(),
+        "CLI file response includes image data"
+    );
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = std::fs::metadata(&path)?.permissions().mode() & 0o777;
+        check_eq!(mode, 0o600, "PNG file mode");
+    }
+    let args = ["page", "screenshot", "--max-side", "200", "--out", dest];
+    let (code, out, _) = cli(tool, session, &args, transcript)?;
+    check_eq!(code, 3, "CLI screenshot refuses an existing path");
+    check!(
+        out.is_empty(),
+        "CLI screenshot reports success on an existing path"
+    );
+    check_eq!(
+        std::fs::read(path)?,
+        screenshot.png,
+        "PNG kept after refusal"
+    );
+    check!(
+        stdout.png == screenshot.png,
+        "CLI JSON and file PNGs differ"
+    );
+    Ok(screenshot.png)
+}
+
+fn screenshot_mcp(mcp: &[Value]) -> Result<Vec<u8>> {
+    step("DN17", "MCP page_screenshot returns a native PNG image");
+    let tool = mcp[1]["result"]["tools"]
+        .as_array()
+        .and_then(|tools| tools.iter().find(|tool| tool["name"] == "page_screenshot"))
+        .context("no MCP screenshot tool")?;
+    let properties = &tool["inputSchema"]["properties"];
+    check_eq!(
+        properties["scale"]["type"],
+        json!("number"),
+        "MCP scale type"
+    );
+    check_eq!(
+        properties["max_side"]["type"],
+        json!("integer"),
+        "MCP max_side type"
+    );
+    let result = &mcp[3]["result"];
+    check_eq!(result["isError"], json!(false), "MCP screenshot succeeded");
+    let content = result["content"]
+        .as_array()
+        .context("no MCP screenshot content")?;
+    let image = content
+        .iter()
+        .find(|block| block["type"] == "image")
+        .context("no MCP image")?;
+    check_eq!(image["mimeType"], json!("image/png"), "MCP image MIME type");
+    let encoded = image["data"].as_str().context("no MCP image data")?;
+    let screenshot = Screenshot::decode(STANDARD.decode(encoded)?)?;
+    let metadata = content
+        .iter()
+        .find(|block| block["type"] == "text")
+        .and_then(|block| block["text"].as_str())
+        .context("no MCP image metadata")?;
+    screenshot.verify_metadata(&serde_json::from_str(metadata)?)?;
+    check_eq!(screenshot.width.max(screenshot.height), 400, "MCP PNG size");
+    Ok(screenshot.png)
 }
 
 /// SIGTERM, then a hard kill after 10 s.

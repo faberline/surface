@@ -4,9 +4,12 @@
 //! method. The tool list and the descriptions come from
 //! `Devtools.capabilities` of the connected app.
 use crate::connection::Connection;
+use crate::screenshot;
 use serde_json::{json, Value};
 use std::io::{BufRead, Write};
-use surface_devtools_protocol::{Request, VERSION};
+use surface_devtools_protocol::{
+    Request, PAGE_SCREENSHOT, SCREENSHOT_DEFAULT_MAX_SIDE, SCREENSHOT_MAX_SIDE, VERSION,
+};
 
 const SUPPORTED: [&str; 3] = ["2024-11-05", "2025-03-26", "2025-06-18"];
 const LATEST: &str = "2025-06-18";
@@ -163,6 +166,10 @@ impl McpServer {
         let request = self.request(&method, arguments);
         // The request is sent once. A failure is reported, not retried.
         match conn.call(&request) {
+            Ok(reply) if reply.ok && method == PAGE_SCREENSHOT => success(
+                id,
+                screenshot_tool_result(reply.result.unwrap_or(Value::Null)),
+            ),
             Ok(reply) if reply.ok => success(
                 id,
                 tool_result(false, &reply.result.unwrap_or(Value::Null).to_string()),
@@ -181,6 +188,19 @@ impl McpServer {
 
 fn tool_result(is_error: bool, text: &str) -> Value {
     json!({"content": [{"type": "text", "text": text}], "isError": is_error})
+}
+
+fn screenshot_tool_result(result: Value) -> Value {
+    match screenshot::parse(result) {
+        Ok((image, _)) => json!({
+            "content": [
+                {"type": "image", "mimeType": "image/png", "data": image.data_base64},
+                {"type": "text", "text": screenshot::metadata(&image).to_string()}
+            ],
+            "isError": false
+        }),
+        Err(error) => tool_result(true, &format!("error: {error}")),
+    }
 }
 
 fn success(id: Value, result: Value) -> Value {
@@ -302,6 +322,16 @@ fn known(method: &str) -> (&'static str, Value) {
                     "extend": {"type": "boolean"},
                     "by_word": {"type": "boolean"}},
                 "required": ["key"]}),
+        ),
+        PAGE_SCREENSHOT => (
+            "Capture the current native Surface frame as PNG.",
+            json!({"type": "object", "properties": {
+                "scale": {"type": "number", "exclusiveMinimum": 0,
+                    "description": "Pixels per logical unit. Defaults to the window scale."},
+                "max_side": {"type": "integer", "minimum": 1, "maximum": SCREENSHOT_MAX_SIDE,
+                    "default": SCREENSHOT_DEFAULT_MAX_SIDE,
+                    "description": "Maximum size of the longer side in pixels."}
+            }}),
         ),
         _ => (
             "Call a method the client has no schema for.",
