@@ -2,6 +2,8 @@
 
 #[path = "material_time_dial_capture.rs"]
 mod capture_loss;
+#[path = "material_time_dial_motion.rs"]
+pub(super) mod motion;
 
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
@@ -239,6 +241,21 @@ async fn landscape(env: &Env, tab: &Tab) -> Result<Value> {
         Some(&json!("false")),
         "the nearby zero choice stays in Chrome accessibility"
     );
+    // The checked value changes immediately. Verify the old overlap rule
+    // after the moving hand reaches the selected mark.
+    tab.wait_for(
+        "(() => {
+            const hand = window.gallery.control_bounds('time-dial-dial-handle');
+            const mark = window.gallery.control_bounds('time-dial-dial-minute-59');
+            const nodes = JSON.parse(window.gallery.export_dom()).dom.nodes;
+            const selected = nodes.find(node => node.stable_id === 'time-dial-dial-minute-59');
+            return hand.length === 4 && mark.length === 4 &&
+                Math.abs(hand[0] + hand[2] / 2 - mark[0] - mark[2] / 2) < 0.0001 &&
+                Math.abs(hand[1] + hand[3] / 2 - mark[1] - mark[3] / 2) < 0.0001 &&
+                nodes[selected?.first_child]?.text === '59';
+          })()",
+    )
+    .await?;
     check_eq!(
         tab.eval(
             "(() => {

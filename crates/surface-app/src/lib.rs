@@ -44,7 +44,7 @@ pub use frame_input::{
     FrameInput, FramePress, FramePressPhase, InputAnimationUpdate, TouchContact,
 };
 pub use keys::{Key, KeyPress, Modifiers, Shortcut, TextAction};
-pub use motion::{ToggleMotion, ToggleSpring};
+pub use motion::{SpatialMotion, ToggleMotion, ToggleSpring};
 #[cfg(feature = "devtools")]
 pub use paint_export::{AttributedOp, PaintExport, PaintOwner, PAINT_SCHEMA};
 pub use scroll_control::{
@@ -78,6 +78,7 @@ pub struct View<M> {
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     focus_shortcuts: Vec<Shortcut<String>>,
+    key_focus_navigation: Option<KeyFocusNavigationHandler<M>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
@@ -108,6 +109,7 @@ enum ModalLayer {
 
 /// A key handler. `Some(message)` consumes the press, `None` passes it on.
 type KeyHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<M>>;
+type KeyFocusNavigationHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<FocusNavigation<M>>>;
 impl<M> View<M> {
     pub fn new(node: Node) -> Self {
         Self {
@@ -125,6 +127,7 @@ impl<M> View<M> {
             cancel_within: None,
             key: None,
             focus_shortcuts: Vec::new(),
+            key_focus_navigation: None,
             focus_navigation: None,
             context: None,
             stick: false,
@@ -361,6 +364,20 @@ impl<M> View<M> {
     ) -> Self {
         self.focus_shortcuts
             .push(Shortcut::new(key, modifiers, target.into()));
+        self
+    }
+
+    /// Handle a key press from this focused non-editor control. The message
+    /// may mount the named target. The runtime then focuses that target
+    /// within the active scope without activating it.
+    ///
+    /// A focused `on_key` handler runs first. IME composition keeps its keys.
+    /// If a repeated press matches, consume it without running the message.
+    pub fn on_key_focus_navigation(
+        mut self,
+        handler: impl Fn(&KeyPress) -> Option<FocusNavigation<M>> + 'static,
+    ) -> Self {
+        self.key_focus_navigation = Some(Rc::new(handler));
         self
     }
 
@@ -698,6 +715,7 @@ struct Binding<M> {
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
     focus_shortcuts: Vec<Shortcut<String>>,
+    key_focus_navigation: Option<KeyFocusNavigationHandler<M>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
@@ -1084,6 +1102,7 @@ impl<A: Application> Runtime<A> {
                     cancel_within: view.cancel_within,
                     key: view.key,
                     focus_shortcuts: view.focus_shortcuts,
+                    key_focus_navigation: view.key_focus_navigation,
                     focus_navigation: view.focus_navigation,
                     context: view.context,
                     stick: view.stick,
@@ -1332,9 +1351,9 @@ impl<A: Application> Runtime<A> {
         }
     }
     /// The host calls this for each key press before the field handles it.
-    /// Returns `true` when the focused `on_key` handler or a scoped focus
-    /// shortcut consumes the press. Returns `false` during IME composition
-    /// or when no handler consumes the press.
+    /// Returns `true` when the focused key handler, key focus navigation,
+    /// or a scoped focus shortcut consumes the press. Returns `false` during
+    /// IME composition or when no handler consumes the press.
     pub fn key(&mut self, press: &KeyPress) -> Result<bool, AppError> {
         #[cfg(feature = "devtools")]
         let span = self.trace_input("Key", None, None, None);
@@ -1363,7 +1382,41 @@ impl<A: Application> Runtime<A> {
             }
             return self.message(Some(message));
         }
-        Ok(self.focus_shortcut(id, press))
+        if self.navigate_key_focus(id, press)? {
+            Ok(true)
+        } else {
+            Ok(self.focus_shortcut(id, press))
+        }
+    }
+
+    fn navigate_key_focus(&mut self, id: NodeId, press: &KeyPress) -> Result<bool, AppError> {
+        let Some(handler) = self
+            .bindings
+            .get(&id)
+            .and_then(|binding| binding.key_focus_navigation.as_ref())
+        else {
+            return Ok(false);
+        };
+        if self.has_pending_composition()
+            || !self.in_scope(id)
+            || !self
+                .dom
+                .get(id)
+                .is_ok_and(|node| node.is_focusable() && node.role() != Role::TextInput)
+        {
+            return Ok(false);
+        }
+        let Some(navigation) = handler(press) else {
+            return Ok(false);
+        };
+        if press.repeat {
+            return Ok(true);
+        }
+        #[cfg(feature = "devtools")]
+        if let (Some(recorder), Some(focused)) = (&mut self.trace, &self.focused) {
+            recorder.set_source(focused, trace::Handler::Key);
+        }
+        self.apply_focus_navigation(navigation)
     }
 
     fn focus_shortcut(&mut self, source: NodeId, press: &KeyPress) -> bool {

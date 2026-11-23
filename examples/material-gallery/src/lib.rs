@@ -398,6 +398,7 @@ impl Application for Gallery {
         let carousel = self.carousel_demo.frame(&frame);
         let app_bar = self.app_bar_demo.frame(&frame);
         let toolbar = self.toolbar_demo.frame(&frame);
+        let time_dial = self.time_dial_demo.frame(&frame);
         AnimationUpdate {
             rebuild: inline.rebuild
                 || modal.rebuild
@@ -408,7 +409,8 @@ impl Application for Gallery {
                 || bottom_sheet.rebuild
                 || carousel.rebuild
                 || app_bar.rebuild
-                || toolbar.rebuild,
+                || toolbar.rebuild
+                || time_dial.rebuild,
             request_next: inline.request_next
                 || modal.request_next
                 || snackbar.request_next
@@ -416,7 +418,8 @@ impl Application for Gallery {
                 || progress.request_next
                 || side_sheet.request_next
                 || bottom_sheet.request_next
-                || carousel.request_next,
+                || carousel.request_next
+                || time_dial.request_next,
         }
     }
     fn update(&mut self, m: Message) {

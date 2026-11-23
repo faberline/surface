@@ -1,13 +1,16 @@
 //! Material 3 Expressive Dial and its Input alternative in one modal.
 
+mod hand_motion;
 mod polar;
+
+pub use hand_motion::DialHandMotion;
 
 use std::rc::Rc;
 
 use surface::{
     Align, Color, FillContour, Insets, Length, Node, Rect, Role, Style, TextScaling, TextStyle,
 };
-use surface_app::{EditKey, FocusNavigation, PointDrag, Roving, View};
+use surface_app::{EditKey, FocusNavigation, Key, KeyPress, PointDrag, Roving, View};
 
 use crate::{
     date_picker::{button, disabled_ink, text, TARGET},
@@ -140,8 +143,30 @@ impl Theme {
     /// the host observes accepted frame input.
     pub fn time_dial<M: Clone + 'static>(
         &self,
+        options: TimeDialOptions<'_>,
+        state: &DialState,
+        on_event: impl Fn(DialEvent) -> M + 'static,
+    ) -> View<M> {
+        self.build_time_dial(options, state, None, on_event)
+    }
+
+    /// Render the dial with a retained selector animation. Pass dial events
+    /// through [DialHandMotion::apply] and advance it from the frame callback.
+    pub fn time_dial_with_motion<M: Clone + 'static>(
+        &self,
+        options: TimeDialOptions<'_>,
+        state: &DialState,
+        motion: &DialHandMotion,
+        on_event: impl Fn(DialEvent) -> M + 'static,
+    ) -> View<M> {
+        self.build_time_dial(options, state, Some(motion), on_event)
+    }
+
+    fn build_time_dial<M: Clone + 'static>(
+        &self,
         mut options: TimeDialOptions<'_>,
         state: &DialState,
+        motion: Option<&DialHandMotion>,
         on_event: impl Fn(DialEvent) -> M + 'static,
     ) -> View<M> {
         options.input.presentation = TimeInputPresentation::Modal;
@@ -157,6 +182,7 @@ impl Theme {
             labels: options.labels,
             scale: effective_scale(options.text_scale),
             state,
+            motion,
             emit,
         }
         .view()
@@ -168,7 +194,14 @@ struct Dial<'a, 'b, M> {
     labels: &'b TimeDialLabels<'b>,
     scale: f32,
     state: &'a DialState,
+    motion: Option<&'a DialHandMotion>,
     emit: Rc<dyn Fn(DialEvent) -> M>,
+}
+
+#[derive(Clone, Copy)]
+struct HandPaint {
+    center: (f32, f32),
+    resting_value: Option<u8>,
 }
 
 impl<M: Clone + 'static> Dial<'_, '_, M> {
@@ -299,6 +332,12 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
     fn controls(&self, layout: TimeDialLayout) -> View<M> {
         let vertical = layout == TimeDialLayout::Vertical;
         let period = self.state.input().period();
+        let width = if vertical {
+            vertical_controls_width(period.is_some())
+        } else {
+            HORIZONTAL_WIDTH
+        };
+        let title = self.input.title(width);
         let fields = self.fields();
         let help = View::new(Node::new(Role::Group, "").styled(Style::column().gap(2.))).children(
             [TimeField::Hour, TimeField::Minute]
@@ -316,24 +355,22 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
                 std::iter::once(fields)
                     .chain(period.map(|value| self.input.dial_period(value, true, PERIOD_WIDTH))),
             );
-            vec![self.input.title(), row, help]
+            vec![title, row, help]
         } else {
             let period = period.map(|value| self.input.dial_period(value, false, 100.));
-            [self.input.title(), fields, help]
-                .into_iter()
-                .chain(period)
-                .collect()
-        };
-        let width = if vertical {
-            vertical_controls_width(period.is_some())
-        } else {
-            HORIZONTAL_WIDTH
+            [title, fields, help].into_iter().chain(period).collect()
         };
         let mut style = Style::column().width(Length::Px(width)).gap(BODY_GAP);
+        let scale = self.scale.max(1.);
         style.max_height = Length::Px(if vertical {
-            control_height(self.scale.max(1.))
+            control_height(scale)
         } else {
-            FACE
+            // The controls can grow beside the face. Reserve enough room
+            // for the footer before the controls need to scroll.
+            self.input.options.viewport.height
+                - 2. * (PANEL_MARGIN + HORIZONTAL_PADDING)
+                - FOOTER_GAP
+                - footer_height(scale)
         });
         style.clip = true;
         View::new(
@@ -346,6 +383,8 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
     }
 
     fn fields(&self) -> View<M> {
+        let separator_type = typography::DISPLAY_LARGE_EMPHASIZED;
+        let line_height = separator_type.line_height_px();
         let separator = View::new(
             Node::new(Role::Group, "").styled(
                 Style::column()
@@ -361,7 +400,8 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
                 .text_scaling(TextScaling::Fixed)
                 .styled(
                     Style::column()
-                        .with_text_style(typography::DISPLAY_LARGE_EMPHASIZED)
+                        .with_text_style(separator_type)
+                        .height(Length::Px(line_height))
                         .foreground(self.input.theme.colors.on_surface),
                 ),
         )])
@@ -460,10 +500,22 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             )
             .without_interaction(None),
         ]);
-        if selected && !disabled {
+        if disabled {
+            return view;
+        }
+        let emit = self.emit.clone();
+        let clock = session.clock();
+        let start = value_id(self.input.options.id, field, default_value(field, clock));
+        let view = view.on_key_focus_navigation(move |press| {
+            plain_enter(press).then(|| FocusNavigation {
+                target: start.clone(),
+                message: emit(DialEvent::SetField(field)),
+            })
+        });
+        if selected {
             let emit = self.emit.clone();
             let base = self.input.options.id.to_string();
-            let value = validation.unwrap_or(default_value(field, session.clock()));
+            let value = validation.unwrap_or(default_value(field, clock));
             view.on_focus_navigation_with_extend(move |key, extend| {
                 if extend || !matches!(key, EditKey::Down | EditKey::Right) {
                     return None;
@@ -500,10 +552,19 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         let clock = state.input().clock();
         let shown = state.input().validation().field(field).ok();
         let preview = state.preview().map(|preview| preview.value);
-        let hand = preview.or(shown);
-        let visual = hand
-            .into_iter()
-            .flat_map(|value| self.hand(field, clock, value));
+        let hand = preview.or(shown).map(|value| {
+            let target = polar::center(field, clock, value);
+            let center = self
+                .motion
+                .and_then(DialHandMotion::center)
+                .unwrap_or(target);
+            let settled = self.motion.is_none_or(DialHandMotion::is_settled);
+            HandPaint {
+                center,
+                resting_value: (settled && center == target).then_some(value),
+            }
+        });
+        let visual = hand.into_iter().flat_map(|hand| self.hand(hand.center));
         let values = match (field, clock) {
             (TimeField::Hour, ClockFormat::TwelveHour) => {
                 std::iter::once(12).chain(1..12).collect()
@@ -550,8 +611,7 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         })
     }
 
-    fn hand(&self, field: TimeField, clock: ClockFormat, value: u8) -> [View<M>; 3] {
-        let (x, y) = polar::center(field, clock, value);
+    fn hand(&self, (x, y): (f32, f32)) -> [View<M>; 3] {
         let mid = FACE / 2.;
         let length = (x - mid).hypot(y - mid);
         let normal = [(y - mid) / length, (mid - x) / length];
@@ -599,7 +659,7 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         field: TimeField,
         value: u8,
         selected: Option<u8>,
-        hand: Option<u8>,
+        hand: Option<HandPaint>,
         clock: ClockFormat,
     ) -> View<M> {
         let digits = self.state.input().digit_text(field, value);
@@ -607,8 +667,17 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         let colors = self.input.theme.colors;
         let base = self.input.options.id;
         let chosen = selected == Some(value);
-        let lit = hand == Some(value);
         let disabled = self.input.options.disabled;
+        let size = self.face_type(field, clock);
+        let (lit, obscured) = match hand {
+            Some(hand) if hand.resting_value == Some(value) => (true, false),
+            Some(hand) => match label_coverage(&digits, &size, (x, y), hand.center) {
+                LabelCoverage::Outside => (false, false),
+                LabelCoverage::Inside if hand.resting_value.is_none() => (true, false),
+                _ => (false, true),
+            },
+            None => (false, false),
+        };
         let ink = if lit && !disabled {
             colors.on_primary
         } else if disabled {
@@ -617,10 +686,9 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             colors.on_surface
         };
         let name = (self.labels.value_name)(field, &digits, choice_count(field, clock));
-        let size = self.face_type(field, clock);
-        let obscured = hand.filter(|&hand| hand != value).is_some_and(|hand| {
-            label_overlaps_handle(&digits, &size, (x, y), polar::center(field, clock, hand))
-        });
+        let exact_minute = field == TimeField::Minute && !value.is_multiple_of(5);
+        let show_label = !obscured
+            && (!exact_minute || hand.is_some_and(|paint| paint.resting_value == Some(value)));
         let node = Node::new(Role::Radio, name)
             .id(value_id(base, field, value))
             .checked(chosen)
@@ -635,9 +703,9 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             node,
             (!disabled).then(|| (self.emit)(DialEvent::Choose { field, value })),
         )
-        // Retain the same target and checked metadata across held previews
-        // and commits. Only the digits that cross the handle lose paint.
-        .children((!obscured).then(|| self.face_label(&digits, ink, size)))
+        // Keep the radio present during motion. An exact minute label fits
+        // among the five-minute marks only when its handle covers that spot.
+        .children(show_label.then(|| self.face_label(&digits, ink, size)))
         .restore_focus_on_removal(self.input.id(if field == TimeField::Hour {
             "minute-selector"
         } else {
@@ -648,7 +716,16 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         }
         let base = base.to_owned();
         let emit = self.emit.clone();
-        view.on_focus_navigation_with_extend(move |key, extend| {
+        let rid = value_id(&base, field, value);
+        let repeat = self.emit.clone();
+        view.on_key_focus_navigation(move |press| {
+            // Holding Enter after entering the face must not pick the mark.
+            (press.repeat && plain_enter(press)).then(|| FocusNavigation {
+                target: rid.clone(),
+                message: repeat(DialEvent::SetField(field)),
+            })
+        })
+        .on_focus_navigation_with_extend(move |key, extend| {
             if extend {
                 return None;
             }
@@ -703,19 +780,34 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
     }
 }
 
-fn label_overlaps_handle(
+enum LabelCoverage {
+    Outside,
+    Partial,
+    Inside,
+}
+
+fn label_coverage(
     digits: &str,
     size: &TextStyle,
     (x, y): (f32, f32),
     (handle_x, handle_y): (f32, f32),
-) -> bool {
+) -> LabelCoverage {
     let width_in_em = digits
         .chars()
         .map(|digit| if digit.is_ascii() { 0.65 } else { 1. })
         .sum::<f32>();
-    let dx = ((x - handle_x).abs() - size.font_size * width_in_em / 2.).max(0.);
-    let dy = ((y - handle_y).abs() - size.font_size / 2.).max(0.);
-    dx.hypot(dy) < FACE_HANDLE / 2.
+    let half_width = size.font_size * width_in_em / 2.;
+    let half_height = size.font_size / 2.;
+    let dx = (x - handle_x).abs();
+    let dy = (y - handle_y).abs();
+    let radius = FACE_HANDLE / 2.;
+    if (dx + half_width).hypot(dy + half_height) <= radius {
+        LabelCoverage::Inside
+    } else if (dx - half_width).max(0.).hypot((dy - half_height).max(0.)) < radius {
+        LabelCoverage::Partial
+    } else {
+        LabelCoverage::Outside
+    }
 }
 
 fn choice_count(field: TimeField, clock: ClockFormat) -> u8 {
@@ -731,6 +823,10 @@ fn field_part(field: TimeField) -> &'static str {
         TimeField::Hour => "hour",
         TimeField::Minute => "minute",
     }
+}
+
+fn plain_enter(press: &KeyPress) -> bool {
+    press.key == Key::Enter && press.modifiers.is_empty()
 }
 
 fn value_id(base: &str, field: TimeField, value: u8) -> String {

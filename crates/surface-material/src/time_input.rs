@@ -16,7 +16,6 @@ const FIELD_HEIGHT: f32 = 72.;
 const SEPARATOR_WIDTH: f32 = 16.;
 pub(crate) const PANEL_PADDING: f32 = 12.;
 pub(crate) const PANEL_MARGIN: f32 = 8.;
-const ACTION_RESERVE: f32 = 56.;
 const SHORT_MODAL_HEIGHT: f32 = 320.;
 
 /// Show the editor in surrounding content or in a named, modal dialog.
@@ -134,27 +133,25 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
     }
 
     pub(crate) fn modal_body(&self, width: f32, extra: Option<View<M>>) -> View<M> {
-        let height = self.options.viewport.height.max(0.);
-        let mut body_style = Style::column().clip(true).gap(12.);
-        body_style.max_height =
-            Length::Px((height - (PANEL_MARGIN + PANEL_PADDING) * 2. - ACTION_RESERVE).max(0.));
         // The Dialog keeps its accessible title at every height. In a short
         // modal, use the available body height for fields and their help.
-        let title = (!self.short_modal()).then(|| self.title());
+        let inner_width = (width - PANEL_PADDING * 2.).max(0.);
+        let title = (!self.short_modal()).then(|| self.title(inner_width));
         View::new(
             Node::new(Role::Group, "")
                 .id(self.id("body"))
-                .styled(body_style),
+                .shrink_to_fit_height()
+                .styled(Style::column().clip(true).gap(12.)),
         )
         .children(title.into_iter().chain(extra).chain([self.body(
-            (width - PANEL_PADDING * 2.).max(0.),
+            inner_width,
             self.session.period(),
             true,
         )]))
         .accessibility_scroll_pages()
     }
 
-    pub(crate) fn title(&self) -> View<M> {
+    pub(crate) fn title(&self, width: f32) -> View<M> {
         View::new(
             Node::new(Role::Heading, self.options.title)
                 .id(self.id("title"))
@@ -162,6 +159,7 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                 .shrink_to_fit_width()
                 .styled(
                     Style::column()
+                        .width(Length::Px(width))
                         .with_text_style(typography::TITLE_LARGE)
                         .foreground(self.theme.colors.on_surface),
                 ),
@@ -176,21 +174,25 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
         actions: View<M>,
         initial_focus: String,
     ) -> View<M> {
+        let mut panel_style = Style::column()
+            .width(Length::Px(width))
+            .padding(padding)
+            .gap(8.)
+            .corners(shape::EXTRA_LARGE)
+            .background(self.theme.colors.surface_container)
+            .clip(true);
+        // Let the actual wrapped action row keep its measured height. A
+        // scrollable Input body can give up the remaining column space.
+        panel_style.max_height =
+            Length::Px((self.options.viewport.height - PANEL_MARGIN * 2.).max(0.));
         let panel = View::new(
             Node::new(Role::Dialog, self.options.title)
                 .id(self.options.id)
                 .tab_index(-1)
-                .styled(
-                    Style::column()
-                        .width(Length::Px(width))
-                        .padding(padding)
-                        .gap(8.)
-                        .corners(shape::EXTRA_LARGE)
-                        .background(self.theme.colors.surface_container)
-                        .clip(true),
-                ),
+                .styled(panel_style),
         )
         .children([body, actions])
+        .accessibility_scroll_pages()
         .modal_initial_focus(initial_focus);
         let panel = if let Some(fallback) = self.options.restore_focus_to {
             panel.modal_focus_fallback(fallback)

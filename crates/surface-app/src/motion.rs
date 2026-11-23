@@ -454,6 +454,66 @@ impl ToggleSpring {
     }
 }
 
+/// A continuous coordinate driven by the Material 3 Standard Fast Spatial spring.
+///
+/// Use logical pixels, or an equivalent distance. A new target preserves the
+/// current position and velocity. The position can briefly pass the target.
+pub struct SpatialMotion {
+    target: f64,
+    spring: Option<ScalarSpring>,
+}
+
+impl SpatialMotion {
+    /// Start at rest at the given coordinate. A nonfinite coordinate uses zero.
+    pub fn new(value: f64) -> Self {
+        Self {
+            target: if value.is_finite() { value } else { 0. },
+            spring: None,
+        }
+    }
+
+    /// Retarget at a finite monotonic frame time, in milliseconds.
+    pub fn aim(&mut self, target: f64, now_ms: f64) {
+        if target == self.target || !target.is_finite() || !now_ms.is_finite() {
+            return;
+        }
+        let [position, velocity] = self.pose(now_ms);
+        let (stiffness, damping) = STANDARD_FAST_SPATIAL;
+        self.target = target;
+        self.spring = Some(ScalarSpring::new(
+            stiffness,
+            damping,
+            [1. + (position - target), velocity],
+            now_ms,
+        ));
+    }
+
+    /// Sample the coordinate without changing the track.
+    pub fn position(&self, now_ms: f64) -> f64 {
+        self.pose(now_ms)[0]
+    }
+
+    /// Return the coordinate and whether another frame is needed. A nonfinite
+    /// frame time settles to the exact target and clears the track.
+    pub fn advance(&mut self, now_ms: f64) -> (f64, bool) {
+        if let Some([position, _]) = self.sample(now_ms) {
+            return (position, true);
+        }
+        self.spring = None;
+        (self.target, false)
+    }
+
+    fn pose(&self, now_ms: f64) -> [f64; 2] {
+        self.sample(now_ms).unwrap_or([self.target, 0.])
+    }
+
+    fn sample(&self, now_ms: f64) -> Option<[f64; 2]> {
+        let spring = self.spring.filter(|_| now_ms.is_finite())?;
+        let [offset, velocity] = spring.sample(now_ms)?;
+        Some([self.target + (offset - 1.), velocity])
+    }
+}
+
 /// Sample an app-controlled transition from its current position and velocity.
 /// Use the same preset for this track throughout its lifetime.
 #[derive(Default)]

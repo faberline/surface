@@ -40,17 +40,36 @@ pub fn captured_hit(
     hit(field, clock, position.0, position.1)
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(super) struct HandPosition {
+    pub angle: f64,
+    pub radius: f64,
+}
+
+impl HandPosition {
+    pub fn for_value(field: TimeField, clock: ClockFormat, value: u8) -> Self {
+        let (slots, radius) = match (field, clock) {
+            (TimeField::Minute, _) => (60, OUTER_RADIUS),
+            (TimeField::Hour, ClockFormat::TwentyFourHour) if value >= 12 => (12, INNER_RADIUS),
+            (TimeField::Hour, _) => (12, OUTER_RADIUS),
+        };
+        Self {
+            angle: TAU * f64::from(value % slots) / f64::from(slots),
+            radius,
+        }
+    }
+
+    pub fn center(self) -> (f32, f32) {
+        let (sin, cos) = self.angle.sin_cos();
+        (
+            (FACE_RADIUS + self.radius * sin) as f32,
+            (FACE_RADIUS - self.radius * cos) as f32,
+        )
+    }
+}
+
 pub fn center(field: TimeField, clock: ClockFormat, value: u8) -> (f32, f32) {
-    let (count, radius) = match (field, clock) {
-        (TimeField::Minute, _) => (60., OUTER_RADIUS),
-        (TimeField::Hour, ClockFormat::TwentyFourHour) if value >= 12 => (12., INNER_RADIUS),
-        (TimeField::Hour, _) => (12., OUTER_RADIUS),
-    };
-    let angle = TAU * f64::from(value) / count;
-    (
-        (FACE_RADIUS + radius * angle.sin()) as f32,
-        (FACE_RADIUS - radius * angle.cos()) as f32,
-    )
+    HandPosition::for_value(field, clock, value).center()
 }
 
 #[cfg(test)]

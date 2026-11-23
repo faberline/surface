@@ -138,6 +138,8 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     shrink_to_fit_width: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    shrink_to_fit_height: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     reverse_row: bool,
     #[serde(default, skip_serializing_if = "TextScaling::is_default")]
     text_scaling: TextScaling,
@@ -200,6 +202,7 @@ impl Node {
             measured_group: None,
             absolute_overlay_fit: None,
             shrink_to_fit_width: false,
+            shrink_to_fit_height: false,
             reverse_row: false,
             text_scaling: TextScaling::default(),
             focus_color: None,
@@ -371,6 +374,15 @@ impl Node {
     }
     pub fn can_shrink_width(&self) -> bool {
         self.shrink_to_fit_width
+    }
+    /// Let this child give up height in a flex column when space runs out.
+    /// Its children keep their own layout rules.
+    pub fn shrink_to_fit_height(mut self) -> Self {
+        self.shrink_to_fit_height = true;
+        self
+    }
+    pub fn can_shrink_height(&self) -> bool {
+        self.shrink_to_fit_height
     }
     pub fn text_scaling(mut self, scaling: TextScaling) -> Self {
         self.text_scaling = scaling;

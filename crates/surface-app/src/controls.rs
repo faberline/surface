@@ -71,6 +71,20 @@ pub(crate) fn descendant(dom: &MicroDom, mut id: NodeId, parent: NodeId) -> bool
 }
 
 impl<A: Application> Runtime<A> {
+    pub(crate) fn apply_focus_navigation(
+        &mut self,
+        navigation: FocusNavigation<A::Message>,
+    ) -> Result<bool, AppError> {
+        self.apply(navigation.message)?;
+        if self.dom.by_id(&navigation.target).is_some_and(|target| {
+            self.in_scope(target) && self.dom.get(target).is_ok_and(Node::is_focusable)
+        }) {
+            self.focused = Some(navigation.target);
+            self.layout_focus = None;
+        }
+        Ok(true)
+    }
+
     pub(crate) fn descendant(&self, id: NodeId, parent: NodeId) -> bool {
         descendant(&self.dom, id, parent)
     }
@@ -398,14 +412,7 @@ impl<A: Application> Runtime<A> {
                 .as_ref()
                 .and_then(|navigate| navigate(key, extend))
             {
-                self.apply(navigation.message)?;
-                if self.dom.by_id(&navigation.target).is_some_and(|target| {
-                    self.in_scope(target) && self.dom.get(target).is_ok_and(Node::is_focusable)
-                }) {
-                    self.focused = Some(navigation.target);
-                    self.layout_focus = None;
-                }
-                return Ok(true);
+                return self.apply_focus_navigation(navigation);
             }
         }
         let Some((group, roving)) = self

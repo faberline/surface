@@ -485,10 +485,24 @@ It receives the field, display digits, and number of values on that dial.
 Pass all `DialEvent` values to `DialState::apply`. Forward editor focus
 changes to `DialState::observe_input_focus` while the dialog is open.
 A held pointer changes the hand preview. Release accepts the choice
-for that field. Choosing an hour advances to minute selection. Use
-the arrows on a focused dial value to move through exact minutes.
+for that field. Choosing an hour advances to minute selection.
+Press Enter on an hour or minute field to focus the first clock mark.
+This starts at hour 12 in 12-hour format, hour 00 in 24-hour format,
+or minute 00. The draft keeps its value until you choose a mark.
+On the face, use the arrows to step through exact values or Enter to
+accept the focused mark.
 Use Save to commit. Cancel, Escape and the scrim discard the draft
 and return focus to the opener.
+
+For animated feedback, keep a `DialHandMotion` with the open draft and
+render it through `Theme::time_dial_with_motion`. Pass all dial events,
+including viewport changes, to `DialHandMotion::apply` with the same
+draft. Advance the hand in the app animation frame with the current
+time and Reduce Motion setting. Apply the returned rebuild and frame
+request flags. The Standard Fast Spatial spring moves the displayed
+hand along the shortest arc. Focus, the draft, and checked values
+update immediately. A held pointer and Reduce Motion move the hand
+directly to its value.
 
 In Material Gallery, choose 浮層, then 時間錶盤. The scene uses the same
 draft in both modes. It supports portrait and landscape layouts with
