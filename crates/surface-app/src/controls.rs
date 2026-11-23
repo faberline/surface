@@ -38,6 +38,12 @@ impl Roving {
 pub(crate) struct RovingGroup {
     pub(crate) options: Roving,
     pub(crate) first_enabled_on_entry: bool,
+    pub(crate) retain_focus: bool,
+}
+
+pub(crate) struct RetainedRovingFocus {
+    group: String,
+    visible_predecessors: Option<Vec<String>>,
 }
 
 pub(crate) struct FocusScope {
@@ -129,6 +135,88 @@ impl<A: Application> Runtime<A> {
             .map(|(id, _)| id)
             .collect()
     }
+
+    fn roving_entry(&self, members: &[NodeId], options: RovingGroup) -> Option<NodeId> {
+        if !options.first_enabled_on_entry {
+            let selected = members.iter().copied().find(|id| {
+                self.dom
+                    .get(*id)
+                    .is_ok_and(|n| n.is_selected() == Some(true) || n.is_checked() == Some(true))
+            });
+            if selected.is_some() {
+                return selected;
+            }
+        }
+        members.first().copied()
+    }
+
+    // The runtime builds subtrees in preorder. Include stable predecessors
+    // that do not take focus, since disabled rows can also move a member.
+    fn preceding_roving_ids(&self, group: NodeId, focused: NodeId) -> impl Iterator<Item = &str> {
+        let start = group.index() + 1;
+        self.dom
+            .iter()
+            .skip(start)
+            .take(focused.index() - start)
+            .filter_map(|(_, node)| node.stable_id())
+    }
+
+    pub(crate) fn capture_retained_roving_focus(&self) -> Option<RetainedRovingFocus> {
+        let focused = self.focused_node().filter(|id| self.in_scope(*id))?;
+        let (group, options) = self.group(focused)?;
+        if !options.retain_focus || !self.in_scope(group) {
+            return None;
+        }
+        let visible = self.computed.as_ref().is_some_and(|layout| {
+            let bounds = &layout.nodes[focused.index()];
+            let visible = bounds.bounds.intersect(bounds.clip);
+            visible.width > 0. && visible.height > 0.
+        });
+        Some(RetainedRovingFocus {
+            group: self.stable(group)?,
+            visible_predecessors: visible.then(|| {
+                self.preceding_roving_ids(group, focused)
+                    .map(str::to_owned)
+                    .collect()
+            }),
+        })
+    }
+
+    fn reconcile_retained_roving_focus(&mut self, retained: RetainedRovingFocus) {
+        let Some(group) = self
+            .dom
+            .by_id(&retained.group)
+            .filter(|id| self.in_scope(*id))
+        else {
+            return;
+        };
+        let Some(options) = self.bindings[&group]
+            .roving
+            .filter(|group| group.retain_focus)
+        else {
+            return;
+        };
+        if let Some(focused) = self
+            .focused_node()
+            .filter(|&id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
+        {
+            if self.group(focused).is_some_and(|(owner, _)| owner == group)
+                && retained.visible_predecessors.is_some_and(|before| {
+                    self.preceding_roving_ids(group, focused)
+                        .ne(before.iter().map(String::as_str))
+                })
+            {
+                self.layout_focus = None;
+            }
+        } else if let Some(target) = self
+            .roving_entry(&self.members(group, None), options)
+            .and_then(|target| self.stable(target))
+        {
+            self.focused = Some(target);
+            self.layout_focus = None;
+        }
+    }
+
     pub(crate) fn tab_stop(&self, id: NodeId, collapsed: Option<&BTreeSet<String>>) -> bool {
         if !self.in_scope(id) {
             return false;
@@ -138,20 +226,7 @@ impl<A: Application> Runtime<A> {
         };
         let members = self.members(group, collapsed);
         let current = self.focused_node().filter(|id| members.contains(id));
-        let entry = || {
-            if !options.first_enabled_on_entry {
-                let selected = members.iter().copied().find(|id| {
-                    self.dom.get(*id).is_ok_and(|n| {
-                        n.is_selected() == Some(true) || n.is_checked() == Some(true)
-                    })
-                });
-                if selected.is_some() {
-                    return selected;
-                }
-            }
-            members.first().copied()
-        };
-        current.or_else(entry) == Some(id)
+        current.or_else(|| self.roving_entry(&members, options)) == Some(id)
     }
     pub(crate) fn has_tab_extent(&self, id: NodeId) -> bool {
         self.computed.as_ref().is_none_or(|layout| {
@@ -185,7 +260,11 @@ impl<A: Application> Runtime<A> {
             .is_some_and(|id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
     }
 
-    pub(crate) fn reconcile_controls(&mut self, focus_after_removal: Vec<String>) {
+    pub(crate) fn reconcile_controls(
+        &mut self,
+        focus_after_removal: Vec<String>,
+        retained_roving_focus: Option<RetainedRovingFocus>,
+    ) {
         let old_focus = self.focused.clone();
         // Bindings follow the current tree's preorder. Later sibling layers
         // cover earlier siblings. A nested layer always follows its parent.
@@ -279,6 +358,8 @@ impl<A: Application> Runtime<A> {
             }) {
                 self.focused = Some(target);
                 self.layout_focus = None;
+            } else if let Some(retained) = retained_roving_focus {
+                self.reconcile_retained_roving_focus(retained);
             }
         }
         if self.scopes.last().is_some() && self.focused_node().is_none_or(|id| !self.in_scope(id)) {

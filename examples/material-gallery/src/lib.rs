@@ -10,6 +10,7 @@ mod docked_date_picker_demo;
 mod extended_fab_demo;
 mod fab_demo;
 mod fab_menu_demo;
+mod lists_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
@@ -36,6 +37,7 @@ use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
+use lists_demo::{ListsDemo, ListsEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -93,6 +95,7 @@ pub struct Gallery {
     time_input_demo: TimeInputDemo,
     time_dial_demo: TimeDialDemo,
     time_scroll_demo: TimeScrollDemo,
+    lists_demo: ListsDemo,
     queue: Option<Queue<Message>>,
     docked_date_picker_demo: DockedDateDemo,
     extended_fab_demo: ExtendedFabDemo,
@@ -141,6 +144,7 @@ impl Default for Gallery {
             time_input_demo: TimeInputDemo::default(),
             time_dial_demo: TimeDialDemo::default(),
             time_scroll_demo: TimeScrollDemo::default(),
+            lists_demo: ListsDemo::default(),
             queue: None,
             docked_date_picker_demo: DockedDateDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
@@ -175,6 +179,7 @@ pub enum Message {
     TimeInput(TimeInputDemoEvent),
     TimeDial(TimeDialDemoEvent),
     TimeScroll(TimeScrollDemoEvent),
+    Lists(ListsEvent),
     DockedDate(DockedDateDemoEvent),
     ExtendedFab(ExtendedFabEvent),
     Fab(FabEvent),
@@ -250,6 +255,9 @@ impl Application for Gallery {
         }
         if self.time_scroll_demo.visible() {
             return self.time_scroll_demo.text_scale();
+        }
+        if self.lists_demo.visible() {
+            return self.lists_demo.text_scale();
         }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
@@ -489,6 +497,9 @@ impl Application for Gallery {
                 if i != time_scroll_demo::SECTION {
                     self.time_scroll_demo.leave();
                 }
+                if i != lists_demo::SECTION {
+                    self.lists_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -524,6 +535,7 @@ impl Application for Gallery {
             Message::TimeInput(event) => self.time_input_demo.update(event),
             Message::TimeDial(event) => self.time_dial_demo.update(event),
             Message::TimeScroll(event) => self.time_scroll_demo.update(event),
+            Message::Lists(event) => self.lists_demo.update(event),
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Fab(event) => self.fab_demo.update(event),
             Message::FabMenu(event) => self.fab_menu_demo.update(event),
@@ -618,6 +630,9 @@ impl Application for Gallery {
         }
         if self.time_scroll_demo.visible() {
             return self.time_scroll_demo.view(&t);
+        }
+        if self.lists_demo.visible() {
+            return self.lists_demo.view(&t);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -1122,6 +1137,7 @@ impl Application for Gallery {
                 children.push(TimeScrollDemo::show_button(&t));
                 children.push(TimeInputDemo::show_baseline_button(&t));
                 children.push(TimeDialDemo::show_baseline_button(&t));
+                children.push(ListsDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1269,7 +1285,7 @@ mod web {
                 "outline": colors.outline,
             })
         });
-        serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
+        let mut state = serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
             "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused(),
             "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
             "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime),
@@ -1296,7 +1312,10 @@ mod web {
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "tooltip": s.tooltip_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() })
-        }).to_string()
+        });
+        let theme = if s.dark { Theme::dark() } else { Theme::light() };
+        state["lists"] = s.lists_demo.inspect(&runtime, &theme);
+        state.to_string()
     })
     }
     #[wasm_bindgen]

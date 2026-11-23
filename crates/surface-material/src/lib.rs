@@ -30,6 +30,7 @@ mod fab_menu;
 mod fab_menu_layout;
 mod fab_menu_motion;
 mod fab_motion;
+mod list;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
@@ -117,6 +118,7 @@ pub use fab_menu_layout::{
 };
 pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
 pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
+pub use list::{ListItem, ListLines, ListMode, ListOptions, ListStyle};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };

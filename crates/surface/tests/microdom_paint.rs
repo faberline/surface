@@ -107,6 +107,58 @@ fn ops_follow_paint_order() {
 }
 
 #[test]
+fn interaction_corners_follow_press_focus_and_hover_without_moving_the_face() {
+    let style = Style::default()
+        .height(Length::Px(56.))
+        .corners(Corners::all(4.))
+        .background(Color::rgb(10, 20, 30))
+        .state_layer(Color::rgb(30, 40, 50))
+        .border(1., Color::rgb(50, 60, 70));
+    let node = Node::new(Role::Button, "Option")
+        .styled(style)
+        .focus_outline_width(3.)
+        .state_layer_alphas(20, 26, 26)
+        .interaction_corners(
+            Some(Corners::all(12.)),
+            Some(Corners::all(18.)),
+            Some(Corners::all(16.)),
+        );
+    for (disabled, hovered, focused, pressed, radius, layers) in [
+        (false, false, false, false, 4., 2),
+        (false, true, false, false, 12., 3),
+        (false, true, true, false, 16., 4),
+        (false, true, true, true, 18., 4),
+        (true, true, false, true, 4., 2),
+    ] {
+        let dom = MicroDom::new(node.clone().disabled(disabled));
+        let id = dom.root();
+        let layout = LayoutEngine::default()
+            .compute(&dom, 200., 100., &mut Metrics)
+            .unwrap();
+        let painted = DisplayList::compile_with_interaction(
+            &dom,
+            &layout,
+            focused.then_some(id),
+            &Default::default(),
+            InteractionState {
+                hovered: hovered.then_some(id),
+                pressed: pressed.then_some(id),
+            },
+        );
+        assert_eq!(painted.ops.len(), layers);
+        for op in painted.ops {
+            assert_eq!(op.rect(), layout.nodes[id.index()].bounds);
+            assert_eq!(op.clip(), layout.nodes[id.index()].clip);
+            assert!(matches!(
+                op,
+                PaintOp::Quad { radius: painted, .. } | PaintOp::Stroke { radius: painted, .. }
+                    if painted == radius
+            ));
+        }
+    }
+}
+
+#[test]
 fn nested_clips_are_carried_on_every_op() {
     let mut dom = MicroDom::new(
         Node::new(Role::Window, "App").styled(
