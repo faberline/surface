@@ -69,6 +69,13 @@ pub(super) fn element(
             let checked = node.is_checked().or(node.is_selected()).unwrap_or(false);
             set_bool(&element, "aria-checked", checked)?;
         }
+        Some("option") => {
+            set_bool(
+                &element,
+                "aria-selected",
+                node.is_checked().unwrap_or(false),
+            )?;
+        }
         Some("button") => {
             let pressed = match current_page {
                 Some(_) => node.is_checked(),
@@ -153,7 +160,9 @@ fn aria_role(node: &Node) -> Option<&'static str> {
         Role::Checkbox => "checkbox",
         Role::TextInput => "textbox",
         Role::Navigation => "navigation",
+        Role::Radio if node.uses_web_listbox_semantics() => "option",
         Role::Radio => "radio",
+        Role::RadioGroup if node.uses_web_listbox_semantics() => "listbox",
         Role::RadioGroup => "radiogroup",
         Role::Switch => "switch",
         Role::Slider => "slider",

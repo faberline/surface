@@ -329,6 +329,7 @@ impl<M> View<M> {
         self.roving = Some(controls::RovingGroup {
             options,
             first_enabled_on_entry: false,
+            retain_focus: false,
         });
         self
     }
@@ -340,6 +341,20 @@ impl<M> View<M> {
         self.roving = Some(controls::RovingGroup {
             options,
             first_enabled_on_entry: true,
+            retain_focus: false,
+        });
+        self
+    }
+
+    /// Keep focus in this named roving group during a rebuild. If a focused
+    /// member is removed or disabled, try its explicit fallback, then the
+    /// selected or first enabled member of this group. A previously visible
+    /// member that moves in the group's order is revealed again.
+    pub fn roving_retained(mut self, options: Roving) -> Self {
+        self.roving = Some(controls::RovingGroup {
+            options,
+            first_enabled_on_entry: false,
+            retain_focus: true,
         });
         self
     }
@@ -1154,6 +1169,7 @@ impl<A: Application> Runtime<A> {
             .and_then(|id| self.bindings.get(&id))
             .map(|binding| binding.focus_after_removal.clone())
             .unwrap_or_default();
+        let retained_roving_focus = self.capture_retained_roving_focus();
         let pressed_role = self
             .pressed
             .as_deref()
@@ -1164,7 +1180,7 @@ impl<A: Application> Runtime<A> {
         self.bindings = bindings;
         self.reconcile_editors();
         self.computed = None;
-        self.reconcile_controls(focus_after_removal);
+        self.reconcile_controls(focus_after_removal, retained_roving_focus);
         if self.focused.as_ref().is_some_and(|key| {
             self.dom
                 .by_id(key)

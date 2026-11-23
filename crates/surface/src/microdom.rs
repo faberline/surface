@@ -1,5 +1,5 @@
 //! An indexed semantic tree. No browser DOM objects or renderer handles live here.
-use crate::{AdjustableValue, BoxShadow, Color, Direction, Style, TextScaling};
+use crate::{AdjustableValue, BoxShadow, Color, Corners, Direction, Style, TextScaling};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -114,11 +114,15 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     interaction_box_shadows: Option<Box<InteractionBoxShadows>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    interaction_corners: Option<Box<[Option<Corners>; 3]>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fill_contour: Option<crate::FillContour>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     current_page: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     grid_role: Option<GridRole>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    web_listbox: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     grid_multiselectable: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -145,6 +149,8 @@ pub struct Node {
     text_scaling: TextScaling,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     focus_color: Option<Color>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    focus_outline_width: Option<f32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     state_layer_alphas: Option<[u8; 3]>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -192,9 +198,11 @@ impl Node {
             stable_id: None,
             box_shadows: [BoxShadow::NONE; 2],
             interaction_box_shadows: None,
+            interaction_corners: None,
             fill_contour: None,
             current_page: None,
             grid_role: None,
+            web_listbox: false,
             grid_multiselectable: false,
             current_date: false,
             described_by_text: None,
@@ -208,6 +216,7 @@ impl Node {
             reverse_row: false,
             text_scaling: TextScaling::default(),
             focus_color: None,
+            focus_outline_width: None,
             state_layer_alphas: None,
             focus_outline_from_parent: false,
             role,
@@ -284,6 +293,44 @@ impl Node {
             None
         };
         active.unwrap_or(self.box_shadows)
+    }
+    /// Replace the painted corners of this node while it is hovered, pressed,
+    /// or focused. Press wins over focus, then hover. A disabled node or state
+    /// without valid override radii uses the style's corners. This changes
+    /// paint immediately and keeps the same layout and hit area.
+    pub fn interaction_corners(
+        mut self,
+        hovered: Option<Corners>,
+        pressed: Option<Corners>,
+        focused: Option<Corners>,
+    ) -> Self {
+        let overrides = [hovered, pressed, focused].map(|radii| radii.filter(Corners::is_valid));
+        self.interaction_corners = overrides
+            .iter()
+            .any(Option::is_some)
+            .then(|| Box::new(overrides));
+        self
+    }
+    pub(crate) fn presented_interaction_corners(
+        &self,
+        id: NodeId,
+        focus: Option<NodeId>,
+        interaction: crate::InteractionState,
+    ) -> Option<Corners> {
+        let &[hovered, pressed, focused] = self
+            .interaction_corners
+            .as_deref()
+            .filter(|_| !self.disabled)?;
+        let active = if interaction.pressed == Some(id) {
+            pressed
+        } else if focus == Some(id) {
+            focused
+        } else if interaction.hovered == Some(id) {
+            hovered
+        } else {
+            None
+        };
+        active.filter(Corners::is_valid)
     }
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
@@ -407,6 +454,16 @@ impl Node {
             None => Some(self.style.foreground),
         }
     }
+    /// Paint an inside focus stroke of this width along the node's shape.
+    /// The width must be finite and positive. Other values restore the default.
+    pub fn focus_outline_width(mut self, width: f32) -> Self {
+        self.focus_outline_width = valid_outline_width(width).then_some(width);
+        self
+    }
+    pub(crate) fn resolved_focus_outline_width(&self) -> Option<f32> {
+        self.focus_outline_width
+            .filter(|&width| valid_outline_width(width))
+    }
     /// Set the state layer opacity on the 0–255 scale. This does not change
     /// the focus outline.
     pub fn state_layer_alphas(mut self, hover: u8, focus: u8, press: u8) -> Self {
@@ -434,6 +491,16 @@ impl Node {
     }
     pub fn accessibility_grid_role(&self) -> Option<GridRole> {
         self.grid_role.filter(|role| role.applies_to(self.role))
+    }
+    /// Expose a RadioGroup as a listbox or a Radio as an option on Web.
+    /// A Radio's checked value supplies the option's selected state.
+    /// The base role still controls keyboard and native accessibility.
+    pub fn web_listbox_semantics(mut self) -> Self {
+        self.web_listbox = matches!(self.role, Role::RadioGroup | Role::Radio);
+        self
+    }
+    pub fn uses_web_listbox_semantics(&self) -> bool {
+        self.web_listbox && matches!(self.role, Role::RadioGroup | Role::Radio)
     }
     /// Report that this grid can have multiple selected cells. Set selection
     /// on each cell separately. This property only applies to [`GridRole::Grid`].
@@ -578,6 +645,11 @@ impl Node {
                 ))
     }
 }
+
+fn valid_outline_width(width: f32) -> bool {
+    width.is_finite() && width > 0.
+}
+
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum DomError {
     #[error("duplicate stable ID: {0}")]

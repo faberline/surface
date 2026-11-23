@@ -561,6 +561,103 @@ mod tests {
     }
 
     #[test]
+    fn web_listbox_nodes_keep_native_radio_roles_values_and_actions() {
+        struct Choices {
+            web_listbox: bool,
+            selected: usize,
+            presses: usize,
+        }
+        impl Application for Choices {
+            type Message = usize;
+
+            fn update(&mut self, selected: usize) {
+                self.selected = selected;
+                self.presses += 1;
+            }
+
+            fn view(&self) -> View<usize> {
+                let project = |node: SurfaceNode| {
+                    if self.web_listbox {
+                        node.web_listbox_semantics()
+                    } else {
+                        node
+                    }
+                };
+                let group = View::new(project(
+                    SurfaceNode::new(SurfaceRole::RadioGroup, "Delivery")
+                        .id("delivery")
+                        .styled(Style::column()),
+                ))
+                .children(
+                    ["Standard", "Express", "Unavailable"]
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, name)| {
+                            View::new(project(
+                                SurfaceNode::new(SurfaceRole::Radio, name)
+                                    .id(name)
+                                    .text(name)
+                                    .checked(self.selected == index)
+                                    .disabled(index == 2),
+                            ))
+                            .on_press(index)
+                            .accessible_activation()
+                        }),
+                );
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Window")).children([group])
+            }
+        }
+
+        for web_listbox in [false, true] {
+            let mut runtime = Runtime::new(Choices {
+                web_listbox,
+                selected: 0,
+                presses: 0,
+            })
+            .unwrap();
+            let mut tree = Tree::default();
+            let frame = update(&mut runtime, &mut tree);
+            let group = named(&frame, "Delivery").1;
+            let (standard_id, standard) = named(&frame, "Standard");
+            let (express_id, express) = named(&frame, "Express");
+            let (disabled_id, disabled) = named(&frame, "Unavailable");
+            assert_eq!(group.role(), Role::RadioGroup);
+            assert_eq!(group.children(), [standard_id, express_id, disabled_id]);
+            assert_eq!(standard.role(), Role::RadioButton);
+            assert_eq!(standard.toggled(), Some(Toggled::True));
+            assert_eq!(express.toggled(), Some(Toggled::False));
+            assert!(express.supports_action(Action::Focus));
+            assert!(express.supports_action(Action::Click));
+            assert!(disabled.is_disabled());
+            assert!(!disabled.supports_action(Action::Focus));
+            assert!(!disabled.supports_action(Action::Click));
+            let action = |action, target_node| ActionRequest {
+                action,
+                target_tree: TreeId::ROOT,
+                target_node,
+                data: None,
+            };
+            assert!(tree
+                .action(&mut runtime, action(Action::Focus, express_id))
+                .unwrap());
+            assert_eq!(runtime.focused(), Some("Express"));
+            assert_eq!(runtime.app().selected, 0);
+            assert_eq!(runtime.app().presses, 0);
+
+            let frame = update(&mut runtime, &mut tree);
+            let (express_id, _) = named(&frame, "Express");
+            assert!(tree
+                .action(&mut runtime, action(Action::Click, express_id))
+                .unwrap());
+            assert_eq!(runtime.app().selected, 1);
+            assert_eq!(runtime.app().presses, 1);
+            let frame = update(&mut runtime, &mut tree);
+            assert_eq!(named(&frame, "Standard").1.toggled(), Some(Toggled::False));
+            assert_eq!(named(&frame, "Express").1.toggled(), Some(Toggled::True));
+        }
+    }
+
+    #[test]
     fn adjustable_projection_sets_spinbutton_value_and_routes_current_actions() {
         struct Adjustable {
             value: Option<f64>,

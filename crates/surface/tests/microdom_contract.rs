@@ -195,6 +195,45 @@ fn grid_multiselection_is_opt_in_and_keeps_the_existing_snapshot_version() {
 }
 
 #[test]
+fn web_listbox_round_trip_preserves_checked_radios_and_legacy_json() {
+    let root = Node::new(Role::RadioGroup, "Delivery");
+    let option = Node::new(Role::Radio, "Standard").checked(true);
+    let plain = serde_json::to_value(&option).unwrap();
+    assert!(plain.get("web_listbox").is_none());
+    assert!(!serde_json::from_value::<Node>(plain)
+        .unwrap()
+        .uses_web_listbox_semantics());
+
+    let mut dom = MicroDom::new(root.web_listbox_semantics());
+    let row = dom
+        .append(dom.root(), option.web_listbox_semantics())
+        .unwrap();
+    let json = serde_json::to_value(dom.snapshot()).unwrap();
+    assert_eq!(json["version"], 1);
+    assert_eq!(json["nodes"][0]["web_listbox"], true);
+    assert_eq!(json["nodes"][row.index()]["web_listbox"], true);
+    let restored = MicroDom::from_snapshot(serde_json::from_value(json).unwrap()).unwrap();
+    let parent = restored.get(restored.root()).unwrap();
+    assert_eq!(parent.role(), Role::RadioGroup);
+    assert!(parent.uses_web_listbox_semantics());
+    assert!(!parent.is_focusable());
+    let radio = restored.get(row).unwrap();
+    assert_eq!(radio.role(), Role::Radio);
+    assert!(radio.uses_web_listbox_semantics());
+    assert!(radio.is_focusable());
+    assert_eq!(radio.is_checked(), Some(true));
+    assert_eq!(radio.is_selected(), None);
+
+    let unrelated = Node::new(Role::List, "Routes").web_listbox_semantics();
+    let mut json = serde_json::to_value(&unrelated).unwrap();
+    assert!(json.get("web_listbox").is_none());
+    json["web_listbox"] = serde_json::Value::Bool(true);
+    assert!(!serde_json::from_value::<Node>(json)
+        .unwrap()
+        .uses_web_listbox_semantics());
+}
+
+#[test]
 fn snapshot_has_golden_bytes() {
     let dom = MicroDom::new(Node::new(Role::Window, "App").id("app"));
     let json = serde_json::to_string(&dom.snapshot()).unwrap();

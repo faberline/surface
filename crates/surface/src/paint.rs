@@ -1,6 +1,6 @@
 //! Ordered, serializable drawing commands shared by every GPU backend.
 use crate::shadow::has_area;
-use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, Rect, Role, Style, TextStyle};
+use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, Rect, Role, TextStyle};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[derive(Clone, Debug, Default)]
@@ -114,17 +114,11 @@ impl Outline {
             .map_or(Self::Corners(corners), Self::Radius)
     }
 
-    fn of(style: &Style, bounds: Rect) -> Self {
-        match style.corners {
-            // Legacy nodes are not resolved so their output never changes.
-            None => Self::Radius(style.radius),
-            Some(corners) => {
-                let corners = corners.resolve(bounds.width, bounds.height);
-                corners
-                    .uniform()
-                    .map_or(Self::Corners(corners), Self::Radius)
-            }
-        }
+    fn resolve(radius: f32, corners: Option<Corners>, bounds: Rect) -> Self {
+        // Preserve the legacy radius in the paint command.
+        corners.map_or(Self::Radius(radius), |corners| {
+            Self::from_corners(corners.resolve(bounds.width, bounds.height))
+        })
     }
     fn fill(self, rect: Rect, clip: Rect, color: Color) -> PaintOp {
         match self {
@@ -376,10 +370,14 @@ fn compile_into<Op: CompileOp>(
         let g = &computed.nodes[id.index()];
         let s = n.style();
         let visible = has_area(g.bounds.intersect(g.clip));
+        let corners = n
+            .presented_interaction_corners(*id, focused, interaction)
+            .or(s.corners);
+        let outline = Outline::resolve(s.radius, corners, g.bounds);
         for shadow in n.presented_box_shadow_layers(*id, focused, interaction) {
             shadow.contours(
                 g.bounds,
-                s.corner_radii(),
+                corners.unwrap_or(Corners::all(s.radius)),
                 g.clip,
                 |rect, corners, color, stroke| {
                     let outline = Outline::from_corners(corners);
@@ -391,7 +389,6 @@ fn compile_into<Op: CompileOp>(
                 },
             );
         }
-        let outline = Outline::of(s, g.bounds);
         if visible && s.background.3 > 0 {
             ops.push(*id, outline.fill(g.bounds, g.clip, s.background));
         }
@@ -448,7 +445,8 @@ fn compile_into<Op: CompileOp>(
             .focus_outline_color()
             .filter(|_| n.paints_focus_outline(*id, focused));
         if let Some(color) = focus_color {
-            if s.corners.is_none() {
+            let width = n.resolved_focus_outline_width();
+            if corners.is_none() && width.is_none() {
                 // Legacy nodes keep the four square edge quads.
                 let r = g.bounds;
                 for line in [
@@ -469,7 +467,10 @@ fn compile_into<Op: CompileOp>(
                 }
             } else {
                 // One inside stroke that follows the node shape.
-                ops.push(*id, outline.stroke(g.bounds, g.clip, 2., color));
+                ops.push(
+                    *id,
+                    outline.stroke(g.bounds, g.clip, width.unwrap_or(2.), color),
+                );
             }
         }
         if let Some(text) = n.text_value() {

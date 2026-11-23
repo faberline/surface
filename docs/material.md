@@ -156,6 +156,7 @@ does not change application state.
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
 | `carousel` | Multi-browse, two free-scroll layouts, two Hero alignments and full-screen paging with adaptive card sizes and logical focus navigation |
+| `list` | Baseline Standard, Expressive Standard and Expressive Segmented with passive rows, one action per row or one controlled selection |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -808,6 +809,46 @@ clip. Rounded descendant clips and photo rendering remain open.
 
 [Material 3 carousel specs](https://m3.material.io/components/carousel/specs) ·
 [Android carousel guide](https://developer.android.com/develop/ui/compose/components/carousel)
+
+## Lists
+
+Call `Theme::list` with `ListOptions` and an iterator of `ListItem` values.
+Set a stable list ID and a name for assistive technology. Give each item its
+own stable ID. Keep the ID when the item changes position. Reserve the item's
+derived IDs for `-item`, `-overline`, `-headline`, `-supporting`, `-leading`,
+`-trailing` and `-mark`.
+
+| `ListStyle` | Presentation |
+| --- | --- |
+| `Baseline` | Baseline Standard with square unselected rows and 24 dp icons |
+| `Standard` | Expressive Standard with 4 dp resting corners and 20 dp icons |
+| `Segmented` | Expressive rows with 16 dp outer corners, 4 dp inner corners and 2 dp gaps |
+
+Use `ListLines::One`, `Two` or `Three` to set a 56, 72 or 88 dp minimum row
+height. Text wraps and can make a row taller. The row can include an overline,
+supporting text, a leading vector icon and a short trailing label. Put essential
+information in the headline or supporting text. Set `direction` to mirror the
+slots with `LayoutDirection::Rtl`.
+
+Set `ListMode::Passive` for readable content and `ListMode::Action` for one
+command per row. Use `ListMode::SingleSelect { selected_id }` for one selection.
+In SingleSelect mode, set `on_activate` to a message that carries the row ID.
+Update `selected_id` in the app when that message arrives. The row displays a
+check mark and selection color. Rows with no action are disabled in both
+interactive modes.
+
+Tab enters the selected or first enabled row. Up and Down move focus and wrap
+at the ends. Home and End move to the first or last enabled row. Enter or Space
+runs the row action. Web exposes single selection as a listbox with options.
+Native exposes it as a radio group. The selected value and action are shared.
+
+Place a long list in a named clipped container and apply
+`View::accessibility_scroll_pages` to that container. Surface reveals focused
+rows when they move outside the visible area. The Gallery **清單** scene shows
+all three styles and modes with light and dark themes, RTL and 200% text.
+
+[Material 3 list specs](https://m3.material.io/components/lists/specs) ·
+[Material 3 list accessibility](https://m3.material.io/components/lists/accessibility)
 
 ## Tooltips
 
