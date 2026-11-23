@@ -63,6 +63,47 @@ impl PartialEq for VerticalDragSession {
 
 impl Eq for VerticalDragSession {}
 
+/// A coordinate tap or drag in logical window coordinates.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
+pub enum PointDrag {
+    /// Release within the drag threshold over the same visible owner.
+    Tap {
+        origin: (f32, f32),
+        position: (f32, f32),
+    },
+    /// Move after the contact crosses the drag threshold.
+    Move {
+        origin: (f32, f32),
+        position: (f32, f32),
+    },
+    /// Release after the contact crosses the drag threshold.
+    End {
+        origin: (f32, f32),
+        position: (f32, f32),
+    },
+    /// A claimed gesture ended without a release.
+    Cancel,
+}
+
+/// Identity of one logical point binding. Retain it across preview rebuilds.
+#[derive(Clone, Debug, Default)]
+pub struct PointDragSession(Rc<()>);
+
+impl PointDragSession {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl PartialEq for PointDragSession {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl Eq for PointDragSession {}
+
 #[derive(Clone, Copy)]
 enum Axis {
     Horizontal,
@@ -101,11 +142,24 @@ struct Binding<M> {
     update: Rc<dyn Fn(Drag, Rect) -> M>,
 }
 
-pub(crate) struct Bindings<M>([Option<Binding<M>>; 2]);
+type PointUpdate<M> = Rc<dyn Fn(PointDrag, Rect) -> Option<M>>;
+
+struct PointBinding<M> {
+    session: PointDragSession,
+    update: PointUpdate<M>,
+}
+
+pub(crate) struct Bindings<M> {
+    axes: [Option<Binding<M>>; 2],
+    point: Option<PointBinding<M>>,
+}
 
 impl<M> Default for Bindings<M> {
     fn default() -> Self {
-        Self([None, None])
+        Self {
+            axes: [None, None],
+            point: None,
+        }
     }
 }
 
@@ -115,7 +169,7 @@ impl<M> Bindings<M> {
         session: HorizontalDragSession,
         update: impl Fn(HorizontalDrag, Rect) -> M + 'static,
     ) {
-        self.0[Axis::Horizontal as usize] = Some(Binding {
+        self.axes[Axis::Horizontal as usize] = Some(Binding {
             session: session.0,
             update: Rc::new(move |drag, bounds| {
                 let event = match drag {
@@ -136,7 +190,7 @@ impl<M> Bindings<M> {
         session: VerticalDragSession,
         update: impl Fn(VerticalDrag, Rect) -> M + 'static,
     ) {
-        self.0[Axis::Vertical as usize] = Some(Binding {
+        self.axes[Axis::Vertical as usize] = Some(Binding {
             session: session.0,
             update: Rc::new(move |drag, bounds| {
                 let event = match drag {
@@ -152,18 +206,34 @@ impl<M> Bindings<M> {
         });
     }
 
+    pub(crate) fn set_point(
+        &mut self,
+        session: PointDragSession,
+        update: impl Fn(PointDrag, Rect) -> Option<M> + 'static,
+    ) {
+        self.point = Some(PointBinding {
+            session,
+            update: Rc::new(update),
+        });
+    }
+
     pub(crate) fn is_empty(&self) -> bool {
-        self.0.iter().all(Option::is_none)
+        self.point.is_none() && self.axes.iter().all(Option::is_none)
     }
 
     fn get(&self, axis: Axis) -> Option<&Binding<M>> {
-        self.0[axis as usize].as_ref()
+        self.axes[axis as usize].as_ref()
     }
 }
 
 struct AxisMotion {
     session: Rc<()>,
     velocity: Velocity,
+}
+
+struct PointMotion {
+    session: PointDragSession,
+    claimed: bool,
 }
 
 pub(crate) struct Tracking {
@@ -174,6 +244,7 @@ pub(crate) struct Tracking {
     bounds: Rect,
     motion: [Option<AxisMotion>; 2],
     claimed: Option<Axis>,
+    point: Option<PointMotion>,
 }
 
 impl<A: Application> Runtime<A> {
@@ -242,6 +313,20 @@ impl<A: Application> Runtime<A> {
             .nodes[id.index()]
         .bounds;
         let now = self.input_time_ms();
+        let point = bindings.point.as_ref().map(|binding| PointMotion {
+            session: binding.session.clone(),
+            claimed: false,
+        });
+        let motion = if point.is_some() {
+            [None, None]
+        } else {
+            Axis::ALL.map(|axis| {
+                bindings.get(axis).map(|binding| AxisMotion {
+                    session: binding.session.clone(),
+                    velocity: Velocity::new(axis.component(x, y), now),
+                })
+            })
+        };
         self.captured_drag = Some(Tracking {
             id: node
                 .stable_id()
@@ -251,14 +336,15 @@ impl<A: Application> Runtime<A> {
             scope: self.drag_scope().map(str::to_owned),
             start: (x, y),
             bounds,
-            motion: Axis::ALL.map(|axis| {
-                bindings.get(axis).map(|binding| AxisMotion {
-                    session: binding.session.clone(),
-                    velocity: Velocity::new(axis.component(x, y), now),
-                })
-            }),
+            motion,
             claimed: None,
+            point,
         });
+    }
+
+    fn matching_drag_owner(&self, drag: &Tracking) -> Option<NodeId> {
+        let id = self.dom.by_id(&drag.id)?;
+        (self.dom.get(id).ok()?.role() == drag.role).then_some(id)
     }
 
     fn matching_drag_binding(
@@ -267,11 +353,19 @@ impl<A: Application> Runtime<A> {
         axis: Axis,
     ) -> Option<(NodeId, &Binding<A::Message>)> {
         let motion = drag.motion[axis as usize].as_ref()?;
-        let id = self.dom.by_id(&drag.id)?;
-        let node = self.dom.get(id).ok()?;
+        let id = self.matching_drag_owner(drag)?;
         let binding = self.bindings.get(&id)?.drag_bindings.get(axis)?;
-        (node.role() == drag.role && Rc::ptr_eq(&binding.session, &motion.session))
-            .then_some((id, binding))
+        Rc::ptr_eq(&binding.session, &motion.session).then_some((id, binding))
+    }
+
+    fn matching_point_binding(
+        &self,
+        drag: &Tracking,
+    ) -> Option<(NodeId, &PointBinding<A::Message>)> {
+        let motion = drag.point.as_ref()?;
+        let id = self.matching_drag_owner(drag)?;
+        let binding = self.bindings.get(&id)?.drag_bindings.point.as_ref()?;
+        (binding.session == motion.session).then_some((id, binding))
     }
 
     fn active_drag_binding(&self, drag: &Tracking, axis: Axis) -> Option<&Binding<A::Message>> {
@@ -280,6 +374,11 @@ impl<A: Application> Runtime<A> {
     }
 
     fn drag_still_active(&self, drag: &Tracking) -> bool {
+        if drag.point.is_some() {
+            return self.matching_point_binding(drag).is_some_and(|(id, _)| {
+                self.in_drag_scope(id) && self.drag_scope() == drag.scope.as_deref()
+            });
+        }
         match drag.claimed {
             Some(axis) => self.active_drag_binding(drag, axis).is_some(),
             None => Axis::ALL
@@ -288,7 +387,13 @@ impl<A: Application> Runtime<A> {
         }
     }
 
-    pub(crate) fn update_drag(&mut self, x: f32, y: f32, release: bool) -> Result<bool, AppError> {
+    pub(crate) fn update_drag(
+        &mut self,
+        x: f32,
+        y: f32,
+        release: bool,
+        suppress_touch_activation: bool,
+    ) -> Result<bool, AppError> {
         let Some(mut drag) = self.captured_drag.take() else {
             return Ok(false);
         };
@@ -296,6 +401,15 @@ impl<A: Application> Runtime<A> {
         let dy = y - drag.start.1;
         if !dx.is_finite() || !dy.is_finite() || !self.drag_still_active(&drag) {
             return self.finish_drag_cancel(drag);
+        }
+        if drag.point.is_some() {
+            return self.update_point_drag(
+                drag,
+                (x, y),
+                dx.hypot(dy),
+                release,
+                suppress_touch_activation,
+            );
         }
         let now = self.input_time_ms();
         let axis = if let Some(axis) = drag.claimed {
@@ -344,6 +458,48 @@ impl<A: Application> Runtime<A> {
         self.message(Some(update(event, bounds)))
     }
 
+    fn update_point_drag(
+        &mut self,
+        mut drag: Tracking,
+        position: (f32, f32),
+        distance: f32,
+        release: bool,
+        suppress_touch_activation: bool,
+    ) -> Result<bool, AppError> {
+        let origin = drag.start;
+        let claimed = drag.point.as_ref().expect("point motion exists").claimed;
+        let crossed = distance >= SLOP;
+        if !release && !claimed && !crossed {
+            self.captured_drag = Some(drag);
+            return Ok(false);
+        }
+        let (owner, binding) = self
+            .matching_point_binding(&drag)
+            .expect("point drag is active");
+        let event = if !release {
+            Some(PointDrag::Move { origin, position })
+        } else if !claimed && suppress_touch_activation {
+            None
+        } else if claimed || crossed {
+            Some(PointDrag::End { origin, position })
+        } else {
+            let (x, y) = position;
+            (self.drag_candidate(self.hit(x, y), x, y) == Some(owner))
+                .then_some(PointDrag::Tap { origin, position })
+        };
+        let message = event.and_then(|event| (binding.update)(event, drag.bounds));
+        self.retire_drag_tap();
+        if !claimed {
+            self.hovered = None;
+        }
+        if !release {
+            drag.point.as_mut().expect("point motion exists").claimed = true;
+            self.captured_drag = Some(drag);
+        }
+        self.message(message)?;
+        Ok(true)
+    }
+
     fn retire_drag_tap(&mut self) {
         self.pressed = None;
         self.modal_outside = false;
@@ -362,18 +518,38 @@ impl<A: Application> Runtime<A> {
         self.finish_drag_cancel(drag)
     }
 
+    /// Retire a held point contact after the host loses pointer capture.
+    /// Returns `true` for a pending or claimed point contact. Returns
+    /// `false` when there is no point contact to cancel.
+    pub fn cancel_point_drag(&mut self) -> Result<bool, AppError> {
+        if self.has_point_drag() {
+            self.cancel_pointer()
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Let the host associate a physical pointer ID with the held point contact.
+    #[doc(hidden)]
+    pub fn has_point_drag(&self) -> bool {
+        self.captured_drag
+            .as_ref()
+            .is_some_and(|drag| drag.point.is_some())
+    }
+
     fn finish_drag_cancel(&mut self, drag: Tracking) -> Result<bool, AppError> {
         self.retire_drag_tap();
-        if let Some(axis) = drag.claimed {
-            // A matching session can roll its preview back after leaving a
-            // scope. A replacement must not receive the old gesture.
-            if let Some(message) = self
-                .matching_drag_binding(&drag, axis)
+        // A matching session can roll its preview back after leaving a
+        // scope. A replacement must not receive the old gesture.
+        let message = if drag.point.as_ref().is_some_and(|motion| motion.claimed) {
+            self.matching_point_binding(&drag)
+                .and_then(|(_, binding)| (binding.update)(PointDrag::Cancel, drag.bounds))
+        } else {
+            drag.claimed
+                .and_then(|axis| self.matching_drag_binding(&drag, axis))
                 .map(|(_, binding)| (binding.update)(Drag::Cancel, drag.bounds))
-            {
-                self.message(Some(message))?;
-            }
-        }
+        };
+        self.message(message)?;
         Ok(true)
     }
 

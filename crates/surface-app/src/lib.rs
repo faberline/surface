@@ -28,7 +28,10 @@ pub use accessibility::{
     AccessibilityScrollDirection, AccessibilityScrollPageTarget, AccessibilityScrollResult,
     AccessibilityScrollTarget,
 };
-pub use captured_drag::{HorizontalDrag, HorizontalDragSession, VerticalDrag, VerticalDragSession};
+pub use captured_drag::{
+    HorizontalDrag, HorizontalDragSession, PointDrag, PointDragSession, VerticalDrag,
+    VerticalDragSession,
+};
 pub use context::PointerPoint;
 pub use controls::{FocusNavigation, Roving};
 pub use cursor::CursorStyle;
@@ -232,6 +235,21 @@ impl<M> View<M> {
         update: impl Fn(VerticalDrag, Rect) -> M + 'static,
     ) -> Self {
         self.drag_bindings.set_vertical(session, update);
+        self
+    }
+
+    /// Capture a primary pointer's two coordinates in this view. A tap
+    /// releases over the same visible owner. A drag beyond the threshold
+    /// keeps the down-time bounds and can continue outside the view.
+    /// This binding owns physical release and takes precedence over axis
+    /// bindings on the same view. Point events preserve current focus.
+    /// Returning `None` sends no message.
+    pub fn on_point_drag_with_bounds(
+        mut self,
+        session: PointDragSession,
+        update: impl Fn(PointDrag, Rect) -> Option<M> + 'static,
+    ) -> Self {
+        self.drag_bindings.set_point(session, update);
         self
     }
 
@@ -1523,7 +1541,7 @@ impl<A: Application> Runtime<A> {
             }
             Event::PointerUp { x, y } => {
                 let drag_tap = self.captured_drag.is_some();
-                if self.update_drag(x, y, true)? {
+                if self.update_drag(x, y, true, suppress_touch_activation)? {
                     return Ok(true);
                 }
                 if self.range_drag.is_some() {
@@ -1631,7 +1649,7 @@ impl<A: Application> Runtime<A> {
                 by_word: false,
             }),
             Event::PointerMove { x, y } => {
-                if self.update_drag(x, y, false)? {
+                if self.update_drag(x, y, false, false)? {
                     return Ok(true);
                 }
                 let hover = self.hit(x, y).and_then(|id| self.stable(id));

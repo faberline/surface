@@ -472,6 +472,28 @@ format, locale, direction, theme and text scale. Use it in the
 [headless Gallery](devtools-protocol.md#headless-native-gallery).
 [Material 3 time picker specification](https://m3.material.io/components/time-pickers/specs)
 
+Use `Theme::time_dial` for the modal Expressive Dial variant and its
+Input switch. Set the initial mode when you create a `DialState` with
+one `TimeInputSession`. Pass the same viewport and text scale to the
+view and to `time_dial_layout`. Send `DialEvent::SetDialFits` when the
+viewport or text scale changes. A short window opens or switches to
+Input with the draft intact. It stays in Input when space returns
+until the user chooses the Dial button.
+Supply a localized `TimeDialLabels::value_name` for each dial option.
+It receives the field, display digits, and number of values on that dial.
+
+Pass all `DialEvent` values to `DialState::apply`. Forward editor focus
+changes to `DialState::observe_input_focus` while the dialog is open.
+A held pointer changes the hand preview. Release accepts the choice
+for that field. Choosing an hour advances to minute selection. Use
+the arrows on a focused dial value to move through exact minutes.
+Use Save to commit. Cancel, Escape and the scrim discard the draft
+and return focus to the opener.
+
+In Material Gallery, choose 浮層, then 時間錶盤. The scene uses the same
+draft in both modes. It supports portrait and landscape layouts with
+the full 256 dp clock face and a text fallback for smaller windows.
+
 ## FAB menus
 
 Use `Theme::fab_menu` with a stable ID, the viewport, the trigger size,

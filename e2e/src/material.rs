@@ -40,6 +40,8 @@ mod material_side_sheet;
 mod material_snackbar;
 #[path = "material_split_button.rs"]
 mod material_split_button;
+#[path = "material_time_dial.rs"]
+mod material_time_dial;
 #[path = "material_time_input.rs"]
 mod material_time_input;
 #[path = "material_toolbar.rs"]
@@ -65,7 +67,8 @@ pub const STEPS: &[&str] = &[
     "M95", "M96", "M97", "M98", "M99", "M100", "M101", "M102", "M103", "M104", "M105", "M106",
     "M107", "M108", "M109", "M110", "M111", "M112", "M113", "M114", "M115", "M116", "M117", "M118",
     "M119", "M120", "M121", "M122", "M123", "M124", "M125", "M126", "M127", "M128", "M129", "M130",
-    "M131", "M132", "M133", "M134", "M135", "M136", "M137", "M138",
+    "M131", "M132", "M133", "M134", "M135", "M136", "M137", "M138", "M139", "M140", "M141", "M142",
+    "M143", "M144",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -159,7 +162,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_docked_date_picker::run(env, chrome, &url).await?;
     material_date_range_picker::run(env, chrome, &url).await?;
     material_date_picker_gestures::run(env, chrome, &url).await?;
-    material_time_input::run(env, chrome, &url).await
+    material_time_input::run(env, chrome, &url).await?;
+    material_time_dial::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

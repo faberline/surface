@@ -350,6 +350,32 @@ impl TimeInputSession {
         changed
     }
 
+    pub(crate) fn retire_input_focus(&mut self) {
+        self.focused = None;
+    }
+
+    /// Accept one dial choice through the draft's number format.
+    pub(crate) fn write_picked_value(&mut self, field: TimeField, value: u8) -> bool {
+        if !self.accepts_value(field, value) {
+            return false;
+        }
+        self.raw[field.index()] = self.digit_text(field, value);
+        self.show_error[field.index()] = false;
+        true
+    }
+
+    pub(crate) fn digit_text(&self, field: TimeField, value: u8) -> String {
+        field_text(&self.digits, field, value, self.clock)
+    }
+
+    pub(crate) fn accepts_value(&self, field: TimeField, value: u8) -> bool {
+        match (field, self.clock) {
+            (TimeField::Hour, ClockFormat::TwelveHour) => (1..=12).contains(&value),
+            (TimeField::Hour, ClockFormat::TwentyFourHour) => value < 24,
+            (TimeField::Minute, _) => value < 60,
+        }
+    }
+
     fn parse(&self, field: TimeField) -> Result<u8, TimeInputError> {
         let text = self.raw(field).trim();
         if text.is_empty() {
@@ -364,12 +390,7 @@ impl TimeInputSession {
                 read_digit(&self.digits, digit).map(|digit| value * 10 + digit)
             })
             .ok_or(TimeInputError::ExpectedOneOrTwoDigits)?;
-        let accepted = match (field, self.clock) {
-            (TimeField::Hour, ClockFormat::TwelveHour) => (1..=12).contains(&number),
-            (TimeField::Hour, ClockFormat::TwentyFourHour) => number < 24,
-            (TimeField::Minute, _) => number < 60,
-        };
-        if accepted {
+        if self.accepts_value(field, number) {
             Ok(number)
         } else {
             Err(TimeInputError::OutOfRange)

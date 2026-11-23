@@ -14,8 +14,8 @@ use crate::{
 
 const FIELD_HEIGHT: f32 = 72.;
 const SEPARATOR_WIDTH: f32 = 16.;
-const PANEL_PADDING: f32 = 12.;
-const PANEL_MARGIN: f32 = 8.;
+pub(crate) const PANEL_PADDING: f32 = 12.;
+pub(crate) const PANEL_MARGIN: f32 = 8.;
 const ACTION_RESERVE: f32 = 56.;
 const SHORT_MODAL_HEIGHT: f32 = 320.;
 
@@ -80,19 +80,19 @@ impl Theme {
     }
 }
 
-struct TimeInput<'a, 'b, M> {
-    theme: &'a Theme,
-    options: TimeInputOptions<'b>,
-    session: &'a TimeInputSession,
-    emit: Rc<dyn Fn(TimeInputEvent) -> M>,
+pub(crate) struct TimeInput<'a, 'b, M> {
+    pub(crate) theme: &'a Theme,
+    pub(crate) options: TimeInputOptions<'b>,
+    pub(crate) session: &'a TimeInputSession,
+    pub(crate) emit: Rc<dyn Fn(TimeInputEvent) -> M>,
 }
 
 impl<M: Clone + 'static> TimeInput<'_, '_, M> {
-    fn id(&self, part: &str) -> String {
+    pub(crate) fn id(&self, part: &str) -> String {
         format!("{}-{part}", self.options.id)
     }
 
-    fn row(&self, node: Node) -> Node {
+    pub(crate) fn row(&self, node: Node) -> Node {
         if self.options.direction == LayoutDirection::RightToLeft {
             node.reverse_row()
         } else {
@@ -120,36 +120,62 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
 
         let default_width = if period.is_some() { 336. } else { 264. };
         let width = (available - PANEL_MARGIN * 2.).max(0.).min(default_width);
+        self.modal_panel(
+            width,
+            PANEL_PADDING,
+            self.modal_body(width, None),
+            self.actions(None),
+            self.id(if self.options.disabled {
+                "cancel"
+            } else {
+                "hour-input"
+            }),
+        )
+    }
+
+    pub(crate) fn modal_body(&self, width: f32, extra: Option<View<M>>) -> View<M> {
         let height = self.options.viewport.height.max(0.);
         let mut body_style = Style::column().clip(true).gap(12.);
         body_style.max_height =
             Length::Px((height - (PANEL_MARGIN + PANEL_PADDING) * 2. - ACTION_RESERVE).max(0.));
         // The Dialog keeps its accessible title at every height. In a short
         // modal, use the available body height for fields and their help.
-        let title = (!self.short_modal()).then(|| {
-            View::new(
-                Node::new(Role::Heading, self.options.title)
-                    .id(self.id("title"))
-                    .text(self.options.title)
-                    .shrink_to_fit_width()
-                    .styled(
-                        Style::column()
-                            .with_text_style(typography::TITLE_LARGE)
-                            .foreground(self.theme.colors.on_surface),
-                    ),
-            )
-        });
-        let body = View::new(
+        let title = (!self.short_modal()).then(|| self.title());
+        View::new(
             Node::new(Role::Group, "")
                 .id(self.id("body"))
                 .styled(body_style),
         )
-        .children(title.into_iter().chain([self.body(
+        .children(title.into_iter().chain(extra).chain([self.body(
             (width - PANEL_PADDING * 2.).max(0.),
-            period,
+            self.session.period(),
             true,
         )]))
-        .accessibility_scroll_pages();
+        .accessibility_scroll_pages()
+    }
+
+    pub(crate) fn title(&self) -> View<M> {
+        View::new(
+            Node::new(Role::Heading, self.options.title)
+                .id(self.id("title"))
+                .text(self.options.title)
+                .shrink_to_fit_width()
+                .styled(
+                    Style::column()
+                        .with_text_style(typography::TITLE_LARGE)
+                        .foreground(self.theme.colors.on_surface),
+                ),
+        )
+    }
+
+    pub(crate) fn modal_panel(
+        &self,
+        width: f32,
+        padding: f32,
+        body: View<M>,
+        actions: View<M>,
+        initial_focus: String,
+    ) -> View<M> {
         let panel = View::new(
             Node::new(Role::Dialog, self.options.title)
                 .id(self.options.id)
@@ -157,19 +183,15 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                 .styled(
                     Style::column()
                         .width(Length::Px(width))
-                        .padding(PANEL_PADDING)
+                        .padding(padding)
                         .gap(8.)
                         .corners(shape::EXTRA_LARGE)
                         .background(self.theme.colors.surface_container)
                         .clip(true),
                 ),
         )
-        .children([body, self.actions()])
-        .modal_initial_focus(self.id(if self.options.disabled {
-            "cancel"
-        } else {
-            "hour-input"
-        }));
+        .children([body, actions])
+        .modal_initial_focus(initial_focus);
         let panel = if let Some(fallback) = self.options.restore_focus_to {
             panel.modal_focus_fallback(fallback)
         } else {
@@ -372,6 +394,21 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
     }
 
     fn period(&self, selected: TimePeriod, column: bool, width: f32, modal: bool) -> View<M> {
+        self.period_view(selected, column, width, modal, None)
+    }
+
+    pub(crate) fn dial_period(&self, selected: TimePeriod, column: bool, width: f32) -> View<M> {
+        self.period_view(selected, column, width, true, (!column).then_some(width))
+    }
+
+    fn period_view(
+        &self,
+        selected: TimePeriod,
+        column: bool,
+        width: f32,
+        modal: bool,
+        row_width: Option<f32>,
+    ) -> View<M> {
         let style = if column {
             Style::column().width(Length::Px(width)).gap(8.)
         } else {
@@ -412,6 +449,8 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
             style.min_width = TARGET;
             if column {
                 style.width = Length::Percent(1.);
+            } else if let Some(width) = row_width {
+                style.width = Length::Px(width);
             }
             let label = self.options.locale.period_label(period);
             button(
@@ -454,7 +493,7 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
         })
     }
 
-    fn actions(&self) -> View<M> {
+    pub(crate) fn actions(&self, leading: Option<View<M>>) -> View<M> {
         let make_action = |id, label, event, enabled| {
             let ink = if enabled {
                 self.theme.colors.primary
@@ -487,20 +526,22 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                     .styled(Style::row().gap(8.)),
             ),
         )
-        .children([
-            make_action(
-                "cancel",
-                self.options.labels.cancel,
-                TimeInputEvent::Cancel,
-                true,
-            ),
-            make_action(
-                "confirm",
-                self.options.labels.confirm,
-                TimeInputEvent::Confirm,
-                !self.options.disabled,
-            )
-            .protect_composition_on_press(),
-        ])
+        .children(
+            leading.into_iter().chain([
+                make_action(
+                    "cancel",
+                    self.options.labels.cancel,
+                    TimeInputEvent::Cancel,
+                    true,
+                ),
+                make_action(
+                    "confirm",
+                    self.options.labels.confirm,
+                    TimeInputEvent::Confirm,
+                    !self.options.disabled,
+                )
+                .protect_composition_on_press(),
+            ]),
+        )
     }
 }

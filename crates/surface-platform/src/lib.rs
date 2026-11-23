@@ -31,6 +31,8 @@ mod wake;
 mod web_accessibility;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
+#[cfg(any(target_arch = "wasm32", test))]
+mod web_pointer_capture;
 pub use clipboard::{Clipboard, ClipboardError};
 #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
 pub use headless::run_headless_runtime;
@@ -197,6 +199,8 @@ enum UserEvent {
     VerifyWebFocus,
     #[cfg(target_arch = "wasm32")]
     WebAccessibility(web_accessibility::Action),
+    #[cfg(target_arch = "wasm32")]
+    WebPointerCaptureLost,
 }
 #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
 impl From<accesskit_winit::Event> for UserEvent {
@@ -239,6 +243,8 @@ struct Host<A: Application> {
     web_input: Option<web_input::WebInput<A>>,
     #[cfg(target_arch = "wasm32")]
     web_accessibility: Option<web_accessibility::WebAccessibility>,
+    #[cfg(target_arch = "wasm32")]
+    web_pointer_capture: Option<web_pointer_capture::WebPointerCapture>,
     #[cfg(target_arch = "wasm32")]
     reduced_motion: Option<motion::ReducedMotionWatch>,
     #[cfg(target_os = "macos")]
@@ -517,6 +523,31 @@ impl<A: Application> Host<A> {
         self.stop_following_web_focus_on_press(&event);
         self.dispatch_input(event_loop, |runtime| runtime.dispatch(event));
     }
+    fn reset_pointer_route(&mut self) {
+        self.touch.reset();
+        #[cfg(target_arch = "wasm32")]
+        if let Some(capture) = &self.web_pointer_capture {
+            capture.reset();
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn track_web_point_down(&self, touch: Option<u64>) {
+        if let Some(capture) = &self.web_pointer_capture {
+            capture.accept_down(touch, self.runtime.borrow().has_point_drag());
+        }
+    }
+    #[cfg(target_arch = "wasm32")]
+    fn cancel_lost_web_point(&mut self, event_loop: &ActiveEventLoop) {
+        let loss = self
+            .web_pointer_capture
+            .as_ref()
+            .and_then(web_pointer_capture::WebPointerCapture::take_loss);
+        if let Some(pointer) = loss {
+            if self.touch.retire_web_contact(pointer.touch_id()) {
+                self.dispatch_input(event_loop, Runtime::cancel_point_drag);
+            }
+        }
+    }
     #[cfg(target_arch = "wasm32")]
     fn stop_following_web_focus_on_press(&mut self, event: &Event) {
         if matches!(event, Event::PointerDown { .. }) {
@@ -575,7 +606,7 @@ impl<A: Application> Host<A> {
         {
             return;
         }
-        self.touch.reset();
+        self.reset_pointer_route();
         if let Some(tree) = &mut self.web_accessibility {
             tree.follow_focus(false);
         }
@@ -897,6 +928,19 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             }
         }
         #[cfg(target_arch = "wasm32")]
+        {
+            use winit::platform::web::WindowExtWebSys;
+            if let Some(canvas) = window.canvas() {
+                match web_pointer_capture::WebPointerCapture::new(canvas, self.proxy.clone()) {
+                    Ok(capture) => self.web_pointer_capture = Some(capture),
+                    Err(error) => {
+                        self.fail(event_loop, format!("browser pointer capture: {error:?}"));
+                        return;
+                    }
+                }
+            }
+        }
+        #[cfg(target_arch = "wasm32")]
         match web_accessibility::WebAccessibility::new(self.proxy.clone()) {
             Ok(tree) => self.web_accessibility = Some(tree),
             Err(error) => {
@@ -976,6 +1020,8 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             UserEvent::WebAccessibility(action) => {
                 self.web_accessibility_action(event_loop, action)
             }
+            #[cfg(target_arch = "wasm32")]
+            UserEvent::WebPointerCaptureLost => self.cancel_lost_web_point(event_loop),
         }
     }
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
@@ -985,6 +1031,10 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         self.exit_if_app_closed(event_loop);
     }
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+        // Chrome may deliver the next move or up immediately after loss.
+        // Drain before winit can dispatch either for the old contact.
+        #[cfg(target_arch = "wasm32")]
+        self.cancel_lost_web_point(event_loop);
         #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
         if let (Some(window), Some(adapter)) = (
             self.window.as_ref().filter(|window| window.id() == _id),
@@ -1005,7 +1055,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
             WindowEvent::CloseRequested => self.close_requested(event_loop),
             WindowEvent::RedrawRequested => self.draw(event_loop),
             WindowEvent::Resized(size) => {
-                self.touch.reset();
+                self.reset_pointer_route();
                 self.dispatch_input(event_loop, Runtime::pointer_geometry_changed);
                 if let Some(gpu) = &mut self.gpu {
                     gpu.resize(size.width, size.height);
@@ -1015,7 +1065,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 }
             }
             WindowEvent::ScaleFactorChanged { .. } => {
-                self.touch.reset();
+                self.reset_pointer_route();
                 self.dispatch_input(event_loop, Runtime::pointer_geometry_changed);
                 if let Some(window) = &self.window {
                     window.request_redraw();
@@ -1071,27 +1121,44 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                     return;
                 }
                 let (x, y) = self.pointer;
+                let down = state == ElementState::Pressed;
+                if !down {
+                    if let Some(capture) = &self.web_pointer_capture {
+                        capture.mouse_up();
+                    }
+                }
                 self.input(
                     event_loop,
-                    if state == ElementState::Pressed {
+                    if down {
                         Event::PointerDown { x, y }
                     } else {
                         Event::PointerUp { x, y }
                     },
                 );
+                if down {
+                    self.track_web_point_down(None);
+                }
             }
             WindowEvent::Touch(touch) => {
                 let scale = self.window.as_ref().map(|w| w.scale_factor()).unwrap_or(1.);
+                #[cfg(target_arch = "wasm32")]
+                let touch_id = touch.id;
                 match self.touch.route(touch, scale) {
                     touch_route::TouchStep::Pointer(event) => {
                         #[cfg(target_arch = "wasm32")]
                         self.stop_following_web_focus_on_press(&event);
+                        #[cfg(target_arch = "wasm32")]
+                        let down = matches!(event, Event::PointerDown { .. });
                         let released = matches!(event, Event::PointerUp { .. });
                         self.dispatch_input(event_loop, move |runtime| {
                             let changed = runtime.dispatch_touch(event)?;
                             let left = released && runtime.dispatch(Event::PointerLeave)?;
                             Ok(changed || left)
                         });
+                        #[cfg(target_arch = "wasm32")]
+                        if down {
+                            self.track_web_point_down(Some(touch_id));
+                        }
                     }
                     touch_route::TouchStep::Cancel => {
                         self.dispatch_input(event_loop, |runtime| {
@@ -1141,7 +1208,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 }
                 #[cfg(not(target_arch = "wasm32"))]
                 {
-                    self.touch.reset();
+                    self.reset_pointer_route();
                     self.route = pointer_route::PointerRoute::default();
                     self.input(event_loop, Event::Blur);
                 }
@@ -1253,6 +1320,8 @@ pub fn run_with_wake<A: Application>(
         web_input: None,
         #[cfg(target_arch = "wasm32")]
         web_accessibility: None,
+        #[cfg(target_arch = "wasm32")]
+        web_pointer_capture: None,
         #[cfg(target_arch = "wasm32")]
         reduced_motion: None,
         #[cfg(target_os = "macos")]
