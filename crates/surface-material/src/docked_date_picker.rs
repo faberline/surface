@@ -3,7 +3,7 @@
 use std::rc::Rc;
 
 use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style};
-use surface_app::{Roving, View};
+use surface_app::{Key, Modifiers, Roving, View};
 
 use crate::{
     date_picker::{
@@ -236,6 +236,16 @@ impl<M: Clone + 'static> Docked<'_, '_, M> {
                 .styled(style),
         )
         .children([header, body]);
+        let pane = if mode == DockedDatePickerMode::Calendar {
+            let shift = Modifiers {
+                shift: true,
+                ..Modifiers::default()
+            };
+            pane.focus_shortcut_within(Key::Character("m".into()), shift, self.id("month"))
+                .focus_shortcut_within(Key::Character("y".into()), shift, self.id("year"))
+        } else {
+            pane
+        };
         (pane, initial_focus)
     }
 

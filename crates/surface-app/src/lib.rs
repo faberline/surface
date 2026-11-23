@@ -74,6 +74,7 @@ pub struct View<M> {
     modal_initial_focus: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
+    focus_shortcuts: Vec<Shortcut<String>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
@@ -120,6 +121,7 @@ impl<M> View<M> {
             modal_initial_focus: None,
             cancel_within: None,
             key: None,
+            focus_shortcuts: Vec::new(),
             focus_navigation: None,
             context: None,
             stick: false,
@@ -325,6 +327,22 @@ impl<M> View<M> {
     /// called during an IME composition. See `KeyPress`.
     pub fn on_key(mut self, handler: impl Fn(&KeyPress) -> Option<M> + 'static) -> Self {
         self.key = Some(Rc::new(handler));
+        self
+    }
+
+    /// Move focus to a stable ID in this subtree when the chord is pressed.
+    /// The focused node must be inside the subtree and the active modal.
+    /// Text inputs and pending IME compositions keep their own keys. A
+    /// focused `on_key` handler can consume the press first. An eligible
+    /// repeated press is consumed without moving focus.
+    pub fn focus_shortcut_within(
+        mut self,
+        key: Key,
+        modifiers: Modifiers,
+        target: impl Into<String>,
+    ) -> Self {
+        self.focus_shortcuts
+            .push(Shortcut::new(key, modifiers, target.into()));
         self
     }
 
@@ -661,6 +679,7 @@ struct Binding<M> {
     modal_initial_focus: Option<String>,
     cancel_within: Option<M>,
     key: Option<KeyHandler<M>>,
+    focus_shortcuts: Vec<Shortcut<String>>,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
@@ -1046,6 +1065,7 @@ impl<A: Application> Runtime<A> {
                     modal_initial_focus: view.modal_initial_focus,
                     cancel_within: view.cancel_within,
                     key: view.key,
+                    focus_shortcuts: view.focus_shortcuts,
                     focus_navigation: view.focus_navigation,
                     context: view.context,
                     stick: view.stick,
@@ -1293,11 +1313,10 @@ impl<A: Application> Runtime<A> {
             Ok(false)
         }
     }
-    /// The host calls this for each key press before the field's own key
-    /// handling. Returns `true` when the focused node's `on_key` handler
-    /// consumed the press; the host then skips the field. Returns `false`
-    /// with no handler, when the handler passes, or during an IME
-    /// composition, where the handler is not called.
+    /// The host calls this for each key press before the field handles it.
+    /// Returns `true` when the focused `on_key` handler or a scoped focus
+    /// shortcut consumes the press. Returns `false` during IME composition
+    /// or when no handler consumes the press.
     pub fn key(&mut self, press: &KeyPress) -> Result<bool, AppError> {
         #[cfg(feature = "devtools")]
         let span = self.trace_input("Key", None, None, None);
@@ -1314,19 +1333,61 @@ impl<A: Application> Runtime<A> {
         let Some(id) = self.focused_node() else {
             return Ok(false);
         };
-        let Some(handler) = self.bindings.get(&id).and_then(|b| b.key.clone()) else {
-            return Ok(false);
-        };
-        match handler(press) {
-            Some(message) => {
-                #[cfg(feature = "devtools")]
-                if let (Some(recorder), Some(focused)) = (&mut self.trace, &self.focused) {
-                    recorder.set_source(focused, trace::Handler::Key);
-                }
-                self.message(Some(message))
+        if let Some(message) = self
+            .bindings
+            .get(&id)
+            .and_then(|binding| binding.key.clone())
+            .and_then(|handler| handler(press))
+        {
+            #[cfg(feature = "devtools")]
+            if let (Some(recorder), Some(focused)) = (&mut self.trace, &self.focused) {
+                recorder.set_source(focused, trace::Handler::Key);
             }
-            None => Ok(false),
+            return self.message(Some(message));
         }
+        Ok(self.focus_shortcut(id, press))
+    }
+
+    fn focus_shortcut(&mut self, source: NodeId, press: &KeyPress) -> bool {
+        let Some(target) = self.focus_shortcut_target(source, press) else {
+            return false;
+        };
+        if !press.repeat && self.focused.as_deref() != Some(target) {
+            self.focused = Some(target.to_owned());
+            self.computed = None;
+            self.layout_focus = None;
+            self.ime_area = None;
+            self.text_drag = None;
+        }
+        true
+    }
+
+    fn focus_shortcut_target(&self, source: NodeId, press: &KeyPress) -> Option<&str> {
+        let focused = self.dom.get(source).ok()?;
+        if !focused.is_focusable()
+            || focused.role() == Role::TextInput
+            || self.has_pending_composition()
+        {
+            return None;
+        }
+        let mut owner = Some(source);
+        while let Some(id) = owner.filter(|id| self.in_scope(*id)) {
+            let binding = self.bindings.get(&id)?;
+            if let Some(shortcut) = binding
+                .focus_shortcuts
+                .iter()
+                .find(|chord| chord.matches(press))
+            {
+                let target = self.dom.by_id(&shortcut.message)?;
+                return (self.in_scope(target)
+                    && self.descendant(target, id)
+                    && self.dom.get(target).is_ok_and(Node::is_focusable)
+                    && self.has_tab_extent(target))
+                .then_some(shortcut.message.as_str());
+            }
+            owner = self.dom.get(id).ok()?.parent();
+        }
+        None
     }
     /// The host calls this after `key` returns `false`. Sends the message
     /// of the first matching `Application::shortcuts` entry and returns
