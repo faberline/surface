@@ -120,6 +120,8 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     grid_role: Option<GridRole>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    grid_multiselectable: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     current_date: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     described_by_text: Option<String>,
@@ -189,6 +191,7 @@ impl Node {
             fill_contour: None,
             current_page: None,
             grid_role: None,
+            grid_multiselectable: false,
             current_date: false,
             described_by_text: None,
             expanded: None,
@@ -416,6 +419,15 @@ impl Node {
     }
     pub fn accessibility_grid_role(&self) -> Option<GridRole> {
         self.grid_role.filter(|role| role.applies_to(self.role))
+    }
+    /// Report that this grid can have multiple selected cells. Set selection
+    /// on each cell separately. This property only applies to [`GridRole::Grid`].
+    pub fn grid_multiselectable(mut self, value: bool) -> Self {
+        self.grid_multiselectable = value;
+        self
+    }
+    pub fn is_grid_multiselectable(&self) -> bool {
+        self.grid_multiselectable && self.accessibility_grid_role() == Some(GridRole::Grid)
     }
     /// Mark a grid cell as today's date, independently of selection and focus.
     pub fn current_date(mut self, value: bool) -> Self {

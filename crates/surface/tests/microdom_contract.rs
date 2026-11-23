@@ -162,6 +162,39 @@ fn grid_metadata_round_trips_without_changing_base_roles() {
 }
 
 #[test]
+fn grid_multiselection_is_opt_in_and_keeps_the_existing_snapshot_version() {
+    let grid = Node::new(Role::Group, "June").grid_role(GridRole::Grid);
+    let ordinary = serde_json::to_value(MicroDom::new(grid.clone()).snapshot()).unwrap();
+    assert!(ordinary["nodes"][0].get("grid_multiselectable").is_none());
+    let restored = MicroDom::from_snapshot(serde_json::from_value(ordinary).unwrap()).unwrap();
+    assert!(!restored
+        .get(restored.root())
+        .unwrap()
+        .is_grid_multiselectable());
+
+    let range_grid = grid.grid_multiselectable(true);
+    let json = serde_json::to_value(MicroDom::new(range_grid).snapshot()).unwrap();
+    assert_eq!(json["version"], 1);
+    assert_eq!(json["nodes"][0]["grid_multiselectable"], true);
+    let restored = MicroDom::from_snapshot(serde_json::from_value(json).unwrap()).unwrap();
+    let root = restored.get(restored.root()).unwrap();
+    assert_eq!(root.role(), Role::Group);
+    assert!(root.is_grid_multiselectable());
+    assert!(!root
+        .clone()
+        .grid_multiselectable(false)
+        .is_grid_multiselectable());
+
+    for role in [GridRole::Row, GridRole::ColumnHeader, GridRole::GridCell] {
+        assert!(!root.clone().grid_role(role).is_grid_multiselectable());
+    }
+    assert!(!Node::new(Role::Button, "June 1")
+        .grid_role(GridRole::Grid)
+        .grid_multiselectable(true)
+        .is_grid_multiselectable());
+}
+
+#[test]
 fn snapshot_has_golden_bytes() {
     let dom = MicroDom::new(Node::new(Role::Window, "App").id("app"));
     let json = serde_json::to_string(&dom.snapshot()).unwrap();
