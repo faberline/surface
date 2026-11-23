@@ -1,0 +1,709 @@
+{
+  "source_manifest_sha256": "0600bb800b20bb79db299a6508e75a4520684038d8d4e0df91a4ed1bfae9c88e",
+  "gallery_sha256": "45f1960d98c83d05f08e199d7d316a61fdbe7931ca193a2ae62821f67e0740b7",
+  "cli_sha256": "a12c4ca855c51f67e9e9284eb9eb2432664458bacece6a7e5719756f5dcc0a7b",
+  "motion": "native headless Reduce Motion endpoints",
+  "input": "native headless DevTools Action.key and Action.activate",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "segmented": {
+      "closed": {
+        "branch": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 178.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 178.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 252.0
+        },
+        "extent": 0.0,
+        "following_offset": 74.0
+      },
+      "open": {
+        "branch": {
+          "height": 246.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 178.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 178.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 426.0
+        },
+        "extent": 174.0,
+        "following_offset": 248.0
+      },
+      "disclosures": [
+        {
+          "expanded": false,
+          "header_name": "旅行行程",
+          "header_role": "Button",
+          "branch_role": "ListItem",
+          "indicator": {
+            "height": 32.0,
+            "width": 32.0,
+            "x": 700.0,
+            "y": 198.0
+          }
+        },
+        {
+          "expanded": true,
+          "header_name": "旅行行程",
+          "header_role": "Button",
+          "branch_role": "ListItem",
+          "indicator": {
+            "height": 32.0,
+            "width": 32.0,
+            "x": 700.0,
+            "y": 198.0
+          }
+        }
+      ],
+      "restored": {
+        "branch": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 168.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 168.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 242.0
+        },
+        "extent": 0.0,
+        "following_offset": 74.0
+      },
+      "child_bounds": {
+        "list-expand-child-a": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 252.0
+        },
+        "list-expand-child-disabled": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 310.0
+        },
+        "list-expand-child-b": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 368.0
+        }
+      },
+      "fully_visible_child_targets": {
+        "list-expand-child-a": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 252.0
+        },
+        "list-expand-child-b": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 300.0
+        }
+      },
+      "disabled_skip": [
+        "list-expand-child-a",
+        "list-expand-child-b"
+      ],
+      "rejected_actions": {
+        "list-expand-child-a": "missing_node",
+        "list-expand-child-disabled": "disabled"
+      },
+      "independent_command": "list-expand-child-b",
+      "external_escape_focus": [
+        "list-expand-child-b",
+        "list-expand-header"
+      ],
+      "transport_captures": [
+        {
+          "name": "expansion-segmented-light-closed.png",
+          "sha256": "eb513f952c98a58d743f50fb77e31ffa57d0fe73257a84ab9e1c8bc7612006cf",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "list-expand-header-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 628.0,
+                "x": 60.0,
+                "y": 192.0
+              },
+              "ink_bounds": [
+                61,
+                197,
+                62,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 226
+            }
+          },
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus_outline": {
+            "samples": [
+              [
+                98,
+                91,
+                113,
+                255
+              ],
+              [
+                98,
+                91,
+                113,
+                255
+              ],
+              [
+                98,
+                91,
+                113,
+                255
+              ],
+              [
+                230,
+                225,
+                232,
+                255
+              ],
+              [
+                230,
+                225,
+                232,
+                255
+              ]
+            ],
+            "expected_focus_color": [
+              98,
+              91,
+              113,
+              255
+            ]
+          }
+        },
+        {
+          "name": "expansion-segmented-light-open.png",
+          "sha256": "7b662c3f686864a524c321b4934c40787416ef25480c344192defde4dd5e465f",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "list-expand-child-a-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 640.0,
+                "x": 92.0,
+                "y": 268.0
+              },
+              "ink_bounds": [
+                93,
+                273,
+                158,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 731
+            }
+          },
+          "visible_windows": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "expansion-segmented-light-escape.png",
+          "sha256": "2709b1eaf6590c4b180a838be0f3bfe8ca49f125aa76c915155949aa4a2291b9",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus_outline": {
+            "samples": [
+              [
+                98,
+                91,
+                113,
+                255
+              ],
+              [
+                98,
+                91,
+                113,
+                255
+              ],
+              [
+                98,
+                91,
+                113,
+                255
+              ],
+              [
+                230,
+                225,
+                232,
+                255
+              ],
+              [
+                230,
+                225,
+                232,
+                255
+              ]
+            ],
+            "expected_focus_color": [
+              98,
+              91,
+              113,
+              255
+            ]
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        760,
+        640
+      ]
+    },
+    "standard": {
+      "style": "standard",
+      "dark": true,
+      "page_fill": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "closed": {
+        "branch": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 248.0
+        },
+        "extent": 0.0,
+        "following_offset": 72.0
+      },
+      "open": {
+        "branch": {
+          "height": 240.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 416.0
+        },
+        "extent": 168.0,
+        "following_offset": 240.0
+      },
+      "child_bounds": {
+        "list-expand-child-a": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 248.0
+        },
+        "list-expand-child-disabled": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 304.0
+        },
+        "list-expand-child-b": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 360.0
+        }
+      },
+      "transport_captures": [
+        {
+          "name": "expansion-standard-dark.png",
+          "sha256": "a7892d3dd93a8c145c17d48848b717d1760e60e793e4304d312362e3542243d4",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "list-expand-child-a-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 640.0,
+                "x": 92.0,
+                "y": 264.0
+              },
+              "ink_bounds": [
+                93,
+                269,
+                158,
+                16
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 747
+            }
+          },
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        760,
+        640
+      ]
+    },
+    "baseline": {
+      "style": "baseline",
+      "dark": false,
+      "page_fill": [
+        242,
+        236,
+        244,
+        255
+      ],
+      "closed": {
+        "branch": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 248.0
+        },
+        "extent": 0.0,
+        "following_offset": 72.0
+      },
+      "open": {
+        "branch": {
+          "height": 240.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "header": {
+          "height": 72.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 176.0
+        },
+        "following": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 416.0
+        },
+        "extent": 168.0,
+        "following_offset": 240.0
+      },
+      "child_bounds": {
+        "list-expand-child-a": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 248.0
+        },
+        "list-expand-child-disabled": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 304.0
+        },
+        "list-expand-child-b": {
+          "height": 56.0,
+          "width": 736.0,
+          "x": 12.0,
+          "y": 360.0
+        }
+      },
+      "transport_captures": [
+        {
+          "name": "expansion-baseline-light.png",
+          "sha256": "65e0c60151d2e89cb2db85f7f11794b2e9bcb6f63fbccc1fd1458b250f886f94",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "list-expand-child-a-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 624.0,
+                "x": 100.0,
+                "y": 264.0
+              },
+              "ink_bounds": [
+                101,
+                269,
+                158,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 731
+            }
+          },
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        760,
+        640
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "indicator": {
+        "height": 32.0,
+        "width": 32.0,
+        "x": 28.0,
+        "y": 382.0
+      },
+      "header_support": {
+        "height": 120.0,
+        "width": 188.0,
+        "x": 72.0,
+        "y": 362.0
+      },
+      "full_child_target": {
+        "height": 116.0,
+        "width": 296.0,
+        "x": 12.0,
+        "y": 376.0
+      },
+      "full_child_headline": {
+        "height": 96.0,
+        "width": 200.0,
+        "x": 28.0,
+        "y": 386.0
+      },
+      "independent_command": "list-expand-child-a",
+      "transport_captures": [
+        {
+          "name": "expansion-compact-dark-rtl.png",
+          "sha256": "bde5d51ba1d8a76c6a244d06aa531c0df5fce5c3c74285ad086f18f6c66ff3c1",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "ink": {
+            "list-expand-child-a-headline": {
+              "bounds": {
+                "height": 96.0,
+                "width": 200.0,
+                "x": 28.0,
+                "y": 386.0
+              },
+              "ink_bounds": [
+                30,
+                397,
+                188,
+                78
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 3045
+            }
+          },
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        900
+      ]
+    },
+    "short": {
+      "rtl": true,
+      "text_scale": 2,
+      "scroller_bounds": {
+        "height": 120.0,
+        "width": 296.0,
+        "x": 12.0,
+        "y": 52.0
+      },
+      "absolute_scroller_clip": {
+        "x": 12.0,
+        "y": 52.0,
+        "width": 296.0,
+        "height": 120.0
+      },
+      "visible_child_hit": {
+        "x": 12.0,
+        "y": 104.0,
+        "width": 296.0,
+        "height": 68.0
+      },
+      "visible_footer_target": {
+        "height": 48.0,
+        "width": 80.0,
+        "x": 12.0,
+        "y": 180.0
+      },
+      "enabled_command": "list-expand-child-b",
+      "scroll_y": {
+        "initial": {
+          "list-expand-demo": 0.0,
+          "list-expand-scroll": 0.0
+        },
+        "child": {
+          "list-expand-demo": 204.0,
+          "list-expand-scroll": 396.0
+        },
+        "footer": {
+          "list-expand-demo": 220.0,
+          "list-expand-scroll": 396.0
+        }
+      },
+      "transport_captures": [
+        {
+          "name": "expansion-short-outer-scroll.png",
+          "sha256": "3b8900700f76b583152c4f4c7663e46576b203497f72f1ea6f432674e895716d",
+          "format": "png",
+          "width": 320,
+          "height": 240,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        240
+      ]
+    }
+  }
+}
