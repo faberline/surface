@@ -508,6 +508,41 @@ In Material Gallery, choose 浮層, then 時間錶盤. The scene uses the same
 draft in both modes. It supports portrait and landscape layouts with
 the full 256 dp clock face and a text fallback for smaller windows.
 
+Use `Theme::time_scroll` for the Expressive Scroll variant. It can sit
+in a form or open in a modal dialog. Keep a `TimeScrollState` with one
+`TimeInputSession`. Pass the same viewport, format, text scale and
+presentation to `time_scroll_layout` and the view. Give inline forms
+their allocated picker width. Send `TimeScrollEvent::SetScrollFits`
+when the space or text scale changes. The view switches to Input when
+space runs out. The user switches back when the wheels fit again.
+
+Forward events to `state.apply(event, reduced_motion)`. Store the
+time only on Commit. Pass focused wheel and editor IDs to
+`observe_scroll_focus` and `observe_input_focus` as hour or minute.
+Call `state.advance(frame.now_ms, frame.reduced_motion)` in the
+animation frame. Use its flags to rebuild and request another frame.
+
+Tap a neighboring value, drag, or use a mouse wheel to move one field.
+The draft and accessible value update after release or a quiet wheel
+interval. Use Up or Down to choose an adjacent value. Left and Right
+move between fields in visual order. Home and End reach the bounds.
+The keyboard button switches to direct text input and keeps the draft.
+Enter on a focused wheel confirms the time. In Input, Enter finishes
+the editor and the input method handles Enter during composition.
+Use a separate Save action in an inline form. The modal has Save and
+Cancel and returns focus to its opener on close.
+
+The published example shows a 100 × 120 dp field. Surface reserves
+three 48 dp rows to meet the touch target rule and grows the rows for
+larger text. Each field has one adjustable accessibility target with
+a localized accepted value. The Web projection uses a spinbutton.
+The macOS adapter exposes an incrementor. The neighboring numerals
+are paint inside the same field.
+
+In Material Gallery, choose 浮層, then 捲動選時. The scene includes
+both placements, format and scale changes, and the Input switch.
+[Material 3 time picker accessibility](https://m3.material.io/components/time-pickers/accessibility)
+
 ## FAB menus
 
 Use `Theme::fab_menu` with a stable ID, the viewport, the trigger size,

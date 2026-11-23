@@ -1,10 +1,11 @@
 //! Scroll control: stick to bottom, scroll-to requests and read-only metrics.
 use crate::{AppError, Application, Queue, Runtime};
 use std::{cell::RefCell, collections::BTreeMap, rc::Rc};
-use surface::{scroll_extent, ComputedDom, NodeId};
+use surface::{scroll_extent, ComputedDom, NodeId, Role, TextMeasurer};
 
 /// Distance from the bottom, in pixels, that still counts as "at bottom".
 const BOTTOM_TOLERANCE: f32 = 0.5;
+const PENDING_WHEEL_LIMIT: usize = 32;
 
 /// Where `scroll_to` moves a scroll container. Offsets are clamped to the
 /// content at the next `render`.
@@ -98,6 +99,35 @@ pub(crate) struct State {
     /// The largest vertical offset at the last render, for stick containers.
     last_max: BTreeMap<String, f32>,
     pub(crate) metrics: BTreeMap<String, ScrollMetrics>,
+    wheel_burst: Option<WheelBurst>,
+}
+
+#[derive(Clone, Copy)]
+struct WheelRoute {
+    hit: NodeId,
+    horizontal: Option<NodeId>,
+    vertical: Option<NodeId>,
+}
+
+#[derive(PartialEq, Eq)]
+struct WheelOwner {
+    key: String,
+    role: Role,
+    enabled: bool,
+    observes_horizontal: bool,
+    observes_vertical: bool,
+}
+
+struct WheelSample {
+    delta: (f32, f32),
+    now_ms: Option<f64>,
+}
+
+struct WheelBurst {
+    point: (f32, f32),
+    scope: Option<String>,
+    route: [Option<WheelOwner>; 3],
+    pending: Vec<WheelSample>,
 }
 
 impl<M> Queue<M> {
@@ -142,25 +172,133 @@ impl<A: Application> Runtime<A> {
         if !delta.0.is_finite() || !delta.1.is_finite() {
             return Ok(false);
         }
-        let Some(computed) = &self.computed else {
+        let sample = WheelSample {
+            delta,
+            now_ms: self.input_time_ms(),
+        };
+        let scope = self.active_scope_root().and_then(|id| self.stable(id));
+        if self.computed.is_none() {
+            return Ok(self.scroll_state.wheel_burst.as_mut().is_some_and(|burst| {
+                if burst.point != point
+                    || burst.scope != scope
+                    || burst.pending.len() >= PENDING_WHEEL_LIMIT
+                {
+                    return false;
+                }
+                burst.pending.push(sample);
+                true
+            }));
+        }
+        self.discard_wheel_burst();
+        let Some(route) = self.wheel_route(point) else {
             return Ok(false);
         };
-        let Some(target) = computed
+        let owners = self.wheel_owners(route);
+        let handled = self.dispatch_wheel_route(route, sample)?;
+        if handled && scope == self.active_scope_root().and_then(|id| self.stable(id)) {
+            self.scroll_state.wheel_burst = Some(WheelBurst {
+                point,
+                scope,
+                route: owners,
+                pending: Vec::new(),
+            });
+        }
+        Ok(handled)
+    }
+
+    pub(crate) fn discard_wheel_burst(&mut self) {
+        self.scroll_state.wheel_burst = None;
+    }
+
+    /// Only continue a previously verified wheel route. Rebuilds can move or
+    /// replace its controls, so hit test current geometry before each sample.
+    pub(crate) fn replay_wheel_burst(
+        &mut self,
+        width: f32,
+        height: f32,
+        measurer: &mut impl TextMeasurer,
+    ) -> Result<(), AppError> {
+        let Some(burst) = self.scroll_state.wheel_burst.take() else {
+            return Ok(());
+        };
+        for sample in burst.pending {
+            if self.queue.1.get()
+                || !self.queue.0.borrow().is_empty()
+                || burst.scope != self.active_scope_root().and_then(|id| self.stable(id))
+            {
+                break;
+            }
+            let scale = self.app.text_scale();
+            let scale = if scale.is_finite() && scale > 0. {
+                scale
+            } else {
+                1.
+            };
+            let (_, _, mut computed) = self.layout_editing(width, height, scale, measurer)?;
+            let pending_scroll = !self.queue.2.borrow().is_empty();
+            if pending_scroll && self.apply_scroll_control(&computed)? {
+                (_, _, computed) = self.layout_editing(width, height, scale, measurer)?;
+            }
+            self.dom
+                .apply_modal_layers(&mut computed.paint_order, &self.modal_layers);
+            self.computed = Some(computed);
+            let Some(route) = self
+                .wheel_route(burst.point)
+                .filter(|route| self.wheel_owners(*route) == burst.route)
+            else {
+                self.computed = None;
+                break;
+            };
+            self.dispatch_wheel_route(route, sample)?;
+        }
+        Ok(())
+    }
+
+    fn wheel_route(&self, point: (f32, f32)) -> Option<WheelRoute> {
+        let computed = self.computed.as_ref()?;
+        let hit = computed
             .paint_order
             .iter()
             .rev()
             .copied()
-            .find(|&id| self.wheel_target_at(computed, id, point))
-        else {
-            return Ok(false);
-        };
-        let marked = self
-            .wheel_ancestors(computed, target, point)
+            .find(|&id| self.wheel_target_at(computed, id, point))?;
+        let horizontal = self
+            .wheel_ancestors(computed, hit, point)
             .find(|id| self.bindings[id].horizontal_scroll.is_some());
-        if let Some(horizontal) = marked {
-            return self.dispatch_split_wheel(target, horizontal, point, delta);
+        Some(WheelRoute {
+            hit,
+            horizontal,
+            vertical: horizontal.and_then(|_| self.vertical_wheel_target(computed, hit, point)),
+        })
+    }
+
+    fn wheel_owners(&self, route: WheelRoute) -> [Option<WheelOwner>; 3] {
+        [Some(route.hit), route.horizontal, route.vertical].map(|id| {
+            let id = id?;
+            let node = self.dom.get(id).ok()?;
+            let binding = self.bindings.get(&id)?;
+            Some(WheelOwner {
+                key: self.stable(id)?,
+                role: node.role(),
+                enabled: !node.is_disabled(),
+                observes_horizontal: binding.horizontal_scroll.is_some(),
+                observes_vertical: binding.vertical_scroll.is_some(),
+            })
+        })
+    }
+
+    fn dispatch_wheel_route(
+        &mut self,
+        route: WheelRoute,
+        sample: WheelSample,
+    ) -> Result<bool, AppError> {
+        let target = route.hit;
+        let delta = sample.delta;
+        if let Some(horizontal) = route.horizontal {
+            return self.dispatch_split_wheel(horizontal, route.vertical, sample);
         }
 
+        let computed = self.computed.as_ref().expect("wheel has current geometry");
         let (max_x, max_y) = self.wheel_limits(computed, target);
         let scroll_x = self.dom.get(target)?.style().scroll_x;
         let (y, message) = self.vertical_wheel(target, delta.1, max_y);
@@ -173,21 +311,20 @@ impl<A: Application> Runtime<A> {
 
     fn dispatch_split_wheel(
         &mut self,
-        target: NodeId,
         horizontal: NodeId,
-        point: (f32, f32),
-        delta: (f32, f32),
+        vertical: Option<NodeId>,
+        sample: WheelSample,
     ) -> Result<bool, AppError> {
         let computed = self.computed.as_ref().expect("wheel has current geometry");
+        let delta = sample.delta;
         let horizontal_result = (delta.0 != 0. && !self.dom.get(horizontal)?.is_disabled())
-            .then(|| self.horizontal_wheel(computed, horizontal, delta.0));
+            .then(|| self.horizontal_wheel(computed, horizontal, delta.0, sample.now_ms));
         let vertical_result = if delta.1 != 0. {
-            self.vertical_wheel_target(computed, target, point)
-                .map(|id| {
-                    let (offset, message) =
-                        self.vertical_wheel(id, delta.1, self.wheel_limits(computed, id).1);
-                    (id, offset, message)
-                })
+            vertical.map(|id| {
+                let (offset, message) =
+                    self.vertical_wheel(id, delta.1, self.wheel_limits(computed, id).1);
+                (id, offset, message)
+            })
         } else {
             None
         };
@@ -280,6 +417,7 @@ impl<A: Application> Runtime<A> {
         computed: &ComputedDom,
         id: NodeId,
         delta: f32,
+        now_ms: Option<f64>,
     ) -> (Option<f32>, Option<A::Message>) {
         let offset = self.dom.get(id).expect("valid wheel node").style().scroll_x;
         let max_offset = self.wheel_limits(computed, id).0;
@@ -291,7 +429,7 @@ impl<A: Application> Runtime<A> {
             delta,
             offset,
             max_offset,
-            now_ms: self.input_time_ms(),
+            now_ms,
         };
         match scroll(input, self.focused()) {
             Some(response) => (

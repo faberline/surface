@@ -1,4 +1,4 @@
-use crate::{AppError, Application, EditKey, ModalLayer, Runtime};
+use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalLayer, Runtime};
 use std::{collections::BTreeSet, rc::Rc};
 use surface::{Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
 
@@ -413,6 +413,26 @@ impl<A: Application> Runtime<A> {
                 .and_then(|navigate| navigate(key, extend))
             {
                 return self.apply_focus_navigation(navigation);
+            }
+            if let Some(range) = node.accessibility_adjustable() {
+                let action = match key {
+                    EditKey::Up => Some(AccessibilityAdjustment::Increment),
+                    EditKey::Down => Some(AccessibilityAdjustment::Decrement),
+                    EditKey::Home => Some(AccessibilityAdjustment::SetValue(range.min)),
+                    EditKey::End => Some(AccessibilityAdjustment::SetValue(range.max)),
+                    _ => None,
+                };
+                if let Some(action) = action {
+                    let message = action.resolve(range).and_then(|value| {
+                        self.bindings
+                            .get(&id)?
+                            .value
+                            .as_ref()
+                            .map(|handler| handler(value))
+                    });
+                    self.message(message)?;
+                    return Ok(true);
+                }
             }
         }
         let Some((group, roving)) = self

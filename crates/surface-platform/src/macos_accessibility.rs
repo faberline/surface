@@ -6,7 +6,8 @@ use accesskit::{
 use std::collections::BTreeMap;
 use surface::{GridRole, NodeId as SurfaceId, Role as SurfaceRole};
 use surface_app::{
-    AccessibilityActivationResult, AccessibilityActivationTarget, AccessibilityFocusResult,
+    AccessibilityActivationResult, AccessibilityActivationTarget, AccessibilityAdjustment,
+    AccessibilityAdjustmentResult, AccessibilityAdjustmentTarget, AccessibilityFocusResult,
     AccessibilityFocusTarget, AccessibilityFrame, AccessibilityFrameId, AccessibilityNode,
     AccessibilityScrollDirection, AccessibilityScrollPageTarget, AccessibilityScrollResult,
     AccessibilityScrollTarget, AppError, Application, Runtime,
@@ -22,6 +23,7 @@ const PAGE_ACTIONS: [(Action, AccessibilityScrollDirection); 2] = [
 struct Targets {
     focus: Option<AccessibilityFocusTarget>,
     press: Option<AccessibilityActivationTarget>,
+    adjustment: Option<AccessibilityAdjustmentTarget>,
     reveal: Option<AccessibilityScrollTarget>,
     pages: BTreeMap<Action, AccessibilityScrollPageTarget>,
 }
@@ -95,6 +97,7 @@ impl Tree {
             let mut node = describe(&source);
             let focus = frame.focus_target(id);
             let press = frame.activation_target(id);
+            let adjustment = frame.adjustment_target(id);
             let pages: BTreeMap<_, _> = PAGE_ACTIONS
                 .into_iter()
                 .filter_map(|(action, direction)| {
@@ -154,6 +157,19 @@ impl Tree {
             if press.is_some() {
                 node.add_action(Action::Click);
             }
+            if let Some(range) = source
+                .node
+                .accessibility_adjustable()
+                .filter(|_| adjustment.is_some())
+            {
+                node.add_action(Action::SetValue);
+                if range.step_value(true).is_some() {
+                    node.add_action(Action::Increment);
+                }
+                if range.step_value(false).is_some() {
+                    node.add_action(Action::Decrement);
+                }
+            }
             if reveal.is_some() {
                 node.add_action(Action::ScrollIntoView);
             }
@@ -201,6 +217,7 @@ impl Tree {
                 Targets {
                     focus,
                     press,
+                    adjustment,
                     reveal,
                     pages: BTreeMap::new(),
                 },
@@ -263,7 +280,25 @@ impl Tree {
                 AccessibilityScrollResult::Scheduled | AccessibilityScrollResult::Rebuilt
             )
         };
+        let adjust = |runtime: &mut Runtime<A>, action| {
+            let Some(target) = &target.adjustment else {
+                return Ok(false);
+            };
+            Ok(matches!(
+                runtime.accessibility_adjust(target, action)?,
+                AccessibilityAdjustmentResult::Adjusted | AccessibilityAdjustmentResult::Rebuilt
+            ))
+        };
         match (request.action, request.data) {
+            (Action::Increment, None) => adjust(runtime, AccessibilityAdjustment::Increment),
+            (Action::Decrement, None) => adjust(runtime, AccessibilityAdjustment::Decrement),
+            (Action::SetValue, Some(ActionData::NumericValue(value))) => {
+                adjust(runtime, AccessibilityAdjustment::SetValue(value))
+            }
+            (Action::SetValue, Some(ActionData::Value(text))) => match text.trim().parse::<f64>() {
+                Ok(value) => adjust(runtime, AccessibilityAdjustment::SetValue(value)),
+                Err(_) => Ok(false),
+            },
             (Action::Focus, None) => {
                 let Some(focus) = &target.focus else {
                     return Ok(false);
@@ -324,6 +359,7 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
         Some(GridRole::ColumnHeader) => Role::ColumnHeader,
         Some(GridRole::GridCell) => Role::GridCell,
         None => match authored.role() {
+            SurfaceRole::Group if authored.accessibility_adjustable().is_some() => Role::SpinButton,
             SurfaceRole::Group if authored.name().is_empty() => Role::GenericContainer,
             SurfaceRole::Group => Role::Group,
             SurfaceRole::Window => Role::Window,
@@ -399,7 +435,17 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
             value.into()
         });
     }
-    if let Some(range) = authored.range_value() {
+    if let Some(range) = authored.accessibility_adjustable() {
+        node.set_min_numeric_value(range.min);
+        node.set_max_numeric_value(range.max);
+        node.set_numeric_value_step(range.step);
+        if let Some(value) = range.value {
+            node.set_numeric_value(value);
+        }
+        if let Some(text) = &range.value_text {
+            node.set_value(text.as_str());
+        }
+    } else if let Some(range) = authored.range_value() {
         node.set_numeric_value(range.value);
         node.set_min_numeric_value(range.min);
         node.set_max_numeric_value(range.max);
@@ -512,6 +558,121 @@ mod tests {
             .iter()
             .find_map(|(id, node)| (node.label() == Some(name)).then_some((*id, node)))
             .unwrap()
+    }
+
+    #[test]
+    fn adjustable_projection_sets_spinbutton_value_and_routes_current_actions() {
+        struct Adjustable {
+            value: Option<f64>,
+            disabled: bool,
+        }
+        impl Application for Adjustable {
+            type Message = f64;
+
+            fn update(&mut self, value: f64) {
+                self.value = Some(value);
+            }
+
+            fn view(&self) -> View<Self::Message> {
+                let number = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Minutes")
+                        .id("minutes")
+                        .disabled(self.disabled)
+                        .adjustable(surface::AdjustableValue {
+                            min: 0.,
+                            max: 59.,
+                            step: 1.,
+                            value: self.value,
+                            value_text: Some(
+                                if self.value.is_some() {
+                                    "０７"
+                                } else {
+                                    "未設定"
+                                }
+                                .into(),
+                            ),
+                        })
+                        .styled(Style::row().width(Length::Px(120.)).height(Length::Px(48.))),
+                )
+                .on_value(|value| value);
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Test")).children([number])
+            }
+        }
+
+        let mut rt = Runtime::new(Adjustable {
+            value: None,
+            disabled: false,
+        })
+        .unwrap();
+        let mut tree = Tree::default();
+        let rendered = update(&mut rt, &mut tree);
+        let (first_id, minute) = named(&rendered, "Minutes");
+        assert_eq!(minute.role(), Role::SpinButton);
+        assert_eq!(minute.numeric_value(), None);
+        assert_eq!(minute.min_numeric_value(), Some(0.));
+        assert_eq!(minute.max_numeric_value(), Some(59.));
+        assert_eq!(minute.value(), Some("未設定"));
+        for action in [
+            Action::Increment,
+            Action::Decrement,
+            Action::SetValue,
+            Action::Focus,
+        ] {
+            assert!(minute.supports_action(action));
+        }
+        assert!(!minute.supports_action(Action::Click));
+
+        let request = |target_node, action, data| ActionRequest {
+            target_tree: TreeId::ROOT,
+            target_node,
+            action,
+            data,
+        };
+        assert!(tree
+            .action(&mut rt, request(first_id, Action::Increment, None))
+            .unwrap());
+        assert_eq!(rt.app().value, Some(0.));
+        assert!(!tree
+            .action(&mut rt, request(first_id, Action::Increment, None))
+            .unwrap());
+
+        let rendered = update(&mut rt, &mut tree);
+        let (id, minute) = named(&rendered, "Minutes");
+        assert_ne!(id, first_id);
+        assert!(minute.supports_action(Action::Increment));
+        assert!(!minute.supports_action(Action::Decrement));
+        assert!(tree
+            .action(
+                &mut rt,
+                request(id, Action::SetValue, Some(ActionData::NumericValue(7.)))
+            )
+            .unwrap());
+        assert_eq!(rt.app().value, Some(7.));
+
+        let rendered = update(&mut rt, &mut tree);
+        let (id, minute) = named(&rendered, "Minutes");
+        assert_eq!(minute.numeric_value(), Some(7.));
+        assert_eq!(minute.value(), Some("０７"));
+        assert!(tree
+            .action(&mut rt, request(id, Action::Decrement, None))
+            .unwrap());
+        assert_eq!(rt.app().value, Some(6.));
+
+        let mut disabled = Runtime::new(Adjustable {
+            value: Some(6.),
+            disabled: true,
+        })
+        .unwrap();
+        let rendered = update(&mut disabled, &mut tree);
+        let (id, minute) = named(&rendered, "Minutes");
+        assert!(minute.is_disabled());
+        assert!(!minute.supports_action(Action::Increment));
+        assert!(!minute.supports_action(Action::Decrement));
+        assert!(!minute.supports_action(Action::SetValue));
+        assert!(!tree
+            .action(&mut disabled, request(id, Action::Increment, None))
+            .unwrap());
+        assert_eq!(disabled.app().value, Some(6.));
     }
 
     struct Calendar(bool);

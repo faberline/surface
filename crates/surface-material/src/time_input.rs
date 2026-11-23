@@ -9,7 +9,7 @@ use crate::{
     date_picker::{button, disabled_ink, text, TARGET},
     shape::{self, LayoutDirection},
     typography, ClockFormat, Theme, TimeField, TimeInputError, TimeInputEvent, TimeInputLocale,
-    TimeInputSession, TimePeriod,
+    TimeInputSession, TimePeriod, VectorIcon,
 };
 
 const FIELD_HEIGHT: f32 = 72.;
@@ -74,6 +74,7 @@ impl Theme {
             options,
             session,
             emit: Rc::new(on_event),
+            editor_fallback_suffix: None,
         }
         .view()
     }
@@ -84,6 +85,7 @@ pub(crate) struct TimeInput<'a, 'b, M> {
     pub(crate) options: TimeInputOptions<'b>,
     pub(crate) session: &'a TimeInputSession,
     pub(crate) emit: Rc<dyn Fn(TimeInputEvent) -> M>,
+    pub(crate) editor_fallback_suffix: Option<(&'static str, &'static str)>,
 }
 
 impl<M: Clone + 'static> TimeInput<'_, '_, M> {
@@ -214,7 +216,7 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
         )
     }
 
-    fn body(&self, width: f32, period: Option<TimePeriod>, modal: bool) -> View<M> {
+    pub(crate) fn body(&self, width: f32, period: Option<TimePeriod>, modal: bool) -> View<M> {
         let alongside = period.is_some() && width >= if modal { 312. } else { 392. };
         let period_width = if modal { 56. } else { 48. };
         let field_width =
@@ -392,6 +394,13 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                 .cursor(CursorStyle::Text)
                 .accessibility_scroll_into_view();
         }
+        if let Some((hour, minute)) = self.editor_fallback_suffix {
+            let target = match field {
+                TimeField::Hour => hour,
+                TimeField::Minute => minute,
+            };
+            input = input.restore_focus_on_removal(self.id(target));
+        }
         (input, text(help_id, &help, typography::BODY_SMALL, ink))
     }
 
@@ -399,7 +408,7 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
         self.period_view(selected, column, width, modal, None)
     }
 
-    pub(crate) fn dial_period(&self, selected: TimePeriod, column: bool, width: f32) -> View<M> {
+    pub(crate) fn picker_period(&self, selected: TimePeriod, column: bool, width: f32) -> View<M> {
         self.period_view(selected, column, width, true, (!column).then_some(width))
     }
 
@@ -546,4 +555,17 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
             ]),
         )
     }
+}
+
+pub(crate) fn keyboard_icon() -> VectorIcon {
+    let rect = |x, y, w, h| [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+    VectorIcon::from_contours([
+        rect(2., 5., 20., 14.),
+        rect(4., 7., 16., 10.),
+        rect(6., 9., 2., 2.),
+        rect(11., 9., 2., 2.),
+        rect(16., 9., 2., 2.),
+        rect(7., 13., 10., 2.),
+    ])
+    .expect("valid time picker keyboard icon")
 }

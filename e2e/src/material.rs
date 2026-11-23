@@ -44,6 +44,8 @@ mod material_split_button;
 mod material_time_dial;
 #[path = "material_time_input.rs"]
 mod material_time_input;
+#[path = "material_time_scroll.rs"]
+mod material_time_scroll;
 #[path = "material_toolbar.rs"]
 mod material_toolbar;
 #[path = "material_tooltip.rs"]
@@ -68,7 +70,7 @@ pub const STEPS: &[&str] = &[
     "M107", "M108", "M109", "M110", "M111", "M112", "M113", "M114", "M115", "M116", "M117", "M118",
     "M119", "M120", "M121", "M122", "M123", "M124", "M125", "M126", "M127", "M128", "M129", "M130",
     "M131", "M132", "M133", "M134", "M135", "M136", "M137", "M138", "M139", "M140", "M141", "M142",
-    "M143", "M144", "M145", "M146", "M147", "M148",
+    "M143", "M144", "M145", "M146", "M147", "M148", "M149", "M150", "M151", "M152", "M153", "M154",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -164,7 +166,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_date_picker_gestures::run(env, chrome, &url).await?;
     material_time_input::run(env, chrome, &url).await?;
     material_time_dial::run(env, chrome, &url).await?;
-    material_time_dial::motion::run(env, chrome, &url).await
+    material_time_dial::motion::run(env, chrome, &url).await?;
+    material_time_scroll::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

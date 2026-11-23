@@ -45,6 +45,8 @@ mod time_dial;
 mod time_dial_state;
 mod time_input;
 mod time_input_state;
+mod time_scroll;
+mod time_scroll_state;
 mod tokens;
 mod toolbar;
 mod toolbar_scroll;
@@ -142,6 +144,11 @@ pub use time_input::{TimeInputLabels, TimeInputOptions, TimeInputPresentation};
 pub use time_input_state::{
     ClockFormat, PeriodPosition, TimeField, TimeInputEffect, TimeInputError, TimeInputEvent,
     TimeInputLocale, TimeInputSession, TimeInputValidation, TimeOfDay, TimePeriod,
+};
+pub use time_scroll::{time_scroll_layout, TimeScrollLabels, TimeScrollLayout, TimeScrollOptions};
+pub use time_scroll_state::{
+    TimeScrollColumn, TimeScrollDrag, TimeScrollEvent, TimeScrollMode, TimeScrollState,
+    TimeScrollStep,
 };
 pub use tokens::ColorScheme;
 pub use toolbar::{
