@@ -658,6 +658,97 @@ mod tests {
     }
 
     #[test]
+    fn web_multiselect_listbox_keeps_native_checkbox_roles_and_independent_actions() {
+        struct Drinks(u8);
+
+        impl Application for Drinks {
+            type Message = u8;
+
+            fn update(&mut self, drink: u8) {
+                self.0 ^= drink;
+            }
+
+            fn view(&self) -> View<u8> {
+                let group = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Drinks")
+                        .id("drinks")
+                        .web_multiselect_listbox_semantics()
+                        .styled(Style::column()),
+                )
+                .children(
+                    [
+                        ("Coffee", 1, false, false),
+                        ("Tea", 2, false, false),
+                        ("Water", 4, true, false),
+                        ("Mixed", 8, false, true),
+                    ]
+                    .map(|(name, drink, disabled, mixed)| {
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Checkbox, name)
+                                .id(name)
+                                .text(name)
+                                .checked(self.0 & drink != 0)
+                                .mixed(mixed)
+                                .disabled(disabled)
+                                .web_multiselect_listbox_semantics(),
+                        )
+                        .on_press(drink)
+                        .accessible_activation()
+                    }),
+                );
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Window")).children([group])
+            }
+        }
+
+        let mut runtime = Runtime::new(Drinks(1)).unwrap();
+        let mut tree = Tree::default();
+        let frame = update(&mut runtime, &mut tree);
+        let group = named(&frame, "Drinks").1;
+        let (coffee_id, coffee) = named(&frame, "Coffee");
+        let (tea_id, tea) = named(&frame, "Tea");
+        let (water_id, water) = named(&frame, "Water");
+        let (mixed_id, mixed) = named(&frame, "Mixed");
+        assert_eq!(group.role(), Role::Group);
+        assert_eq!(group.children(), [coffee_id, tea_id, water_id, mixed_id]);
+        for (checkbox, toggled) in [
+            (coffee, Toggled::True),
+            (tea, Toggled::False),
+            (water, Toggled::False),
+            (mixed, Toggled::Mixed),
+        ] {
+            assert_eq!(checkbox.role(), Role::CheckBox);
+            assert_eq!(checkbox.toggled(), Some(toggled));
+            assert_eq!(checkbox.is_selected(), None);
+        }
+        assert!(tea.supports_action(Action::Focus));
+        assert!(tea.supports_action(Action::Click));
+        assert!(water.is_disabled());
+        assert!(!water.supports_action(Action::Focus));
+        assert!(!water.supports_action(Action::Click));
+
+        let action = |action, target_node| ActionRequest {
+            action,
+            target_tree: TreeId::ROOT,
+            target_node,
+            data: None,
+        };
+        assert!(tree
+            .action(&mut runtime, action(Action::Focus, tea_id))
+            .unwrap());
+        assert_eq!(runtime.focused(), Some("Tea"));
+        assert_eq!(runtime.app().0, 1);
+        let frame = update(&mut runtime, &mut tree);
+        assert!(tree
+            .action(&mut runtime, action(Action::Click, named(&frame, "Tea").0))
+            .unwrap());
+        assert_eq!(runtime.app().0, 3);
+        let frame = update(&mut runtime, &mut tree);
+        for label in ["Coffee", "Tea"] {
+            assert_eq!(named(&frame, label).1.toggled(), Some(Toggled::True));
+        }
+    }
+
+    #[test]
     fn adjustable_projection_sets_spinbutton_value_and_routes_current_actions() {
         struct Adjustable {
             value: Option<f64>,

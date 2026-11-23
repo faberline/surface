@@ -1,8 +1,10 @@
+use std::collections::BTreeSet;
+
 use surface::{Align, Length, Node, Role, Style};
 use surface_app::View;
 use surface_material::{
     shape::LayoutDirection, ChipKind, ChoiceState, ListItem, ListLines, ListMode, ListOptions,
-    ListStyle, Theme,
+    ListStyle, MultiSelectListOptions, Theme,
 };
 
 use crate::{rail_icons::Destination, Message};
@@ -24,10 +26,12 @@ const STYLES: [(ListStyle, &str, &str); 3] = [
     (ListStyle::Standard, "standard", "標準"),
     (ListStyle::Segmented, "segmented", "分段"),
 ];
-const MODES: [(ListsMode, &str, &str); 3] = [
+const DEFAULT_MULTI: [&str; 2] = ["lists-c", "lists-f"];
+const MODES: [(ListsMode, &str, &str); 4] = [
     (ListsMode::Passive, "passive", "唯讀"),
     (ListsMode::Action, "action", "操作"),
     (ListsMode::Select, "select", "單選"),
+    (ListsMode::Multi, "multi", "多選"),
 ];
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -35,6 +39,7 @@ pub enum ListsMode {
     Passive,
     Action,
     Select,
+    Multi,
 }
 
 #[derive(Clone)]
@@ -61,6 +66,7 @@ pub(crate) struct ListsDemo {
     reversed: bool,
     hide_last: bool,
     selected: Option<&'static str>,
+    multi_selected: BTreeSet<&'static str>,
     last: Option<&'static str>,
     activations: usize,
 }
@@ -76,6 +82,7 @@ impl Default for ListsDemo {
             reversed: false,
             hide_last: false,
             selected: Some("lists-c"),
+            multi_selected: BTreeSet::from(DEFAULT_MULTI),
             last: None,
             activations: 0,
         }
@@ -122,26 +129,40 @@ impl ListsDemo {
             ListsEvent::Reorder => self.reversed = !self.reversed,
             ListsEvent::ToggleLast => {
                 self.hide_last = !self.hide_last;
-                if self.hide_last && self.selected == Some("lists-f") {
-                    self.selected = None;
+                if self.hide_last {
+                    if self.selected == Some("lists-f") {
+                        self.selected = None;
+                    }
+                    self.multi_selected.remove("lists-f");
                 }
             }
             ListsEvent::Reset => {
                 self.selected = Some("lists-c");
+                self.multi_selected = BTreeSet::from(DEFAULT_MULTI);
                 self.reversed = false;
                 self.hide_last = false;
                 self.last = None;
                 self.activations = 0;
             }
             ListsEvent::Clear => {
-                self.selected = None;
+                if self.mode == ListsMode::Multi {
+                    self.multi_selected.clear();
+                } else {
+                    self.selected = None;
+                }
                 self.last = None;
             }
             ListsEvent::Activate(id) => {
                 self.last = Some(id);
                 self.activations += 1;
-                if self.mode == ListsMode::Select {
-                    self.selected = Some(id);
+                match self.mode {
+                    ListsMode::Select => self.selected = Some(id),
+                    ListsMode::Multi => {
+                        if !self.multi_selected.remove(id) {
+                            self.multi_selected.insert(id);
+                        }
+                    }
+                    ListsMode::Passive | ListsMode::Action => {}
                 }
             }
         }
@@ -149,25 +170,42 @@ impl ListsDemo {
 
     pub(crate) fn view(&self, theme: &Theme) -> View<Message> {
         let mode = match self.mode {
-            ListsMode::Passive => ListMode::Passive,
-            ListsMode::Action => ListMode::Action,
-            ListsMode::Select => ListMode::SingleSelect {
+            ListsMode::Passive => Some(ListMode::Passive),
+            ListsMode::Action => Some(ListMode::Action),
+            ListsMode::Select => Some(ListMode::SingleSelect {
                 selected_id: self.selected,
-            },
+            }),
+            ListsMode::Multi => None,
         };
         let direction = if self.rtl {
             LayoutDirection::RightToLeft
         } else {
             LayoutDirection::LeftToRight
         };
-        let options = ListOptions {
-            id: LIST,
-            name: "書籤",
-            style: self.style,
-            mode,
-            direction,
+        let items = self.rows().map(Self::item);
+        let list = if let Some(mode) = mode {
+            theme.list(
+                ListOptions {
+                    id: LIST,
+                    name: "書籤",
+                    style: self.style,
+                    mode,
+                    direction,
+                },
+                items,
+            )
+        } else {
+            theme.multi_select_list(
+                MultiSelectListOptions {
+                    id: LIST,
+                    name: "書籤",
+                    style: self.style,
+                    direction,
+                    is_selected: &|key| self.multi_selected.contains(key),
+                },
+                items,
+            )
         };
-        let list = theme.list(options, self.rows().map(Self::item));
         let body = View::new(Node::new(Role::Group, "").id(SCROLL).styled(Style {
             height: Length::Px(0.),
             min_height: 140.,
@@ -187,6 +225,7 @@ impl ListsDemo {
             ListsMode::Passive => "書籤預覽".to_owned(),
             ListsMode::Action => format!("最近操作：{}", row_name(self.last)),
             ListsMode::Select => format!("已選取：{}", row_name(self.selected)),
+            ListsMode::Multi => format!("已選取 {} 項", self.multi_selected.len()),
         };
         let after = View::new(
             Node::new(Role::Group, "清單操作").styled(Style::row().align(Align::Center).gap(8.)),
@@ -363,6 +402,11 @@ impl ListsDemo {
             .iter()
             .find(|(mode, _, _)| *mode == self.mode)
             .map(|(_, suffix, _)| *suffix);
+        let selected_ids: Vec<_> = self
+            .rows()
+            .map(|(id, _)| id)
+            .filter(|id| self.mode == ListsMode::Multi && self.multi_selected.contains(id))
+            .collect();
         json!({
             "visible": self.visible,
             "variant": variant,
@@ -370,6 +414,7 @@ impl ListsDemo {
             "rtl": self.rtl,
             "text_scale": self.text_scale(),
             "selected": if self.mode == ListsMode::Select { self.selected } else { None },
+            "selected_ids": selected_ids,
             "activations": self.activations,
             "last": self.last,
             "items": items,
@@ -381,6 +426,8 @@ impl ListsDemo {
                 "on_surface": theme.colors.on_surface,
                 "on_surface_variant": theme.colors.on_surface_variant,
                 "on_secondary_container": theme.colors.on_secondary_container,
+                "primary": theme.colors.primary,
+                "on_primary": theme.colors.on_primary,
             },
         })
     }

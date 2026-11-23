@@ -16,6 +16,7 @@ const EDGE_INSET: f32 = 16.;
 const BASELINE_END_INSET: f32 = 24.;
 const SEGMENT_GAP: f32 = 2.;
 const FOCUS_WIDTH: f32 = 3.;
+const CHECKBOX_SIZE: f32 = 18.;
 
 /// The visual treatment of the list and its rows.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -67,6 +68,18 @@ pub struct ListOptions<'a> {
     pub direction: LayoutDirection,
 }
 
+/// Stable identity and caller-owned selection for a list of checkboxes.
+#[derive(Clone, Copy)]
+pub struct MultiSelectListOptions<'a> {
+    pub id: &'a str,
+    /// Name the items people can choose. Use a localized label.
+    pub name: &'a str,
+    pub style: ListStyle,
+    pub direction: LayoutDirection,
+    /// Report whether each stable row ID is checked.
+    pub is_selected: &'a dyn Fn(&str) -> bool,
+}
+
 /// One row with one headline, optional details and a single available action.
 pub struct ListItem<'a, M> {
     /// Stable ID of the row or its interactive control. Reserve the generated
@@ -90,6 +103,48 @@ pub struct ListItem<'a, M> {
     pub on_activate: Option<M>,
 }
 
+#[derive(Clone, Copy)]
+enum ListInteraction<'a> {
+    Passive,
+    Action,
+    SingleSelect(Option<&'a str>),
+    MultiSelect(&'a dyn Fn(&str) -> bool),
+}
+
+impl ListInteraction<'_> {
+    fn row_role(self) -> Role {
+        match self {
+            Self::Passive => Role::ListItem,
+            Self::Action => Role::Button,
+            Self::SingleSelect(_) => Role::Radio,
+            Self::MultiSelect(_) => Role::Checkbox,
+        }
+    }
+
+    fn checked(self, id: &str) -> Option<bool> {
+        match self {
+            Self::SingleSelect(id_selected) => Some(id_selected == Some(id)),
+            Self::MultiSelect(is_selected) => Some(is_selected(id)),
+            Self::Passive | Self::Action => None,
+        }
+    }
+
+    fn web_selection(self, node: Node) -> Node {
+        match self {
+            Self::SingleSelect(_) => node.web_listbox_semantics(),
+            Self::MultiSelect(_) => node.web_multiselect_listbox_semantics(),
+            Self::Passive | Self::Action => node,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct ListPresentation<'a> {
+    style: ListStyle,
+    direction: LayoutDirection,
+    interaction: ListInteraction<'a>,
+}
+
 impl Theme {
     /// Build a list that fills the available width and fits its row heights.
     ///
@@ -104,34 +159,78 @@ impl Theme {
         options: ListOptions<'a>,
         items: impl IntoIterator<Item = ListItem<'a, M>>,
     ) -> View<M> {
+        let interaction = match options.mode {
+            ListMode::Passive => ListInteraction::Passive,
+            ListMode::Action => ListInteraction::Action,
+            ListMode::SingleSelect { selected_id } => ListInteraction::SingleSelect(selected_id),
+        };
+        self.list_with(
+            options.id,
+            options.name,
+            ListPresentation {
+                style: options.style,
+                direction: options.direction,
+                interaction,
+            },
+            items,
+        )
+    }
+
+    /// Build a multi-select list with one checkbox action per row.
+    ///
+    /// Give each enabled item an `on_activate` message with its ID and
+    /// desired checked state. The caller updates its selection and supplies
+    /// the result through `is_selected` on the next build. Arrow keys move
+    /// focus. Enter, Space or a press switches only the focused or pressed row.
+    /// Web exposes options in a multi-select listbox. Native exposes checkboxes.
+    pub fn multi_select_list<'a, M>(
+        &self,
+        options: MultiSelectListOptions<'_>,
+        items: impl IntoIterator<Item = ListItem<'a, M>>,
+    ) -> View<M> {
+        self.list_with(
+            options.id,
+            options.name,
+            ListPresentation {
+                style: options.style,
+                direction: options.direction,
+                interaction: ListInteraction::MultiSelect(options.is_selected),
+            },
+            items,
+        )
+    }
+
+    fn list_with<'a, M>(
+        &self,
+        id: &str,
+        name: &str,
+        options: ListPresentation<'_>,
+        items: impl IntoIterator<Item = ListItem<'a, M>>,
+    ) -> View<M> {
         let items: Vec<_> = items.into_iter().collect();
         let last = items.len().saturating_sub(1);
-        let mut node = Node::new(
-            if matches!(options.mode, ListMode::SingleSelect { .. }) {
-                Role::RadioGroup
-            } else {
-                Role::List
-            },
-            options.name,
-        )
-        .id(options.id)
-        .styled(Style::column().width(Length::Percent(1.)).gap(
+        let role = match options.interaction {
+            ListInteraction::Passive | ListInteraction::Action => Role::List,
+            ListInteraction::SingleSelect(_) => Role::RadioGroup,
+            ListInteraction::MultiSelect(_) => Role::Group,
+        };
+        let style = Style::column().width(Length::Percent(1.)).gap(
             if options.style == ListStyle::Segmented {
                 SEGMENT_GAP
             } else {
                 0.
             },
-        ));
-        if matches!(options.mode, ListMode::SingleSelect { .. }) {
-            node = node.web_listbox_semantics();
-        }
+        );
+        let node = options
+            .interaction
+            .web_selection(Node::new(role, name).id(id).styled(style));
         let view = View::new(node).children(
             items
                 .into_iter()
                 .enumerate()
                 .map(|(index, item)| self.list_row(options, item, index == 0, index == last)),
         );
-        if options.mode == ListMode::Passive {
+        if matches!(options.interaction, ListInteraction::Passive) {
             view
         } else {
             view.roving_retained(Roving::vertical(false))
@@ -140,22 +239,15 @@ impl Theme {
 
     fn list_row<M>(
         &self,
-        options: ListOptions<'_>,
+        options: ListPresentation<'_>,
         item: ListItem<'_, M>,
         first: bool,
         last: bool,
     ) -> View<M> {
-        let passive = options.mode == ListMode::Passive;
+        let passive = matches!(options.interaction, ListInteraction::Passive);
         let disabled = item.disabled || (!passive && item.on_activate.is_none());
-        let role = match options.mode {
-            ListMode::Passive => Role::ListItem,
-            ListMode::Action => Role::Button,
-            ListMode::SingleSelect { .. } => Role::Radio,
-        };
-        let selection = match options.mode {
-            ListMode::SingleSelect { selected_id } => Some(selected_id == Some(item.id)),
-            ListMode::Passive | ListMode::Action => None,
-        };
+        let role = options.interaction.row_role();
+        let selection = options.interaction.checked(item.id);
         let selected = selection == Some(true);
         let baseline = options.style == ListStyle::Baseline;
         let ink = if disabled {
@@ -170,7 +262,10 @@ impl Theme {
         } else {
             self.colors.on_surface_variant
         };
-        let background = if selected {
+        let background = if selected && disabled && role == Role::Checkbox {
+            // The selected, disabled Lists container uses OnSurface at 38%.
+            ink
+        } else if selected {
             self.colors.secondary_container
         } else if options.style == ListStyle::Segmented {
             self.colors.surface
@@ -209,17 +304,36 @@ impl Theme {
             }
         }
         if let Some(checked) = selection {
-            node = node.checked(checked).web_listbox_semantics();
+            node = options.interaction.web_selection(node.checked(checked));
         }
 
-        let content = row_content(options, &item, selection, ink, supporting_ink);
+        let mark = selection.map(|checked| {
+            let id = format!("{}-mark", item.id);
+            if role == Role::Checkbox {
+                self.list_checkbox(id, checked, disabled)
+            } else {
+                let size = list_icon_size(options.style);
+                let contour = if checked {
+                    selection_mark(size, ink)
+                } else {
+                    None
+                };
+                list_icon(id, size, contour)
+            }
+        });
+        let content = row_content(options, &item, mark, ink, supporting_ink);
         let row = if passive {
             View::new(node)
         } else {
             button(node, item.on_activate.filter(|_| !disabled))
         }
         .children([content]);
-        if options.mode == ListMode::Action {
+        let row = if role == Role::Checkbox {
+            row.suppress_repeated_activation()
+        } else {
+            row
+        };
+        if role == Role::Button {
             View::new(
                 Node::new(Role::ListItem, "")
                     .id(format!("{}-item", item.id))
@@ -230,19 +344,51 @@ impl Theme {
             row
         }
     }
+
+    fn list_checkbox<M>(&self, id: String, checked: bool, disabled: bool) -> View<M> {
+        let colors = self.colors;
+        let ink = if disabled {
+            disabled_ink(self)
+        } else if checked {
+            colors.primary
+        } else {
+            colors.on_surface_variant
+        };
+        let size = Length::Px(CHECKBOX_SIZE);
+        let style = Style::column()
+            .width(size)
+            .height(size)
+            .corners(Corners::all(2.));
+        let style = if checked {
+            style.background(ink)
+        } else {
+            style.border(2., ink)
+        };
+        let mut node = Node::new(Role::Group, "").id(id).styled(style);
+        if checked {
+            let color = if disabled {
+                colors.surface
+            } else {
+                colors.on_primary
+            };
+            if let Some(check) = selection_mark(CHECKBOX_SIZE, color) {
+                node = node.fill_contour(check);
+            }
+        }
+        View::new(node).without_interaction(None)
+    }
 }
 
 fn row_content<M>(
-    options: ListOptions<'_>,
+    options: ListPresentation<'_>,
     item: &ListItem<'_, M>,
-    selection: Option<bool>,
+    mark: Option<View<M>>,
     ink: Color,
     supporting_ink: Color,
 ) -> View<M> {
     let id = |part| format!("{}-{part}", item.id);
-    let passive = options.mode == ListMode::Passive;
-    let baseline = options.style == ListStyle::Baseline;
-    let icon_size = if baseline { 24. } else { 20. };
+    let passive = matches!(options.interaction, ListInteraction::Passive);
+    let icon_size = list_icon_size(options.style);
     let align = row_alignment(item.lines);
     let copy = row_copy(item, ink, supporting_ink, passive);
     let leading = item.leading.map(|icon| {
@@ -270,17 +416,6 @@ fn row_content<M>(
             trailing.without_interaction(None)
         }
     });
-    let mark = selection.map(|checked| {
-        list_icon(
-            id("mark"),
-            icon_size,
-            if checked {
-                selection_mark(icon_size, ink)
-            } else {
-                None
-            },
-        )
-    });
     let content = View::new(logical_row(
         Style::row()
             .width(Length::Px(0.))
@@ -296,7 +431,7 @@ fn row_content<M>(
             .chain(trailing)
             .chain(mark),
     );
-    let end = if baseline {
+    let end = if options.style == ListStyle::Baseline {
         BASELINE_END_INSET
     } else {
         EDGE_INSET
@@ -310,6 +445,14 @@ fn row_content<M>(
         content,
         spacer(end - ROW_PADDING),
     ])
+}
+
+fn list_icon_size(style: ListStyle) -> f32 {
+    if style == ListStyle::Baseline {
+        24.
+    } else {
+        20.
+    }
 }
 
 fn row_copy<M>(

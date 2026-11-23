@@ -124,6 +124,8 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     web_listbox: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    web_multiselect_listbox: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     grid_multiselectable: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     current_date: bool,
@@ -203,6 +205,7 @@ impl Node {
             current_page: None,
             grid_role: None,
             web_listbox: false,
+            web_multiselect_listbox: false,
             grid_multiselectable: false,
             current_date: false,
             described_by_text: None,
@@ -501,6 +504,17 @@ impl Node {
     }
     pub fn uses_web_listbox_semantics(&self) -> bool {
         self.web_listbox && matches!(self.role, Role::RadioGroup | Role::Radio)
+    }
+    /// Expose a Group as a multi-select listbox or a Checkbox as an option
+    /// on Web. Set this on the listbox and on each option. Use checked values
+    /// to express binary option selection.
+    /// The base role and mixed state still apply to native accessibility.
+    pub fn web_multiselect_listbox_semantics(mut self) -> Self {
+        self.web_multiselect_listbox = matches!(self.role, Role::Group | Role::Checkbox);
+        self
+    }
+    pub fn uses_web_multiselect_listbox_semantics(&self) -> bool {
+        self.web_multiselect_listbox && matches!(self.role, Role::Group | Role::Checkbox)
     }
     /// Report that this grid can have multiple selected cells. Set selection
     /// on each cell separately. This property only applies to [`GridRole::Grid`].

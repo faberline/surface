@@ -68,6 +68,7 @@ pub struct View<M> {
     node: Node,
     children: Vec<Self>,
     activate: Option<M>,
+    suppress_repeated_activation: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     value: Option<Rc<dyn Fn(f64) -> M>>,
@@ -117,6 +118,7 @@ impl<M> View<M> {
             node,
             children: Vec::new(),
             activate: None,
+            suppress_repeated_activation: false,
             input: None,
             text_options: TextOptions::default(),
             value: None,
@@ -154,6 +156,13 @@ impl<M> View<M> {
     }
     pub fn on_press(mut self, message: M) -> Self {
         self.activate = Some(message);
+        self
+    }
+    /// Ignore held Enter or Space repeats for this control's default press.
+    /// Focused key handlers and scoped shortcuts take precedence. Text
+    /// inputs keep their normal key behavior.
+    pub fn suppress_repeated_activation(mut self) -> Self {
+        self.suppress_repeated_activation = true;
         self
     }
     /// When the focused control is removed or disabled, move focus to an
@@ -721,6 +730,7 @@ pub enum AppError {
 }
 struct Binding<M> {
     activate: Option<M>,
+    suppress_repeated_activation: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     value: Option<Rc<dyn Fn(f64) -> M>>,
@@ -1115,6 +1125,7 @@ impl<A: Application> Runtime<A> {
                 id,
                 Binding {
                     activate: view.activate,
+                    suppress_repeated_activation: view.suppress_repeated_activation,
                     input: view.input,
                     text_options: view.text_options,
                     value: view.value,
@@ -1378,9 +1389,8 @@ impl<A: Application> Runtime<A> {
         }
     }
     /// The host calls this for each key press before the field handles it.
-    /// Returns `true` when the focused key handler, key focus navigation,
-    /// or a scoped focus shortcut consumes the press. Returns `false` during
-    /// IME composition or when no handler consumes the press.
+    /// Returns `true` when a focused handler, scoped shortcut or repeat guard
+    /// consumes the press. During IME composition, the field keeps its keys.
     pub fn key(&mut self, press: &KeyPress) -> Result<bool, AppError> {
         #[cfg(feature = "devtools")]
         let span = self.trace_input("Key", None, None, None);
@@ -1409,11 +1419,24 @@ impl<A: Application> Runtime<A> {
             }
             return self.message(Some(message));
         }
-        if self.navigate_key_focus(id, press)? {
-            Ok(true)
-        } else {
-            Ok(self.focus_shortcut(id, press))
+        if self.navigate_key_focus(id, press)? || self.focus_shortcut(id, press) {
+            return Ok(true);
         }
+        let modifiers = press.modifiers;
+        Ok(press.repeat
+            && matches!(press.key, Key::Enter | Key::Space)
+            && !modifiers.control
+            && !modifiers.alt
+            && !modifiers.meta
+            && !self.has_pending_composition()
+            && self.in_scope(id)
+            && self.bindings.get(&id).is_some_and(|binding| {
+                binding.suppress_repeated_activation && binding.activate.is_some()
+            })
+            && self
+                .dom
+                .get(id)
+                .is_ok_and(|node| node.is_focusable() && node.role() != Role::TextInput))
     }
 
     fn navigate_key_focus(&mut self, id: NodeId, press: &KeyPress) -> Result<bool, AppError> {

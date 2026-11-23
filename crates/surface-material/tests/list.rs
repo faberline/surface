@@ -1,22 +1,28 @@
+use std::collections::BTreeSet;
+
 use surface::{
-    Color, Corners, DisplayList, Length, Node, NodeId, PaintOp, Rect, Role, Style, TextMeasurer,
+    Color, Corners, DisplayList, ExtendedPaintOp, Length, Node, NodeId, PaintOp, Rect, Role, Style,
+    TextMeasurer,
 };
-use surface_app::{Application, EditKey, Event, Runtime, View};
+use surface_app::{AccessibilityActivationResult, Application, EditKey, Event, Runtime, View};
 use surface_material::{
     shape::{self, LayoutDirection},
-    typography, ListItem, ListLines, ListMode, ListOptions, ListStyle, Theme, VectorIcon,
+    typography, ListItem, ListLines, ListMode, ListOptions, ListStyle, MultiSelectListOptions,
+    Theme, VectorIcon,
 };
 
 #[derive(Clone)]
 enum Message {
     Boundary,
     Activate(&'static str),
+    SetChecked { id: &'static str, checked: bool },
     Reverse,
     Remove(&'static str),
 }
 
 struct App {
     mode: ListMode<'static>,
+    checked: Option<BTreeSet<&'static str>>,
     style: ListStyle,
     rows: Vec<&'static str>,
     direction: LayoutDirection,
@@ -32,6 +38,7 @@ impl App {
         Self {
             style,
             mode,
+            checked: None,
             rows: vec!["a", "b", "c"],
             direction: LayoutDirection::LeftToRight,
             scale: 1.,
@@ -57,6 +64,15 @@ impl Application for App {
                     };
                 }
             }
+            Message::SetChecked { id, checked } => {
+                let selected = self.checked.as_mut().unwrap();
+                if checked {
+                    selected.insert(id);
+                } else {
+                    selected.remove(id);
+                }
+                self.presses.push(id);
+            }
             Message::Reverse => self.rows.reverse(),
             Message::Remove(id) => self.rows.retain(|row| *row != id),
         }
@@ -73,44 +89,64 @@ impl Application for App {
             Theme::light()
         };
         let icon = VectorIcon::new([[4., 3.], [20., 3.], [12., 21.]]).unwrap();
-        let list = theme.list(
-            ListOptions {
-                id: "list",
-                name: "專案",
-                style: self.style,
-                mode: self.mode,
-                direction: self.direction,
-            },
-            self.rows.iter().map(|&id| {
-                let (headline, overline, supporting, lines) = match id {
-                    "a" => ("收入", None, None, ListLines::One),
-                    "b" => ("暫停", None, Some("待處理"), ListLines::Two),
-                    "c" => ("完成", Some("現況"), Some("已經審核"), ListLines::Three),
-                    "long" => (
-                        "這個很長的專案名稱會在窄視窗內依照可用寬度換行",
-                        Some("工作狀態"),
-                        Some("完整的說明可從無障礙介面取得"),
-                        ListLines::Three,
-                    ),
-                    _ => ("無法開啟", None, None, ListLines::One),
-                };
-                ListItem {
-                    id,
-                    headline,
-                    overline,
-                    supporting,
-                    leading: Some(&icon),
-                    trailing: Some(if id == "long" {
-                        "這是一個較長的狀態標籤"
-                    } else {
-                        "今天"
-                    }),
-                    lines,
-                    disabled: id == "b",
-                    on_activate: (id != "missing").then_some(Message::Activate(id)),
-                }
-            }),
-        );
+        let items = self.rows.iter().map(|&id| {
+            let (headline, overline, supporting, lines) = match id {
+                "a" => ("收入", None, None, ListLines::One),
+                "b" => ("暫停", None, Some("待處理"), ListLines::Two),
+                "c" => ("完成", Some("現況"), Some("已經審核"), ListLines::Three),
+                "long" => (
+                    "這個很長的專案名稱會在窄視窗內依照可用寬度換行",
+                    Some("工作狀態"),
+                    Some("完整的說明可從無障礙介面取得"),
+                    ListLines::Three,
+                ),
+                _ => ("無法開啟", None, None, ListLines::One),
+            };
+            ListItem {
+                id,
+                headline,
+                overline,
+                supporting,
+                leading: Some(&icon),
+                trailing: Some(if id == "long" {
+                    "這是一個較長的狀態標籤"
+                } else {
+                    "今天"
+                }),
+                lines,
+                disabled: id == "b",
+                on_activate: (id != "missing").then(|| match &self.checked {
+                    Some(selected) => Message::SetChecked {
+                        id,
+                        checked: !selected.contains(id),
+                    },
+                    None => Message::Activate(id),
+                }),
+            }
+        });
+        let list = if let Some(selected) = &self.checked {
+            theme.multi_select_list(
+                MultiSelectListOptions {
+                    id: "list",
+                    name: "專案",
+                    style: self.style,
+                    direction: self.direction,
+                    is_selected: &|id| selected.contains(id),
+                },
+                items,
+            )
+        } else {
+            theme.list(
+                ListOptions {
+                    id: "list",
+                    name: "專案",
+                    style: self.style,
+                    mode: self.mode,
+                    direction: self.direction,
+                },
+                items,
+            )
+        };
         let boundary = |id| {
             View::new(
                 Node::new(Role::Button, id)
@@ -417,4 +453,142 @@ fn expressive_live_corners_and_focus_stroke_share_the_row_geometry() {
     assert!(list.ops.iter().any(|op| matches!(op, PaintOp::Quad {
         rect, radius: 16., color, ..
     } if *rect == row && *color == Color(r, g, b, 26))));
+}
+
+#[test]
+fn multi_select_keeps_independent_checks_and_one_accessible_press_per_row() {
+    let mut app = App::new(ListStyle::Segmented, ListMode::Passive);
+    app.checked = Some(BTreeSet::from(["b", "c"]));
+    app.rows.push("missing");
+    let mut runtime = runtime(app);
+    let group = node(&runtime, "list");
+    assert_eq!(group.role(), Role::Group);
+    assert!(group.uses_web_multiselect_listbox_semantics());
+    for (key, checked) in [("a", false), ("b", true), ("c", true), ("missing", false)] {
+        let row = node(&runtime, key);
+        assert_eq!(row.parent(), Some(id(&runtime, "list")));
+        assert_eq!(row.role(), Role::Checkbox);
+        assert!(row.uses_web_multiselect_listbox_semantics());
+        assert_eq!(row.is_checked(), Some(checked));
+        let bounds = bounds(&runtime, key);
+        assert!(bounds.width >= 48. && bounds.height >= 48.);
+    }
+    let frame = runtime.accessibility_frame().unwrap();
+    assert_eq!(frame.node(id(&runtime, "c")).unwrap().node.name(), "完成");
+    assert_eq!(
+        frame.description_target(id(&runtime, "c")),
+        Some(id(&runtime, "c-supporting"))
+    );
+    assert!(frame.node(id(&runtime, "c-mark")).is_none());
+    for key in ["b", "missing"] {
+        assert!(node(&runtime, key).is_disabled());
+        assert!(frame.focus_target(id(&runtime, key)).is_none());
+        assert!(frame.activation_target(id(&runtime, key)).is_none());
+    }
+    tab(&mut runtime, false, "before");
+    tab(&mut runtime, false, "c");
+    navigate(&mut runtime, EditKey::Up, "a");
+    navigate(&mut runtime, EditKey::Up, "c");
+    navigate(&mut runtime, EditKey::Down, "a");
+    assert!(runtime.app().presses.is_empty());
+    assert_eq!(node(&runtime, "a").is_checked(), Some(false));
+    assert_eq!(node(&runtime, "c").is_checked(), Some(true));
+
+    let marker = bounds(&runtime, "a-mark");
+    tap(&mut runtime, marker.x + 9., marker.y + 9.);
+    assert_eq!(runtime.app().presses, ["a"]);
+    assert_eq!(bounds(&runtime, "a-mark"), marker);
+    for checked in ["a", "b", "c"] {
+        assert_eq!(node(&runtime, checked).is_checked(), Some(true));
+    }
+    let pressed = runtime
+        .accessibility_frame()
+        .unwrap()
+        .activation_target(id(&runtime, "a"))
+        .unwrap();
+    assert_eq!(
+        runtime.accessibility_activate(&pressed).unwrap(),
+        AccessibilityActivationResult::Activated
+    );
+    render(&mut runtime);
+    assert_eq!(runtime.app().presses, ["a", "a"]);
+    assert_eq!(node(&runtime, "a").is_checked(), Some(false));
+    assert_eq!(node(&runtime, "b").is_checked(), Some(true));
+    assert_eq!(node(&runtime, "c").is_checked(), Some(true));
+    runtime.apply(Message::Reverse).unwrap();
+    render(&mut runtime);
+    assert_eq!(runtime.focused(), Some("a"));
+    runtime.apply(Message::Remove("a")).unwrap();
+    render(&mut runtime);
+    assert_eq!(runtime.focused(), Some("c"));
+    assert_eq!(runtime.app().presses, ["a", "a"]);
+}
+
+#[test]
+fn multi_select_keeps_18_dp_checkbox_tokens_and_wrapped_rows_in_compact_rtl() {
+    for style in [
+        ListStyle::Baseline,
+        ListStyle::Standard,
+        ListStyle::Segmented,
+    ] {
+        let mut app = App::new(style, ListMode::Passive);
+        app.checked = Some(BTreeSet::from(["b", "long"]));
+        app.rows = vec!["a", "b", "long"];
+        app.viewport = (320., 640.);
+        app.scroll_height = 550.;
+        app.direction = LayoutDirection::RightToLeft;
+        app.dark = true;
+        app.scale = 2.;
+        let mut runtime = runtime(app);
+        let paint = runtime.render_extended(320., 640., &mut Metrics).unwrap();
+        let colors = Theme::dark().colors;
+        let Color(r, g, b, _) = colors.on_surface;
+        let disabled_ink = Color(r, g, b, 97);
+        let row = bounds(&runtime, "long");
+        let headline = bounds(&runtime, "long-headline");
+        assert_eq!(row.width, 320.);
+        assert!(row.height > 88.);
+        assert!(headline.height > 48.);
+        let checked = bounds(&runtime, "long-mark");
+        let unchecked = bounds(&runtime, "a-mark");
+        let disabled = bounds(&runtime, "b-mark");
+        for mark in [checked, unchecked, disabled] {
+            assert_eq!((mark.width, mark.height), (18., 18.));
+            assert_eq!(
+                mark.x,
+                if style == ListStyle::Baseline {
+                    24.
+                } else {
+                    16.
+                }
+            );
+        }
+        assert!(checked.x + checked.width < headline.x);
+        assert!(headline.x + headline.width < bounds(&runtime, "long-leading").x);
+        assert_eq!(checked.intersect(row), checked);
+        assert_eq!(
+            node(&runtime, "long").style().background,
+            colors.secondary_container
+        );
+        assert_eq!(node(&runtime, "b").style().background, disabled_ink);
+        for (mark, color) in [(checked, colors.primary), (disabled, disabled_ink)] {
+            assert!(paint.ops().iter().any(|op| matches!(op,
+                ExtendedPaintOp::Legacy(PaintOp::Quad { rect, radius: 2., color: ink, .. })
+                    if *rect == mark && *ink == color
+            )));
+        }
+        assert!(paint.ops().iter().any(|op| matches!(op,
+            ExtendedPaintOp::Legacy(PaintOp::Stroke { rect, radius: 2., width: 2., color, .. })
+                if *rect == unchecked && *color == colors.on_surface_variant
+        )));
+        for (mark, ink) in [(checked, colors.on_primary), (disabled, colors.surface)] {
+            assert!(paint.ops().iter().any(|op| matches!(op,
+                ExtendedPaintOp::FillPath(path)
+                    if path.rect().intersect(mark) == path.rect() && path.color() == ink
+            )));
+        }
+        assert!(!paint.ops().iter().any(|op| matches!(op,
+            ExtendedPaintOp::FillPath(path) if path.rect().intersect(unchecked) == path.rect()
+        )));
+    }
 }
