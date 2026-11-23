@@ -435,6 +435,43 @@ In Material Gallery, choose 浮層, then 日期範圍選擇器. Use the same
 scene for the [headless Gallery](devtools-protocol.md#headless-native-gallery).
 [Material 3 date pickers](https://m3.material.io/components/date-pickers/specs)
 
+## Time pickers
+
+Use `Theme::time_input` for the Expressive Input variant. Choose
+`TimeInputPresentation::Inline` for a form. Choose `Modal` for a
+dialog with Save and Cancel. Supply the viewport, stable ID, labels,
+direction and locale. The caller stores a `TimeInputSession` with the
+open editor. Use a new session when the clock format or display digits
+change.
+
+The app stores a `TimeOfDay` between 00:00 and 23:59. It represents an
+hour and minute. The input supports 12-hour and 24-hour formats. In
+12-hour mode, use the AM and PM buttons to change the draft period.
+In 24-hour mode, the fields use 00 through 23 and the period group is
+absent. The locale can supply display digits and period labels. The
+editors accept ASCII and full-width digits as well as the configured
+digits.
+Use a font that covers the supplied labels and digits. The bundled
+fonts cover the Chinese and Japanese examples in Material Gallery.
+Other scripts may need an added font.
+
+Forward input events to `session.apply`. Call `observe_input_focus`
+from the app's input frame hook to validate the prior field when focus
+leaves it. Enter finishes the focused field. The input method handles
+Enter during composition. Each field has its own description for its
+hint or error. Read `validation().candidate()` for an inline preview.
+Store the time only on `TimeInputEffect::Commit`. Drop the modal
+session on Commit or Dismiss. An inline form sends Confirm through its
+own submit control.
+In a short dialog, the body scrolls and the action buttons stay in
+view. The dialog keeps its accessible name when the visible heading
+is omitted to make room for the fields and their hints.
+
+In Material Gallery, choose 浮層, then 時間輸入. This scene lets you change
+format, locale, direction, theme and text scale. Use it in the
+[headless Gallery](devtools-protocol.md#headless-native-gallery).
+[Material 3 time picker specification](https://m3.material.io/components/time-pickers/specs)
+
 ## FAB menus
 
 Use `Theme::fab_menu` with a stable ID, the viewport, the trigger size,
