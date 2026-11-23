@@ -152,6 +152,7 @@ impl Theme {
                 session: state.input(),
                 emit: Rc::new(move |event| input_emit(TimeScrollEvent::Input(event))),
                 editor_fallback_suffix: Some(("hour-wheel", "minute-wheel")),
+                style: crate::time_input::TimePickerStyle::Expressive,
             },
             labels: options.labels,
             scale: options.text_scale,

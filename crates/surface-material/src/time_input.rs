@@ -1,5 +1,8 @@
 //! The inline and modal Material 3 time inputs share one controlled draft.
 
+mod baseline;
+pub(crate) use baseline::{BaselinePeriodLayout, BASELINE_PANEL_PADDING};
+
 use std::rc::Rc;
 
 use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style, TextScaling, TextStyle};
@@ -8,8 +11,8 @@ use surface_app::{CursorStyle, Key, Roving, View};
 use crate::{
     date_picker::{button, disabled_ink, text, TARGET},
     shape::{self, LayoutDirection},
-    typography, ClockFormat, Theme, TimeField, TimeInputError, TimeInputEvent, TimeInputLocale,
-    TimeInputSession, TimePeriod, VectorIcon,
+    typography, ClockFormat, Elevation, Theme, TimeField, TimeInputError, TimeInputEvent,
+    TimeInputLocale, TimeInputSession, TimePeriod, VectorIcon,
 };
 
 const FIELD_HEIGHT: f32 = 72.;
@@ -75,9 +78,16 @@ impl Theme {
             session,
             emit: Rc::new(on_event),
             editor_fallback_suffix: None,
+            style: TimePickerStyle::Expressive,
         }
         .view()
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum TimePickerStyle {
+    Expressive,
+    Baseline,
 }
 
 pub(crate) struct TimeInput<'a, 'b, M> {
@@ -86,6 +96,7 @@ pub(crate) struct TimeInput<'a, 'b, M> {
     pub(crate) session: &'a TimeInputSession,
     pub(crate) emit: Rc<dyn Fn(TimeInputEvent) -> M>,
     pub(crate) editor_fallback_suffix: Option<(&'static str, &'static str)>,
+    pub(crate) style: TimePickerStyle,
 }
 
 impl<M: Clone + 'static> TimeInput<'_, '_, M> {
@@ -154,6 +165,13 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
     }
 
     pub(crate) fn title(&self, width: f32) -> View<M> {
+        let (text_style, ink) = match self.style {
+            TimePickerStyle::Expressive => (typography::TITLE_LARGE, self.theme.colors.on_surface),
+            TimePickerStyle::Baseline => (
+                typography::LABEL_MEDIUM,
+                self.theme.colors.on_surface_variant,
+            ),
+        };
         View::new(
             Node::new(Role::Heading, self.options.title)
                 .id(self.id("title"))
@@ -162,8 +180,8 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                 .styled(
                     Style::column()
                         .width(Length::Px(width))
-                        .with_text_style(typography::TITLE_LARGE)
-                        .foreground(self.theme.colors.on_surface),
+                        .with_text_style(text_style)
+                        .foreground(ink),
                 ),
         )
     }
@@ -176,26 +194,34 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
         actions: View<M>,
         initial_focus: String,
     ) -> View<M> {
+        let background = match self.style {
+            TimePickerStyle::Expressive => self.theme.colors.surface_container,
+            TimePickerStyle::Baseline => self.theme.colors.surface_container_high,
+        };
         let mut panel_style = Style::column()
             .width(Length::Px(width))
             .padding(padding)
             .gap(8.)
             .corners(shape::EXTRA_LARGE)
-            .background(self.theme.colors.surface_container)
+            .background(background)
             .clip(true);
         // Let the actual wrapped action row keep its measured height. A
         // scrollable Input body can give up the remaining column space.
         panel_style.max_height =
             Length::Px((self.options.viewport.height - PANEL_MARGIN * 2.).max(0.));
-        let panel = View::new(
-            Node::new(Role::Dialog, self.options.title)
-                .id(self.options.id)
-                .tab_index(-1)
-                .styled(panel_style),
-        )
-        .children([body, actions])
-        .accessibility_scroll_pages()
-        .modal_initial_focus(initial_focus);
+        let panel = Node::new(Role::Dialog, self.options.title)
+            .id(self.options.id)
+            .tab_index(-1)
+            .styled(panel_style);
+        let panel = if self.style == TimePickerStyle::Baseline {
+            panel.box_shadows(self.theme.elevation(Elevation::Level3))
+        } else {
+            panel
+        };
+        let panel = View::new(panel)
+            .children([body, actions])
+            .accessibility_scroll_pages()
+            .modal_initial_focus(initial_focus);
         let panel = if let Some(fallback) = self.options.restore_focus_to {
             panel.modal_focus_fallback(fallback)
         } else {
@@ -263,8 +289,15 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
             labels.hour,
             labels.hour_hint,
             digits.clone(),
+            FIELD_HEIGHT,
         );
-        let minute = self.field(TimeField::Minute, labels.minute, labels.minute_hint, digits);
+        let minute = self.field(
+            TimeField::Minute,
+            labels.minute,
+            labels.minute_hint,
+            digits,
+            FIELD_HEIGHT,
+        );
         let separator_type = if short || self.options.viewport.width < 360. {
             typography::TITLE_LARGE_EMPHASIZED
         } else {
@@ -338,6 +371,7 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
         label: &str,
         hint: &str,
         digits: TextStyle,
+        min_height: f32,
     ) -> (View<M>, View<M>) {
         let part = match field {
             TimeField::Hour => "hour",
@@ -354,19 +388,50 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
             None => ("hint", hint.to_owned(), colors.on_surface_variant),
         };
         let help_id = self.id(&format!("{part}-{help_name}"));
+        let baseline = self.style == TimePickerStyle::Baseline;
+        let focused =
+            baseline && !self.options.disabled && self.session.focused_input_field() == Some(field);
+        let (corners, background, text_ink) = if focused {
+            (
+                shape::SMALL,
+                colors.primary_container,
+                colors.on_primary_container,
+            )
+        } else if baseline {
+            (
+                shape::SMALL,
+                colors.surface_container_highest,
+                colors.on_surface,
+            )
+        } else {
+            (
+                shape::MEDIUM,
+                colors.surface_container_lowest,
+                colors.on_surface,
+            )
+        };
         let mut style = Style::column()
             .width(Length::Percent(1.))
             .padding(6.)
-            .corners(shape::MEDIUM)
-            .background(colors.surface_container_lowest)
+            .corners(corners)
+            .background(background)
             .foreground(if self.options.disabled {
                 disabled_ink(self.theme)
             } else {
-                colors.on_surface
+                text_ink
             })
             .with_text_style(digits);
-        style.min_height = FIELD_HEIGHT;
-        if error.is_some() {
+        style.min_height = min_height;
+        if focused {
+            style = style.border(
+                2.,
+                if error.is_some() {
+                    colors.error
+                } else {
+                    colors.primary
+                },
+            );
+        } else if error.is_some() {
             style = style.border(1., colors.error);
         }
         let mut input = View::new(
@@ -374,7 +439,9 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                 .id(self.id(&format!("{part}-input")))
                 .text(self.session.raw(field))
                 .described_by_text(&help_id)
-                .focus_color(if error.is_some() {
+                .focus_color(if baseline {
+                    Color::TRANSPARENT
+                } else if error.is_some() {
                     colors.error
                 } else {
                     colors.secondary
@@ -505,6 +572,14 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
     }
 
     pub(crate) fn actions(&self, leading: Option<View<M>>) -> View<M> {
+        self.action_row(leading, None)
+    }
+
+    pub(crate) fn actions_with_height(&self, leading: Option<View<M>>, height: f32) -> View<M> {
+        self.action_row(leading, Some(height.max(TARGET)))
+    }
+
+    fn action_row(&self, leading: Option<View<M>>, height: Option<f32>) -> View<M> {
         let make_action = |id, label, event, enabled| {
             let ink = if enabled {
                 self.theme.colors.primary
@@ -521,6 +596,19 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                 .state_layer(ink);
             style.min_height = TARGET;
             style.min_width = TARGET;
+            let caption = match height {
+                Some(height) => {
+                    style.height = Length::Px(height);
+                    bounded_caption(
+                        label,
+                        typography::LABEL_LARGE,
+                        ink,
+                        Length::Percent(1.),
+                        height - 8.,
+                    )
+                }
+                None => text("", label, typography::LABEL_LARGE, ink).without_interaction(None),
+            };
             button(
                 Node::new(Role::Button, label)
                     .id(self.id(id))
@@ -528,7 +616,7 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
                     .styled(style),
                 enabled.then(|| (self.emit)(event)),
             )
-            .children([text("", label, typography::LABEL_LARGE, ink).without_interaction(None)])
+            .children([caption])
         };
         View::new(
             self.row(
@@ -555,6 +643,20 @@ impl<M: Clone + 'static> TimeInput<'_, '_, M> {
             ]),
         )
     }
+}
+
+fn bounded_caption<M>(
+    label: &str,
+    typography: TextStyle,
+    ink: Color,
+    width: Length,
+    max_height: f32,
+) -> View<M> {
+    let mut style = Style::column().width(width).align(Align::Center).clip(true);
+    style.max_height = Length::Px(max_height);
+    View::new(Node::new(Role::Group, "").styled(style))
+        .children([text("", label, typography, ink)])
+        .without_interaction(None)
 }
 
 pub(crate) fn keyboard_icon() -> VectorIcon {

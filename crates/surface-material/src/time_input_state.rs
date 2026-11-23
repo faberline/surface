@@ -303,6 +303,18 @@ impl TimeInputSession {
         }
     }
 
+    /// Track accepted editor focus for a Baseline time picker. An entry, exit
+    /// or move between fields needs a rebuild to update its fill and outline.
+    /// Normal editor blur still validates and normalizes the previous field.
+    pub fn observe_baseline_input_focus(&mut self, focused: Option<TimeField>) -> bool {
+        let changed = self.focused != focused;
+        self.observe_input_focus(focused) || changed
+    }
+
+    pub(crate) const fn focused_input_field(&self) -> Option<TimeField> {
+        self.focused
+    }
+
     pub fn apply(&mut self, event: TimeInputEvent) -> TimeInputEffect {
         match event {
             TimeInputEvent::Edit(field, raw) => {

@@ -543,6 +543,30 @@ In Material Gallery, choose 浮層, then 捲動選時. The scene includes
 both placements, format and scale changes, and the Input switch.
 [Material 3 time picker accessibility](https://m3.material.io/components/time-pickers/accessibility)
 
+Use `Theme::time_input_baseline` or `Theme::time_dial_baseline` to
+choose the Baseline modal style. Pass the effective text scale to
+the Baseline Input builder. Use `time_dial_baseline_layout` for the
+Baseline Dial fit check. The Baseline Dial shares its draft with the
+Baseline Input view. A short viewport uses Input and retains the
+draft. The mode button returns to the Dial when it fits.
+
+Call `observe_baseline_input_focus` on the retained `TimeInputSession`
+or `DialState` from the app's frame input hook. Rebuild when the method
+returns true so the editor fill and outline follow focus. Use the
+existing event and commit handling with either Baseline builder.
+
+The Baseline modal uses the High surface color, Level 3 shadows and
+24 dp padding at normal sizes. The portrait 24-hour Dial uses the
+wider 114 dp fields. The AM and PM controls retain their Baseline
+painted track while each reserves a separate 48 dp touch target.
+Long captions keep their full accessible names. The Dial contains
+their paint within the period and action button bounds.
+The Input view can stack its fields and scroll above the measured
+action row when larger text needs more space.
+
+In Material Gallery, choose 浮層, then Baseline 時間輸入 or Baseline 錶盤.
+[Baseline time picker specification](https://m3.material.io/components/time-pickers/specs)
+
 ## FAB menus
 
 Use `Theme::fab_menu` with a stable ID, the viewport, the trigger size,
