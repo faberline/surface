@@ -40,11 +40,13 @@ pub(crate) struct RovingGroup {
     pub(crate) first_enabled_on_entry: bool,
     pub(crate) retain_focus: bool,
     pub(crate) all_arrows: bool,
+    pub(crate) reveal_after_rebuild: bool,
 }
 
 pub(crate) struct RetainedRovingFocus {
     group: String,
     visible_predecessors: Option<Vec<String>>,
+    fully_visible: bool,
 }
 
 pub(crate) struct FocusScope {
@@ -178,10 +180,11 @@ impl<A: Application> Runtime<A> {
         if !options.retain_focus || !self.in_scope(group) {
             return None;
         }
-        let visible = self.computed.as_ref().is_some_and(|layout| {
+        let (visible, fully_visible) = self.computed.as_ref().map_or((false, false), |layout| {
             let bounds = &layout.nodes[focused.index()];
-            let visible = bounds.bounds.intersect(bounds.clip);
-            visible.width > 0. && visible.height > 0.
+            let portion = bounds.bounds.intersect(bounds.clip);
+            let visible = portion.width > 0. && portion.height > 0.;
+            (visible, visible && portion == bounds.bounds)
         });
         Some(RetainedRovingFocus {
             group: self.stable(group)?,
@@ -190,6 +193,7 @@ impl<A: Application> Runtime<A> {
                     .map(str::to_owned)
                     .collect()
             }),
+            fully_visible,
         })
     }
 
@@ -212,10 +216,11 @@ impl<A: Application> Runtime<A> {
             .filter(|&id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
         {
             if self.group(focused).is_some_and(|(owner, _)| owner == group)
-                && retained.visible_predecessors.is_some_and(|before| {
-                    self.preceding_roving_ids(group, focused)
-                        .ne(before.iter().map(String::as_str))
-                })
+                && ((options.reveal_after_rebuild && retained.fully_visible)
+                    || retained.visible_predecessors.is_some_and(|before| {
+                        self.preceding_roving_ids(group, focused)
+                            .ne(before.iter().map(String::as_str))
+                    }))
             {
                 self.layout_focus = None;
             }

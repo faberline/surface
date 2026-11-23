@@ -1,8 +1,6 @@
 //! The Material 3 Expressive split button and its optional command menu.
 
-use surface::{
-    Align, Color, Corners, FillContour, Insets, Length, Node, Rect, Role, Style, TextStyle,
-};
+use surface::{Align, Color, Corners, Insets, Length, Node, Rect, Role, Style, TextStyle};
 use surface_app::{CursorStyle, Key, Roving, View};
 
 use crate::{
@@ -10,8 +8,9 @@ use crate::{
     place_split_button_popup,
     shape::{self, LayoutDirection},
     split_button_motion::Interaction,
-    typography, ButtonGroupAppearance, ButtonGroupSize, Elevation, SplitButtonMotion, Theme,
-    VectorIcon,
+    typography,
+    vector_icon::chevron_contour,
+    ButtonGroupAppearance, ButtonGroupSize, Elevation, SplitButtonMotion, Theme, VectorIcon,
 };
 
 const TOUCH: f32 = 48.;
@@ -656,27 +655,10 @@ fn measure_label<M>(id: &str, label: &str, font: TextStyle) -> View<M> {
 }
 
 fn chevron<M>(id: &str, size: f32, angle: f32, ink: Color) -> View<M> {
-    let (sine, cosine) = angle.to_radians().sin_cos();
-    let point = |(x, y): (f32, f32)| {
-        let (x, y) = (x - 12., y - 12.);
-        [
-            (x * cosine - y * sine + 12.) * size / 24.,
-            (x * sine + y * cosine + 12.) * size / 24.,
-        ]
-    };
-    let points = [
-        (6., 9.),
-        (12., 15.),
-        (18., 9.),
-        (16.5, 7.5),
-        (12., 12.),
-        (7.5, 7.5),
-    ]
-    .map(point);
     let mut node = Node::new(Role::Group, "")
         .id(format!("{id}-chevron"))
         .styled(icon_style(size));
-    if let Some(fill) = FillContour::new(points, ink) {
+    if let Some(fill) = chevron_contour(size, angle, ink) {
         node = node.fill_contour(fill);
     }
     View::new(node)

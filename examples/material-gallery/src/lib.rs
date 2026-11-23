@@ -11,6 +11,7 @@ mod extended_fab_demo;
 mod fab_demo;
 mod fab_menu_demo;
 mod list_actions_demo;
+mod list_expand_demo;
 mod lists_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
@@ -39,6 +40,7 @@ use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
 use list_actions_demo::{ListActionsDemo, ListActionsEvent};
+use list_expand_demo::{ListExpandDemo, ListExpandEvent};
 use lists_demo::{ListsDemo, ListsEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
@@ -99,6 +101,7 @@ pub struct Gallery {
     time_scroll_demo: TimeScrollDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
+    list_expand_demo: ListExpandDemo,
     queue: Option<Queue<Message>>,
     docked_date_picker_demo: DockedDateDemo,
     extended_fab_demo: ExtendedFabDemo,
@@ -149,6 +152,7 @@ impl Default for Gallery {
             time_scroll_demo: TimeScrollDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
+            list_expand_demo: ListExpandDemo::default(),
             queue: None,
             docked_date_picker_demo: DockedDateDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
@@ -185,6 +189,7 @@ pub enum Message {
     TimeScroll(TimeScrollDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
+    ListExpand(ListExpandEvent),
     DockedDate(DockedDateDemoEvent),
     ExtendedFab(ExtendedFabEvent),
     Fab(FabEvent),
@@ -266,6 +271,9 @@ impl Application for Gallery {
         }
         if self.list_actions_demo.visible() {
             return self.list_actions_demo.text_scale();
+        }
+        if self.list_expand_demo.visible() {
+            return self.list_expand_demo.text_scale();
         }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
@@ -430,6 +438,7 @@ impl Application for Gallery {
         let toolbar = self.toolbar_demo.frame(&frame);
         let time_dial = self.time_dial_demo.frame(&frame);
         let time_scroll = self.time_scroll_demo.frame(&frame);
+        let list_expand = self.list_expand_demo.frame(&frame);
         AnimationUpdate {
             rebuild: inline.rebuild
                 || modal.rebuild
@@ -442,7 +451,8 @@ impl Application for Gallery {
                 || app_bar.rebuild
                 || toolbar.rebuild
                 || time_dial.rebuild
-                || time_scroll.rebuild,
+                || time_scroll.rebuild
+                || list_expand.rebuild,
             request_next: inline.request_next
                 || modal.request_next
                 || snackbar.request_next
@@ -452,7 +462,8 @@ impl Application for Gallery {
                 || bottom_sheet.request_next
                 || carousel.request_next
                 || time_dial.request_next
-                || time_scroll.request_next,
+                || time_scroll.request_next
+                || list_expand.request_next,
         }
     }
     fn update(&mut self, m: Message) {
@@ -510,6 +521,7 @@ impl Application for Gallery {
                 if i != lists_demo::SECTION {
                     self.lists_demo.leave();
                     self.list_actions_demo.leave();
+                    self.list_expand_demo.leave();
                 }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
@@ -548,6 +560,7 @@ impl Application for Gallery {
             Message::TimeScroll(event) => self.time_scroll_demo.update(event),
             Message::Lists(event) => self.lists_demo.update(event),
             Message::ListActions(event) => self.list_actions_demo.update(event),
+            Message::ListExpand(event) => self.list_expand_demo.update(event),
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Fab(event) => self.fab_demo.update(event),
             Message::FabMenu(event) => self.fab_menu_demo.update(event),
@@ -648,6 +661,9 @@ impl Application for Gallery {
         }
         if self.list_actions_demo.visible() {
             return self.list_actions_demo.view(&t);
+        }
+        if self.list_expand_demo.visible() {
+            return self.list_expand_demo.view(&t);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -1154,6 +1170,7 @@ impl Application for Gallery {
                 children.push(TimeDialDemo::show_baseline_button(&t));
                 children.push(ListsDemo::show_button(&t));
                 children.push(ListActionsDemo::show_button(&t));
+                children.push(ListExpandDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1332,6 +1349,7 @@ mod web {
         let theme = if s.dark { Theme::dark() } else { Theme::light() };
         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+        state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state.to_string()
     })
     }

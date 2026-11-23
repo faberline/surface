@@ -1,6 +1,8 @@
 //! Material 3 Baseline and Expressive lists.
 
+mod expansion;
 mod multi_action;
+pub use expansion::{ExpandableListOptions, ExpandableListRow, ListExpansionMotion};
 pub use multi_action::{ListSupplementaryAction, MultiActionListItem, MultiActionListOptions};
 
 use surface::{Align, Color, Corners, FillContour, Length, Node, Role, Style};
@@ -148,6 +150,13 @@ struct ListPresentation<'a> {
     interaction: ListInteraction<'a>,
 }
 
+#[derive(Clone, Copy)]
+enum RowPlacement {
+    Regular { first: bool, last: bool },
+    ExpansionHeader { body_visible: bool },
+    ExpansionChild { last: bool, indent: f32 },
+}
+
 impl Theme {
     /// Build a list that fills the available width and fits its row heights.
     ///
@@ -217,13 +226,9 @@ impl Theme {
             ListInteraction::SingleSelect(_) => Role::RadioGroup,
             ListInteraction::MultiSelect(_) => Role::Group,
         };
-        let style = Style::column().width(Length::Percent(1.)).gap(
-            if options.style == ListStyle::Segmented {
-                SEGMENT_GAP
-            } else {
-                0.
-            },
-        );
+        let style = Style::column()
+            .width(Length::Percent(1.))
+            .gap(list_gap(options.style));
         let node = options
             .interaction
             .web_selection(Node::new(role, name).id(id).styled(style));
@@ -247,6 +252,22 @@ impl Theme {
         first: bool,
         last: bool,
     ) -> View<M> {
+        let id = item.id;
+        let row = self.list_row_control(options, item, RowPlacement::Regular { first, last }, None);
+        if options.interaction.row_role() == Role::Button {
+            action_item(id, row)
+        } else {
+            row
+        }
+    }
+
+    fn list_row_control<M>(
+        &self,
+        options: ListPresentation<'_>,
+        item: ListItem<'_, M>,
+        placement: RowPlacement,
+        accessory: Option<View<M>>,
+    ) -> View<M> {
         let passive = matches!(options.interaction, ListInteraction::Passive);
         let disabled = item.disabled || (!passive && item.on_activate.is_none());
         let role = options.interaction.row_role();
@@ -265,7 +286,7 @@ impl Theme {
         } else {
             self.colors.on_surface_variant
         };
-        let background = if selected && disabled && role == Role::Checkbox {
+        let regular_background = if selected && disabled && role == Role::Checkbox {
             // The selected, disabled Lists container uses OnSurface at 38%.
             ink
         } else if selected {
@@ -275,11 +296,41 @@ impl Theme {
         } else {
             Color::TRANSPARENT
         };
+        let segmented = options.style == ListStyle::Segmented;
+        let (corners, background, indent) = match placement {
+            RowPlacement::Regular { first, last } => (
+                row_corners(options.style, selected, first, last),
+                regular_background,
+                0.,
+            ),
+            RowPlacement::ExpansionHeader { body_visible } => (
+                if body_visible {
+                    Corners::new(16., 16., 4., 4.)
+                } else {
+                    shape::LARGE
+                },
+                if body_visible || segmented {
+                    self.colors.surface
+                } else {
+                    Color::TRANSPARENT
+                },
+                0.,
+            ),
+            RowPlacement::ExpansionChild { last, indent } => (
+                if last {
+                    Corners::new(4., 4., 16., 16.)
+                } else {
+                    shape::EXTRA_SMALL
+                },
+                self.colors.surface,
+                indent,
+            ),
+        };
         let mut style = Style::column()
             .width(Length::Percent(1.))
             .justify(row_alignment(item.lines))
             .padding(ROW_PADDING)
-            .corners(row_corners(options.style, selected, first, last))
+            .corners(corners)
             .background(background);
         style.min_height = item.lines.min_height();
         if !passive {
@@ -298,7 +349,7 @@ impl Theme {
             if item.supporting.is_some() {
                 node = node.described_by_text(format!("{}-supporting", item.id));
             }
-            if !baseline && !selected {
+            if !baseline && !selected && matches!(placement, RowPlacement::Regular { .. }) {
                 node = node.interaction_corners(
                     Some(shape::MEDIUM),
                     Some(shape::LARGE),
@@ -310,39 +361,31 @@ impl Theme {
             node = options.interaction.web_selection(node.checked(checked));
         }
 
-        let mark = selection.map(|checked| {
-            let id = format!("{}-mark", item.id);
-            if role == Role::Checkbox {
-                self.list_checkbox(id, checked, disabled)
-            } else {
-                let size = list_icon_size(options.style);
-                let contour = if checked {
-                    selection_mark(size, ink)
+        let mark = accessory.or_else(|| {
+            selection.map(|checked| {
+                let id = format!("{}-mark", item.id);
+                if role == Role::Checkbox {
+                    self.list_checkbox(id, checked, disabled)
                 } else {
-                    None
-                };
-                list_icon(id, size, contour)
-            }
+                    let size = list_icon_size(options.style);
+                    let contour = if checked {
+                        selection_mark(size, ink)
+                    } else {
+                        None
+                    };
+                    list_icon(id, size, contour)
+                }
+            })
         });
-        let content = row_content(options, &item, mark, ink, supporting_ink);
+        let content = row_content(options, &item, mark, ink, supporting_ink, indent);
         let row = if passive {
             View::new(node)
         } else {
             button(node, item.on_activate.filter(|_| !disabled))
         }
         .children([content]);
-        let row = if role == Role::Checkbox {
+        if role == Role::Checkbox {
             row.suppress_repeated_activation()
-        } else {
-            row
-        };
-        if role == Role::Button {
-            View::new(
-                Node::new(Role::ListItem, "")
-                    .id(format!("{}-item", item.id))
-                    .styled(Style::column().width(Length::Percent(1.))),
-            )
-            .children([row])
         } else {
             row
         }
@@ -382,12 +425,30 @@ impl Theme {
     }
 }
 
+fn action_item<M>(id: &str, row: View<M>) -> View<M> {
+    View::new(
+        Node::new(Role::ListItem, "")
+            .id(format!("{id}-item"))
+            .styled(Style::column().width(Length::Percent(1.))),
+    )
+    .children([row])
+}
+
+fn list_gap(style: ListStyle) -> f32 {
+    if style == ListStyle::Segmented {
+        SEGMENT_GAP
+    } else {
+        0.
+    }
+}
+
 fn row_content<M>(
     options: ListPresentation<'_>,
     item: &ListItem<'_, M>,
     mark: Option<View<M>>,
     ink: Color,
     supporting_ink: Color,
+    indent: f32,
 ) -> View<M> {
     let id = |part| format!("{}-{part}", item.id);
     let passive = matches!(options.interaction, ListInteraction::Passive);
@@ -444,7 +505,7 @@ fn row_content<M>(
         options.direction,
     ))
     .children([
-        spacer(EDGE_INSET - ROW_PADDING),
+        spacer(EDGE_INSET - ROW_PADDING + indent),
         content,
         spacer(end - ROW_PADDING),
     ])
