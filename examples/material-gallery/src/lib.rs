@@ -312,7 +312,11 @@ impl Application for Gallery {
         input: FrameInput<'_>,
     ) -> InputAnimationUpdate {
         let mut update = self.tooltip_demo.frame(&frame, input);
-        update.animation.rebuild |= self.date_picker_demo.observe_focus(input.focused);
+        let date = self
+            .date_picker_demo
+            .observe(&frame, input.focused, self.queue.as_ref());
+        update.animation.rebuild |= date.rebuild;
+        update.animation.request_next |= date.request_next;
         let docked = self.docked_date_picker_demo.observe(&frame, input);
         update.animation.rebuild |= docked.rebuild;
         update.animation.request_next |= docked.request_next;

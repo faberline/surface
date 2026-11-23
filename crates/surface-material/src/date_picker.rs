@@ -1,6 +1,10 @@
 //! The controlled Material 3 single-date modal picker.
 
 pub(crate) mod calendar_view;
+mod swipe;
+mod swipe_decision;
+
+pub use swipe::{DatePickerSwipe, DatePickerSwipeInput};
 
 use std::rc::Rc;
 
@@ -81,6 +85,38 @@ impl Theme {
         session: &DatePickerSession,
         on_event: impl Fn(DatePickerEvent) -> M + 'static,
     ) -> View<M> {
+        self.date_picker_view(options, session, Rc::new(on_event), None)
+    }
+
+    /// Mount the single-date picker with horizontal month paging in Calendar mode.
+    /// Keep a [DatePickerSwipe] for this open session and forward its input.
+    pub fn swipeable_date_picker<M: Clone + 'static>(
+        &self,
+        options: DatePickerOptions<'_>,
+        session: &DatePickerSession,
+        swipe: &DatePickerSwipe,
+        on_input: impl Fn(DatePickerSwipeInput) -> M + 'static,
+    ) -> View<M> {
+        let on_input: Rc<dyn Fn(DatePickerSwipeInput) -> M> = Rc::new(on_input);
+        let date_event = on_input.clone();
+        self.date_picker_view(
+            options,
+            session,
+            Rc::new(move |event| date_event(DatePickerSwipeInput::Date(event))),
+            Some(SwipeBinding {
+                state: swipe,
+                on_input,
+            }),
+        )
+    }
+
+    fn date_picker_view<M: Clone + 'static>(
+        &self,
+        options: DatePickerOptions<'_>,
+        session: &DatePickerSession,
+        emit: Rc<dyn Fn(DatePickerEvent) -> M>,
+        swipe: Option<SwipeBinding<'_, M>>,
+    ) -> View<M> {
         let compact = WindowWidthSizeClass::from_dp(options.viewport.width)
             == Some(WindowWidthSizeClass::Compact);
         let fullscreen = options.layout == DatePickerLayout::FullScreen
@@ -105,7 +141,8 @@ impl Theme {
             theme: self,
             options,
             session,
-            emit: Rc::new(on_event),
+            emit,
+            swipe,
             width: size.0,
             height: size.1,
             fullscreen,
@@ -124,9 +161,15 @@ struct Picker<'a, 'b, M> {
     options: DatePickerOptions<'b>,
     session: &'a DatePickerSession,
     emit: Rc<dyn Fn(DatePickerEvent) -> M>,
+    swipe: Option<SwipeBinding<'a, M>>,
     width: f32,
     height: f32,
     fullscreen: bool,
+}
+
+struct SwipeBinding<'a, M> {
+    state: &'a DatePickerSwipe,
+    on_input: Rc<dyn Fn(DatePickerSwipeInput) -> M>,
 }
 
 impl<M: Clone + 'static> Picker<'_, '_, M> {

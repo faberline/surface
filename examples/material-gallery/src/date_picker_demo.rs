@@ -1,10 +1,10 @@
 use surface::Rect;
-use surface_app::View;
+use surface_app::{AnimationFrame, AnimationUpdate, Queue, View};
 use surface_material::{
     shape::LayoutDirection, ButtonKind, CivilDate, DateBounds, DateInputError, DateInputFormat,
-    DateInputOrder, DateInputSeparator, DatePickerConstraints, DatePickerEffect, DatePickerEvent,
-    DatePickerLabels, DatePickerLayout, DatePickerLocale, DatePickerMode, DatePickerOptions,
-    DatePickerSession, Theme, Weekday, YearMonth,
+    DateInputOrder, DateInputSeparator, DatePickerConstraints, DatePickerEffect, DatePickerLabels,
+    DatePickerLayout, DatePickerLocale, DatePickerMode, DatePickerOptions, DatePickerSession,
+    DatePickerSwipe, DatePickerSwipeInput, Theme, Weekday, YearMonth,
 };
 
 use crate::Message;
@@ -21,7 +21,7 @@ pub enum DatePickerDemoEvent {
     LargeText,
     Locale,
     Open(DatePickerMode),
-    Picker(DatePickerEvent),
+    Picker(DatePickerSwipeInput),
 }
 
 pub(crate) struct DatePickerDemo {
@@ -32,6 +32,7 @@ pub(crate) struct DatePickerDemo {
     viewport: Rect,
     committed: CivilDate,
     session: Option<DatePickerSession>,
+    swipe: DatePickerSwipe,
     commits: usize,
 }
 
@@ -45,6 +46,7 @@ impl Default for DatePickerDemo {
             viewport: Rect::new(0., 0., 960., 720.),
             committed: date(2024, 2, 28),
             session: None,
+            swipe: DatePickerSwipe::default(),
             commits: 0,
         }
     }
@@ -68,6 +70,7 @@ impl DatePickerDemo {
     pub(crate) fn leave(&mut self) {
         self.visible = false;
         self.session = None;
+        self.swipe = DatePickerSwipe::default();
     }
 
     pub(crate) fn text_scale(&self) -> f32 {
@@ -89,11 +92,23 @@ impl DatePickerDemo {
         self.session.is_some()
     }
 
-    pub(crate) fn observe_focus(&mut self, focused: Option<&str>) -> bool {
+    pub(crate) fn observe(
+        &mut self,
+        frame: &AnimationFrame<'_>,
+        focused: Option<&str>,
+        queue: Option<&Queue<Message>>,
+    ) -> AnimationUpdate {
+        let Some(session) = &mut self.session else {
+            return AnimationUpdate::default();
+        };
         let locale = locale(self.english, self.rtl);
-        self.session.as_mut().is_some_and(|session| {
-            session.observe_input_focus(focused == Some(INPUT_ID), constraints(), &locale)
-        })
+        let mut update = queue.map_or_else(AnimationUpdate::default, |queue| {
+            self.swipe
+                .observe(ID, frame, session, constraints(), &locale, queue)
+        });
+        update.rebuild |=
+            session.observe_input_focus(focused == Some(INPUT_ID), constraints(), &locale);
+        update
     }
 
     pub(crate) fn update(&mut self, event: DatePickerDemoEvent) {
@@ -104,6 +119,7 @@ impl DatePickerDemo {
             DatePickerDemoEvent::LargeText => self.large_text = !self.large_text,
             DatePickerDemoEvent::Locale => self.english = !self.english,
             DatePickerDemoEvent::Open(mode) => {
+                self.swipe = DatePickerSwipe::default();
                 self.session = Some(DatePickerSession::new(
                     Some(self.committed),
                     today(),
@@ -115,7 +131,7 @@ impl DatePickerDemo {
             DatePickerDemoEvent::Picker(event) => {
                 let locale = locale(self.english, self.rtl);
                 if let Some(session) = &mut self.session {
-                    match session.apply(event, constraints(), &locale) {
+                    match self.swipe.apply(event, session, constraints(), &locale) {
                         DatePickerEffect::None => {}
                         DatePickerEffect::Commit(date) => {
                             self.committed = date;
@@ -182,7 +198,7 @@ impl DatePickerDemo {
         );
         let picker = self.session.as_ref().map(|session| {
             let labels = labels(self.english);
-            theme.date_picker(
+            theme.swipeable_date_picker(
                 DatePickerOptions {
                     id: ID,
                     today: today(),
@@ -194,6 +210,7 @@ impl DatePickerDemo {
                     restore_focus_to: Some("date-picker-demo-open"),
                 },
                 session,
+                &self.swipe,
                 |event| Message::DatePicker(DatePickerDemoEvent::Picker(event)),
             )
         });
@@ -209,6 +226,7 @@ impl DatePickerDemo {
             "rtl": self.rtl,
             "english": self.english,
             "text_scale": self.text_scale(),
+            "swipe": { "offset": self.swipe.preview_offset() },
             "session": self.session.as_ref().map(|session| serde_json::json!({
                 "mode": format!("{:?}", session.mode()),
                 "draft": session.draft().map(|value| value.to_string()),
@@ -411,5 +429,82 @@ fn labels(english: bool) -> DatePickerLabels<'static> {
             save: "儲存",
             close: "關閉",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use surface::TextMeasurer;
+    use surface_app::{Event, Runtime};
+
+    struct Metrics;
+
+    impl TextMeasurer for Metrics {
+        fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
+            (text.chars().count() as f32 * size * 0.6, size * 1.5)
+        }
+    }
+
+    fn draw(runtime: &mut Runtime<crate::Gallery>, time: f64) {
+        runtime.set_time(time);
+        runtime.render(960., 760., &mut Metrics).unwrap();
+    }
+
+    #[test]
+    fn gallery_touch_swipe_cancels_or_browses_without_committing_the_draft() {
+        let mut runtime = Runtime::new(crate::Gallery::default()).unwrap();
+        let active = "date-picker-demo-modal-day-2024-02-28";
+        let preview = "date-picker-demo-modal-swipe-preview";
+        runtime.apply(Message::Section(SECTION)).unwrap();
+        runtime.activate("date-picker-demo-show").unwrap();
+        runtime.activate("date-picker-demo-open").unwrap();
+        draw(&mut runtime, 0.);
+        draw(&mut runtime, 17.);
+
+        let id = runtime.dom().by_id(active).unwrap();
+        let rect = runtime.computed().unwrap().nodes[id.index()].bounds;
+        let (x, y) = (rect.x + rect.width / 2., rect.y + rect.height / 2.);
+        runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
+        runtime
+            .dispatch_touch(Event::PointerMove { x: x - 40., y })
+            .unwrap();
+        draw(&mut runtime, 50.);
+        let preview_node = runtime.dom().by_id(preview).expect("held swipe preview");
+        let ax = runtime.accessibility_frame().unwrap();
+        assert!(ax.node(preview_node).is_none());
+        assert_eq!(runtime.focused(), Some(active));
+        let session = runtime.app().date_picker_demo.session.as_ref().unwrap();
+        assert_eq!(session.month(), date(2024, 2, 1).year_month());
+        assert_eq!(session.draft(), Some(date(2024, 2, 28)));
+
+        runtime.cancel_pointer().unwrap();
+        draw(&mut runtime, 70.);
+        draw(&mut runtime, 470.);
+        assert!(runtime.dom().by_id(preview).is_none());
+        assert_eq!(runtime.focused(), Some(active));
+
+        runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
+        draw(&mut runtime, 500.);
+        runtime
+            .dispatch_touch(Event::PointerMove { x: x - 152., y })
+            .unwrap();
+        draw(&mut runtime, 630.);
+        runtime
+            .dispatch_touch(Event::PointerUp { x: x - 152., y })
+            .unwrap();
+        draw(&mut runtime, 640.);
+        draw(&mut runtime, 1080.);
+
+        let state = &runtime.app().date_picker_demo;
+        let session = state.session.as_ref().unwrap();
+        assert_eq!(session.month(), date(2024, 3, 1).year_month());
+        assert_eq!(session.draft(), Some(date(2024, 2, 28)));
+        assert_eq!(state.commits, 0);
+        assert_eq!(
+            runtime.focused(),
+            Some("date-picker-demo-modal-day-2024-03-28")
+        );
+        assert!(runtime.dom().by_id(preview).is_none());
     }
 }

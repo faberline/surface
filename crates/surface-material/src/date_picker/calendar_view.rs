@@ -12,7 +12,9 @@ use crate::{
     DateRangePickerState, DateRangePosition, DateRangeValidation, StepDirection, Theme, YearMonth,
 };
 
-use super::{button, centered, disabled_ink, text, Glyph, Picker, TARGET};
+use super::{
+    button, centered, disabled_ink, text, DatePickerSwipeInput, Glyph, Picker, SwipeBinding, TARGET,
+};
 
 mod range_band;
 
@@ -53,8 +55,14 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
 
     pub(super) fn calendar(&self) -> View<M> {
         let title = (self.options.locale.month_title)(self.session.month());
+        let grid = self.grid();
+        let page = if let Some(swipe) = &self.swipe {
+            grid.swipeable_view(&title, swipe)
+        } else {
+            grid.view(&title)
+        };
         View::new(Node::new(Role::Group, "").styled(Style::column()))
-            .children([self.month_controls(&title, false), self.grid().view(&title)])
+            .children([self.month_controls(&title, false), page])
     }
 }
 
@@ -92,6 +100,17 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
     }
 
     pub(crate) fn view(&self, title: &str) -> View<M> {
+        let wide = self.width >= GRID_WIDTH;
+        let viewport = self.viewport(self.content(title, &[]), !wide);
+        if wide {
+            viewport
+        } else {
+            // Give vertical wheel input to the picker's body.
+            viewport.on_horizontal_scroll(|_, _| None)
+        }
+    }
+
+    fn content(&self, title: &str, fallbacks: &[String]) -> View<M> {
         let month = self.session.month();
         let active = self.active_day();
         let grid = MonthGrid {
@@ -101,37 +120,122 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
             month,
             adjacent_dates: self.adjacent_dates,
         };
-        let grid = grid
-            .view(grid.node(title), None, |date| {
-                self.day(date, active == Some(date))
-            })
-            .roving(Roving::horizontal(false));
+        grid.view(grid.node(title), None, |date| {
+            self.day(date, active == Some(date), fallbacks)
+        })
+        .roving(Roving::horizontal(false))
+    }
+
+    fn viewport(&self, content: View<M>, clipped: bool) -> View<M> {
         let wide = self.width >= GRID_WIDTH;
         let mut clip = Style::row().width(Length::Percent(1.)).justify(if wide {
             Align::Center
         } else {
             Align::Start
         });
-        clip = clip.clip(!wide);
+        clip = clip.clip(clipped);
         if self.rtl() && !wide {
             clip.scroll_x = GRID_WIDTH - self.width;
         }
-        let viewport = View::new(
+        View::new(
             Node::new(Role::Group, "")
                 .id(self.id("grid-scroll"))
                 .styled(clip),
         )
-        .children([grid])
-        .accessibility_scroll_pages();
-        if wide {
+        .children([content])
+        .accessibility_scroll_pages()
+    }
+
+    fn swipeable_view(&self, title: &str, swipe: &SwipeBinding<'_, M>) -> View<M> {
+        let fallbacks: Vec<_> = [StepDirection::Backward, StepDirection::Forward]
+            .into_iter()
+            .filter_map(|direction| {
+                let mut next = self.session.clone();
+                next.apply(
+                    DatePickerEvent::BrowseMonth(direction),
+                    self.constraints,
+                    self.locale,
+                );
+                next.active()
+                    .filter(|_| next.month() != self.session.month())
+            })
+            .map(|date| self.id(&format!("day-{date}")))
+            .collect();
+        let plane = self.width.max(GRID_WIDTH);
+        let style = Style::column()
+            .width(Length::Px(plane))
+            .align(Align::Center);
+        let preview = swipe.state.preview();
+        let current = View::new(
+            Node::new(Role::Group, "")
+                .id(self.id("swipe-current"))
+                .styled(style.clone())
+                .slide_horizontally(preview.map_or(0., |p| p.translation_x / plane)),
+        )
+        .children([self.content(title, &fallbacks)]);
+        let neighbor = preview.map(|page| {
+            let neighbor_style = style.clone().absolute(Insets {
+                top: Length::Px(0.),
+                left: Length::Px(0.),
+                ..Insets::default()
+            });
+            View::new(
+                Node::new(Role::Group, "")
+                    .id(self.id("swipe-preview"))
+                    .styled(neighbor_style)
+                    .slide_horizontally((page.translation_x - page.pitch * page.sign) / plane),
+            )
+            .children([self.passive_month(page.month)])
+            .without_interaction(None)
+        });
+        // Keep the viewport's scroll extent independent of the translated pages.
+        let track = View::new(Node::new(Role::Group, "").styled(style))
+            .children(std::iter::once(current).chain(neighbor));
+        let viewport = self.viewport(track, true).on_horizontal_scroll(|_, _| None);
+        if swipe.state.is_settling() {
             viewport
         } else {
-            // Give vertical wheel input to the picker's body.
-            viewport.on_horizontal_scroll(|_, _| None)
+            let emit = swipe.on_input.clone();
+            let vertical = swipe.on_input.clone();
+            viewport
+                .on_horizontal_drag_with_bounds(
+                    swipe.state.horizontal_session(),
+                    move |drag, bounds| {
+                        emit(DatePickerSwipeInput::Horizontal {
+                            drag,
+                            width: bounds.width,
+                        })
+                    },
+                )
+                .on_vertical_drag(swipe.state.vertical_session(), move |drag| {
+                    vertical(DatePickerSwipeInput::Vertical(drag))
+                })
         }
     }
 
-    fn day(&self, date: CivilDate, active: bool) -> View<M> {
+    fn passive_month(&self, month: YearMonth) -> View<M> {
+        let id = self.id("swipe-neighbor");
+        let grid = MonthGrid {
+            theme: self.theme,
+            id: &id,
+            locale: self.locale,
+            month,
+            adjacent_dates: false,
+        };
+        grid.view(grid.node(""), None, |date| {
+            let enabled = self.constraints.allows(date);
+            let state = DateFaceState {
+                selected: enabled && self.session.draft() == Some(date),
+                interior: false,
+                today: self.today == date,
+            };
+            let key = format!("{id}-{date}");
+            View::new(Node::new(Role::Group, "").styled(centered(TARGET, TARGET)))
+                .children([day_paint(self.theme, &key, date, enabled, state)])
+        })
+    }
+
+    fn day(&self, date: CivilDate, active: bool, fallbacks: &[String]) -> View<M> {
         let enabled = self.constraints.allows(date);
         let id = self.id(&format!("day-{date}"));
         let view = day_cell(
@@ -149,6 +253,13 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
         );
         if enabled {
             let emit = self.emit.clone();
+            let month_id = self.id("month");
+            let mut targets = fallbacks.iter().chain(std::iter::once(&month_id));
+            let first = targets.next().expect("month fallback is present");
+            let view = view.restore_focus_on_removal(first);
+            let view = targets.fold(view, |view, target| {
+                view.restore_focus_in_subtree_on_removal(target)
+            });
             view.on_focus_navigation_with_extend(day_navigation(
                 self.id,
                 id,
@@ -160,7 +271,6 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
                 move |step| emit(DatePickerEvent::NavigateFrom(date, step)),
             ))
             .accessibility_scroll_into_view()
-            .restore_focus_on_removal(self.id("month"))
         } else {
             view
         }
@@ -462,13 +572,23 @@ fn day_cell<M>(
     if enabled {
         node = node.selected(state.selected);
     }
+    let paint = day_paint(theme, id, date, enabled, state);
+    button(node, action).children([paint])
+}
+
+fn day_paint<M>(
+    theme: &Theme,
+    id: &str,
+    date: CivilDate,
+    enabled: bool,
+    state: DateFaceState,
+) -> View<M> {
     let mut style = centered(DAY_DIAMETER, DAY_DIAMETER);
     if state.today && !state.selected {
         style = style.border(1., theme.colors.primary);
     }
     let label = date.day().to_string();
-    let paint = date_face(theme, id, &label, style, enabled, state);
-    button(node, action).children([paint])
+    date_face(theme, id, &label, style, enabled, state)
 }
 
 fn date_face<M>(

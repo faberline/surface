@@ -1,7 +1,7 @@
 use surface::{GridRole, Length, Node, Rect, Role, Style, TextMeasurer};
 use surface_app::{
     AnimationFrame, AnimationUpdate, Application, EditKey, Event, FrameInput, InputAnimationUpdate,
-    Runtime, View,
+    Key, KeyPress, Modifiers, Runtime, View,
 };
 use surface_material::{
     shape::LayoutDirection, CivilDate, DateBounds, DateInputFormat, DateInputOrder,
@@ -177,6 +177,65 @@ fn render(runtime: &mut Runtime<Demo>) {
 fn rect(runtime: &Runtime<Demo>, name: &str) -> Rect {
     let id = runtime.dom().by_id(name).unwrap();
     runtime.computed().unwrap().nodes[id.index()].bounds
+}
+
+#[test]
+fn shift_shortcuts_focus_the_calendar_selectors_without_opening_lists() {
+    let mut runtime = Runtime::new(Demo::default()).unwrap();
+    render(&mut runtime);
+    render(&mut runtime);
+    let shifted = |letter: &str| {
+        KeyPress::new(
+            Key::Character(letter.into()),
+            Modifiers {
+                shift: true,
+                ..Modifiers::default()
+            },
+        )
+    };
+    runtime.activate(INPUT).unwrap();
+    assert!(!runtime.key(&shifted("M")).unwrap());
+    assert_eq!(runtime.focused(), Some(INPUT));
+    assert!(runtime.dom().by_id(POPUP).is_none());
+
+    runtime.activate(TRIGGER).unwrap();
+    render(&mut runtime);
+    assert_eq!(runtime.focused(), Some("docked-day-2024-02-28"));
+    for (letter, selector, choice, mode) in [
+        (
+            "M",
+            "docked-month",
+            "docked-month-02",
+            DockedDatePickerMode::Month,
+        ),
+        (
+            "y",
+            "docked-year",
+            "docked-year-2024",
+            DockedDatePickerMode::Year,
+        ),
+    ] {
+        assert!(runtime.key(&shifted(letter)).unwrap());
+        assert_eq!(runtime.focused(), Some(selector));
+        assert_eq!(
+            runtime.app().picker.mode(),
+            Some(DockedDatePickerMode::Calendar)
+        );
+        render(&mut runtime);
+        let id = runtime.dom().by_id(selector).unwrap();
+        let layout = &runtime.computed().unwrap().nodes[id.index()];
+        assert_eq!(layout.bounds.intersect(layout.clip), layout.bounds);
+        runtime.dispatch(Event::Activate).unwrap();
+        render(&mut runtime);
+        assert_eq!(runtime.app().picker.mode(), Some(mode));
+        assert_eq!(runtime.focused(), Some(choice));
+        assert!(!runtime.key(&shifted(letter)).unwrap());
+        runtime.dispatch(Event::Cancel).unwrap();
+        render(&mut runtime);
+        assert_eq!(runtime.focused(), Some(selector));
+    }
+    assert_eq!(runtime.app().picker.raw_input(), "2024/02/28");
+    assert_eq!(runtime.app().commits, 0);
 }
 
 #[test]

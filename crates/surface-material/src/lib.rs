@@ -72,7 +72,9 @@ pub use components::{
     FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,
     SegmentPosition,
 };
-pub use date_picker::{DatePickerLabels, DatePickerLayout, DatePickerOptions};
+pub use date_picker::{
+    DatePickerLabels, DatePickerLayout, DatePickerOptions, DatePickerSwipe, DatePickerSwipeInput,
+};
 pub use date_picker_state::{
     CivilDate, DateBounds, DateInputError, DateInputFormat, DateInputOrder, DateInputSeparator,
     DatePickerConstraints, DatePickerEffect, DatePickerEvent, DatePickerLocale, DatePickerMode,

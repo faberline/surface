@@ -16,6 +16,8 @@ mod material_card;
 mod material_carousel;
 #[path = "material_date_picker.rs"]
 mod material_date_picker;
+#[path = "material_date_picker_gestures.rs"]
+mod material_date_picker_gestures;
 #[path = "material_date_range_picker.rs"]
 mod material_date_range_picker;
 #[path = "material_docked_date_picker.rs"]
@@ -60,7 +62,8 @@ pub const STEPS: &[&str] = &[
     "M82", "M83", "M84", "M85", "M86", "M87", "M88", "M89", "M90", "M91", "M92", "M93", "M94",
     "M95", "M96", "M97", "M98", "M99", "M100", "M101", "M102", "M103", "M104", "M105", "M106",
     "M107", "M108", "M109", "M110", "M111", "M112", "M113", "M114", "M115", "M116", "M117", "M118",
-    "M119", "M120", "M121", "M122", "M123", "M124", "M125", "M126", "M127",
+    "M119", "M120", "M121", "M122", "M123", "M124", "M125", "M126", "M127", "M128", "M129", "M130",
+    "M131", "M132", "M133",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -152,7 +155,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_fab_menu::run(env, chrome, &url).await?;
     material_date_picker::run(env, chrome, &url).await?;
     material_docked_date_picker::run(env, chrome, &url).await?;
-    material_date_range_picker::run(env, chrome, &url).await
+    material_date_range_picker::run(env, chrome, &url).await?;
+    material_date_picker_gestures::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

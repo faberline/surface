@@ -349,6 +349,18 @@ Page Up and Page Down browse months. Hold Shift on a page key to browse
 years. Enter or Space on a day updates the draft. Escape dismisses the
 picker and returns focus.
 
+To add swipe paging, use `Theme::swipeable_date_picker` and keep a
+`DatePickerSwipe` with the open session. Send picker input to
+`swipe.apply` and handle its effects as above. Call `swipe.observe`
+from the input frame hook. Pass the picker ID, session, locale, date
+constraints and the queue from `Application::attach_queue`.
+
+A horizontal swipe previews the adjoining month and keeps the draft
+date. The direction follows the locale. A narrow grid pans to reveal
+the clipped columns first. Start a new swipe from that edge to change
+months. A short or canceled swipe restores the current month. Reduce
+Motion removes the preview and applies a completed swipe immediately.
+
 In Material Gallery, choose 浮層, then 日期選擇器. The example can open
 either mode and switch locale, text scale, theme, and direction.
 
@@ -368,6 +380,11 @@ The field and calendar button have separate Tab stops. The button
 opens the calendar. Month and year lists change the month on display.
 Choosing a day submits it. Escape closes a month or year list first.
 Dismiss the calendar to restore focus to its button.
+
+When a calendar control has focus, Shift+M moves focus to Month and
+Shift+Y moves focus to Year. Press Enter or Space to open the list.
+The shortcuts leave the date editor and input method in control of
+their own keys.
 
 Forward every picker event to `DockedDatePickerState::apply`. Feed
 the field's focus to `observe_input_focus` from the frame input
