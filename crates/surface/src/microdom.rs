@@ -107,6 +107,19 @@ pub(crate) struct AbsoluteOverlayFit {
     pub(crate) boundary: OverlayBoundary,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct PressRipple {
+    pub(crate) after: Option<String>,
+    pub(crate) presented: Option<PresentedPressRipple>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct PresentedPressRipple {
+    pub(crate) center: (f32, f32),
+    pub(crate) progress: f32,
+    pub(crate) opacity: f32,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node {
     #[serde(default, skip_serializing_if = "no_box_shadows")]
@@ -117,6 +130,8 @@ pub struct Node {
     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
     #[serde(skip)]
     animate_interaction_corners: bool,
+    #[serde(skip)]
+    pub(crate) press_ripple: Option<Arc<PressRipple>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fill_contour: Option<crate::FillContour>,
     #[serde(skip)]
@@ -206,6 +221,7 @@ impl Node {
             interaction_box_shadows: None,
             interaction_corners: None,
             animate_interaction_corners: false,
+            press_ripple: None,
             fill_contour: None,
             raster: None,
             current_page: None,
@@ -330,6 +346,25 @@ impl Node {
     pub fn animate_interaction_corners(mut self) -> Self {
         self.animate_interaction_corners = true;
         self
+    }
+
+    /// Enable bounded feedback for an accepted pointer press on this node.
+    ///
+    /// The extended renderer clips the ripple to the node's current outline.
+    /// Set `after` to the stable ID of a passive raster descendant to draw
+    /// the wave and focus outline above its image. Layout, input and snapshots
+    /// keep their original form.
+    pub fn press_ripple(mut self, after: Option<String>) -> Self {
+        self.press_ripple = Some(Arc::new(PressRipple {
+            after,
+            presented: None,
+        }));
+        self
+    }
+
+    /// Whether this live node requests pointer ripple feedback.
+    pub fn has_press_ripple(&self) -> bool {
+        self.press_ripple.is_some()
     }
 
     /// Return the effective corner target for an opted-in runtime track.
@@ -830,6 +865,37 @@ impl MicroDom {
         }
         Ok(())
     }
+
+    /// Set the active ripple on a display copy for the extended renderer.
+    /// The center is in physical logical pixels relative to the node.
+    /// Finite progress and opacity clamp to 0–1. Zero opacity still replaces
+    /// the held press fill. An invalid sample clears the copy's wave.
+    #[doc(hidden)]
+    pub fn set_presented_press_ripple(
+        &mut self,
+        id: NodeId,
+        center_local: (f32, f32),
+        progress: f32,
+        opacity: f32,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if let Some(ripple) = &mut node.press_ripple {
+            let presented = [center_local.0, center_local.1, progress, opacity]
+                .into_iter()
+                .all(f32::is_finite)
+                .then(|| PresentedPressRipple {
+                    center: center_local,
+                    progress: progress.clamp(0., 1.),
+                    opacity: opacity.clamp(0., 1.),
+                });
+            Arc::make_mut(ripple).presented = presented;
+        }
+        Ok(())
+    }
+
     pub fn set_text(&mut self, id: NodeId, text: impl Into<String>) -> Result<(), DomError> {
         let n = self
             .nodes

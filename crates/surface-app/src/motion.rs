@@ -732,6 +732,9 @@ impl<A: Application> Runtime<A> {
     /// Apply style changes immediately. Running transitions finish at the next render.
     pub fn set_reduced_motion(&mut self, reduce: bool) {
         self.motion.reduced = reduce;
+        if reduce {
+            self.cancel_press_ripple();
+        }
     }
     pub fn reduced_motion(&self) -> bool {
         self.motion.reduced
@@ -740,7 +743,8 @@ impl<A: Application> Runtime<A> {
     ///
     /// Hosts should render again on the next frame while this is true.
     pub fn needs_frame(&self) -> bool {
-        self.animation_request_next || (self.motion.running && !self.motion.reduced)
+        self.animation_request_next
+            || ((self.motion.running || self.press_ripple.needs_frame()) && !self.motion.reduced)
     }
     pub(crate) fn input_time_ms(&self) -> Option<f64> {
         self.motion.now
@@ -752,7 +756,7 @@ impl<A: Application> Runtime<A> {
                 .and_then(|(x, y)| self.hit(x, y))
                 .and_then(|id| self.dom.get(id).ok()?.stable_id())
         } else {
-            self.press_observation.clear();
+            self.press_observation.clear_application();
             None
         };
         let frame = crate::AnimationFrame {
@@ -768,11 +772,11 @@ impl<A: Application> Runtime<A> {
             touch_cancelled: std::mem::take(&mut self.touch_cancelled),
         };
         let pressed = self.pressed.as_deref();
-        let press = self.press_observation.frame(pressed);
+        let press = self.press_observation.application_frame(pressed);
         let update = self
             .app
             .animation_frame_with_press_detail(frame, input, pressed, press, hovered);
-        self.press_observation.clear_terminal();
+        self.press_observation.finish_application_frame();
         if let Some(touch) = &mut self.touch {
             touch.suppress_activation |= update.suppress_touch_activation;
         }

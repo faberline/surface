@@ -1,5 +1,5 @@
 use crate::{AnimationUpdate, AppError, Application, Event, Runtime};
-use surface::Rect;
+use surface::{Rect, Role};
 
 /// A held primary touch contact in logical window coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -61,11 +61,33 @@ struct ObservedPress {
     bounds: Rect,
     started_ms: Option<f64>,
     phase: FramePressPhase,
+    application: bool,
+    ripple_role: Option<Role>,
 }
 
 impl PressObservation {
-    pub(crate) fn clear(&mut self) {
-        self.current = None;
+    pub(crate) fn clear_application(&mut self) {
+        if let Some(press) = &mut self.current {
+            press.application = false;
+        }
+        self.discard_if_unused();
+    }
+
+    pub(crate) fn clear_ripple(&mut self) {
+        if let Some(press) = &mut self.current {
+            press.ripple_role = None;
+        }
+        self.discard_if_unused();
+    }
+
+    fn discard_if_unused(&mut self) {
+        if self
+            .current
+            .as_ref()
+            .is_some_and(|p| !p.application && p.ripple_role.is_none())
+        {
+            self.current = None;
+        }
     }
 
     pub(crate) fn accept(
@@ -74,6 +96,8 @@ impl PressObservation {
         position: (f32, f32),
         bounds: Rect,
         started_ms: Option<f64>,
+        application: bool,
+        ripple_role: Option<Role>,
     ) {
         self.sequence = self.sequence.wrapping_add(1);
         self.current = Some(ObservedPress {
@@ -82,6 +106,8 @@ impl PressObservation {
             bounds,
             started_ms,
             phase: FramePressPhase::Held,
+            application,
+            ripple_role,
         });
     }
 
@@ -95,7 +121,7 @@ impl PressObservation {
         }
     }
 
-    pub(crate) fn frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
+    fn frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
         let press = self.current.as_mut()?;
         if press.phase == FramePressPhase::Held && pressed != Some(press.id.as_str()) {
             press.phase = FramePressPhase::Cancelled;
@@ -110,14 +136,37 @@ impl PressObservation {
         })
     }
 
-    pub(crate) fn clear_terminal(&mut self) {
-        if self
-            .current
+    pub(crate) fn application_frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
+        self.current.as_ref().filter(|press| press.application)?;
+        self.frame(pressed)
+    }
+
+    pub(crate) fn ripple_frame(&mut self, pressed: Option<&str>) -> Option<(FramePress<'_>, Role)> {
+        let role = self.current.as_ref()?.ripple_role?;
+        Some((self.frame(pressed)?, role))
+    }
+
+    pub(crate) fn ripple_owner(&self) -> Option<(&str, Role)> {
+        let press = self.current.as_ref()?;
+        Some((&press.id, press.ripple_role?))
+    }
+
+    pub(crate) fn finish_application_frame(&mut self) {
+        if self.is_terminal() {
+            self.clear_application();
+        }
+    }
+
+    pub(crate) fn finish_ripple_frame(&mut self) {
+        if self.is_terminal() {
+            self.clear_ripple();
+        }
+    }
+
+    fn is_terminal(&self) -> bool {
+        self.current
             .as_ref()
             .is_some_and(|press| press.phase != FramePressPhase::Held)
-        {
-            self.current = None;
-        }
     }
 }
 
