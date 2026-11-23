@@ -1,9 +1,11 @@
 //! Material 3 Baseline and Expressive lists.
 
 mod expansion;
+mod media;
 mod multi_action;
 mod reorder;
 pub use expansion::{ExpandableListOptions, ExpandableListRow, ListExpansionMotion};
+pub use media::{ListMedia, ListMediaKind, MediaListItem, MediaListMode, MediaListOptions};
 pub use multi_action::{ListSupplementaryAction, MultiActionListItem, MultiActionListOptions};
 pub use reorder::{
     ListReorderEntry, ListReorderInput, ListReorderRequest, ListReorderState, ReorderableListItem,
@@ -226,23 +228,36 @@ impl Theme {
     ) -> View<M> {
         let items: Vec<_> = items.into_iter().collect();
         let last = items.len().saturating_sub(1);
+        self.list_container(
+            id,
+            name,
+            options,
+            Length::Percent(1.),
+            items
+                .into_iter()
+                .enumerate()
+                .map(|(index, item)| self.list_row(options, item, index == 0, index == last)),
+        )
+    }
+
+    fn list_container<M>(
+        &self,
+        id: &str,
+        name: &str,
+        options: ListPresentation<'_>,
+        width: Length,
+        rows: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
         let role = match options.interaction {
             ListInteraction::Passive | ListInteraction::Action => Role::List,
             ListInteraction::SingleSelect(_) => Role::RadioGroup,
             ListInteraction::MultiSelect(_) => Role::Group,
         };
-        let style = Style::column()
-            .width(Length::Percent(1.))
-            .gap(list_gap(options.style));
+        let style = Style::column().width(width).gap(list_gap(options.style));
         let node = options
             .interaction
             .web_selection(Node::new(role, name).id(id).styled(style));
-        let view = View::new(node).children(
-            items
-                .into_iter()
-                .enumerate()
-                .map(|(index, item)| self.list_row(options, item, index == 0, index == last)),
-        );
+        let view = View::new(node).children(rows);
         if matches!(options.interaction, ListInteraction::Passive) {
             view
         } else {
@@ -272,6 +287,17 @@ impl Theme {
         item: ListItem<'_, M>,
         placement: RowPlacement,
         accessory: Option<View<M>>,
+    ) -> View<M> {
+        self.list_row_control_with_media(options, item, placement, accessory, None)
+    }
+
+    fn list_row_control_with_media<M>(
+        &self,
+        options: ListPresentation<'_>,
+        item: ListItem<'_, M>,
+        placement: RowPlacement,
+        accessory: Option<View<M>>,
+        media: Option<media::MediaRow<'_>>,
     ) -> View<M> {
         let passive = matches!(options.interaction, ListInteraction::Passive);
         let disabled = item.disabled || (!passive && item.on_activate.is_none());
@@ -334,7 +360,7 @@ impl Theme {
         let mut style = Style::column()
             .width(Length::Percent(1.))
             .justify(row_alignment(item.lines))
-            .padding(ROW_PADDING)
+            .padding(if media.is_some() { 0. } else { ROW_PADDING })
             .corners(corners)
             .background(background);
         style.min_height = item.lines.min_height();
@@ -382,7 +408,10 @@ impl Theme {
                 }
             })
         });
-        let content = row_content(options, &item, mark, ink, supporting_ink, indent);
+        let content = match media {
+            Some(layout) => layout.content(options, &item, mark, ink, supporting_ink),
+            None => row_content(options, &item, mark, ink, supporting_ink, indent),
+        };
         let row = if passive {
             View::new(node)
         } else {
@@ -467,24 +496,7 @@ fn row_content<M>(
             icon.contour_dp(icon_size, supporting_ink),
         )
     });
-    let trailing = item.trailing.map(|label| {
-        let mut style = Style::column()
-            .with_text_style(typography::LABEL_SMALL)
-            .foreground(supporting_ink);
-        style.max_width = Length::Percent(0.28);
-        let trailing = View::new(
-            Node::new(Role::Text, label)
-                .id(id("trailing"))
-                .text(label)
-                .shrink_to_fit_width()
-                .styled(style),
-        );
-        if passive {
-            trailing
-        } else {
-            trailing.without_interaction(None)
-        }
-    });
+    let trailing = row_trailing(item, supporting_ink, passive, Length::Percent(0.28));
     let content = View::new(logical_row(
         Style::row()
             .width(Length::Px(0.))
@@ -514,6 +526,31 @@ fn row_content<M>(
         content,
         spacer(end - ROW_PADDING),
     ])
+}
+
+fn row_trailing<M>(
+    item: &ListItem<'_, M>,
+    ink: Color,
+    passive: bool,
+    max_width: Length,
+) -> Option<View<M>> {
+    let label = item.trailing?;
+    let mut style = Style::column()
+        .with_text_style(typography::LABEL_SMALL)
+        .foreground(ink);
+    style.max_width = max_width;
+    let trailing = View::new(
+        Node::new(Role::Text, label)
+            .id(format!("{}-trailing", item.id))
+            .text(label)
+            .shrink_to_fit_width()
+            .styled(style),
+    );
+    Some(if passive {
+        trailing
+    } else {
+        trailing.without_interaction(None)
+    })
 }
 
 fn list_icon_size(style: ListStyle) -> f32 {

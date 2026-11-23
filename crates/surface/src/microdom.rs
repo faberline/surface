@@ -117,6 +117,8 @@ pub struct Node {
     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fill_contour: Option<crate::FillContour>,
+    #[serde(skip)]
+    pub(crate) raster: Option<crate::RasterImage>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     current_page: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -202,6 +204,7 @@ impl Node {
             interaction_box_shadows: None,
             interaction_corners: None,
             fill_contour: None,
+            raster: None,
             current_page: None,
             grid_role: None,
             web_listbox: false,
@@ -344,6 +347,15 @@ impl Node {
     /// does not create a semantic child.
     pub fn fill_contour(mut self, contour: crate::FillContour) -> Self {
         self.fill_contour = Some(contour);
+        self
+    }
+
+    /// Paint image pixels across this node with a centered aspect crop.
+    /// Size the node through its style. The image adds no layout or semantic
+    /// child. The extended renderer draws it with the node's corners and
+    /// ancestor clip. Serialized DOM snapshots omit the live image resource.
+    pub fn raster_image(mut self, image: crate::RasterImage) -> Self {
+        self.raster = Some(image);
         self
     }
     /// Paint this node's focus outline while its immediate parent is focused.

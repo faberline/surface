@@ -161,6 +161,7 @@ does not change application state.
 | `multi_action_list` | A primary action and separate supplementary commands or toggles with a shared keyboard order |
 | `expandable_list` | Inline disclosure rows that reveal a nested list and move following rows in the same scroll flow |
 | `reorderable_list` | Stable row order, a pointer grip, and separate Move Up and Move Down buttons |
+| `media_list` | Leading images and video posters with an optional row command or app-owned checkbox |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -947,6 +948,49 @@ each enabled action, and the group uses one Tab stop. If a move reaches a
 boundary, focus stays on the row when another action can receive it. At
 narrow widths the separate 48 dp controls wrap below the headline.
 Try **可排序清單** in the Gallery.
+
+### Rows with media
+
+Use `Theme::media_list` with `MediaListOptions` and `MediaListItem` values.
+Wrap a `ListItem` and give it optional `ListMedia`. A supplied image fills
+the leading slot. Text-only rows can keep their leading icon. Retain the
+image and pass a reference to it on each build.
+
+Create a `surface::RasterImage` from straight-alpha sRGB RGBA8 pixels in
+top-to-bottom row order. `RasterImage::new` takes the pixel dimensions and
+tightly packed bytes. The extended renderer crops the image around its
+center and clips it to its own corners and the scroll area. For standalone
+art, use `Node::raster_image` and size that node through its style.
+
+| Profile | Preferred media frame |
+| --- | --- |
+| `Thumbnail` | 56 × 56 dp |
+| `VideoSmall` | 100 × 56 dp |
+| `VideoLarge` | 114 × 64 dp |
+| `WideThumbnail` | 80 × 80 dp for a wider layout |
+
+Use the width allocated to the list after insets. The media frame can
+shrink with its aspect ratio intact. At very narrow widths, content stacks
+and keeps a full row target. Expressive rows use 8 dp media corners. Baseline
+rows use square corners. RTL mirrors the slot order and keeps the picture's
+orientation. Text can wrap and grow to 200% scale.
+
+At normal widths, a passive Baseline video poster starts at the leading
+edge. Interactive Baseline video rows inset the poster by 3 dp to keep the
+inside focus outline visible.
+
+Use `Passive` for readable content and `Action` for one app command per
+row. Use `MultiSelect` with a selection function for one checkbox action
+per row. Tab enters or leaves the group, Up and Down move focus, and Enter
+or Space uses the focused row. The image adds no focus stop. Put useful
+image information in the row text. The application handles opening details
+or playback when a poster row activates.
+
+Raster pixels stay in live resources. DOM snapshots and legacy paint
+exports keep the existing wire format. Serializing an extended frame with
+a live image returns an error. Use `Page.screenshot` to capture the pixels.
+Custom hosts use `Runtime::render_extended` with the extended renderer.
+The native and browser Gallery hosts already use this path.
 
 [Material 3 list specs](https://m3.material.io/components/lists/specs) ·
 [Material 3 list guidelines](https://m3.material.io/components/lists/guidelines) ·

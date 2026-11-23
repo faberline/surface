@@ -27,6 +27,7 @@ mod microdom;
 mod motion;
 mod paint;
 mod path_geometry;
+mod raster;
 mod scroll_extent;
 mod shadow;
 mod shape;
@@ -47,6 +48,7 @@ pub use motion::{Easing, Transition};
 pub use paint::{
     DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp, TextDecoration,
 };
+pub use raster::{RasterImage, RasterPaint};
 pub use scroll_extent::scroll_extent;
 pub use shadow::BoxShadow;
 pub use shape::Corners;

@@ -646,6 +646,172 @@ fn capture_rejects_oversize_requests_without_a_gpu() {
 
 #[test]
 #[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
+fn gpu_offscreen_raster_preserves_crop_clip_alpha_and_draw_order_in_both_formats() {
+    use surface::{ExtendedDisplayList, ExtendedPaintOp, PathFill, RasterImage, RasterPaint};
+
+    const WIDTH: u32 = 120;
+    const HEIGHT: u32 = 76;
+    let viewport = Rect::new(0., 0., WIDTH as f32, HEIGHT as f32);
+    let background = [0, 0, 0, 255];
+    let top_left = [205, 39, 78, 255];
+    let top_right = [220, 112, 35, 255];
+    let bottom_left = [50, 84, 220, 255];
+    let bottom_right = [172, 56, 190, 255];
+    let mut pixels = Vec::new();
+    for y in 0..4 {
+        for x in 0..8 {
+            let rgba = match (x, y) {
+                (0..=1 | 6..=7, _) => [5, 230, 70, 255], // Discard the outer columns on cover.
+                (2..=3, 0..=1) => top_left,
+                (4..=5, 0..=1) => top_right,
+                (2..=3, _) => bottom_left,
+                _ => bottom_right,
+            };
+            pixels.extend_from_slice(&rgba);
+        }
+    }
+    let pattern = RasterImage::new(8, 4, pixels).unwrap();
+    let alpha = RasterImage::new(2, 1, vec![255, 255, 255, 255, 255, 0, 0, 0]).unwrap();
+    let solid_color = [11, 65, 118, 255];
+    let solid = RasterImage::new(1, 1, solid_color.to_vec()).unwrap();
+    let image = |asset: &RasterImage, rect, clip, corners| {
+        ExtendedPaintOp::Raster(RasterPaint::new(asset.clone(), rect, clip, corners).unwrap())
+    };
+    let ink = |rect| {
+        ExtendedPaintOp::Legacy(PaintOp::Text {
+            rect,
+            clip: viewport,
+            text: "A".to_owned(),
+            font_size: 18.,
+            color: Color::rgb(255, 255, 255),
+        })
+    };
+    let hidden_text = Rect::new(8., 43., 44., 27.);
+    let visible_text = Rect::new(61., 43., 44., 27.);
+    let frame = ExtendedDisplayList::new(
+        viewport,
+        vec![
+            image(
+                &pattern,
+                Rect::new(4., 4., 32., 32.),
+                viewport,
+                Corners::new(10., 0., 10., 0.),
+            ),
+            image(
+                &pattern,
+                Rect::new(42., 4., 32., 32.),
+                Rect::new(47., 9., 20., 22.),
+                Corners::default(),
+            ),
+            image(
+                &alpha,
+                Rect::new(82., 4., 31., 31.),
+                viewport,
+                Corners::default(),
+            ),
+            ExtendedPaintOp::FillPath(
+                PathFill::new(
+                    [[18., 9.], [24., 9.], [24., 15.], [18., 15.]],
+                    Color::rgb(0, 255, 0),
+                    viewport,
+                )
+                .unwrap(),
+            ),
+            ExtendedPaintOp::Legacy(PaintOp::Quad {
+                rect: Rect::new(20., 10., 2., 3.),
+                clip: viewport,
+                radius: 0.,
+                color: Color::rgb(255, 255, 0),
+            }),
+            ink(hidden_text),
+            image(&solid, hidden_text, viewport, Corners::default()),
+            image(&solid, visible_text, viewport, Corners::default()),
+            ink(visible_text),
+        ],
+    );
+
+    pollster::block_on(async {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::PRIMARY,
+            ..Default::default()
+        });
+        let adapter = Renderer::request(&instance, None)
+            .await
+            .expect("native GPU adapter is required");
+        eprintln!("GPU evidence: {:?}", adapter.get_info());
+        for (format, alpha_middle) in [
+            (wgpu::TextureFormat::Rgba8Unorm, 128),
+            (wgpu::TextureFormat::Bgra8UnormSrgb, 188),
+        ] {
+            let mut renderer = Renderer::new(&adapter, format).await.unwrap();
+            let capture = renderer
+                .capture_extended(&frame, WIDTH, HEIGHT, 1.)
+                .unwrap();
+            assert_eq!(
+                capture,
+                renderer
+                    .capture_extended(&frame, WIDTH, HEIGHT, 1.)
+                    .unwrap()
+            );
+            let pixel = |x: u32, y: u32| -> [u8; 4] {
+                let start = ((y * WIDTH + x) * 4) as usize;
+                capture.rgba[start..start + 4].try_into().unwrap()
+            };
+            let sample = |point: (u32, u32), want: [u8; 4]| {
+                let got = pixel(point.0, point.1);
+                assert!(
+                    got.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2),
+                    "{format:?} at {point:?}: got {got:?}, wanted {want:?}"
+                );
+            };
+
+            for (point, color) in [
+                ((5, 5), background),   // Rounded top-left.
+                ((31, 5), top_right),   // Square top-right.
+                ((34, 34), background), // Rounded bottom-right.
+                ((8, 34), bottom_left), // Square bottom-left.
+                ((10, 11), top_left),
+                ((29, 11), top_right),
+                ((10, 28), bottom_left),
+                ((29, 28), bottom_right),
+                ((46, 12), background), // Left scissor.
+                ((48, 12), top_left),
+                ((65, 28), bottom_right),
+                ((67, 28), background), // Right scissor.
+                ((50, 8), background),  // Top scissor.
+                ((50, 31), background), // Bottom scissor.
+                ((97, 19), [alpha_middle, alpha_middle, alpha_middle, 255]),
+                ((19, 10), [0, 255, 0, 255]),   // Path on the raster.
+                ((20, 11), [255, 255, 0, 255]), // Quad on the path.
+            ] {
+                sample(point, color);
+            }
+            assert!(
+                (3..top_left[0] - 2).contains(&pixel(8, 5)[0]),
+                "{format:?}: rounded corner has partially covered pixels"
+            );
+            for y in 44..69 {
+                for x in 9..51 {
+                    sample((x, y), solid_color); // Raster occludes earlier text.
+                }
+            }
+            assert!(
+                (44..69).any(|y| (62..104).any(|x| pixel(x, y)[0] > 160)),
+                "{format:?}: later glyph is visible above the raster"
+            );
+            eprintln!(
+                "{format:?}: crop {:?}, clip {:?}, corner AA {:?}, alpha midpoint {:?}",
+                pixel(10, 11),
+                pixel(46, 12),
+                pixel(8, 5),
+                pixel(97, 19)
+            );
+        }
+    });
+}
+
+#[test]
+#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
 fn gpu_offscreen_capture_reads_rgba_in_both_formats() {
     pollster::block_on(async {
         let instance = wgpu::Instance::new(&Default::default());
