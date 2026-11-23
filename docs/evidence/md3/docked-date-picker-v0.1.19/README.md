@@ -51,6 +51,14 @@ and validation, held pointer focus, composition, grid accessibility,
 month and year browsing, dismissal, and compact RTL.
 The composition evidence uses Chrome's synthetic IME events.
 
+The first Linux run used a field position from before text reflow.
+This caused the popup to overlap the calendar button. The Gallery now
+requests a frame after layout changes and places the popup at the updated
+field position. A Gallery test checks the first frame after opening.
+[Original hosted failure geometry](web/hosted-anchor-before.json) ·
+[Anchor comparison](web/anchor-geometry-comparison.json) ·
+[Original GitHub Actions run](https://github.com/faberline/surface/actions/runs/45091274456)
+
 Chrome/157.0.8103.79 used Apple Metal 3. All five cases passed 6,902 checks. Material passed 120 steps and 6,654 checks.
 
 [Docked Date Picker report](web/browser-material-docked-date-picker.json) ·
