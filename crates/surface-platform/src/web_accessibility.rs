@@ -267,6 +267,14 @@ impl WebAccessibility {
                 } else {
                     textbox.remove_attribute("aria-describedby")?;
                 }
+                if editor
+                    .and_then(|id| frame.node(id))
+                    .is_some_and(|source| source.node.is_invalid())
+                {
+                    textbox.set_attribute("aria-invalid", "true")?;
+                } else {
+                    textbox.remove_attribute("aria-invalid")?;
+                }
             }
             self.published = Some(Published {
                 generation,

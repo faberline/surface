@@ -1,7 +1,7 @@
 //! Project the current application scope into the macOS accessibility tree.
 use accesskit::{
-    Action, ActionData, ActionRequest, AriaCurrent, HasPopup, Live, Node, NodeId, Rect, Role,
-    ScrollUnit, Toggled, TreeId, TreeInfo, TreeUpdate,
+    Action, ActionData, ActionRequest, AriaCurrent, HasPopup, Invalid, Live, Node, NodeId, Rect,
+    Role, ScrollUnit, Toggled, TreeId, TreeInfo, TreeUpdate,
 };
 use std::collections::BTreeMap;
 use surface::{GridRole, NodeId as SurfaceId, Role as SurfaceRole};
@@ -411,6 +411,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
     if authored.is_disabled() {
         node.set_disabled();
     }
+    if authored.is_invalid() {
+        node.set_invalid(Invalid::True);
+    }
     if let Some(selected) = authored.is_selected() {
         node.set_selected(selected);
     }
@@ -467,6 +470,7 @@ mod tests {
         modal: bool,
         focusable_notice: bool,
         menu_expanded: Option<bool>,
+        invalid_editor: Option<bool>,
     }
 
     impl Application for App {
@@ -528,13 +532,23 @@ mod tests {
                         .text("Open the item"),
                 )
             });
+            let editor = self.invalid_editor.map(|invalid| {
+                View::new(
+                    SurfaceNode::new(SurfaceRole::TextInput, "Quantity")
+                        .id("quantity")
+                        .text("15")
+                        .invalid(invalid),
+                )
+                .on_input(|_| Self::default())
+            });
             View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop").styled(Style::column()))
                 .children(
                     std::iter::once(button)
                         .chain(menu_controls.into_iter().flatten())
                         .chain(status)
                         .chain(modal)
-                        .chain(tooltip),
+                        .chain(tooltip)
+                        .chain(editor),
                 )
         }
     }
@@ -1321,6 +1335,24 @@ mod tests {
             let disclosure = named(&view, "Details").1;
             assert_eq!(disclosure.is_expanded(), Some(open));
             assert_eq!(disclosure.has_popup(), None);
+        }
+    }
+
+    #[test]
+    fn editor_validation_reaches_accesskit_and_clears_on_correction() {
+        let mut runtime = Runtime::new(App::default()).unwrap();
+        let mut tree = Tree::default();
+        for invalid in [true, false] {
+            runtime
+                .apply(App {
+                    invalid_editor: Some(invalid),
+                    ..App::default()
+                })
+                .unwrap();
+            let view = update(&mut runtime, &mut tree);
+            let field = named(&view, "Quantity").1;
+            assert_eq!(field.role(), Role::TextInput);
+            assert_eq!(field.invalid(), invalid.then_some(Invalid::True));
         }
     }
 
