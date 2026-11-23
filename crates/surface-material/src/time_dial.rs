@@ -1,8 +1,10 @@
-//! Material 3 Expressive Dial and its Input alternative in one modal.
+//! Material 3 Dial variants and their Input alternative in one modal.
 
+mod baseline;
 mod hand_motion;
 mod polar;
 
+pub use baseline::time_dial_baseline_layout;
 pub use hand_motion::DialHandMotion;
 
 use std::rc::Rc;
@@ -15,7 +17,10 @@ use surface_app::{EditKey, FocusNavigation, Key, KeyPress, PointDrag, Roving, Vi
 use crate::{
     date_picker::{button, disabled_ink, text, TARGET},
     shape,
-    time_input::{keyboard_icon, TimeInput, PANEL_MARGIN, PANEL_PADDING},
+    time_input::{
+        keyboard_icon, TimeInput, TimePickerStyle, BASELINE_PANEL_PADDING, PANEL_MARGIN,
+        PANEL_PADDING,
+    },
     typography,
     vector_icon::VectorIconSize,
     ClockFormat, DialEvent, DialMode, DialPoint, DialState, Theme, TimeField, TimeInputOptions,
@@ -147,7 +152,7 @@ impl Theme {
         state: &DialState,
         on_event: impl Fn(DialEvent) -> M + 'static,
     ) -> View<M> {
-        self.build_time_dial(options, state, None, on_event)
+        self.build_time_dial(options, state, None, TimePickerStyle::Expressive, on_event)
     }
 
     /// Render the dial with a retained selector animation. Pass dial events
@@ -159,7 +164,26 @@ impl Theme {
         motion: &DialHandMotion,
         on_event: impl Fn(DialEvent) -> M + 'static,
     ) -> View<M> {
-        self.build_time_dial(options, state, Some(motion), on_event)
+        self.build_time_dial(
+            options,
+            state,
+            Some(motion),
+            TimePickerStyle::Expressive,
+            on_event,
+        )
+    }
+
+    /// Render the Baseline Dial and Baseline Input alternative in one modal.
+    ///
+    /// Use [time_dial_baseline_layout] for fit and forward editor focus to
+    /// [DialState::observe_baseline_input_focus]. The draft handles both modes.
+    pub fn time_dial_baseline<M: Clone + 'static>(
+        &self,
+        options: TimeDialOptions<'_>,
+        state: &DialState,
+        on_event: impl Fn(DialEvent) -> M + 'static,
+    ) -> View<M> {
+        self.build_time_dial(options, state, None, TimePickerStyle::Baseline, on_event)
     }
 
     fn build_time_dial<M: Clone + 'static>(
@@ -167,6 +191,7 @@ impl Theme {
         mut options: TimeDialOptions<'_>,
         state: &DialState,
         motion: Option<&DialHandMotion>,
+        style: TimePickerStyle,
         on_event: impl Fn(DialEvent) -> M + 'static,
     ) -> View<M> {
         options.input.presentation = TimeInputPresentation::Modal;
@@ -179,6 +204,7 @@ impl Theme {
                 session: state.input(),
                 emit: Rc::new(move |event| emit_input(DialEvent::Input(event))),
                 editor_fallback_suffix: None,
+                style,
             },
             labels: options.labels,
             scale: effective_scale(options.text_scale),
@@ -206,9 +232,18 @@ struct HandPaint {
 }
 
 impl<M: Clone + 'static> Dial<'_, '_, M> {
+    fn is_baseline(&self) -> bool {
+        matches!(self.input.style, TimePickerStyle::Baseline)
+    }
+
     fn view(&self) -> View<M> {
         let options = self.input.options;
-        let fit = time_dial_layout(
+        let fit_layout = if self.is_baseline() {
+            time_dial_baseline_layout
+        } else {
+            time_dial_layout
+        };
+        let fit = fit_layout(
             options.viewport.width,
             options.viewport.height,
             self.scale,
@@ -216,16 +251,22 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         );
         let layout = fit.filter(|_| self.state.mode() == DialMode::Dial && self.state.dial_fits());
         let (width, padding, body, initial, mode) = if let Some(layout) = layout {
-            let (width, padding) = match layout {
-                TimeDialLayout::Vertical => (
-                    vertical_controls_width(self.state.input().period().is_some())
-                        + 2. * PANEL_PADDING,
-                    PANEL_PADDING,
-                ),
-                TimeDialLayout::Horizontal => (
-                    HORIZONTAL_WIDTH + HORIZONTAL_GAP + FACE + 2. * HORIZONTAL_PADDING,
-                    HORIZONTAL_PADDING,
-                ),
+            let (width, padding) = if self.is_baseline() {
+                let metrics =
+                    baseline::DialMetrics::new(layout, self.scale, self.state.input().clock());
+                (metrics.panel_width, BASELINE_PANEL_PADDING)
+            } else {
+                match layout {
+                    TimeDialLayout::Vertical => (
+                        vertical_controls_width(self.state.input().period().is_some())
+                            + 2. * PANEL_PADDING,
+                        PANEL_PADDING,
+                    ),
+                    TimeDialLayout::Horizontal => (
+                        HORIZONTAL_WIDTH + HORIZONTAL_GAP + FACE + 2. * HORIZONTAL_PADDING,
+                        HORIZONTAL_PADDING,
+                    ),
+                }
             };
             (
                 width,
@@ -251,18 +292,33 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
                     self.input.theme.colors.on_surface_variant,
                 )
             });
+            let (width, padding, body) = if self.is_baseline() {
+                let width = self.input.baseline_modal_width(self.scale);
+                let padding = self.input.baseline_modal_padding(self.scale);
+                (
+                    width,
+                    padding,
+                    self.input
+                        .baseline_modal_body(width, padding, self.scale, reason),
+                )
+            } else {
+                (width, PANEL_PADDING, self.input.modal_body(width, reason))
+            };
             (
                 width,
-                PANEL_PADDING,
-                self.input
-                    .modal_body(width, reason)
-                    .restore_focus_in_subtree_on_removal(self.input.id("hour-selector")),
+                padding,
+                body.restore_focus_in_subtree_on_removal(self.input.id("hour-selector")),
                 "hour-input",
                 DialMode::Dial,
             )
         };
         let toggle = self.mode_button(mode, fit.is_some() && self.state.dial_fits());
-        let mut actions = self.input.actions(Some(toggle));
+        let mut actions = if self.is_baseline() && layout.is_some() {
+            self.input
+                .actions_with_height(Some(toggle), footer_height(self.scale.max(1.)))
+        } else {
+            self.input.actions(Some(toggle))
+        };
         if layout.is_some() {
             actions = actions.restore_focus_in_subtree_on_removal(self.input.id("hour-input"));
         }
@@ -331,6 +387,9 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
     }
 
     fn controls(&self, layout: TimeDialLayout) -> View<M> {
+        if self.is_baseline() {
+            return self.baseline_controls(layout);
+        }
         let vertical = layout == TimeDialLayout::Vertical;
         let period = self.state.input().period();
         let width = if vertical {
@@ -339,7 +398,7 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             HORIZONTAL_WIDTH
         };
         let title = self.input.title(width);
-        let fields = self.fields();
+        let fields = self.fields(None);
         let help = View::new(Node::new(Role::Group, "").styled(Style::column().gap(2.))).children(
             [TimeField::Hour, TimeField::Minute]
                 .into_iter()
@@ -383,13 +442,65 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         .accessibility_scroll_pages()
     }
 
-    fn fields(&self) -> View<M> {
-        let separator_type = typography::DISPLAY_LARGE_EMPHASIZED;
+    fn baseline_controls(&self, layout: TimeDialLayout) -> View<M> {
+        let vertical = layout == TimeDialLayout::Vertical;
+        let metrics = baseline::DialMetrics::new(layout, self.scale, self.state.input().clock());
+        let fields = self.fields(Some(&metrics));
+        let period = self.state.input().period().map(|value| {
+            self.input
+                .baseline_period(value, metrics.period, self.scale)
+        });
+        let mut controls = vec![self.input.title(metrics.controls_width)];
+        if vertical {
+            let row = View::new(
+                self.input.row(
+                    Node::new(Role::Group, "")
+                        .styled(Style::row().gap(PERIOD_GAP).align(Align::Center)),
+                ),
+            )
+            .children(std::iter::once(fields).chain(period));
+            controls.push(row);
+        } else {
+            controls.push(fields);
+            controls.extend(period);
+        }
+        controls.extend(
+            [TimeField::Hour, TimeField::Minute]
+                .into_iter()
+                .filter_map(|field| self.error(field)),
+        );
+        let mut style = Style::column()
+            .width(Length::Px(metrics.controls_width))
+            .gap(BODY_GAP)
+            .clip(true);
+        let available_height =
+            baseline::body_height_available(self.input.options.viewport.height, self.scale);
+        let face_row = if vertical { FACE + BODY_GAP } else { 0. };
+        style.max_height = Length::Px((available_height - face_row).max(0.));
+        View::new(
+            Node::new(Role::Group, "")
+                .id(self.input.id("dial-controls"))
+                .styled(style),
+        )
+        .children(controls)
+        .accessibility_scroll_pages()
+    }
+
+    fn fields(&self, baseline: Option<&baseline::DialMetrics>) -> View<M> {
+        let mut separator_type = typography::DISPLAY_LARGE_EMPHASIZED;
+        if baseline.is_some() {
+            separator_type = typography::DISPLAY_LARGE;
+            separator_type.font_size *= self.scale;
+            separator_type.line_height =
+                separator_type.line_height.map(|height| height * self.scale);
+        }
         let line_height = separator_type.line_height_px();
         let separator = View::new(
             Node::new(Role::Group, "").styled(
                 Style::column()
-                    .width(Length::Px(SEPARATOR))
+                    .width(Length::Px(
+                        baseline.map_or(SEPARATOR, |metrics| metrics.separator_width),
+                    ))
                     .align(Align::Center)
                     .justify(Align::Center),
             ),
@@ -415,9 +526,9 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             ),
         )
         .children([
-            self.selector(TimeField::Hour),
+            self.selector(TimeField::Hour, baseline),
             separator,
-            self.selector(TimeField::Minute),
+            self.selector(TimeField::Minute, baseline),
         ])
     }
 
@@ -428,7 +539,7 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         }
     }
 
-    fn selector(&self, field: TimeField) -> View<M> {
+    fn selector(&self, field: TimeField, baseline: Option<&baseline::DialMetrics>) -> View<M> {
         let session = self.state.input();
         let validation = session.validation().field(field);
         let preview = self
@@ -457,22 +568,33 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             ),
             Err(error) => (self.input.options.labels.error_text)(field, error, session.clock()),
         };
+        let corners = match (baseline.is_some(), selected) {
+            (true, _) => shape::SMALL,
+            (false, true) => shape::LARGE,
+            (false, false) => shape::MEDIUM,
+        };
+        let surface = if baseline.is_some() {
+            colors.surface_container_highest
+        } else {
+            colors.surface_container_lowest
+        };
+        let width = baseline.map_or(VERTICAL_FIELD, |metrics| metrics.field_width);
         let mut style = Style::column()
-            .width(Length::Px(VERTICAL_FIELD))
+            .width(Length::Px(width))
             .align(Align::Center)
             .justify(Align::Center)
-            .corners(if selected {
-                shape::LARGE
-            } else {
-                shape::MEDIUM
-            })
+            .corners(corners)
             .background(if selected && !disabled {
                 colors.primary_container
             } else {
-                colors.surface_container_lowest
+                surface
             })
             .state_layer(ink);
-        style.min_height = field_height(self.scale);
+        if let Some(metrics) = baseline {
+            style.height = Length::Px(metrics.field_height);
+        } else {
+            style.min_height = field_height(self.scale);
+        }
         let mut node = Node::new(Role::Radio, label)
             .id(self.selector_id(field))
             .checked(selected)
@@ -482,25 +604,40 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
         if session.displayed_error(field).is_some() {
             node = node.described_by_text(self.input.id(&format!("{}-error", field_part(field))));
         }
-        let number_style = if self.scale > 1.5 {
-            typography::HEADLINE_LARGE
+        let id = self.input.id(&format!("{}-dial-value", field_part(field)));
+        let number = if baseline.is_some() {
+            let number_style = baseline::number_style(&digits, self.scale, width);
+            View::new(
+                Node::new(Role::Text, "")
+                    .id(id)
+                    .text(digits)
+                    .text_scaling(TextScaling::Fixed)
+                    .styled(
+                        Style::column()
+                            .with_text_style(number_style)
+                            .foreground(ink),
+                    ),
+            )
         } else {
-            typography::DISPLAY_MEDIUM
+            let number_style = if self.scale > 1.5 {
+                typography::HEADLINE_LARGE
+            } else {
+                typography::DISPLAY_MEDIUM
+            };
+            text(id, &digits, number_style, ink)
         };
+        let caption = baseline.is_none().then(|| {
+            text("", self.caption(field), typography::LABEL_MEDIUM, ink).without_interaction(None)
+        });
         let view = button(
             node,
             (!disabled).then(|| (self.emit)(DialEvent::SetField(field))),
         )
-        .children([
-            text("", self.caption(field), typography::LABEL_MEDIUM, ink).without_interaction(None),
-            text(
-                self.input.id(&format!("{}-dial-value", field_part(field))),
-                &digits,
-                number_style,
-                ink,
-            )
-            .without_interaction(None),
-        ]);
+        .children(
+            caption
+                .into_iter()
+                .chain([number.without_interaction(None)]),
+        );
         if disabled {
             return view;
         }
@@ -583,14 +720,15 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             values.dedup();
         }
         let colors = self.input.theme.colors;
+        let background = if self.is_baseline() {
+            colors.surface_container_highest
+        } else {
+            colors.surface_container_lowest
+        };
         let face = View::new(
             Node::new(Role::RadioGroup, self.caption(field))
                 .id(self.input.id("dial-face"))
-                .styled(
-                    square(FACE)
-                        .corners(shape::FULL)
-                        .background(colors.surface_container_lowest),
-                ),
+                .styled(square(FACE).corners(shape::FULL).background(background)),
         )
         .children(visual.chain(values.into_iter().map(|value| {
             // Preview at a non-label minute has paint, but it is not a choice

@@ -1,9 +1,10 @@
 use surface::Rect;
 use surface_app::{AnimationFrame, AnimationUpdate, View};
 use surface_material::{
-    shape::LayoutDirection, time_dial_layout, ButtonKind, ClockFormat, DialEvent, DialHandMotion,
-    DialMode, DialState, Theme, TimeDialLabels, TimeDialOptions, TimeField, TimeInputEffect,
-    TimeInputOptions, TimeInputPresentation, TimeInputSession, TimeOfDay,
+    shape::LayoutDirection, time_dial_baseline_layout, time_dial_layout, ButtonKind, ClockFormat,
+    DialEvent, DialHandMotion, DialMode, DialState, Theme, TimeDialLabels, TimeDialOptions,
+    TimeField, TimeInputEffect, TimeInputOptions, TimeInputPresentation, TimeInputSession,
+    TimeOfDay,
 };
 
 use crate::{
@@ -18,6 +19,7 @@ const OPEN: &str = "time-dial-demo-open";
 #[derive(Clone)]
 pub enum TimeDialDemoEvent {
     Show,
+    ShowBaseline,
     Back,
     Direction,
     LargeText,
@@ -33,8 +35,19 @@ struct OpenDial {
     hand: DialHandMotion,
 }
 
+impl OpenDial {
+    fn apply(&mut self, event: DialEvent, baseline: bool) -> TimeInputEffect {
+        if baseline {
+            self.state.apply(event)
+        } else {
+            self.hand.apply(&mut self.state, event)
+        }
+    }
+}
+
 pub(crate) struct TimeDialDemo {
     visible: bool,
+    baseline: bool,
     rtl: bool,
     large_text: bool,
     japanese: bool,
@@ -50,6 +63,7 @@ impl Default for TimeDialDemo {
     fn default() -> Self {
         Self {
             visible: false,
+            baseline: false,
             rtl: false,
             large_text: false,
             japanese: false,
@@ -74,12 +88,23 @@ impl TimeDialDemo {
         )
     }
 
+    pub(crate) fn show_baseline_button(theme: &Theme) -> View<Message> {
+        theme.button_with(
+            "time-dial-baseline-demo-show",
+            "Baseline 錶盤",
+            ButtonKind::Outlined,
+            false,
+            Message::TimeDial(TimeDialDemoEvent::ShowBaseline),
+        )
+    }
+
     pub(crate) fn visible(&self) -> bool {
         self.visible
     }
 
     pub(crate) fn leave(&mut self) {
         self.visible = false;
+        self.baseline = false;
         self.draft = None;
     }
 
@@ -92,7 +117,12 @@ impl TimeDialDemo {
     }
 
     fn layout(&self) -> Option<surface_material::TimeDialLayout> {
-        time_dial_layout(
+        let plan = if self.baseline {
+            time_dial_baseline_layout
+        } else {
+            time_dial_layout
+        };
+        plan(
             self.viewport.width,
             self.viewport.height,
             self.text_scale(),
@@ -103,9 +133,7 @@ impl TimeDialDemo {
     fn update_fit(&mut self) {
         let fits = self.layout().is_some();
         if let Some(draft) = &mut self.draft {
-            draft
-                .hand
-                .apply(&mut draft.state, DialEvent::SetDialFits(fits));
+            draft.apply(DialEvent::SetDialFits(fits), self.baseline);
         }
     }
 
@@ -120,12 +148,20 @@ impl TimeDialDemo {
     }
 
     pub(crate) fn observe_focus(&mut self, focused: Option<&str>) -> bool {
-        self.draft
-            .as_mut()
-            .is_some_and(|draft| draft.state.observe_input_focus(field(focused, DIAL)))
+        self.draft.as_mut().is_some_and(|draft| {
+            let field = field(focused, DIAL);
+            if self.baseline {
+                draft.state.observe_baseline_input_focus(field)
+            } else {
+                draft.state.observe_input_focus(field)
+            }
+        })
     }
 
     pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
+        if self.baseline {
+            return AnimationUpdate::default();
+        }
         self.draft
             .as_mut()
             .map_or_else(AnimationUpdate::default, |draft| {
@@ -135,7 +171,10 @@ impl TimeDialDemo {
 
     pub(crate) fn update(&mut self, event: TimeDialDemoEvent) {
         match event {
-            TimeDialDemoEvent::Show => self.visible = true,
+            TimeDialDemoEvent::Show | TimeDialDemoEvent::ShowBaseline => {
+                self.visible = true;
+                self.baseline = matches!(event, TimeDialDemoEvent::ShowBaseline);
+            }
             TimeDialDemoEvent::Back => self.leave(),
             TimeDialDemoEvent::Direction => self.rtl = !self.rtl,
             TimeDialDemoEvent::LargeText => {
@@ -159,7 +198,7 @@ impl TimeDialDemo {
             TimeDialDemoEvent::Outside => self.outside_actions += 1,
             TimeDialDemoEvent::Dial(event) => {
                 if let Some(draft) = &mut self.draft {
-                    match draft.hand.apply(&mut draft.state, event) {
+                    match draft.apply(event, self.baseline) {
                         TimeInputEffect::Commit(value) => {
                             self.saved = value;
                             self.commits += 1;
@@ -237,30 +276,31 @@ impl TimeDialDemo {
                     },
                 )
             };
-            theme.time_dial_with_motion(
-                TimeDialOptions {
-                    input: TimeInputOptions {
-                        id: DIAL,
-                        title,
-                        labels: &labels(self.japanese, self.clock),
-                        locale: locale(self.japanese),
-                        direction: if self.rtl {
-                            LayoutDirection::RightToLeft
-                        } else {
-                            LayoutDirection::LeftToRight
-                        },
-                        presentation: TimeInputPresentation::Modal,
-                        viewport: self.viewport,
-                        disabled: false,
-                        restore_focus_to: Some(OPEN),
+            let options = TimeDialOptions {
+                input: TimeInputOptions {
+                    id: DIAL,
+                    title,
+                    labels: &labels(self.japanese, self.clock),
+                    locale: locale(self.japanese),
+                    direction: if self.rtl {
+                        LayoutDirection::RightToLeft
+                    } else {
+                        LayoutDirection::LeftToRight
                     },
-                    labels: &dial_labels,
-                    text_scale: self.text_scale(),
+                    presentation: TimeInputPresentation::Modal,
+                    viewport: self.viewport,
+                    disabled: false,
+                    restore_focus_to: Some(OPEN),
                 },
-                &draft.state,
-                &draft.hand,
-                |event| Message::TimeDial(TimeDialDemoEvent::Dial(event)),
-            )
+                labels: &dial_labels,
+                text_scale: self.text_scale(),
+            };
+            let emit = |event| Message::TimeDial(TimeDialDemoEvent::Dial(event));
+            if self.baseline {
+                theme.time_dial_baseline(options, &draft.state, emit)
+            } else {
+                theme.time_dial_with_motion(options, &draft.state, &draft.hand, emit)
+            }
         });
         let saved = theme.text("time-dial-demo-saved", format!("已儲存 {}", self.saved));
         theme.page([actions, controls, saved].into_iter().chain(modal))
@@ -287,7 +327,7 @@ impl TimeDialDemo {
                 "candidate": input.validation().candidate().map(|time| time.to_string()),
             })
         });
-        serde_json::json!({
+        let mut value = serde_json::json!({
             "visible": self.visible,
             "rtl": self.rtl,
             "locale": if self.japanese { "ja" } else { "zh-Hant" },
@@ -298,7 +338,11 @@ impl TimeDialDemo {
             "commits": self.commits,
             "outside_actions": self.outside_actions,
             "draft": draft,
-        })
+        });
+        if self.baseline {
+            value["variant"] = serde_json::json!("Baseline");
+        }
+        value
     }
 }
 

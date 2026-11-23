@@ -143,6 +143,12 @@ impl DialState {
         }
     }
 
+    /// Update the focused field when a Baseline Dial shows its Input mode.
+    /// Use the returned flag to refresh the editor's focused fill and outline.
+    pub fn observe_baseline_input_focus(&mut self, focused: Option<TimeField>) -> bool {
+        self.mode == DialMode::Input && self.input.observe_baseline_input_focus(focused)
+    }
+
     fn set_mode(&mut self, mode: DialMode) {
         if mode != self.mode {
             self.preview = None;

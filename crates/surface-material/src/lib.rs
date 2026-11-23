@@ -137,7 +137,8 @@ pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
 pub use time_dial::{
-    time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout, TimeDialOptions,
+    time_dial_baseline_layout, time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout,
+    TimeDialOptions,
 };
 pub use time_dial_state::{DialEvent, DialMode, DialPoint, DialPreview, DialState};
 pub use time_input::{TimeInputLabels, TimeInputOptions, TimeInputPresentation};

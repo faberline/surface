@@ -16,6 +16,7 @@ const OPEN: &str = "time-input-demo-modal-open";
 #[derive(Clone)]
 pub enum TimeInputDemoEvent {
     Show,
+    ShowBaseline,
     Back,
     Direction,
     LargeText,
@@ -29,6 +30,7 @@ pub enum TimeInputDemoEvent {
 
 pub(crate) struct TimeInputDemo {
     visible: bool,
+    baseline: bool,
     rtl: bool,
     large_text: bool,
     japanese: bool,
@@ -49,6 +51,7 @@ impl Default for TimeInputDemo {
         let midnight = TimeOfDay::new(0, 5).unwrap();
         Self {
             visible: false,
+            baseline: false,
             rtl: false,
             large_text: false,
             japanese: false,
@@ -76,6 +79,16 @@ impl TimeInputDemo {
         )
     }
 
+    pub(crate) fn show_baseline_button(theme: &Theme) -> View<Message> {
+        theme.button_with(
+            "time-input-baseline-demo-show",
+            "Baseline 時間輸入",
+            ButtonKind::Outlined,
+            false,
+            Message::TimeInput(TimeInputDemoEvent::ShowBaseline),
+        )
+    }
+
     pub(crate) fn visible(&self) -> bool {
         self.visible
     }
@@ -83,6 +96,7 @@ impl TimeInputDemo {
     pub(crate) fn leave(&mut self) {
         if self.visible {
             self.visible = false;
+            self.baseline = false;
             self.modal = None;
             self.reset_inline();
         }
@@ -108,10 +122,14 @@ impl TimeInputDemo {
             return false;
         }
         let inline = self.inline.observe_input_focus(field(focused, INLINE));
-        let modal = self
-            .modal
-            .as_mut()
-            .is_some_and(|session| session.observe_input_focus(field(focused, MODAL)));
+        let modal = self.modal.as_mut().is_some_and(|session| {
+            let field = field(focused, MODAL);
+            if self.baseline {
+                session.observe_baseline_input_focus(field)
+            } else {
+                session.observe_input_focus(field)
+            }
+        });
         inline || modal
     }
 
@@ -125,7 +143,10 @@ impl TimeInputDemo {
 
     pub(crate) fn update(&mut self, event: TimeInputDemoEvent) {
         match event {
-            TimeInputDemoEvent::Show => self.visible = true,
+            TimeInputDemoEvent::Show | TimeInputDemoEvent::ShowBaseline => {
+                self.visible = true;
+                self.baseline = matches!(event, TimeInputDemoEvent::ShowBaseline);
+            }
             TimeInputDemoEvent::Back => self.leave(),
             TimeInputDemoEvent::Direction => self.rtl = !self.rtl,
             TimeInputDemoEvent::LargeText => self.large_text = !self.large_text,
@@ -237,6 +258,27 @@ impl TimeInputDemo {
             disabled: false,
             restore_focus_to,
         };
+        let modal = self.modal.as_ref().map(|session| {
+            let options = options(
+                MODAL,
+                TimeInputPresentation::Modal,
+                self.viewport,
+                Some(OPEN),
+            );
+            let emit = |event| Message::TimeInput(TimeInputDemoEvent::Modal(event));
+            if self.baseline {
+                theme.time_input_baseline(options, self.text_scale(), session, emit)
+            } else {
+                theme.time_input(options, session, emit)
+            }
+        });
+        let modal_saved = theme.text(
+            "time-input-demo-modal-value",
+            format!("已儲存 {}", self.modal_committed),
+        );
+        if self.baseline {
+            return theme.page([controls, actions, modal_saved].into_iter().chain(modal));
+        }
         let inline_width = (self.viewport.width - 56.).max(0.);
         let inline = theme.time_input(
             options(
@@ -257,25 +299,9 @@ impl TimeInputDemo {
                 Message::TimeInput(TimeInputDemoEvent::Inline(TimeInputEvent::Confirm)),
             )
             .protect_composition_on_press();
-        let modal = self.modal.as_ref().map(|session| {
-            theme.time_input(
-                options(
-                    MODAL,
-                    TimeInputPresentation::Modal,
-                    self.viewport,
-                    Some(OPEN),
-                ),
-                session,
-                |event| Message::TimeInput(TimeInputDemoEvent::Modal(event)),
-            )
-        });
         let inline_saved = theme.text(
             "time-input-demo-inline-value",
             format!("已儲存 {}", self.inline_committed),
-        );
-        let modal_saved = theme.text(
-            "time-input-demo-modal-value",
-            format!("已儲存 {}", self.modal_committed),
         );
         theme.page(
             [
@@ -304,7 +330,7 @@ impl TimeInputDemo {
                 "minute_error": session.displayed_error(minute).map(|e| format!("{e:?}")),
             })
         };
-        serde_json::json!({
+        let mut value = serde_json::json!({
             "visible": self.visible,
             "rtl": self.rtl,
             "text_scale": self.text_scale(),
@@ -315,9 +341,13 @@ impl TimeInputDemo {
             "inline_commits": self.inline_commits,
             "modal_committed": self.modal_committed.to_string(),
             "modal_commits": self.modal_commits,
-            "inline": draft(&self.inline),
+            "inline": (!self.baseline).then(|| draft(&self.inline)),
             "modal": self.modal.as_ref().map(draft),
-        })
+        });
+        if self.baseline {
+            value["variant"] = serde_json::json!("Baseline");
+        }
+        value
     }
 }
 

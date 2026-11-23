@@ -1120,6 +1120,8 @@ impl Application for Gallery {
                 children.push(TimeInputDemo::show_button(&t));
                 children.push(TimeDialDemo::show_button(&t));
                 children.push(TimeScrollDemo::show_button(&t));
+                children.push(TimeInputDemo::show_baseline_button(&t));
+                children.push(TimeDialDemo::show_baseline_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1253,6 +1255,20 @@ mod web {
     pub fn inspect() -> String {
         APP.with(|a|{
         let a=a.borrow();let runtime=a.as_ref().expect("started").borrow();let s=runtime.app();
+        let time_input = s.time_input_demo.inspect();
+        let time_dial = s.time_dial_demo.inspect();
+        let baseline_time_colors = [&time_input, &time_dial].into_iter().any(|demo| demo["variant"] == "Baseline").then(|| {
+            let theme = if s.dark { Theme::dark() } else { Theme::light() };
+            let colors = theme.colors;
+            serde_json::json!({
+                "surface_container_high": colors.surface_container_high,
+                "surface_container_highest": colors.surface_container_highest,
+                "primary_container": colors.primary_container,
+                "primary": colors.primary,
+                "tertiary_container": colors.tertiary_container,
+                "outline": colors.outline,
+            })
+        });
         serde_json::json!({"section":s.section,"dark":s.dark,"radio":s.radio,"enabled":s.enabled,"check":format!("{:?}",s.check),"segment":s.segment,
             "volume":s.volume,"clicks":s.clicks,"filter":s.filter,"input_chip":s.input_chip,"dialog":s.dialog,"menu":s.menu,"name":s.name,"draft":s.draft,"nav":s.nav,"focused":runtime.focused(),
             "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
@@ -1272,8 +1288,9 @@ mod web {
             "date_picker": s.date_picker_demo.inspect(),
             "docked_date_picker": s.docked_date_picker_demo.inspect(),
             "date_range_picker": s.date_range_picker_demo.inspect(),
-            "time_input": s.time_input_demo.inspect(),
-            "time_dial": s.time_dial_demo.inspect(),
+            "time_input": time_input,
+            "time_dial": time_dial,
+            "baseline_time_colors": baseline_time_colors,
             "time_scroll": s.time_scroll_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),

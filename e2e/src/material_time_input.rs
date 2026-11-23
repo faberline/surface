@@ -640,7 +640,7 @@ async fn composition(env: &Env, tab: &Tab) -> Result<Value> {
     )
 }
 
-struct Raster {
+pub(super) struct Raster {
     bytes: Vec<u8>,
     frame: png::OutputInfo,
     channels: usize,
@@ -649,7 +649,7 @@ struct Raster {
 }
 
 impl Raster {
-    async fn read(tab: &Tab, path: PathBuf) -> Result<Self> {
+    pub(super) async fn read(tab: &Tab, path: PathBuf) -> Result<Self> {
         let mut decoder = png::Decoder::new(BufReader::new(File::open(path)?));
         decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
         let mut reader = decoder.read_info()?;
@@ -675,7 +675,7 @@ impl Raster {
         })
     }
 
-    fn colors(&self, rect: Rect) -> Result<BTreeMap<Rgb, usize>> {
+    pub(super) fn colors(&self, rect: Rect) -> Result<BTreeMap<Rgb, usize>> {
         let [x, y, w, h] = rect;
         let px = |x: f64| ((self.canvas[0] + x) * self.scale).round() as usize;
         let py = |y: f64| ((self.canvas[1] + y) * self.scale).round() as usize;
