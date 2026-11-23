@@ -7,10 +7,121 @@ use super::{
     BASELINE_END_INSET, EDGE_INSET, FOCUS_WIDTH, ROW_PADDING, SEGMENT_GAP, SLOT_GAP,
 };
 
-const TARGET: f32 = 48.;
+pub(super) const TARGET: f32 = 48.;
 const ACTION_GAP: f32 = 4.;
 const COMPACT_PADDING: f32 = 8.;
 const COMPACT_COPY_WIDTH: f32 = 32.;
+const TRAILING_LABEL_WIDTH: f32 = 0.28;
+
+#[derive(Clone, Copy)]
+pub(super) struct ListActionRow {
+    inline: bool,
+    compact: bool,
+    end: f32,
+    gutter: f32,
+    inset: f32,
+}
+
+impl ListActionRow {
+    pub(super) fn new<M>(
+        width: f32,
+        style: ListStyle,
+        item: &ListItem<'_, M>,
+        count: usize,
+    ) -> Self {
+        let baseline = style == ListStyle::Baseline;
+        let end = if baseline {
+            BASELINE_END_INSET
+        } else {
+            EDGE_INSET
+        };
+        let gutter = if baseline { EDGE_INSET } else { SLOT_GAP } - ROW_PADDING;
+        let leading_width = item
+            .leading
+            .map_or(0., |_| list_icon_size(style) + SLOT_GAP);
+        let trailing_width = TARGET * count as f32 + ACTION_GAP * count.saturating_sub(1) as f32;
+        let copy_width = |content_width: f32| {
+            let metadata = item.trailing.map_or(0., |_| {
+                content_width.max(0.) * TRAILING_LABEL_WIDTH + SLOT_GAP
+            });
+            content_width - leading_width - metadata
+        };
+        let inline_width = width - end - gutter - trailing_width - EDGE_INSET - ROW_PADDING;
+        let inline = count > 0 && copy_width(inline_width) > trailing_width;
+        let inset = if count > 0 && !inline {
+            ROW_PADDING.min((width - TARGET) / 2.)
+        } else {
+            0.
+        };
+        let compact =
+            !inline && copy_width(width - 2. * inset - EDGE_INSET - end) < COMPACT_COPY_WIDTH;
+        Self {
+            inline,
+            compact,
+            end,
+            gutter,
+            inset,
+        }
+    }
+
+    pub(super) fn style(self) -> Style {
+        let row = if self.inline {
+            Style::row()
+        } else {
+            // The full-width primary occupies the first line. The remaining
+            // fixed-width buttons wrap in authored order and align to the end.
+            Style::row()
+                .wrap(true)
+                .justify(Align::End)
+                .gap(ACTION_GAP)
+                .padding(self.inset)
+        };
+        row.width(Length::Percent(1.)).align(Align::Stretch)
+    }
+
+    pub(super) fn children<M>(self, primary: View<M>, extras: Vec<View<M>>) -> Vec<View<M>> {
+        let mut children = vec![primary];
+        if self.inline {
+            children.push(spacer(self.gutter));
+        }
+        for (index, action) in extras.into_iter().enumerate() {
+            if self.inline && index != 0 {
+                children.push(spacer(ACTION_GAP));
+            }
+            children.push(action);
+        }
+        if self.inline {
+            children.push(spacer(self.end));
+        }
+        children
+    }
+
+    fn padding(self) -> f32 {
+        if self.compact {
+            COMPACT_PADDING
+        } else {
+            ROW_PADDING
+        }
+    }
+
+    pub(super) fn primary_style(self, list_style: ListStyle, lines: ListLines) -> Style {
+        let mut style = Style::column()
+            .justify(row_alignment(lines))
+            .padding(self.padding())
+            .corners(if list_style == ListStyle::Baseline {
+                shape::NONE
+            } else {
+                shape::LARGE
+            });
+        style.min_width = TARGET;
+        style.min_height = lines.min_height();
+        if self.inline {
+            style.width(Length::Px(0.)).grow(1.)
+        } else {
+            style.width(Length::Percent(1.))
+        }
+    }
+}
 
 /// Placement and style of a list with independent row actions.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -108,31 +219,13 @@ impl Theme {
         first: bool,
         last: bool,
     ) -> View<M> {
-        let width = options.available_width;
-        let baseline = options.style == ListStyle::Baseline;
         let icon_size = list_icon_size(options.style);
-        let end = if baseline {
-            BASELINE_END_INSET
-        } else {
-            EDGE_INSET
-        };
-        let gutter = if baseline { EDGE_INSET } else { SLOT_GAP } - ROW_PADDING;
-        let leading_width = item.leading.map_or(0., |_| icon_size + SLOT_GAP);
-        let count = item.actions.len();
-        let trailing_width = TARGET * count as f32 + ACTION_GAP * count.saturating_sub(1) as f32;
-        let inline_copy_width =
-            width - end - gutter - trailing_width - EDGE_INSET - leading_width - ROW_PADDING;
-        let inline = count > 0 && inline_copy_width > trailing_width;
-        let inset = if count > 0 && !inline {
-            ROW_PADDING.min((width - TARGET) / 2.)
-        } else {
-            0.
-        };
-        let compact =
-            !inline && width - 2. * inset - EDGE_INSET - leading_width - end < COMPACT_COPY_WIDTH;
-        let corners = row_corners(options.style, false, first, last);
-        let actions = item.actions;
-        let primary = self.multi_action_primary(
+        let actions = item
+            .actions
+            .into_iter()
+            .map(|action| self.supplementary_action(action, item.id, icon_size))
+            .collect();
+        self.list_action_row(
             options,
             ListItem {
                 id: item.id,
@@ -145,38 +238,24 @@ impl Theme {
                 disabled: item.disabled,
                 on_activate: item.on_activate,
             },
-            inline,
-            compact,
-            end,
-        );
-        let mut children = vec![primary];
-        if inline {
-            children.push(spacer(gutter));
-        }
-        for (index, action) in actions.into_iter().enumerate() {
-            if inline && index != 0 {
-                children.push(spacer(ACTION_GAP));
-            }
-            children.push(self.supplementary_action(action, item.id, icon_size));
-        }
-        if inline {
-            children.push(spacer(end));
-        }
+            actions,
+            first,
+            last,
+        )
+    }
 
-        let mut style = if inline {
-            Style::row()
-        } else {
-            // The full-width primary occupies the first line. The remaining
-            // fixed-width buttons wrap in authored order and align to the end.
-            Style::row()
-                .wrap(true)
-                .justify(Align::End)
-                .gap(ACTION_GAP)
-                .padding(inset)
-        }
-        .width(Length::Percent(1.))
-        .align(Align::Stretch)
-        .corners(corners);
+    pub(super) fn list_action_row<M>(
+        &self,
+        options: MultiActionListOptions<'_>,
+        item: ListItem<'_, M>,
+        actions: Vec<View<M>>,
+        first: bool,
+        last: bool,
+    ) -> View<M> {
+        let placement =
+            ListActionRow::new(options.available_width, options.style, &item, actions.len());
+        let corners = row_corners(options.style, false, first, last);
+        let mut style = placement.style().corners(corners);
         if options.style == ListStyle::Segmented {
             style = style.background(self.colors.surface);
         }
@@ -186,16 +265,16 @@ impl Theme {
         if options.direction == LayoutDirection::RightToLeft {
             row = row.reverse_row();
         }
-        View::new(row).children(children)
+        View::new(row).children(
+            placement.children(self.multi_action_primary(options, item, placement), actions),
+        )
     }
 
     fn multi_action_primary<M>(
         &self,
         options: MultiActionListOptions<'_>,
         item: ListItem<'_, M>,
-        inline: bool,
-        compact: bool,
-        end: f32,
+        placement: ListActionRow,
     ) -> View<M> {
         let disabled = item.disabled || item.on_activate.is_none();
         let (ink, secondary_ink) = if disabled {
@@ -204,60 +283,12 @@ impl Theme {
         } else {
             (self.colors.on_surface, self.colors.on_surface_variant)
         };
-        let padding = if compact {
-            COMPACT_PADDING
-        } else {
-            ROW_PADDING
-        };
-        let mut style = Style::column()
-            .justify(row_alignment(item.lines))
-            .padding(padding)
-            .corners(if options.style == ListStyle::Baseline {
-                shape::NONE
-            } else {
-                shape::LARGE
-            });
-        style.min_width = TARGET;
-        style.min_height = item.lines.min_height();
-        let style = if inline {
-            style.width(Length::Px(0.)).grow(1.)
-        } else {
-            style.width(Length::Percent(1.))
-        };
+        let style = placement.primary_style(options.style, item.lines);
         let mut node = Node::new(Role::Button, item.headline).id(item.id);
         if item.supporting.is_some() {
             node = node.described_by_text(format!("{}-supporting", item.id));
         }
-        let copy = row_copy(&item, ink, secondary_ink, false);
-        let leading = item.leading.map(|icon| {
-            let size = list_icon_size(options.style);
-            list_icon(
-                format!("{}-leading", item.id),
-                size,
-                icon.contour_dp(size, secondary_ink),
-            )
-        });
-        let content = if compact {
-            let line =
-                |child| View::new(logical_row(Style::row(), options.direction)).children([child]);
-            View::new(Node::new(Role::Group, "").styled(Style::column().gap(ACTION_GAP)))
-                .children(leading.map(line).into_iter().chain([line(copy)]))
-        } else {
-            let content = View::new(logical_row(
-                Style::row()
-                    .width(Length::Px(0.))
-                    .grow(1.)
-                    .align(row_alignment(item.lines))
-                    .gap(SLOT_GAP),
-                options.direction,
-            ))
-            .children(leading.into_iter().chain([copy]));
-            View::new(logical_row(Style::row(), options.direction)).children(
-                [spacer(EDGE_INSET - padding), content]
-                    .into_iter()
-                    .chain((!inline).then(|| spacer(end - padding))),
-            )
-        };
+        let content = list_action_copy(options, &item, placement, ink, secondary_ink);
         self.list_action_button(node, style, ink, item.on_activate.filter(|_| !disabled))
             .children([content])
     }
@@ -280,24 +311,22 @@ impl Theme {
         if let Some(checked) = action.checked {
             node = node.checked(checked);
         }
-        let mut style = Style::column()
-            .width(Length::Px(TARGET))
-            .align(Align::Center)
-            .justify(Align::Center)
-            .corners(shape::LARGE);
-        style.min_width = TARGET;
-        style.min_height = TARGET;
         let icon = list_icon(
             format!("{}-icon", action.id),
             icon_size,
             action.icon.contour_dp(icon_size, ink),
         );
-        self.list_action_button(node, style, ink, action.on_activate.filter(|_| !disabled))
-            .children([icon])
-            .restore_focus_on_removal(primary)
+        self.list_action_button(
+            node,
+            list_action_target(),
+            ink,
+            action.on_activate.filter(|_| !disabled),
+        )
+        .children([icon])
+        .restore_focus_on_removal(primary)
     }
 
-    fn list_action_button<M>(
+    pub(super) fn list_action_button<M>(
         &self,
         node: Node,
         style: Style,
@@ -313,5 +342,77 @@ impl Theme {
         )
         .suppress_repeated_activation()
         .accessibility_scroll_into_view()
+    }
+}
+
+pub(super) fn list_action_target() -> Style {
+    let mut style = Style::column()
+        .width(Length::Px(TARGET))
+        .align(Align::Center)
+        .justify(Align::Center)
+        .corners(shape::LARGE);
+    style.min_width = TARGET;
+    style.min_height = TARGET;
+    style
+}
+
+pub(super) fn list_action_copy<M>(
+    options: MultiActionListOptions<'_>,
+    item: &ListItem<'_, M>,
+    placement: ListActionRow,
+    ink: Color,
+    secondary_ink: Color,
+) -> View<M> {
+    let copy = row_copy(item, ink, secondary_ink, false);
+    let leading = item.leading.map(|icon| {
+        let size = list_icon_size(options.style);
+        list_icon(
+            format!("{}-leading", item.id),
+            size,
+            icon.contour_dp(size, secondary_ink),
+        )
+    });
+    let trailing = item.trailing.map(|label| {
+        let mut style = Style::column()
+            .with_text_style(crate::typography::LABEL_SMALL)
+            .foreground(secondary_ink);
+        if !placement.compact {
+            style.max_width = Length::Percent(TRAILING_LABEL_WIDTH);
+        }
+        View::new(
+            Node::new(Role::Text, label)
+                .id(format!("{}-trailing", item.id))
+                .text(label)
+                .shrink_to_fit_width()
+                .styled(style),
+        )
+        .without_interaction(None)
+    });
+    if placement.compact {
+        let line =
+            |child| View::new(logical_row(Style::row(), options.direction)).children([child]);
+        View::new(Node::new(Role::Group, "").styled(Style::column().gap(ACTION_GAP))).children(
+            leading
+                .map(line)
+                .into_iter()
+                .chain([line(copy)])
+                .chain(trailing),
+        )
+    } else {
+        let content = View::new(logical_row(
+            Style::row()
+                .width(Length::Px(0.))
+                .grow(1.)
+                .align(row_alignment(item.lines))
+                .gap(SLOT_GAP),
+            options.direction,
+        ))
+        .children(leading.into_iter().chain([copy]).chain(trailing));
+        let padding = placement.padding();
+        View::new(logical_row(Style::row(), options.direction)).children(
+            [spacer(EDGE_INSET - padding), content]
+                .into_iter()
+                .chain((!placement.inline).then(|| spacer(placement.end - padding))),
+        )
     }
 }

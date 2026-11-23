@@ -3,7 +3,7 @@ use crate::{
     AppError, Application, Runtime,
 };
 use std::rc::Rc;
-use surface::{NodeId, Rect, Role};
+use surface::{ComputedDom, MicroDom, NodeId, Rect, Role};
 
 /// A horizontal gesture in logical pixels. Positive displacement and velocity
 /// point toward the physical right. Velocity is in logical pixels per second.
@@ -104,6 +104,48 @@ impl PartialEq for PointDragSession {
 
 impl Eq for PointDragSession {}
 
+/// The bounds and ancestor clip of a measured node in the last rendered frame.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PointDragTarget {
+    pub bounds: Rect,
+    pub clip: Rect,
+}
+
+/// A small snapshot for hit and drop rules during an opted-in point drag.
+/// Bounds use logical window coordinates. Missing IDs stay in request order.
+pub struct PointDragLayout {
+    pub viewport: Rect,
+    ids: Rc<[String]>,
+    targets: Vec<Option<PointDragTarget>>,
+}
+
+impl PointDragLayout {
+    pub fn targets(&self) -> impl Iterator<Item = (&str, Option<PointDragTarget>)> + '_ {
+        self.ids
+            .iter()
+            .map(String::as_str)
+            .zip(self.targets.iter().copied())
+    }
+
+    fn capture(ids: Rc<[String]>, dom: &MicroDom, layout: &ComputedDom) -> Self {
+        let targets = ids
+            .iter()
+            .map(|key| {
+                let geometry = layout.nodes.get(dom.by_id(key)?.index())?;
+                Some(PointDragTarget {
+                    bounds: geometry.bounds,
+                    clip: geometry.clip,
+                })
+            })
+            .collect();
+        Self {
+            viewport: layout.viewport,
+            ids,
+            targets,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 enum Axis {
     Horizontal,
@@ -142,11 +184,12 @@ struct Binding<M> {
     update: Rc<dyn Fn(Drag, Rect) -> M>,
 }
 
-type PointUpdate<M> = Rc<dyn Fn(PointDrag, Rect) -> Option<M>>;
+type PointUpdate<M> = Rc<dyn Fn(PointDrag, Rect, Option<&PointDragLayout>) -> Option<M>>;
 
 struct PointBinding<M> {
     session: PointDragSession,
     update: PointUpdate<M>,
+    measure: Option<Rc<[String]>>,
 }
 
 pub(crate) struct Bindings<M> {
@@ -209,11 +252,13 @@ impl<M> Bindings<M> {
     pub(crate) fn set_point(
         &mut self,
         session: PointDragSession,
-        update: impl Fn(PointDrag, Rect) -> Option<M> + 'static,
+        measure: Option<Rc<[String]>>,
+        update: impl Fn(PointDrag, Rect, Option<&PointDragLayout>) -> Option<M> + 'static,
     ) {
         self.point = Some(PointBinding {
             session,
             update: Rc::new(update),
+            measure,
         });
     }
 
@@ -231,12 +276,18 @@ struct AxisMotion {
     velocity: Velocity,
 }
 
-struct PointMotion {
-    session: PointDragSession,
-    claimed: bool,
+struct MeasuredPoint<M> {
+    update: PointUpdate<M>,
+    layout: PointDragLayout,
 }
 
-pub(crate) struct Tracking {
+struct PointMotion<M> {
+    session: PointDragSession,
+    claimed: bool,
+    measured: Option<MeasuredPoint<M>>,
+}
+
+pub(crate) struct Tracking<M> {
     id: String,
     role: Role,
     scope: Option<String>,
@@ -244,7 +295,18 @@ pub(crate) struct Tracking {
     bounds: Rect,
     motion: [Option<AxisMotion>; 2],
     claimed: Option<Axis>,
-    point: Option<PointMotion>,
+    point: Option<PointMotion<M>>,
+}
+
+impl<M> Tracking<M> {
+    fn point_message(&self, binding: &PointBinding<M>, event: PointDrag) -> Option<M> {
+        let point = self.point.as_ref()?;
+        if let Some(measured) = &point.measured {
+            (measured.update)(event, self.bounds, Some(&measured.layout))
+        } else {
+            (binding.update)(event, self.bounds, None)
+        }
+    }
 }
 
 impl<A: Application> Runtime<A> {
@@ -306,16 +368,19 @@ impl<A: Application> Runtime<A> {
     pub(crate) fn begin_drag(&mut self, id: NodeId, x: f32, y: f32) {
         let node = self.dom.get(id).expect("drag candidate exists");
         let bindings = &self.bindings[&id].drag_bindings;
-        let bounds = self
+        let layout = self
             .computed
             .as_ref()
-            .expect("drag candidate has current geometry")
-            .nodes[id.index()]
-        .bounds;
+            .expect("drag candidate has current geometry");
+        let bounds = layout.nodes[id.index()].bounds;
         let now = self.input_time_ms();
         let point = bindings.point.as_ref().map(|binding| PointMotion {
             session: binding.session.clone(),
             claimed: false,
+            measured: binding.measure.as_ref().map(|ids| MeasuredPoint {
+                update: binding.update.clone(),
+                layout: PointDragLayout::capture(ids.clone(), &self.dom, layout),
+            }),
         });
         let motion = if point.is_some() {
             [None, None]
@@ -342,14 +407,26 @@ impl<A: Application> Runtime<A> {
         });
     }
 
-    fn matching_drag_owner(&self, drag: &Tracking) -> Option<NodeId> {
+    pub(crate) fn refresh_point_drag_layout(&mut self, layout: &ComputedDom) {
+        if let Some(measured) = self
+            .captured_drag
+            .as_mut()
+            .and_then(|drag| drag.point.as_mut())
+            .and_then(|point| point.measured.as_mut())
+        {
+            measured.layout =
+                PointDragLayout::capture(measured.layout.ids.clone(), &self.dom, layout);
+        }
+    }
+
+    fn matching_drag_owner(&self, drag: &Tracking<A::Message>) -> Option<NodeId> {
         let id = self.dom.by_id(&drag.id)?;
         (self.dom.get(id).ok()?.role() == drag.role).then_some(id)
     }
 
     fn matching_drag_binding(
         &self,
-        drag: &Tracking,
+        drag: &Tracking<A::Message>,
         axis: Axis,
     ) -> Option<(NodeId, &Binding<A::Message>)> {
         let motion = drag.motion[axis as usize].as_ref()?;
@@ -360,7 +437,7 @@ impl<A: Application> Runtime<A> {
 
     fn matching_point_binding(
         &self,
-        drag: &Tracking,
+        drag: &Tracking<A::Message>,
     ) -> Option<(NodeId, &PointBinding<A::Message>)> {
         let motion = drag.point.as_ref()?;
         let id = self.matching_drag_owner(drag)?;
@@ -368,12 +445,16 @@ impl<A: Application> Runtime<A> {
         (binding.session == motion.session).then_some((id, binding))
     }
 
-    fn active_drag_binding(&self, drag: &Tracking, axis: Axis) -> Option<&Binding<A::Message>> {
+    fn active_drag_binding(
+        &self,
+        drag: &Tracking<A::Message>,
+        axis: Axis,
+    ) -> Option<&Binding<A::Message>> {
         let (id, binding) = self.matching_drag_binding(drag, axis)?;
         (self.in_drag_scope(id) && self.drag_scope() == drag.scope.as_deref()).then_some(binding)
     }
 
-    fn drag_still_active(&self, drag: &Tracking) -> bool {
+    fn drag_still_active(&self, drag: &Tracking<A::Message>) -> bool {
         if drag.point.is_some() {
             return self.matching_point_binding(drag).is_some_and(|(id, _)| {
                 self.in_drag_scope(id) && self.drag_scope() == drag.scope.as_deref()
@@ -460,7 +541,7 @@ impl<A: Application> Runtime<A> {
 
     fn update_point_drag(
         &mut self,
-        mut drag: Tracking,
+        mut drag: Tracking<A::Message>,
         position: (f32, f32),
         distance: f32,
         release: bool,
@@ -487,7 +568,7 @@ impl<A: Application> Runtime<A> {
             (self.drag_candidate(self.hit(x, y), x, y) == Some(owner))
                 .then_some(PointDrag::Tap { origin, position })
         };
-        let message = event.and_then(|event| (binding.update)(event, drag.bounds));
+        let message = event.and_then(|event| drag.point_message(binding, event));
         self.retire_drag_tap();
         if !claimed {
             self.hovered = None;
@@ -537,13 +618,13 @@ impl<A: Application> Runtime<A> {
             .is_some_and(|drag| drag.point.is_some())
     }
 
-    fn finish_drag_cancel(&mut self, drag: Tracking) -> Result<bool, AppError> {
+    fn finish_drag_cancel(&mut self, drag: Tracking<A::Message>) -> Result<bool, AppError> {
         self.retire_drag_tap();
         // A matching session can roll its preview back after leaving a
         // scope. A replacement must not receive the old gesture.
         let message = if drag.point.as_ref().is_some_and(|motion| motion.claimed) {
             self.matching_point_binding(&drag)
-                .and_then(|(_, binding)| (binding.update)(PointDrag::Cancel, drag.bounds))
+                .and_then(|(_, binding)| drag.point_message(binding, PointDrag::Cancel))
         } else {
             drag.claimed
                 .and_then(|axis| self.matching_drag_binding(&drag, axis))

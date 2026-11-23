@@ -30,8 +30,8 @@ pub use accessibility::{
     AccessibilityScrollTarget,
 };
 pub use captured_drag::{
-    HorizontalDrag, HorizontalDragSession, PointDrag, PointDragSession, VerticalDrag,
-    VerticalDragSession,
+    HorizontalDrag, HorizontalDragSession, PointDrag, PointDragLayout, PointDragSession,
+    PointDragTarget, VerticalDrag, VerticalDragSession,
 };
 pub use context::PointerPoint;
 pub use controls::{FocusNavigation, Roving};
@@ -262,7 +262,26 @@ impl<M> View<M> {
         session: PointDragSession,
         update: impl Fn(PointDrag, Rect) -> Option<M> + 'static,
     ) -> Self {
-        self.drag_bindings.set_point(session, update);
+        self.drag_bindings
+            .set_point(session, None, move |event, bounds, _| update(event, bounds));
+        self
+    }
+
+    /// Capture a point drag and measure selected stable IDs after each render.
+    /// The update from pointer down receives the original owner bounds and
+    /// the latest successfully rendered geometry. This covers a scroll between
+    /// the last move and release, including when a rebuild has retired the
+    /// live layout. Retain the session and change it to replace the operation.
+    pub fn on_point_drag_with_layout(
+        mut self,
+        session: PointDragSession,
+        ids: Rc<[String]>,
+        update: impl Fn(PointDrag, Rect, &PointDragLayout) -> Option<M> + 'static,
+    ) -> Self {
+        self.drag_bindings
+            .set_point(session, Some(ids), move |event, bounds, layout| {
+                update(event, bounds, layout?)
+            });
         self
     }
 
@@ -856,7 +875,7 @@ pub struct Runtime<A: Application> {
     text_drag: Option<String>,
     scopes: Vec<controls::FocusScope>,
     range_drag: Option<controls::RangeDrag>,
-    captured_drag: Option<captured_drag::Tracking>,
+    captured_drag: Option<captured_drag::Tracking<A::Message>>,
     pointer_geometry_current: bool,
     modal_layers: Vec<(Option<NodeId>, NodeId)>,
     accessibility: Option<accessibility::Revision>,
@@ -1400,6 +1419,7 @@ impl<A: Application> Runtime<A> {
                 interaction,
             });
         }
+        self.refresh_point_drag_layout(&computed);
         self.computed = Some(computed);
         Ok(list)
     }

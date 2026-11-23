@@ -160,6 +160,7 @@ does not change application state.
 | `multi_select_list` | The same three list styles with independent, app-owned selection for each row |
 | `multi_action_list` | A primary action and separate supplementary commands or toggles with a shared keyboard order |
 | `expandable_list` | Inline disclosure rows that reveal a nested list and move following rows in the same scroll flow |
+| `reorderable_list` | Stable row order, a pointer grip, and separate Move Up and Move Down buttons |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -917,10 +918,41 @@ returns to the enabled header. When the app opens a branch above a
 fully visible focused row, the scroll area keeps that row in view.
 Try **可展開清單** in the Gallery.
 
+### Reorderable rows
+
+Use `Theme::reorderable_list` with a `ReorderableListOptions` value and
+`ReorderableListItem` values. Place the list in the named clipped scroll
+area. Pass its available width and a revision of the app's row order.
+Give each row a stable ID and localized names for its up and down buttons.
+Set `movable` to false to keep a row fixed. The other rows stay on their
+side of that row. The primary command works independently.
+
+Retain one `ListReorderState` for each list. Forward its input to
+`state.update(input, revision, &order)`. The order is a slice of
+`ListReorderEntry` values. If the app accepts the request, remove `item`
+and insert it before the returned stable ID. A missing `before` ID means
+the end of the list. Change the revision whenever order or movability changes.
+Use a visible live status to announce the new position.
+
+Call `state.advance(options, &order, &frame, Some(&queue))` from the app's
+animation frame hook to update the preview and scroll at the edge. Use the
+returned update flags. A drag changes the preview until release. The drop
+uses the measured positions from the last rendered frame, including the
+scroll offset. Call `state.cancel()` when leaving the list or replacing the
+interaction. Escape and host pointer cancellation discard the drag.
+
+The same order is available through the up and down buttons with a click,
+tap, Enter, Space, or an accessibility press. Arrows move focus through
+each enabled action, and the group uses one Tab stop. If a move reaches a
+boundary, focus stays on the row when another action can receive it. At
+narrow widths the separate 48 dp controls wrap below the headline.
+Try **可排序清單** in the Gallery.
+
 [Material 3 list specs](https://m3.material.io/components/lists/specs) ·
 [Material 3 list guidelines](https://m3.material.io/components/lists/guidelines) ·
 [Material 3 list accessibility](https://m3.material.io/components/lists/accessibility) ·
-[WAI-ARIA listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/)
+[WAI-ARIA listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/) ·
+[WCAG dragging movements](https://www.w3.org/WAI/WCAG22/Understanding/dragging-movements.html)
 
 ## Tooltips
 
