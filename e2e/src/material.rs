@@ -32,6 +32,8 @@ mod material_fab;
 mod material_fab_menu;
 #[path = "material_list_actions.rs"]
 mod material_list_actions;
+#[path = "material_list_expansion.rs"]
+mod material_list_expansion;
 #[path = "material_lists.rs"]
 mod material_lists;
 #[path = "material_lists_multi.rs"]
@@ -80,7 +82,8 @@ pub const STEPS: &[&str] = &[
     "M131", "M132", "M133", "M134", "M135", "M136", "M137", "M138", "M139", "M140", "M141", "M142",
     "M143", "M144", "M145", "M146", "M147", "M148", "M149", "M150", "M151", "M152", "M153", "M154",
     "M155", "M156", "M157", "M158", "M159", "M160", "M161", "M162", "M163", "M164", "M165", "M166",
-    "M167", "M168", "M169", "M170", "M171", "M172", "M173", "M174", "M175", "M176", "M177",
+    "M167", "M168", "M169", "M170", "M171", "M172", "M173", "M174", "M175", "M176", "M177", "M178",
+    "M179", "M180", "M181",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -181,7 +184,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_time_baseline::run(env, chrome, &url).await?;
     material_lists::run(env, chrome, &url).await?;
     material_lists_multi::run(env, chrome, &url).await?;
-    material_list_actions::run(env, chrome, &url).await
+    material_list_actions::run(env, chrome, &url).await?;
+    material_list_expansion::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

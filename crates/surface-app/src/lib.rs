@@ -340,6 +340,7 @@ impl<M> View<M> {
             first_enabled_on_entry: false,
             retain_focus: false,
             all_arrows: false,
+            reveal_after_rebuild: false,
         });
         self
     }
@@ -353,6 +354,7 @@ impl<M> View<M> {
             first_enabled_on_entry: true,
             retain_focus: false,
             all_arrows: false,
+            reveal_after_rebuild: false,
         });
         self
     }
@@ -367,6 +369,21 @@ impl<M> View<M> {
             first_enabled_on_entry: false,
             retain_focus: true,
             all_arrows: false,
+            reveal_after_rebuild: false,
+        });
+        self
+    }
+
+    /// Retain focus as with [`Self::roving_retained`] and keep a fully visible
+    /// focused item in view when rows resize in flow. Once the user scrolls the
+    /// item out of view, a layout rebuild alone leaves it there.
+    pub fn roving_retained_layout(mut self, options: Roving) -> Self {
+        self.roving = Some(controls::RovingGroup {
+            options,
+            first_enabled_on_entry: false,
+            retain_focus: true,
+            all_arrows: false,
+            reveal_after_rebuild: true,
         });
         self
     }
@@ -382,6 +399,7 @@ impl<M> View<M> {
             first_enabled_on_entry: true,
             retain_focus: true,
             all_arrows: true,
+            reveal_after_rebuild: false,
         });
         self
     }

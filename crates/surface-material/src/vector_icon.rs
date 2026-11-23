@@ -3,6 +3,27 @@ use surface_app::View;
 
 const VIEWBOX: f32 = 24.;
 
+pub(crate) fn chevron_contour(size: f32, angle: f32, ink: Color) -> Option<FillContour> {
+    let (sine, cosine) = angle.to_radians().sin_cos();
+    let point = |(x, y): (f32, f32)| {
+        let (x, y) = (x - 12., y - 12.);
+        [
+            (x * cosine - y * sine + 12.) * size / VIEWBOX,
+            (x * sine + y * cosine + 12.) * size / VIEWBOX,
+        ]
+    };
+    let points = [
+        (6., 9.),
+        (12., 15.),
+        (18., 9.),
+        (16.5, 7.5),
+        (12., 12.),
+        (7.5, 7.5),
+    ]
+    .map(point);
+    FillContour::new(points, ink)
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum VectorIconSize {
     Dp24,

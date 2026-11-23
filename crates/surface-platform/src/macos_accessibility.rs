@@ -561,6 +561,132 @@ mod tests {
     }
 
     #[test]
+    fn inline_list_disclosure_projects_state_and_retires_removed_child_actions() {
+        #[derive(Clone, Copy)]
+        enum Message {
+            Open(bool),
+            ChildPress,
+        }
+
+        #[derive(Default)]
+        struct Disclosure {
+            open: bool,
+            child_presses: usize,
+        }
+
+        impl Application for Disclosure {
+            type Message = Message;
+
+            fn update(&mut self, message: Message) {
+                match message {
+                    Message::Open(open) => self.open = open,
+                    Message::ChildPress => self.child_presses += 1,
+                }
+            }
+
+            fn view(&self) -> View<Message> {
+                let header = View::new(
+                    SurfaceNode::new(SurfaceRole::Button, "Projects")
+                        .id("projects")
+                        .styled(Style::column().height(Length::Px(56.))),
+                )
+                .disclosure_expanded(self.open)
+                .on_press(Message::Open(!self.open))
+                .accessible_activation();
+                let children = self.open.then(|| {
+                    let notes = View::new(
+                        SurfaceNode::new(SurfaceRole::Button, "Notes")
+                            .id("notes")
+                            .styled(Style::column().height(Length::Px(56.))),
+                    )
+                    .on_press(Message::ChildPress)
+                    .accessible_activation();
+                    let row =
+                        View::new(SurfaceNode::new(SurfaceRole::ListItem, "")).children([notes]);
+                    let nested = View::new(SurfaceNode::new(SurfaceRole::List, "")).children([row]);
+                    View::new(SurfaceNode::new(SurfaceRole::Group, ""))
+                        .children([nested])
+                        .restore_focus_in_subtree_on_removal("projects")
+                });
+                let branch = View::new(SurfaceNode::new(SurfaceRole::ListItem, ""))
+                    .children(std::iter::once(header).chain(children));
+                let list =
+                    View::new(SurfaceNode::new(SurfaceRole::List, "Work")).children([branch]);
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Window")).children([list])
+            }
+        }
+
+        let mut runtime = Runtime::new(Disclosure::default()).unwrap();
+        let mut tree = Tree::default();
+        let request = |action, target_node| ActionRequest {
+            action,
+            target_tree: TreeId::ROOT,
+            target_node,
+            data: None,
+        };
+        let frame = update(&mut runtime, &mut tree);
+        let (header_id, header) = named(&frame, "Projects");
+        assert_eq!(header.role(), Role::Button);
+        assert_eq!(header.is_expanded(), Some(false));
+        assert_eq!(header.has_popup(), None);
+        assert!(frame
+            .nodes
+            .iter()
+            .all(|(_, node)| node.label() != Some("Notes")));
+        assert!(tree
+            .action(&mut runtime, request(Action::Focus, header_id))
+            .unwrap());
+        assert!(!runtime.app().open);
+
+        let frame = update(&mut runtime, &mut tree);
+        assert!(tree
+            .action(
+                &mut runtime,
+                request(Action::Click, named(&frame, "Projects").0)
+            )
+            .unwrap());
+        let frame = update(&mut runtime, &mut tree);
+        let list = named(&frame, "Work").1;
+        let (header_id, header) = named(&frame, "Projects");
+        let (notes_id, notes) = named(&frame, "Notes");
+        let projected = |key| &frame.nodes.iter().find(|(id, _)| *id == key).unwrap().1;
+        assert_eq!(list.role(), Role::List);
+        assert_eq!(list.children().len(), 1);
+        let row = projected(list.children()[0]);
+        assert_eq!(row.role(), Role::ListItem);
+        assert_eq!(row.children().len(), 2);
+        assert_eq!(row.children()[0], header_id);
+        let body = projected(row.children()[1]);
+        let nested = projected(body.children()[0]);
+        assert_eq!(nested.role(), Role::List);
+        let nested_row = projected(nested.children()[0]);
+        assert_eq!(nested_row.role(), Role::ListItem);
+        assert_eq!(nested_row.children(), [notes_id]);
+        assert_eq!(header.is_expanded(), Some(true));
+        assert_eq!(header.has_popup(), None);
+        assert!(notes.supports_action(Action::Focus));
+        assert!(notes.supports_action(Action::Click));
+        assert!(tree
+            .action(&mut runtime, request(Action::Focus, notes_id))
+            .unwrap());
+        assert_eq!(runtime.focused(), Some("notes"));
+        assert_eq!(runtime.app().child_presses, 0);
+
+        runtime.apply(Message::Open(false)).unwrap();
+        assert_eq!(runtime.focused(), Some("projects"));
+        assert!(!tree
+            .action(&mut runtime, request(Action::Click, notes_id))
+            .unwrap());
+        let frame = update(&mut runtime, &mut tree);
+        assert_eq!(named(&frame, "Projects").1.is_expanded(), Some(false));
+        assert!(frame
+            .nodes
+            .iter()
+            .all(|(_, node)| node.label() != Some("Notes")));
+        assert_eq!(runtime.app().child_presses, 0);
+    }
+
+    #[test]
     fn multi_action_list_projects_sibling_buttons_and_routes_their_actions_independently() {
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
         enum Command {

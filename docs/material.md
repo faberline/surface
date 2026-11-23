@@ -159,6 +159,7 @@ does not change application state.
 | `list` | Baseline Standard, Expressive Standard and Expressive Segmented with passive rows, one action per row or one controlled selection |
 | `multi_select_list` | The same three list styles with independent, app-owned selection for each row |
 | `multi_action_list` | A primary action and separate supplementary commands or toggles with a shared keyboard order |
+| `expandable_list` | Inline disclosure rows that reveal a nested list and move following rows in the same scroll flow |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -885,7 +886,39 @@ order wraps across rows and follows the authored order in LTR and RTL.
 Enter and Space invoke the focused action. The Gallery **清單多動作** scene
 shows independent commands, a controlled toggle, and narrow reflow.
 
+### Expandable rows
+
+Use `Theme::expandable_list` with `ExpandableListOptions` and
+`ExpandableListRow` values. A `Leaf` holds one `ListItem`. A `Branch` holds a
+header `ListItem`, its child rows, the app's `expanded` value and a reference
+to `ListExpansionMotion`. Give the header and each child a stable ID. Give
+the header an `on_activate` message that changes `expanded`.
+
+Initialize one `ListExpansionMotion::new(expanded)` per header. Retain it
+across builds. In the app's `animation_frame` hook, call
+`motion.advance(header_id, expanded, &frame)` and return its update. For
+more than one disclosure, combine their two update flags with logical OR.
+Keep the child data available during closing so Surface can paint it.
+
+The body grows in place and uses the Material Standard spatial spring.
+This is Surface's choice of spring for the Lists animation. Reduce Motion
+or a frame without a clock shows the endpoint in one frame. The open list
+uses the children's natural height, so changes to width or text scale can
+reflow rows. In the Segmented style, each child has a 2 dp gap before it.
+The open container has 16 dp exterior corners. The decoration at the end
+of the header uses Surface when closed and Surface Container when open.
+
+The header and all enabled rows share one Tab stop. Up and Down move
+through the header, its open children and the next row. Enter or Space
+runs the focused action. Assistive technology gets the header's expanded
+state. The children become interactive after the opening animation.
+Closing removes their actions immediately. If a child has focus, it
+returns to the enabled header. When the app opens a branch above a
+fully visible focused row, the scroll area keeps that row in view.
+Try **可展開清單** in the Gallery.
+
 [Material 3 list specs](https://m3.material.io/components/lists/specs) ·
+[Material 3 list guidelines](https://m3.material.io/components/lists/guidelines) ·
 [Material 3 list accessibility](https://m3.material.io/components/lists/accessibility) ·
 [WAI-ARIA listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/)
 
