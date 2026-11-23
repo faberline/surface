@@ -1,0 +1,849 @@
+{
+  "source_manifest_sha256": "5eb31aa99f0791b8e76d3106f140925ada667f8a358f189ac0260f412d2f1799",
+  "gallery_sha256": "96edd869699b4cf4fd6ee73f558fb5e188e2cd99c007d65f426e35876c5ec6c3",
+  "cli_sha256": "cd9ae3f18ed0297fa111baaabfc4e458011b9f518ca991b8204c4295651eeced",
+  "motion": "native headless Reduce Motion endpoints",
+  "input": "native headless DevTools Action.key and Action.activate",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "segmented": {
+      "row": "lists-d",
+      "disabled_skip": [
+        "lists-a",
+        "lists-c",
+        "lists-d"
+      ],
+      "blocked": "disabled",
+      "rest_endpoint": {
+        "bounds": {
+          "height": 88.0,
+          "width": 936.0,
+          "x": 12.0,
+          "y": 394.0
+        },
+        "expected_radius_dp": 4.0,
+        "expected_outline_width_dp": 0,
+        "expected_rgba": {
+          "exterior": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "interior": [
+            253,
+            247,
+            255,
+            255
+          ]
+        },
+        "classified_pixels": {
+          "exterior": 2,
+          "interior": 240
+        },
+        "example_samples": {
+          "exterior": {
+            "offset": [
+              0,
+              0
+            ],
+            "rgba": [
+              242,
+              236,
+              244,
+              255
+            ]
+          },
+          "interior": {
+            "offset": [
+              2,
+              1
+            ],
+            "rgba": [
+              253,
+              247,
+              255,
+              255
+            ]
+          }
+        },
+        "flat_outline_samples": null
+      },
+      "focus_endpoint": {
+        "bounds": {
+          "height": 88.0,
+          "width": 936.0,
+          "x": 12.0,
+          "y": 394.0
+        },
+        "expected_radius_dp": 16.0,
+        "expected_outline_width_dp": 3,
+        "expected_rgba": {
+          "exterior": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "stroke": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "interior": [
+            230,
+            225,
+            232,
+            255
+          ]
+        },
+        "classified_pixels": {
+          "exterior": 76,
+          "stroke": 38,
+          "interior": 74
+        },
+        "example_samples": {
+          "exterior": {
+            "offset": [
+              0,
+              0
+            ],
+            "rgba": [
+              242,
+              236,
+              244,
+              255
+            ]
+          },
+          "stroke": {
+            "offset": [
+              9,
+              2
+            ],
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ]
+          },
+          "interior": {
+            "offset": [
+              10,
+              5
+            ],
+            "rgba": [
+              230,
+              225,
+              232,
+              255
+            ]
+          }
+        },
+        "flat_outline_samples": [
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            230,
+            225,
+            232,
+            255
+          ],
+          [
+            230,
+            225,
+            232,
+            255
+          ]
+        ]
+      },
+      "captures": [
+        {
+          "name": "list-corners-segmented-light-rest.png",
+          "sha256": "1017be27605c41282f7614c6ec0363ba05437b2df62e5fa8f838540ad6694f00",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "list-corners-segmented-light-focus.png",
+          "sha256": "dce40dd9e4d41e47f5e6e7541cc4f534bcbc7056199ec3a3f4aab6514beca806",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    },
+    "standard": {
+      "focus_endpoint": {
+        "bounds": {
+          "height": 56.0,
+          "width": 936.0,
+          "x": 12.0,
+          "y": 204.0
+        },
+        "expected_radius_dp": 16.0,
+        "expected_outline_width_dp": 3,
+        "expected_rgba": {
+          "exterior": [
+            33,
+            31,
+            36,
+            255
+          ],
+          "stroke": [
+            203,
+            194,
+            219,
+            255
+          ],
+          "interior": [
+            53,
+            51,
+            56,
+            255
+          ]
+        },
+        "classified_pixels": {
+          "exterior": 76,
+          "stroke": 38,
+          "interior": 74
+        },
+        "example_samples": {
+          "exterior": {
+            "offset": [
+              0,
+              0
+            ],
+            "rgba": [
+              33,
+              31,
+              36,
+              255
+            ]
+          },
+          "stroke": {
+            "offset": [
+              9,
+              2
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          },
+          "interior": {
+            "offset": [
+              10,
+              5
+            ],
+            "rgba": [
+              53,
+              51,
+              56,
+              255
+            ]
+          }
+        },
+        "flat_outline_samples": [
+          [
+            203,
+            194,
+            219,
+            255
+          ],
+          [
+            203,
+            194,
+            219,
+            255
+          ],
+          [
+            203,
+            194,
+            219,
+            255
+          ],
+          [
+            53,
+            51,
+            56,
+            255
+          ],
+          [
+            53,
+            51,
+            56,
+            255
+          ]
+        ]
+      },
+      "old_selection": "lists-c",
+      "new_selection": "lists-a",
+      "captures": [
+        {
+          "name": "list-corners-standard-dark-focus.png",
+          "sha256": "b383bfd16a0e7830b6dcf8e18dd508386c3bbd82fc74a3827cfe516a05dad216",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    },
+    "baseline": {
+      "passive_role": "ListItem",
+      "focus_endpoint": {
+        "bounds": {
+          "height": 56.0,
+          "width": 936.0,
+          "x": 12.0,
+          "y": 204.0
+        },
+        "expected_radius_dp": 0.0,
+        "expected_outline_width_dp": 3,
+        "expected_rgba": {
+          "exterior": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "stroke": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "interior": [
+            220,
+            215,
+            222,
+            255
+          ]
+        },
+        "classified_pixels": {
+          "exterior": 0,
+          "stroke": 42,
+          "interior": 128
+        },
+        "example_samples": {
+          "stroke": {
+            "offset": [
+              1,
+              1
+            ],
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ]
+          },
+          "interior": {
+            "offset": [
+              4,
+              4
+            ],
+            "rgba": [
+              220,
+              215,
+              222,
+              255
+            ]
+          }
+        },
+        "flat_outline_samples": [
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            220,
+            215,
+            222,
+            255
+          ],
+          [
+            220,
+            215,
+            222,
+            255
+          ]
+        ]
+      },
+      "captures": [
+        {
+          "name": "list-corners-baseline-light.png",
+          "sha256": "14a78c62d808f70c981c5b46a3cd1dc0f39ae39979e231863e209c6bdc1fbbcf",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "headline": {
+        "height": 96.0,
+        "width": 202.0,
+        "x": 58.0,
+        "y": 514.0
+      },
+      "supporting": {
+        "height": 80.0,
+        "width": 202.0,
+        "x": 58.0,
+        "y": 610.0
+      },
+      "leading": {
+        "height": 20.0,
+        "width": 20.0,
+        "x": 272.0,
+        "y": 482.0
+      },
+      "mark": {
+        "height": 18.0,
+        "width": 18.0,
+        "x": 28.0,
+        "y": 482.0
+      },
+      "focus_endpoint": {
+        "bounds": {
+          "height": 228.0,
+          "width": 296.0,
+          "x": 12.0,
+          "y": 472.0
+        },
+        "expected_radius_dp": 16.0,
+        "expected_outline_width_dp": 3,
+        "expected_rgba": {
+          "exterior": [
+            33,
+            31,
+            36,
+            255
+          ],
+          "stroke": [
+            203,
+            194,
+            219,
+            255
+          ],
+          "interior": [
+            41,
+            39,
+            45,
+            255
+          ]
+        },
+        "classified_pixels": {
+          "exterior": 76,
+          "stroke": 38,
+          "interior": 74
+        },
+        "example_samples": {
+          "exterior": {
+            "offset": [
+              0,
+              0
+            ],
+            "rgba": [
+              33,
+              31,
+              36,
+              255
+            ]
+          },
+          "stroke": {
+            "offset": [
+              9,
+              2
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          },
+          "interior": {
+            "offset": [
+              10,
+              5
+            ],
+            "rgba": [
+              41,
+              39,
+              45,
+              255
+            ]
+          }
+        },
+        "flat_outline_samples": [
+          [
+            203,
+            194,
+            219,
+            255
+          ],
+          [
+            203,
+            194,
+            219,
+            255
+          ],
+          [
+            203,
+            194,
+            219,
+            255
+          ],
+          [
+            41,
+            39,
+            45,
+            255
+          ],
+          [
+            41,
+            39,
+            45,
+            255
+          ]
+        ]
+      },
+      "selection": [
+        "lists-c",
+        "lists-d",
+        "lists-f"
+      ],
+      "captures": [
+        {
+          "name": "list-corners-compact-dark-rtl.png",
+          "sha256": "9cf15ef73e9b5bc642c8a070449046286ead3a5dcdc7e05366e3bdc6e2c6e541",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "ink": {
+            "lists-d-supporting": {
+              "bounds": {
+                "height": 80.0,
+                "width": 202.0,
+                "x": 58.0,
+                "y": 610.0
+              },
+              "ink_bounds": [
+                59,
+                618,
+                193,
+                66
+              ],
+              "rgba": [
+                202,
+                196,
+                207,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 2375
+            }
+          },
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        900
+      ]
+    },
+    "short": {
+      "rtl": true,
+      "text_scale": 2,
+      "target": "lists-e",
+      "visible_target": {
+        "x": 12.0,
+        "y": 104.0,
+        "width": 296.0,
+        "height": 68.0
+      },
+      "scroll_y": {
+        "initial": {
+          "lists-demo": 24.0,
+          "lists-scroll": 0.0
+        },
+        "focused": {
+          "lists-demo": 348.0,
+          "lists-scroll": 408.0
+        }
+      },
+      "captures": [
+        {
+          "name": "list-corners-short-scroll.png",
+          "sha256": "6e5776e89baf95e05b15749f93e57dfc12b336ec83fc0f16134d1e31c81bbe0c",
+          "format": "png",
+          "width": 320,
+          "height": 240,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        240
+      ]
+    },
+    "media": {
+      "raster_bounds": {
+        "height": 56.0,
+        "width": 56.0,
+        "x": 28.0,
+        "y": 352.0
+      },
+      "raster_radius_dp": 8,
+      "color_samples": {
+        "corner": [
+          230,
+          225,
+          232,
+          255
+        ],
+        "green": [
+          19,
+          190,
+          82,
+          255
+        ],
+        "blue": [
+          27,
+          91,
+          238,
+          255
+        ]
+      },
+      "focus_endpoint": {
+        "bounds": {
+          "height": 72.0,
+          "width": 936.0,
+          "x": 12.0,
+          "y": 344.0
+        },
+        "expected_radius_dp": 16.0,
+        "expected_outline_width_dp": 3,
+        "expected_rgba": {
+          "exterior": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "stroke": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "interior": [
+            230,
+            225,
+            232,
+            255
+          ]
+        },
+        "classified_pixels": {
+          "exterior": 76,
+          "stroke": 38,
+          "interior": 74
+        },
+        "example_samples": {
+          "exterior": {
+            "offset": [
+              0,
+              0
+            ],
+            "rgba": [
+              242,
+              236,
+              244,
+              255
+            ]
+          },
+          "stroke": {
+            "offset": [
+              9,
+              2
+            ],
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ]
+          },
+          "interior": {
+            "offset": [
+              10,
+              5
+            ],
+            "rgba": [
+              230,
+              225,
+              232,
+              255
+            ]
+          }
+        },
+        "flat_outline_samples": [
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            98,
+            91,
+            113,
+            255
+          ],
+          [
+            230,
+            225,
+            232,
+            255
+          ],
+          [
+            230,
+            225,
+            232,
+            255
+          ]
+        ]
+      },
+      "captures": [
+        {
+          "name": "list-corners-media-focus.png",
+          "sha256": "ca061ed0bc1d95f4217edccf0f10d57446012f8fe4d82101e2abaa997f7cd6b2",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    }
+  }
+}
