@@ -84,10 +84,10 @@
       "id": "date-pickers",
       "spec": "https://m3.material.io/components/date-pickers/overview",
       "status": "partial",
-      "implemented": "Single-date modal calendar, year view and modal input. Localized Gregorian dates and week starts, unavailable dates, caller-owned draft and commit, adaptive full-screen layout, RTL and constrained scrolling. Docked calendar, range modes, live screen-reader speech and system high contrast remain open.",
+      "implemented": "Single-date modal calendar, year view and modal input. Localized Gregorian dates and week starts, unavailable dates, caller-owned draft and commit, adaptive full-screen layout, RTL and constrained scrolling. Docked calendar, range modes, swipe paging, live screen-reader speech and system high contrast remain open.",
       "variant_review": "pending",
-      "desktop_evidence": "Native headless Metal checks modal sizes, today and selection, typed date errors and normalization, month and year navigation, focus restoration, and 320 dp dark RTL at 200% text. Two replays reproduced six PNGs via Page.screenshot, CLI and MCP with zero visible windows. https://github.com/faberline/surface/tree/b42f86ebaddbc1d544081bdda1b15678970280b6/docs/evidence/md3/date-picker-v0.1.18",
-      "web_evidence": "Chrome WebGPU M112–M115 checks calendar grid semantics, keyboard navigation and focus, year paging, static descriptions on the active textarea, browser composition and enter-to-submit, and compact RTL. https://github.com/faberline/surface/tree/b42f86ebaddbc1d544081bdda1b15678970280b6/docs/evidence/md3/date-picker-v0.1.18",
+      "desktop_evidence": "Native headless Metal checks modal sizes, today and selection, typed date errors and normalization, month and year navigation, focus restoration, and 320 dp dark RTL at 200% text. Two replays reproduced six PNGs via Page.screenshot, CLI and MCP with zero visible windows. https://github.com/faberline/surface/tree/17bbe44f3327dbc0756c3bfef2b3103fbd81e158/docs/evidence/md3/date-picker-v0.1.18",
+      "web_evidence": "Chrome WebGPU M112–M115 checks calendar grid semantics, keyboard navigation and focus, year paging, static descriptions on the active textarea, browser composition and enter-to-submit, and compact RTL wheel scrolling. https://github.com/faberline/surface/tree/17bbe44f3327dbc0756c3bfef2b3103fbd81e158/docs/evidence/md3/date-picker-v0.1.18",
       "unit_evidence": "Gregorian bounds, validation, locale and draft transitions, adaptive layout, calendar keyboard, typed Enter with composition, DOM round-trip, AccessKit date roles and text description."
     },
     {

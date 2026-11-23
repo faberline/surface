@@ -50,8 +50,6 @@ pub struct DatePickerLabels<'a> {
     pub cancel: &'a str,
     pub save: &'a str,
     pub close: &'a str,
-    pub today: &'a str,
-    pub selected: &'a str,
 }
 
 /// The data policy, locale and placement of a single-date modal.

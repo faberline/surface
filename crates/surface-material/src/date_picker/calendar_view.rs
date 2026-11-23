@@ -96,6 +96,12 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         )
         .children([grid])
         .accessibility_scroll_pages();
+        let viewport = if wide {
+            viewport
+        } else {
+            // Give vertical wheel input to the picker's body.
+            viewport.on_horizontal_scroll(|_, _| None)
+        };
         View::new(Node::new(Role::Group, "").styled(Style::column()))
             .children([self.month_controls(&title, false), viewport])
     }

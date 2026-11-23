@@ -29,8 +29,6 @@ const LABELS: DatePickerLabels<'static> = DatePickerLabels {
     cancel: "取消",
     save: "儲存",
     close: "關閉",
-    today: "今天",
-    selected: "已選取",
 };
 
 fn date(year: u16, month: u8, day: u8) -> CivilDate {
@@ -163,6 +161,49 @@ fn render(runtime: &mut Runtime<Demo>) {
     runtime
         .render(VIEWPORT.width, VIEWPORT.height, &mut Metrics)
         .unwrap();
+}
+
+#[test]
+fn wheel_over_compact_date_routes_each_axis_to_its_scroller() {
+    let mut runtime = Runtime::new(Demo::default()).unwrap();
+    render(&mut runtime);
+    runtime.activate("open").unwrap();
+    render(&mut runtime);
+
+    let body_id = "picker-body";
+    let grid_id = "picker-grid-scroll";
+    let body_before = runtime.scroll_metrics(body_id).unwrap().offset;
+    let grid_before = runtime.scroll_metrics(grid_id).unwrap().offset;
+    let confirm = rect(&runtime, "picker-confirm");
+    assert!(body_before.1 >= 48.);
+    assert!(grid_before.0 >= 8.);
+
+    let mut wheel = |delta_x, delta_y| {
+        let date = rect(&runtime, SELECTED);
+        assert!(rect(&runtime, body_id).contains(date.x + 24., date.y + 24.));
+        runtime
+            .dispatch(Event::Scroll {
+                x: date.x + 24.,
+                y: date.y + 24.,
+                delta_x,
+                delta_y,
+            })
+            .unwrap();
+        render(&mut runtime);
+        (
+            runtime.scroll_metrics(body_id).unwrap().offset,
+            runtime.scroll_metrics(grid_id).unwrap().offset,
+        )
+    };
+
+    let (body, grid) = wheel(-8., 0.);
+    assert_eq!(body, body_before);
+    assert_eq!(grid, (grid_before.0 - 8., grid_before.1));
+
+    let (body, grid_after) = wheel(0., -48.);
+    assert_eq!(body, (body_before.0, body_before.1 - 48.));
+    assert_eq!(grid_after, grid);
+    assert_eq!(rect(&runtime, "picker-confirm"), confirm);
 }
 
 #[test]

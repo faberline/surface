@@ -308,6 +308,27 @@ async fn compact(env: &Env, tab: &Tab) -> Result<Value> {
     tab.press("ArrowLeft").await?;
     focused(tab, &day("2024-02-29")).await?;
     capture(env, tab, "calendar-dark-rtl-200").await?;
+
+    let body_scroll = format!(
+        "(JSON.parse(window.gallery.export_dom()).dom.nodes.find(n => n.stable_id === {}).style.scroll_y)",
+        js(part("body"))
+    );
+    let before = tab
+        .eval(&body_scroll)
+        .await?
+        .as_f64()
+        .context("date picker body scroll offset")?;
+    check!(
+        before > 0.,
+        "revealing the focused date scrolls the compact body"
+    );
+    let wheel = point(tab, &day("2024-02-29")).await?;
+    tab.mouse_move(wheel.x, wheel.y).await?;
+    tab.wheel(0., -240.).await?;
+    tab.wait_for(&format!("{body_scroll} < {before}")).await?;
+    let after = tab.eval(&body_scroll).await?;
+    picker_state(tab, "d.session.draft === '2024-02-28' && d.commits === 0").await?;
+
     click(tab, &part("mode")).await?;
     picker_state(
         tab,
@@ -318,7 +339,9 @@ async fn compact(env: &Env, tab: &Tab) -> Result<Value> {
     click(tab, &part("cancel")).await?;
     runtime_focused(tab, OPEN).await?;
     picker_state(tab, "d.session === null && d.commits === 0").await?;
-    Ok(json!({"panel":panel.b,"day":cell.b,"confirm":confirm.b}))
+    Ok(
+        json!({"panel":panel.b,"day":cell.b,"confirm":confirm.b,"body_scroll":[json!(before),after]}),
+    )
 }
 
 async fn journey(env: &Env, chrome: &Chrome, url: &str, tab: &Tab) -> Result<()> {

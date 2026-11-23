@@ -396,8 +396,6 @@ fn labels(english: bool) -> DatePickerLabels<'static> {
             cancel: "Cancel",
             save: "Save",
             close: "Close",
-            today: "Today",
-            selected: "Selected",
         }
     } else {
         DatePickerLabels {
@@ -412,8 +410,6 @@ fn labels(english: bool) -> DatePickerLabels<'static> {
             cancel: "取消",
             save: "儲存",
             close: "關閉",
-            today: "今天",
-            selected: "已選取",
         }
     }
 }
