@@ -1,0 +1,640 @@
+{
+  "source_manifest_sha256": "852dfd0ec3cf3f93a446b7b9dc2ee16340329ced174625b39c8a7884641e9023",
+  "gallery_sha256": "1066841195380152cfefc9a346bb1ba4e7914b8d072980c0eb5a1f4dc0ba0e3a",
+  "cli_sha256": "9460a9fa7fafe8d03986380c9b16fad3e70a6e996d92c3633ea1e28c577b02c8",
+  "motion": "native headless Reduce Motion",
+  "input": "native headless DevTools Action.key, Action.activate and Action.fill",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "light": {
+      "initial": {
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "step": 1,
+        "value": 1,
+        "value_text": "板橋"
+      },
+      "keyboard_increment": {
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "step": 1,
+        "value": 2,
+        "value_text": "台北 北門"
+      },
+      "ambiguous": {
+        "raw": "台北",
+        "invalid": true,
+        "message": "有多個相符地點，請輸入完整名稱",
+        "description": "scroll-choice-demo-value-error",
+        "still_selected": "台北 北門"
+      },
+      "suggestion": {
+        "raw": "桃",
+        "message": "建議選項 桃園",
+        "description": "scroll-choice-demo-value-suggestion",
+        "still_selected": "台北 北門",
+        "after_enter": {
+          "name": "地點",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "value": 4,
+          "value_text": "桃園"
+        }
+      },
+      "catalog_change": {
+        "authored_id": "banqiao",
+        "before": {
+          "name": "地點",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "value": 1,
+          "value_text": "板橋"
+        },
+        "selection_key": "home",
+        "devtools_slider_set_value": "invalid_params",
+        "reordered": {
+          "name": "地點",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "value": 5,
+          "value_text": "板橋"
+        },
+        "relabeled": {
+          "name": "地點",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "value": 5,
+          "value_text": "板橋站"
+        }
+      },
+      "geometry": {
+        "face": {
+          "height": 200.0,
+          "width": 302.0,
+          "x": 33.0,
+          "y": 186.0
+        },
+        "capture": {
+          "height": 228.0,
+          "width": 312.0,
+          "x": 28.0,
+          "y": 172.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 302.0,
+          "x": 33.0,
+          "y": 172.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 302.0,
+          "x": 33.0,
+          "y": 352.0
+        },
+        "focus_ring": {
+          "height": 210.0,
+          "width": 312.0,
+          "x": 28.0,
+          "y": 181.0
+        }
+      },
+      "focus_path": [
+        "scroll-choice-demo-theme",
+        "scroll-choice-demo-rtl",
+        "scroll-choice-demo-large-text",
+        "scroll-choice-demo-compact",
+        "scroll-choice-demo-disabled",
+        "scroll-choice-demo-reorder",
+        "scroll-choice-demo-relabel",
+        "scroll-choice-demo-value-adjustable"
+      ],
+      "relabel_focus_path": [
+        "scroll-choice-demo-value-adjustable"
+      ],
+      "back": {
+        "tab_path": [
+          "scroll-choice-demo-value-use-input",
+          "scroll-choice-demo-back"
+        ],
+        "restored": "scroll-choice-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-choice-light-scroll.png",
+          "sha256": "b290f967de9a8af19c8d8adb4bc810011053c680719c8817132ffea10bf52b4d",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              232,
+              232,
+              232,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 26,
+            "active": {
+              "text": "台北 北門",
+              "ink_box": [
+                69,
+                263,
+                230,
+                53
+              ],
+              "ink_pixels": 2950,
+              "rgb_tolerance": 64,
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ]
+            },
+            "text_contrast": 13.9356,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "above": {
+              "text": "台北 車站",
+              "ink_box": [
+                93,
+                186,
+                183,
+                32
+              ],
+              "ink_pixels": 1746,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            },
+            "below": {
+              "text": "板橋",
+              "ink_box": [
+                141,
+                359,
+                86,
+                27
+              ],
+              "ink_pixels": 925,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-choice-light-ambiguous.png",
+          "sha256": "f47a8716e813d454bb2f64fbcc9eff79c19be018adc7cf28acc230ae828f3272",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "台北",
+              "ink_box": [
+                33,
+                238,
+                302,
+                96
+              ],
+              "ink_pixels": 1886,
+              "rgb_tolerance": 64,
+              "rgba": [
+                186,
+                26,
+                26,
+                255
+              ]
+            },
+            "text_contrast": 6.4606,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "editor_stroke_rgba": [
+              186,
+              26,
+              26,
+              255
+            ],
+            "supporting": {
+              "text": "有多個相符地點，請輸入完整名稱",
+              "ink_box": [
+                29,
+                406,
+                178,
+                12
+              ],
+              "ink_pixels": 454,
+              "rgb_tolerance": 64,
+              "rgba": [
+                186,
+                26,
+                26,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-choice-light-suggestion.png",
+          "sha256": "9d6d95d7909af18652e1e5e8db3470c9ef24eacab15ad2cb18acc7989f414568",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "桃",
+              "ink_box": [
+                33,
+                238,
+                302,
+                96
+              ],
+              "ink_pixels": 1464,
+              "rgb_tolerance": 64,
+              "rgba": [
+                101,
+                85,
+                143,
+                255
+              ]
+            },
+            "text_contrast": 6.4628,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "editor_stroke_rgba": [
+              101,
+              85,
+              143,
+              255
+            ],
+            "supporting": {
+              "text": "建議選項 桃園",
+              "ink_box": [
+                29,
+                406,
+                73,
+                12
+              ],
+              "ink_pixels": 280,
+              "rgb_tolerance": 64,
+              "rgba": [
+                73,
+                69,
+                78,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-choice-light-reordered.png",
+          "sha256": "a92a20a50b97dfe3453e9b0bbb026fd83f12dddc819077fb0fa05c3eb13f5136",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              232,
+              232,
+              232,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 26,
+            "active": {
+              "text": "板橋站",
+              "ink_box": [
+                100,
+                263,
+                167,
+                53
+              ],
+              "ink_pixels": 2968,
+              "rgb_tolerance": 64,
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ]
+            },
+            "text_contrast": 13.9356,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "below": {
+              "text": "台北 北門",
+              "ink_box": [
+                93,
+                360,
+                181,
+                26
+              ],
+              "ink_pixels": 1219,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "geometry": {
+        "face": {
+          "height": 88.0,
+          "width": 254.0,
+          "x": 33.0,
+          "y": 325.0
+        },
+        "editor": {
+          "height": 88.0,
+          "width": 254.0,
+          "x": 33.0,
+          "y": 325.0
+        }
+      },
+      "focus_path": [
+        "scroll-choice-demo-disabled",
+        "scroll-choice-demo-reorder",
+        "scroll-choice-demo-relabel",
+        "scroll-choice-demo-value-editor"
+      ],
+      "fallback_initial": "板橋",
+      "submitted_alias": "台北車站",
+      "normalized_editor": "台北",
+      "authored_selected_id": "taipei-station",
+      "saved_after_enter": "已選 台北 車站",
+      "back": {
+        "tab_path": [
+          "scroll-choice-demo-back"
+        ],
+        "restored": "scroll-choice-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-choice-dark-fallback.png",
+          "sha256": "3ab475175a14b88f2e7803543101fe36d633a7b01cc3540113b07d175c2b8011",
+          "format": "png",
+          "width": 320,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "板橋",
+              "ink_box": [
+                33,
+                325,
+                254,
+                88
+              ],
+              "ink_pixels": 2627,
+              "rgb_tolerance": 64,
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            },
+            "text_contrast": 11.3708,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "editor_stroke_rgba": [
+              207,
+              189,
+              254,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-choice-dark-station.png",
+          "sha256": "303dd26353256fe8c44fcdd23b66a83ebad00abb897267cc82554d8a65012fb2",
+          "format": "png",
+          "width": 320,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "台北",
+              "ink_box": [
+                33,
+                325,
+                254,
+                88
+              ],
+              "ink_pixels": 2218,
+              "rgb_tolerance": 64,
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            },
+            "text_contrast": 11.3708,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "editor_stroke_rgba": [
+              207,
+              189,
+              254,
+              255
+            ]
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        820
+      ]
+    }
+  }
+}
