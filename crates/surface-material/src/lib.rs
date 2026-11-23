@@ -35,6 +35,8 @@ mod loading_indicator;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
+mod scroll_choice_catalog;
+mod scroll_choice_field_state;
 mod scroll_field;
 mod scroll_field_state;
 pub mod shape;
@@ -135,8 +137,14 @@ pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
+pub use scroll_choice_catalog::{
+    ScrollChoice, ScrollChoiceCatalog, ScrollChoiceCatalogError, ScrollChoiceItem,
+    ScrollChoiceMatch, ScrollChoiceMatchKind, ScrollChoiceQueryError,
+};
+pub use scroll_choice_field_state::{ScrollChoiceEvent, ScrollChoiceState};
 pub use scroll_field::{
-    scroll_field_layout, ScrollFieldLayout, ScrollFieldOptions, ScrollFieldSize,
+    scroll_choice_field_layout, scroll_field_layout, ScrollChoiceFieldOptions, ScrollFieldLayout,
+    ScrollFieldOptions, ScrollFieldSize,
 };
 pub use scroll_field_state::{
     ScrollFieldDrag, ScrollFieldError, ScrollFieldEvent, ScrollFieldMode, ScrollFieldRange,

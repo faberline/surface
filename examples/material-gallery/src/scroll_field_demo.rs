@@ -15,8 +15,16 @@ const SHOW: &str = "scroll-field-demo-show";
 const BACK: &str = "scroll-field-demo-back";
 const SCROLL: &str = "scroll-field-demo-scroll";
 const FIELD: &str = "scroll-field-demo-value";
-const PADDING: f32 = 12.;
-const CONTENT_PADDING: f32 = 8.;
+pub(crate) const PADDING: f32 = 12.;
+pub(crate) const CONTENT_PADDING: f32 = 8.;
+const SCENE: ScrollFieldScene = ScrollFieldScene {
+    page: "scroll-field-demo",
+    scroll: SCROLL,
+    show: SHOW,
+    saved: "scroll-field-demo-saved",
+    title: "捲動欄位",
+    scroller_label: "數值範例",
+};
 const SIZES: [(ScrollFieldSize, &str, &str); 3] = [
     (ScrollFieldSize::Small, "scroll-field-demo-small", "小"),
     (ScrollFieldSize::Medium, "scroll-field-demo-medium", "中"),
@@ -242,19 +250,7 @@ impl ScrollFieldDemo {
                 .segmented_button(id, label, choice(selected), Message::ScrollField(event))
                 .accessible_activation()
         };
-        let row = |children: Vec<View<Message>>| {
-            View::new(
-                Node::new(Role::Group, "").styled(
-                    Style::row()
-                        .width(Length::Percent(1.))
-                        .gap(8.)
-                        .wrap(true)
-                        .align(Align::Center),
-                ),
-            )
-            .children(children)
-        };
-        let profile = row(vec![
+        let profile = control_row(vec![
             theme
                 .tonal_button(
                     BACK,
@@ -284,93 +280,49 @@ impl ScrollFieldDemo {
                 ScrollFieldDemoEvent::LargeText,
             ),
         ]);
-        let settings = row(SIZES
-            .into_iter()
-            .map(|(size, id, label)| {
-                toggle(
-                    id,
-                    label,
-                    self.size == size,
-                    ScrollFieldDemoEvent::Size(size),
-                )
-            })
-            .chain([
-                toggle(
-                    "scroll-field-demo-compact",
-                    "矮欄位",
-                    self.compact,
-                    ScrollFieldDemoEvent::Compact,
-                ),
-                toggle(
-                    "scroll-field-demo-disabled",
-                    "停用",
-                    self.disabled,
-                    ScrollFieldDemoEvent::Disabled,
-                ),
-                toggle(
-                    "scroll-field-demo-wide-range",
-                    "四位數",
-                    self.wide_range,
-                    ScrollFieldDemoEvent::WideRange,
-                ),
-            ])
-            .collect());
+        let settings = control_row(
+            SIZES
+                .into_iter()
+                .map(|(size, id, label)| {
+                    toggle(
+                        id,
+                        label,
+                        self.size == size,
+                        ScrollFieldDemoEvent::Size(size),
+                    )
+                })
+                .chain([
+                    toggle(
+                        "scroll-field-demo-compact",
+                        "矮欄位",
+                        self.compact,
+                        ScrollFieldDemoEvent::Compact,
+                    ),
+                    toggle(
+                        "scroll-field-demo-disabled",
+                        "停用",
+                        self.disabled,
+                        ScrollFieldDemoEvent::Disabled,
+                    ),
+                    toggle(
+                        "scroll-field-demo-wide-range",
+                        "四位數",
+                        self.wide_range,
+                        ScrollFieldDemoEvent::WideRange,
+                    ),
+                ])
+                .collect(),
+        );
         let field = theme.scroll_field(self.options(), &self.state, |event| {
             Message::ScrollField(ScrollFieldDemoEvent::Field(event))
         });
-        let field_position = Node::new(Role::Group, "").styled(
-            Style::row()
-                .width(Length::Percent(1.))
-                .padding(CONTENT_PADDING),
-        );
-        let field_position = if self.rtl {
-            field_position.reverse_row()
-        } else {
-            field_position
-        };
-        let saved = View::new(
-            Node::new(Role::Text, "")
-                .id("scroll-field-demo-saved")
-                .text(format!("已選 {}", value_text(self.committed)))
-                .styled(
-                    Style::row()
-                        .with_text_style(typography::BODY_MEDIUM)
-                        .foreground(theme.colors.on_surface_variant),
-                ),
-        );
-        let contents = View::new(Node::new(Role::Group, "").styled(Style {
-            min_height: 900.,
-            ..Style::column().padding(CONTENT_PADDING)
-        }))
-        .children([
-            View::new(field_position).children([field]),
-            View::new(
-                Node::new(Role::Group, "").styled(Style::column().height(Length::Px(0.)).grow(1.)),
-            )
-            .without_interaction(None),
-            saved,
-        ]);
-        let scroller = View::new(Node::new(Role::Group, "數值範例").id(SCROLL).styled(Style {
-            min_height: 120.,
-            ..Style::column().height(Length::Px(0.)).grow(1.).clip(true)
-        }))
-        .accessibility_scroll_pages()
-        .children([contents]);
-        View::new(
-            Node::new(Role::Window, "捲動欄位")
-                .id("scroll-field-demo")
-                .styled(
-                    Style::column()
-                        .height(Length::Percent(1.))
-                        .padding(PADDING)
-                        .gap(8.)
-                        .clip(true)
-                        .background(theme.colors.surface),
-                ),
+        SCENE.view(
+            theme,
+            self.rtl,
+            [profile, settings],
+            field,
+            format!("已選 {}", value_text(self.committed)),
         )
-        .restore_focus_in_subtree_on_removal(SHOW)
-        .accessibility_scroll_pages()
-        .children([profile, settings, scroller])
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -403,12 +355,106 @@ impl ScrollFieldDemo {
             "requests_frame": self.requests_frame, "reduced_motion": self.reduced_motion,
             "scroll_top": runtime.scroll_metrics(SCROLL).map(|metrics| metrics.offset.1),
             "commits": self.commits,
-            "palette": {
-                "surface": theme.colors.surface, "face": theme.colors.surface_container_lowest,
-                "center": theme.colors.on_surface, "neighbor": theme.colors.outline,
-                "focus": theme.colors.secondary, "editing": theme.colors.primary,
-                "error": theme.colors.error,
-            },
+            "palette": palette(theme),
         })
     }
+}
+
+pub(crate) fn control_row(children: Vec<View<Message>>) -> View<Message> {
+    View::new(
+        Node::new(Role::Group, "").styled(
+            Style::row()
+                .width(Length::Percent(1.))
+                .gap(8.)
+                .wrap(true)
+                .align(Align::Center),
+        ),
+    )
+    .children(children)
+}
+
+pub(crate) struct ScrollFieldScene {
+    pub page: &'static str,
+    pub scroll: &'static str,
+    pub show: &'static str,
+    pub saved: &'static str,
+    pub title: &'static str,
+    pub scroller_label: &'static str,
+}
+
+impl ScrollFieldScene {
+    pub(crate) fn view(
+        &self,
+        theme: &Theme,
+        rtl: bool,
+        controls: [View<Message>; 2],
+        field: View<Message>,
+        saved_text: String,
+    ) -> View<Message> {
+        let field_position = Node::new(Role::Group, "").styled(
+            Style::row()
+                .width(Length::Percent(1.))
+                .padding(CONTENT_PADDING),
+        );
+        let field_position = if rtl {
+            field_position.reverse_row()
+        } else {
+            field_position
+        };
+        let saved = View::new(
+            Node::new(Role::Text, "")
+                .id(self.saved)
+                .text(saved_text)
+                .styled(
+                    Style::row()
+                        .with_text_style(typography::BODY_MEDIUM)
+                        .foreground(theme.colors.on_surface_variant),
+                ),
+        );
+        let contents = View::new(Node::new(Role::Group, "").styled(Style {
+            min_height: 900.,
+            ..Style::column().padding(CONTENT_PADDING)
+        }))
+        .children([
+            View::new(field_position).children([field]),
+            View::new(
+                Node::new(Role::Group, "").styled(Style::column().height(Length::Px(0.)).grow(1.)),
+            )
+            .without_interaction(None),
+            saved,
+        ]);
+        let scroller = View::new(
+            Node::new(Role::Group, self.scroller_label)
+                .id(self.scroll)
+                .styled(Style {
+                    min_height: 120.,
+                    ..Style::column().height(Length::Px(0.)).grow(1.).clip(true)
+                }),
+        )
+        .accessibility_scroll_pages()
+        .children([contents]);
+        View::new(
+            Node::new(Role::Window, self.title).id(self.page).styled(
+                Style::column()
+                    .height(Length::Percent(1.))
+                    .padding(PADDING)
+                    .gap(8.)
+                    .clip(true)
+                    .background(theme.colors.surface),
+            ),
+        )
+        .restore_focus_in_subtree_on_removal(self.show)
+        .accessibility_scroll_pages()
+        .children(controls.into_iter().chain([scroller]))
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn palette(theme: &Theme) -> serde_json::Value {
+    serde_json::json!({
+        "surface": theme.colors.surface, "face": theme.colors.surface_container_lowest,
+        "center": theme.colors.on_surface, "neighbor": theme.colors.outline,
+        "focus": theme.colors.secondary, "editing": theme.colors.primary,
+        "error": theme.colors.error,
+    })
 }

@@ -1,4 +1,7 @@
-//! Material 3 Expressive numeric Scroll Fields.
+//! Material 3 Expressive Scroll Fields.
+
+mod choice;
+pub use choice::{scroll_choice_field_layout, ScrollChoiceFieldOptions};
 
 use std::rc::Rc;
 
@@ -82,6 +85,41 @@ pub struct ScrollFieldOptions<'a> {
     pub value_text: &'a dyn Fn(i32) -> String,
 }
 
+#[derive(Clone, Copy)]
+struct FieldOptions<'a> {
+    id: &'a str,
+    label: &'a str,
+    size: ScrollFieldSize,
+    height: f32,
+    available_width: f32,
+    available_height: f32,
+    text_scale: f32,
+    direction: LayoutDirection,
+    disabled: bool,
+    hint: Option<&'a str>,
+    use_input: &'a str,
+    use_scroll: &'a str,
+}
+
+impl<'a> From<ScrollFieldOptions<'a>> for FieldOptions<'a> {
+    fn from(options: ScrollFieldOptions<'a>) -> Self {
+        Self {
+            id: options.id,
+            label: options.label,
+            size: options.size,
+            height: options.height,
+            available_width: options.available_width,
+            available_height: options.available_height,
+            text_scale: options.text_scale,
+            direction: options.direction,
+            disabled: options.disabled,
+            hint: options.hint,
+            use_input: options.use_input,
+            use_scroll: options.use_scroll,
+        }
+    }
+}
+
 /// Geometry in logical pixels for a field that can show Scroll mode.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScrollFieldLayout {
@@ -115,6 +153,15 @@ pub fn scroll_field_layout(
     options: ScrollFieldOptions<'_>,
     state: &ScrollFieldState,
 ) -> Option<ScrollFieldLayout> {
+    let width = numeric_width(options.size, state, scale(options.text_scale));
+    field_layout(options.into(), width, false)
+}
+
+fn field_layout(
+    options: FieldOptions<'_>,
+    width: f32,
+    text_choices: bool,
+) -> Option<ScrollFieldLayout> {
     if !options.available_width.is_finite() || !options.available_height.is_finite() {
         return None;
     }
@@ -124,7 +171,6 @@ pub fn scroll_field_layout(
     } else {
         DEFAULT_FACE_HEIGHT
     };
-    let width = preferred_width(options.size, state, scale);
     let slot_width = width + 2. * FOCUS_OUTSET;
     let mode_below = slot_width + MODE_GAP + TARGET > options.available_width;
     let label_height = copy_height(options.label, typography::LABEL_LARGE, scale);
@@ -139,9 +185,10 @@ pub fn scroll_field_layout(
         return None;
     }
     let face_height = wanted_height.clamp(minimum_height, room_for_face);
-    // Numeric ink is about 0.72 em tall. Measure the item gap between
-    // the visible numbers. Line boxes include unused ascent and descent.
-    let ink_separation = 0.36 * (CENTER.font_size + NEIGHBOR.font_size) * scale;
+    // Measure the gap between visible labels. Ideographs and some other
+    // choices can occupy more of the line than digits.
+    let ink_fraction = if text_choices { 0.46 } else { 0.36 };
+    let ink_separation = ink_fraction * (CENTER.font_size + NEIGHBOR.font_size) * scale;
     let row_height = (ink_separation + ITEM_GAP).max(face_height / 2. - 8. * scale);
     Some(ScrollFieldLayout {
         width,
@@ -168,7 +215,7 @@ fn scale(scale: f32) -> f32 {
     }
 }
 
-fn preferred_width(size: ScrollFieldSize, state: &ScrollFieldState, scale: f32) -> f32 {
+fn numeric_width(size: ScrollFieldSize, state: &ScrollFieldState, scale: f32) -> f32 {
     // Plan a stable width before the first frame using the longest possible
     // value, with room for full-width digits. The paint group uses the font's
     // actual advances to center each label and avoid text wrapping.
@@ -183,6 +230,10 @@ fn preferred_width(size: ScrollFieldSize, state: &ScrollFieldState, scale: f32) 
         })
         .into_iter()
         .fold(0., f32::max);
+    width_for_ems(size, ems, scale)
+}
+
+fn width_for_ems(size: ScrollFieldSize, ems: f32, scale: f32) -> f32 {
     (ems * CENTER.font_size * scale + 2. * size.padding())
         .ceil()
         .max(size.min_width())
@@ -207,8 +258,13 @@ impl Theme {
     ) -> View<M> {
         ScrollField {
             theme: self,
-            options,
-            state,
+            options: options.into(),
+            wheel: state,
+            copy: FieldCopy::Numeric {
+                error_text: options.error_text,
+                value_text: options.value_text,
+            },
+            preferred_width: numeric_width(options.size, state, scale(options.text_scale)),
             emit: Rc::new(on_event),
         }
         .view()
@@ -217,9 +273,19 @@ impl Theme {
 
 struct ScrollField<'a, 'b, M> {
     theme: &'a Theme,
-    options: ScrollFieldOptions<'b>,
-    state: &'a ScrollFieldState,
+    options: FieldOptions<'b>,
+    wheel: &'a ScrollFieldState,
+    copy: FieldCopy<'a, 'b>,
+    preferred_width: f32,
     emit: Rc<dyn Fn(ScrollFieldEvent) -> M>,
+}
+
+enum FieldCopy<'a, 'b> {
+    Numeric {
+        error_text: &'b dyn Fn(ScrollFieldError) -> String,
+        value_text: &'b dyn Fn(i32) -> String,
+    },
+    Choice(choice::ChoiceCopy<'a, 'b>),
 }
 
 impl<M: Clone + 'static> ScrollField<'_, '_, M> {
@@ -228,9 +294,17 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
     }
 
     fn view(&self) -> View<M> {
-        let fit = scroll_field_layout(self.options, self.state);
-        let editing = self.state.mode() == ScrollFieldMode::Input || fit.is_none();
-        let status = self.status();
+        let fit = field_layout(
+            self.options,
+            self.preferred_width,
+            matches!(&self.copy, FieldCopy::Choice(_)),
+        );
+        let mode = match &self.copy {
+            FieldCopy::Numeric { .. } => self.wheel.mode(),
+            FieldCopy::Choice(copy) => copy.state.mode(),
+        };
+        let editing = mode == ScrollFieldMode::Input || fit.is_none();
+        let status = self.status(editing);
         let status_id = status.as_ref().map(|(id, _, _)| id.as_str());
         let control = match fit.filter(|_| !editing) {
             Some(layout) => self.adjustable(layout, status_id),
@@ -283,10 +357,20 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
         ))
     }
 
-    fn status(&self) -> Option<(String, String, Color)> {
-        if let Some(error) = self.state.error() {
-            let message = (self.options.error_text)(error);
+    fn status(&self, editing: bool) -> Option<(String, String, Color)> {
+        if let Some(message) = self.error_text() {
             return Some((self.id("error"), message, self.theme.colors.error));
+        }
+        if editing && !self.options.disabled {
+            if let FieldCopy::Choice(copy) = &self.copy {
+                if let Some(message) = copy.suggestion() {
+                    return Some((
+                        self.id("suggestion"),
+                        message,
+                        self.theme.colors.on_surface_variant,
+                    ));
+                }
+            }
         }
         let hint = self.options.hint?;
         let ink = if self.options.disabled {
@@ -297,25 +381,42 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
         Some((self.id("hint"), hint.to_owned(), ink))
     }
 
+    fn error_text(&self) -> Option<String> {
+        match &self.copy {
+            FieldCopy::Numeric { error_text, .. } => self.wheel.error().map(error_text),
+            FieldCopy::Choice(copy) => copy.state.error().map(copy.error_text),
+        }
+    }
+
     fn adjustable(&self, layout: ScrollFieldLayout, description: Option<&str>) -> View<M> {
         let id = self.id("adjustable");
         let editor = self.id("editor");
-        let range = self.state.range();
+        let range = self.wheel.range();
+        let value = self.wheel.value();
+        let (ordinal_offset, value_text) = match &self.copy {
+            FieldCopy::Numeric { value_text, .. } => (0., value_text(value)),
+            FieldCopy::Choice(copy) => (1., copy.qualified(copy.state.choice())),
+        };
         let node = self.describe(
             Node::new(Role::Group, self.options.label)
                 .id(&id)
                 .adjustable(AdjustableValue {
-                    min: f64::from(range.min()),
-                    max: f64::from(range.max()),
+                    min: f64::from(range.min()) + ordinal_offset,
+                    max: f64::from(range.max()) + ordinal_offset,
                     step: f64::from(range.step()),
-                    value: Some(f64::from(self.state.value())),
-                    value_text: Some((self.options.value_text)(self.state.value())),
+                    value: Some(f64::from(value) + ordinal_offset),
+                    value_text: Some(value_text),
                 })
                 .disabled(self.options.disabled)
                 .focus_color(Color::TRANSPARENT)
                 .styled(fixed(layout.slot_width(), layout.target_height)),
             description,
         );
+        let node = if matches!(&self.copy, FieldCopy::Choice(_)) {
+            node.web_adjustable_value_description()
+        } else {
+            node
+        };
         let target = |suffix, y| {
             self.passive(
                 self.id(suffix),
@@ -339,8 +440,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
             return field;
         }
 
-        let session = self.state.drag_session();
-        let value = self.state.value();
+        let session = self.wheel.drag_session();
         let drag = self.emit.clone();
         let steps = self.emit.clone();
         let keys = self.emit.clone();
@@ -376,7 +476,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
                     message: steps(ScrollFieldEvent::Step(step)),
                 })
             })
-            .on_value(move |value| set(ScrollFieldEvent::SetValue(value as i32)))
+            .on_value(move |value| set(ScrollFieldEvent::SetValue((value - ordinal_offset) as i32)))
             .on_point_drag_with_bounds(session.clone(), move |point, bounds| {
                 let sample = match point {
                     PointDrag::Tap {
@@ -427,15 +527,19 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
             FOCUS_OUTSET,
             OUTSIDE_TARGET,
         );
-        let range = self.state.range();
+        let range = self.wheel.range();
         let minimum = i64::from(range.min());
         let step = i64::from(range.step());
-        let preview = (i64::from(self.state.preview()) - minimum) / step;
-        let offset = self.state.offset();
+        let preview = (i64::from(self.wheel.preview()) - minimum) / step;
+        let offset = self.wheel.offset();
         let colors = self.theme.colors;
         let positions = (-2..=2).filter_map(|relative| {
             let index = preview + i64::from(relative);
             let value = range.value_at(index)?;
+            let label = match &self.copy {
+                FieldCopy::Numeric { .. } => self.wheel.format_value(value),
+                FieldCopy::Choice(copy) => copy.qualified(copy.state.get(index as usize)?),
+            };
             let (suffix, role, ink) = match relative {
                 0 => ("center", CENTER, colors.on_surface),
                 1 => ("above", NEIGHBOR, colors.outline),
@@ -448,7 +552,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
                 ink
             };
             let node = Node::new(Role::Text, "")
-                .text(self.state.format_value(value))
+                .text(label)
                 .styled(Style::column().foreground(ink).with_text_style(role));
             let node = if suffix.is_empty() {
                 node
@@ -463,7 +567,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
         let (centers, labels): (Vec<_>, Vec<_>) = positions.unzip();
         let paint = View::new(
             Node::new(Role::Group, "")
-                .measured_group(DigitLayout { centers })
+                .measured_group(ValueLayout { centers })
                 .styled(fixed(layout.width, layout.face_height).clip(true)),
         )
         .children(labels.into_iter().map(View::new))
@@ -482,12 +586,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
             0.
         };
         let outset = ((available - TARGET) / 2.).clamp(0., FOCUS_OUTSET);
-        let width = preferred_width(
-            self.options.size,
-            self.state,
-            scale(self.options.text_scale),
-        )
-        .min(available - 2. * outset);
+        let width = self.preferred_width.min(available - 2. * outset);
         (width, outset)
     }
 
@@ -515,7 +614,10 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
         let slot_height = fit.map_or(face_height + 2. * outset, |layout| layout.target_height);
         let top = (slot_height - face_height) / 2.;
         let colors = self.theme.colors;
-        let error = self.state.error().is_some();
+        let error = match &self.copy {
+            FieldCopy::Numeric { .. } => self.wheel.error().is_some(),
+            FieldCopy::Choice(copy) => copy.state.error().is_some(),
+        };
         let ink = if self.options.disabled {
             disabled_ink(self.theme)
         } else if error {
@@ -528,10 +630,12 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
             self.face_style(at(fixed(width, face_height), outset, top))
                 .border(2., ink),
         );
-        let raw = if self.state.mode() == ScrollFieldMode::Input {
-            self.state.raw().to_owned()
-        } else {
-            self.state.format_value(self.state.value())
+        let raw = match &self.copy {
+            FieldCopy::Numeric { .. } if self.wheel.mode() == ScrollFieldMode::Input => {
+                self.wheel.raw().to_owned()
+            }
+            FieldCopy::Numeric { .. } => self.wheel.format_value(self.wheel.value()),
+            FieldCopy::Choice(copy) => copy.state.raw().to_owned(),
         };
         let node = self.describe(
             Node::new(Role::TextInput, self.options.label)
@@ -687,11 +791,11 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
 /// Keep the line widths from the actual font. The face clips only the
 /// neighboring ink when those lines move partly outside the panel.
 #[derive(Debug)]
-struct DigitLayout {
+struct ValueLayout {
     centers: Vec<f32>,
 }
 
-impl MeasuredGroupLayout for DigitLayout {
+impl MeasuredGroupLayout for ValueLayout {
     fn measure(
         &self,
         _children: &[&Node],

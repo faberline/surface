@@ -376,7 +376,24 @@ fn project<M>(
     if source.node.role() == Role::Tooltip || descriptions.text_targets.contains(&id) {
         element.set_id(&descriptions.target_id(id));
     }
-    if let Some(description) = descriptions.described_by(id) {
+    let authored_description = descriptions.described_by(id);
+    let description = if let Some(text) = source.node.web_adjustable_description_text() {
+        // The referenced text stays hidden as a standalone item. Project it
+        // first so the selected value precedes any authored hint.
+        let value_id = format!("surface-accessibility-value-{}", id.index());
+        let value = document.create_element("span")?;
+        value.set_id(&value_id);
+        value.set_attribute("hidden", "")?;
+        value.set_text_content(Some(text));
+        element.append_child(&value)?;
+        Some(match authored_description {
+            Some(hint) => format!("{value_id} {hint}"),
+            None => value_id,
+        })
+    } else {
+        authored_description
+    };
+    if let Some(description) = description {
         element.set_attribute("aria-describedby", &description)?;
     }
     if let Some(focus) = frame.focus_target(id) {

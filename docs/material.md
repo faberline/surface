@@ -173,6 +173,7 @@ does not change application state.
 | `switch` | Controlled on/off choice and disabled state |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
 | `scroll_field` | Inline finite numeric values with three sizes, a snap-to-center wheel, direct entry and validation |
+| `scroll_choice_field` | Inline finite text choices with stable IDs, qualified labels and direct-entry completion |
 | `segment` | Position-aware segment: round outer ends, square inner edges, check mark when selected; single or multi select owned by the application |
 | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
@@ -653,6 +654,39 @@ accepted value.
 
 In Material Gallery, choose 選取, then 捲動欄位. 四位數 shows the editor
 fallback in a narrow window with 大字 enabled.
+
+### Text choices
+
+Use `Theme::scroll_choice_field` for an ordered list of text choices.
+Give each `ScrollChoiceItem` a stable ID and a localized label. Add a
+qualifier and a distinct input alias when two items have the same label.
+`ScrollChoiceFieldOptions::choice_text` formats the label and qualifier
+for both the wheel and its accessible value.
+
+Create a `ScrollChoiceState` with at least two items and a valid initial
+ID. Send field events to `state.apply` and save the ID it returns.
+`state.sync_choice` applies an external choice. `state.replace_items`
+accepts the new order and the caller's chosen ID in one operation. Both
+keep the open editor text until the user accepts or cancels the draft.
+Catalog replacement retires pointer capture from the old list.
+
+The direct editor offers a suggestion when a prefix identifies one
+choice. It keeps the typed text and waits for Enter. An exact label
+or alias takes precedence. If several items match, the editor shows
+an error and keeps focus. Escape cancels. The default comparison trims
+surrounding whitespace and preserves case. Use `with_match_key` for
+locale-specific matching rules.
+
+Call `scroll_choice_field_layout` and `state.update_fit` when space,
+text scale or the catalog changes. The editor keeps active composition
+when the view becomes wider. A screen reader can query the qualified
+label and adjust the choice by its position in the current list.
+
+In Material Gallery, choose 選取, then 文字捲動欄位. The two 台北 entries
+have different qualifiers. Type 桃 to suggest 桃園 and press Enter
+to select it. 倒序 and 改名 show how the field keeps the selected ID.
+
+[W3C Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)
 
 [Material 3 Scroll Fields specs](https://m3.material.io/components/scroll-fields/specs) ·
 [Accessibility](https://m3.material.io/components/scroll-fields/accessibility) ·
