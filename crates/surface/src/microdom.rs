@@ -115,6 +115,8 @@ pub struct Node {
     interaction_box_shadows: Option<Box<InteractionBoxShadows>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
+    #[serde(skip)]
+    animate_interaction_corners: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fill_contour: Option<crate::FillContour>,
     #[serde(skip)]
@@ -203,6 +205,7 @@ impl Node {
             box_shadows: [BoxShadow::NONE; 2],
             interaction_box_shadows: None,
             interaction_corners: None,
+            animate_interaction_corners: false,
             fill_contour: None,
             raster: None,
             current_page: None,
@@ -316,6 +319,31 @@ impl Node {
             .any(Option::is_some)
             .then(|| Box::new(overrides));
         self
+    }
+
+    /// Let the runtime animate changes between the interaction corners and
+    /// the style's resting corners using the style's transition.
+    ///
+    /// This affects paint only. It needs a stable node ID and a runtime frame
+    /// clock. Direct paint compilation and serialized snapshots keep the
+    /// immediate interaction behavior.
+    pub fn animate_interaction_corners(mut self) -> Self {
+        self.animate_interaction_corners = true;
+        self
+    }
+
+    /// Return the effective corner target for an opted-in runtime track.
+    #[doc(hidden)]
+    pub fn animated_interaction_corner_target(
+        &self,
+        id: NodeId,
+        focus: Option<NodeId>,
+        interaction: crate::InteractionState,
+    ) -> Option<Corners> {
+        (self.animate_interaction_corners && self.stable_id().is_some()).then(|| {
+            self.presented_interaction_corners(id, focus, interaction)
+                .unwrap_or_else(|| self.style.corner_radii())
+        })
     }
     pub(crate) fn presented_interaction_corners(
         &self,
@@ -780,6 +808,26 @@ impl MicroDom {
             .get_mut(id.index())
             .ok_or(DomError::InvalidNode(id.index()))?;
         n.style = style;
+        Ok(())
+    }
+
+    /// Apply one valid presented outline to the display copy before paint.
+    /// Ignore invalid radii. The semantic DOM keeps the authored style and
+    /// interaction targets.
+    #[doc(hidden)]
+    pub fn set_presented_interaction_corners(
+        &mut self,
+        id: NodeId,
+        corners: Corners,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if corners.is_valid() {
+            node.style.corners = Some(corners);
+            node.interaction_corners = None;
+        }
         Ok(())
     }
     pub fn set_text(&mut self, id: NodeId, text: impl Into<String>) -> Result<(), DomError> {

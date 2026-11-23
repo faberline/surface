@@ -64,9 +64,8 @@ Known gaps in shape support:
 - Text is not clipped by rounded corners.
 - `LARGE_START` and `LARGE_END` assume left-to-right layout. They are not
   mirrored for right-to-left text.
-- The shape tokens are a foundation. They do not make any component family
-  complete. Per-state shape changes (for example a pressed button) are not
-  implemented.
+- Per-state shape changes cover a subset of the catalog. See the family
+  entries in the [coverage file](material-coverage.json).
 
 ## Typography
 
@@ -852,6 +851,13 @@ Place a long list in a named clipped container and apply
 rows when they move outside the visible area. The Gallery **清單** scene shows
 all three styles with light and dark themes, RTL and 200% text.
 
+Expressive action and selection rows animate to 12 dp corners on hover and
+16 dp on press or focus. Selected rows use 16 dp. Fill, state layer and focus
+outline use the same presented shape. The row keeps its size and hit area
+throughout the change. This also applies to Expressive rows with media.
+Surface uses its 200 ms `STATE_CHANGE` timing. Reduce Motion and hosts without
+a frame clock apply the target shape immediately.
+
 ### Multiple selection
 
 Use `Theme::multi_select_list` with `MultiSelectListOptions` and the same
@@ -1192,9 +1198,8 @@ makes the runtime blend color and corner changes over time. The host
 gives the runtime a clock, and a reduced-motion switch turns blending off.
 See [DOM export](dom-export.md#style-transitions) for the data shape.
 
-`motion::STATE_CHANGE` is 200 ms (`duration::SHORT4`) with the `STANDARD`
-easing. It is a Surface choice. It is not an official Material mapping.
-These components use it, and nothing else does:
+`motion::STATE_CHANGE` is the Surface choice of 200 ms (`duration::SHORT4`)
+with the `STANDARD` easing. Components that use it include:
 
 - the filled button's visual container;
 - the checkbox box;
@@ -1203,7 +1208,8 @@ These components use it, and nothing else does:
 - the segmented button container;
 - the chip container;
 - the slider active fill and thumb;
-- the tab active indicator.
+- the tab active indicator;
+- the Expressive list row's shape and colors.
 
 The tab indicator exists only while its tab is selected. It is added
 and removed, so it appears at once. Its transition has no visible effect.
@@ -1222,6 +1228,11 @@ toward half the short side and never toward `f32::MAX`. Each shown corner
 stays finite and within that range, even with an easing that overshoots.
 While a run is active the display copy carries the shown corners. The
 exported DOM keeps the target corners.
+
+Custom controls can use `Node::animate_interaction_corners` with
+`Node::interaction_corners` and a style transition. The Runtime treats the
+active interaction corners as the target and uses the current shown corners
+when the target changes during a run.
 
 Known motion gaps:
 
