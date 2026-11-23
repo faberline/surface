@@ -41,6 +41,8 @@ mod split_button;
 mod split_button_layout;
 mod split_button_motion;
 mod standard_navigation_drawer;
+mod time_dial;
+mod time_dial_state;
 mod time_input;
 mod time_input_state;
 mod tokens;
@@ -132,6 +134,8 @@ pub use split_button_motion::SplitButtonMotion;
 pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
+pub use time_dial::{time_dial_layout, TimeDialLabels, TimeDialLayout, TimeDialOptions};
+pub use time_dial_state::{DialEvent, DialMode, DialPoint, DialPreview, DialState};
 pub use time_input::{TimeInputLabels, TimeInputOptions, TimeInputPresentation};
 pub use time_input_state::{
     ClockFormat, PeriodPosition, TimeField, TimeInputEffect, TimeInputError, TimeInputEvent,

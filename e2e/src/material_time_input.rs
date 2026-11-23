@@ -24,7 +24,7 @@ fn part(base: &str, suffix: &str) -> String {
     format!("{base}-{suffix}")
 }
 
-fn projected(id: &str) -> String {
+pub(super) fn projected(id: &str) -> String {
     format!(
         "document.querySelector({})",
         js(format!("#surface-accessibility [data-surface-id=\"{id}\"]"))
@@ -44,9 +44,9 @@ async fn runtime_focus(tab: &Tab, id: &str) -> Result<()> {
     until(tab, &format!("s.focused === {}", js(id))).await
 }
 
-async fn focused(tab: &Tab, id: &str) -> Result<()> {
+pub(super) async fn focused(tab: &Tab, id: &str) -> Result<()> {
     runtime_focus(tab, id).await?;
-    let target = if id.ends_with("-input") {
+    let target = if id.ends_with("-hour-input") || id.ends_with("-minute-input") {
         TEXTAREA.to_owned()
     } else {
         projected(id)
@@ -58,20 +58,20 @@ async fn focused(tab: &Tab, id: &str) -> Result<()> {
     tab.settle().await
 }
 
-async fn focus_projected(tab: &Tab, id: &str) -> Result<()> {
+pub(super) async fn focus_projected(tab: &Tab, id: &str) -> Result<()> {
     let target = projected(id);
     tab.wait_for(&format!("{target} !== null")).await?;
     tab.eval(&format!("{target}.focus()")).await?;
     focused(tab, id).await
 }
 
-async fn activate(tab: &Tab, id: &str) -> Result<()> {
+pub(super) async fn activate(tab: &Tab, id: &str) -> Result<()> {
     focus_projected(tab, id).await?;
     tab.press("Enter").await?;
     tab.settle().await
 }
 
-async fn resize(tab: &Tab, width: u32, height: u32) -> Result<()> {
+pub(super) async fn resize(tab: &Tab, width: u32, height: u32) -> Result<()> {
     tab.viewport(width, height + 44).await?;
     tab.wait_for(&format!(
         "(() => {{ const v = JSON.parse(window.gallery.export_dom()).layout?.viewport;
@@ -122,7 +122,7 @@ async fn replace(tab: &Tab, presentation: &str, field: &str, raw: &str) -> Resul
     .await
 }
 
-async fn bounds(tab: &Tab, id: &str) -> Result<Rect> {
+pub(super) async fn bounds(tab: &Tab, id: &str) -> Result<Rect> {
     point(tab, id)
         .await?
         .b
@@ -130,7 +130,7 @@ async fn bounds(tab: &Tab, id: &str) -> Result<Rect> {
         .map_err(|rect| anyhow::anyhow!("expected four bounds for {id}: {rect:?}"))
 }
 
-fn near(a: f64, b: f64) -> bool {
+pub(super) fn near(a: f64, b: f64) -> bool {
     (a - b).abs() <= 0.75
 }
 
@@ -145,14 +145,14 @@ fn intersect(a: Rect, b: Rect) -> Rect {
     ]
 }
 
-fn contains(outer: Rect, inner: Rect) -> bool {
+pub(super) fn contains(outer: Rect, inner: Rect) -> bool {
     intersect(outer, inner)
         .into_iter()
         .zip(inner)
         .all(|(a, b)| near(a, b))
 }
 
-async fn ax_tree(tab: &Tab) -> Result<Vec<Value>> {
+pub(super) async fn ax_tree(tab: &Tab) -> Result<Vec<Value>> {
     let mut result = tab.cdp("Accessibility.getFullAXTree", json!({})).await?;
     match result["nodes"].take() {
         Value::Array(nodes) => Ok(nodes),
@@ -160,7 +160,7 @@ async fn ax_tree(tab: &Tab) -> Result<Vec<Value>> {
     }
 }
 
-fn ax<'a>(tree: &'a [Value], role: &str, name: &str) -> Result<&'a Value> {
+pub(super) fn ax<'a>(tree: &'a [Value], role: &str, name: &str) -> Result<&'a Value> {
     tree.iter()
         .find(|node| {
             node["ignored"] == false
@@ -170,7 +170,7 @@ fn ax<'a>(tree: &'a [Value], role: &str, name: &str) -> Result<&'a Value> {
         .with_context(|| format!("Chrome AX lacks {role} named {name}"))
 }
 
-fn ax_property<'a>(node: &'a Value, key: &str) -> Option<&'a Value> {
+pub(super) fn ax_property<'a>(node: &'a Value, key: &str) -> Option<&'a Value> {
     node["properties"]
         .as_array()?
         .iter()

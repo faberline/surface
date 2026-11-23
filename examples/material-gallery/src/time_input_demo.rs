@@ -321,7 +321,7 @@ impl TimeInputDemo {
     }
 }
 
-fn field(focused: Option<&str>, prefix: &str) -> Option<TimeField> {
+pub(super) fn field(focused: Option<&str>, prefix: &str) -> Option<TimeField> {
     match focused?.strip_prefix(prefix)? {
         "-hour-input" => Some(TimeField::Hour),
         "-minute-input" => Some(TimeField::Minute),
@@ -329,7 +329,7 @@ fn field(focused: Option<&str>, prefix: &str) -> Option<TimeField> {
     }
 }
 
-fn locale(japanese: bool) -> TimeInputLocale<'static> {
+pub(super) fn locale(japanese: bool) -> TimeInputLocale<'static> {
     if japanese {
         TimeInputLocale::new("午前", "午後", ":")
             .with_period_position(PeriodPosition::Before, " ")
@@ -340,7 +340,7 @@ fn locale(japanese: bool) -> TimeInputLocale<'static> {
     }
 }
 
-fn labels(japanese: bool, clock: ClockFormat) -> TimeInputLabels<'static> {
+pub(super) fn labels(japanese: bool, clock: ClockFormat) -> TimeInputLabels<'static> {
     let twelve = clock == ClockFormat::TwelveHour;
     if japanese {
         TimeInputLabels {

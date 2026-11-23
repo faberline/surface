@@ -17,6 +17,7 @@ mod rail_icons;
 mod side_sheet_demo;
 mod snackbar_demo;
 mod split_demo;
+mod time_dial_demo;
 mod time_input_demo;
 mod toolbar_demo;
 mod tooltip_demo;
@@ -49,6 +50,7 @@ use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
     IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition, Theme,
 };
+use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
 use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
 use toolbar_demo::{ToolbarDemo, ToolbarEvent};
 use tooltip_demo::{TooltipDemo, TooltipEvent};
@@ -87,6 +89,7 @@ pub struct Gallery {
     date_picker_demo: DatePickerDemo,
     date_range_picker_demo: DateRangeDemo,
     time_input_demo: TimeInputDemo,
+    time_dial_demo: TimeDialDemo,
     queue: Option<Queue<Message>>,
     docked_date_picker_demo: DockedDateDemo,
     extended_fab_demo: ExtendedFabDemo,
@@ -133,6 +136,7 @@ impl Default for Gallery {
             date_picker_demo: DatePickerDemo::default(),
             date_range_picker_demo: DateRangeDemo::default(),
             time_input_demo: TimeInputDemo::default(),
+            time_dial_demo: TimeDialDemo::default(),
             queue: None,
             docked_date_picker_demo: DockedDateDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
@@ -165,6 +169,7 @@ pub enum Message {
     DatePicker(DatePickerDemoEvent),
     DateRange(DateRangeDemoEvent),
     TimeInput(TimeInputDemoEvent),
+    TimeDial(TimeDialDemoEvent),
     DockedDate(DockedDateDemoEvent),
     ExtendedFab(ExtendedFabEvent),
     Fab(FabEvent),
@@ -235,6 +240,9 @@ impl Application for Gallery {
         if self.time_input_demo.visible() {
             return self.time_input_demo.text_scale();
         }
+        if self.time_dial_demo.visible() {
+            return self.time_dial_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -272,6 +280,7 @@ impl Application for Gallery {
         let docked_date = self.docked_date_picker_demo.viewport_changed(width, height);
         let date_range = self.date_range_picker_demo.viewport_changed(width, height);
         let time_input = self.time_input_demo.viewport_changed(width, height);
+        let time_dial = self.time_dial_demo.viewport_changed(width, height);
         let extended_fab = self.extended_fab_demo.viewport_changed(width, height);
         let fab = self.fab_demo.viewport_changed(width, height);
         let fab_menu = self.fab_menu_demo.viewport_changed(width, height);
@@ -293,6 +302,7 @@ impl Application for Gallery {
             || docked_date
             || date_range
             || time_input
+            || time_dial
             || carousel
             || app_bar
             || toolbar
@@ -309,6 +319,7 @@ impl Application for Gallery {
             || self.docked_date_picker_demo.visible()
             || self.date_range_picker_demo.observes_input()
             || self.time_input_demo.visible()
+            || self.time_dial_demo.visible()
     }
     fn attach_queue(&mut self, queue: Queue<Message>) {
         self.queue = Some(queue);
@@ -335,6 +346,7 @@ impl Application for Gallery {
         update.animation.rebuild |= range.rebuild;
         update.animation.request_next |= range.request_next;
         update.animation.rebuild |= self.time_input_demo.observe_focus(input.focused);
+        update.animation.rebuild |= self.time_dial_demo.observe_focus(input.focused);
         if let Some(queue) = &self.queue {
             self.date_range_picker_demo.flush_scroll_requests(queue);
         }
@@ -453,6 +465,9 @@ impl Application for Gallery {
                 if i != time_input_demo::SECTION {
                     self.time_input_demo.leave();
                 }
+                if i != time_dial_demo::SECTION {
+                    self.time_dial_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -486,6 +501,7 @@ impl Application for Gallery {
             Message::DockedDate(event) => self.docked_date_picker_demo.update(event),
             Message::DateRange(event) => self.date_range_picker_demo.update(event),
             Message::TimeInput(event) => self.time_input_demo.update(event),
+            Message::TimeDial(event) => self.time_dial_demo.update(event),
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Fab(event) => self.fab_demo.update(event),
             Message::FabMenu(event) => self.fab_menu_demo.update(event),
@@ -574,6 +590,9 @@ impl Application for Gallery {
         }
         if self.time_input_demo.visible() {
             return self.time_input_demo.view(&t);
+        }
+        if self.time_dial_demo.visible() {
+            return self.time_dial_demo.view(&t);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -1074,6 +1093,7 @@ impl Application for Gallery {
                 children.push(DockedDateDemo::show_button(&t));
                 children.push(DateRangeDemo::show_button(&t));
                 children.push(TimeInputDemo::show_button(&t));
+                children.push(TimeDialDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1227,6 +1247,7 @@ mod web {
             "docked_date_picker": s.docked_date_picker_demo.inspect(),
             "date_range_picker": s.date_range_picker_demo.inspect(),
             "time_input": s.time_input_demo.inspect(),
+            "time_dial": s.time_dial_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),

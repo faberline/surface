@@ -24,6 +24,19 @@ impl TouchRoute {
         *self = Self::default();
     }
 
+    #[cfg(any(target_arch = "wasm32", test))]
+    pub(crate) fn retire_web_contact(&mut self, touch_id: Option<u64>) -> bool {
+        let Some(id) = touch_id else {
+            return std::mem::take(&mut self.mouse_held);
+        };
+        if self.contact.is_some_and(|(_, current)| current == id) {
+            self.contact = None;
+            true
+        } else {
+            false
+        }
+    }
+
     /// Keep a mouse press from taking over a touch and an unmatched release
     /// from ending a later contact.
     pub(crate) fn mouse_primary(&mut self, state: ElementState) -> bool {
@@ -152,6 +165,24 @@ mod tests {
             route.route(contact(2, Ended, 2., 2.), 1.),
             TouchStep::Pointer(Event::PointerUp { x: 2., y: 2. })
         ));
+        assert!(!route.mouse_primary(ElementState::Released));
+    }
+
+    #[test]
+    fn web_capture_loss_retires_only_the_matching_host_contact() {
+        let mut route = TouchRoute::default();
+        route.route(contact(8, Started, 5., 10.), 1.);
+        assert!(!route.retire_web_contact(Some(9)));
+        assert!(!route.retire_web_contact(None));
+        assert!(route.active());
+        assert!(route.retire_web_contact(Some(8)));
+        assert!(matches!(
+            route.route(contact(8, Ended, 10., 15.), 1.),
+            TouchStep::Ignore
+        ));
+        assert!(route.mouse_primary(ElementState::Pressed));
+        assert!(!route.retire_web_contact(Some(8)));
+        assert!(route.retire_web_contact(None));
         assert!(!route.mouse_primary(ElementState::Released));
     }
 
