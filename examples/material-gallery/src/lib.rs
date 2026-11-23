@@ -12,6 +12,7 @@ mod fab_demo;
 mod fab_menu_demo;
 mod list_actions_demo;
 mod list_expand_demo;
+mod list_reorder_demo;
 mod lists_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
@@ -41,6 +42,7 @@ use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
 use list_actions_demo::{ListActionsDemo, ListActionsEvent};
 use list_expand_demo::{ListExpandDemo, ListExpandEvent};
+use list_reorder_demo::{ListReorderDemo, ListReorderEvent};
 use lists_demo::{ListsDemo, ListsEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
@@ -102,6 +104,7 @@ pub struct Gallery {
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
+    list_reorder_demo: ListReorderDemo,
     queue: Option<Queue<Message>>,
     docked_date_picker_demo: DockedDateDemo,
     extended_fab_demo: ExtendedFabDemo,
@@ -153,6 +156,7 @@ impl Default for Gallery {
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
+            list_reorder_demo: ListReorderDemo::default(),
             queue: None,
             docked_date_picker_demo: DockedDateDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
@@ -190,6 +194,7 @@ pub enum Message {
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
+    ListReorder(ListReorderEvent),
     DockedDate(DockedDateDemoEvent),
     ExtendedFab(ExtendedFabEvent),
     Fab(FabEvent),
@@ -275,6 +280,9 @@ impl Application for Gallery {
         if self.list_expand_demo.visible() {
             return self.list_expand_demo.text_scale();
         }
+        if self.list_reorder_demo.visible() {
+            return self.list_reorder_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -315,6 +323,7 @@ impl Application for Gallery {
         let time_dial = self.time_dial_demo.viewport_changed(width, height);
         let time_scroll = self.time_scroll_demo.viewport_changed(width, height);
         let list_actions = self.list_actions_demo.viewport_changed(width);
+        let list_reorder = self.list_reorder_demo.viewport_changed(width);
         let extended_fab = self.extended_fab_demo.viewport_changed(width, height);
         let fab = self.fab_demo.viewport_changed(width, height);
         let fab_menu = self.fab_menu_demo.viewport_changed(width, height);
@@ -339,6 +348,7 @@ impl Application for Gallery {
             || time_dial
             || time_scroll
             || list_actions
+            || list_reorder
             || carousel
             || app_bar
             || toolbar
@@ -364,6 +374,7 @@ impl Application for Gallery {
     fn cancel_transient(&mut self) -> bool {
         (self.tooltip_demo.visible() && self.tooltip_demo.dismiss())
             || (self.fab_demo.is_open() && self.fab_demo.dismiss_tooltip())
+            || self.list_reorder_demo.cancel()
     }
     fn animation_frame_with_input(
         &mut self,
@@ -439,6 +450,7 @@ impl Application for Gallery {
         let time_dial = self.time_dial_demo.frame(&frame);
         let time_scroll = self.time_scroll_demo.frame(&frame);
         let list_expand = self.list_expand_demo.frame(&frame);
+        let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
         AnimationUpdate {
             rebuild: inline.rebuild
                 || modal.rebuild
@@ -452,7 +464,8 @@ impl Application for Gallery {
                 || toolbar.rebuild
                 || time_dial.rebuild
                 || time_scroll.rebuild
-                || list_expand.rebuild,
+                || list_expand.rebuild
+                || list_reorder.rebuild,
             request_next: inline.request_next
                 || modal.request_next
                 || snackbar.request_next
@@ -463,7 +476,8 @@ impl Application for Gallery {
                 || carousel.request_next
                 || time_dial.request_next
                 || time_scroll.request_next
-                || list_expand.request_next,
+                || list_expand.request_next
+                || list_reorder.request_next,
         }
     }
     fn update(&mut self, m: Message) {
@@ -522,6 +536,7 @@ impl Application for Gallery {
                     self.lists_demo.leave();
                     self.list_actions_demo.leave();
                     self.list_expand_demo.leave();
+                    self.list_reorder_demo.leave();
                 }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
@@ -561,6 +576,9 @@ impl Application for Gallery {
             Message::Lists(event) => self.lists_demo.update(event),
             Message::ListActions(event) => self.list_actions_demo.update(event),
             Message::ListExpand(event) => self.list_expand_demo.update(event),
+            Message::ListReorder(event) => {
+                self.list_reorder_demo.update(event, self.queue.as_ref())
+            }
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Fab(event) => self.fab_demo.update(event),
             Message::FabMenu(event) => self.fab_menu_demo.update(event),
@@ -664,6 +682,9 @@ impl Application for Gallery {
         }
         if self.list_expand_demo.visible() {
             return self.list_expand_demo.view(&t);
+        }
+        if self.list_reorder_demo.visible() {
+            return self.list_reorder_demo.view(&t);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -1171,6 +1192,7 @@ impl Application for Gallery {
                 children.push(ListsDemo::show_button(&t));
                 children.push(ListActionsDemo::show_button(&t));
                 children.push(ListExpandDemo::show_button(&t));
+                children.push(ListReorderDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1350,6 +1372,7 @@ mod web {
         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+        state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
         state.to_string()
     })
     }

@@ -120,8 +120,9 @@ pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget}
 pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
 pub use list::{
     ExpandableListOptions, ExpandableListRow, ListExpansionMotion, ListItem, ListLines, ListMode,
-    ListOptions, ListStyle, ListSupplementaryAction, MultiActionListItem, MultiActionListOptions,
-    MultiSelectListOptions,
+    ListOptions, ListReorderEntry, ListReorderInput, ListReorderRequest, ListReorderState,
+    ListStyle, ListSupplementaryAction, MultiActionListItem, MultiActionListOptions,
+    MultiSelectListOptions, ReorderableListItem, ReorderableListOptions,
 };
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,

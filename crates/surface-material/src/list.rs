@@ -2,8 +2,13 @@
 
 mod expansion;
 mod multi_action;
+mod reorder;
 pub use expansion::{ExpandableListOptions, ExpandableListRow, ListExpansionMotion};
 pub use multi_action::{ListSupplementaryAction, MultiActionListItem, MultiActionListOptions};
+pub use reorder::{
+    ListReorderEntry, ListReorderInput, ListReorderRequest, ListReorderState, ReorderableListItem,
+    ReorderableListOptions,
+};
 
 use surface::{Align, Color, Corners, FillContour, Length, Node, Role, Style};
 use surface_app::{Roving, View};

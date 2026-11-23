@@ -1,7 +1,8 @@
+use std::rc::Rc;
 use surface::{Length, Node, Rect, Role, Style, TextMeasurer};
 use surface_app::{
     AnimationFrame, Application, Event, FrameInput, HorizontalDragSession, InputAnimationUpdate,
-    PointDrag, PointDragSession, Runtime, View,
+    PointDrag, PointDragSession, Runtime, ScrollTarget, View,
 };
 
 #[derive(Clone)]
@@ -127,6 +128,116 @@ fn moved(runtime: &mut Runtime<App>, (x, y): (f32, f32)) {
 
 fn up(runtime: &mut Runtime<App>, (x, y): (f32, f32)) {
     runtime.dispatch(Event::PointerUp { x, y }).unwrap();
+}
+
+#[derive(Clone)]
+enum MeasuredMessage {
+    Epoch(u8),
+    Report {
+        event: PointDrag,
+        epoch: u8,
+        grip: Rect,
+        target: Rect,
+    },
+}
+
+#[derive(Default)]
+struct MeasuredApp {
+    session: PointDragSession,
+    epoch: u8,
+    reports: Vec<MeasuredMessage>,
+}
+
+impl Application for MeasuredApp {
+    type Message = MeasuredMessage;
+
+    fn update(&mut self, message: MeasuredMessage) {
+        match message {
+            MeasuredMessage::Epoch(epoch) => self.epoch = epoch,
+            message @ MeasuredMessage::Report { .. } => self.reports.push(message),
+        }
+    }
+
+    fn view(&self) -> View<MeasuredMessage> {
+        let epoch = self.epoch;
+        let targets: Rc<[String]> = ["target".to_owned(), "missing".to_owned()].into();
+        let grip = View::new(
+            Node::new(Role::Group, "")
+                .id("grip")
+                .styled(Style::row().height(Length::Px(56.))),
+        )
+        .on_point_drag_with_layout(
+            self.session.clone(),
+            targets,
+            move |event, grip, layout| {
+                let mut entries = layout.targets();
+                let (id, target) = entries.next()?;
+                assert_eq!(id, "target");
+                assert_eq!(entries.next(), Some(("missing", None)));
+                Some(MeasuredMessage::Report {
+                    event,
+                    epoch,
+                    grip,
+                    target: target?.bounds,
+                })
+            },
+        );
+        let target = View::new(
+            Node::new(Role::Group, "")
+                .id("target")
+                .styled(Style::row().height(Length::Px(240.))),
+        );
+        let scroller = View::new(
+            Node::new(Role::Group, "")
+                .id("scroll")
+                .styled(Style::column().height(Length::Px(120.)).clip(true)),
+        )
+        .children([grip, target]);
+        View::new(Node::new(Role::Window, "Fixture")).children([scroller])
+    }
+}
+
+#[test]
+fn measured_point_release_reads_the_latest_render_even_after_an_unrendered_rebuild() {
+    let mut runtime = Runtime::new(MeasuredApp::default()).unwrap();
+    let draw =
+        |runtime: &mut Runtime<MeasuredApp>| runtime.render(320., 160., &mut Metrics).unwrap();
+    draw(&mut runtime);
+    runtime
+        .dispatch(Event::PointerDown { x: 12., y: 20. })
+        .unwrap();
+    runtime
+        .dispatch(Event::PointerMove { x: 12., y: 42. })
+        .unwrap();
+    runtime
+        .queue()
+        .scroll_to("scroll", ScrollTarget::Offset { x: 0., y: 40. });
+    draw(&mut runtime);
+    runtime.apply(MeasuredMessage::Epoch(1)).unwrap();
+    assert!(runtime.computed().is_none());
+    runtime
+        .dispatch(Event::PointerUp { x: 12., y: 42. })
+        .unwrap();
+    let reports = &runtime.app().reports;
+    let [MeasuredMessage::Report {
+        event: PointDrag::Move { .. },
+        target: original,
+        ..
+    }, MeasuredMessage::Report {
+        event: PointDrag::End { .. },
+        epoch: 0,
+        grip,
+        target: scrolled,
+    }] = reports.as_slice()
+    else {
+        panic!("expected one move and a release to the captured update");
+    };
+    assert_eq!(grip.y, 0., "down bounds stay fixed");
+    assert_eq!(
+        scrolled.y,
+        original.y - 40.,
+        "release uses the applied scroll"
+    );
 }
 
 #[test]
