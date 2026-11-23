@@ -50,6 +50,46 @@ fn bounds_and_clips_are_deterministic() {
 }
 
 #[test]
+fn shrinking_column_body_reserves_measured_footer_and_keeps_scroll_extent() {
+    let mut dom =
+        MicroDom::new(Node::new(Role::Window, "App").styled(Style::column().padding(12.).gap(8.)));
+    let body = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Group, "Content")
+                .shrink_to_fit_height()
+                .styled(Style::column().clip(true)),
+        )
+        .unwrap();
+    let text = dom
+        .append(
+            body,
+            Node::new(Role::Text, "Content").styled(Style::column().height(Length::Px(260.))),
+        )
+        .unwrap();
+    let actions = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Group, "Actions").styled(Style::row().height(Length::Px(88.))),
+        )
+        .unwrap();
+    let mut engine = LayoutEngine::default();
+    let compact = engine.compute(&dom, 304., 284., &mut Metrics).unwrap();
+    let body_box = compact.nodes[body.index()].bounds;
+    assert_eq!(body_box.height, 164.);
+    assert_eq!(
+        compact.nodes[actions.index()].bounds,
+        Rect::new(12., 184., 280., 88.)
+    );
+    assert_eq!(compact.nodes[text.index()].clip, body_box);
+    assert_eq!(scroll_extent(&dom, &compact, body), Some((280., 260.)));
+
+    let roomy = engine.compute(&dom, 304., 480., &mut Metrics).unwrap();
+    assert_eq!(roomy.nodes[body.index()].bounds.height, 260.);
+    assert_eq!(roomy.nodes[actions.index()].bounds.height, 88.);
+}
+
+#[test]
 fn changed_since_lists_only_the_changed_subtree() {
     let (mut dom, first, second) = fixture();
     let mut engine = LayoutEngine::default();

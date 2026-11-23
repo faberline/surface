@@ -1,8 +1,8 @@
 use surface::Rect;
-use surface_app::View;
+use surface_app::{AnimationFrame, AnimationUpdate, View};
 use surface_material::{
-    shape::LayoutDirection, time_dial_layout, ButtonKind, ClockFormat, DialEvent, DialMode,
-    DialState, Theme, TimeDialLabels, TimeDialOptions, TimeField, TimeInputEffect,
+    shape::LayoutDirection, time_dial_layout, ButtonKind, ClockFormat, DialEvent, DialHandMotion,
+    DialMode, DialState, Theme, TimeDialLabels, TimeDialOptions, TimeField, TimeInputEffect,
     TimeInputOptions, TimeInputPresentation, TimeInputSession, TimeOfDay,
 };
 
@@ -28,6 +28,11 @@ pub enum TimeDialDemoEvent {
     Dial(DialEvent),
 }
 
+struct OpenDial {
+    state: DialState,
+    hand: DialHandMotion,
+}
+
 pub(crate) struct TimeDialDemo {
     visible: bool,
     rtl: bool,
@@ -35,7 +40,7 @@ pub(crate) struct TimeDialDemo {
     japanese: bool,
     clock: ClockFormat,
     viewport: Rect,
-    draft: Option<DialState>,
+    draft: Option<OpenDial>,
     saved: TimeOfDay,
     commits: usize,
     outside_actions: usize,
@@ -98,7 +103,9 @@ impl TimeDialDemo {
     fn update_fit(&mut self) {
         let fits = self.layout().is_some();
         if let Some(draft) = &mut self.draft {
-            draft.apply(DialEvent::SetDialFits(fits));
+            draft
+                .hand
+                .apply(&mut draft.state, DialEvent::SetDialFits(fits));
         }
     }
 
@@ -115,7 +122,15 @@ impl TimeDialDemo {
     pub(crate) fn observe_focus(&mut self, focused: Option<&str>) -> bool {
         self.draft
             .as_mut()
-            .is_some_and(|draft| draft.observe_input_focus(field(focused, DIAL)))
+            .is_some_and(|draft| draft.state.observe_input_focus(field(focused, DIAL)))
+    }
+
+    pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
+        self.draft
+            .as_mut()
+            .map_or_else(AnimationUpdate::default, |draft| {
+                draft.hand.advance(frame.now_ms, frame.reduced_motion)
+            })
     }
 
     pub(crate) fn update(&mut self, event: TimeDialDemoEvent) {
@@ -135,18 +150,16 @@ impl TimeDialDemo {
                 };
             }
             TimeDialDemoEvent::Open => {
-                let draft =
+                let input =
                     TimeInputSession::new(Some(self.saved), self.clock, locale(self.japanese));
-                self.draft = Some(DialState::new(
-                    draft,
-                    DialMode::Dial,
-                    self.layout().is_some(),
-                ));
+                let state = DialState::new(input, DialMode::Dial, self.layout().is_some());
+                let hand = DialHandMotion::new(&state);
+                self.draft = Some(OpenDial { state, hand });
             }
             TimeDialDemoEvent::Outside => self.outside_actions += 1,
             TimeDialDemoEvent::Dial(event) => {
                 if let Some(draft) = &mut self.draft {
-                    match draft.apply(event) {
+                    match draft.hand.apply(&mut draft.state, event) {
                         TimeInputEffect::Commit(value) => {
                             self.saved = value;
                             self.commits += 1;
@@ -224,7 +237,7 @@ impl TimeDialDemo {
                     },
                 )
             };
-            theme.time_dial(
+            theme.time_dial_with_motion(
                 TimeDialOptions {
                     input: TimeInputOptions {
                         id: DIAL,
@@ -244,7 +257,8 @@ impl TimeDialDemo {
                     labels: &dial_labels,
                     text_scale: self.text_scale(),
                 },
-                draft,
+                &draft.state,
+                &draft.hand,
                 |event| Message::TimeDial(TimeDialDemoEvent::Dial(event)),
             )
         });
@@ -255,6 +269,7 @@ impl TimeDialDemo {
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn inspect(&self) -> serde_json::Value {
         let draft = self.draft.as_ref().map(|draft| {
+            let draft = &draft.state;
             let input = draft.input();
             serde_json::json!({
                 "mode": format!("{:?}", draft.mode()),
@@ -301,4 +316,97 @@ fn japanese_value_name(field: TimeField, value: &str, total: u8) -> String {
         TimeField::Minute => "分",
     };
     format!("{total} のうち {value} {unit}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Gallery;
+    use surface::TextMeasurer;
+    use surface_app::{EditKey, Event, Key, KeyPress, Runtime};
+
+    struct Metrics;
+
+    impl TextMeasurer for Metrics {
+        fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
+            (text.chars().count() as f32 * size * 0.6, size * 1.5)
+        }
+    }
+
+    fn draw(runtime: &mut Runtime<Gallery>, time: f64) {
+        runtime.set_time(time);
+        runtime.render(960., 820., &mut Metrics).unwrap();
+    }
+
+    fn press(runtime: &mut Runtime<Gallery>, key: Key) {
+        let press = KeyPress::new(key, Default::default());
+        assert!(runtime.key(&press).unwrap(), "{press:?}");
+    }
+
+    fn center(runtime: &Runtime<Gallery>, id: &str) -> (f32, f32) {
+        let node = runtime.dom().by_id(id).unwrap();
+        let bounds = runtime.computed().unwrap().nodes[node.index()].bounds;
+        (bounds.x + bounds.width / 2., bounds.y + bounds.height / 2.)
+    }
+
+    #[test]
+    fn gallery_animates_arrow_selection_without_delaying_draft_or_focus() {
+        let mut runtime = Runtime::new(Gallery::default()).unwrap();
+        runtime.apply(Message::Section(SECTION)).unwrap();
+        runtime.activate("time-dial-demo-show").unwrap();
+        draw(&mut runtime, 0.);
+        runtime.activate(OPEN).unwrap();
+        draw(&mut runtime, 0.);
+        press(&mut runtime, Key::Enter);
+        assert_eq!(runtime.focused(), Some("time-dial-dial-hour-12"));
+        runtime.activate("time-dial-minute-selector").unwrap();
+        draw(&mut runtime, 0.);
+        draw(&mut runtime, 1000.);
+
+        press(&mut runtime, Key::Enter);
+        assert_eq!(runtime.focused(), Some("time-dial-dial-minute-0"));
+        draw(&mut runtime, 1000.);
+        let hand = "time-dial-dial-handle";
+        let before = center(&runtime, hand);
+        assert!(runtime
+            .dispatch(Event::Edit {
+                key: EditKey::Left,
+                extend: false,
+                by_word: false,
+            })
+            .unwrap());
+        let selected = "time-dial-dial-minute-59";
+        assert_eq!(runtime.focused(), Some(selected));
+        let gallery = &runtime.app().time_dial_demo;
+        assert_eq!(
+            gallery
+                .draft
+                .as_ref()
+                .unwrap()
+                .state
+                .input()
+                .raw(TimeField::Minute),
+            "59"
+        );
+        assert_eq!(gallery.saved, TimeOfDay::new(9, 7).unwrap());
+        assert_eq!(gallery.commits, 0);
+        draw(&mut runtime, 1000.);
+        draw(&mut runtime, 1020.);
+        let target = center(&runtime, selected);
+        let mid = center(&runtime, hand);
+        assert!(
+            target.0 < mid.0 && mid.0 < before.0,
+            "{target:?} {mid:?} {before:?}"
+        );
+
+        runtime.set_reduced_motion(true);
+        draw(&mut runtime, 1021.);
+        let reduced = center(&runtime, hand);
+        assert!((reduced.0 - target.0).abs() <= 0.5 && (reduced.1 - target.1).abs() <= 0.5);
+        runtime.set_reduced_motion(false);
+        draw(&mut runtime, 1100.);
+        assert_eq!(center(&runtime, hand), reduced);
+        assert!(runtime.dispatch(Event::Cancel).unwrap());
+        assert_eq!(runtime.focused(), Some(OPEN));
+    }
 }

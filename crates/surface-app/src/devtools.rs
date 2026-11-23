@@ -398,7 +398,7 @@ impl<A: Application> Runtime<A> {
                         "the focused field is read-only",
                     ));
                 }
-                if matches!(key, Key::Enter) && input.is_some() && !multiline {
+                if matches!(key, Key::Enter) && !multiline {
                     let press = KeyPress::new(
                         crate::Key::Enter,
                         Modifiers {
@@ -406,7 +406,11 @@ impl<A: Application> Runtime<A> {
                             ..Modifiers::default()
                         },
                     );
-                    if self.key(&press)? {
+                    let uses_key_navigation = self
+                        .focused_node()
+                        .and_then(|id| self.bindings.get(&id))
+                        .is_some_and(|binding| binding.key_focus_navigation.is_some());
+                    if (input.is_some() || uses_key_navigation) && self.key(&press)? {
                         return Ok(json!({"changed":true,"focused":self.focused}));
                     }
                 }

@@ -398,7 +398,7 @@ impl LayoutEngine {
                 shrink: n.parent().and_then(|id| dom.get(id).ok()).is_some_and(
                     |parent| match parent.style().direction {
                         Direction::Row => n.can_shrink_width(),
-                        Direction::Column => false,
+                        Direction::Column => n.can_shrink_height(),
                     },
                 ),
                 children: dom.children(id).collect(),

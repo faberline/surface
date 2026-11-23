@@ -1,5 +1,7 @@
 use surface::{Length, Node, Role, Style, TextMeasurer};
-use surface_app::{Application, EditKey, Event, FocusNavigation, Runtime, View};
+use surface_app::{
+    Application, EditKey, Event, FocusNavigation, Key, KeyPress, Modifiers, Runtime, View,
+};
 
 #[derive(Clone, Copy, Default)]
 enum Destination {
@@ -23,6 +25,8 @@ struct App {
     modal: bool,
     presses: usize,
     year_step: bool,
+    key_step: bool,
+    key_first: bool,
     preferred_modal_focus: Option<&'static str>,
 }
 
@@ -45,7 +49,17 @@ impl Application for App {
             target: "next".into(),
             message: Message::Mount,
         };
-        let start = if self.year_step {
+        let start = if self.key_step {
+            let key_first = self.key_first;
+            button("start")
+                .on_key(move |press| {
+                    (key_first && press.key == Key::Enter && press.modifiers.is_empty())
+                        .then_some(Message::Press)
+                })
+                .on_key_focus_navigation(move |press| {
+                    (press.key == Key::Enter && press.modifiers.is_empty()).then(navigation)
+                })
+        } else if self.year_step {
             button("start").on_focus_navigation_with_extend(move |key, extend| {
                 (key == EditKey::PageDown && extend).then(navigation)
             })
@@ -133,6 +147,93 @@ fn right(runtime: &mut Runtime<App>) -> bool {
             by_word: false,
         })
         .unwrap()
+}
+
+fn key_runtime(destination: Destination, key_first: bool) -> Runtime<App> {
+    let mut runtime = Runtime::new(App {
+        destination,
+        key_step: true,
+        key_first,
+        ..App::default()
+    })
+    .unwrap();
+    runtime.activate("start").unwrap();
+    render(&mut runtime);
+    runtime
+}
+
+fn enter() -> KeyPress {
+    KeyPress::new(Key::Enter, Modifiers::default())
+}
+
+#[test]
+fn key_navigation_applies_once_and_does_not_activate_the_destination() {
+    let mut runtime = key_runtime(Destination::Enabled, false);
+    assert!(runtime.key(&enter().with_repeat(true)).unwrap());
+    assert!(!runtime.app().mounted);
+    assert!(runtime.key(&enter()).unwrap());
+    assert!(runtime.app().mounted);
+    assert_eq!(runtime.focused(), Some("next"));
+    assert_eq!(runtime.app().presses, 0);
+}
+
+#[test]
+fn key_navigation_preserves_key_handler_priority_and_disallows_cross_scope_focus() {
+    let mut runtime = key_runtime(Destination::Enabled, true);
+    assert!(runtime.key(&enter()).unwrap());
+    assert!(!runtime.app().mounted);
+    assert_eq!(runtime.focused(), Some("start"));
+    assert_eq!(runtime.app().presses, 1);
+
+    for (destination, focused) in [
+        (Destination::Disabled, "start"),
+        (Destination::OutsideModal, "close"),
+    ] {
+        let mut runtime = key_runtime(destination, false);
+        assert!(runtime.key(&enter()).unwrap());
+        assert!(runtime.app().mounted);
+        assert_eq!(runtime.focused(), Some(focused));
+        assert_eq!(runtime.app().presses, 0);
+    }
+}
+
+#[test]
+fn projected_key_navigation_consumes_activation_fallback() {
+    let mut runtime = key_runtime(Destination::Enabled, false);
+    let start = runtime.dom().by_id("start").unwrap();
+    let target = runtime
+        .accessibility_frame()
+        .unwrap()
+        .focus_target(start)
+        .unwrap();
+    assert!(runtime
+        .accessibility_key(&target, &enter(), Event::Activate)
+        .unwrap());
+    assert_eq!(runtime.focused(), Some("next"));
+    assert_eq!(runtime.app().presses, 0);
+}
+
+#[cfg(feature = "devtools")]
+#[test]
+fn semantic_enter_uses_opted_in_key_navigation() {
+    use serde_json::json;
+    use surface_devtools_protocol::{Request, VERSION};
+
+    for (dedicated_handler, focus, presses) in [(false, "next", 0), (true, "start", 1)] {
+        let mut runtime = key_runtime(Destination::Enabled, dedicated_handler);
+        let reply = runtime.execute_devtools(Request {
+            v: VERSION,
+            id: 1,
+            method: "Action.key".into(),
+            params: json!({"key": "enter"}),
+        });
+        assert!(reply.ok, "{:?}", reply.error);
+        assert_eq!(
+            reply.result.unwrap(),
+            json!({"changed": true, "focused": focus})
+        );
+        assert_eq!(runtime.app().presses, presses);
+    }
 }
 
 #[test]
