@@ -456,6 +456,75 @@ fn expressive_live_corners_and_focus_stroke_share_the_row_geometry() {
 }
 
 #[test]
+fn expressive_list_hover_and_press_move_the_complete_row_outline() {
+    let mut runtime = runtime(App::new(ListStyle::Segmented, ListMode::Action));
+    let row = bounds(&runtime, "a");
+    let colors = Theme::light().colors;
+    let Color(r, g, b, _) = colors.on_surface;
+    let x = row.x + row.width / 2.;
+    let y = row.y + row.height / 2.;
+    let resting = Corners::new(16., 16., 4., 4.);
+    let painted = |list: &DisplayList, expected_ink| {
+        list.ops.iter().find_map(|operation| match operation {
+            PaintOp::Shape {
+                rect,
+                corners,
+                color,
+                ..
+            } if *rect == row && *color == expected_ink => Some(*corners),
+            PaintOp::Quad {
+                rect,
+                radius,
+                color,
+                ..
+            } if *rect == row && *color == expected_ink => Some(Corners::all(*radius)),
+            _ => None,
+        })
+    };
+
+    runtime.set_time(0.);
+    assert_eq!(
+        painted(&render(&mut runtime), colors.surface),
+        Some(resting)
+    );
+    runtime.dispatch(Event::PointerMove { x, y }).unwrap();
+    assert_eq!(
+        painted(&render(&mut runtime), colors.surface),
+        Some(resting)
+    );
+    assert!(runtime.needs_frame());
+    runtime.set_time(100.);
+    let midway = render(&mut runtime);
+    let hover = painted(&midway, colors.surface).unwrap();
+    assert!(hover.top_left > 12. && hover.top_left < resting.top_left);
+    assert!(hover.bottom_left > resting.bottom_left && hover.bottom_left < 12.);
+    assert_eq!(painted(&midway, Color(r, g, b, 20)), Some(hover));
+    assert_eq!(node(&runtime, "a").style().corner_radii(), resting);
+    assert_eq!(bounds(&runtime, "a"), row);
+
+    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
+    let press_start = render(&mut runtime);
+    assert_eq!(painted(&press_start, colors.surface), Some(hover));
+    assert_eq!(painted(&press_start, Color(r, g, b, 26)), Some(hover));
+    runtime.set_time(200.);
+    let press_half = render(&mut runtime);
+    let press = painted(&press_half, colors.surface).unwrap();
+    assert!(press.top_left > hover.top_left && press.top_left < 16.);
+    assert_eq!(painted(&press_half, Color(r, g, b, 26)), Some(press));
+    assert!(runtime.app().presses.is_empty());
+
+    runtime.set_reduced_motion(true);
+    assert_eq!(
+        painted(&render(&mut runtime), colors.surface),
+        Some(shape::LARGE)
+    );
+    assert!(!runtime.needs_frame());
+    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
+    render(&mut runtime);
+    assert_eq!(runtime.app().presses, ["a"]);
+}
+
+#[test]
 fn multi_select_keeps_independent_checks_and_one_accessible_press_per_row() {
     let mut app = App::new(ListStyle::Segmented, ListMode::Passive);
     app.checked = Some(BTreeSet::from(["b", "c"]));

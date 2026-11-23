@@ -18,7 +18,10 @@
 //! changes animate.
 use crate::{Application, Runtime};
 use std::collections::BTreeMap;
-use surface::{Color, ComputedDom, Corners, DomError, Easing, MicroDom, NodeId, Style, Transition};
+use surface::{
+    Color, ComputedDom, Corners, DomError, Easing, InteractionState, MicroDom, Node, NodeId, Style,
+    Transition,
+};
 
 #[derive(Clone, Copy, PartialEq)]
 struct Value([f32; 4]);
@@ -195,10 +198,10 @@ impl Track {
             Value::color(style.state_layer),
         ]
     }
-    fn new(style: &Style) -> Self {
+    fn new(style: &Style, corners: Corners) -> Self {
         Self {
             colors: Self::targets(style).map(Channel::new),
-            corners: CornerChannel::new(style.corner_radii()),
+            corners: CornerChannel::new(corners),
         }
     }
     fn settled(&self) -> bool {
@@ -271,10 +274,11 @@ struct Seen {
     children: Vec<NodeId>,
     targets: [Value; COLORS],
     corners: Corners,
+    interaction_corners: Option<InteractionCornerTarget>,
 }
 
 impl Seen {
-    fn of(dom: &MicroDom, id: NodeId, node: &surface::Node) -> Self {
+    fn of(dom: &MicroDom, id: NodeId, node: &Node, inputs: InteractionCorners) -> Self {
         let style = node.style();
         Self {
             id,
@@ -282,16 +286,68 @@ impl Seen {
             children: dom.children(id).collect(),
             targets: Track::targets(style),
             corners: style.corner_radii(),
+            interaction_corners: inputs.target(dom, id, node),
         }
     }
     /// The same check as `of`, without allocating.
-    fn matches(&self, dom: &MicroDom, id: NodeId, node: &surface::Node) -> bool {
+    fn matches(&self, dom: &MicroDom, id: NodeId, node: &Node, inputs: InteractionCorners) -> bool {
         let style = node.style();
         self.id == id
             && self.stable.as_deref() == node.stable_id()
             && self.targets == Track::targets(style)
             && self.corners == style.corner_radii()
+            && self.interaction_corners == inputs.target(dom, id, node)
             && dom.children(id).eq(self.children.iter().copied())
+    }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+struct InteractionCornerTarget {
+    corners: Corners,
+    transition: Option<Transition>,
+}
+
+#[derive(Clone, Copy)]
+struct InteractionCorners {
+    state: InteractionState,
+    focused: Option<NodeId>,
+    scope: Option<NodeId>,
+}
+
+impl InteractionCorners {
+    fn target(&self, dom: &MicroDom, id: NodeId, node: &Node) -> Option<InteractionCornerTarget> {
+        let active = node.animated_interaction_corner_target(id, self.focused, self.state)?;
+        let style = node.style();
+        let in_scope = self
+            .scope
+            .is_none_or(|scope| crate::controls::descendant(dom, id, scope));
+        let enabled = in_scope && !node.is_disabled();
+        let corners = if enabled {
+            active
+        } else {
+            style.corner_radii()
+        };
+        let corners = if corners.is_valid() {
+            corners
+        } else {
+            Corners::default()
+        };
+        let transition = style
+            .transition
+            .filter(|t| enabled && t.is_valid() && t.duration_ms > 0.);
+        Some(InteractionCornerTarget {
+            corners,
+            transition,
+        })
+    }
+
+    fn present_endpoints(&self, dom: &MicroDom, display: &mut MicroDom) -> Result<(), DomError> {
+        for (id, node) in dom.iter() {
+            if let Some(target) = self.target(dom, id, node) {
+                display.set_presented_interaction_corners(id, target.corners)?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -302,12 +358,13 @@ impl Motion {
         dom: &MicroDom,
         display: &mut MicroDom,
         computed: &ComputedDom,
+        inputs: InteractionCorners,
     ) -> Result<(), DomError> {
         let Some(now) = self.now else {
             self.tracks.clear();
             self.seen.clear();
             self.running = false;
-            return Ok(());
+            return inputs.present_endpoints(dom, display);
         };
         if !self.running {
             if !dom
@@ -316,16 +373,22 @@ impl Motion {
             {
                 self.tracks.clear();
                 self.seen.clear();
-                return Ok(());
+                return inputs.present_endpoints(dom, display);
             }
             // Every track is settled and no target moved, so the display
-            // copy needs no edit. Skip the keys, tracks and clones.
+            // copy needs only its interaction endpoints. Skip the keys,
+            // tracks and style clones.
             if self.seen.len() == dom.len()
                 && dom
                     .iter()
                     .zip(&self.seen)
-                    .all(|((id, node), seen)| seen.matches(dom, id, node))
+                    .all(|((id, node), seen)| seen.matches(dom, id, node, inputs))
             {
+                for seen in &self.seen {
+                    if let Some(target) = seen.interaction_corners {
+                        display.set_presented_interaction_corners(seen.id, target.corners)?;
+                    }
+                }
                 return Ok(());
             }
         }
@@ -336,9 +399,14 @@ impl Motion {
         let mut previous = std::mem::take(&mut self.tracks);
         let mut running = false;
         for (id, key) in keys(dom) {
-            let style = dom.get(id)?.style();
+            let node = dom.get(id)?;
+            let style = node.style();
+            let animated = inputs.target(dom, id, node);
+            let corners = animated.map_or_else(|| style.corner_radii(), |target| target.corners);
             // A key seen for the first time starts at its target.
-            let mut track = previous.remove(&key).unwrap_or_else(|| Track::new(style));
+            let mut track = previous
+                .remove(&key)
+                .unwrap_or_else(|| Track::new(style, corners));
             for (channel, target) in track.colors.iter_mut().zip(Track::targets(style)) {
                 if self.reduced {
                     channel.settle(target);
@@ -348,17 +416,26 @@ impl Motion {
             }
             let bounds = computed.nodes.get(id.index()).map(|n| n.bounds);
             let size = bounds.map_or((0., 0.), |b| (b.width, b.height));
-            if self.reduced {
-                track.corners.settle(style.corner_radii());
+            if self.reduced || animated.is_some_and(|target| target.transition.is_none()) {
+                track.corners.settle(corners);
             } else {
-                running |= track
-                    .corners
-                    .update(style.corner_radii(), style.transition, now, size);
+                let transition = animated.map_or(style.transition, |target| target.transition);
+                running |= track.corners.update(corners, transition, now, size);
             }
             if !track.settled() {
                 let mut presented = style.clone();
                 track.present(&mut presented);
                 display.set_style(id, presented)?;
+            }
+            if animated.is_some() {
+                // Suppress the immediate override in this display copy so
+                // every paint op uses the same animated outline.
+                let presented = if track.corners.run.is_some() {
+                    track.corners.shown
+                } else {
+                    corners
+                };
+                display.set_presented_interaction_corners(id, presented)?;
             }
             self.tracks.insert(key, track);
         }
@@ -367,7 +444,7 @@ impl Motion {
             Vec::new()
         } else {
             dom.iter()
-                .map(|(id, node)| Seen::of(dom, id, node))
+                .map(|(id, node)| Seen::of(dom, id, node, inputs))
                 .collect()
         };
         Ok(())
@@ -712,8 +789,15 @@ impl<A: Application> Runtime<A> {
         &mut self,
         display: &mut MicroDom,
         computed: &ComputedDom,
+        focused: Option<NodeId>,
+        interaction: InteractionState,
     ) -> Result<(), DomError> {
-        self.motion.present(&self.dom, display, computed)
+        let inputs = InteractionCorners {
+            state: interaction,
+            focused,
+            scope: self.active_scope_root(),
+        };
+        self.motion.present(&self.dom, display, computed, inputs)
     }
 }
 

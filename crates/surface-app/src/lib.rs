@@ -1400,12 +1400,12 @@ impl<A: Application> Runtime<A> {
         );
         #[cfg(feature = "devtools")]
         let start = self.trace_now();
-        self.present_motion(&mut display_dom, &computed)?;
         let focused = self.focused.as_ref().and_then(|id| self.dom.by_id(id));
         let interaction = surface::InteractionState {
             hovered: self.hovered.as_ref().and_then(|id| self.dom.by_id(id)),
             pressed: self.pressed.as_ref().and_then(|id| self.dom.by_id(id)),
         };
+        self.present_motion(&mut display_dom, &computed, focused, interaction)?;
         let list = P::compile(&display_dom, &computed, focused, &decorations, interaction);
         #[cfg(feature = "devtools")]
         self.trace_paint(start, list.len());

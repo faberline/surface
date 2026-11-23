@@ -380,12 +380,15 @@ impl Theme {
             if item.supporting.is_some() {
                 node = node.described_by_text(format!("{}-supporting", item.id));
             }
-            if !baseline && !selected && matches!(placement, RowPlacement::Regular { .. }) {
-                node = node.interaction_corners(
-                    Some(shape::MEDIUM),
-                    Some(shape::LARGE),
-                    Some(shape::LARGE),
-                );
+            if !baseline && matches!(placement, RowPlacement::Regular { .. }) {
+                node = node.animate_interaction_corners();
+                if !selected {
+                    node = node.interaction_corners(
+                        Some(shape::MEDIUM),
+                        Some(shape::LARGE),
+                        Some(shape::LARGE),
+                    );
+                }
             }
         }
         if let Some(checked) = selection {
