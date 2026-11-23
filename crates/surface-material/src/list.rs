@@ -1,5 +1,8 @@
 //! Material 3 Baseline and Expressive lists.
 
+mod multi_action;
+pub use multi_action::{ListSupplementaryAction, MultiActionListItem, MultiActionListOptions};
+
 use surface::{Align, Color, Corners, FillContour, Length, Node, Role, Style};
 use surface_app::{Roving, View};
 

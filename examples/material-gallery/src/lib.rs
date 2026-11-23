@@ -10,6 +10,7 @@ mod docked_date_picker_demo;
 mod extended_fab_demo;
 mod fab_demo;
 mod fab_menu_demo;
+mod list_actions_demo;
 mod lists_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
@@ -37,6 +38,7 @@ use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
+use list_actions_demo::{ListActionsDemo, ListActionsEvent};
 use lists_demo::{ListsDemo, ListsEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
@@ -96,6 +98,7 @@ pub struct Gallery {
     time_dial_demo: TimeDialDemo,
     time_scroll_demo: TimeScrollDemo,
     lists_demo: ListsDemo,
+    list_actions_demo: ListActionsDemo,
     queue: Option<Queue<Message>>,
     docked_date_picker_demo: DockedDateDemo,
     extended_fab_demo: ExtendedFabDemo,
@@ -145,6 +148,7 @@ impl Default for Gallery {
             time_dial_demo: TimeDialDemo::default(),
             time_scroll_demo: TimeScrollDemo::default(),
             lists_demo: ListsDemo::default(),
+            list_actions_demo: ListActionsDemo::default(),
             queue: None,
             docked_date_picker_demo: DockedDateDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
@@ -180,6 +184,7 @@ pub enum Message {
     TimeDial(TimeDialDemoEvent),
     TimeScroll(TimeScrollDemoEvent),
     Lists(ListsEvent),
+    ListActions(ListActionsEvent),
     DockedDate(DockedDateDemoEvent),
     ExtendedFab(ExtendedFabEvent),
     Fab(FabEvent),
@@ -259,6 +264,9 @@ impl Application for Gallery {
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
         }
+        if self.list_actions_demo.visible() {
+            return self.list_actions_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -298,6 +306,7 @@ impl Application for Gallery {
         let time_input = self.time_input_demo.viewport_changed(width, height);
         let time_dial = self.time_dial_demo.viewport_changed(width, height);
         let time_scroll = self.time_scroll_demo.viewport_changed(width, height);
+        let list_actions = self.list_actions_demo.viewport_changed(width);
         let extended_fab = self.extended_fab_demo.viewport_changed(width, height);
         let fab = self.fab_demo.viewport_changed(width, height);
         let fab_menu = self.fab_menu_demo.viewport_changed(width, height);
@@ -321,6 +330,7 @@ impl Application for Gallery {
             || time_input
             || time_dial
             || time_scroll
+            || list_actions
             || carousel
             || app_bar
             || toolbar
@@ -499,6 +509,7 @@ impl Application for Gallery {
                 }
                 if i != lists_demo::SECTION {
                     self.lists_demo.leave();
+                    self.list_actions_demo.leave();
                 }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
@@ -536,6 +547,7 @@ impl Application for Gallery {
             Message::TimeDial(event) => self.time_dial_demo.update(event),
             Message::TimeScroll(event) => self.time_scroll_demo.update(event),
             Message::Lists(event) => self.lists_demo.update(event),
+            Message::ListActions(event) => self.list_actions_demo.update(event),
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Fab(event) => self.fab_demo.update(event),
             Message::FabMenu(event) => self.fab_menu_demo.update(event),
@@ -633,6 +645,9 @@ impl Application for Gallery {
         }
         if self.lists_demo.visible() {
             return self.lists_demo.view(&t);
+        }
+        if self.list_actions_demo.visible() {
+            return self.list_actions_demo.view(&t);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -1138,6 +1153,7 @@ impl Application for Gallery {
                 children.push(TimeInputDemo::show_baseline_button(&t));
                 children.push(TimeDialDemo::show_baseline_button(&t));
                 children.push(ListsDemo::show_button(&t));
+                children.push(ListActionsDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1315,6 +1331,7 @@ mod web {
         });
         let theme = if s.dark { Theme::dark() } else { Theme::light() };
         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
+        state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state.to_string()
     })
     }

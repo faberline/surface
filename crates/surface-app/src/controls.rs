@@ -1,6 +1,6 @@
 use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalLayer, Runtime};
 use std::{collections::BTreeSet, rc::Rc};
-use surface::{Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
+use surface::{ComputedDom, Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
 
 /// Mount or update a named control, then focus it without activating it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -39,6 +39,7 @@ pub(crate) struct RovingGroup {
     pub(crate) options: Roving,
     pub(crate) first_enabled_on_entry: bool,
     pub(crate) retain_focus: bool,
+    pub(crate) all_arrows: bool,
 }
 
 pub(crate) struct RetainedRovingFocus {
@@ -62,6 +63,11 @@ pub(crate) struct RangeDrag {
     id: String,
     bounds: Rect,
     range: RangeValue,
+}
+
+fn has_extent(layout: &ComputedDom, id: NodeId) -> bool {
+    let bounds = layout.nodes[id.index()].bounds;
+    bounds.width > 0. && bounds.height > 0.
 }
 
 pub(crate) fn descendant(dom: &MicroDom, mut id: NodeId, parent: NodeId) -> bool {
@@ -118,7 +124,12 @@ impl<A: Application> Runtime<A> {
         }
         None
     }
-    fn members(&self, group: NodeId, collapsed: Option<&BTreeSet<String>>) -> Vec<NodeId> {
+    fn members(
+        &self,
+        group: NodeId,
+        collapsed: Option<&BTreeSet<String>>,
+        layout: Option<&ComputedDom>,
+    ) -> Vec<NodeId> {
         let measure_members = self.bindings[&group]
             .roving
             .is_some_and(|group| group.first_enabled_on_entry);
@@ -130,7 +141,7 @@ impl<A: Application> Runtime<A> {
                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
                     && collapsed
                         .is_none_or(|ids| node.stable_id().is_none_or(|key| !ids.contains(key)))
-                    && (!measure_members || self.has_tab_extent(*id))
+                    && (!measure_members || layout.is_none_or(|layout| has_extent(layout, *id)))
             })
             .map(|(id, _)| id)
             .collect()
@@ -208,8 +219,12 @@ impl<A: Application> Runtime<A> {
             {
                 self.layout_focus = None;
             }
+        } else if options.all_arrows {
+            // This group uses measured eligibility. Wait for the replacement
+            // tree to lay out before picking a fallback.
+            self.pending_roving_focus = Some(retained.group);
         } else if let Some(target) = self
-            .roving_entry(&self.members(group, None), options)
+            .roving_entry(&self.members(group, None, self.computed.as_ref()), options)
             .and_then(|target| self.stable(target))
         {
             self.focused = Some(target);
@@ -217,24 +232,66 @@ impl<A: Application> Runtime<A> {
         }
     }
 
+    pub(crate) fn resolve_pending_roving_focus(&mut self, layout: &ComputedDom) -> bool {
+        let Some(key) = self.pending_roving_focus.take() else {
+            return false;
+        };
+        if self.focused.is_some() {
+            return false;
+        }
+        self.focused = self
+            .all_arrows_group(&key)
+            .and_then(|id| {
+                let members = self.members(id, None, Some(layout));
+                self.stable(*members.first()?)
+            })
+            .or_else(|| {
+                self.active_scope_root()?;
+                self.scope_entry_after_layout(Some(layout))
+            });
+        self.layout_focus = None;
+        self.focused.is_some()
+    }
+
+    fn all_arrows_group(&self, key: &str) -> Option<NodeId> {
+        self.dom.by_id(key).filter(|id| {
+            self.in_scope(*id)
+                && self.bindings[id]
+                    .roving
+                    .is_some_and(|group| group.all_arrows)
+        })
+    }
+
     pub(crate) fn tab_stop(&self, id: NodeId, collapsed: Option<&BTreeSet<String>>) -> bool {
+        self.tab_stop_in_layout(id, collapsed, self.computed.as_ref())
+    }
+
+    fn tab_stop_in_layout(
+        &self,
+        id: NodeId,
+        collapsed: Option<&BTreeSet<String>>,
+        layout: Option<&ComputedDom>,
+    ) -> bool {
         if !self.in_scope(id) {
             return false;
         }
         let Some((group, options)) = self.group(id) else {
             return true;
         };
-        let members = self.members(group, collapsed);
+        let members = self.members(group, collapsed, layout);
         let current = self.focused_node().filter(|id| members.contains(id));
         current.or_else(|| self.roving_entry(&members, options)) == Some(id)
     }
     pub(crate) fn has_tab_extent(&self, id: NodeId) -> bool {
-        self.computed.as_ref().is_none_or(|layout| {
-            let bounds = layout.nodes[id.index()].bounds;
-            bounds.width > 0. && bounds.height > 0.
-        })
+        self.computed
+            .as_ref()
+            .is_none_or(|layout| has_extent(layout, id))
     }
     pub(crate) fn scope_entry(&self) -> Option<String> {
+        self.scope_entry_after_layout(None)
+    }
+
+    fn scope_entry_after_layout(&self, measured: Option<&ComputedDom>) -> Option<String> {
         if let Some(target) = self
             .active_scope_root()
             .and_then(|id| self.bindings.get(&id)?.modal_initial_focus.as_deref())
@@ -244,7 +301,11 @@ impl<A: Application> Runtime<A> {
         }
         self.dom
             .iter()
-            .find(|(id, n)| n.is_tab_stop() && self.tab_stop(*id, None))
+            .find(|(id, n)| {
+                n.is_tab_stop()
+                    && measured.is_none_or(|layout| has_extent(layout, *id))
+                    && self.tab_stop_in_layout(*id, None, measured.or(self.computed.as_ref()))
+            })
             .and_then(|(id, _)| self.stable(id))
             .or_else(|| {
                 self.scopes
@@ -306,6 +367,7 @@ impl<A: Application> Runtime<A> {
             .count();
         let same_scope = common == self.scopes.len() && common == panels.len();
         if !same_scope {
+            self.pending_roving_focus = None;
             self.layout_focus = None;
             self.clear_modal_pointer();
         }
@@ -362,7 +424,17 @@ impl<A: Application> Runtime<A> {
                 self.reconcile_retained_roving_focus(retained);
             }
         }
-        if self.scopes.last().is_some() && self.focused_node().is_none_or(|id| !self.in_scope(id)) {
+        if self
+            .pending_roving_focus
+            .as_deref()
+            .is_some_and(|key| self.all_arrows_group(key).is_none())
+        {
+            self.pending_roving_focus = None;
+        }
+        if self.pending_roving_focus.is_none()
+            && self.scopes.last().is_some()
+            && self.focused_node().is_none_or(|id| !self.in_scope(id))
+        {
             self.focused = self.scope_entry();
         }
         if self.focused != old_focus {
@@ -525,13 +597,15 @@ impl<A: Application> Runtime<A> {
             return Ok(false);
         };
         let options = roving.options;
-        let members = self.members(group, None);
+        let members = self.members(group, None, self.computed.as_ref());
         if members.is_empty() {
             return Ok(false);
         }
         let index = members.iter().position(|node| *node == id);
         let reversed = self.dom.get(group)?.is_row_reversed();
         let key = match (key, options.direction, reversed) {
+            (EditKey::Left, _, _) if roving.all_arrows => EditKey::Up,
+            (EditKey::Right, _, _) if roving.all_arrows => EditKey::Down,
             (EditKey::Left, Direction::Row, true) => EditKey::Right,
             (EditKey::Right, Direction::Row, true) => EditKey::Left,
             _ => key,
