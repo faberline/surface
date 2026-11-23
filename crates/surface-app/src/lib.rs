@@ -18,6 +18,7 @@ mod keys;
 mod motion;
 #[cfg(feature = "devtools")]
 mod paint_export;
+mod press_ripple;
 mod scroll_control;
 mod snapshot;
 #[cfg(feature = "devtools")]
@@ -865,6 +866,7 @@ pub struct Runtime<A: Application> {
     hovered: Option<String>,
     pointer_position: Option<(f32, f32)>,
     press_observation: frame_input::PressObservation,
+    press_ripple: press_ripple::PressRipple,
     touch: Option<frame_input::ActiveTouch>,
     touch_cancelled: bool,
     scroll: BTreeMap<String, (f32, f32)>,
@@ -911,6 +913,7 @@ impl<A: Application> Runtime<A> {
             hovered: None,
             pointer_position: None,
             press_observation: frame_input::PressObservation::default(),
+            press_ripple: press_ripple::PressRipple::default(),
             touch: None,
             touch_cancelled: false,
             scroll: BTreeMap::new(),
@@ -981,7 +984,8 @@ impl<A: Application> Runtime<A> {
     /// Cancel a pointer sequence without invoking a destination or dismissal.
     pub fn cancel_pointer(&mut self) -> Result<bool, AppError> {
         let touch_changed = self.cancel_touch_contact();
-        let changed = touch_changed
+        let changed = self.cancel_press_ripple()
+            || touch_changed
             || self.pressed.is_some()
             || self.hovered.is_some()
             || self.range_drag.is_some()
@@ -995,13 +999,14 @@ impl<A: Application> Runtime<A> {
     pub fn pointer_geometry_changed(&mut self) -> Result<bool, AppError> {
         self.pointer_geometry_current = false;
         self.discard_wheel_burst();
+        let ripple_changed = self.cancel_press_ripple();
         let pointer_changed = self.pointer_position.take().is_some();
         let cancelled = if self.touch.is_some() {
             self.cancel_pointer()?
         } else {
             self.cancel_drag()?
         };
-        Ok(cancelled || (pointer_changed && self.app.observes_frame_input()))
+        Ok(cancelled || ripple_changed || (pointer_changed && self.app.observes_frame_input()))
     }
 
     fn has_captured_drag(&self) -> bool {
@@ -1101,7 +1106,7 @@ impl<A: Application> Runtime<A> {
     fn rebuild(&mut self) -> Result<(), AppError> {
         self.discard_wheel_burst();
         if !self.app.observes_frame_input() {
-            self.press_observation.clear();
+            self.press_observation.clear_application();
         }
         #[cfg(feature = "devtools")]
         let start = self.trace_now();
@@ -1110,7 +1115,9 @@ impl<A: Application> Runtime<A> {
         if result.is_ok() {
             self.accessibility = Some(accessibility::Revision::default());
             self.animation_rebuild_pending = false;
+            self.reconcile_press_ripple();
         } else {
+            self.cancel_press_ripple();
             self.discard_drag();
             if self.cancel_touch_contact() || self.active_scope_root().is_some() {
                 self.clear_modal_pointer();
@@ -1406,6 +1413,7 @@ impl<A: Application> Runtime<A> {
             pressed: self.pressed.as_ref().and_then(|id| self.dom.by_id(id)),
         };
         self.present_motion(&mut display_dom, &computed, focused, interaction)?;
+        self.present_press_ripple(&mut display_dom, &computed)?;
         let list = P::compile(&display_dom, &computed, focused, &decorations, interaction);
         #[cfg(feature = "devtools")]
         self.trace_paint(start, list.len());
@@ -1663,7 +1671,9 @@ impl<A: Application> Runtime<A> {
                 if self.protects_pointer_composition(hit) {
                     return Ok(false);
                 }
-                let press_bounds = if self.app.observes_frame_input() {
+                let observes_application = self.app.observes_frame_input();
+                let ripple_role = hit.and_then(|id| self.press_ripple_role(id));
+                let press_bounds = if observes_application || ripple_role.is_some() {
                     hit.and_then(|id| {
                         self.computed
                             .as_ref()?
@@ -1672,7 +1682,6 @@ impl<A: Application> Runtime<A> {
                             .map(|node| node.bounds)
                     })
                 } else {
-                    self.press_observation.clear();
                     None
                 };
                 let drag = self.drag_candidate(hit, x, y);
@@ -1684,6 +1693,10 @@ impl<A: Application> Runtime<A> {
                 } else {
                     self.cancel_composition();
                 }
+                self.cancel_press_ripple();
+                if !observes_application {
+                    self.press_observation.clear_application();
+                }
                 self.modal_outside = self.outside_scope(x, y, hit);
                 if self.modal_outside {
                     self.pressed = None;
@@ -1692,7 +1705,14 @@ impl<A: Application> Runtime<A> {
                 self.pressed = hit.and_then(|id| self.stable(id));
                 if let Some((id, bounds)) = self.pressed.as_deref().zip(press_bounds) {
                     let time = self.input_time_ms();
-                    self.press_observation.accept(id, (x, y), bounds, time);
+                    self.press_observation.accept(
+                        id,
+                        (x, y),
+                        bounds,
+                        time,
+                        observes_application,
+                        ripple_role,
+                    );
                 }
                 self.hovered = self.pressed.clone();
                 let defer_focus = hit

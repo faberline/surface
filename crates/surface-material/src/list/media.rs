@@ -155,6 +155,10 @@ pub(super) struct MediaRow<'a> {
 }
 
 impl MediaRow<'_> {
+    pub(super) fn raster_checkpoint(self, row_id: &str) -> Option<String> {
+        self.image.map(|_| media_id(row_id))
+    }
+
     fn vertical_inset(self, lines: ListLines) -> f32 {
         if self.width < COMPACT_WIDTH {
             return COMPACT_INSET;
@@ -303,7 +307,7 @@ impl MediaRow<'_> {
             return Some(
                 View::new(
                     Node::new(Role::Group, "")
-                        .id(format!("{}-media", item.id))
+                        .id(media_id(item.id))
                         .styled(
                             Style::column()
                                 .width(Length::Px(width))
@@ -324,4 +328,8 @@ impl MediaRow<'_> {
             )
         })
     }
+}
+
+fn media_id(row_id: &str) -> String {
+    format!("{row_id}-media")
 }

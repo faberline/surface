@@ -2,7 +2,7 @@
 
 This is a working component checkpoint. The full Material catalog remains
 the target in [the completion contract](completion-contract.md).
-[The coverage file](material-coverage.json) records all 36 families.
+[The coverage file](material-coverage.json) records the 37 published families.
 No family is marked complete by this checkpoint.
 
 ## Themes and state
@@ -858,6 +858,13 @@ throughout the change. This also applies to Expressive rows with media.
 Surface uses its 200 ms `STATE_CHANGE` timing. Reduce Motion and hosts without
 a frame clock apply the target shape immediately.
 
+A pointer press on an enabled action, selection or media row starts a
+bounded ripple at the press position. The ripple uses the current row
+corners and ends at the scroll clip. A media row paints the ripple over
+the image and below its text and focus outline. A cancelled contact clears
+the ripple. Reduce Motion and hosts without a frame clock use the static
+pressed state. Custom hosts use `Runtime::render_extended` for the ripple.
+
 ### Multiple selection
 
 Use `Theme::multi_select_list` with `MultiSelectListOptions` and the same
@@ -1234,6 +1241,13 @@ Custom controls can use `Node::animate_interaction_corners` with
 active interaction corners as the target and uses the current shown corners
 when the target changes during a run.
 
+For a custom ripple, add `Node::press_ripple(None)` to a named control
+with a press action. Use the style's state layer and the node's press
+alpha to set the ink. Pass the stable ID of a passive raster leaf to
+paint the ripple after that image. Place the leaf before the row's text
+and controls. Surface uses 225 ms for growth, 75 ms for fade-in and
+150 ms for fade-out after release and full growth.
+
 Known motion gaps:
 
 - Spring adoption remains limited across the catalog.
@@ -1248,8 +1262,8 @@ Known motion gaps:
   `SURFACE_REDUCED_MOTION=1`. Only the browser follows the OS setting.
 - The Material emphasized path easing is a path curve. Surface uses the
   androidx cubic approximation of it.
-- `STATE_CHANGE` uses a shared duration and easing. A general radial
-  ripple and shape morphing for the catalog remain open.
+- `STATE_CHANGE` uses a shared duration and easing. Radial ripple and shape
+  morphing still cover a subset of the catalog.
 - Other tokens and components do not use a transition yet.
 
 Motion does not complete the Material catalog. The coverage file keeps

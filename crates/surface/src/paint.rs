@@ -1,6 +1,8 @@
 //! Ordered, serializable drawing commands shared by every GPU backend.
+mod press_ripple;
+
 use crate::shadow::has_area;
-use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, Rect, Role, TextStyle};
+use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, PathFill, Rect, Role, TextStyle};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[derive(Clone, Debug, Default)]
@@ -168,6 +170,8 @@ pub enum ExtendedPaintOp {
 }
 
 trait CompileOp: From<PaintOp> {
+    const PRESS_RIPPLE: bool = false;
+
     fn push_fill(path: crate::PathFill, push: impl FnMut(Self));
 
     fn push_raster(
@@ -193,6 +197,8 @@ impl From<PaintOp> for ExtendedPaintOp {
 }
 
 impl CompileOp for ExtendedPaintOp {
+    const PRESS_RIPPLE: bool = true;
+
     fn push_fill(path: crate::PathFill, mut push: impl FnMut(Self)) {
         push(Self::FillPath(path));
     }
@@ -228,6 +234,96 @@ impl<Op: CompileOp> Ops<'_, Op> {
             owners.push(owner);
         }
     }
+}
+
+struct FocusPaint {
+    rect: Rect,
+    clip: Rect,
+    color: Color,
+    stroke: Option<(Outline, f32)>,
+}
+
+impl FocusPaint {
+    fn push<Op: CompileOp>(self, owner: NodeId, ops: &mut Ops<'_, Op>) {
+        if let Some((outline, width)) = self.stroke {
+            ops.push(
+                owner,
+                outline.stroke(self.rect, self.clip, width, self.color),
+            );
+        } else {
+            // Legacy nodes keep the four square edge quads.
+            let r = self.rect;
+            for rect in [
+                Rect::new(r.x, r.y, r.width, 2.),
+                Rect::new(r.x, r.y + r.height - 2., r.width, 2.),
+                Rect::new(r.x, r.y, 2., r.height),
+                Rect::new(r.x + r.width - 2., r.y, 2., r.height),
+            ] {
+                ops.push(
+                    owner,
+                    PaintOp::Quad {
+                        rect,
+                        clip: self.clip,
+                        radius: 0.,
+                        color: self.color,
+                    },
+                );
+            }
+        }
+    }
+}
+
+struct FeedbackPaint {
+    owner: NodeId,
+    wave: Option<PathFill>,
+    focus: Option<FocusPaint>,
+}
+
+impl FeedbackPaint {
+    fn push<Op: CompileOp>(self, ops: &mut Ops<'_, Op>) {
+        if let Some(wave) = self.wave {
+            ops.push_fill(self.owner, wave);
+        }
+        if let Some(focus) = self.focus {
+            focus.push(self.owner, ops);
+        }
+    }
+}
+
+fn raster_checkpoint(
+    dom: &MicroDom,
+    owner: NodeId,
+    name: &str,
+    remaining_paint_order: &[NodeId],
+) -> Option<NodeId> {
+    let id = dom.by_id(name)?;
+    let node = dom.get(id).ok()?;
+    if node.role() != Role::Group
+        || node.is_focusable()
+        || node.text_value().is_some()
+        || node.raster.is_none()
+        || dom.children(id).next().is_some()
+        || !remaining_paint_order.contains(&id)
+    {
+        return None;
+    }
+    let mut parent = node.parent();
+    while let Some(ancestor) = parent {
+        if ancestor == owner {
+            return Some(id);
+        }
+        parent = dom.get(ancestor).ok()?.parent();
+    }
+    None
+}
+
+fn state_ink(color: Color, opacity: u8) -> Color {
+    Color(
+        color.0,
+        color.1,
+        color.2,
+        (u16::from(color.3) * u16::from(opacity) / 255) as u8,
+    )
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct DisplayList {
@@ -390,7 +486,8 @@ fn compile_into<Op: CompileOp>(
         ops: Vec::new(),
         owners,
     };
-    for id in &computed.paint_order {
+    let mut deferred: Option<(NodeId, FeedbackPaint)> = None;
+    for (index, id) in computed.paint_order.iter().enumerate() {
         let n = dom.get(*id).expect("computed node belongs to DOM");
         let g = &computed.nodes[id.index()];
         let s = n.style();
@@ -424,10 +521,7 @@ fn compile_into<Op: CompileOp>(
         {
             ops.push_fill(*id, path);
         }
-        if !visible {
-            continue;
-        }
-        if let Some(image) = &n.raster {
+        if let Some(image) = n.raster.as_ref().filter(|_| visible) {
             Op::push_raster(
                 image,
                 g.bounds,
@@ -438,76 +532,97 @@ fn compile_into<Op: CompileOp>(
                 },
             );
         }
+        // A clipped checkpoint has no raster draw. It still fixes the order
+        // between the owner, the remaining copy and the checkbox.
+        if deferred
+            .as_ref()
+            .is_some_and(|(checkpoint, _)| checkpoint == id)
+        {
+            if let Some((_, feedback)) = deferred.take() {
+                feedback.push(&mut ops);
+            }
+        }
+        if !visible {
+            continue;
+        }
         if s.border_width > 0. && s.border_color.3 > 0 {
             ops.push(
                 *id,
                 outline.stroke(g.bounds, g.clip, s.border_width, s.border_color),
             );
         }
+        let active_wave = n.press_ripple.as_deref().and_then(|ripple| {
+            (Op::PRESS_RIPPLE && !n.is_disabled())
+                .then_some((ripple.presented?, ripple.after.as_deref()))
+        });
+        let [hover_alpha, focus_alpha, press_alpha] = n.resolved_state_layer_alphas();
         if s.state_layer.3 > 0 && !n.is_disabled() {
-            let [hover_alpha, focus_alpha, press_alpha] = n.resolved_state_layer_alphas();
             let mut target = Some(*id);
             let mut opacity = 0;
-            while let Some(id) = target {
-                if interaction.pressed == Some(id) {
-                    opacity = press_alpha;
+            while let Some(ancestor) = target {
+                if interaction.pressed == Some(ancestor) {
+                    // The held wave provides the pressed ink, including on
+                    // its first transparent frame. Avoid doubling it with
+                    // the hovered or focused fill during the same contact.
+                    opacity = if ancestor == *id && active_wave.is_some() {
+                        0
+                    } else {
+                        press_alpha
+                    };
                     break;
                 }
-                if focus_alpha > 0 && focused == Some(id) {
+                if focus_alpha > 0 && focused == Some(ancestor) {
                     opacity = focus_alpha;
-                } else if opacity == 0 && interaction.hovered == Some(id) {
+                } else if opacity == 0 && interaction.hovered == Some(ancestor) {
                     opacity = hover_alpha;
                 }
-                target = dom.get(id).ok().and_then(|n| n.parent());
+                target = dom.get(ancestor).ok().and_then(|n| n.parent());
             }
             if opacity > 0 {
-                let c = s.state_layer;
                 ops.push(
                     *id,
-                    outline.fill(
-                        g.bounds,
-                        g.clip,
-                        Color(
-                            c.0,
-                            c.1,
-                            c.2,
-                            (u16::from(c.3) * u16::from(opacity) / 255) as u8,
-                        ),
-                    ),
+                    outline.fill(g.bounds, g.clip, state_ink(s.state_layer, opacity)),
                 );
             }
         }
         let focus_color = n
             .focus_outline_color()
             .filter(|_| n.paints_focus_outline(*id, focused));
-        if let Some(color) = focus_color {
+        let focus = focus_color.map(|color| {
             let width = n.resolved_focus_outline_width();
-            if corners.is_none() && width.is_none() {
-                // Legacy nodes keep the four square edge quads.
-                let r = g.bounds;
-                for line in [
-                    Rect::new(r.x, r.y, r.width, 2.),
-                    Rect::new(r.x, r.y + r.height - 2., r.width, 2.),
-                    Rect::new(r.x, r.y, 2., r.height),
-                    Rect::new(r.x + r.width - 2., r.y, 2., r.height),
-                ] {
-                    ops.push(
-                        *id,
-                        PaintOp::Quad {
-                            rect: line,
-                            clip: g.clip,
-                            radius: 0.,
-                            color,
-                        },
-                    );
-                }
-            } else {
-                // One inside stroke that follows the node shape.
-                ops.push(
-                    *id,
-                    outline.stroke(g.bounds, g.clip, width.unwrap_or(2.), color),
-                );
+            FocusPaint {
+                rect: g.bounds,
+                clip: g.clip,
+                color,
+                stroke: (corners.is_some() || width.is_some())
+                    .then_some((outline, width.unwrap_or(2.))),
             }
+        });
+        if let Some((wave, after)) = active_wave {
+            let mut ink = state_ink(s.state_layer, press_alpha);
+            ink.3 = (f32::from(ink.3) * wave.opacity).round() as u8;
+            let wave = press_ripple::contour(
+                wave,
+                g.bounds,
+                g.clip,
+                corners.unwrap_or(Corners::all(s.radius)),
+                ink,
+            );
+            let feedback = FeedbackPaint {
+                owner: *id,
+                wave,
+                focus,
+            };
+            let checkpoint = after.filter(|_| deferred.is_none()).and_then(|name| {
+                raster_checkpoint(dom, *id, name, &computed.paint_order[index + 1..])
+            });
+            if let Some(checkpoint) = checkpoint {
+                deferred = Some((checkpoint, feedback));
+            } else {
+                feedback.push(&mut ops);
+            }
+        } else if let Some(focus) = focus {
+            focus.push(*id, &mut ops);
         }
         if let Some(text) = n.text_value() {
             let rect = g.bounds.inset(s.padding);

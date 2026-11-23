@@ -24,7 +24,7 @@ const CLOCK: &str = "window.listCornersClock";
 const DEPTH: f64 = 2.;
 
 #[derive(Clone, Copy)]
-enum Scene {
+pub(super) enum Scene {
     Lists,
     Media,
 }
@@ -46,12 +46,12 @@ impl Scene {
     }
 }
 
-async fn ready(tab: &Tab, scene: Scene, condition: &str) -> Result<()> {
+pub(super) async fn ready(tab: &Tab, scene: Scene, condition: &str) -> Result<()> {
     until(tab, &format!("(d => {condition})(s.{})", scene.inspector())).await?;
     tab.settle().await
 }
 
-async fn reload(tab: &Tab, url: &str, scene: Scene) -> Result<()> {
+pub(super) async fn reload(tab: &Tab, url: &str, scene: Scene) -> Result<()> {
     tab.viewport(960, 2044).await?;
     tab.goto(url).await?;
     crate::smoke::ready(tab, "gallery").await?;
@@ -63,11 +63,11 @@ async fn reload(tab: &Tab, url: &str, scene: Scene) -> Result<()> {
     resize(tab, 960, 820).await
 }
 
-async fn preset(tab: &Tab, scene: Scene, name: &str) -> Result<()> {
+pub(super) async fn preset(tab: &Tab, scene: Scene, name: &str) -> Result<()> {
     activate(tab, &scene.control(name)).await
 }
 
-async fn palette(tab: &Tab, scene: Scene, key: &str) -> Result<Rgb> {
+pub(super) async fn palette(tab: &Tab, scene: Scene, key: &str) -> Result<Rgb> {
     let [r, g, b, a]: [u8; 4] =
         serde_json::from_value(state(tab).await?[scene.inspector()]["colors"][key].clone())
             .with_context(|| format!("Gallery color {key}"))?;
@@ -82,7 +82,7 @@ async fn capture(env: &Env, tab: &Tab, name: &str) -> Result<Raster> {
     Raster::read(tab, path).await
 }
 
-async fn reduced_motion(tab: &Tab, on: bool) -> Result<()> {
+pub(super) async fn reduced_motion(tab: &Tab, on: bool) -> Result<()> {
     let value = if on { "reduce" } else { "no-preference" };
     tab.cdp(
         "Emulation.setEmulatedMedia",
@@ -97,7 +97,7 @@ async fn reduced_motion(tab: &Tab, on: bool) -> Result<()> {
     tab.settle().await
 }
 
-async fn freeze(tab: &Tab) -> Result<()> {
+pub(super) async fn freeze(tab: &Tab) -> Result<()> {
     let set_clock = format!(
         "(() => {{
         const zero=performance.now();
@@ -113,12 +113,12 @@ async fn freeze(tab: &Tab) -> Result<()> {
     tab.settle().await
 }
 
-async fn tick(tab: &Tab, ms: u16) -> Result<()> {
+pub(super) async fn tick(tab: &Tab, ms: u16) -> Result<()> {
     tab.eval(&format!("{CLOCK}={ms}")).await?;
     tab.settle().await
 }
 
-async fn leave_rows(tab: &Tab) -> Result<()> {
+pub(super) async fn leave_rows(tab: &Tab) -> Result<()> {
     let [x, y, _, _] = tab.canvas_box().await?;
     tab.mouse_move(x + 1., y + 1.).await?;
     tab.settle().await
@@ -130,14 +130,14 @@ async fn hover_row(tab: &Tab, id: &str) -> Result<()> {
     tab.settle().await
 }
 
-fn distance(a: Rgb, b: Rgb) -> u16 {
+pub(super) fn distance(a: Rgb, b: Rgb) -> u16 {
     a.into_iter()
         .zip(b)
         .map(|(a, b)| u16::from(a.abs_diff(b)))
         .sum()
 }
 
-fn pixel(image: &Raster, sample: Rect) -> Result<Rgb> {
+pub(super) fn pixel(image: &Raster, sample: Rect) -> Result<Rgb> {
     image
         .colors(sample)?
         .into_iter()

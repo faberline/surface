@@ -1,6 +1,9 @@
 use surface::{Color, Corners, DisplayList, FontFamily, PaintOp, Rect, TextMeasurer, TextStyle};
 use surface_wgpu::{Renderer, TextSystem};
 
+#[path = "it/list_ripple.rs"]
+mod list_ripple;
+
 /// A copy of the bundled font that claims weight 700 and half the units per em,
 /// so every glyph is twice as wide. It is built in memory for this test only.
 /// The real bundle has no bold face, so this is the only way to see whether a

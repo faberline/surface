@@ -374,6 +374,7 @@ impl<A: Application> Runtime<A> {
         if !same_scope {
             self.pending_roving_focus = None;
             self.layout_focus = None;
+            self.cancel_press_ripple();
             self.clear_modal_pointer();
         }
         while self.scopes.len() > common {

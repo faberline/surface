@@ -14,12 +14,13 @@ as the coverage baseline. Track every family and its variants: app bars,
 badges, bottom sheets, buttons, button groups, cards, carousels, checkboxes,
 chips, date pickers, dialogs, dividers, floating action buttons, icon
 buttons, lists, loading/progress indicators, menus, navigation bars,
-navigation drawers, navigation rails, radio buttons, search, segmented
-buttons, side sheets, sliders, snackbars, switches, tabs, text fields,
-time pickers, and tooltips. The rendered official catalog was inspected on
-2026-11-04. It contains 36 families, including extended FABs, FAB menus,
-split buttons and toolbars. Track that full inventory before declaring
-Material complete.
+navigation drawers, navigation rails, radio buttons, scroll fields, search,
+segmented buttons, side sheets, sliders, snackbars, switches, tabs, text fields,
+time pickers, and tooltips. The official overview has 36 family cards,
+including extended FABs, FAB menus, split buttons and toolbars. Google's
+navigation adds the published Scroll fields family. Track all 37 families
+before declaring Material complete.
+[Catalog check on 2026-11-23](https://github.com/faberline/surface/blob/481422231a5e36fd7eaebd21b7c3c7813b061408/docs/evidence/md3/list-corners-v0.1.33/catalog-refresh.md)
 
 Shared foundations include color roles and generation, typography, shapes,
 elevation, motion, state layers, focus, selection, disabled/error behavior,
