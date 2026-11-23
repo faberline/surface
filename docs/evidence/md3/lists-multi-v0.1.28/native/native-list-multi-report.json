@@ -1,0 +1,480 @@
+{
+  "source_manifest_sha256": "af4640b326a37cc170edceb43df1ca471720b65ef70e76ee7cf7bf4b074e0a9d",
+  "gallery_sha256": "8c72379fd5769b27c101047b39a4d316d79c7b8abe8f30254a72bcc1edebf455",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "segmented": {
+      "viewport": [
+        760,
+        640
+      ],
+      "sets": [
+        [
+          "lists-c",
+          "lists-f"
+        ],
+        [
+          "lists-a",
+          "lists-c",
+          "lists-f"
+        ],
+        [
+          "lists-a",
+          "lists-c"
+        ],
+        []
+      ],
+      "wrap": [
+        "lists-a",
+        "lists-f"
+      ],
+      "unchecked_samples": [
+        [
+          73,
+          69,
+          78,
+          255
+        ],
+        [
+          73,
+          69,
+          78,
+          255
+        ],
+        [
+          253,
+          247,
+          255,
+          255
+        ],
+        [
+          253,
+          247,
+          255,
+          255
+        ],
+        [
+          253,
+          247,
+          255,
+          255
+        ],
+        [
+          253,
+          247,
+          255,
+          255
+        ]
+      ],
+      "checked_samples": [
+        [
+          101,
+          85,
+          143,
+          255
+        ],
+        [
+          101,
+          85,
+          143,
+          255
+        ],
+        [
+          101,
+          85,
+          143,
+          255
+        ],
+        [
+          178,
+          170,
+          199,
+          255
+        ],
+        [
+          101,
+          85,
+          143,
+          255
+        ],
+        [
+          139,
+          128,
+          171,
+          255
+        ]
+      ],
+      "transport_captures": [
+        {
+          "name": "multi-segmented-light-start.png",
+          "sha256": "c021be3ef06df18532435cf1cdf8431d114249b2c57425d37be766d7f9c78166",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "lists-a-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 608.0,
+                "x": 60.0,
+                "y": 220.0
+              },
+              "ink_bounds": [
+                62,
+                229,
+                12,
+                11
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 31
+            },
+            "lists-c-supporting": {
+              "bounds": {
+                "height": 20.0,
+                "width": 642.0,
+                "x": 60.0,
+                "y": 358.0
+              },
+              "ink_bounds": [
+                61,
+                362,
+                68,
+                14
+              ],
+              "rgba": [
+                30,
+                25,
+                43,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 229
+            }
+          }
+        },
+        {
+          "name": "multi-segmented-light-three-checked.png",
+          "sha256": "487e5e6b0d70510ccd2b7b2d594f800f4965659c4b9e44e482422b1be5051ee5",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0
+        },
+        {
+          "name": "multi-segmented-light-last-deselected.png",
+          "sha256": "656ee46698b5b53ab9af1fdea2e479a2b68f32d1b91742585f1ba23237b8f702",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "lists-f-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 642.0,
+                "x": 60.0,
+                "y": 484.0
+              },
+              "ink_bounds": [
+                61,
+                489,
+                30,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 135
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ]
+    },
+    "standard": {
+      "viewport": [
+        760,
+        640
+      ],
+      "selected": [
+        "lists-f"
+      ],
+      "transport_captures": [
+        {
+          "name": "multi-standard-dark.png",
+          "sha256": "aeb518771961c84a240edb9d7abe3188585f8c4efc49aa88ef1b624434bbfe9b",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "lists-c-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 642.0,
+                "x": 60.0,
+                "y": 330.0
+              },
+              "ink_bounds": [
+                61,
+                336,
+                14,
+                15
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 56
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ]
+    },
+    "baseline": {
+      "viewport": [
+        760,
+        640
+      ],
+      "selected": [
+        "lists-c",
+        "lists-f"
+      ],
+      "transport_captures": [
+        {
+          "name": "multi-baseline-light.png",
+          "sha256": "9797b18537860c2c1275fdba3fc640b38416f61ac932619712a887b5db948e09",
+          "format": "png",
+          "width": 760,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "lists-c-headline": {
+              "bounds": {
+                "height": 24.0,
+                "width": 630.0,
+                "x": 64.0,
+                "y": 330.0
+              },
+              "ink_bounds": [
+                65,
+                336,
+                14,
+                15
+              ],
+              "rgba": [
+                30,
+                25,
+                43,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 55
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ]
+    },
+    "compact": {
+      "viewport": [
+        320,
+        900
+      ],
+      "selected": [
+        "lists-c",
+        "lists-d",
+        "lists-f"
+      ],
+      "row": {
+        "height": 228.0,
+        "width": 296.0,
+        "x": 12.0,
+        "y": 472.0
+      },
+      "headline": {
+        "height": 96.0,
+        "width": 202.0,
+        "x": 58.0,
+        "y": 514.0
+      },
+      "rtl_slots": [
+        {
+          "height": 20.0,
+          "width": 20.0,
+          "x": 272.0,
+          "y": 404.0
+        },
+        {
+          "height": 18.0,
+          "width": 18.0,
+          "x": 28.0,
+          "y": 405.0
+        }
+      ],
+      "transport_captures": [
+        {
+          "name": "multi-compact-dark-rtl.png",
+          "sha256": "43d16b14941a3428b7925bba18d87a3d7cf9a425ea29f26a18b4007e0f8710a7",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "ink": {
+            "lists-d-headline": {
+              "bounds": {
+                "height": 96.0,
+                "width": 202.0,
+                "x": 58.0,
+                "y": 514.0
+              },
+              "ink_bounds": [
+                60,
+                525,
+                188,
+                78
+              ],
+              "rgba": [
+                232,
+                222,
+                248,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 3560
+            },
+            "lists-d-supporting": {
+              "bounds": {
+                "height": 80.0,
+                "width": 202.0,
+                "x": 58.0,
+                "y": 610.0
+              },
+              "ink_bounds": [
+                59,
+                618,
+                193,
+                66
+              ],
+              "rgba": [
+                232,
+                222,
+                248,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 2457
+            },
+            "lists-demo-status": {
+              "bounds": {
+                "height": 40.0,
+                "width": 208.0,
+                "x": 100.0,
+                "y": 712.0
+              },
+              "ink_bounds": [
+                103,
+                720,
+                136,
+                26
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 947
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ]
+    },
+    "short": {
+      "viewport": [
+        320,
+        240
+      ],
+      "selected_after_enter": [
+        "lists-f"
+      ],
+      "visible_row": {
+        "height": 108.0,
+        "width": 296.0,
+        "x": 12.0,
+        "y": 120.0
+      },
+      "transport_captures": [
+        {
+          "name": "multi-short-dark-rtl.png",
+          "sha256": "a0efa3bf0a27b97a8ff27ee490ff53af42835fec8f7c38d36d0e4552ce9a7db7",
+          "format": "png",
+          "width": 320,
+          "height": 240,
+          "scale": 1.0,
+          "ink": {
+            "lists-c-headline": {
+              "bounds": {
+                "height": 48.0,
+                "width": 202.0,
+                "x": 58.0,
+                "y": 130.0
+              },
+              "ink_bounds": [
+                60,
+                142,
+                29,
+                29
+              ],
+              "rgba": [
+                232,
+                222,
+                248,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 240
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ]
+    }
+  }
+}
