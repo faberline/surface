@@ -151,6 +151,7 @@ does not change application state.
 | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
 | `fab_menu` | Native floating actions or an anchored Web menu with one stable FAB, caller-owned open state, and focus return |
 | `date_picker` | One date in a modal calendar or text field, with year browsing, validation, and adaptive full-screen layout |
+| `docked_date_picker` | An editable date field and a separate calendar button, with month and year lists and an anchored panel |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
@@ -354,6 +355,32 @@ either mode and switch locale, text scale, theme, and direction.
 [Material 3 date picker](https://m3.material.io/components/date-pickers/specs) ·
 [Published date picker tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.01c5310367774eb8.json) ·
 [Headless native Gallery](devtools-protocol.md#headless-native-gallery)
+
+### Docked date picker
+
+Keep a `DockedDatePickerState` for the field. Pass the current viewport
+and the latest layout bounds of `{id}-field` to
+`Theme::docked_date_picker`. Read those bounds from `AnimationFrame`.
+Update the view when the field moves. The panel fits below or above
+the field and can scroll inside a short viewport.
+
+The field and calendar button have separate Tab stops. The button
+opens the calendar. Month and year lists change the month on display.
+Choosing a day submits it. Escape closes a month or year list first.
+Dismiss the calendar to restore focus to its button.
+
+Forward every picker event to `DockedDatePickerState::apply`. Feed
+the field's focus to `observe_input_focus` from the frame input
+observer. Save the date on `DatePickerEffect::Commit` from either
+method. The field keeps incomplete text until the user finishes
+editing. Enter and ordinary field exit validate and format the text.
+During IME composition, Enter belongs to the input method.
+
+In Material Gallery, choose 浮層, then 錨定日期選擇器. Move the field to
+the lower edge to try the placement above it.
+
+[Docked date picker accessibility](https://m3.material.io/components/date-pickers/accessibility) ·
+[Published docked tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.01c5310367774eb8.json)
 
 ## FAB menus
 

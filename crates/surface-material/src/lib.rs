@@ -18,6 +18,8 @@ mod carousel_state;
 mod components;
 mod date_picker;
 mod date_picker_state;
+mod docked_date_picker;
+mod docked_date_picker_state;
 mod elevation;
 mod extended_fab;
 mod extended_fab_motion;
@@ -73,6 +75,10 @@ pub use date_picker_state::{
     CivilDate, DateBounds, DateInputError, DateInputFormat, DateInputOrder, DateInputSeparator,
     DatePickerConstraints, DatePickerEffect, DatePickerEvent, DatePickerLocale, DatePickerMode,
     DatePickerSession, DatePickerStep, StepDirection, Weekday, YearMonth,
+};
+pub use docked_date_picker::{DockedDatePickerLabels, DockedDatePickerOptions};
+pub use docked_date_picker_state::{
+    place_docked_date_picker, DockedDatePickerEvent, DockedDatePickerMode, DockedDatePickerState,
 };
 pub use elevation::Elevation;
 pub use extended_fab::{

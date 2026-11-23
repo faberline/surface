@@ -9,6 +9,7 @@ struct App {
     dialog: bool,
     nested: bool,
     opens: usize,
+    defer_open_focus: bool,
 }
 #[derive(Clone)]
 enum Message {
@@ -47,8 +48,14 @@ impl Application for App {
         }
     }
     fn view(&self) -> View<Message> {
+        let open = button("open", Message::Open);
+        let open = if self.defer_open_focus {
+            open.focus_on_pointer_release()
+        } else {
+            open
+        };
         let mut children = vec![
-            button("open", Message::Open),
+            open,
             View::new(
                 Node::new(Role::RadioGroup, "Choice")
                     .id("radios")
@@ -275,6 +282,33 @@ fn outside_click_dismisses_without_activating_the_control_under_it() {
     r.dispatch(Event::PointerUp { x: 1., y: 1. }).unwrap();
     assert!(!r.app().dialog);
     assert_eq!(r.app().opens, 1);
+    assert_eq!(r.focused(), Some("open"));
+}
+#[test]
+fn deferred_pointer_focus_moves_only_when_the_button_activates() {
+    let mut r = Runtime::new(App {
+        value: 12.,
+        defer_open_focus: true,
+        ..Default::default()
+    })
+    .unwrap();
+    r.activate("radio0").unwrap();
+    r.render(640., 480., &mut Metrics).unwrap();
+    let id = r.dom().by_id("open").unwrap();
+    let b = r.computed().unwrap().nodes[id.index()].bounds;
+    let x = b.x + b.width / 2.;
+    let y = b.y + b.height / 2.;
+    r.dispatch(Event::PointerDown { x, y }).unwrap();
+    assert_eq!(r.focused(), Some("radio0"));
+    assert_eq!(r.app().opens, 0);
+    r.dispatch(Event::PointerUp { x: 639., y: 479. }).unwrap();
+    assert_eq!(r.focused(), Some("radio0"));
+    assert_eq!(r.app().opens, 0);
+    r.dispatch(Event::PointerDown { x, y }).unwrap();
+    r.dispatch(Event::PointerUp { x, y }).unwrap();
+    assert_eq!(r.focused(), Some("close"));
+    assert_eq!(r.app().opens, 1);
+    r.dispatch(Event::Cancel).unwrap();
     assert_eq!(r.focused(), Some("open"));
 }
 #[test]

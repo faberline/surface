@@ -1,6 +1,6 @@
 //! The controlled Material 3 single-date modal picker.
 
-mod calendar_view;
+pub(crate) mod calendar_view;
 
 use std::rc::Rc;
 
@@ -12,8 +12,8 @@ use crate::{
     shape::{self, LayoutDirection},
     typography,
     vector_icon::VectorIconSize,
-    CivilDate, DatePickerConstraints, DatePickerEvent, DatePickerLocale, DatePickerMode,
-    DatePickerSession, Theme, VectorIcon,
+    CivilDate, DateInputError, DatePickerConstraints, DatePickerEvent, DatePickerLocale,
+    DatePickerMode, DatePickerSession, Theme, VectorIcon,
 };
 
 const DIALOG_WIDTH: f32 = 360.;
@@ -22,7 +22,7 @@ const INPUT_WIDTH: f32 = 328.;
 const INPUT_HEIGHT: f32 = 512.;
 const HEADER_HEIGHT: f32 = 120.;
 const STANDARD_INSET: f32 = 12.;
-const TARGET: f32 = 48.;
+pub(crate) const TARGET: f32 = 48.;
 
 /// The caller's preferred presentation of the single-date modal.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -398,98 +398,153 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         icon: Glyph,
         event: Option<DatePickerEvent>,
     ) -> View<M> {
-        let ink = if event.is_some() {
-            self.theme.colors.on_surface_variant
-        } else {
-            self.disabled_ink()
-        };
-        let paint = View::new(
-            Node::new(Role::Group, "")
-                .styled(centered(40., 40.).corners(shape::FULL).state_layer(ink)),
-        )
-        .children([icon.vector().view(VectorIconSize::Dp24, ink)])
-        .without_interaction(None);
-        button(
-            Node::new(Role::Button, label)
-                .id(id)
-                .focus_color(self.theme.colors.primary)
-                .styled(centered(TARGET, TARGET).corners(shape::FULL)),
+        date_icon_button(
+            self.theme,
+            id,
+            label,
+            icon,
             event.map(|event| (self.emit)(event)),
         )
-        .children([paint])
     }
 
     fn disabled_ink(&self) -> Color {
-        let Color(r, g, b, _) = self.theme.colors.on_surface;
-        Color(r, g, b, 97)
+        disabled_ink(self.theme)
     }
 
     fn input(&self) -> View<M> {
-        let id = self.id("input");
-        let locale = self.options.locale;
-        let error = self.session.error();
-        let (hint_id, hint, ink) = if let Some(error) = error {
-            (
-                self.id("error"),
-                format!("{}\n{}", (locale.error_text)(error), locale.format_hint),
-                self.theme.colors.error,
-            )
-        } else {
-            (
-                self.id("hint"),
-                locale.format_hint.to_owned(),
-                self.theme.colors.on_surface_variant,
-            )
-        };
-        let label = self.options.labels.input_name;
-        let mut style = Style::column()
-            .width(Length::Percent(1.))
-            .padding(12.)
-            .corners(shape::EXTRA_SMALL)
-            .border(
-                1.,
-                if error.is_some() {
-                    ink
-                } else {
-                    self.theme.colors.outline
-                },
-            )
-            .with_text_style(typography::BODY_LARGE)
-            .foreground(self.theme.colors.on_surface);
-        style.min_height = 56.;
         let edit = self.emit.clone();
-        let confirm = (self.emit)(DatePickerEvent::Confirm);
-        let input = View::new(
-            Node::new(Role::TextInput, label)
-                .id(id)
-                .text(self.session.raw_input())
-                .described_by_text(&hint_id)
-                .styled(style),
-        )
-        .on_input(move |raw| edit(DatePickerEvent::Edit(raw)))
-        .on_key(move |key| {
-            (key.key == Key::Enter && key.modifiers.is_empty() && !key.repeat)
-                .then(|| confirm.clone())
-        })
-        .cursor(CursorStyle::Text)
-        .restore_focus_on_removal(self.id("mode"))
-        .accessibility_scroll_into_view();
+        let editor = date_editor(
+            self.theme,
+            DateEditorOptions {
+                id: self.options.id,
+                label: self.options.labels.input_name,
+                locale: self.options.locale,
+                raw: self.session.raw_input(),
+                error: self.session.error(),
+                style: Style::column().width(Length::Percent(1.)),
+            },
+            move |raw| edit(DatePickerEvent::Edit(raw)),
+            (self.emit)(DatePickerEvent::Confirm),
+        );
         View::new(Node::new(Role::Group, "").styled(Style::column().padding(12.).gap(6.))).children(
             [
-                text(
-                    "",
-                    label,
-                    typography::LABEL_LARGE,
-                    self.theme.colors.on_surface,
-                ),
-                input,
-                text(hint_id, &hint, typography::BODY_SMALL, ink),
+                editor.label,
+                editor.input.restore_focus_on_removal(self.id("mode")),
+                editor.helper,
             ],
         )
     }
 }
 
-fn button<M>(node: Node, message: Option<M>) -> View<M> {
+pub(crate) struct DateEditorOptions<'a> {
+    pub(crate) id: &'a str,
+    pub(crate) label: &'a str,
+    pub(crate) locale: &'a DatePickerLocale<'a>,
+    pub(crate) raw: &'a str,
+    pub(crate) error: Option<DateInputError>,
+    pub(crate) style: Style,
+}
+
+pub(crate) struct DateEditor<M> {
+    pub(crate) label: View<M>,
+    pub(crate) input: View<M>,
+    pub(crate) helper: View<M>,
+}
+
+pub(crate) fn date_editor<M: Clone + 'static>(
+    theme: &Theme,
+    options: DateEditorOptions<'_>,
+    on_input: impl Fn(String) -> M + 'static,
+    on_enter: M,
+) -> DateEditor<M> {
+    let DateEditorOptions {
+        id,
+        label,
+        locale,
+        raw,
+        error,
+        style,
+    } = options;
+    let (hint_id, hint, ink) = if let Some(error) = error {
+        (
+            format!("{id}-error"),
+            format!("{}\n{}", (locale.error_text)(error), locale.format_hint),
+            theme.colors.error,
+        )
+    } else {
+        (
+            format!("{id}-hint"),
+            locale.format_hint.to_owned(),
+            theme.colors.on_surface_variant,
+        )
+    };
+    let mut style = style
+        .padding(12.)
+        .corners(shape::EXTRA_SMALL)
+        .border(
+            1.,
+            if error.is_some() {
+                ink
+            } else {
+                theme.colors.outline
+            },
+        )
+        .with_text_style(typography::BODY_LARGE)
+        .foreground(theme.colors.on_surface);
+    style.min_height = 56.;
+    let input = View::new(
+        Node::new(Role::TextInput, label)
+            .id(format!("{id}-input"))
+            .text(raw)
+            .described_by_text(&hint_id)
+            .styled(style),
+    )
+    .on_input(on_input)
+    .on_key(move |key| {
+        (key.key == Key::Enter && key.modifiers.is_empty() && !key.repeat).then(|| on_enter.clone())
+    })
+    .cursor(CursorStyle::Text)
+    .accessibility_scroll_into_view();
+    DateEditor {
+        label: text("", label, typography::LABEL_LARGE, theme.colors.on_surface),
+        input,
+        helper: text(hint_id, &hint, typography::BODY_SMALL, ink),
+    }
+}
+
+pub(crate) fn date_icon_button<M>(
+    theme: &Theme,
+    id: String,
+    label: &str,
+    icon: Glyph,
+    message: Option<M>,
+) -> View<M> {
+    let ink = if message.is_some() {
+        theme.colors.on_surface_variant
+    } else {
+        disabled_ink(theme)
+    };
+    let paint = View::new(
+        Node::new(Role::Group, "").styled(centered(40., 40.).corners(shape::FULL).state_layer(ink)),
+    )
+    .children([icon.vector().view(VectorIconSize::Dp24, ink)])
+    .without_interaction(None);
+    button(
+        Node::new(Role::Button, label)
+            .id(id)
+            .focus_color(theme.colors.primary)
+            .styled(centered(TARGET, TARGET).corners(shape::FULL)),
+        message,
+    )
+    .children([paint])
+}
+
+pub(crate) fn disabled_ink(theme: &Theme) -> Color {
+    let Color(r, g, b, _) = theme.colors.on_surface;
+    Color(r, g, b, 97)
+}
+
+pub(crate) fn button<M>(node: Node, message: Option<M>) -> View<M> {
     let view = View::new(node.disabled(message.is_none()));
     if let Some(message) = message {
         view.on_press(message)
@@ -500,7 +555,12 @@ fn button<M>(node: Node, message: Option<M>) -> View<M> {
     }
 }
 
-fn text<M>(id: impl Into<String>, label: &str, style: TextStyle, color: Color) -> View<M> {
+pub(crate) fn text<M>(
+    id: impl Into<String>,
+    label: &str,
+    style: TextStyle,
+    color: Color,
+) -> View<M> {
     let id = id.into();
     let node = Node::new(Role::Text, label)
         .text(label)
@@ -518,7 +578,7 @@ fn centered(width: f32, height: f32) -> Style {
 }
 
 #[derive(Clone, Copy)]
-enum Glyph {
+pub(crate) enum Glyph {
     Left,
     Right,
     Down,
@@ -529,7 +589,7 @@ enum Glyph {
 }
 
 impl Glyph {
-    fn vector(self) -> VectorIcon {
+    pub(crate) fn vector(self) -> VectorIcon {
         let arrow = [
             [14.8, 5.],
             [8., 12.],
