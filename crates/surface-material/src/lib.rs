@@ -118,7 +118,7 @@ pub use fab_menu_layout::{
 };
 pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
 pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
-pub use list::{ListItem, ListLines, ListMode, ListOptions, ListStyle};
+pub use list::{ListItem, ListLines, ListMode, ListOptions, ListStyle, MultiSelectListOptions};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };

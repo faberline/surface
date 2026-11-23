@@ -157,6 +157,7 @@ does not change application state.
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
 | `carousel` | Multi-browse, two free-scroll layouts, two Hero alignments and full-screen paging with adaptive card sizes and logical focus navigation |
 | `list` | Baseline Standard, Expressive Standard and Expressive Segmented with passive rows, one action per row or one controlled selection |
+| `multi_select_list` | The same three list styles with independent, app-owned selection for each row |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -828,7 +829,7 @@ Use `ListLines::One`, `Two` or `Three` to set a 56, 72 or 88 dp minimum row
 height. Text wraps and can make a row taller. The row can include an overline,
 supporting text, a leading vector icon and a short trailing label. Put essential
 information in the headline or supporting text. Set `direction` to mirror the
-slots with `LayoutDirection::Rtl`.
+slots with `LayoutDirection::RightToLeft`.
 
 Set `ListMode::Passive` for readable content and `ListMode::Action` for one
 command per row. Use `ListMode::SingleSelect { selected_id }` for one selection.
@@ -845,10 +846,26 @@ Native exposes it as a radio group. The selected value and action are shared.
 Place a long list in a named clipped container and apply
 `View::accessibility_scroll_pages` to that container. Surface reveals focused
 rows when they move outside the visible area. The Gallery **清單** scene shows
-all three styles and modes with light and dark themes, RTL and 200% text.
+all three styles with light and dark themes, RTL and 200% text.
+
+### Multiple selection
+
+Use `Theme::multi_select_list` with `MultiSelectListOptions` and the same
+`ListItem` values. Pass an `is_selected` function that reads the app's set of
+selected IDs. Set each row's `on_activate` to a message with its stable ID.
+In the app's `update`, add or remove that ID. The other selected IDs stay
+selected. The trailing checkbox and the rest of the row use the same action.
+
+Tab enters the first enabled selected row, or the first enabled row when
+there is no selection. Arrow keys move focus. Enter and Space toggle the
+focused row once per key press. Web exposes named options in a multi-select
+listbox. Native assistive technology receives a checkbox and checked state for
+each row.
+Choose **多選** in the Gallery to try the mode.
 
 [Material 3 list specs](https://m3.material.io/components/lists/specs) ·
-[Material 3 list accessibility](https://m3.material.io/components/lists/accessibility)
+[Material 3 list accessibility](https://m3.material.io/components/lists/accessibility) ·
+[WAI-ARIA listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/listbox/)
 
 ## Tooltips
 

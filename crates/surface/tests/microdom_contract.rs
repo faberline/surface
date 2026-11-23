@@ -234,6 +234,58 @@ fn web_listbox_round_trip_preserves_checked_radios_and_legacy_json() {
 }
 
 #[test]
+fn web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values() {
+    let ordinary = Node::new(Role::Checkbox, "Coffee").checked(true);
+    let json = serde_json::to_value(&ordinary).unwrap();
+    assert!(json.get("web_multiselect_listbox").is_none());
+    assert!(!serde_json::from_value::<Node>(json)
+        .unwrap()
+        .uses_web_multiselect_listbox_semantics());
+
+    let mut dom =
+        MicroDom::new(Node::new(Role::Group, "Drinks").web_multiselect_listbox_semantics());
+    let coffee = dom
+        .append(dom.root(), ordinary.web_multiselect_listbox_semantics())
+        .unwrap();
+    let tea = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Checkbox, "Tea")
+                .checked(false)
+                .disabled(true)
+                .web_multiselect_listbox_semantics(),
+        )
+        .unwrap();
+    let json = serde_json::to_value(dom.snapshot()).unwrap();
+    assert_eq!(json["version"], 1);
+    assert_eq!(json["nodes"][0]["web_multiselect_listbox"], true);
+    let restored = MicroDom::from_snapshot(serde_json::from_value(json).unwrap()).unwrap();
+    let group = restored.get(restored.root()).unwrap();
+    assert_eq!(group.role(), Role::Group);
+    assert!(group.uses_web_multiselect_listbox_semantics());
+    assert!(!group.is_focusable());
+    for (id, checked, disabled) in [(coffee, true, false), (tea, false, true)] {
+        let node = restored.get(id).unwrap();
+        assert_eq!(node.role(), Role::Checkbox);
+        assert!(node.uses_web_multiselect_listbox_semantics());
+        assert!(!node.uses_web_listbox_semantics());
+        assert_eq!(node.is_checked(), Some(checked));
+        assert_eq!(node.is_selected(), None);
+        assert_eq!(node.is_disabled(), disabled);
+    }
+
+    let radio = Node::new(Role::Radio, "Choice")
+        .web_listbox_semantics()
+        .web_multiselect_listbox_semantics();
+    let mut json = serde_json::to_value(&radio).unwrap();
+    assert!(json.get("web_multiselect_listbox").is_none());
+    json["web_multiselect_listbox"] = serde_json::Value::Bool(true);
+    let radio: Node = serde_json::from_value(json).unwrap();
+    assert!(radio.uses_web_listbox_semantics());
+    assert!(!radio.uses_web_multiselect_listbox_semantics());
+}
+
+#[test]
 fn snapshot_has_golden_bytes() {
     let dom = MicroDom::new(Node::new(Role::Window, "App").id("app"));
     let json = serde_json::to_string(&dom.snapshot()).unwrap();

@@ -69,6 +69,9 @@ pub(super) fn element(
             let checked = node.is_checked().or(node.is_selected()).unwrap_or(false);
             set_bool(&element, "aria-checked", checked)?;
         }
+        Some("listbox") if node.uses_web_multiselect_listbox_semantics() => {
+            element.set_attribute("aria-multiselectable", "true")?;
+        }
         Some("option") => {
             set_bool(
                 &element,
@@ -152,11 +155,13 @@ fn aria_role(node: &Node) -> Option<&'static str> {
         return Some("spinbutton");
     }
     Some(match node.role() {
+        Role::Group if node.uses_web_multiselect_listbox_semantics() => "listbox",
         Role::Group if node.name().trim().is_empty() && !node.is_focusable() => return None,
         Role::Group | Role::Window => "group",
         Role::Heading => "heading",
         Role::Text => return None,
         Role::Button => "button",
+        Role::Checkbox if node.uses_web_multiselect_listbox_semantics() => "option",
         Role::Checkbox => "checkbox",
         Role::TextInput => "textbox",
         Role::Navigation => "navigation",
