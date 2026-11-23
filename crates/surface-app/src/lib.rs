@@ -480,6 +480,9 @@ pub trait Application: 'static {
         "Surface"
     }
     fn update(&mut self, message: Self::Message);
+    /// Give the application its own UI-thread queue before its first view.
+    /// Store a copy to enqueue work such as scroll requests from a frame hook.
+    fn attach_queue(&mut self, _queue: Queue<Self::Message>) {}
     /// Called on the event loop after a `WakeHandle::wake` from any thread.
     /// Poll workers, channels and shared state here. The default does
     /// nothing. Many wakes can coalesce into one call, so drain everything
@@ -800,6 +803,7 @@ impl<A: Application> Runtime<A> {
             #[cfg(feature = "devtools")]
             paint_frame: None,
         };
+        runtime.app.attach_queue(runtime.queue.clone());
         runtime.rebuild()?;
         Ok(runtime)
     }

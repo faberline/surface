@@ -137,7 +137,7 @@ impl<M: Clone + 'static> Docked<'_, '_, M> {
                 label: self.options.labels.input_name,
                 locale: self.options.locale,
                 raw: self.state.raw_input(),
-                error: self.state.error(),
+                error: self.state.error().map(self.options.locale.error_text),
                 style: Style::column().width(Length::Px(0.)).grow(1.),
             },
             move |value| edit(DockedDatePickerEvent::Edit(value)),

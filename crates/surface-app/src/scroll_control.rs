@@ -86,7 +86,12 @@ pub struct HorizontalScrollResponse<M> {
 pub(crate) type HorizontalScrollHandler<M> =
     Rc<dyn Fn(HorizontalScroll, Option<&str>) -> Option<HorizontalScrollResponse<M>>>;
 
-pub(crate) type Pending = Rc<RefCell<Vec<(String, ScrollTarget)>>>;
+pub(crate) enum Request {
+    Position(ScrollTarget),
+    ChildTop { child: String, top: f32 },
+}
+
+pub(crate) type Pending = Rc<RefCell<Vec<(String, Request)>>>;
 
 #[derive(Default)]
 pub(crate) struct State {
@@ -99,7 +104,25 @@ impl<M> Queue<M> {
     /// Ask a scroll container to move at the next `render`. It never fails:
     /// an unknown id, a node without `clip` or a non-finite offset is dropped.
     pub fn scroll_to(&self, id: &str, target: ScrollTarget) {
-        self.2.borrow_mut().push((id.to_owned(), target));
+        self.2
+            .borrow_mut()
+            .push((id.to_owned(), Request::Position(target)));
+    }
+
+    /// Place a descendant's top at `top` pixels from the scroller's top edge.
+    /// Use the next render's layout and preserve the horizontal offset. The
+    /// vertical offset stays within the content bounds. Unknown IDs, targets
+    /// that do not move with the scroller and non-finite positions are ignored.
+    pub fn scroll_to_child_top(&self, scroller: &str, child: &str, top: f32) {
+        if top.is_finite() {
+            self.2.borrow_mut().push((
+                scroller.to_owned(),
+                Request::ChildTop {
+                    child: child.to_owned(),
+                    top,
+                },
+            ));
+        }
     }
 }
 
@@ -367,12 +390,6 @@ impl<A: Application> Runtime<A> {
         for node in scrollers {
             let key = self.stable(node).expect("scroller has an ID");
             let stick = self.bindings.get(&node).is_some_and(|b| b.stick);
-            let mine: Vec<ScrollTarget> = requests
-                .iter()
-                .filter(|(id, _)| *id == key)
-                .map(|(_, target)| *target)
-                .collect();
-            let tracked = stick || self.scroll.contains_key(&key) || !mine.is_empty();
             let style = self.dom.get(node)?.style().clone();
             let bounds = computed.nodes[node.index()].bounds;
             let content =
@@ -382,17 +399,34 @@ impl<A: Application> Runtime<A> {
                 (content.1 - bounds.height).max(0.),
             );
             let mut offset = (style.scroll_x, style.scroll_y);
+            let mut requested = false;
+            for (_, request) in requests.iter().filter(|(id, _)| *id == key) {
+                offset = match request {
+                    Request::Position(ScrollTarget::Top) => (offset.0, 0.),
+                    Request::Position(ScrollTarget::Bottom) => (offset.0, max.1),
+                    Request::Position(ScrollTarget::Offset { x, y }) => (*x, *y),
+                    Request::ChildTop { child, top } => {
+                        let Some(child) = self.dom.by_id(child) else {
+                            continue;
+                        };
+                        if !self.scroll_ancestors(child).contains(&node) {
+                            continue;
+                        }
+                        let child = computed.nodes[child.index()].bounds;
+                        let y = style.scroll_y + (child.y - bounds.y) - top;
+                        if !y.is_finite() {
+                            continue;
+                        }
+                        (offset.0, y)
+                    }
+                };
+                requested = true;
+            }
+            let tracked = stick || self.scroll.contains_key(&key) || requested;
             let mut stuck = false;
             if tracked {
-                for target in &mine {
-                    offset = match *target {
-                        ScrollTarget::Top => (offset.0, 0.),
-                        ScrollTarget::Bottom => (offset.0, max.1),
-                        ScrollTarget::Offset { x, y } => (x, y),
-                    };
-                }
                 if stick {
-                    stuck = if !mine.is_empty() {
+                    stuck = if requested {
                         offset.1 >= max.1 - BOTTOM_TOLERANCE
                     } else {
                         self.scroll_state

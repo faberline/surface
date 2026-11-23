@@ -231,7 +231,7 @@ impl DateBounds {
         (self.min..=self.max).contains(&date)
     }
 
-    fn contains_month(self, month: YearMonth) -> bool {
+    pub(crate) fn contains_month(self, month: YearMonth) -> bool {
         (self.min.year_month()..=self.max.year_month()).contains(&month)
     }
 }
@@ -480,6 +480,12 @@ pub enum DatePickerStep {
     Year(StepDirection),
 }
 
+impl DatePickerStep {
+    pub(super) const fn preserves_preferred_day(self) -> bool {
+        matches!(self, Self::Month(_) | Self::Year(_))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DatePickerEvent {
     BrowseMonth(StepDirection),
@@ -610,48 +616,16 @@ impl DatePickerSession {
         constraints: DatePickerConstraints<'_>,
         locale: &DatePickerLocale<'_>,
     ) -> Option<CivilDate> {
-        if origin.year_month() != self.month || !constraints.bounds.contains(origin) {
+        if origin.year_month() != self.month {
             return None;
         }
-        match step {
-            DatePickerStep::Day(direction) => {
-                let first = origin.checked_add_days(direction.sign())?;
-                let month = first.year_month();
-                match direction {
-                    StepDirection::Backward => constraints
-                        .allowed_days(month.first_day_number(), first.day_number())
-                        .next_back(),
-                    StepDirection::Forward => constraints
-                        .allowed_days(first.day_number(), month.last_day_number())
-                        .next(),
-                }
-            }
-            DatePickerStep::Week(direction) => {
-                let target = origin.checked_add_days(direction.sign() * 7)?;
-                let start = week_start(target, locale.first_weekday);
-                constraints.nearest(target, start, start + 6, direction)
-            }
-            DatePickerStep::WeekStart => {
-                let start = week_start(origin, locale.first_weekday);
-                constraints.allowed_days(start, start + 6).next()
-            }
-            DatePickerStep::WeekEnd => {
-                let start = week_start(origin, locale.first_weekday);
-                constraints.allowed_days(start, start + 6).next_back()
-            }
-            DatePickerStep::Month(direction) | DatePickerStep::Year(direction) => {
-                let count = if matches!(step, DatePickerStep::Year(_)) {
-                    12
-                } else {
-                    1
-                };
-                let month = self.month.step(direction.sign() * count)?;
-                if !constraints.bounds.contains_month(month) {
-                    return None;
-                }
-                constraints.nearest_in_month(month, self.preferred_day_from(origin), direction)
-            }
-        }
+        resolve_navigation_target(
+            origin,
+            self.preferred_day_from(origin),
+            step,
+            constraints,
+            locale.first_weekday,
+        )
     }
 
     pub fn apply(
@@ -783,7 +757,7 @@ impl DatePickerSession {
         if let Some(date) = self.navigation_target_from(origin, step, constraints, locale) {
             let preferred_day = self.preferred_day_from(origin);
             self.set_active(date);
-            if matches!(step, DatePickerStep::Month(_) | DatePickerStep::Year(_)) {
+            if step.preserves_preferred_day() {
                 self.preferred_day = preferred_day;
             }
         }
@@ -824,6 +798,59 @@ impl DatePickerSession {
                 self.error = Some(error);
                 changed
             }
+        }
+    }
+}
+
+/// Resolve one calendar key step from its actual origin and preferred paging
+/// day. The picker decides whether the origin belongs to a displayed month.
+pub(super) fn resolve_navigation_target(
+    origin: CivilDate,
+    preferred_day: u8,
+    step: DatePickerStep,
+    constraints: DatePickerConstraints<'_>,
+    first_weekday: Weekday,
+) -> Option<CivilDate> {
+    if !constraints.bounds.contains(origin) {
+        return None;
+    }
+    match step {
+        DatePickerStep::Day(direction) => {
+            let first = origin.checked_add_days(direction.sign())?;
+            let month = first.year_month();
+            match direction {
+                StepDirection::Backward => constraints
+                    .allowed_days(month.first_day_number(), first.day_number())
+                    .next_back(),
+                StepDirection::Forward => constraints
+                    .allowed_days(first.day_number(), month.last_day_number())
+                    .next(),
+            }
+        }
+        DatePickerStep::Week(direction) => {
+            let target = origin.checked_add_days(direction.sign() * 7)?;
+            let start = week_start(target, first_weekday);
+            constraints.nearest(target, start, start + 6, direction)
+        }
+        DatePickerStep::WeekStart => {
+            let start = week_start(origin, first_weekday);
+            constraints.allowed_days(start, start + 6).next()
+        }
+        DatePickerStep::WeekEnd => {
+            let start = week_start(origin, first_weekday);
+            constraints.allowed_days(start, start + 6).next_back()
+        }
+        DatePickerStep::Month(direction) | DatePickerStep::Year(direction) => {
+            let count = if matches!(step, DatePickerStep::Year(_)) {
+                12
+            } else {
+                1
+            };
+            let month = origin.year_month().step(direction.sign() * count)?;
+            if !constraints.bounds.contains_month(month) {
+                return None;
+            }
+            constraints.nearest_in_month(month, preferred_day, direction)
         }
     }
 }

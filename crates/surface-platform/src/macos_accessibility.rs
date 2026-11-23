@@ -378,6 +378,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
     if let Some(selected) = authored.is_selected() {
         node.set_selected(selected);
     }
+    if authored.is_grid_multiselectable() {
+        node.set_multiselectable();
+    }
     if authored.is_current_date() {
         node.set_aria_current(AriaCurrent::Date);
     } else if role != Role::GridCell && authored.is_current_page() == Some(true) {
@@ -595,6 +598,7 @@ mod tests {
         let (today_id, today) = named(&frame, "Monday, November 23, 2026");
         let (disabled_id, disabled) = named(&frame, "Tuesday, November 24, 2026");
         assert_eq!(grid.role(), Role::Grid);
+        assert!(!grid.is_multiselectable());
         assert_eq!(row.role(), Role::Row);
         assert_eq!(column.role(), Role::ColumnHeader);
         assert_eq!(grid.children(), [header_row_id, row_id]);
@@ -634,6 +638,72 @@ mod tests {
         assert_eq!(frame.focus, current);
         assert_eq!(selected.is_selected(), Some(true));
         assert_eq!(selected.aria_current(), Some(AriaCurrent::Date));
+    }
+
+    #[test]
+    fn accesskit_range_grid_projects_both_selected_cells() {
+        struct RangeCalendar;
+
+        impl Application for RangeCalendar {
+            type Message = ();
+
+            fn update(&mut self, (): ()) {}
+
+            fn view(&self) -> View<()> {
+                let cell = |name, selected, disabled| {
+                    let mut node = SurfaceNode::new(SurfaceRole::Button, name)
+                        .id(name)
+                        .text(name)
+                        .grid_role(GridRole::GridCell)
+                        .disabled(disabled);
+                    if let Some(selected) = selected {
+                        node = node.selected(selected);
+                    }
+                    View::new(node).on_press(()).accessible_activation()
+                };
+                let row = |name| {
+                    View::new(SurfaceNode::new(SurfaceRole::Group, name).grid_role(GridRole::Row))
+                };
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Dates")).children([View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "November 2026")
+                        .grid_role(GridRole::Grid)
+                        .grid_multiselectable(true)
+                        .styled(Style::column()),
+                )
+                .children([
+                    row("Week 3").children([
+                        cell("Start", Some(true), false),
+                        cell("Interior", Some(false), false),
+                    ]),
+                    row("Week 4").children([
+                        cell("Unavailable", None, true),
+                        cell("End", Some(true), false),
+                    ]),
+                ])])
+            }
+        }
+
+        let mut runtime = Runtime::new(RangeCalendar).unwrap();
+        let mut tree = Tree::default();
+        let frame = update(&mut runtime, &mut tree);
+        let grid = named(&frame, "November 2026").1;
+        assert_eq!(grid.role(), Role::Grid);
+        assert!(grid.is_multiselectable());
+        assert_eq!(
+            grid.children(),
+            [named(&frame, "Week 3").0, named(&frame, "Week 4").0]
+        );
+        for (name, selected) in [
+            ("Start", Some(true)),
+            ("End", Some(true)),
+            ("Interior", Some(false)),
+            ("Unavailable", None),
+        ] {
+            let day = named(&frame, name).1;
+            assert_eq!(day.role(), Role::GridCell);
+            assert_eq!(day.is_selected(), selected);
+            assert!(!day.is_multiselectable());
+        }
     }
 
     #[test]

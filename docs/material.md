@@ -382,6 +382,42 @@ the lower edge to try the placement above it.
 [Docked date picker accessibility](https://m3.material.io/components/date-pickers/accessibility) ·
 [Published docked tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.01c5310367774eb8.json)
 
+### Date range picker
+
+Keep a `DateRangePickerSession` while the dialog is open. Give
+`Theme::date_range_picker` the viewport, local today, bounds, locale,
+labels and a stable ID. Open the session in Calendar or Input mode.
+Forward its input to `session.apply`. Store the inclusive
+`CivilDateRange` it returns on `DateRangeEffect::Commit`. Drop the
+session on Commit or Dismiss.
+
+Each endpoint must be available under `DateRangeConstraints`. A range
+can include a day that is unavailable as an endpoint. Supply
+`allowed_span` if the app needs to reject spans that contain specific
+days. The calendar starts a new draft after the user selects a complete
+range. An earlier second day moves the start. The same day can be both
+endpoints. Save commits the draft.
+
+The full-screen calendar keeps Close, Save and the mode switch above
+the month feed. Wheel and drag browse the months. Arrow and page keys
+move the day focus across months. At most five months are mounted.
+The endpoints have two selected states in the accessibility grid. The
+range summary stays in the dialog while the user browses. In short
+windows the summary scrolls with the content to leave room for dates
+and input fields. The month controls stay in reach. Assistive
+technology can still read updates to the range summary.
+
+Input mode has separate start and end fields. Call `session.observe_frame`
+from the app's input frame hook. Use its return value to request layout
+when needed. Call `session.flush_scroll_requests` with the picker ID and
+the queue from `Application::attach_queue`. The same frame hook validates
+a field when focus leaves it. Enter finishes editing that field. Save
+submits both fields. During composition, the input method handles Enter.
+
+In Material Gallery, choose 浮層, then 日期範圍選擇器. Use the same
+scene for the [headless Gallery](devtools-protocol.md#headless-native-gallery).
+[Material 3 date pickers](https://m3.material.io/components/date-pickers/specs)
+
 ## FAB menus
 
 Use `Theme::fab_menu` with a stable ID, the viewport, the trigger size,

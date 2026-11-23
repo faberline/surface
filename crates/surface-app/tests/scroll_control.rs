@@ -8,6 +8,7 @@ use surface_app::{
 enum Message {
     Rows(usize),
     Bottom,
+    Prepend { height: f32, anchor_top: f32 },
     Poke,
 }
 struct App {
@@ -16,6 +17,7 @@ struct App {
     inner: bool,
     no_id: bool,
     wide: bool,
+    prepended: Vec<f32>,
     poke: u32,
     queue: Rc<RefCell<Option<Queue<Message>>>>,
 }
@@ -27,6 +29,7 @@ impl App {
             inner: false,
             no_id: false,
             wide: false,
+            prepended: Vec::new(),
             poke: 0,
             queue: Rc::default(),
         }
@@ -43,6 +46,14 @@ impl Application for App {
                 .as_ref()
                 .unwrap()
                 .scroll_to("log", ScrollTarget::Bottom),
+            Message::Prepend { height, anchor_top } => {
+                self.prepended.push(height);
+                self.queue
+                    .borrow()
+                    .as_ref()
+                    .unwrap()
+                    .scroll_to_child_top("log", "row6", anchor_top);
+            }
             Message::Poke => self.poke += 1,
         }
     }
@@ -56,7 +67,16 @@ impl Application for App {
             )
             .on_press(Message::Poke)
         };
-        let mut rows: Vec<View<Message>> = (0..self.rows).map(row).collect();
+        let leading = self.prepended.iter().map(|height| {
+            View::new(
+                Node::new(Role::Group, "Prepended").styled(
+                    Style::default()
+                        .width(Length::Px(160.))
+                        .height(Length::Px(*height)),
+                ),
+            )
+        });
+        let mut rows: Vec<View<Message>> = leading.chain((0..self.rows).map(row)).collect();
         if self.wide {
             rows.push(View::new(
                 Node::new(Role::Group, "wide").styled(
@@ -341,6 +361,63 @@ fn api_queue_from_update() {
     r.apply(Message::Bottom).unwrap();
     render(&mut r);
     assert_eq!(metrics(&r, "log").offset.1, 400.);
+}
+
+#[test]
+fn queued_child_position_uses_the_rebuilt_layout_in_the_same_frame() {
+    let mut app = App::new(30);
+    app.stick = false;
+    let mut r = start(app);
+    let queue = r.queue();
+    render(&mut r);
+    assert_eq!(metrics(&r, "log").offset, (0., 0.));
+
+    let anchor_top = -13.;
+    queue.scroll_to_child_top("log", "row6", anchor_top);
+    render(&mut r);
+    assert_eq!(row_bounds(&r, 6).y, anchor_top);
+    assert_eq!(metrics(&r, "log").offset, (0., 133.));
+
+    queue.scroll_to("log", ScrollTarget::Offset { x: 21., y: 42. });
+    for (height, expected_y) in [(35., 168.), (71., 239.)] {
+        r.apply(Message::Prepend { height, anchor_top }).unwrap();
+        render(&mut r);
+        assert_eq!(row_bounds(&r, 6).y, anchor_top);
+        assert_eq!(metrics(&r, "log").offset, (21., expected_y));
+    }
+
+    for (top, expected_y) in [(1_000., 0.), (-1_000., 506.)] {
+        queue.scroll_to_child_top("log", "row6", top);
+        render(&mut r);
+        assert_eq!(metrics(&r, "log").offset, (21., expected_y));
+    }
+}
+
+#[test]
+fn queued_child_position_ignores_bad_keys_and_nonfinite_offsets() {
+    let mut app = App::new(30);
+    app.stick = false;
+    let mut r = start(app);
+    render(&mut r);
+    let queue = r.queue();
+    queue.scroll_to_child_top("log", "row6", 20.);
+    render(&mut r);
+    let original = metrics(&r, "log");
+    assert_eq!(original.offset.1, 100.);
+
+    for (scroller, child, top) in [
+        ("unknown", "row6", 8.),
+        ("root", "row6", 8.),
+        ("log", "unknown", 8.),
+        ("log", "root", 8.),
+        ("log", "log", 8.),
+        ("log", "row6", f32::NAN),
+        ("log", "row6", f32::INFINITY),
+    ] {
+        queue.scroll_to_child_top(scroller, child, top);
+        render(&mut r);
+        assert_eq!(metrics(&r, "log"), original);
+    }
 }
 
 #[test]

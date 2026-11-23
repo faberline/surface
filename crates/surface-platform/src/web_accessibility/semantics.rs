@@ -85,6 +85,9 @@ pub(super) fn element(
                 node.is_selected().unwrap_or(false),
             )?;
         }
+        Some("grid") if node.is_grid_multiselectable() => {
+            element.set_attribute("aria-multiselectable", "true")?;
+        }
         Some("gridcell") => {
             if let Some(selected) = node.is_selected() {
                 set_bool(&element, "aria-selected", selected)?;

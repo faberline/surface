@@ -12,8 +12,8 @@ use crate::{
     shape::{self, LayoutDirection},
     typography,
     vector_icon::VectorIconSize,
-    CivilDate, DateInputError, DatePickerConstraints, DatePickerEvent, DatePickerLocale,
-    DatePickerMode, DatePickerSession, Theme, VectorIcon,
+    CivilDate, DatePickerConstraints, DatePickerEvent, DatePickerLocale, DatePickerMode,
+    DatePickerSession, Theme, VectorIcon,
 };
 
 const DIALOG_WIDTH: f32 = 360.;
@@ -420,7 +420,7 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
                 label: self.options.labels.input_name,
                 locale: self.options.locale,
                 raw: self.session.raw_input(),
-                error: self.session.error(),
+                error: self.session.error().map(self.options.locale.error_text),
                 style: Style::column().width(Length::Percent(1.)),
             },
             move |raw| edit(DatePickerEvent::Edit(raw)),
@@ -441,7 +441,7 @@ pub(crate) struct DateEditorOptions<'a> {
     pub(crate) label: &'a str,
     pub(crate) locale: &'a DatePickerLocale<'a>,
     pub(crate) raw: &'a str,
-    pub(crate) error: Option<DateInputError>,
+    pub(crate) error: Option<String>,
     pub(crate) style: Style,
 }
 
@@ -465,10 +465,10 @@ pub(crate) fn date_editor<M: Clone + 'static>(
         error,
         style,
     } = options;
-    let (hint_id, hint, ink) = if let Some(error) = error {
+    let (hint_id, hint, ink) = if let Some(error) = &error {
         (
             format!("{id}-error"),
-            format!("{}\n{}", (locale.error_text)(error), locale.format_hint),
+            format!("{error}\n{}", locale.format_hint),
             theme.colors.error,
         )
     } else {

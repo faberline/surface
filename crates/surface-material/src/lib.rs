@@ -18,6 +18,8 @@ mod carousel_state;
 mod components;
 mod date_picker;
 mod date_picker_state;
+mod date_range_picker;
+mod date_range_picker_state;
 mod docked_date_picker;
 mod docked_date_picker_state;
 mod elevation;
@@ -75,6 +77,14 @@ pub use date_picker_state::{
     CivilDate, DateBounds, DateInputError, DateInputFormat, DateInputOrder, DateInputSeparator,
     DatePickerConstraints, DatePickerEffect, DatePickerEvent, DatePickerLocale, DatePickerMode,
     DatePickerSession, DatePickerStep, StepDirection, Weekday, YearMonth,
+};
+pub use date_range_picker::{
+    DateRangePickerInput, DateRangePickerLabels, DateRangePickerOptions, DateRangePickerSession,
+};
+pub use date_range_picker_state::{
+    CivilDateRange, DateRangeConstraints, DateRangeEffect, DateRangeEndpoint, DateRangeEvent,
+    DateRangeMode, DateRangePairError, DateRangePickerState, DateRangePosition,
+    DateRangeValidation,
 };
 pub use docked_date_picker::{DockedDatePickerLabels, DockedDatePickerOptions};
 pub use docked_date_picker_state::{

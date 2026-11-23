@@ -5,6 +5,7 @@ mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
 mod date_picker_demo;
+mod date_range_picker_demo;
 mod docked_date_picker_demo;
 mod extended_fab_demo;
 mod fab_demo;
@@ -27,6 +28,7 @@ use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
 use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
+use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
 use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
@@ -40,7 +42,7 @@ use split_demo::{SplitDemo, SplitEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{
     AnimationFrame, AnimationUpdate, Application, FrameInput, FramePress, InputAnimationUpdate,
-    View,
+    Queue, View,
 };
 use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
@@ -81,6 +83,8 @@ pub struct Gallery {
     button_group_demo: ButtonGroupDemo,
     split_demo: SplitDemo,
     date_picker_demo: DatePickerDemo,
+    date_range_picker_demo: DateRangeDemo,
+    queue: Option<Queue<Message>>,
     docked_date_picker_demo: DockedDateDemo,
     extended_fab_demo: ExtendedFabDemo,
     fab_demo: FabDemo,
@@ -124,6 +128,8 @@ impl Default for Gallery {
             button_group_demo: ButtonGroupDemo::default(),
             split_demo: SplitDemo::default(),
             date_picker_demo: DatePickerDemo::default(),
+            date_range_picker_demo: DateRangeDemo::default(),
+            queue: None,
             docked_date_picker_demo: DockedDateDemo::default(),
             extended_fab_demo: ExtendedFabDemo::default(),
             fab_demo: FabDemo::default(),
@@ -153,6 +159,7 @@ pub enum Message {
     ButtonGroup(ButtonGroupEvent),
     Split(SplitEvent),
     DatePicker(DatePickerDemoEvent),
+    DateRange(DateRangeDemoEvent),
     DockedDate(DockedDateDemoEvent),
     ExtendedFab(ExtendedFabEvent),
     Fab(FabEvent),
@@ -217,6 +224,9 @@ impl Application for Gallery {
         if self.docked_date_picker_demo.visible() {
             return self.docked_date_picker_demo.text_scale();
         }
+        if self.date_range_picker_demo.visible() {
+            return self.date_range_picker_demo.text_scale();
+        }
         if self.card_demo.visible() {
             return self.card_demo.text_scale();
         }
@@ -252,6 +262,7 @@ impl Application for Gallery {
         let split = self.split_demo.viewport_changed(width);
         let date_picker = self.date_picker_demo.viewport_changed(width, height);
         let docked_date = self.docked_date_picker_demo.viewport_changed(width, height);
+        let date_range = self.date_range_picker_demo.viewport_changed(width, height);
         let extended_fab = self.extended_fab_demo.viewport_changed(width, height);
         let fab = self.fab_demo.viewport_changed(width, height);
         let fab_menu = self.fab_menu_demo.viewport_changed(width, height);
@@ -271,6 +282,7 @@ impl Application for Gallery {
             || fab_menu
             || date_picker
             || docked_date
+            || date_range
             || carousel
             || app_bar
             || toolbar
@@ -285,6 +297,10 @@ impl Application for Gallery {
             || self.fab_menu_demo.in_scene()
             || self.date_picker_demo.observes_input()
             || self.docked_date_picker_demo.visible()
+            || self.date_range_picker_demo.observes_input()
+    }
+    fn attach_queue(&mut self, queue: Queue<Message>) {
+        self.queue = Some(queue);
     }
     fn cancel_transient(&mut self) -> bool {
         (self.tooltip_demo.visible() && self.tooltip_demo.dismiss())
@@ -300,6 +316,12 @@ impl Application for Gallery {
         let docked = self.docked_date_picker_demo.observe(&frame, input);
         update.animation.rebuild |= docked.rebuild;
         update.animation.request_next |= docked.request_next;
+        let range = self.date_range_picker_demo.observe(&frame, input);
+        update.animation.rebuild |= range.rebuild;
+        update.animation.request_next |= range.request_next;
+        if let Some(queue) = &self.queue {
+            self.date_range_picker_demo.flush_scroll_requests(queue);
+        }
         let other = self.animation_frame(frame);
         update.animation.rebuild |= other.rebuild;
         update.animation.request_next |= other.request_next;
@@ -409,6 +431,9 @@ impl Application for Gallery {
                 if i != docked_date_picker_demo::SECTION {
                     self.docked_date_picker_demo.leave();
                 }
+                if i != date_range_picker_demo::SECTION {
+                    self.date_range_picker_demo.leave();
+                }
                 if i != card_demo::SECTION {
                     self.card_demo.leave();
                 }
@@ -440,6 +465,7 @@ impl Application for Gallery {
             Message::Split(event) => self.split_demo.update(event),
             Message::DatePicker(event) => self.date_picker_demo.update(event),
             Message::DockedDate(event) => self.docked_date_picker_demo.update(event),
+            Message::DateRange(event) => self.date_range_picker_demo.update(event),
             Message::ExtendedFab(event) => self.extended_fab_demo.update(event),
             Message::Fab(event) => self.fab_demo.update(event),
             Message::FabMenu(event) => self.fab_menu_demo.update(event),
@@ -522,6 +548,9 @@ impl Application for Gallery {
         }
         if self.docked_date_picker_demo.visible() {
             return self.docked_date_picker_demo.view(&t);
+        }
+        if self.date_range_picker_demo.visible() {
+            return self.date_range_picker_demo.view(&t);
         }
         if self.card_demo.visible() {
             return self.card_demo.view(&t, self.dark);
@@ -1020,6 +1049,7 @@ impl Application for Gallery {
                 children.push(self.snackbar_demo.card(&t));
                 children.push(DatePickerDemo::show_button(&t));
                 children.push(DockedDateDemo::show_button(&t));
+                children.push(DateRangeDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1171,6 +1201,7 @@ mod web {
             "fab_menu": s.fab_menu_demo.inspect(),
             "date_picker": s.date_picker_demo.inspect(),
             "docked_date_picker": s.docked_date_picker_demo.inspect(),
+            "date_range_picker": s.date_range_picker_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
             "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
             "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),

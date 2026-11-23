@@ -1,20 +1,23 @@
 use std::rc::Rc;
 
-use surface::{Align, Color, GridRole, Length, Node, Role, Style};
+use surface::{Align, Color, GridRole, Insets, Length, Node, Role, Style};
 use surface_app::{EditKey, FocusNavigation, Roving, View};
 
 use crate::{
     shape::{self, LayoutDirection},
     typography,
     vector_icon::VectorIconSize,
-    CivilDate, DatePickerConstraints, DatePickerEvent, DatePickerLocale, DatePickerMode,
-    DatePickerSession, DatePickerStep, StepDirection, Theme, YearMonth,
+    CivilDate, CivilDateRange, DatePickerConstraints, DatePickerEvent, DatePickerLocale,
+    DatePickerMode, DatePickerSession, DatePickerStep, DateRangeConstraints, DateRangeEvent,
+    DateRangePickerState, DateRangePosition, DateRangeValidation, StepDirection, Theme, YearMonth,
 };
 
 use super::{button, centered, disabled_ink, text, Glyph, Picker, TARGET};
 
+mod range_band;
+
 const WEEK_LENGTH: usize = 7;
-const GRID_WIDTH: f32 = TARGET * WEEK_LENGTH as f32;
+pub(crate) const GRID_WIDTH: f32 = TARGET * WEEK_LENGTH as f32;
 const DAY_DIAMETER: f32 = 40.;
 pub(crate) const YEAR_PAGE: u16 = 72;
 const YEAR_PILL_WIDTH: f32 = 72.;
@@ -76,14 +79,6 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
         self.locale.direction == LayoutDirection::RightToLeft
     }
 
-    fn row(&self, node: Node) -> Node {
-        if self.rtl() {
-            node.reverse_row()
-        } else {
-            node
-        }
-    }
-
     pub(crate) fn active_day(&self) -> Option<CivilDate> {
         let allowed = |date: &CivilDate| self.constraints.allows(*date);
         self.session.active().filter(allowed).or_else(|| {
@@ -99,39 +94,18 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
     pub(crate) fn view(&self, title: &str) -> View<M> {
         let month = self.session.month();
         let active = self.active_day();
-        let days = month.calendar_days(self.locale.first_weekday);
-        let mut grid_rows = Vec::with_capacity(7);
-        grid_rows.push(self.weekdays());
-        grid_rows.extend(
-            days.chunks_exact(WEEK_LENGTH)
-                .enumerate()
-                .map(|(week, dates)| {
-                    let cells = dates.iter().copied().enumerate().map(|(weekday, date)| {
-                        if let Some(date) = date {
-                            self.day(date, active == Some(date))
-                        } else {
-                            self.passive_day(month, week * WEEK_LENGTH + weekday)
-                        }
-                    });
-                    View::new(
-                        self.row(
-                            Node::new(Role::Group, "")
-                                .id(self.id(&format!("week-{week}")))
-                                .grid_role(GridRole::Row)
-                                .styled(Style::row().width(Length::Px(GRID_WIDTH))),
-                        ),
-                    )
-                    .children(cells)
-                }),
-        );
-        let grid = View::new(
-            Node::new(Role::Group, title)
-                .id(self.id("grid"))
-                .grid_role(GridRole::Grid)
-                .styled(Style::column().width(Length::Px(GRID_WIDTH))),
-        )
-        .children(grid_rows)
-        .roving(Roving::horizontal(false));
+        let grid = MonthGrid {
+            theme: self.theme,
+            id: self.id,
+            locale: self.locale,
+            month,
+            adjacent_dates: self.adjacent_dates,
+        };
+        let grid = grid
+            .view(grid.node(title), None, |date| {
+                self.day(date, active == Some(date))
+            })
+            .roving(Roving::horizontal(false));
         let wide = self.width >= GRID_WIDTH;
         let mut clip = Style::row().width(Length::Percent(1.)).justify(if wide {
             Align::Center
@@ -157,7 +131,205 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
         }
     }
 
-    fn passive_day(&self, month: YearMonth, index: usize) -> View<M> {
+    fn day(&self, date: CivilDate, active: bool) -> View<M> {
+        let enabled = self.constraints.allows(date);
+        let id = self.id(&format!("day-{date}"));
+        let view = day_cell(
+            self.theme,
+            &id,
+            (self.locale.date_name)(date),
+            date,
+            active,
+            DateFaceState {
+                selected: enabled && self.session.draft() == Some(date),
+                interior: false,
+                today: self.today == date,
+            },
+            enabled.then(|| (self.emit)(DatePickerEvent::Select(date))),
+        );
+        if enabled {
+            let emit = self.emit.clone();
+            view.on_focus_navigation_with_extend(day_navigation(
+                self.id,
+                id,
+                self.rtl(),
+                |step| {
+                    self.session
+                        .navigation_target_from(date, step, self.constraints, self.locale)
+                },
+                move |step| emit(DatePickerEvent::NavigateFrom(date, step)),
+            ))
+            .accessibility_scroll_into_view()
+            .restore_focus_on_removal(self.id("month"))
+        } else {
+            view
+        }
+    }
+}
+
+pub(crate) struct RangeMonth<'a, 'b> {
+    pub(crate) theme: &'a Theme,
+    pub(crate) id: &'a str,
+    pub(crate) today: CivilDate,
+    pub(crate) constraints: DateRangeConstraints<'b>,
+    pub(crate) locale: &'a DatePickerLocale<'b>,
+    pub(crate) state: &'a DateRangePickerState,
+    pub(crate) validation: DateRangeValidation,
+    pub(crate) month: YearMonth,
+    pub(crate) active: Option<CivilDate>,
+    pub(crate) day_name: &'a dyn Fn(CivilDate, DateRangePosition) -> String,
+    pub(crate) focus_fallback: &'a str,
+}
+
+/// Render one month. The caller owns the feed, scrolling, and the single
+/// active date across all mounted months.
+pub(crate) fn range_month<M: 'static>(
+    options: RangeMonth<'_, '_>,
+    emit: Rc<dyn Fn(DateRangeEvent) -> M>,
+) -> View<M> {
+    let RangeMonth {
+        theme,
+        id,
+        today,
+        constraints,
+        locale,
+        state,
+        validation,
+        month,
+        active,
+        day_name,
+        focus_fallback,
+    } = options;
+    let month_id = format!("{id}-month-{:04}-{:02}", month.year(), month.month());
+    let grid = MonthGrid {
+        theme,
+        id: &month_id,
+        locale,
+        month,
+        adjacent_dates: false,
+    };
+    let title = (locale.month_title)(month);
+    let node = grid.node(&title).grid_multiselectable(true);
+    grid.view(node, validation.candidate(), |date| {
+        let enabled = constraints.dates.allows(date);
+        let position = validation.position(date);
+        let day_id = format!("{id}-day-{date}");
+        let view = day_cell(
+            theme,
+            &day_id,
+            day_name(date, position),
+            date,
+            active == Some(date),
+            DateFaceState {
+                selected: enabled
+                    && matches!(
+                        position,
+                        DateRangePosition::Start
+                            | DateRangePosition::End
+                            | DateRangePosition::OnlyDay
+                    ),
+                interior: position == DateRangePosition::Interior,
+                today: today == date,
+            },
+            enabled.then(|| emit(DateRangeEvent::SelectDay(date))),
+        );
+        if enabled {
+            let emit = emit.clone();
+            view.on_focus_navigation_with_extend(day_navigation(
+                id,
+                day_id,
+                locale.direction == LayoutDirection::RightToLeft,
+                |step| state.navigation_target_from(date, step, constraints, locale),
+                move |step| emit(DateRangeEvent::NavigateFrom(date, step)),
+            ))
+            .accessibility_scroll_into_view()
+            .restore_focus_on_removal(focus_fallback)
+        } else {
+            view
+        }
+    })
+}
+
+struct MonthGrid<'a, 'b> {
+    theme: &'a Theme,
+    id: &'a str,
+    locale: &'a DatePickerLocale<'b>,
+    month: YearMonth,
+    adjacent_dates: bool,
+}
+
+impl MonthGrid<'_, '_> {
+    fn id(&self, part: &str) -> String {
+        format!("{}-{part}", self.id)
+    }
+
+    fn row(&self, node: Node) -> Node {
+        if self.locale.direction == LayoutDirection::RightToLeft {
+            node.reverse_row()
+        } else {
+            node
+        }
+    }
+
+    fn node(&self, title: &str) -> Node {
+        Node::new(Role::Group, title)
+            .id(self.id("grid"))
+            .grid_role(GridRole::Grid)
+            .styled(Style::column().width(Length::Px(GRID_WIDTH)))
+    }
+
+    fn view<M>(
+        &self,
+        grid: Node,
+        range: Option<CivilDateRange>,
+        day: impl Fn(CivilDate) -> View<M>,
+    ) -> View<M> {
+        let days = self.month.calendar_days(self.locale.first_weekday);
+        let weeks = days
+            .as_chunks::<WEEK_LENGTH>()
+            .0
+            .iter()
+            .enumerate()
+            .map(|(week, dates)| {
+                let cells = dates.iter().copied().enumerate().map(|(column, date)| {
+                    if let Some(date) = date {
+                        day(date)
+                    } else {
+                        self.passive_day(week * WEEK_LENGTH + column)
+                    }
+                });
+                let row_id = self.id(&format!("week-{week}"));
+                let band = range_band::range_band(self.month, dates, range, self.locale.direction)
+                    .map(|band| {
+                        View::new(
+                            Node::new(Role::Group, "")
+                                .id(format!("{row_id}-band"))
+                                .styled(
+                                    centered(band.width, band.height)
+                                        .background(self.theme.colors.secondary_container)
+                                        .absolute(Insets {
+                                            top: Length::Px(band.y),
+                                            left: Length::Px(band.x),
+                                            ..Insets::default()
+                                        }),
+                                ),
+                        )
+                        .without_interaction(None)
+                    });
+                View::new(
+                    self.row(
+                        Node::new(Role::Group, "")
+                            .id(row_id)
+                            .grid_role(GridRole::Row)
+                            .styled(Style::row().width(Length::Px(GRID_WIDTH))),
+                    ),
+                )
+                .children(band.into_iter().chain(cells))
+            });
+        View::new(grid).children(std::iter::once(self.weekdays()).chain(weeks))
+    }
+
+    fn passive_day<M>(&self, index: usize) -> View<M> {
         let cell = |id, name| {
             Node::new(Role::Group, name)
                 .id(id)
@@ -165,7 +337,7 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
                 .styled(centered(TARGET, TARGET))
         };
         if self.adjacent_dates {
-            let first = month.day_clamped(1);
+            let first = self.month.day_clamped(1);
             let first_day = self.locale.first_weekday.index();
             let leading = (first.weekday().index() + WEEK_LENGTH - first_day) % WEEK_LENGTH;
             if let Some(date) = first.checked_add_days(index as i32 - leading as i32) {
@@ -184,7 +356,7 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
         View::new(cell(self.id(&format!("blank-{index}")), String::new()))
     }
 
-    fn weekdays(&self) -> View<M> {
+    fn weekdays<M>(&self) -> View<M> {
         let locale = self.locale;
         let columns = (0..WEEK_LENGTH).map(|column| {
             let index = (locale.first_weekday.index() + column) % WEEK_LENGTH;
@@ -219,86 +391,84 @@ impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
         )
         .children(columns)
     }
+}
 
-    fn day(&self, date: CivilDate, active: bool) -> View<M> {
-        let enabled = self.constraints.allows(date);
-        let selected = enabled && self.session.draft() == Some(date);
-        let today = self.today == date;
-        let id = self.id(&format!("day-{date}"));
-        let mut node = Node::new(Role::Button, (self.locale.date_name)(date))
-            .id(&id)
-            .tab_index(if active { 0 } else { -1 })
-            .grid_role(GridRole::GridCell)
-            .current_date(today)
-            .focus_color(self.theme.colors.secondary)
-            .styled(centered(TARGET, TARGET).corners(shape::FULL));
-        if enabled {
-            node = node.selected(selected);
-        }
-        let mut style = centered(DAY_DIAMETER, DAY_DIAMETER);
-        if today && !selected {
-            style = style.border(1., self.theme.colors.primary);
-        }
-        let label = date.day().to_string();
-        let paint = date_face(self.theme, &id, &label, style, enabled, selected, today);
-        let view = button(
-            node,
-            enabled.then(|| (self.emit)(DatePickerEvent::Select(date))),
-        )
-        .children([paint]);
-        if enabled {
-            view.on_focus_navigation_with_extend(self.day_navigation(date, id))
-                .accessibility_scroll_into_view()
-                .restore_focus_on_removal(self.id("month"))
-        } else {
-            view
-        }
+fn day_navigation<M: 'static>(
+    id: &str,
+    current: String,
+    rtl: bool,
+    target: impl Fn(DatePickerStep) -> Option<CivilDate>,
+    emit: impl Fn(DatePickerStep) -> M + 'static,
+) -> impl Fn(EditKey, bool) -> Option<FocusNavigation<M>> + 'static {
+    let steps = [
+        DatePickerStep::Day(StepDirection::Backward),
+        DatePickerStep::Day(StepDirection::Forward),
+        DatePickerStep::Week(StepDirection::Backward),
+        DatePickerStep::Week(StepDirection::Forward),
+        DatePickerStep::WeekStart,
+        DatePickerStep::WeekEnd,
+        DatePickerStep::Month(StepDirection::Backward),
+        DatePickerStep::Month(StepDirection::Forward),
+        DatePickerStep::Year(StepDirection::Backward),
+        DatePickerStep::Year(StepDirection::Forward),
+    ];
+    let targets = steps.map(target);
+    let id = id.to_owned();
+    move |key, extend| {
+        let index = match (key, extend) {
+            (EditKey::Left, _) => usize::from(rtl),
+            (EditKey::Right, _) => usize::from(!rtl),
+            (EditKey::Up, _) => 2,
+            (EditKey::Down, _) => 3,
+            (EditKey::Home, _) => 4,
+            (EditKey::End, _) => 5,
+            (EditKey::PageUp, false) => 6,
+            (EditKey::PageDown, false) => 7,
+            (EditKey::PageUp, true) => 8,
+            (EditKey::PageDown, true) => 9,
+            _ => return None,
+        };
+        Some(FocusNavigation {
+            target: targets[index]
+                .map_or_else(|| current.clone(), |date| format!("{id}-day-{date}")),
+            message: emit(steps[index]),
+        })
     }
+}
 
-    fn day_navigation(
-        &self,
-        date: CivilDate,
-        current: String,
-    ) -> impl Fn(EditKey, bool) -> Option<FocusNavigation<M>> + 'static {
-        let steps = [
-            DatePickerStep::Day(StepDirection::Backward),
-            DatePickerStep::Day(StepDirection::Forward),
-            DatePickerStep::Week(StepDirection::Backward),
-            DatePickerStep::Week(StepDirection::Forward),
-            DatePickerStep::WeekStart,
-            DatePickerStep::WeekEnd,
-            DatePickerStep::Month(StepDirection::Backward),
-            DatePickerStep::Month(StepDirection::Forward),
-            DatePickerStep::Year(StepDirection::Backward),
-            DatePickerStep::Year(StepDirection::Forward),
-        ];
-        let targets = steps.map(|step| {
-            self.session
-                .navigation_target_from(date, step, self.constraints, self.locale)
-                .map(|target| self.id(&format!("day-{target}")))
-        });
-        let emit = self.emit.clone();
-        let rtl = self.rtl();
-        move |key, extend| {
-            let index = match (key, extend) {
-                (EditKey::Left, _) => usize::from(rtl),
-                (EditKey::Right, _) => usize::from(!rtl),
-                (EditKey::Up, _) => 2,
-                (EditKey::Down, _) => 3,
-                (EditKey::Home, _) => 4,
-                (EditKey::End, _) => 5,
-                (EditKey::PageUp, false) => 6,
-                (EditKey::PageDown, false) => 7,
-                (EditKey::PageUp, true) => 8,
-                (EditKey::PageDown, true) => 9,
-                _ => return None,
-            };
-            Some(FocusNavigation {
-                target: targets[index].clone().unwrap_or_else(|| current.clone()),
-                message: emit(DatePickerEvent::NavigateFrom(date, steps[index])),
-            })
-        }
+struct DateFaceState {
+    selected: bool,
+    interior: bool,
+    today: bool,
+}
+
+fn day_cell<M>(
+    theme: &Theme,
+    id: &str,
+    name: String,
+    date: CivilDate,
+    active: bool,
+    state: DateFaceState,
+    action: Option<M>,
+) -> View<M> {
+    let enabled = action.is_some();
+    let mut node = Node::new(Role::Button, name)
+        .id(id)
+        .tab_index(if active { 0 } else { -1 })
+        .grid_role(GridRole::GridCell)
+        .current_date(state.today)
+        .focus_color(theme.colors.secondary)
+        .styled(centered(TARGET, TARGET).corners(shape::FULL));
+    if enabled {
+        node = node.selected(state.selected);
     }
+    let mut style = centered(DAY_DIAMETER, DAY_DIAMETER);
+    if state.today && !state.selected {
+        style = style.border(1., theme.colors.primary);
+    }
+    let label = date.day().to_string();
+    let paint = date_face(theme, id, &label, style, enabled, state);
+    button(node, action).children([paint])
 }
 
 fn date_face<M>(
@@ -307,25 +477,32 @@ fn date_face<M>(
     label: &str,
     style: Style,
     enabled: bool,
-    selected: bool,
-    today: bool,
+    state: DateFaceState,
 ) -> View<M> {
     let colors = theme.colors;
     let ink = if !enabled {
         disabled_ink(theme)
-    } else if selected {
+    } else if state.selected {
         colors.on_primary
-    } else if today {
+    } else if state.interior {
+        colors.on_secondary_container
+    } else if state.today {
         colors.primary
     } else {
         colors.on_surface
     };
-    let fill = if selected {
+    let fill = if state.selected {
         colors.primary
     } else {
         Color::TRANSPARENT
     };
-    let layer = if enabled { ink } else { Color::TRANSPARENT };
+    let layer = if !enabled {
+        Color::TRANSPARENT
+    } else if state.interior {
+        colors.on_primary_container
+    } else {
+        ink
+    };
     View::new(
         Node::new(Role::Group, "")
             .id(format!("{id}-face"))
@@ -544,7 +721,18 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         if today && !selected {
             visual = visual.border(1., self.theme.colors.primary);
         }
-        let face = date_face(self.theme, &id, &label, visual, true, selected, today);
+        let face = date_face(
+            self.theme,
+            &id,
+            &label,
+            visual,
+            true,
+            DateFaceState {
+                selected,
+                interior: false,
+                today,
+            },
+        );
         button(
             Node::new(Role::Button, &label)
                 .id(id)
