@@ -41,10 +41,31 @@ struct Target {
     press: Option<AccessibilityActivationTarget>,
 }
 
+#[derive(Default, PartialEq, Eq)]
+struct Descriptions {
+    references: BTreeMap<NodeId, NodeId>,
+    text_targets: BTreeSet<NodeId>,
+}
+
+impl Descriptions {
+    fn target_id(&self, id: NodeId) -> String {
+        let kind = if self.text_targets.contains(&id) {
+            "text"
+        } else {
+            "tooltip"
+        };
+        format!("surface-accessibility-{kind}-{}", id.index())
+    }
+
+    fn described_by(&self, source: NodeId) -> Option<String> {
+        self.references.get(&source).map(|id| self.target_id(*id))
+    }
+}
+
 struct Published {
     generation: AccessibilityFrameId,
     visible: BTreeSet<NodeId>,
-    descriptions: BTreeMap<NodeId, NodeId>,
+    descriptions: Descriptions,
     editor: Option<NodeId>,
     tree: Element,
 }
@@ -181,13 +202,21 @@ impl WebAccessibility {
             .is_some_and(|old| old.generation == generation);
         let mut visible = BTreeSet::new();
         collect_visible(frame, frame.root(), &mut visible);
-        let descriptions: BTreeMap<_, _> = visible
-            .iter()
-            .filter_map(|id| {
-                let target = frame.description_target(*id)?;
-                visible.contains(&target).then_some((*id, target))
-            })
-            .collect();
+        let mut descriptions = Descriptions::default();
+        for source in &visible {
+            if let Some(target) = frame
+                .description_target(*source)
+                .filter(|id| visible.contains(id))
+            {
+                descriptions.references.insert(*source, target);
+                if frame
+                    .node(target)
+                    .is_some_and(|node| node.node.role() == Role::Text)
+                {
+                    descriptions.text_targets.insert(target);
+                }
+            }
+        }
         let statuses = visible
             .iter()
             .filter_map(|id| live_status::message(frame, *id))
@@ -233,7 +262,11 @@ impl WebAccessibility {
             }
             *self.targets.borrow_mut() = targets;
             if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
-                describe_by(&textbox, editor.and_then(|id| descriptions.get(&id)))?;
+                if let Some(id) = editor.and_then(|id| descriptions.described_by(id)) {
+                    textbox.set_attribute("aria-describedby", &id)?;
+                } else {
+                    textbox.remove_attribute("aria-describedby")?;
+                }
             }
             self.published = Some(Published {
                 generation,
@@ -310,7 +343,7 @@ fn project<M>(
     id: NodeId,
     visible: &BTreeSet<NodeId>,
     editor: Option<NodeId>,
-    descriptions: &BTreeMap<NodeId, NodeId>,
+    descriptions: &Descriptions,
     targets: &mut BTreeMap<usize, Target>,
 ) -> Result<Element, JsValue> {
     let source = frame.node(id).expect("visible nodes belong to the frame");
@@ -332,11 +365,11 @@ fn project<M>(
     if let Some(stable_id) = source.node.stable_id() {
         element.set_attribute("data-surface-id", stable_id)?;
     }
-    if source.node.role() == Role::Tooltip {
-        element.set_id(&tooltip_id(id));
+    if source.node.role() == Role::Tooltip || descriptions.text_targets.contains(&id) {
+        element.set_id(&descriptions.target_id(id));
     }
-    if let Some(description) = descriptions.get(&id) {
-        describe_by(&element, Some(description))?;
+    if let Some(description) = descriptions.described_by(id) {
+        element.set_attribute("aria-describedby", &description)?;
     }
     if let Some(focus) = frame.focus_target(id) {
         let press = frame.activation_target(id);
@@ -371,17 +404,6 @@ fn project<M>(
         element.append_child(&child_element)?;
     }
     Ok(element)
-}
-
-fn tooltip_id(id: NodeId) -> String {
-    format!("surface-accessibility-tooltip-{}", id.index())
-}
-
-fn describe_by(element: &Element, target: Option<&NodeId>) -> Result<(), JsValue> {
-    match target {
-        Some(id) => element.set_attribute("aria-describedby", &tooltip_id(*id)),
-        None => element.remove_attribute("aria-describedby"),
-    }
 }
 
 fn projected_key(event: &KeyboardEvent) -> Option<(KeyPress, Option<Event>)> {

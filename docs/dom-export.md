@@ -62,6 +62,18 @@ Repeated reads of unchanged state produce the same JSON. The capture has
 no callbacks, GPU objects or platform handles. Loading JSON into `DomExport`
 reads inspection data; it does not restore a running application.
 
+## Date grid metadata
+
+Some nodes add a `grid_role` of `Grid`, `Row`, `ColumnHeader`, or
+`GridCell`. The base `role` still drives input and DevTools role queries.
+A date cell can report `selected` and `current_date` independently.
+
+A field can use `described_by_text` to point to a visible text node
+by stable ID. The platform can read the association as a date format
+hint or error. A painted state layer can carry three opacity bytes in
+`state_layer_alphas`, in hover, focus, and press order. Omitted values
+retain the usual behavior.
+
 ## Style transitions
 
 A style may carry an optional `transition`. It is omitted when `None`, so

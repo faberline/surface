@@ -33,7 +33,7 @@
   },
   "modified_since_import": {
     "crates/surface/src/element.rs": "Allows clippy::large_enum_variant on Element so its public variants stay unchanged.",
-    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports after the Core exports. The Core lines are unchanged.",
+    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, after the Core exports. The Core lines are unchanged.",
     "crates/surface/src/snapshot.rs": "Passes tag instead of *tag to two helpers to satisfy Clippy. Behavior is unchanged.",
     "crates/ui-runtime/src/domain/use_reducer.rs": "Names the reducer type with a Reducer alias to satisfy Clippy type_complexity. The signature is unchanged."
   },
@@ -68,7 +68,7 @@
     "archive_sha256": "123828ceeec755b05255e3976cb0852993202de98a0626c97dd8d34246991f84",
     "license": "MIT OR Apache-2.0; node.rs includes Chromium BSD-licensed code",
     "local_path": "third-party/accesskit-macos",
-    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. Progress indicators expose a read-only AXValue in the legacy AppKit settable query. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
+    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. Progress indicators expose a read-only AXValue in the legacy AppKit settable query. Grids publish their rows and selected cells through AXRows and AXSelectedChildren. Grid cells with selection state expose read-only AXSelected. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
   },
   "accesskit_winit": {
     "repository": "https://github.com/AccessKit/accesskit",

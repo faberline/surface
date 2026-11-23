@@ -16,6 +16,8 @@ mod carousel;
 mod carousel_layout;
 mod carousel_state;
 mod components;
+mod date_picker;
+mod date_picker_state;
 mod elevation;
 mod extended_fab;
 mod extended_fab_motion;
@@ -65,6 +67,12 @@ pub use components::{
     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
     FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,
     SegmentPosition,
+};
+pub use date_picker::{DatePickerLabels, DatePickerLayout, DatePickerOptions};
+pub use date_picker_state::{
+    CivilDate, DateBounds, DateInputError, DateInputFormat, DateInputOrder, DateInputSeparator,
+    DatePickerConstraints, DatePickerEffect, DatePickerEvent, DatePickerLocale, DatePickerMode,
+    DatePickerSession, DatePickerStep, StepDirection, Weekday, YearMonth,
 };
 pub use elevation::Elevation;
 pub use extended_fab::{

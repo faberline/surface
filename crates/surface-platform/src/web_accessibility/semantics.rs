@@ -1,6 +1,6 @@
 //! Project a rendered Surface node without adding browser-native actions.
 
-use surface::{Node, Role};
+use surface::{GridRole, Node, Role};
 use surface_app::AccessibilityNode;
 use wasm_bindgen::JsValue;
 use web_sys::{Document, Element};
@@ -50,7 +50,9 @@ pub(super) fn element(
         element.set_attribute("aria-haspopup", "menu")?;
     }
     let current_page = node.is_current_page();
-    if current_page == Some(true) {
+    if node.is_current_date() {
+        element.set_attribute("aria-current", "date")?;
+    } else if role != Some("gridcell") && current_page == Some(true) {
         element.set_attribute("aria-current", "page")?;
     }
 
@@ -83,6 +85,11 @@ pub(super) fn element(
                 node.is_selected().unwrap_or(false),
             )?;
         }
+        Some("gridcell") => {
+            if let Some(selected) = node.is_selected() {
+                set_bool(&element, "aria-selected", selected)?;
+            }
+        }
         Some("slider" | "progressbar") => {
             if let Some(range) = node.range_value().filter(|range| range.is_valid()) {
                 element.set_attribute("aria-valuemin", &range.min.to_string())?;
@@ -102,6 +109,14 @@ pub(super) fn element(
 }
 
 fn aria_role(node: &Node) -> Option<&'static str> {
+    if let Some(role) = node.accessibility_grid_role() {
+        return Some(match role {
+            GridRole::Grid => "grid",
+            GridRole::Row => "row",
+            GridRole::ColumnHeader => "columnheader",
+            GridRole::GridCell => "gridcell",
+        });
+    }
     Some(match node.role() {
         Role::Group if node.name().trim().is_empty() && !node.is_focusable() => return None,
         Role::Group | Role::Window => "group",

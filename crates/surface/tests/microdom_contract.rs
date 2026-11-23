@@ -115,6 +115,53 @@ fn menu_popup_uses_the_existing_expanded_and_disclosure_wire_fields() {
 }
 
 #[test]
+fn grid_metadata_round_trips_without_changing_base_roles() {
+    let field = Node::new(Role::TextInput, "Date").described_by_text("date-format");
+    let plain = Node::new(Role::Button, "June 1").selected(false);
+    let date = plain
+        .clone()
+        .grid_role(GridRole::GridCell)
+        .current_date(true);
+    let mut dom = MicroDom::new(Node::new(Role::Group, "June").grid_role(GridRole::Grid));
+    let row = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Group, "Week").grid_role(GridRole::Row),
+        )
+        .unwrap();
+    let day = dom.append(row, date).unwrap();
+    let input = dom.append(dom.root(), field).unwrap();
+
+    let json = serde_json::to_value(dom.snapshot()).unwrap();
+    assert_eq!(json["version"], 1);
+    let node = &json["nodes"][day.index()];
+    assert_eq!(node["grid_role"], "GridCell");
+    assert_eq!(node["current_date"], true);
+    assert_eq!(node["selected"], false);
+    let decoded = MicroDom::from_snapshot(serde_json::from_value(json).unwrap()).unwrap();
+    let decoded_date = decoded.get(day).unwrap();
+    assert_eq!(decoded_date.role(), Role::Button);
+    assert_eq!(decoded_date.parent(), Some(row));
+    assert!(decoded_date.is_current_date());
+    assert!(decoded_date.is_focusable());
+    assert_eq!(
+        decoded.get(input).unwrap().description_text_target(),
+        Some("date-format")
+    );
+
+    let ordinary = serde_json::to_value(&plain).unwrap();
+    assert!(ordinary.get("grid_role").is_none());
+    assert!(ordinary.get("current_date").is_none());
+    assert!(ordinary.get("described_by_text").is_none());
+    assert_eq!(
+        plain
+            .grid_role(GridRole::ColumnHeader)
+            .accessibility_grid_role(),
+        None
+    );
+}
+
+#[test]
 fn snapshot_has_golden_bytes() {
     let dom = MicroDom::new(Node::new(Role::Window, "App").id("app"));
     let json = serde_json::to_string(&dom.snapshot()).unwrap();

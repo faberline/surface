@@ -92,6 +92,8 @@ pub fn key(name: &str) -> Result<Key> {
         "ArrowDown" => named("ArrowDown", "ArrowDown", 40, "", 0),
         "Home" => named("Home", "Home", 36, "", 0),
         "End" => named("End", "End", 35, "", 0),
+        "PageUp" => named("PageUp", "PageUp", 33, "", 0),
+        "PageDown" => named("PageDown", "PageDown", 34, "", 0),
         "Shift" => named("Shift", "ShiftLeft", 16, "", 1),
         "Control" => named("Control", "ControlLeft", 17, "", 1),
         "Alt" => named("Alt", "AltLeft", 18, "", 1),
@@ -179,6 +181,9 @@ mod tests {
             SHIFT
         );
         assert_eq!(chord.key.key_code, 9);
+        let page = Chord::parse("Shift+PageDown").unwrap();
+        assert_eq!(page.key.key_code, 34);
+        assert_eq!(key("PageUp").unwrap().key_code, 33);
         let chord = Chord::parse("Meta+Shift+Z").unwrap();
         assert_eq!(
             chord

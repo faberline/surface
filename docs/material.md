@@ -150,6 +150,7 @@ does not change application state.
 | `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
 | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
 | `fab_menu` | Native floating actions or an anchored Web menu with one stable FAB, caller-owned open state, and focus return |
+| `date_picker` | One date in a modal calendar or text field, with year browsing, validation, and adaptive full-screen layout |
 | `bottom_sheet_layout` / `bottom_sheet_with_motion` | Standard and modal bottom sheets with peek and expanded heights, a fixed accessible handle, contained scrolling and optional vertical drag |
 | `app_bar` / `app_bar_search_view` | Small, center-aligned, flexible and search app bars with caller-controlled slots, scroll behavior and a modal Search View |
 | `toolbar` / `toolbar_button` | Docked and horizontal or vertical floating action groups with Standard and Vibrant palettes, arrow-key focus and optional adjacent FAB |
@@ -322,6 +323,37 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Date picker
+
+Use `Theme::date_picker` to mount a single-date modal while the app
+holds a `DatePickerSession`. The app supplies its committed date,
+local today, inclusive bounds, and an optional rule for unavailable
+dates. Open the session in Calendar or Input mode. Forward the picker
+events to `DatePickerSession::apply`. Save the date only when it returns
+`DatePickerEffect::Commit`. Drop the session on Commit or Dismiss.
+
+Supply the localized names, date order, format hint and first weekday
+in `DatePickerLabels` and `DatePickerLocale`. Year, month, and day use
+the Gregorian calendar. Input accepts ASCII and full-width digits.
+Use `observe_input_focus` in the frame input observer to check and
+format the field after focus leaves it. Surface gives the first Enter
+to the active IME composition. A separate Enter can submit the date.
+
+Adaptive layout uses a full-screen panel below 600 dp. Close and Save
+stay in reach when the body scrolls. A narrow grid can scroll
+horizontally to preserve 48 dp date targets. Focus starts at the
+selected day or an available fallback. Day and week keys move focus.
+Page Up and Page Down browse months. Hold Shift on a page key to browse
+years. Enter or Space on a day updates the draft. Escape dismisses the
+picker and returns focus.
+
+In Material Gallery, choose 浮層, then 日期選擇器. The example can open
+either mode and switch locale, text scale, theme, and direction.
+
+[Material 3 date picker](https://m3.material.io/components/date-pickers/specs) ·
+[Published date picker tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.01c5310367774eb8.json) ·
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
 
 ## FAB menus
 
