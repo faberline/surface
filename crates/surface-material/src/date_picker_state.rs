@@ -722,11 +722,26 @@ impl DatePickerSession {
         month: YearMonth,
         direction: StepDirection,
         constraints: DatePickerConstraints<'_>,
-    ) {
-        if constraints.bounds.contains_month(month) {
-            self.month = month;
-            self.active = constraints.nearest_in_month(month, self.preferred_day, direction);
+    ) -> bool {
+        if !constraints.bounds.contains_month(month) {
+            return false;
         }
+        self.month = month;
+        self.active = constraints.nearest_in_month(month, self.preferred_day, direction);
+        true
+    }
+
+    pub(super) fn browse_to(
+        &mut self,
+        month: YearMonth,
+        constraints: DatePickerConstraints<'_>,
+    ) -> bool {
+        let direction = if month < self.month {
+            StepDirection::Backward
+        } else {
+            StepDirection::Forward
+        };
+        self.browse(month, direction, constraints)
     }
 
     fn browse_year(&mut self, year: u16, constraints: DatePickerConstraints<'_>) -> bool {
@@ -740,13 +755,7 @@ impl DatePickerSession {
             month: self.month.month,
         }
         .clamp(first, last);
-        let direction = if month < self.month {
-            StepDirection::Backward
-        } else {
-            StepDirection::Forward
-        };
-        self.browse(month, direction, constraints);
-        true
+        self.browse_to(month, constraints)
     }
 
     fn set_mode(&mut self, mode: DatePickerMode) {

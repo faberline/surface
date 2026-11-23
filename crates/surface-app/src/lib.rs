@@ -85,6 +85,7 @@ pub struct View<M> {
     description: Option<String>,
     focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
+    focus_on_pointer_release: bool,
     accessible_scroll: bool,
     accessible_scroll_pages: bool,
     interaction_suppression: Option<Rc<InteractionSuppression>>,
@@ -130,6 +131,7 @@ impl<M> View<M> {
             description: None,
             focus_after_removal: Vec::new(),
             protect_composition_on_press: false,
+            focus_on_pointer_release: false,
             accessible_scroll: false,
             accessible_scroll_pages: false,
             interaction_suppression: None,
@@ -278,6 +280,12 @@ impl<M> View<M> {
     /// composition without this option.
     pub fn protect_composition_on_press(mut self) -> Self {
         self.protect_composition_on_press = true;
+        self
+    }
+    /// Keep focus in the current control until a pointer release activates
+    /// this button. Use this when a button opens a companion to an editor.
+    pub fn focus_on_pointer_release(mut self) -> Self {
+        self.focus_on_pointer_release = true;
         self
     }
     pub fn on_input(mut self, handler: impl Fn(String) -> M + 'static) -> Self {
@@ -661,6 +669,7 @@ struct Binding<M> {
     description: Option<String>,
     focus_after_removal: Vec<String>,
     protect_composition_on_press: bool,
+    focus_on_pointer_release: bool,
     accessible_scroll: bool,
     accessible_scroll_pages: bool,
     interaction_suppression: Option<Rc<InteractionSuppression>>,
@@ -1044,6 +1053,7 @@ impl<A: Application> Runtime<A> {
                     description: view.description,
                     focus_after_removal: view.focus_after_removal,
                     protect_composition_on_press: view.protect_composition_on_press,
+                    focus_on_pointer_release: view.focus_on_pointer_release,
                     accessible_scroll: view.accessible_scroll,
                     accessible_scroll_pages: view.accessible_scroll_pages,
                     visual_overlay: view.visual_overlay,
@@ -1425,7 +1435,10 @@ impl<A: Application> Runtime<A> {
                     self.press_observation.accept(id, (x, y), bounds, time);
                 }
                 self.hovered = self.pressed.clone();
-                if drag.is_none() {
+                let defer_focus = hit
+                    .and_then(|id| self.bindings.get(&id))
+                    .is_some_and(|binding| binding.focus_on_pointer_release);
+                if drag.is_none() && !defer_focus {
                     // Blank clicks within a modal must not release its focus scope.
                     if self.pressed.is_some() || self.active_scope_root().is_none() {
                         self.focused = self.pressed.clone();

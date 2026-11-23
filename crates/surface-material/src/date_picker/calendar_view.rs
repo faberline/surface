@@ -1,17 +1,22 @@
+use std::rc::Rc;
+
 use surface::{Align, Color, GridRole, Length, Node, Role, Style};
 use surface_app::{EditKey, FocusNavigation, Roving, View};
 
 use crate::{
-    shape, typography, vector_icon::VectorIconSize, CivilDate, DatePickerEvent, DatePickerMode,
-    DatePickerStep, StepDirection,
+    shape::{self, LayoutDirection},
+    typography,
+    vector_icon::VectorIconSize,
+    CivilDate, DatePickerConstraints, DatePickerEvent, DatePickerLocale, DatePickerMode,
+    DatePickerSession, DatePickerStep, StepDirection, Theme, YearMonth,
 };
 
-use super::{button, centered, text, Glyph, Picker, TARGET};
+use super::{button, centered, disabled_ink, text, Glyph, Picker, TARGET};
 
 const WEEK_LENGTH: usize = 7;
 const GRID_WIDTH: f32 = TARGET * WEEK_LENGTH as f32;
 const DAY_DIAMETER: f32 = 40.;
-const YEAR_PAGE: u16 = 72;
+pub(crate) const YEAR_PAGE: u16 = 72;
 const YEAR_PILL_WIDTH: f32 = 72.;
 const YEAR_PILL_HEIGHT: f32 = 36.;
 
@@ -26,22 +31,75 @@ struct YearPage {
 
 impl<M: Clone + 'static> Picker<'_, '_, M> {
     pub(super) fn active_day(&self) -> Option<CivilDate> {
-        let allowed = |date: &CivilDate| self.options.constraints.allows(*date);
+        self.grid().active_day()
+    }
+
+    fn grid(&self) -> CalendarGrid<'_, '_, M> {
+        CalendarGrid {
+            theme: self.theme,
+            id: self.options.id,
+            today: self.options.today,
+            constraints: self.options.constraints,
+            locale: self.options.locale,
+            session: self.session,
+            emit: self.emit.clone(),
+            width: self.width,
+            adjacent_dates: false,
+        }
+    }
+
+    pub(super) fn calendar(&self) -> View<M> {
+        let title = (self.options.locale.month_title)(self.session.month());
+        View::new(Node::new(Role::Group, "").styled(Style::column()))
+            .children([self.month_controls(&title, false), self.grid().view(&title)])
+    }
+}
+
+pub(crate) struct CalendarGrid<'a, 'b, M> {
+    pub(crate) theme: &'a Theme,
+    pub(crate) id: &'a str,
+    pub(crate) today: CivilDate,
+    pub(crate) constraints: DatePickerConstraints<'b>,
+    pub(crate) locale: &'a DatePickerLocale<'b>,
+    pub(crate) session: &'a DatePickerSession,
+    pub(crate) emit: Rc<dyn Fn(DatePickerEvent) -> M>,
+    pub(crate) width: f32,
+    pub(crate) adjacent_dates: bool,
+}
+
+impl<M: Clone + 'static> CalendarGrid<'_, '_, M> {
+    fn id(&self, part: &str) -> String {
+        format!("{}-{part}", self.id)
+    }
+
+    fn rtl(&self) -> bool {
+        self.locale.direction == LayoutDirection::RightToLeft
+    }
+
+    fn row(&self, node: Node) -> Node {
+        if self.rtl() {
+            node.reverse_row()
+        } else {
+            node
+        }
+    }
+
+    pub(crate) fn active_day(&self) -> Option<CivilDate> {
+        let allowed = |date: &CivilDate| self.constraints.allows(*date);
         self.session.active().filter(allowed).or_else(|| {
             self.session
                 .month()
-                .calendar_days(self.options.locale.first_weekday)
+                .calendar_days(self.locale.first_weekday)
                 .into_iter()
                 .flatten()
                 .find(allowed)
         })
     }
 
-    pub(super) fn calendar(&self) -> View<M> {
+    pub(crate) fn view(&self, title: &str) -> View<M> {
         let month = self.session.month();
         let active = self.active_day();
-        let title = (self.options.locale.month_title)(month);
-        let days = month.calendar_days(self.options.locale.first_weekday);
+        let days = month.calendar_days(self.locale.first_weekday);
         let mut grid_rows = Vec::with_capacity(7);
         grid_rows.push(self.weekdays());
         grid_rows.extend(
@@ -52,12 +110,7 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
                         if let Some(date) = date {
                             self.day(date, active == Some(date))
                         } else {
-                            View::new(
-                                Node::new(Role::Group, "")
-                                    .id(self.id(&format!("blank-{}", week * WEEK_LENGTH + weekday)))
-                                    .grid_role(GridRole::GridCell)
-                                    .styled(centered(TARGET, TARGET)),
-                            )
+                            self.passive_day(month, week * WEEK_LENGTH + weekday)
                         }
                     });
                     View::new(
@@ -72,7 +125,7 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
                 }),
         );
         let grid = View::new(
-            Node::new(Role::Group, &title)
+            Node::new(Role::Group, title)
                 .id(self.id("grid"))
                 .grid_role(GridRole::Grid)
                 .styled(Style::column().width(Length::Px(GRID_WIDTH))),
@@ -96,18 +149,43 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         )
         .children([grid])
         .accessibility_scroll_pages();
-        let viewport = if wide {
+        if wide {
             viewport
         } else {
             // Give vertical wheel input to the picker's body.
             viewport.on_horizontal_scroll(|_, _| None)
+        }
+    }
+
+    fn passive_day(&self, month: YearMonth, index: usize) -> View<M> {
+        let cell = |id, name| {
+            Node::new(Role::Group, name)
+                .id(id)
+                .grid_role(GridRole::GridCell)
+                .styled(centered(TARGET, TARGET))
         };
-        View::new(Node::new(Role::Group, "").styled(Style::column()))
-            .children([self.month_controls(&title, false), viewport])
+        if self.adjacent_dates {
+            let first = month.day_clamped(1);
+            let first_day = self.locale.first_weekday.index();
+            let leading = (first.weekday().index() + WEEK_LENGTH - first_day) % WEEK_LENGTH;
+            if let Some(date) = first.checked_add_days(index as i32 - leading as i32) {
+                let id = self.id(&format!("adjacent-{date}"));
+                let name = (self.locale.date_name)(date);
+                let caption = text(
+                    "",
+                    &date.day().to_string(),
+                    typography::BODY_LARGE,
+                    disabled_ink(self.theme),
+                );
+                return View::new(cell(id, name).disabled(true))
+                    .children([caption.without_interaction(None)]);
+            }
+        }
+        View::new(cell(self.id(&format!("blank-{index}")), String::new()))
     }
 
     fn weekdays(&self) -> View<M> {
-        let locale = self.options.locale;
+        let locale = self.locale;
         let columns = (0..WEEK_LENGTH).map(|column| {
             let index = (locale.first_weekday.index() + column) % WEEK_LENGTH;
             let name = locale.weekday_full[index];
@@ -143,11 +221,11 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
     }
 
     fn day(&self, date: CivilDate, active: bool) -> View<M> {
-        let enabled = self.options.constraints.allows(date);
+        let enabled = self.constraints.allows(date);
         let selected = enabled && self.session.draft() == Some(date);
-        let today = self.options.today == date;
+        let today = self.today == date;
         let id = self.id(&format!("day-{date}"));
-        let mut node = Node::new(Role::Button, (self.options.locale.date_name)(date))
+        let mut node = Node::new(Role::Button, (self.locale.date_name)(date))
             .id(&id)
             .tab_index(if active { 0 } else { -1 })
             .grid_role(GridRole::GridCell)
@@ -162,7 +240,7 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
             style = style.border(1., self.theme.colors.primary);
         }
         let label = date.day().to_string();
-        let paint = self.date_face(&id, &label, style, enabled, selected, today);
+        let paint = date_face(self.theme, &id, &label, style, enabled, selected, today);
         let view = button(
             node,
             enabled.then(|| (self.emit)(DatePickerEvent::Select(date))),
@@ -175,46 +253,6 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         } else {
             view
         }
-    }
-
-    fn date_face(
-        &self,
-        id: &str,
-        label: &str,
-        style: Style,
-        enabled: bool,
-        selected: bool,
-        today: bool,
-    ) -> View<M> {
-        let colors = self.theme.colors;
-        let ink = if !enabled {
-            self.disabled_ink()
-        } else if selected {
-            colors.on_primary
-        } else if today {
-            colors.primary
-        } else {
-            colors.on_surface
-        };
-        let fill = if selected {
-            colors.primary
-        } else {
-            Color::TRANSPARENT
-        };
-        let layer = if enabled { ink } else { Color::TRANSPARENT };
-        View::new(
-            Node::new(Role::Group, "")
-                .id(format!("{id}-face"))
-                .state_layer_alphas(20, 26, 26)
-                .styled(
-                    style
-                        .corners(shape::FULL)
-                        .background(fill)
-                        .state_layer(layer),
-                ),
-        )
-        .children([text("", label, typography::BODY_LARGE, ink)])
-        .without_interaction(None)
     }
 
     fn day_navigation(
@@ -236,7 +274,7 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         ];
         let targets = steps.map(|step| {
             self.session
-                .navigation_target_from(date, step, self.options.constraints, self.options.locale)
+                .navigation_target_from(date, step, self.constraints, self.locale)
                 .map(|target| self.id(&format!("day-{target}")))
         });
         let emit = self.emit.clone();
@@ -261,7 +299,49 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
             })
         }
     }
+}
 
+fn date_face<M>(
+    theme: &Theme,
+    id: &str,
+    label: &str,
+    style: Style,
+    enabled: bool,
+    selected: bool,
+    today: bool,
+) -> View<M> {
+    let colors = theme.colors;
+    let ink = if !enabled {
+        disabled_ink(theme)
+    } else if selected {
+        colors.on_primary
+    } else if today {
+        colors.primary
+    } else {
+        colors.on_surface
+    };
+    let fill = if selected {
+        colors.primary
+    } else {
+        Color::TRANSPARENT
+    };
+    let layer = if enabled { ink } else { Color::TRANSPARENT };
+    View::new(
+        Node::new(Role::Group, "")
+            .id(format!("{id}-face"))
+            .state_layer_alphas(20, 26, 26)
+            .styled(
+                style
+                    .corners(shape::FULL)
+                    .background(fill)
+                    .state_layer(layer),
+            ),
+    )
+    .children([text("", label, typography::BODY_LARGE, ink)])
+    .without_interaction(None)
+}
+
+impl<M: Clone + 'static> Picker<'_, '_, M> {
     fn month_controls(&self, title: &str, show_year: bool) -> View<M> {
         let labels = self.options.labels;
         let month = self.session.month();
@@ -464,7 +544,7 @@ impl<M: Clone + 'static> Picker<'_, '_, M> {
         if today && !selected {
             visual = visual.border(1., self.theme.colors.primary);
         }
-        let face = self.date_face(&id, &label, visual, true, selected, today);
+        let face = date_face(self.theme, &id, &label, visual, true, selected, today);
         button(
             Node::new(Role::Button, &label)
                 .id(id)

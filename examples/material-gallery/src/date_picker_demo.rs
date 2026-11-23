@@ -221,15 +221,15 @@ impl DatePickerDemo {
     }
 }
 
-fn date(year: u16, month: u8, day: u8) -> CivilDate {
+pub(crate) fn date(year: u16, month: u8, day: u8) -> CivilDate {
     CivilDate::new(year, month, day).expect("valid Gallery date")
 }
 
-fn today() -> CivilDate {
+pub(crate) fn today() -> CivilDate {
     date(2024, 2, 29)
 }
 
-fn constraints() -> DatePickerConstraints<'static> {
+pub(crate) fn constraints() -> DatePickerConstraints<'static> {
     DatePickerConstraints {
         bounds: DateBounds::new(date(1900, 1, 1), date(2100, 12, 31)).expect("ordered dates"),
         allowed_date: Some(&available),
@@ -341,7 +341,7 @@ fn en_error(error: DateInputError) -> String {
     .into()
 }
 
-fn locale(english: bool, rtl: bool) -> DatePickerLocale<'static> {
+pub(crate) fn locale(english: bool, rtl: bool) -> DatePickerLocale<'static> {
     let direction = if rtl {
         LayoutDirection::RightToLeft
     } else {
