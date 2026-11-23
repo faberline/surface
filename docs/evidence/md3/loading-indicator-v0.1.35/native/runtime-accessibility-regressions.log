@@ -1,0 +1,102 @@
+   Compiling surface-devtools-protocol v0.1.35 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-devtools-protocol)
+   Compiling surface v0.1.35 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface)
+   Compiling surface-app v0.1.35 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 03s
+     Running tests/accessibility_activation.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/accessibility_activation-067e50a197bc1b15)
+
+running 6 tests
+test activation_preserves_ime_and_does_not_interrupt_a_pointer_press ... ok
+test activation_requires_opt_in_enabled_press_role_and_a_message ... ok
+test clipping_retires_a_target_even_when_the_control_returns ... ok
+test clone_cannot_press_while_close_or_scroll_is_pending ... ok
+test old_activation_cannot_cross_runtimes_replacements_or_modals ... ok
+test queued_updates_before_or_during_clone_do_not_run_the_old_press ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_description.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/accessibility_description-ebcd67ba868de16a)
+
+running 3 tests
+test date_field_describes_itself_with_current_static_text ... ok
+test description_requires_a_current_visible_tooltip_in_scope ... ok
+test devtools_exposes_grid_state_and_text_reference_through_the_existing_methods ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/accessibility_focus.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/accessibility_focus-44bf8f18c1335885)
+
+running 9 tests
+test a_focus_request_cannot_interrupt_an_active_pointer_press ... ok
+test clipping_and_render_failure_retire_a_target_without_a_view_rebuild ... ok
+test custom_projected_keys_need_no_fallback_and_reject_stale_targets ... ok
+test focus_does_not_activate_and_ordinary_frames_keep_identity ... ok
+test focus_preserves_the_replacement_range_across_empty_preedit ... ok
+test modal_projection_and_replacement_retire_previous_targets ... ok
+test projected_keys_do_not_apply_after_pending_view_replacement_or_modal_change ... ok
+test queue_is_applied_before_focus_and_invalid_view_never_reuses_old_targets ... ok
+test rapid_projected_keys_follow_current_focus_before_the_next_frame ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/accessibility_scroll.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/accessibility_scroll-fbeaf7acf255471c)
+
+running 3 tests
+test nested_reveal_keeps_focus_and_publishes_manual_offsets ... ok
+test replaced_views_and_external_modal_ancestors_do_not_consume_reveal ... ok
+test reveal_respects_pointer_and_pending_composition ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_scroll_pages.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/accessibility_scroll_pages-9d55c8d58a5d2b4f)
+
+running 6 tests
+test opted_in_viewport_requires_a_stable_id ... ok
+test ordinary_reflows_preserve_live_targets_and_loss_of_visibility_retires_them ... ok
+test rebuilt_and_modal_views_reject_delayed_pages ... ok
+test relative_pages_use_the_visible_size_and_leave_the_other_axis_and_parent_alone ... ok
+test vertical_pages_pause_and_resume_sticky_following ... ok
+test viewport_actions_require_opt_in_and_do_not_interrupt_native_input ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/motion.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/motion-562caf18ca2aded0)
+
+running 24 tests
+test a_transition_added_with_the_first_change_animates_when_another_node_has_one ... ok
+test a_transition_added_with_the_first_change_does_not_animate_without_other_transitions ... ok
+test c10_color_run_keeps_a_legacy_radius_unresolved ... ok
+test c11_reduced_motion_settles_the_corner_target ... ok
+test c1_uniform_corners_interpolate_linearly ... ok
+test c2_full_radius_interpolates_toward_the_resolved_value ... ok
+test c3_overshooting_easing_stays_finite_and_in_range ... ok
+test c4_constant_full_radius_follows_a_resize_without_a_run ... ok
+test c5_radius_to_equal_explicit_corners_starts_no_run ... ok
+test c6_top_to_bottom_passes_through_a_uniform_shape ... ok
+test c7_export_dom_keeps_the_target_corners_mid_run ... ok
+test c8_reduced_motion_jumps_corners_to_the_target ... ok
+test c9_retargeting_a_corner_run_starts_from_the_shown_corners ... ok
+test export_dom_reports_target_styles_mid_transition ... ok
+test first_appearance_does_not_animate ... ok
+test interrupted_transition_retargets_from_the_presented_value ... ok
+test linear_transition_interpolates_with_the_host_clock ... ok
+test m2_a_stable_id_that_looks_like_a_child_path_keeps_its_own_track ... ok
+test modal_opening_mid_transition_keeps_animating ... ok
+test reduced_motion_applies_targets_immediately ... ok
+test time_never_moves_backwards ... ok
+test view_is_not_called_by_time_or_render ... ok
+test without_clock_changes_apply_immediately_and_need_no_frame ... ok
+test zero_duration_and_missing_transition_apply_immediately ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/paint_export.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/paint_export-6e5e87a97c647662)
+
+running 6 tests
+test caret_and_text_belong_to_the_focused_field ... ok
+test export_after_a_state_change_is_an_error_until_the_next_render ... ok
+test export_before_the_first_frame_is_an_error ... ok
+test export_json_is_pinned ... ok
+test export_round_trips ... ok
+test owner_ids_match_dom_export ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s

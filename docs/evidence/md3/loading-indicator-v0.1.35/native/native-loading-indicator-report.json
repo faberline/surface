@@ -1,0 +1,657 @@
+{
+  "source_manifest_sha256": "3dd2d0872b97118ece7e8d161217e271d9676a79b0b93aefbcde4a631fad4b1d",
+  "gallery_sha256": "414b3ea2e224cb49506fa6166c36822022d059f8ec6873e0fd5b0885f33af742",
+  "cli_sha256": "6f2a09eff3a99017afa7742d57ba1da4712546c534f7c17719611d340c3e1a8a",
+  "contour_data_sha256": "27abd0da1719f8d828466d85017cb0cf2e5e6b4235236a8a6203c3e4e23d2a97",
+  "motion": "native headless Reduce Motion endpoint",
+  "input": "native headless DevTools Action.key and Action.activate",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "light": {
+      "startup": {
+        "loading-default": {
+          "name": "載入資料",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 219.0,
+            "y": 248.0
+          },
+          "active": {
+            "height": 38.0,
+            "width": 38.0,
+            "x": 224.0,
+            "y": 253.0
+          },
+          "contour_vertices": 191,
+          "contour_radius": 15.93806316596785,
+          "container": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "backing": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "ink": [
+            101,
+            85,
+            143,
+            255
+          ],
+          "contrast": 5.5641,
+          "pixels": {
+            "center": [
+              101,
+              85,
+              143,
+              255
+            ],
+            "rim": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "corner": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "classified": {
+              "interior": 85,
+              "exterior": 90
+            }
+          }
+        },
+        "loading-contained": {
+          "name": "讀取快取",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 693.0,
+            "y": 248.0
+          },
+          "active": {
+            "height": 38.0,
+            "width": 38.0,
+            "x": 698.0,
+            "y": 253.0
+          },
+          "contour_vertices": 191,
+          "contour_radius": 15.93806316596785,
+          "container": [
+            233,
+            221,
+            255,
+            255
+          ],
+          "backing": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "ink": [
+            32,
+            16,
+            71,
+            255
+          ],
+          "contrast": 13.25,
+          "pixels": {
+            "center": [
+              32,
+              16,
+              71,
+              255
+            ],
+            "rim": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "corner": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "classified": {
+              "interior": 85,
+              "exterior": 86
+            }
+          }
+        }
+      },
+      "stopped_slots": {
+        "loading-default": {
+          "height": 48.0,
+          "width": 48.0,
+          "x": 219.0,
+          "y": 248.0
+        },
+        "loading-contained": {
+          "height": 48.0,
+          "width": 48.0,
+          "x": 693.0,
+          "y": 248.0
+        }
+      },
+      "focus_path": [
+        "loading-demo-theme",
+        "loading-demo-rtl",
+        "loading-demo-large-text",
+        "loading-demo-small",
+        "loading-demo-regular",
+        "loading-demo-large",
+        "loading-demo-run",
+        "loading-demo-stop"
+      ],
+      "stop_focus": "loading-demo-stop",
+      "restart_focus": "loading-demo-run",
+      "back_focus": "loading-demo-show",
+      "captures": [
+        {
+          "name": "loading-light-48.png",
+          "sha256": "807b1ee2d1c91c027e6f1d782b229a355fca7a4092d83b07da84a550df68aced",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "loading-stopped-48.png",
+          "sha256": "d6e46ddd6332ddb56f4ac4e367bf4d00ab5525f5e8e53232d98144a14c8b69e3",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "loading-restarted-48.png",
+          "sha256": "cee593707e39dfed3c68c2786fc1b958d648b936d7672ee37c34d00849a0bb69",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "24_dp": {
+        "loading-default": {
+          "name": "載入資料",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 225.0,
+            "y": 396.0
+          },
+          "active": {
+            "height": 19.0,
+            "width": 19.0,
+            "x": 227.5,
+            "y": 398.5
+          },
+          "contour_vertices": 191,
+          "contour_radius": 7.969031582983925,
+          "container": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "backing": [
+            33,
+            31,
+            36,
+            255
+          ],
+          "ink": [
+            207,
+            189,
+            254,
+            255
+          ],
+          "contrast": 9.6127,
+          "pixels": {
+            "center": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "rim": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "corner": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "classified": {
+              "interior": 66,
+              "exterior": 61
+            }
+          }
+        },
+        "loading-contained": {
+          "name": "讀取快取",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 71.0,
+            "y": 396.0
+          },
+          "active": {
+            "height": 19.0,
+            "width": 19.0,
+            "x": 73.5,
+            "y": 398.5
+          },
+          "contour_vertices": 191,
+          "contour_radius": 7.969031582983925,
+          "container": [
+            77,
+            61,
+            117,
+            255
+          ],
+          "backing": [
+            33,
+            31,
+            36,
+            255
+          ],
+          "ink": [
+            233,
+            221,
+            255,
+            255
+          ],
+          "contrast": 7.2553,
+          "pixels": {
+            "center": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "rim": [
+              77,
+              61,
+              117,
+              255
+            ],
+            "corner": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "classified": {
+              "interior": 66,
+              "exterior": 56
+            }
+          }
+        }
+      },
+      "48_dp": {
+        "loading-default": {
+          "name": "載入資料",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 213.0,
+            "y": 396.0
+          },
+          "active": {
+            "height": 38.0,
+            "width": 38.0,
+            "x": 218.0,
+            "y": 401.0
+          },
+          "contour_vertices": 191,
+          "contour_radius": 15.93806316596785,
+          "container": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "backing": [
+            33,
+            31,
+            36,
+            255
+          ],
+          "ink": [
+            207,
+            189,
+            254,
+            255
+          ],
+          "contrast": 9.6127,
+          "pixels": {
+            "center": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "rim": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "corner": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "classified": {
+              "interior": 85,
+              "exterior": 90
+            }
+          }
+        },
+        "loading-contained": {
+          "name": "讀取快取",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 59.0,
+            "y": 396.0
+          },
+          "active": {
+            "height": 38.0,
+            "width": 38.0,
+            "x": 64.0,
+            "y": 401.0
+          },
+          "contour_vertices": 191,
+          "contour_radius": 15.93806316596785,
+          "container": [
+            77,
+            61,
+            117,
+            255
+          ],
+          "backing": [
+            33,
+            31,
+            36,
+            255
+          ],
+          "ink": [
+            233,
+            221,
+            255,
+            255
+          ],
+          "contrast": 7.2553,
+          "pixels": {
+            "center": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "rim": [
+              77,
+              61,
+              117,
+              255
+            ],
+            "corner": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "classified": {
+              "interior": 85,
+              "exterior": 86
+            }
+          }
+        }
+      },
+      "captures": [
+        {
+          "name": "loading-dark-rtl-24.png",
+          "sha256": "02760e97d855eb920ef27b37f2290cb6c2e41272a9396b2041da8168d59daa55",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        },
+        {
+          "name": "loading-dark-rtl-48.png",
+          "sha256": "841d90f17543427987d7e342ba0d267b222cde082b90cfa155fd99ed707645fc",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        900
+      ]
+    },
+    "wide": {
+      "size": 240,
+      "indicators": {
+        "loading-default": {
+          "name": "載入資料",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 240.0,
+            "width": 240.0,
+            "x": 123.0,
+            "y": 248.0
+          },
+          "active": {
+            "height": 190.0,
+            "width": 190.0,
+            "x": 148.0,
+            "y": 273.0
+          },
+          "contour_vertices": 191,
+          "contour_radius": 79.69031582983925,
+          "container": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "backing": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "ink": [
+            101,
+            85,
+            143,
+            255
+          ],
+          "contrast": 5.5641,
+          "pixels": {
+            "center": [
+              101,
+              85,
+              143,
+              255
+            ],
+            "rim": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "corner": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "classified": {
+              "interior": 110,
+              "exterior": 106
+            }
+          }
+        },
+        "loading-contained": {
+          "name": "讀取快取",
+          "role": "Progress",
+          "has_value": false,
+          "outer": {
+            "height": 240.0,
+            "width": 240.0,
+            "x": 597.0,
+            "y": 248.0
+          },
+          "active": {
+            "height": 190.0,
+            "width": 190.0,
+            "x": 622.0,
+            "y": 273.0
+          },
+          "contour_vertices": 191,
+          "contour_radius": 79.69031582983925,
+          "container": [
+            233,
+            221,
+            255,
+            255
+          ],
+          "backing": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "ink": [
+            32,
+            16,
+            71,
+            255
+          ],
+          "contrast": 13.25,
+          "pixels": {
+            "center": [
+              32,
+              16,
+              71,
+              255
+            ],
+            "rim": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "corner": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "classified": {
+              "interior": 110,
+              "exterior": 106
+            }
+          }
+        }
+      },
+      "captures": [
+        {
+          "name": "loading-wide-240.png",
+          "sha256": "7aed684709d34ad95f231c6d49819d1da7b489ebe5f7eebec7cafb43b00f9e70",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ]
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    }
+  }
+}
