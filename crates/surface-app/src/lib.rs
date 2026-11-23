@@ -60,14 +60,17 @@ use std::{
     rc::Rc,
 };
 use surface::{
-    ComputedDom, DisplayList, DomError, ExtendedDisplayList, LayoutEngine, LayoutError, MicroDom,
-    Node, NodeId, Rect, Role, TextMeasurer,
+    ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
+    LayoutError, MicroDom, Node, NodeId, Rect, Role, TextMeasurer,
 };
+
+type ContourPainter = Box<dyn Fn() -> FillContour>;
 
 /// One view of application state. Messages return through `Application::update`.
 pub struct View<M> {
     node: Node,
     children: Vec<Self>,
+    paint_contour: Option<ContourPainter>,
     activate: Option<M>,
     suppress_repeated_activation: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
@@ -118,6 +121,7 @@ impl<M> View<M> {
         Self {
             node,
             children: Vec::new(),
+            paint_contour: None,
             activate: None,
             suppress_repeated_activation: false,
             input: None,
@@ -151,6 +155,15 @@ impl<M> View<M> {
             modal_layer: None,
         }
     }
+    /// Paint a node-local contour from retained state on each rendered frame.
+    /// The contour uses the extended display list and does not change layout,
+    /// hit testing, or accessibility. Update the state during animation and
+    /// request the next frame. Rebuild the view if any semantic state changes.
+    pub fn paint_fill_contour(mut self, paint: impl Fn() -> FillContour + 'static) -> Self {
+        self.paint_contour = Some(Box::new(paint));
+        self
+    }
+
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
         self.children = children.into_iter().collect();
         self
@@ -858,6 +871,7 @@ pub struct Runtime<A: Application> {
     app: A,
     dom: MicroDom,
     bindings: BTreeMap<NodeId, Binding<A::Message>>,
+    contour_painters: Vec<(NodeId, ContourPainter)>,
     layout: LayoutEngine,
     computed: Option<ComputedDom>,
     focused: Option<String>,
@@ -905,6 +919,7 @@ impl<A: Application> Runtime<A> {
             app,
             dom: MicroDom::new(Node::new(Role::Window, "Surface")),
             bindings: BTreeMap::new(),
+            contour_painters: Vec::new(),
             layout: LayoutEngine::default(),
             computed: None,
             focused: None,
@@ -1139,6 +1154,7 @@ impl<A: Application> Runtime<A> {
             dom: &mut MicroDom,
             parent: Option<NodeId>,
             bindings: &mut BTreeMap<NodeId, Binding<M>>,
+            contour_painters: &mut Vec<(NodeId, ContourPainter)>,
             disabled: bool,
             inherited_suppression: Option<&Rc<InteractionSuppression>>,
         ) -> Result<(), AppError> {
@@ -1185,6 +1201,9 @@ impl<A: Application> Runtime<A> {
             } else {
                 dom.root()
             };
+            if let Some(paint) = view.paint_contour {
+                contour_painters.push((id, paint));
+            }
             bindings.insert(
                 id,
                 Binding {
@@ -1222,14 +1241,31 @@ impl<A: Application> Runtime<A> {
                 },
             );
             for child in view.children {
-                add(child, dom, Some(id), bindings, disabled, suppression)?;
+                add(
+                    child,
+                    dom,
+                    Some(id),
+                    bindings,
+                    contour_painters,
+                    disabled,
+                    suppression,
+                )?;
             }
             Ok(())
         }
         let view = self.app.view();
         let mut dom = MicroDom::new(view.node.clone());
         let mut bindings = BTreeMap::new();
-        add(view, &mut dom, None, &mut bindings, false, None)?;
+        let mut contour_painters = Vec::new();
+        add(
+            view,
+            &mut dom,
+            None,
+            &mut bindings,
+            &mut contour_painters,
+            false,
+            None,
+        )?;
         for (key, (x, y)) in &self.scroll {
             if let Some(id) = dom.by_id(key) {
                 let mut style = dom.get(id)?.style().clone();
@@ -1253,6 +1289,7 @@ impl<A: Application> Runtime<A> {
             .map(Node::role);
         self.dom = dom;
         self.bindings = bindings;
+        self.contour_painters = contour_painters;
         self.reconcile_editors();
         self.computed = None;
         self.reconcile_controls(focus_after_removal, retained_roving_focus);
@@ -1414,6 +1451,9 @@ impl<A: Application> Runtime<A> {
         };
         self.present_motion(&mut display_dom, &computed, focused, interaction)?;
         self.present_press_ripple(&mut display_dom, &computed)?;
+        for (id, paint) in &self.contour_painters {
+            display_dom.set_presented_fill_contour(*id, paint())?;
+        }
         let list = P::compile(&display_dom, &computed, focused, &decorations, interaction);
         #[cfg(feature = "devtools")]
         self.trace_paint(start, list.len());

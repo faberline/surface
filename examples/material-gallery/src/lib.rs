@@ -15,6 +15,7 @@ mod list_expand_demo;
 mod list_media_demo;
 mod list_reorder_demo;
 mod lists_demo;
+mod loading_indicator_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
@@ -46,6 +47,7 @@ use list_expand_demo::{ListExpandDemo, ListExpandEvent};
 use list_media_demo::{ListMediaDemo, ListMediaEvent};
 use list_reorder_demo::{ListReorderDemo, ListReorderEvent};
 use lists_demo::{ListsDemo, ListsEvent};
+use loading_indicator_demo::{LoadingDemo, LoadingEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -59,7 +61,7 @@ use surface_app::{
 };
 use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
-    IconButtonKind, LoadingKind, NavigationRailItem, SegmentPosition, Theme,
+    IconButtonKind, NavigationRailItem, SegmentPosition, Theme,
 };
 use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
 use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
@@ -94,6 +96,7 @@ pub struct Gallery {
     badge_demo: BadgeDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
+    loading_demo: LoadingDemo,
     side_sheet_demo: SideSheetDemo,
     bottom_sheet_demo: BottomSheetDemo,
     button_group_demo: ButtonGroupDemo,
@@ -147,6 +150,7 @@ impl Default for Gallery {
             badge_demo: BadgeDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
+            loading_demo: LoadingDemo::default(),
             side_sheet_demo: SideSheetDemo::default(),
             bottom_sheet_demo: BottomSheetDemo::default(),
             button_group_demo: ButtonGroupDemo::default(),
@@ -186,6 +190,7 @@ pub enum Message {
     Drawer(usize),
     DrawerDemo(DrawerDemoEvent),
     Progress(ProgressEvent),
+    Loading(LoadingEvent),
     SideSheet(SideSheetEvent),
     BottomSheet(BottomSheetEvent),
     ButtonGroup(ButtonGroupEvent),
@@ -236,6 +241,9 @@ impl Application for Gallery {
         }
         if self.progress_demo.visible() {
             return self.progress_demo.text_scale();
+        }
+        if self.loading_demo.visible() {
+            return self.loading_demo.text_scale();
         }
         if self.side_sheet_demo.visible() {
             return self.side_sheet_demo.text_scale();
@@ -320,6 +328,7 @@ impl Application for Gallery {
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
         let progress = self.progress_demo.viewport_changed(width);
+        let loading = self.loading_demo.viewport_changed(width);
         let side_sheet = self.side_sheet_demo.viewport_changed(width, height);
         let bottom_sheet = self.bottom_sheet_demo.viewport_changed(height);
         let button_group = self.button_group_demo.viewport_changed(width);
@@ -343,6 +352,7 @@ impl Application for Gallery {
         (self.section == wide_navigation_rail_demo::SECTION && (inline || modal))
             || (self.drawer_demo.visible() && drawer)
             || (self.progress_demo.visible() && progress)
+            || (self.loading_demo.visible() && loading)
             || (self.side_sheet_demo.visible() && side_sheet)
             || (self.bottom_sheet_demo.visible() && bottom_sheet)
             || button_group
@@ -452,6 +462,7 @@ impl Application for Gallery {
         let snackbar = self.snackbar_demo.frame(&frame);
         let drawer = self.drawer_demo.frame(&frame);
         let progress = self.progress_demo.frame(&frame);
+        let loading = self.loading_demo.frame(&frame);
         let side_sheet = self.side_sheet_demo.frame(&frame);
         let bottom_sheet = self.bottom_sheet_demo.frame(&frame);
         let carousel = self.carousel_demo.frame(&frame);
@@ -467,6 +478,7 @@ impl Application for Gallery {
                 || snackbar.rebuild
                 || drawer.rebuild
                 || progress.rebuild
+                || loading.rebuild
                 || side_sheet.rebuild
                 || bottom_sheet.rebuild
                 || carousel.rebuild
@@ -481,6 +493,7 @@ impl Application for Gallery {
                 || snackbar.request_next
                 || drawer.request_next
                 || progress.request_next
+                || loading.request_next
                 || side_sheet.request_next
                 || bottom_sheet.request_next
                 || carousel.request_next
@@ -502,6 +515,9 @@ impl Application for Gallery {
                 }
                 if i != progress_demo::SECTION {
                     self.progress_demo.leave();
+                }
+                if i != loading_indicator_demo::SECTION {
+                    self.loading_demo.leave();
                 }
                 if i != side_sheet_demo::SECTION {
                     self.side_sheet_demo.leave();
@@ -574,6 +590,7 @@ impl Application for Gallery {
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
+            Message::Loading(event) => self.loading_demo.update(event),
             Message::SideSheet(event) => self.side_sheet_demo.update(event),
             Message::BottomSheet(event) => self.bottom_sheet_demo.update(event),
             Message::ButtonGroup(event) => self.button_group_demo.update(event),
@@ -646,6 +663,9 @@ impl Application for Gallery {
         }
         if self.progress_demo.visible() {
             return self.progress_demo.view(&t, self.dark);
+        }
+        if self.loading_demo.visible() {
+            return self.loading_demo.view(&t, self.dark);
         }
         if self.side_sheet_demo.visible() {
             return self.side_sheet_demo.view(&t, self.dark);
@@ -1060,20 +1080,7 @@ impl Application for Gallery {
                                 Message::Click,
                             ),
                         ]),
-                        t.row([
-                            t.loading_indicator(
-                                "loading-default",
-                                "Loading",
-                                LoadingKind::Default,
-                                0.,
-                            ),
-                            t.loading_indicator(
-                                "loading-contained",
-                                "Loading contained",
-                                LoadingKind::Contained,
-                                0.,
-                            ),
-                        ]),
+                        LoadingDemo::show_button(&t),
                     ],
                 ));
                 if self.input_chip {
@@ -1386,6 +1393,7 @@ mod web {
         });
         let theme = if s.dark { Theme::dark() } else { Theme::light() };
         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
+        state["loading"] = s.loading_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

@@ -675,6 +675,19 @@ impl Raster {
         })
     }
 
+    /// Sample one logical canvas point from the decoded device-pixel PNG.
+    pub(super) fn sample(&self, x: f64, y: f64) -> Result<Rgb> {
+        let px = ((self.canvas[0] + x) * self.scale).floor();
+        let py = ((self.canvas[1] + y) * self.scale).floor();
+        if !(0. ..f64::from(self.frame.width)).contains(&px)
+            || !(0. ..f64::from(self.frame.height)).contains(&py)
+        {
+            anyhow::bail!("canvas point ({x}, {y}) is outside the Chrome PNG");
+        }
+        let offset = py as usize * self.frame.line_size + px as usize * self.channels;
+        Ok(self.bytes[offset..offset + 3].try_into()?)
+    }
+
     pub(super) fn colors(&self, rect: Rect) -> Result<BTreeMap<Rgb, usize>> {
         let [x, y, w, h] = rect;
         let px = |x: f64| ((self.canvas[0] + x) * self.scale).round() as usize;

@@ -3,6 +3,8 @@ use surface_wgpu::{Renderer, TextSystem};
 
 #[path = "it/list_ripple.rs"]
 mod list_ripple;
+#[path = "it/loading_indicator.rs"]
+mod loading_indicator;
 
 /// A copy of the bundled font that claims weight 700 and half the units per em,
 /// so every glyph is twice as wide. It is built in memory for this test only.

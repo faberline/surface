@@ -1,5 +1,6 @@
 use crate::{
     badge::badge_headroom,
+    loading_indicator::{loading_container, ACTIVE_SIZE, DEFAULT_SIZE},
     motion::STATE_CHANGE,
     shape::{self, LayoutDirection},
     tokens::blend,
@@ -346,8 +347,8 @@ impl Theme {
         view
     }
     /// Indeterminate loading indicator. The application owns `phase` (0 to 1)
-    /// and changes it over time. It draws the shape cycle by corner radius;
-    /// it does not rotate or morph polygons yet.
+    /// and changes it over time. See [`Theme::loading_indicator_with_motion`]
+    /// for the continuous contour animation.
     pub fn loading_indicator<M>(
         &self,
         id: &str,
@@ -355,23 +356,10 @@ impl Theme {
         kind: LoadingKind,
         phase: f32,
     ) -> View<M> {
-        let indicator = match kind {
-            LoadingKind::Default => self.colors.primary,
-            LoadingKind::Contained => self.colors.on_primary_container,
-        };
-        let mut outer = Style::row()
-            .align(Align::Center)
-            .justify(Align::Center)
-            .width(Length::Px(48.))
-            .height(Length::Px(48.));
-        if kind == LoadingKind::Contained {
-            outer = outer
-                .corners(shape::FULL)
-                .background(self.colors.primary_container);
-        }
+        let (outer, indicator) = loading_container(self, kind, DEFAULT_SIZE);
         let shape = Style::default()
-            .width(Length::Px(38.))
-            .height(Length::Px(38.))
+            .width(Length::Px(ACTIVE_SIZE))
+            .height(Length::Px(ACTIVE_SIZE))
             .corners(loading_corners(phase))
             .background(indicator);
         View::new(Node::new(Role::Progress, name).id(id).styled(outer)).children([box_view(shape)])
