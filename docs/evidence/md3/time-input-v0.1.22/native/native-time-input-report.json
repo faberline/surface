@@ -1,0 +1,318 @@
+{
+  "source_manifest_sha256": "7c43156683b9704c678bbcb9ccaa94ba91ca271accd4b3a02dd17ac18f0a1207",
+  "gallery_sha256": "82adb5a950f2f7c30fb38cdaf0214b8ddeaaf6200c2fb76b529e1c77982e7cf9",
+  "cli_sha256": "21bfa7948db8abb953d9b74b9e630c4ba63be78fa5b209eae8e17d9198f256cf",
+  "headless_renderer": "WGPU native macOS",
+  "input_source": "DevTools semantic key, action and fill",
+  "external_input_boundary": "Hardware IME and scrim pointer events are outside this replay",
+  "inline": {
+    "roundtrip_digits": [
+      "１２",
+      "５"
+    ],
+    "hints": {
+      "hour": "1–12",
+      "minute": "0–59"
+    },
+    "period_tab_path": [
+      "time-input-inline-am"
+    ],
+    "period_arrow": "down",
+    "midnight": "00:05",
+    "noon_after_submit": "12:05",
+    "image": {
+      "name": "inline-light-midnight.png",
+      "sha256": "7fc31ce25b240324171d640b9de7f8e264cd5017775f85584ab9b56f06e5701a",
+      "format": "png",
+      "width": 960,
+      "height": 800,
+      "scale": 1.0
+    },
+    "onscreen_windows": {
+      "before": 0,
+      "after": 0
+    }
+  },
+  "wide_modal": {
+    "panel": {
+      "height": 236.0,
+      "width": 264.0,
+      "x": 348.0,
+      "y": 282.0
+    },
+    "initial": "09:07",
+    "saved": "23:59",
+    "hour_error": "小時須介於 0 與 23",
+    "minute_error": "分鐘須介於 0 與 59",
+    "confirm_tab_path": [
+      "time-input-modal-minute-input",
+      "time-input-modal-cancel",
+      "time-input-modal-confirm"
+    ],
+    "invalid_confirm_tab_path": [
+      "time-input-modal-cancel",
+      "time-input-modal-confirm"
+    ],
+    "cancel_tab_path": [
+      "time-input-modal-minute-input",
+      "time-input-modal-cancel"
+    ],
+    "outside_semantic_action_rejected": true,
+    "japanese_normalized_draft": [
+      "０９",
+      "０７"
+    ],
+    "focus_restored": "time-input-demo-modal-open",
+    "images": [
+      {
+        "name": "modal-light-independent-error.png",
+        "sha256": "c673f989033d5cd443b89964a5f23f80eb335565b75d2b5d16c6c6bd3dbd3cad",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0
+      },
+      {
+        "name": "modal-light-valid.png",
+        "sha256": "cca20345bba3d05af42d5caab85a4d14f9770b22608646e1bba366c7c21bef16",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0
+      },
+      {
+        "name": "modal-light-japanese.png",
+        "sha256": "ae6884efa96f6d54ce20d7076e1803d89ad31c5e310744eded745dec4889941d",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0,
+        "ink": {
+          "time-input-modal-title": {
+            "bounds": {
+              "height": 28.0,
+              "width": 240.0,
+              "x": 360.0,
+              "y": 294.0
+            },
+            "ink_bounds": [
+              362,
+              300,
+              106,
+              20
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 431
+          },
+          "time-input-modal-hour-label": {
+            "bounds": {
+              "height": 20.0,
+              "width": 112.0,
+              "x": 360.0,
+              "y": 334.0
+            },
+            "ink_bounds": [
+              361,
+              338,
+              12,
+              14
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 63
+          },
+          "time-input-modal-minute-label": {
+            "bounds": {
+              "height": 20.0,
+              "width": 112.0,
+              "x": 488.0,
+              "y": 334.0
+            },
+            "ink_bounds": [
+              489,
+              338,
+              12,
+              14
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 37
+          },
+          "time-input-modal-hour-input": {
+            "bounds": {
+              "height": 72.0,
+              "width": 112.0,
+              "x": 360.0,
+              "y": 358.0
+            },
+            "ink_bounds": [
+              371,
+              372,
+              33,
+              16
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 122
+          },
+          "time-input-modal-minute-input": {
+            "bounds": {
+              "height": 72.0,
+              "width": 112.0,
+              "x": 488.0,
+              "y": 358.0
+            },
+            "ink_bounds": [
+              499,
+              364,
+              34,
+              28
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 135
+          },
+          "time-input-modal-hour-hint": {
+            "bounds": {
+              "height": 16.0,
+              "width": 112.0,
+              "x": 360.0,
+              "y": 434.0
+            },
+            "ink_bounds": [
+              363,
+              438,
+              36,
+              9
+            ],
+            "rgba": [
+              73,
+              69,
+              78,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 56
+          },
+          "time-input-modal-minute-hint": {
+            "bounds": {
+              "height": 16.0,
+              "width": 112.0,
+              "x": 488.0,
+              "y": 434.0
+            },
+            "ink_bounds": [
+              491,
+              438,
+              36,
+              9
+            ],
+            "rgba": [
+              73,
+              69,
+              78,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 56
+          }
+        }
+      }
+    ],
+    "onscreen_windows": {
+      "before": 0,
+      "after": 0
+    }
+  },
+  "compact": {
+    "viewport": [
+      320,
+      240
+    ],
+    "rtl": true,
+    "text_scale": 2,
+    "panel": {
+      "height": 224.0,
+      "width": 304.0,
+      "x": 8.0,
+      "y": 8.0
+    },
+    "hour": {
+      "height": 72.0,
+      "width": 132.0,
+      "x": 168.0,
+      "y": 54.0
+    },
+    "minute": {
+      "height": 72.0,
+      "width": 132.0,
+      "x": 20.0,
+      "y": 54.0
+    },
+    "hour_hint": "1–12",
+    "minute_hint": "0–59",
+    "hour_hint_bounds": {
+      "height": 32.0,
+      "width": 132.0,
+      "x": 168.0,
+      "y": 128.0
+    },
+    "minute_hint_bounds": {
+      "height": 32.0,
+      "width": 132.0,
+      "x": 20.0,
+      "y": 128.0
+    },
+    "cancel": {
+      "height": 48.0,
+      "width": 136.0,
+      "x": 164.0,
+      "y": 172.0
+    },
+    "confirm": {
+      "height": 48.0,
+      "width": 136.0,
+      "x": 20.0,
+      "y": 172.0
+    },
+    "focus_restored": "time-input-demo-modal-open",
+    "image": {
+      "name": "modal-dark-rtl-200.png",
+      "sha256": "ac4cca71d46de12825aae80eef2a105cbe01f935012d283fdc77d3c8cc0923bd",
+      "format": "png",
+      "width": 320,
+      "height": 240,
+      "scale": 1.0
+    },
+    "onscreen_windows": {
+      "before": 0,
+      "after": 0
+    }
+  }
+}
