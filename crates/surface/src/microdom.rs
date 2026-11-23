@@ -896,6 +896,21 @@ impl MicroDom {
         Ok(())
     }
 
+    /// Set a node-local contour on the display copy. This does not affect layout.
+    #[doc(hidden)]
+    pub fn set_presented_fill_contour(
+        &mut self,
+        id: NodeId,
+        contour: crate::FillContour,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        node.fill_contour = Some(contour);
+        Ok(())
+    }
+
     pub fn set_text(&mut self, id: NodeId, text: impl Into<String>) -> Result<(), DomError> {
         let n = self
             .nodes

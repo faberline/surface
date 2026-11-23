@@ -105,9 +105,10 @@
       "spec": "https://m3.material.io/components/loading-indicator/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Default and contained kinds at the M3 sizes; progress role without a range; shape step follows the application phase"
+      "desktop_evidence": "Two native headless Gallery runs reproduce the static shapes, focus, narrow dark RTL at 200% text and wide 240 dp PNGs via Page.screenshot, CLI and MCP. The offscreen Metal renderer measures all seven poses, a mid-morph pose, and the static Reduce Motion frame. https://github.com/faberline/surface/tree/277078fd2dfa034345063547041793f79e227f3e/docs/evidence/md3/loading-indicator-v0.1.35",
+      "web_evidence": "Chrome WebGPU M201–M204 measure the palette, seven silhouettes and the spring between them, continuous angle across wraps, stable Chrome accessibility identities, adaptive sizes and zero requested frames while reduced or stopped. https://github.com/faberline/surface/tree/277078fd2dfa034345063547041793f79e227f3e/docs/evidence/md3/loading-indicator-v0.1.35",
+      "implemented": "Standalone Expressive Default and Contained with 24–240 dp sizes, the 48/38 dp default and active boxes, seven continuously morphing silhouettes, clockwise spin, and a stationary Reduce Motion pose. Applications mount one named progress role without a numeric range or Tab stop. The prior manual phase API remains available. Pull-to-refresh, the AndroidX determinate overload, custom palettes, live screen-reader speech, and system high contrast remain open.",
+      "unit_evidence": "Exact-clock Rust tests check 650 ms shape steps, the spring peak and continuous settling tail, the 4,666 ms spin, layout and color roles, passive paint, progress without a range, and reset on idle or Reduce Motion. Generated contour tests sweep all seven shape pairs through overshoot."
     },
     {
       "id": "progress-indicators",

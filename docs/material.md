@@ -166,7 +166,7 @@ does not change application state.
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
 | `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
-| `loading_indicator` | Default and contained; light and dark; phase set by the application; shape cycle by corner radius, no rotation or polygon morph yet |
+| `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
 | `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
@@ -329,6 +329,43 @@ value, direction, motion, theme and text size. The sample uses the
 [Material 3 progress indicator guidelines](https://m3.material.io/components/progress-indicators/overview),
 the [pinned flat AndroidX implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/ProgressIndicator.kt)
 and the [pinned wavy implementation](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/WavyProgressIndicator.kt).
+
+## Expressive loading indicator
+
+Retain one `LoadingIndicatorMotion` while an operation is in progress.
+In `Application::animation_frame`, call `motion.advance(&frame, active)`.
+Return its `AnimationUpdate`, or combine it with the other updates.
+Mount an indicator while the operation is active.
+
+```rust
+theme.loading_indicator_with_motion(
+    LoadingIndicatorOptions { id: "load-results", name: "Loading results",
+        kind: LoadingKind::Contained, size: 48. },
+    &motion,
+)
+```
+
+Use a stable ID and a localized name for the task. Each variant exposes one
+read-only progress indicator without a numeric value or a Tab stop.
+Default paints the active shape in Primary. Contained uses a
+Primary Container circle with an On Primary Container shape. The default
+square is 48 dp with a 38 dp active box. Sizes from 24 to 240 dp keep
+that ratio. The legacy `Theme::loading_indicator` accepts a manual phase.
+
+The seven shapes follow the pinned AndroidX sequence. A spring moves
+between shapes every 650 ms. A separate spin turns once in 4,666 ms.
+Surface eases the end of the spring to the next shape by 450 ms so the
+rotation stays continuous. Each animation frame updates the paint and
+keeps the same accessibility node. With Reduce Motion or without a
+clock, the indicator shows its first pose and stops requesting frames.
+
+In Material Gallery, choose 動作, then 載入指示器. Start or stop the task.
+Switch size, theme, direction, and text scale. The headless native
+Gallery captures its stationary pose.
+
+[Material 3 loading indicator specs](https://m3.material.io/components/loading-indicator/specs) ·
+[Pinned AndroidX motion and shapes](https://android.googlesource.com/platform/frameworks/support/+/428942a35fedec39ca7253a473a2ec3be06f614c/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/LoadingIndicator.kt#380) ·
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
 
 ## Date picker
 

@@ -46,6 +46,8 @@ mod material_list_ripple;
 mod material_lists;
 #[path = "material_lists_multi.rs"]
 mod material_lists_multi;
+#[path = "material_loading.rs"]
+mod material_loading;
 #[path = "material_progress.rs"]
 mod material_progress;
 #[path = "material_rail.rs"]
@@ -92,7 +94,8 @@ pub const STEPS: &[&str] = &[
     "M155", "M156", "M157", "M158", "M159", "M160", "M161", "M162", "M163", "M164", "M165", "M166",
     "M167", "M168", "M169", "M170", "M171", "M172", "M173", "M174", "M175", "M176", "M177", "M178",
     "M179", "M180", "M181", "M182", "M183", "M184", "M185", "M186", "M187", "M188", "M189", "M190",
-    "M191", "M192", "M193", "M194", "M195", "M196", "M197", "M198", "M199", "M200",
+    "M191", "M192", "M193", "M194", "M195", "M196", "M197", "M198", "M199", "M200", "M201", "M202",
+    "M203", "M204",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -198,7 +201,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_list_reorder::run(env, chrome, &url).await?;
     material_list_media::run(env, chrome, &url).await?;
     material_list_corners::run(env, chrome, &url).await?;
-    material_list_ripple::run(env, chrome, &url).await
+    material_list_ripple::run(env, chrome, &url).await?;
+    material_loading::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

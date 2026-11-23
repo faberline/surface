@@ -31,6 +31,7 @@ mod fab_menu_layout;
 mod fab_menu_motion;
 mod fab_motion;
 mod list;
+mod loading_indicator;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
@@ -124,6 +125,9 @@ pub use list::{
     ListReorderState, ListStyle, ListSupplementaryAction, MediaListItem, MediaListMode,
     MediaListOptions, MultiActionListItem, MultiActionListOptions, MultiSelectListOptions,
     ReorderableListItem, ReorderableListOptions,
+};
+pub use loading_indicator::{
+    LoadingIndicatorMotion, LoadingIndicatorOptions, LoadingIndicatorPose,
 };
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
