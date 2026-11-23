@@ -53,15 +53,18 @@ SURFACE_GPU_EVIDENCE="$scratch_dir/gpu-offscreen.png" \
 
 M112–M115 check the Chrome accessibility tree, grid roles, date
 selection, unavailable days, today, year pages, keyboard navigation,
-dismissal, and descriptions on the real active textarea. The test
+dismissal, vertical wheel scrolling over a compact date grid, and
+descriptions on the real active textarea. The test
 driver uses Chrome composition events to check that Enter during
 composition does not commit the date. A separate Enter submits the
 date after the composition ends.
 
-Chrome/157.0.8103.79 used Apple Metal 3. All five cases passed 6,627 checks. Material passed 114 steps and 6,379 checks.
+Chrome/157.0.8103.79 used Apple Metal 3. All five cases passed 6,631 checks. Material passed 114 steps and 6,383 checks.
 
 [Browser date picker report](web/browser-material-date-picker.json) ·
-[Five cases](web/headless-results.txt)
+[Five cases](web/headless-results.txt) ·
+[Wheel before the fix](web/compact-wheel-before.json) ·
+[Wheel after the fix](web/compact-wheel-after.json)
 
 Install the `wasm32-unknown-unknown` Rust target. Put the matching
 `wasm-bindgen` CLI and `wasm-opt` on `PATH`. The hosted workflow uses
@@ -94,7 +97,7 @@ cap "$CARGO_TARGET_DIR/debug/surface-e2e" \
 The hosted workflow uses a virtual display for three additional suites.
 The AccessKit tree has focused unit evidence. Live AppKit and VoiceOver
 behavior, OS high contrast and physical input still need verification.
-Docked pickers and date ranges remain tracked in issue #20.
+Docked pickers, date ranges and swipe paging remain tracked in issue #20.
 
 [Google Date Picker](https://m3.material.io/components/date-pickers/specs) ·
 [Published token table](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.01c5310367774eb8.json) ·
