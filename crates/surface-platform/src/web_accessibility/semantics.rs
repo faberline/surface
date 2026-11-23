@@ -93,6 +93,27 @@ pub(super) fn element(
                 set_bool(&element, "aria-selected", selected)?;
             }
         }
+        Some("spinbutton") => {
+            if let Some(range) = node.accessibility_adjustable() {
+                element.set_attribute("aria-valuemin", &range.min.to_string())?;
+                element.set_attribute("aria-valuemax", &range.max.to_string())?;
+                if let Some(value) = range.value {
+                    element.set_attribute("aria-valuenow", &value.to_string())?;
+                }
+                if let Some(text) = range
+                    .value_text
+                    .as_deref()
+                    .filter(|text| !text.trim().is_empty())
+                {
+                    element.set_attribute("aria-valuetext", text)?;
+                    if range.value.is_none() {
+                        // Chrome exposes a default numeric zero and can drop
+                        // value text when the authored current value is absent.
+                        element.set_attribute("aria-description", text)?;
+                    }
+                }
+            }
+        }
         Some("slider" | "progressbar") => {
             if let Some(range) = node.range_value().filter(|range| range.is_valid()) {
                 element.set_attribute("aria-valuemin", &range.min.to_string())?;
@@ -119,6 +140,9 @@ fn aria_role(node: &Node) -> Option<&'static str> {
             GridRole::ColumnHeader => "columnheader",
             GridRole::GridCell => "gridcell",
         });
+    }
+    if node.accessibility_adjustable().is_some() {
+        return Some("spinbutton");
     }
     Some(match node.role() {
         Role::Group if node.name().trim().is_empty() && !node.is_focusable() => return None,

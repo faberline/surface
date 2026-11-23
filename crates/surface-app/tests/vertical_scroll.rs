@@ -25,6 +25,7 @@ struct App {
     nested: bool,
     disabled: bool,
     modal_open: bool,
+    move_inner_after_wheel: bool,
     observed: Vec<(&'static str, VerticalScroll)>,
 }
 
@@ -82,8 +83,11 @@ impl Application for App {
         let inner = self
             .nested
             .then(|| scroller("inner", 60., self.hook, false).children(rows("inner")));
+        let space = (self.move_inner_after_wheel && !self.observed.is_empty()).then(|| {
+            View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(65.))))
+        });
         let outer = scroller("outer", 100., self.hook, self.disabled)
-            .children(inner.into_iter().chain(rows("outer")));
+            .children(space.into_iter().chain(inner).chain(rows("outer")));
         let modal = self.modal_open.then(|| {
             View::new(
                 Node::new(Role::Dialog, "Modal")
@@ -116,16 +120,20 @@ fn runtime(app: App) -> Runtime<App> {
 }
 
 fn wheel(runtime: &mut Runtime<App>, dx: f32, dy: f32) -> bool {
-    let handled = runtime
+    let handled = wheel_input(runtime, dx, dy);
+    render(runtime);
+    handled
+}
+
+fn wheel_input(runtime: &mut Runtime<App>, dx: f32, dy: f32) -> bool {
+    runtime
         .dispatch(Event::Scroll {
             x: 30.,
             y: 30.,
             delta_x: dx,
             delta_y: dy,
         })
-        .unwrap();
-    render(runtime);
-    handled
+        .unwrap()
 }
 
 fn offset(runtime: &Runtime<App>, id: &str) -> (f32, f32) {
@@ -263,4 +271,75 @@ fn hook_ignores_nonvertical_invalid_and_out_of_scope_events() {
     assert!(!wheel(&mut runtime, 0., 30.));
     assert!(runtime.app().observed.is_empty());
     assert_eq!(offset(&runtime, "outer"), (17., 0.));
+}
+
+#[test]
+fn a_wheel_burst_between_frames_keeps_each_sample_and_current_offsets() {
+    let mut runtime = runtime(App {
+        hook: Hook::Partial(5.),
+        ..App::default()
+    });
+    for delta in [15., 12., -7.] {
+        assert!(wheel_input(&mut runtime, 0., delta));
+    }
+    assert_eq!(runtime.app().observed.len(), 1);
+    render(&mut runtime);
+    assert_eq!(
+        runtime
+            .app()
+            .observed
+            .iter()
+            .map(|(target, scroll)| (*target, scroll.delta, scroll.offset))
+            .collect::<Vec<_>>(),
+        [("outer", 15., 0.), ("outer", 12., 10.), ("outer", -7., 17.)]
+    );
+    assert_eq!(offset(&runtime, "outer"), (0., 15.));
+}
+
+#[test]
+fn a_moved_or_newly_out_of_scope_owner_never_retargets_queued_wheel_samples() {
+    let mut moved = runtime(App {
+        hook: Hook::Partial(50.),
+        nested: true,
+        move_inner_after_wheel: true,
+        ..App::default()
+    });
+    assert!(wheel_input(&mut moved, 0., 10.));
+    assert!(wheel_input(&mut moved, 0., 10.));
+    render(&mut moved);
+    assert!(matches!(moved.app().observed.as_slice(), [("inner", _)]));
+    assert!(wheel(&mut moved, 0., 10.));
+    assert!(matches!(
+        moved.app().observed.as_slice(),
+        [("inner", _), ("outer", _)]
+    ));
+
+    let mut modal = runtime(App {
+        hook: Hook::Partial(30.),
+        ..App::default()
+    });
+    assert!(wheel_input(&mut modal, 0., 10.));
+    assert!(wheel_input(&mut modal, 0., 10.));
+    modal.apply(Message::OpenModal).unwrap();
+    render(&mut modal);
+    assert_eq!(modal.app().observed.len(), 1);
+    assert!(!wheel(&mut modal, 0., 10.));
+    assert_eq!(modal.app().observed.len(), 1);
+}
+
+#[test]
+fn a_pending_app_update_can_replace_the_route_before_replay() {
+    let mut runtime = runtime(App {
+        hook: Hook::Partial(30.),
+        ..App::default()
+    });
+    assert!(wheel_input(&mut runtime, 0., 10.));
+    assert!(wheel_input(&mut runtime, 0., 10.));
+    runtime.queue().post(Message::OpenModal);
+    render(&mut runtime);
+    runtime.flush().unwrap();
+    render(&mut runtime);
+    assert!(runtime.app().modal_open);
+    assert_eq!(runtime.app().observed.len(), 1);
+    assert!(!wheel(&mut runtime, 0., 10.));
 }

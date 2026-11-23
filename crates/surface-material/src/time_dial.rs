@@ -15,7 +15,7 @@ use surface_app::{EditKey, FocusNavigation, Key, KeyPress, PointDrag, Roving, Vi
 use crate::{
     date_picker::{button, disabled_ink, text, TARGET},
     shape,
-    time_input::{TimeInput, PANEL_MARGIN, PANEL_PADDING},
+    time_input::{keyboard_icon, TimeInput, PANEL_MARGIN, PANEL_PADDING},
     typography,
     vector_icon::VectorIconSize,
     ClockFormat, DialEvent, DialMode, DialPoint, DialState, Theme, TimeField, TimeInputOptions,
@@ -178,6 +178,7 @@ impl Theme {
                 options: options.input,
                 session: state.input(),
                 emit: Rc::new(move |event| emit_input(DialEvent::Input(event))),
+                editor_fallback_suffix: None,
             },
             labels: options.labels,
             scale: effective_scale(options.text_scale),
@@ -353,11 +354,11 @@ impl<M: Clone + 'static> Dial<'_, '_, M> {
             )
             .children(
                 std::iter::once(fields)
-                    .chain(period.map(|value| self.input.dial_period(value, true, PERIOD_WIDTH))),
+                    .chain(period.map(|value| self.input.picker_period(value, true, PERIOD_WIDTH))),
             );
             vec![title, row, help]
         } else {
-            let period = period.map(|value| self.input.dial_period(value, false, 100.));
+            let period = period.map(|value| self.input.picker_period(value, false, 100.));
             [title, fields, help].into_iter().chain(period).collect()
         };
         let mut style = Style::column().width(Length::Px(width)).gap(BODY_GAP);
@@ -890,7 +891,9 @@ fn absolute(x: f32, y: f32, size: f32) -> Style {
 }
 
 fn mode_icon(mode: DialMode) -> VectorIcon {
-    let rect = |x, y, w, h| vec![[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+    if mode == DialMode::Input {
+        return keyboard_icon();
+    }
     let ring = |r: f32| {
         (0..32)
             .map(|index| {
@@ -899,28 +902,17 @@ fn mode_icon(mode: DialMode) -> VectorIcon {
             })
             .collect::<Vec<_>>()
     };
-    let contours = if mode == DialMode::Input {
+    VectorIcon::from_contours([
+        ring(10.),
+        ring(8.),
         vec![
-            rect(2., 5., 20., 14.),
-            rect(4., 7., 16., 10.),
-            rect(6., 9., 2., 2.),
-            rect(11., 9., 2., 2.),
-            rect(16., 9., 2., 2.),
-            rect(7., 13., 10., 2.),
-        ]
-    } else {
-        vec![
-            ring(10.),
-            ring(8.),
-            vec![
-                [11., 6.],
-                [13., 6.],
-                [13., 11.5],
-                [17., 14.],
-                [16., 16.],
-                [11., 13.],
-            ],
-        ]
-    };
-    VectorIcon::from_contours(contours).expect("valid time-picker mode icon")
+            [11., 6.],
+            [13., 6.],
+            [13., 11.5],
+            [17., 14.],
+            [16., 16.],
+            [11., 13.],
+        ],
+    ])
+    .expect("valid time picker dial icon")
 }

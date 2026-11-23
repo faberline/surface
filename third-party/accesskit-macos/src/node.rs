@@ -391,14 +391,16 @@ impl NodeWrapper<'_> {
             }
         }
         let numeric = self.0.numeric_value().map(Value::Number);
-        if self.0.role() == Role::Slider && numeric.is_some() {
+        if matches!(self.0.role(), Role::Slider | Role::SpinButton) && numeric.is_some() {
             return numeric;
         }
         self.0.value().map(Value::String).or(numeric)
     }
 
     pub(crate) fn value_description(&self) -> Option<&str> {
-        if self.0.role() == Role::Slider && self.0.numeric_value().is_some() {
+        if matches!(self.0.role(), Role::Slider | Role::SpinButton)
+            && self.0.numeric_value().is_some()
+        {
             self.0.raw_value().filter(|text| !text.trim().is_empty())
         } else {
             None
@@ -1532,7 +1534,7 @@ mod tests {
     }
 
     #[test]
-    fn slider_ax_number_and_value_description_stay_separate() {
+    fn adjustable_ax_number_and_value_description_stay_separate() {
         objc2::rc::autoreleasepool(|_| {
             assert!(
                 PlatformNode::class()
@@ -1546,6 +1548,8 @@ mod tests {
                 (Role::Slider, Some(25.), None),
                 (Role::Slider, Some(25.), Some(" ")),
                 (Role::Slider, None, Some("Medium")),
+                (Role::SpinButton, Some(7.), Some("０７")),
+                (Role::SpinButton, None, Some("未設定")),
                 (Role::TextInput, None, Some("25 元")),
             ] {
                 let mut node = Node::new(role);

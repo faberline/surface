@@ -9,7 +9,9 @@ use std::{
     rc::Rc,
     sync::LazyLock,
 };
-use surface::{scroll_extent, ComputedDom, ComputedNode, MicroDom, Node, NodeId, Rect, Role};
+use surface::{
+    scroll_extent, AdjustableValue, ComputedDom, ComputedNode, MicroDom, Node, NodeId, Rect, Role,
+};
 
 static EMPTY_ROOT: LazyLock<Node> = LazyLock::new(|| Node::new(Role::Group, ""));
 
@@ -120,11 +122,49 @@ pub enum AccessibilityFocusResult {
     Rebuilt,
 }
 
+/// An opt-in adjustment offered by a rendered and in-scope control.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AccessibilityAdjustmentTarget {
+    frame: AccessibilityFrameId,
+    id: NodeId,
+}
+
+/// Native platform operations on an opted-in adjustable control.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AccessibilityAdjustment {
+    Increment,
+    Decrement,
+    SetValue(f64),
+}
+
+impl AccessibilityAdjustment {
+    pub(crate) fn resolve(self, value: &AdjustableValue) -> Option<f64> {
+        match self {
+            Self::Increment => value.step_value(true),
+            Self::Decrement => value.step_value(false),
+            Self::SetValue(number) => value.resolve(number),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AccessibilityAdjustmentResult {
+    /// The view received a changed value. Publish the new rendered frame.
+    Adjusted,
+    /// The target, value or adjustment is no longer available.
+    Rejected,
+    BlockedByComposition,
+    BlockedByPointer,
+    /// Earlier queued work ran instead. Publish the new rendered frame.
+    Rebuilt,
+}
+
 #[derive(Default)]
 pub(crate) struct Revision {
     id: OnceCell<AccessibilityFrameId>,
     issued_targets: RefCell<BTreeSet<NodeId>>,
     issued_scroll_targets: RefCell<BTreeSet<NodeId>>,
+    issued_adjustment_targets: RefCell<BTreeSet<NodeId>>,
     issued_scroll_page_targets: RefCell<BTreeSet<NodeId>>,
     rendered: bool,
 }
@@ -393,6 +433,25 @@ impl<M> AccessibilityFrame<'_, M> {
         })
     }
 
+    /// Issue an action token for an enabled visible adjustable control.
+    pub fn adjustment_target(&self, id: NodeId) -> Option<AccessibilityAdjustmentTarget> {
+        self.adjustment_binding(id)?;
+        self.revision
+            .issued_adjustment_targets
+            .borrow_mut()
+            .insert(id);
+        Some(AccessibilityAdjustmentTarget {
+            frame: self.generation(),
+            id,
+        })
+    }
+
+    fn adjustment_binding(&self, id: NodeId) -> Option<(&AdjustableValue, &dyn Fn(f64) -> M)> {
+        let source = self.node(id).filter(focusable)?;
+        let range = source.node.accessibility_adjustable()?;
+        Some((range, self.bindings.get(&id)?.value.as_deref()?))
+    }
+
     fn press_binding(&self, id: NodeId) -> Option<(AccessibilityNode<'_>, &M)> {
         let node = self.node(id).filter(focusable)?;
         if !offers_press(node.node.role()) {
@@ -457,6 +516,12 @@ impl<A: Application> Runtime<A> {
                 .borrow()
                 .iter()
                 .any(|id| !frame.node(*id).is_some_and(|node| focusable(&node)))
+                || frame
+                    .revision
+                    .issued_adjustment_targets
+                    .borrow()
+                    .iter()
+                    .any(|id| frame.adjustment_binding(*id).is_none())
                 || frame
                     .revision
                     .issued_scroll_targets
@@ -746,6 +811,69 @@ impl<A: Application> Runtime<A> {
         self.focused = Some(stable_id);
         self.message(Some(message))?;
         Ok(Outcome::Activated)
+    }
+
+    /// Adjust only the control named by the current rendered action token.
+    /// AX adjustment changes a draft value without moving keyboard focus.
+    pub fn accessibility_adjust(
+        &mut self,
+        target: &AccessibilityAdjustmentTarget,
+        action: AccessibilityAdjustment,
+    ) -> Result<AccessibilityAdjustmentResult, AppError> {
+        use AccessibilityAdjustmentResult as Outcome;
+        if let Some(outcome) = self.adjustment_blocked(target)? {
+            return Ok(outcome);
+        }
+        let Some(message) = self.accessibility_frame().and_then(|frame| {
+            let (range, handler) = frame.adjustment_binding(target.id)?;
+            action.resolve(range).map(handler)
+        }) else {
+            return Ok(Outcome::Rejected);
+        };
+        // An app handler can enqueue changes behind this action.
+        if let Some(outcome) = self.adjustment_blocked(target)? {
+            return Ok(outcome);
+        }
+        self.message(Some(message))?;
+        Ok(Outcome::Adjusted)
+    }
+
+    fn adjustment_blocked(
+        &mut self,
+        target: &AccessibilityAdjustmentTarget,
+    ) -> Result<Option<AccessibilityAdjustmentResult>, AppError> {
+        use AccessibilityAdjustmentResult as Outcome;
+        if self.queue.1.get()
+            || !self.accessibility.as_ref().is_some_and(|revision| {
+                revision.rendered
+                    && revision.id.get() == Some(&target.frame)
+                    && revision
+                        .issued_adjustment_targets
+                        .borrow()
+                        .contains(&target.id)
+            })
+        {
+            return Ok(Some(Outcome::Rejected));
+        }
+        if self.editors.values().any(|editor| editor.is_composing())
+            || self.has_pending_composition()
+        {
+            return Ok(Some(Outcome::BlockedByComposition));
+        }
+        if self.accessibility_pointer_active() {
+            return Ok(Some(Outcome::BlockedByPointer));
+        }
+        if !self.queue.0.borrow().is_empty() {
+            self.flush()?;
+            return Ok(Some(Outcome::Rebuilt));
+        }
+        if !self.queue.2.borrow().is_empty() {
+            return Ok(Some(Outcome::Rejected));
+        }
+        let offered = self
+            .accessibility_frame()
+            .is_some_and(|frame| frame.adjustment_binding(target.id).is_some());
+        Ok((!offered).then_some(Outcome::Rejected))
     }
 
     fn activation_blocked(

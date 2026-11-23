@@ -8,9 +8,19 @@ use std::{
 use surface_app::{
     utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Modifiers, Runtime,
 };
-use wasm_bindgen::{closure::Closure, JsCast};
-use web_sys::{EventTarget, HtmlTextAreaElement};
+use wasm_bindgen::{closure::Closure, prelude::wasm_bindgen, JsCast};
+use web_sys::{EventTarget, HtmlTextAreaElement, PointerEvent};
 use winit::{platform::web::WindowExtWebSys, window::Window};
+
+// Use the same fractional CSS offsets as winit's web pointer backend.
+#[wasm_bindgen]
+extern "C" {
+    type PointerOffsets;
+    #[wasm_bindgen(method, getter, js_name = offsetX)]
+    fn offset_x(this: &PointerOffsets) -> f64;
+    #[wasm_bindgen(method, getter, js_name = offsetY)]
+    fn offset_y(this: &PointerOffsets) -> f64;
+}
 
 struct Listener {
     target: EventTarget,
@@ -137,8 +147,23 @@ impl<A: Application> WebInput<A> {
                 canvas.unchecked_into(),
                 "pointerdown",
                 true,
-                move |_| {
+                move |event| {
                     press.borrow_mut().press();
+                    if let Some(pointer) = event.dyn_ref::<PointerEvent>() {
+                        let offsets: &PointerOffsets = pointer.unchecked_ref();
+                        if pointer.button() == 0
+                            && runtime.borrow().pointer_preserves_composition(
+                                offsets.offset_x() as f32,
+                                offsets.offset_y() as f32,
+                            )
+                        {
+                            // Runtime rejects this down. Block the browser's
+                            // focus default and winit's explicit canvas.focus().
+                            event.prevent_default();
+                            event.stop_immediate_propagation();
+                            return;
+                        }
+                    }
                     if composing.replace(false) {
                         // Browser focus defaults can commit before winit delivers
                         // the Rust pointer event. Cancel before that default runs.

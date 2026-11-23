@@ -168,6 +168,30 @@ fn masked_view_observes_physical_x_with_clock_and_focus() {
 }
 
 #[test]
+fn a_burst_retains_each_inputs_time_across_the_next_render() {
+    let mut runtime = runtime(App::default());
+    for (time, delta) in [(75., 8.), (80., 6.), (87., -3.)] {
+        runtime.set_time(time);
+        assert!(wheel(&mut runtime, delta, 0.));
+    }
+    runtime.set_time(100.);
+    render(&mut runtime);
+    let samples: Vec<_> = runtime
+        .app()
+        .events
+        .iter()
+        .filter_map(|event| match event {
+            Message::Horizontal(scroll, _) => Some((scroll.now_ms, scroll.delta)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        samples,
+        [(Some(75.), 8.), (Some(80.), 6.), (Some(87.), -3.)]
+    );
+}
+
+#[test]
 fn a_diagonal_event_saves_both_axes_before_one_view_rebuild() {
     let mut runtime = runtime(App {
         wheel: Wheel::Managed(20.),

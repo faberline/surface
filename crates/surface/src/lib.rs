@@ -19,6 +19,7 @@ pub use props::Props;
 pub use snapshot::SurfaceSnapshot;
 pub use surface_node::{SurfaceNode, SurfaceNodeKind, SurfaceProps, SurfaceRect};
 
+mod adjustable;
 mod fill_contour;
 mod geometry;
 mod layout;
@@ -32,6 +33,7 @@ mod shape;
 mod style;
 mod text_layout;
 mod typography;
+pub use adjustable::AdjustableValue;
 pub use fill_contour::{FillContour, PathFill};
 pub use geometry::Rect;
 pub use layout::{

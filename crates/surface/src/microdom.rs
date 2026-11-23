@@ -1,5 +1,5 @@
 //! An indexed semantic tree. No browser DOM objects or renderer handles live here.
-use crate::{BoxShadow, Color, Direction, Style, TextScaling};
+use crate::{AdjustableValue, BoxShadow, Color, Direction, Style, TextScaling};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -161,6 +161,8 @@ pub struct Node {
     mixed: bool,
     #[serde(default)]
     range: Option<RangeValue>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    adjustable: Option<Box<AdjustableValue>>,
     #[serde(default)]
     tab_index: Option<i32>,
     pub(crate) style: Style,
@@ -216,6 +218,7 @@ impl Node {
             selected: None,
             mixed: false,
             range: None,
+            adjustable: None,
             tab_index: None,
             style: Style::default(),
             parent: None,
@@ -506,6 +509,18 @@ impl Node {
         self.range = Some(value);
         self
     }
+    /// Expose this named Group as an adjustable control in accessibility
+    /// adapters. Slider geometry, pointer hit testing and legacy ranges are
+    /// unchanged. Grid roles keep priority over this opt-in.
+    pub fn adjustable(mut self, value: AdjustableValue) -> Self {
+        self.adjustable = Some(Box::new(value));
+        self
+    }
+    pub fn accessibility_adjustable(&self) -> Option<&AdjustableValue> {
+        self.adjustable.as_deref().filter(|value| {
+            self.role == Role::Group && self.accessibility_grid_role().is_none() && value.is_valid()
+        })
+    }
     pub fn tab_index(mut self, value: i32) -> Self {
         self.tab_index = Some(value);
         self
@@ -549,6 +564,7 @@ impl Node {
     pub fn is_focusable(&self) -> bool {
         !self.disabled
             && (self.tab_index.is_some()
+                || self.accessibility_adjustable().is_some()
                 || matches!(
                     self.role,
                     Role::Button

@@ -23,7 +23,8 @@ mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
 pub use accessibility::{
-    AccessibilityActivationResult, AccessibilityActivationTarget, AccessibilityFocusResult,
+    AccessibilityActivationResult, AccessibilityActivationTarget, AccessibilityAdjustment,
+    AccessibilityAdjustmentResult, AccessibilityAdjustmentTarget, AccessibilityFocusResult,
     AccessibilityFocusTarget, AccessibilityFrame, AccessibilityFrameId, AccessibilityNode,
     AccessibilityScrollDirection, AccessibilityScrollPageTarget, AccessibilityScrollResult,
     AccessibilityScrollTarget,
@@ -319,6 +320,7 @@ impl<M> View<M> {
         self.text_options = options;
         self
     }
+    /// Bind a slider value or an opted-in adjustable Group.
     pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
         self.value = Some(Rc::new(handler));
         self
@@ -910,6 +912,7 @@ impl<A: Application> Runtime<A> {
     /// Invalidate pointer geometry before the next resize or scale redraw.
     pub fn pointer_geometry_changed(&mut self) -> Result<bool, AppError> {
         self.pointer_geometry_current = false;
+        self.discard_wheel_burst();
         let pointer_changed = self.pointer_position.take().is_some();
         let cancelled = if self.touch.is_some() {
             self.cancel_pointer()?
@@ -1014,6 +1017,7 @@ impl<A: Application> Runtime<A> {
         self.rebuild()
     }
     fn rebuild(&mut self) -> Result<(), AppError> {
+        self.discard_wheel_burst();
         if !self.app.observes_frame_input() {
             self.press_observation.clear();
         }
@@ -1069,6 +1073,11 @@ impl<A: Application> Runtime<A> {
                 && (node.range_value().is_none_or(|v| !v.is_valid())
                     || (!disabled && view.value.is_none()))
             {
+                return Err(AppError::InvalidRange(
+                    node.stable_id().unwrap_or(node.name()).to_owned(),
+                ));
+            }
+            if node.accessibility_adjustable().is_some() && !disabled && view.value.is_none() {
                 return Err(AppError::InvalidRange(
                     node.stable_id().unwrap_or(node.name()).to_owned(),
                 ));
@@ -1211,6 +1220,7 @@ impl<A: Application> Runtime<A> {
         if result.is_err() {
             // Roll back a live gesture without replacing the render error.
             let _ = self.cancel_pointer();
+            self.discard_wheel_burst();
             self.animation_request_next = false;
             self.computed = None;
             self.ime_area = None;
@@ -1229,6 +1239,7 @@ impl<A: Application> Runtime<A> {
     ) -> Result<P, AppError> {
         self.set_viewport(width, height)?;
         if width.is_finite() && height.is_finite() && width > 0. && height > 0. {
+            self.replay_wheel_burst(width, height, measurer)?;
             self.animate_application()?;
         }
         let text_scale = self.app.text_scale();
