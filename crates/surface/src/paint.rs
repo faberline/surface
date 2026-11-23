@@ -155,16 +155,29 @@ impl Outline {
         }
     }
 }
-/// Ordered drawing commands that retain vector fills.
+/// Ordered drawing commands that retain vector fills and live raster images.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ExtendedPaintOp {
     Legacy(PaintOp),
     FillPath(crate::PathFill),
+    /// A live resource. Use a screenshot to export its rendered pixels.
+    /// Serializing an extended list that contains this operation returns an error.
+    #[serde(skip)]
+    Raster(crate::RasterPaint),
 }
 
 trait CompileOp: From<PaintOp> {
     fn push_fill(path: crate::PathFill, push: impl FnMut(Self));
+
+    fn push_raster(
+        _image: &crate::RasterImage,
+        _rect: Rect,
+        _clip: Rect,
+        _corners: Corners,
+        _push: impl FnMut(Self),
+    ) {
+    }
 }
 
 impl CompileOp for PaintOp {
@@ -182,6 +195,18 @@ impl From<PaintOp> for ExtendedPaintOp {
 impl CompileOp for ExtendedPaintOp {
     fn push_fill(path: crate::PathFill, mut push: impl FnMut(Self)) {
         push(Self::FillPath(path));
+    }
+
+    fn push_raster(
+        image: &crate::RasterImage,
+        rect: Rect,
+        clip: Rect,
+        corners: Corners,
+        mut push: impl FnMut(Self),
+    ) {
+        if let Some(paint) = crate::RasterPaint::new(image.clone(), rect, clip, corners) {
+            push(Self::Raster(paint));
+        }
     }
 }
 
@@ -288,7 +313,7 @@ impl DisplayList {
     }
 }
 
-/// A display list that retains filled vector contours.
+/// A display list that retains filled vector contours and live raster images.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ExtendedDisplayList {
     viewport: Rect,
@@ -401,6 +426,17 @@ fn compile_into<Op: CompileOp>(
         }
         if !visible {
             continue;
+        }
+        if let Some(image) = &n.raster {
+            Op::push_raster(
+                image,
+                g.bounds,
+                g.clip,
+                corners.unwrap_or(Corners::all(s.radius)),
+                |op| {
+                    ops.push_owned(*id, op);
+                },
+            );
         }
         if s.border_width > 0. && s.border_color.3 > 0 {
             ops.push(

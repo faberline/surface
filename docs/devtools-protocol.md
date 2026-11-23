@@ -121,10 +121,10 @@ TCP.
 
 ## Native screenshots
 
-`Page.screenshot` returns the drawing commands from the frame the native
-host just presented, rendered as PNG. This keeps the capture at the same
-logical layout as the window or headless viewport. Check
-`Devtools.capabilities` for support.
+`Page.screenshot` returns a PNG of the last frame the native host presented.
+It uses the logical layout of the window or headless viewport and includes
+live raster images. DOM and `surface.paint.v1` exports omit raster pixels.
+Check `Devtools.capabilities` for screenshot support.
 
 ```json
 {"v":1,"id":8,"method":"Page.screenshot","params":{"max_side":1200},"token":"<session token>"}

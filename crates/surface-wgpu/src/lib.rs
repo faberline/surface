@@ -1,13 +1,14 @@
 //! One ordered wgpu renderer for native GPU surfaces and browser WebGPU.
 mod path;
+mod raster;
 mod text;
 use glyphon::{
     Cache, Resolution, SwashCache, TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
 };
 use std::borrow::Cow;
 use surface::{
-    Color, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PathFill, Rect,
-    TextStyle,
+    Color, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PathFill,
+    RasterPaint, Rect, TextStyle,
 };
 pub use text::TextSystem;
 use wgpu::util::DeviceExt;
@@ -37,6 +38,8 @@ pub enum ExtendedRenderError {
     Render(#[from] RenderError),
     #[error("this renderer does not support an operation in the extended display list")]
     UnsupportedOperation,
+    #[error("raster image of {width}x{height} exceeds the device's {max} pixel side limit")]
+    RasterTooLarge { width: u32, height: u32, max: u32 },
 }
 
 /// Largest width or height `Renderer::capture` accepts.
@@ -127,12 +130,14 @@ impl RasterSpace {
 enum RenderOp<'a> {
     Legacy(&'a PaintOp),
     Fill(&'a PathFill),
+    Raster(&'a RasterPaint),
 }
 
 enum Draw {
     Quad { start: u32, clip: Rect },
     Text(usize),
     Fill { index: u32, clip: Rect },
+    Raster { index: u32, clip: Rect },
 }
 /// The paint-time view shared by `Text`, `EditableText` and `StyledText`.
 struct TextRun<'a> {
@@ -208,6 +213,7 @@ pub struct Renderer {
     pub text: TextSystem,
     pipeline: wgpu::RenderPipeline,
     path_pipeline: Option<path::Pipeline>,
+    raster_pipeline: Option<raster::Pipeline>,
     atlas: TextAtlas,
     viewport: Viewport,
     cache: SwashCache,
@@ -302,6 +308,7 @@ impl Renderer {
             text: TextSystem::default(),
             pipeline,
             path_pipeline: None,
+            raster_pipeline: None,
             atlas,
             viewport,
             cache: SwashCache::new(),
@@ -444,7 +451,7 @@ impl Renderer {
         )
     }
 
-    /// Paint an ordered display list including vector fills.
+    /// Paint an ordered display list including vector fills and raster images.
     pub fn render_extended(
         &mut self,
         list: &ExtendedDisplayList,
@@ -453,10 +460,20 @@ impl Renderer {
         height: u32,
         scale: f32,
     ) -> Result<(), ExtendedRenderError> {
+        let max = self.device.limits().max_texture_dimension_2d;
         self.render_ops(
             list.ops().iter().map(|op| match op {
                 ExtendedPaintOp::Legacy(op) => Ok(RenderOp::Legacy(op)),
                 ExtendedPaintOp::FillPath(fill) => Ok(RenderOp::Fill(fill)),
+                ExtendedPaintOp::Raster(paint) => {
+                    let width = paint.image().width();
+                    let height = paint.image().height();
+                    if width > max || height > max {
+                        Err(ExtendedRenderError::RasterTooLarge { width, height, max })
+                    } else {
+                        Ok(RenderOp::Raster(paint))
+                    }
+                }
                 _ => Err(ExtendedRenderError::UnsupportedOperation),
             }),
             target,
@@ -487,6 +504,7 @@ impl Renderer {
             scale,
         };
         let mut paths = path::Frame::default();
+        let mut rasters = raster::Frame::default();
         let mut buffers = Vec::new();
         for op in ops {
             let op = match op? {
@@ -496,6 +514,20 @@ impl Renderer {
                         draws.push(Draw::Fill {
                             index,
                             clip: fill.clip(),
+                        });
+                    }
+                    continue;
+                }
+                RenderOp::Raster(paint) => {
+                    let pipeline = self
+                        .raster_pipeline
+                        .get_or_insert_with(|| raster::Pipeline::new(&self.device, self.format));
+                    if let Some(index) =
+                        rasters.push(paint, space, pipeline, &self.device, &self.queue)
+                    {
+                        draws.push(Draw::Raster {
+                            index,
+                            clip: paint.clip(),
                         });
                     }
                     continue;
@@ -620,6 +652,7 @@ impl Renderer {
                 .get_or_insert_with(|| path::Pipeline::new(&self.device, self.format));
             (paths.upload(&self.device, pipeline), pipeline)
         });
+        let raster_buffers = rasters.upload(&self.device);
         let empty_vertex = Vertex::zeroed();
         let vertex_buffer = self
             .device
@@ -668,6 +701,17 @@ impl Renderer {
                             continue;
                         };
                         if let Some((buffers, pipeline)) = &path_buffers {
+                            pass.set_scissor_rect(left, top, width, height);
+                            buffers.draw(&mut pass, pipeline, index);
+                        }
+                    }
+                    Draw::Raster { index, clip } => {
+                        let Some([left, top, width, height]) = space.scissor(clip) else {
+                            continue;
+                        };
+                        if let (Some(buffers), Some(pipeline)) =
+                            (&raster_buffers, &self.raster_pipeline)
+                        {
                             pass.set_scissor_rect(left, top, width, height);
                             buffers.draw(&mut pass, pipeline, index);
                         }
