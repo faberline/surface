@@ -568,10 +568,21 @@ impl<A: Application> Runtime<A> {
             (self.drag_candidate(self.hit(x, y), x, y) == Some(owner))
                 .then_some(PointDrag::Tap { origin, position })
         };
+        let tap = matches!(event, Some(PointDrag::Tap { .. }));
         let message = event.and_then(|event| drag.point_message(binding, event));
+        let focus_on_tap = tap
+            && message.is_some()
+            && self.bindings[&owner].focus_on_pointer_release
+            && self.dom.get(owner).is_ok_and(|node| node.is_focusable());
         self.retire_drag_tap();
         if !claimed {
             self.hovered = None;
+        }
+        if focus_on_tap {
+            if self.has_pending_composition() {
+                return Ok(true);
+            }
+            self.focused = Some(drag.id.clone());
         }
         if !release {
             drag.point.as_mut().expect("point motion exists").claimed = true;

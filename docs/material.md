@@ -172,6 +172,7 @@ does not change application state.
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
 | `switch` | Controlled on/off choice and disabled state |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
+| `scroll_field` | Inline finite numeric values with three sizes, a snap-to-center wheel, direct entry and validation |
 | `segment` | Position-aware segment: round outer ends, square inner edges, check mark when selected; single or multi select owned by the application |
 | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
@@ -608,6 +609,55 @@ action row when larger text needs more space.
 
 In Material Gallery, choose 浮層, then Baseline 時間輸入 or Baseline 錶盤.
 [Baseline time picker specification](https://m3.material.io/components/time-pickers/specs)
+
+## Scroll fields
+
+Use `Theme::scroll_field` for a finite sequence of numeric values. Create
+a `ScrollFieldRange` with distinct inclusive bounds and a positive
+step. The last value must align with the step. Retain a
+`ScrollFieldState` for each field and give it an initial value in the
+range. Pass each `ScrollFieldEvent` to `state.apply`. Save the new value
+when the method returns `Some(value)`. Call `state.sync_value` to apply
+an external change.
+
+Set a localized label and value text in `ScrollFieldOptions`. Give the
+options the available width, height and effective text scale. Use
+`scroll_field_layout` to check fit when those values change. Report the
+result to `state.update_fit` and retire the old gesture geometry with
+`state.invalidate_layout`. The direct editor stays open across resize
+and preserves active composition. It accepts ASCII and full-width
+digits. Use `with_digits` to
+display a custom set of digits and accept those digits on input.
+
+Use Up and Down to choose the adjacent value. Surface puts the larger
+value above so Up agrees with the native Increment action. Tap a
+neighbor or drag the wheel to preview a value. A drag commits on
+release. Each neighbor has a 48 dp tap area, including the region
+beyond the cropped text. The host page still receives wheel scrolling.
+
+Press Enter or Space on the wheel to open the editor. Enter accepts a
+valid value. Escape cancels the draft. The editor gives the first Enter
+to active composition. An invalid value keeps focus in the editor and
+exposes the error and its description to assistive technology.
+
+Small, Medium and Large have minimum widths of 100, 120 and 186 dp.
+Pass 120 dp for a compact face or 200 dp for a regular face. The face
+grows for larger text. The editor takes over when the wheel and its
+targets cannot fit. Medium follows the 120 dp minimum in the published
+tokens and measurement diagram. The guidelines prose gives 144 dp.
+
+Call `state.advance(frame.now_ms, frame.reduced_motion)` from
+`Application::animation_frame`. Return its frame request while the
+Expressive Fast Spatial spring settles. Reduce Motion snaps to the
+accepted value.
+
+In Material Gallery, choose 選取, then 捲動欄位. 四位數 shows the editor
+fallback in a narrow window with 大字 enabled.
+
+[Material 3 Scroll Fields specs](https://m3.material.io/components/scroll-fields/specs) ·
+[Accessibility](https://m3.material.io/components/scroll-fields/accessibility) ·
+[Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.42f95ef205743188.json) ·
+[Headless native Gallery](devtools-protocol.md#headless-native-gallery)
 
 ## FAB menus
 

@@ -349,7 +349,8 @@ impl<M> View<M> {
         self
     }
     /// Keep focus in the current control until a pointer release activates
-    /// this button. Use this when a button opens a companion to an editor.
+    /// this view. A point-drag view with this option takes focus on an accepted
+    /// tap. A completed drag keeps its previous focus.
     pub fn focus_on_pointer_release(mut self) -> Self {
         self.focus_on_pointer_release = true;
         self

@@ -35,6 +35,8 @@ mod loading_indicator;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
+mod scroll_field;
+mod scroll_field_state;
 pub mod shape;
 mod side_sheet;
 mod snackbar;
@@ -133,6 +135,13 @@ pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
+pub use scroll_field::{
+    scroll_field_layout, ScrollFieldLayout, ScrollFieldOptions, ScrollFieldSize,
+};
+pub use scroll_field_state::{
+    ScrollFieldDrag, ScrollFieldError, ScrollFieldEvent, ScrollFieldMode, ScrollFieldRange,
+    ScrollFieldState, ScrollFieldStep,
+};
 pub use side_sheet::{
     SideSheetContent, SideSheetEdge, SideSheetMotion, SideSheetOptions, SideSheetPresentation,
     SideSheetStyle,

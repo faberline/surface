@@ -181,6 +181,8 @@ pub struct Node {
     pub(crate) name: String,
     pub(crate) text: Option<String>,
     pub(crate) disabled: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    invalid: bool,
     pub(crate) checked: Option<bool>,
     #[serde(default)]
     selected: Option<bool>,
@@ -248,6 +250,7 @@ impl Node {
             name: name.into(),
             text: None,
             disabled: false,
+            invalid: false,
             checked: None,
             selected: None,
             mixed: false,
@@ -649,6 +652,12 @@ impl Node {
         self.disabled = value;
         self
     }
+
+    /// Report input validation to assistive technology.
+    pub fn invalid(mut self, value: bool) -> Self {
+        self.invalid = value;
+        self
+    }
     pub fn checked(mut self, value: bool) -> Self {
         self.checked = Some(value);
         self
@@ -710,6 +719,9 @@ impl Node {
     }
     pub fn is_disabled(&self) -> bool {
         self.disabled
+    }
+    pub fn is_invalid(&self) -> bool {
+        self.invalid
     }
     pub fn is_checked(&self) -> Option<bool> {
         self.checked

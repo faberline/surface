@@ -43,6 +43,9 @@ pub(super) fn element(
     if node.is_disabled() {
         element.set_attribute("aria-disabled", "true")?;
     }
+    if node.is_invalid() {
+        element.set_attribute("aria-invalid", "true")?;
+    }
     if let Some(expanded) = node.expanded_state() {
         set_bool(&element, "aria-expanded", expanded)?;
     }
