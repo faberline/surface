@@ -1,5 +1,5 @@
 use surface::{Align, Insets, Length, Node, Rect, Role, Style};
-use surface_app::{AnimationFrame, FrameInput, View};
+use surface_app::{AnimationFrame, AnimationUpdate, FrameInput, View};
 use surface_material::{
     place_docked_date_picker, ButtonKind, CivilDate, DatePickerEffect, DockedDatePickerEvent,
     DockedDatePickerLabels, DockedDatePickerOptions, DockedDatePickerState, Theme, YearMonth,
@@ -103,6 +103,9 @@ impl DockedDateDemo {
         let viewport = Rect::new(0., 0., width, height);
         let changed = viewport != self.viewport;
         self.viewport = viewport;
+        if changed && self.picker.mode().is_none() {
+            self.anchor = None;
+        }
         changed && self.visible
     }
 
@@ -113,12 +116,21 @@ impl DockedDateDemo {
         }
     }
 
-    pub(crate) fn observe(&mut self, frame: &AnimationFrame<'_>, input: FrameInput<'_>) -> bool {
+    pub(crate) fn observe(
+        &mut self,
+        frame: &AnimationFrame<'_>,
+        input: FrameInput<'_>,
+    ) -> AnimationUpdate {
         if !self.visible {
-            return false;
+            return AnimationUpdate::default();
         }
         let Some(layout) = frame.layout else {
-            return false;
+            // A view rebuild invalidates the previous layout. Measure the
+            // newly rendered field even if no more input arrives.
+            return AnimationUpdate {
+                request_next: true,
+                ..AnimationUpdate::default()
+            };
         };
         let bounds = |key| {
             frame
@@ -127,12 +139,18 @@ impl DockedDateDemo {
                 .and_then(|id| layout.nodes.get(id.index()))
                 .map(|node| node.bounds)
         };
-        let new_anchor = bounds(ANCHOR);
-        let anchor_changed = self.anchor != new_anchor;
-        self.anchor = new_anchor;
         let next_top = bounds(SUMMARY).map_or(self.anchor_top, |row| row.y + row.height + 24.);
         let moved = next_top != self.anchor_top;
         self.anchor_top = next_top;
+        let new_anchor = bounds(ANCHOR).map(|mut field| {
+            if !self.near_bottom {
+                // The next view uses this same top edge for the field.
+                field.y = next_top;
+            }
+            field
+        });
+        let anchor_changed = self.anchor != new_anchor;
+        self.anchor = new_anchor;
         let locale = locale(false, self.rtl);
         let lost_popup = self.picker.mode().is_some()
             && new_anchor
@@ -149,13 +167,21 @@ impl DockedDateDemo {
                     &locale,
                 );
             }
-            return true;
+            return AnimationUpdate {
+                rebuild: true,
+                request_next: true,
+            };
         }
         let (changed, effect) =
             self.picker
                 .observe_input_focus(input.focused == Some(INPUT), constraints(), &locale);
         self.accept(effect);
-        anchor_changed || moved || changed || matches!(effect, DatePickerEffect::Commit(_))
+        let rebuild =
+            anchor_changed || moved || changed || matches!(effect, DatePickerEffect::Commit(_));
+        AnimationUpdate {
+            rebuild,
+            request_next: rebuild,
+        }
     }
 
     pub(crate) fn update(&mut self, event: DockedDateDemoEvent) {
@@ -163,8 +189,14 @@ impl DockedDateDemo {
             DockedDateDemoEvent::Show => self.visible = true,
             DockedDateDemoEvent::Back => self.leave(),
             DockedDateDemoEvent::Direction => self.rtl = !self.rtl,
-            DockedDateDemoEvent::LargeText => self.large_text = !self.large_text,
-            DockedDateDemoEvent::Bottom => self.near_bottom = !self.near_bottom,
+            DockedDateDemoEvent::LargeText => {
+                self.large_text = !self.large_text;
+                self.anchor = None;
+            }
+            DockedDateDemoEvent::Bottom => {
+                self.near_bottom = !self.near_bottom;
+                self.anchor = None;
+            }
             DockedDateDemoEvent::Outside => self.outside_actions += 1,
             DockedDateDemoEvent::Picker(event) => {
                 let effect =
@@ -294,4 +326,60 @@ impl DockedDateDemo {
 
 fn month_label(month: YearMonth) -> String {
     format!("{}月", month.month())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use surface::TextMeasurer;
+    use surface_app::Runtime;
+
+    struct Metrics;
+
+    impl TextMeasurer for Metrics {
+        fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
+            (text.chars().count() as f32 * size * 0.6, size * 1.5)
+        }
+    }
+
+    fn bounds(runtime: &Runtime<crate::Gallery>, id: &str) -> Rect {
+        let id = runtime.dom().by_id(id).unwrap();
+        runtime.computed().unwrap().nodes[id.index()].bounds
+    }
+
+    #[test]
+    fn opening_after_resize_uses_the_new_field_position_on_the_first_frame() {
+        let mut runtime = Runtime::new(crate::Gallery::default()).unwrap();
+        runtime.apply(Message::Section(SECTION)).unwrap();
+        runtime
+            .apply(Message::DockedDate(DockedDateDemoEvent::Show))
+            .unwrap();
+        for _ in 0..3 {
+            runtime.render(960., 800., &mut Metrics).unwrap();
+        }
+        runtime
+            .apply(Message::DockedDate(DockedDateDemoEvent::LargeText))
+            .unwrap();
+        runtime
+            .apply(Message::DockedDate(DockedDateDemoEvent::Direction))
+            .unwrap();
+        runtime.render(320., 720., &mut Metrics).unwrap();
+        assert!(runtime.needs_frame(), "resize needs a fresh field measure");
+        runtime.render(320., 720., &mut Metrics).unwrap();
+        runtime
+            .activate("docked-date-picker-demo-picker-calendar-trigger")
+            .unwrap();
+        runtime.render(320., 720., &mut Metrics).unwrap();
+
+        let field = bounds(&runtime, ANCHOR);
+        let popup = bounds(&runtime, "docked-date-picker-demo-picker-popup");
+        let summary = bounds(&runtime, SUMMARY);
+        assert!(field.y >= summary.y + summary.height + 23.);
+        let above_gap = field.y - (popup.y + popup.height);
+        let below_gap = popup.y - (field.y + field.height);
+        assert!(
+            (above_gap - 4.).abs() <= 0.5 || (below_gap - 4.).abs() <= 0.5,
+            "popup {popup:?} should clear the newly positioned field {field:?}",
+        );
+    }
 }
