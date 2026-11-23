@@ -93,10 +93,12 @@
     {
       "id": "time-pickers",
       "spec": "https://m3.material.io/components/time-pickers/overview",
-      "status": "pending",
+      "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "implemented": "Expressive Input in inline and modal forms. 12- and 24-hour entry, localized labels and digits, independent hour and minute draft, hints and validation, AM/PM keyboard selection, text composition isolation, and explicit commit. Modal Save, Cancel, Escape, scrim dismissal, focus restoration, and compact scrolling with pinned actions. Expressive Dial and Scroll, legacy variants, live VoiceOver, operating system IME and system high contrast remain open.",
+      "desktop_evidence": "Native headless Metal replayed 5 exact PNGs with Page.screenshot, CLI and MCP. Chinese and Japanese, full-width digits, validation, modal focus, dark RTL and 200% text. https://github.com/faberline/surface/tree/c3724377c0394e69b172361060fa3eb2515f7795/docs/evidence/md3/time-input-v0.1.22",
+      "web_evidence": "Chrome WebGPU M134–M138 verify localized 12- and 24-hour entry, keyboard and trusted pointer, per-field Chrome AX descriptions, synthetic composition Enter, explicit Save and dismissal, short form scrolling and sampled pixel contrast. https://github.com/faberline/surface/tree/c3724377c0394e69b172361060fa3eb2515f7795/docs/evidence/md3/time-input-v0.1.22",
+      "unit_evidence": "All 1,440 minutes keep their 24-hour value and round-trip through 12-hour notation. Checks cover midnight and noon, locale-configured digits, partial and invalid values, draft and commit, modal scope, focus, hint and error relationships, composition, disabled actions, and short RTL layout."
     },
     {
       "id": "loading-indicator",

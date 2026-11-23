@@ -41,6 +41,8 @@ mod split_button;
 mod split_button_layout;
 mod split_button_motion;
 mod standard_navigation_drawer;
+mod time_input;
+mod time_input_state;
 mod tokens;
 mod toolbar;
 mod toolbar_scroll;
@@ -129,6 +131,11 @@ pub use split_button_layout::{place_split_button_popup, SplitButtonAnchor};
 pub use split_button_motion::SplitButtonMotion;
 pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
+};
+pub use time_input::{TimeInputLabels, TimeInputOptions, TimeInputPresentation};
+pub use time_input_state::{
+    ClockFormat, PeriodPosition, TimeField, TimeInputEffect, TimeInputError, TimeInputEvent,
+    TimeInputLocale, TimeInputSession, TimeInputValidation, TimeOfDay, TimePeriod,
 };
 pub use tokens::ColorScheme;
 pub use toolbar::{
