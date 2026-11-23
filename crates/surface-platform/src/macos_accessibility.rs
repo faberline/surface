@@ -561,6 +561,127 @@ mod tests {
     }
 
     #[test]
+    fn multi_action_list_projects_sibling_buttons_and_routes_their_actions_independently() {
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum Command {
+            Open,
+            Pin,
+            Remove,
+        }
+
+        #[derive(Default)]
+        struct Bookmarks {
+            pinned: bool,
+            presses: Vec<Command>,
+        }
+
+        impl Application for Bookmarks {
+            type Message = Command;
+
+            fn update(&mut self, command: Command) {
+                self.presses.push(command);
+                if command == Command::Pin {
+                    self.pinned = !self.pinned;
+                }
+            }
+
+            fn view(&self) -> View<Command> {
+                let button = |id, name, command, checked, disabled| {
+                    let mut node = SurfaceNode::new(SurfaceRole::Button, name)
+                        .id(id)
+                        .disabled(disabled)
+                        .styled(Style::row().width(Length::Px(64.)).height(Length::Px(48.)));
+                    if let Some(checked) = checked {
+                        node = node.checked(checked);
+                    }
+                    View::new(node).on_press(command).accessible_activation()
+                };
+                let row = View::new(
+                    SurfaceNode::new(SurfaceRole::ListItem, "").styled(Style::row().gap(4.)),
+                )
+                .children([
+                    button("open", "Open bookmark", Command::Open, None, false),
+                    button(
+                        "pin",
+                        "Pin bookmark",
+                        Command::Pin,
+                        Some(self.pinned),
+                        false,
+                    ),
+                    button("remove", "Remove bookmark", Command::Remove, None, true),
+                ]);
+                let list =
+                    View::new(SurfaceNode::new(SurfaceRole::List, "Bookmarks")).children([row]);
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Window")).children([list])
+            }
+        }
+
+        let mut runtime = Runtime::new(Bookmarks::default()).unwrap();
+        let mut tree = Tree::default();
+        let frame = update(&mut runtime, &mut tree);
+        let list = named(&frame, "Bookmarks").1;
+        let (open_id, open) = named(&frame, "Open bookmark");
+        let (pin_id, pin) = named(&frame, "Pin bookmark");
+        let (remove_id, remove) = named(&frame, "Remove bookmark");
+        assert_eq!(list.role(), Role::List);
+        assert_eq!(list.children().len(), 1);
+        let row_id = list.children()[0];
+        let row = &frame.nodes.iter().find(|(id, _)| *id == row_id).unwrap().1;
+        assert_eq!(row.role(), Role::ListItem);
+        assert_eq!(row.children(), [open_id, pin_id, remove_id]);
+        assert!(!row.supports_action(Action::Focus));
+        assert!(!row.supports_action(Action::Click));
+        for button in [open, pin] {
+            assert_eq!(button.role(), Role::Button);
+            assert!(button.supports_action(Action::Focus));
+            assert!(button.supports_action(Action::Click));
+        }
+        assert_eq!(open.toggled(), None);
+        assert_eq!(pin.toggled(), Some(Toggled::False));
+        assert!(remove.is_disabled());
+        assert!(!remove.supports_action(Action::Focus));
+        assert!(!remove.supports_action(Action::Click));
+
+        let request = |action, target_node| ActionRequest {
+            action,
+            target_tree: TreeId::ROOT,
+            target_node,
+            data: None,
+        };
+        assert!(!tree
+            .action(&mut runtime, request(Action::Click, remove_id))
+            .unwrap());
+        assert!(tree
+            .action(&mut runtime, request(Action::Focus, pin_id))
+            .unwrap());
+        assert_eq!(runtime.focused(), Some("pin"));
+        assert!(runtime.app().presses.is_empty());
+        let frame = update(&mut runtime, &mut tree);
+        assert!(tree
+            .action(
+                &mut runtime,
+                request(Action::Click, named(&frame, "Open bookmark").0)
+            )
+            .unwrap());
+        assert_eq!(runtime.focused(), Some("open"));
+        assert_eq!(runtime.app().presses, [Command::Open]);
+        let frame = update(&mut runtime, &mut tree);
+        assert!(tree
+            .action(
+                &mut runtime,
+                request(Action::Click, named(&frame, "Pin bookmark").0)
+            )
+            .unwrap());
+        assert_eq!(runtime.focused(), Some("pin"));
+        assert_eq!(runtime.app().presses, [Command::Open, Command::Pin]);
+        let frame = update(&mut runtime, &mut tree);
+        assert_eq!(
+            named(&frame, "Pin bookmark").1.toggled(),
+            Some(Toggled::True)
+        );
+    }
+
+    #[test]
     fn web_listbox_nodes_keep_native_radio_roles_values_and_actions() {
         struct Choices {
             web_listbox: bool,

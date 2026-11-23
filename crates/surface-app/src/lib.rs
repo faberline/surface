@@ -339,6 +339,7 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: false,
             retain_focus: false,
+            all_arrows: false,
         });
         self
     }
@@ -351,6 +352,7 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: true,
             retain_focus: false,
+            all_arrows: false,
         });
         self
     }
@@ -364,6 +366,22 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: false,
             retain_focus: true,
+            all_arrows: false,
+        });
+        self
+    }
+
+    /// Give this named group one Tab stop at its first enabled member.
+    /// Right and Down advance in authored order. Left and Up go back.
+    /// Arrows wrap and move focus without activating a control. The order
+    /// applies in either layout direction. Focus survives rebuilds as with
+    /// [`Self::roving_retained`].
+    pub fn roving_all_arrows(mut self) -> Self {
+        self.roving = Some(controls::RovingGroup {
+            options: Roving::vertical(false),
+            first_enabled_on_entry: true,
+            retain_focus: true,
+            all_arrows: true,
         });
         self
     }
@@ -805,6 +823,7 @@ pub struct Runtime<A: Application> {
     layout: LayoutEngine,
     computed: Option<ComputedDom>,
     focused: Option<String>,
+    pending_roving_focus: Option<String>,
     pressed: Option<String>,
     hovered: Option<String>,
     pointer_position: Option<(f32, f32)>,
@@ -850,6 +869,7 @@ impl<A: Application> Runtime<A> {
             layout: LayoutEngine::default(),
             computed: None,
             focused: None,
+            pending_roving_focus: None,
             pressed: None,
             hovered: None,
             pointer_position: None,
@@ -1280,6 +1300,15 @@ impl<A: Application> Runtime<A> {
         let start = self.trace_now();
         let (mut display_dom, mut decorations, mut computed) =
             self.layout_editing(width, height, text_scale, measurer)?;
+        if self.resolve_pending_roving_focus(&computed)
+            && self
+                .focused
+                .as_ref()
+                .is_some_and(|key| self.editors.contains_key(key))
+        {
+            (display_dom, decorations, computed) =
+                self.layout_editing(width, height, text_scale, measurer)?;
+        }
         if self.focused != self.layout_focus
             || self.layout_viewport != Some((width, height))
             || self.layout_text_scale != text_scale
@@ -1549,6 +1578,7 @@ impl<A: Application> Runtime<A> {
         if self.protects_composition(id) {
             return Ok(false);
         }
+        self.pending_roving_focus = None;
         let focus_changed = self.focused.as_deref() != Some(stable_id);
         if focus_changed {
             self.cancel_composition();
@@ -1568,6 +1598,12 @@ impl<A: Application> Runtime<A> {
         event: Event,
         dispatch: impl FnOnce(&mut Self, Event) -> Result<bool, AppError>,
     ) -> Result<bool, AppError> {
+        if matches!(
+            event,
+            Event::PointerDown { .. } | Event::FocusNext { .. } | Event::Blur
+        ) {
+            self.pending_roving_focus = None;
+        }
         #[cfg(feature = "devtools")]
         let span = self.trace_event(&event);
         let result = dispatch(self, event);

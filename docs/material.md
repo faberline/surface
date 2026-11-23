@@ -158,6 +158,7 @@ does not change application state.
 | `carousel` | Multi-browse, two free-scroll layouts, two Hero alignments and full-screen paging with adaptive card sizes and logical focus navigation |
 | `list` | Baseline Standard, Expressive Standard and Expressive Segmented with passive rows, one action per row or one controlled selection |
 | `multi_select_list` | The same three list styles with independent, app-owned selection for each row |
+| `multi_action_list` | A primary action and separate supplementary commands or toggles with a shared keyboard order |
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
@@ -862,6 +863,27 @@ focused row once per key press. Web exposes named options in a multi-select
 listbox. Native assistive technology receives a checkbox and checked state for
 each row.
 Choose **多選** in the Gallery to try the mode.
+
+### Multiple actions per row
+
+Use `Theme::multi_action_list` with `MultiActionListOptions` and
+`MultiActionListItem` values. Give the primary action and each
+`ListSupplementaryAction` its own stable ID. Set the supplementary action's
+accessible label and icon. Set `checked` for an app-owned toggle. A missing
+message disables its own action. The primary and supplementary actions work
+independently.
+
+Pass the available width inside the parent padding. Rebuild with the new
+width when the parent resizes. Every target needs at least 48 × 48 dp. The
+method returns `None` when a finite width of at least 48 dp is unavailable.
+When the actions and text need more room, the supplementary buttons wrap
+below the primary action. Stable IDs preserve their focus through reflow.
+
+Tab enters at the first enabled action from either direction. Right and
+Down move to the next action. Left and Up move to the previous action. The
+order wraps across rows and follows the authored order in LTR and RTL.
+Enter and Space invoke the focused action. The Gallery **清單多動作** scene
+shows independent commands, a controlled toggle, and narrow reflow.
 
 [Material 3 list specs](https://m3.material.io/components/lists/specs) ·
 [Material 3 list accessibility](https://m3.material.io/components/lists/accessibility) ·
