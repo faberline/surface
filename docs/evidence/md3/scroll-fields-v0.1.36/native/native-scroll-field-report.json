@@ -1,0 +1,649 @@
+{
+  "source_manifest_sha256": "ac0451250e5f6dced0590e0b738c439e220fc561aee6c67ca3b1f48ee4ab5792",
+  "gallery_sha256": "d7316095900946f48205e3209c2a2fc0f4c42c83afd3bb9fb21f98973b1e7c91",
+  "cli_sha256": "9b4399322fabf93431be0f9da7db852777b769fcb6c97a695beb6db10cf09f19",
+  "motion": "native headless Reduce Motion",
+  "input": "native headless DevTools Action.key, Action.activate and Action.fill",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "light": {
+      "initial": {
+        "min": 0,
+        "max": 30,
+        "step": 2,
+        "value": 14,
+        "value_text": "14 件"
+      },
+      "incremented": {
+        "min": 0,
+        "max": 30,
+        "step": 2,
+        "value": 16,
+        "value_text": "16 件"
+      },
+      "committed": {
+        "min": 0,
+        "max": 30,
+        "step": 2,
+        "value": 20,
+        "value_text": "20 件"
+      },
+      "focus_path": [
+        "scroll-field-demo-theme",
+        "scroll-field-demo-rtl",
+        "scroll-field-demo-large-text",
+        "scroll-field-demo-small",
+        "scroll-field-demo-medium",
+        "scroll-field-demo-large",
+        "scroll-field-demo-compact",
+        "scroll-field-demo-disabled",
+        "scroll-field-demo-wide-range",
+        "scroll-field-demo-value-adjustable"
+      ],
+      "error": "請輸入偶數",
+      "invalid_editor": true,
+      "geometry": {
+        "face": {
+          "height": 200.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 186.0
+        },
+        "capture": {
+          "height": 228.0,
+          "width": 130.0,
+          "x": 28.0,
+          "y": 172.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 172.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 352.0
+        },
+        "focus_ring": {
+          "height": 210.0,
+          "width": 130.0,
+          "x": 28.0,
+          "y": 181.0
+        }
+      },
+      "back": {
+        "tab_path": [
+          "scroll-field-demo-value-use-input",
+          "scroll-field-demo-back"
+        ],
+        "restored": "scroll-field-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-field-light-adjusted.png",
+          "sha256": "188bc401d275631f16e3040ba637a91f962500ecc73bd89ae43c1ed99ab41c41",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              232,
+              232,
+              232,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 26,
+            "active": {
+              "text": "16",
+              "ink_box": [
+                66,
+                269,
+                55,
+                42
+              ],
+              "ink_pixels": 647,
+              "rgb_tolerance": 0,
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ]
+            },
+            "text_contrast": 13.9356,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "above": {
+              "text": "18",
+              "ink_box": [
+                72,
+                186,
+                43,
+                28
+              ],
+              "ink_pixels": 306,
+              "rgb_tolerance": 0,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            },
+            "below": {
+              "text": "14",
+              "ink_box": [
+                73,
+                365,
+                38,
+                21
+              ],
+              "ink_pixels": 184,
+              "rgb_tolerance": 0,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-field-light-error.png",
+          "sha256": "4e46002c50bac65d128476e44cce576bcac242889fbb4e09617fd1194c666353",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "17",
+              "ink_box": [
+                33,
+                238,
+                120,
+                96
+              ],
+              "ink_pixels": 954,
+              "rgb_tolerance": 0,
+              "rgba": [
+                186,
+                26,
+                26,
+                255
+              ]
+            },
+            "text_contrast": 6.4606,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "editor_stroke_rgba": [
+              186,
+              26,
+              26,
+              255
+            ],
+            "error": {
+              "text": "請輸入偶數",
+              "ink_box": [
+                29,
+                406,
+                58,
+                12
+              ],
+              "ink_pixels": 150,
+              "rgb_tolerance": 64,
+              "rgba": [
+                186,
+                26,
+                26,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-field-light-committed.png",
+          "sha256": "efa3790515a374f94c9e2c4e485e082182c4e6adb232ebbe01d112364b32e820",
+          "format": "png",
+          "width": 960,
+          "height": 760,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              232,
+              232,
+              232,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "focus_layer_alpha": 26,
+            "active": {
+              "text": "20",
+              "ink_box": [
+                63,
+                269,
+                58,
+                42
+              ],
+              "ink_pixels": 663,
+              "rgb_tolerance": 0,
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ]
+            },
+            "text_contrast": 13.9356,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "above": {
+              "text": "22",
+              "ink_box": [
+                70,
+                186,
+                45,
+                28
+              ],
+              "ink_pixels": 272,
+              "rgb_tolerance": 0,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            },
+            "below": {
+              "text": "18",
+              "ink_box": [
+                73,
+                365,
+                41,
+                21
+              ],
+              "ink_pixels": 209,
+              "rgb_tolerance": 0,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        760
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "compact": {
+        "min": 0,
+        "max": 30,
+        "step": 2,
+        "value": 14,
+        "value_text": "14 件"
+      },
+      "geometry": {
+        "face": {
+          "height": 224.0,
+          "width": 168.0,
+          "x": 119.0,
+          "y": 334.0
+        },
+        "capture": {
+          "height": 252.0,
+          "width": 178.0,
+          "x": 114.0,
+          "y": 320.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 168.0,
+          "x": 119.0,
+          "y": 320.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 168.0,
+          "x": 119.0,
+          "y": 524.0
+        },
+        "focus_ring": {
+          "height": 234.0,
+          "width": 178.0,
+          "x": 114.0,
+          "y": 329.0
+        }
+      },
+      "focus_path": [
+        "scroll-field-demo-disabled",
+        "scroll-field-demo-wide-range",
+        "scroll-field-demo-value-adjustable"
+      ],
+      "editor_focus_path": [
+        "scroll-field-demo-value-editor"
+      ],
+      "fallback_initial": 1200,
+      "fallback_committed": 1300,
+      "caller_saved": "已選 1300 件",
+      "back": {
+        "tab_path": [
+          "scroll-field-demo-back"
+        ],
+        "restored": "scroll-field-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-field-dark-compact.png",
+          "sha256": "dc9ee291cd271d58411f5e208f29694984893c89bcb9a704ea45eb898fbe1d14",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              37,
+              35,
+              41,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "focus_layer_alpha": 26,
+            "active": {
+              "text": "14",
+              "ink_box": [
+                150,
+                412,
+                111,
+                84
+              ],
+              "ink_pixels": 2748,
+              "rgb_tolerance": 0,
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ]
+            },
+            "text_contrast": 11.9929,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "above": {
+              "text": "16",
+              "ink_box": [
+                161,
+                334,
+                87,
+                55
+              ],
+              "ink_pixels": 1333,
+              "rgb_tolerance": 0,
+              "rgba": [
+                148,
+                143,
+                153,
+                255
+              ]
+            },
+            "below": {
+              "text": "12",
+              "ink_box": [
+                164,
+                515,
+                80,
+                43
+              ],
+              "ink_pixels": 807,
+              "rgb_tolerance": 0,
+              "rgba": [
+                148,
+                143,
+                153,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-field-dark-fallback.png",
+          "sha256": "6b4402ee4b82306b1da9e40f5fdeb5638e82ded1ecf34b96f38cdd26a6d94ab9",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "1200",
+              "ink_box": [
+                33,
+                325,
+                254,
+                88
+              ],
+              "ink_pixels": 1929,
+              "rgb_tolerance": 0,
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            },
+            "text_contrast": 11.3708,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "editor_stroke_rgba": [
+              207,
+              189,
+              254,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-field-dark-committed.png",
+          "sha256": "dd8ffdd0112d78ca92e07fecd48a4de9a82ec72107ce1649cc8cbb93682c9470",
+          "format": "png",
+          "width": 320,
+          "height": 900,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "focus_layer_alpha": 0,
+            "active": {
+              "text": "1300",
+              "ink_box": [
+                33,
+                325,
+                254,
+                88
+              ],
+              "ink_pixels": 1925,
+              "rgb_tolerance": 0,
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            },
+            "text_contrast": 11.3708,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "editor_stroke_rgba": [
+              207,
+              189,
+              254,
+              255
+            ]
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        900
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+case material ...
+browser: Chrome/157.0.8103.79 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M205] Small, Medium and Large paint the scroll colors and keep focused geometry explicit
+  [M206] trusted mouse and touch tap the 48 dp cropped zones and wheel remains page scrolling
+case material ... FAILED after 33.7s: Material 3 numeric Scroll Fields: timed out after 30s waiting for `(s => s.focused === "scroll-field-demo-value-editor")(JSON.parse(window.gallery.inspect()))`
+  last step: M206
+
+e2e result: 0 passed; 1 failed; 84 checks; artifacts in /tmp/surface-md3-scroll-fields-chrome.sadscc2y/focused-1
+no case passed

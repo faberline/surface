@@ -1,0 +1,85 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.13s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/surface_material-1acfba394f0dc16f)
+
+running 68 tests
+test app_bar_scroll::tests::enter_always_consumes_before_content_in_both_directions ... ok
+test app_bar_scroll::tests::exit_until_collapsed_uses_only_reverse_delta_left_at_the_top ... ok
+test app_bar_scroll::tests::pinned_scroll_changes_surface_only ... ok
+test bottom_sheet_motion::tests::cancelled_drag_restores_the_initial_anchor ... ok
+test bottom_sheet_motion::tests::equal_heights_have_no_peek_snap ... ok
+test bottom_sheet_motion::tests::interruption_uses_current_height_and_backward_clocks_do_not_rewind ... ok
+test bottom_sheet_motion::tests::release_uses_distance_or_velocity_and_preserves_a_distance_tie ... ok
+test bottom_sheet_motion::tests::standard_stops_at_peek_while_modal_can_dismiss ... ok
+test bottom_sheet_motion::tests::upward_drag_previews_then_commits_expansion ... ok
+test date_picker::calendar_view::range_band::tests::a_single_in_month_interior_cell_has_a_full_band ... ok
+test date_picker::calendar_view::range_band::tests::across_week_break_draws_half_cells_for_endpoints_at_the_break ... ok
+test date_picker::calendar_view::range_band::tests::cross_month_band_does_not_fill_adjacent_calendar_cells ... ok
+test date_picker::calendar_view::range_band::tests::cross_month_endpoint_centers_stay_in_their_own_month ... ok
+test date_picker::calendar_view::range_band::tests::empty_and_disjoint_weeks_have_no_band ... ok
+test date_picker::calendar_view::range_band::tests::middle_week_is_continuous_even_without_either_endpoint ... ok
+test date_picker::calendar_view::range_band::tests::same_day_and_provisional_start_have_no_band ... ok
+test date_picker::calendar_view::range_band::tests::sunday_first_is_already_reflected_in_logical_columns ... ok
+test date_picker::calendar_view::range_band::tests::within_one_week_joins_endpoint_centers ... ok
+test loading_indicator::contours::tests::every_pair_fits_at_intermediate_and_overshoot_progress ... ok
+test loading_indicator::contours::tests::pair_junctions_match_and_morphs_include_intermediate_and_overshoot_shapes ... ok
+test navigation_drawer::swipe::tests::release_uses_half_width_or_fling_and_commits_once ... ok
+test navigation_drawer::swipe::tests::resize_discards_pending_release_and_renews_binding ... ok
+test navigation_drawer::swipe::tests::swipe_uses_logical_direction_and_clamps_to_the_drawer_width ... ok
+test scroll_field_state::tests::cancel_invalid_terminal_and_external_changes_retire_the_capture ... ok
+test scroll_field_state::tests::editor_rejects_bad_drafts_and_commits_reachable_values_once ... ok
+test scroll_field_state::tests::expressive_spring_overshoots_and_reduced_or_missing_time_snaps ... ok
+test scroll_field_state::tests::fallback_is_an_editor_and_preserves_a_draft_after_resize ... ok
+test scroll_field_state::tests::held_preview_uses_its_down_time_pitch_and_accepts_the_terminal_position ... ok
+test scroll_field_state::tests::localized_digits_display_and_parse_signed_values ... ok
+test scroll_field_state::tests::neighboring_taps_stay_bounded_and_do_not_loop ... ok
+test scroll_field_state::tests::range_checks_bounds_step_and_extreme_indices ... ok
+test side_sheet::motion::tests::closing_direction_mirrors_both_logical_edges ... ok
+test side_sheet::motion::tests::enter_exit_reverse_from_the_displayed_position_with_a_275_ms_clock ... ok
+test side_sheet::motion::tests::held_gesture_keeps_its_travel_edge_and_session ... ok
+test side_sheet::motion::tests::ignored_gestures_and_application_close_never_emit_a_swipe_commit ... ok
+test side_sheet::motion::tests::reduced_motion_or_missing_clock_finishes_without_a_followup_frame ... ok
+test side_sheet::motion::tests::release_uses_midpoint_significant_speed_and_opening_direction ... ok
+test side_sheet::motion::tests::swipe_dismissal_commits_once_at_the_hidden_anchor ... ok
+test time_dial::polar::tests::all_painted_hour_and_minute_positions_resolve_to_their_own_values ... ok
+test time_dial::polar::tests::capture_preserves_rejection_of_a_contact_outside_the_usable_circle ... ok
+test time_dial::polar::tests::minute_half_step_and_hour_ring_split_are_unambiguous ... ok
+test time_scroll_state::tests::cancelled_or_nonfinite_terminal_restores_draft_without_a_value_change ... ok
+test time_scroll_state::tests::empty_center_cancel_and_direct_value_preserve_field_independence ... ok
+test time_scroll_state::tests::equivalent_editor_focus_is_retained_across_modes_and_toolbar_focus ... ok
+test time_scroll_state::tests::fallback_cancels_previews_and_returns_only_after_explicit_switch ... ok
+test time_scroll_state::tests::finite_bounds_keep_twelve_hour_choices_and_period_independent ... ok
+test time_scroll_state::tests::independent_held_offsets_do_not_change_draft_and_one_release_preserves_the_other ... ok
+test time_scroll_state::tests::mode_switch_retires_focus_and_keeps_the_unresolved_peer_raw_and_touched ... ok
+test time_scroll_state::tests::release_sets_a_draft_then_a_bounded_tween_snaps_the_paint ... ok
+test time_scroll_state::tests::release_without_move_accepts_once_and_rearms_only_its_wheel ... ok
+test time_scroll_state::tests::same_mode_resize_discards_preview_and_rejects_contacts_from_old_geometry ... ok
+test time_scroll_state::tests::save_flushes_pending_wheel_but_never_accepts_an_unreleased_drag ... ok
+test time_scroll_state::tests::wheel_at_bound_does_not_start_a_preview_or_request_a_frame ... ok
+test time_scroll_state::tests::wheel_small_deltas_accumulate_independently_and_wait_for_quiet ... ok
+test time_scroll_state::tests::wheel_without_dispatch_clock_debounces_from_host_frame_or_steps_without_a_host_clock ... ok
+test toolbar_scroll::tests::actual_clamped_travel_counts_toward_hiding ... ok
+test toolbar_scroll::tests::focus_reveals_and_resets_travel_even_at_a_bound ... ok
+test toolbar_scroll::tests::pinned_and_invalid_scroll_cannot_hide_the_toolbar ... ok
+test toolbar_scroll::tests::reverse_scroll_reveals_and_resets_the_collapse_distance ... ok
+test tooltip_state::tests::a_short_tap_and_a_moved_touch_stay_closed ... ok
+test tooltip_state::tests::cancelled_contact_dismisses_an_already_shown_tooltip ... ok
+test tooltip_state::tests::focus_and_explicit_activation_open_without_a_clock ... ok
+test tooltip_state::tests::hover_waits_stays_while_popup_is_active_and_rearms_after_dismissal ... ok
+test tooltip_state::tests::long_press_consumes_release_and_lingers_until_touch_timeout ... ok
+test wide_navigation_rail::motion::tests::inline_uses_standard_default_spatial_and_settles_at_both_endpoints ... ok
+test wide_navigation_rail::motion::tests::modal_samples_width_slide_and_scrim_with_their_material_springs ... ok
+test wide_navigation_rail::motion::tests::reduce_motion_missing_clock_and_explicit_snap_finish_without_queued_frames ... ok
+test wide_navigation_rail::motion::tests::reversal_reuses_the_current_position_and_velocity_of_each_track ... ok
+
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/scroll_fields.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/scroll_fields-a9d68b5a521e90fa)
+
+running 3 tests
+test compact_edit_keeps_focus_and_draft_when_space_returns ... ok
+test cropped_neighbor_target_accepts_a_pointer_tap_outside_the_face ... ok
+test current_accessible_adjustment_commits_once_and_retires_its_target ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

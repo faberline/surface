@@ -1,0 +1,17 @@
+{
+  "expected_failure": true,
+  "version": "0.1.36 pre-fix",
+  "step": "M206",
+  "checks": 84,
+  "before_center_commit_count": 2,
+  "value": 14,
+  "observed_mode": "scroll",
+  "observed_focus": "scroll-field-demo-compact",
+  "expected_focus": "scroll-field-demo-value-editor",
+  "error": "timed out after 30s waiting for `(s => s.focused === \"scroll-field-demo-value-editor\")(JSON.parse(window.gallery.inspect()))`",
+  "errors": [],
+  "wasm_sha256": "d87d1afe59a4a164413564b7045312ab5fe9c59d5b345ec98b21844182eb947e",
+  "wasm_source_sha256": "182dfce4d364b08ff6c7e83e24eacd0daa16cb61bd81c321131def0c5275ba2e",
+  "probe_binary_sha256": "4463e559dede8bbcbb895fd7f68ed0a86ead45a3efac46cf9edcb9d8f50ac428",
+  "browser": "Chrome/157.0.8103.79"
+}
