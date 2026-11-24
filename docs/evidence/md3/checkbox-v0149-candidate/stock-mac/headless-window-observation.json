@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4007,
+      "pids": [
+        3113,
+        90452
+      ]
+    },
+    "native_gallery": {
+      "samples": 15,
+      "pids": [
+        3381
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 3968,
+      "pids": [
+        90452
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 39,
+      "pids": [
+        3113
+      ],
+      "detached_samples": 33
+    },
+    "native": {
+      "samples": 15,
+      "pids": [
+        3381
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 90452,
+      "ppid": 90441,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=53178",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-checkbox-stock-observer.N22c4C4M/run/tmp/.tmp2Zvpsz",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-checkbox-stock-observer.N22c4C4M/run/tmp/.tmp2Zvpsz"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 3113,
+      "ppid": 3101,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=54786",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-checkbox-stock-observer.N22c4C4M/run/tmp/.tmpD23HzC",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-checkbox-stock-observer.N22c4C4M/run/tmp/.tmpD23HzC"
+    },
+    {
+      "role": "native",
+      "pid": 3381,
+      "ppid": 90441,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}

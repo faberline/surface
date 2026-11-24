@@ -1,0 +1,212 @@
+{
+  "checkbox": {
+    "ax_names": [
+      "同步全部",
+      "筆記",
+      "附件",
+      "已鎖定的專案",
+      "允許在行動網路上同步大型附件"
+    ],
+    "compact": {
+      "callbacks_after": 5,
+      "callbacks_before": 4,
+      "compact_values": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "mixed",
+        "checked"
+      ],
+      "error_outline": [
+        255,
+        180,
+        171
+      ],
+      "help_ink": 5692,
+      "invalid": {
+        "description": "請勾選後再繼續。",
+        "invalid": true
+      },
+      "label_height": 144.0,
+      "resolved": {
+        "description": "",
+        "invalid": false
+      },
+      "resolved_check_ink": 102,
+      "resolved_fill": [
+        207,
+        189,
+        254
+      ],
+      "rtl": true,
+      "scrolled_to_help": true,
+      "text_scale": 2,
+      "viewport": [
+        320,
+        640
+      ],
+      "wrapped_line_ink": [
+        5539,
+        5322
+      ]
+    },
+    "role": "checkbox",
+    "wide": {
+      "callback_counts": {
+        "box": 4,
+        "canceled": 3,
+        "enter": 2,
+        "held": 3,
+        "initial": 0,
+        "label": 3,
+        "outside": 3,
+        "space": 1
+      },
+      "focus_ring_rgb": [
+        98,
+        91,
+        113
+      ],
+      "focused_layer_rgb": [
+        238,
+        230,
+        244
+      ],
+      "initial_consent": {
+        "description": "請勾選後再繼續。",
+        "invalid": true
+      },
+      "locked": "checkbox-demo-locked",
+      "mixed_mark_rgb": [
+        255,
+        255,
+        255
+      ],
+      "pressed_layer_rgb": [
+        230,
+        225,
+        232
+      ],
+      "values": {
+        "enter": [
+          "mixed",
+          "unchecked",
+          "checked",
+          "mixed",
+          "unchecked"
+        ],
+        "initial": [
+          "mixed",
+          "checked",
+          "unchecked",
+          "mixed",
+          "unchecked"
+        ],
+        "pointer_box": [
+          "unchecked",
+          "unchecked",
+          "unchecked",
+          "mixed",
+          "unchecked"
+        ],
+        "space": [
+          "checked",
+          "checked",
+          "checked",
+          "mixed",
+          "unchecked"
+        ]
+      },
+      "wide_check_ink": 102
+    }
+  },
+  "evidence_scope": "stock-macos",
+  "observed_adapter": {
+    "architecture": "metal-3",
+    "isFallbackAdapter": false,
+    "vendor": "apple"
+  },
+  "page_errors": 0,
+  "report_sha256": "fc32e70b945b9bb377b9ef14a7ba969bf239a8a66fb966b61ee726f78fd2b6d0",
+  "runner": {
+    "browser": "Chrome/158.0.8127.37",
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 19546,
+        "steps": 280
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "checkbox_steps": [
+      "M278",
+      "M279",
+      "M280",
+      "M281"
+    ],
+    "profile": "stock-macos",
+    "sha256": "840080cdae4857e24063e0f111b90c967645965bc960cf860b018ff3e40e433a",
+    "total_checks": 19827
+  },
+  "screenshots": {
+    "material-checkbox-compact-invalid.png": {
+      "decoded_rgb_sha256": "df12869fdeae7f149c5ed0ab58353eb4ef94b665fb6352e86c71050b33ba3fe3",
+      "pixels": [
+        640,
+        1368
+      ],
+      "sha256": "fec3006e8bf4f3e0b9ef6d3311c4f5aebe76c71228f0e3a28db0faa830fb8d71"
+    },
+    "material-checkbox-compact-resolved.png": {
+      "decoded_rgb_sha256": "05b70f33c5d9ffa93221b8e155cb2c37c930fb58c9e47340e0793f7e7f120e08",
+      "pixels": [
+        640,
+        1368
+      ],
+      "sha256": "18b6729d49c6e7559f0326fd3af5074a65d9d59b6e5ebb136e2f5daf3bf79819"
+    },
+    "material-checkbox-wide-focused.png": {
+      "decoded_rgb_sha256": "b96cb0261a2380c0f9e0f6520dc0e8a26da10e716839a2e5d9e903d2439e5f5d",
+      "pixels": [
+        1920,
+        1688
+      ],
+      "sha256": "3048231c337d844cbf3349d94065644f22160065947b752778745b9593e1c8ec"
+    },
+    "material-checkbox-wide-held.png": {
+      "decoded_rgb_sha256": "7dfe70b2594134aede1c799113e23a182eeed599e5e7436df4177facdbdd2970",
+      "pixels": [
+        1920,
+        1688
+      ],
+      "sha256": "10bcb4c4dbf346cc2b1a624432bcaea90c0f017625fc9ecd42ba4ae94be75ce5"
+    }
+  },
+  "source": {
+    "files": 602,
+    "manifest_sha256": "3a9aeda30a8ca3520afd04d9d4db8c26f3a900dc5aae20fad14e4d366d2544fe",
+    "source_bytes_checked": true,
+    "switch_inputs": {
+      "crates/surface-material/src/checkbox.rs": "1e91f8c443e9083a9cef8a4133356846636b95647561df7b74c7494d547e32a9",
+      "e2e/src/material.rs": "98282f047157f384134142c89de255fb4057781211382800dcff6f94c3bcd7d3",
+      "e2e/src/material_checkbox.rs": "cdfa61b840c886340bfab5c6559f239057bf902b5240a564dc79503ec803b43f",
+      "examples/material-gallery/src/checkbox_demo.rs": "601c01b8127efe0b86189e87a4353e010f648533a270469c33633a9d6235724a",
+      "examples/material-gallery/web/index.html": "cfe715b3c29ea45e3ee482578f99d40685052d9297c9168a7adae31e06b9ad15"
+    }
+  },
+  "version": 1
+}

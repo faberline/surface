@@ -1,0 +1,465 @@
+{
+  "schema": "surface.test.checkbox.native.v1",
+  "binaries": {
+    "gallery": "2969eec25d4d58f8b2f8a2a8944e58515fcd5a8128a898899ac3e283fa696440",
+    "cli": "ff6ce71b9815049028ba8b18e81b01cce921024e7d1cf7518d9a633619897638"
+  },
+  "rendering": "headless",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "viewport": [
+        960,
+        800
+      ],
+      "rtl": false,
+      "text_scale": 1,
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "before": [
+        "mixed",
+        "checked",
+        "unchecked",
+        "mixed",
+        "unchecked"
+      ],
+      "after": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "mixed",
+        "checked"
+      ],
+      "geometry": {
+        "checkbox-demo-all": {
+          "target": {
+            "height": 50.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 136.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 40.0,
+            "y": 152.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 406.0,
+            "x": 82.0,
+            "y": 149.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 24.0,
+            "y": 136.0
+          }
+        },
+        "checkbox-demo-notes": {
+          "target": {
+            "height": 50.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 190.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 40.0,
+            "y": 206.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 406.0,
+            "x": 82.0,
+            "y": 203.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 24.0,
+            "y": 190.0
+          }
+        },
+        "checkbox-demo-attachments": {
+          "target": {
+            "height": 50.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 244.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 40.0,
+            "y": 260.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 406.0,
+            "x": 82.0,
+            "y": 257.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 24.0,
+            "y": 244.0
+          }
+        },
+        "checkbox-demo-locked": {
+          "target": {
+            "height": 50.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 298.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 40.0,
+            "y": 314.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 406.0,
+            "x": 82.0,
+            "y": 311.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 24.0,
+            "y": 298.0
+          }
+        },
+        "checkbox-demo-consent": {
+          "target": {
+            "height": 50.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 356.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 40.0,
+            "y": 372.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 406.0,
+            "x": 82.0,
+            "y": 369.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 24.0,
+            "y": 356.0
+          }
+        }
+      },
+      "png": {
+        "name": "wide-light.png",
+        "sha256": "4c76269b913f85f4fdeee3a4a77a8c3601e5b8b09de4626c67bc8f9987f5fd66",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0,
+        "ink": {
+          "checkbox-demo-consent-label": {
+            "bounds": {
+              "height": 24.0,
+              "width": 406.0,
+              "x": 82.0,
+              "y": 369.0
+            },
+            "ink_bounds": [
+              83,
+              374,
+              222,
+              16
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 749
+          },
+          "checkbox-demo-error-hint": {
+            "bounds": {
+              "height": 20.0,
+              "width": 464.0,
+              "x": 24.0,
+              "y": 414.0
+            },
+            "ink_bounds": [
+              25,
+              418,
+              106,
+              14
+            ],
+            "rgba": [
+              186,
+              26,
+              26,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 346
+          }
+        },
+        "error_pixel": {
+          "point": [
+            49,
+            373
+          ],
+          "rgba": [
+            186,
+            26,
+            26,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "viewport": [
+        320,
+        720
+      ],
+      "rtl": true,
+      "text_scale": 2,
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "before": [
+        "mixed",
+        "checked",
+        "unchecked",
+        "mixed",
+        "unchecked"
+      ],
+      "after": [
+        "unchecked",
+        "unchecked",
+        "unchecked",
+        "mixed",
+        "checked"
+      ],
+      "geometry": {
+        "checkbox-demo-all": {
+          "target": {
+            "height": 50.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 232.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 262.0,
+            "y": 248.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 214.0,
+            "x": 24.0,
+            "y": 233.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 246.0,
+            "y": 232.0
+          }
+        },
+        "checkbox-demo-notes": {
+          "target": {
+            "height": 50.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 286.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 262.0,
+            "y": 302.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 214.0,
+            "x": 24.0,
+            "y": 287.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 246.0,
+            "y": 286.0
+          }
+        },
+        "checkbox-demo-attachments": {
+          "target": {
+            "height": 50.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 340.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 262.0,
+            "y": 356.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 214.0,
+            "x": 24.0,
+            "y": 341.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 246.0,
+            "y": 340.0
+          }
+        },
+        "checkbox-demo-locked": {
+          "target": {
+            "height": 50.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 394.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 262.0,
+            "y": 410.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 214.0,
+            "x": 24.0,
+            "y": 395.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 246.0,
+            "y": 394.0
+          }
+        },
+        "checkbox-demo-consent": {
+          "target": {
+            "height": 144.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 452.0
+          },
+          "box": {
+            "height": 18.0,
+            "width": 18.0,
+            "x": 262.0,
+            "y": 515.0
+          },
+          "label": {
+            "height": 144.0,
+            "width": 214.0,
+            "x": 24.0,
+            "y": 452.0
+          },
+          "ring": {
+            "height": 50.0,
+            "width": 50.0,
+            "x": 246.0,
+            "y": 499.0
+          }
+        }
+      },
+      "png": {
+        "name": "compact-dark-rtl-200.png",
+        "sha256": "092a3511d905e24174030ee544987564b62e2c6eb23e26a789a833a808c68a77",
+        "format": "png",
+        "width": 320,
+        "height": 720,
+        "scale": 1.0,
+        "ink": {
+          "checkbox-demo-consent-label": {
+            "bounds": {
+              "height": 144.0,
+              "width": 214.0,
+              "x": 24.0,
+              "y": 452.0
+            },
+            "ink_bounds": [
+              48,
+              463,
+              188,
+              126
+            ],
+            "rgba": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 3417
+          },
+          "checkbox-demo-error-hint": {
+            "bounds": {
+              "height": 40.0,
+              "width": 272.0,
+              "x": 24.0,
+              "y": 604.0
+            },
+            "ink_bounds": [
+              73,
+              612,
+              213,
+              26
+            ],
+            "rgba": [
+              255,
+              180,
+              171,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 1532
+          }
+        },
+        "error_pixel": {
+          "point": [
+            271,
+            516
+          ],
+          "rgba": [
+            255,
+            180,
+            171,
+            255
+          ]
+        }
+      }
+    }
+  ]
+}
