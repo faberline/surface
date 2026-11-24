@@ -1,0 +1,289 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "semantics": {
+    "group": {
+      "role": "group",
+      "name": "容量",
+      "tabindex": null,
+      "action": null,
+      "names": [
+        "數量",
+        "單位"
+      ]
+    },
+    "quantity": {
+      "dom": {
+        "min": -1800,
+        "max": 1800,
+        "now": 1200,
+        "text": "1200",
+        "name": "數量",
+        "role": "spinbutton",
+        "inside_group": true
+      },
+      "chrome_value": 1200,
+      "chrome_description": "每次增加或減少 2"
+    },
+    "unit": {
+      "dom": {
+        "min": 1,
+        "max": 3,
+        "now": 1,
+        "text": "毫升",
+        "name": "單位",
+        "role": "spinbutton",
+        "inside_group": true
+      },
+      "chrome_value": 1,
+      "chrome_description": "毫升 可輸入單位名稱"
+    },
+    "faces": [
+      [
+        33.0,
+        186.0,
+        218.0,
+        200.0
+      ],
+      [
+        333.0,
+        186.0,
+        279.0,
+        200.0
+      ]
+    ],
+    "paint_colors": [
+      466,
+      450
+    ]
+  },
+  "edits": {
+    "quantity_values": [
+      1200,
+      1202,
+      1208
+    ],
+    "unit_ids": [
+      "ml",
+      "liter",
+      "fluid-ounce"
+    ],
+    "commits": [
+      2,
+      2
+    ],
+    "rejected_quantity": "1201",
+    "error": "請輸入偶數",
+    "alias": "fl oz",
+    "unit_error": "找不到單位",
+    "quantity_ax": {
+      "dom": {
+        "min": -1800,
+        "max": 1800,
+        "now": 1208,
+        "text": "1208",
+        "name": "數量",
+        "role": "spinbutton",
+        "inside_group": true
+      },
+      "chrome_value": 1208,
+      "chrome_description": "每次增加或減少 2"
+    },
+    "liter_ax": {
+      "dom": {
+        "min": 1,
+        "max": 3,
+        "now": 2,
+        "text": "公升",
+        "name": "單位",
+        "role": "spinbutton",
+        "inside_group": true
+      },
+      "chrome_value": 2,
+      "chrome_description": "公升 可輸入單位名稱"
+    },
+    "unit_ax": {
+      "dom": {
+        "min": 1,
+        "max": 3,
+        "now": 3,
+        "text": "液量盎司",
+        "name": "單位",
+        "role": "spinbutton",
+        "inside_group": true
+      },
+      "chrome_value": 3,
+      "chrome_description": "液量盎司 可輸入單位名稱"
+    }
+  },
+  "mirror": {
+    "viewport": [
+      960,
+      820
+    ],
+    "ltr": [
+      [
+        33.0,
+        186.0,
+        218.0,
+        200.0
+      ],
+      [
+        333.0,
+        186.0,
+        279.0,
+        200.0
+      ]
+    ],
+    "rtl": [
+      [
+        709.0,
+        186.0,
+        218.0,
+        200.0
+      ],
+      [
+        348.0,
+        186.0,
+        279.0,
+        200.0
+      ]
+    ],
+    "gaps": [
+      82.0,
+      82.0
+    ],
+    "tab_order": [
+      "scroll-pair-demo-quantity-adjustable",
+      "scroll-pair-demo-quantity-use-input",
+      "scroll-pair-demo-unit-adjustable",
+      "scroll-pair-demo-unit-use-input"
+    ]
+  },
+  "disabled": {
+    "quantity_disabled_attributes": [
+      "true",
+      "true"
+    ],
+    "unit_disabled_attributes": [
+      "true",
+      "true"
+    ],
+    "enabled_tab_stops": [
+      "scroll-pair-demo-unit-adjustable",
+      "scroll-pair-demo-quantity-adjustable"
+    ],
+    "quantity_when_unit_changes": 1200,
+    "unit_when_quantity_changes": "liter",
+    "final_quantity": 1198,
+    "commits": [
+      1,
+      1
+    ]
+  },
+  "compact": {
+    "viewport": [
+      320,
+      820
+    ],
+    "rtl": true,
+    "text_scale": 2,
+    "editors": [
+      [
+        33.0,
+        269.0,
+        254.0,
+        104.0
+      ],
+      [
+        33.0,
+        479.0,
+        254.0,
+        88.0
+      ]
+    ],
+    "paint_colors": [
+      309,
+      361
+    ],
+    "preedit_survived_resize": true,
+    "raw": "公升",
+    "first_enter_commits": 0,
+    "id": "liter",
+    "unit_commits": 1,
+    "quantity": 1202,
+    "quantity_commits": 1,
+    "restored_editor_focus": true,
+    "hint_scroll": [
+      0.0,
+      60.0
+    ],
+    "unit_ax": {
+      "dom": {
+        "min": 1,
+        "max": 3,
+        "now": 2,
+        "text": "公升",
+        "name": "單位",
+        "role": "spinbutton",
+        "inside_group": true
+      },
+      "chrome_value": 2,
+      "chrome_description": "公升 可輸入單位名稱"
+    }
+  },
+  "short": {
+    "viewport": [
+      320,
+      360
+    ],
+    "scroller": [
+      12.0,
+      204.0,
+      296.0,
+      144.0
+    ],
+    "clipped_unit": [
+      33.0,
+      479.0,
+      254.0,
+      88.0
+    ],
+    "focus_order": [
+      "scroll-pair-demo-quantity-editor",
+      "scroll-pair-demo-unit-editor",
+      "scroll-pair-demo-quantity-editor"
+    ],
+    "focused_editors": [
+      [
+        33.0,
+        244.0,
+        254.0,
+        104.0
+      ],
+      [
+        33.0,
+        260.0,
+        254.0,
+        88.0
+      ],
+      [
+        33.0,
+        204.0,
+        254.0,
+        104.0
+      ]
+    ],
+    "scroll_offsets": [
+      0.0,
+      25.0,
+      219.0,
+      65.0
+    ],
+    "commits": [
+      0,
+      0
+    ],
+    "back_focus": "scroll-pair-demo-show"
+  },
+  "errors": []
+}
