@@ -171,6 +171,7 @@ does not change application state.
 | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
 | `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
+| `checkbox_with_options` | Controlled Material 3 checkbox with three states, disabled and error, a stable label and RTL |
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
 | `switch` | Controlled on/off choice and disabled state |
 | `switch_with_options` | Controlled Material 3 switch with three icon styles, RTL, press motion and a wrapping label |
@@ -212,6 +213,30 @@ revealed from its inner scroll container to its outer container. A viewport
 resize also reveals focus. Fixed overlays do not move the background.
 Repeated frames preserve a deliberate manual scroll when focus and viewport
 have not changed. A target larger than its viewport is aligned at its start.
+
+## Checkbox
+
+Use `checkbox_with_options(options, &motion, on_change)` for the Material 3
+checkbox. A checkbox has three values. Unchecked draws an outline, checked
+draws a check, and mixed draws a dash. Keep the current `CheckValue` in
+the application. Space, Enter, tap and accessible press request one new
+value. A mixed parent requests checked. Set the children's values in the
+application and derive the parent's value from the children.
+
+Keep one `CheckboxMotion` per stable ID. Opt in to
+`Application::observes_frame_input` and call `CheckboxMotion::advance`
+from `animation_frame_with_press_detail`. Apply its next-frame and
+rebuild flags. The mark keeps its geometry at large text sizes. Match
+each label to the current text scale and direction.
+
+When the application marks the checkbox invalid, set `error` and pass
+the stable ID of visible help in `error_description`. The checkbox
+exposes the invalid state and its description. The disabled state
+stays readable and rejects activation.
+
+Open `checkbox-demo-show` in the Gallery to try one mixed parent,
+its child controls, a disabled row and a check that has error help.
+[Material 3 Checkbox specifications](https://m3.material.io/components/checkbox/specs)
 
 ## Switch
 

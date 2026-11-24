@@ -213,10 +213,10 @@
       "id": "checkbox",
       "spec": "https://m3.material.io/components/checkbox/overview",
       "status": "partial",
-      "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Unchecked, checked, mixed and disabled"
+      "variant_review": "Reviewed checked, unchecked, mixed and error configurations against Google's 2026-11-19 Checkbox specification. The review includes the centered 18 dp box, 40 dp state layer, 48 dp minimum target and exterior focus ring.",
+      "desktop_evidence": "Two offscreen Metal Gallery replays cover the mixed parent, disabled rejection, error help, keyboard focus, and dark RTL at 320 dp with 200% text. The raw API, CLI and MCP produce identical PNGs.",
+      "web_evidence": "Material Gallery M278 through M281 check Chrome accessibility, checked states and disabled behavior, pointer cancellation, and dark RTL with visible error help and enlarged text.",
+      "implemented": "Additive Material 3 checkbox with three controlled states, vector indicators, optional error descriptions, logical direction, large labels, state layers and a focus ring. Live native screen-reader speech and system high contrast remain open."
     },
     {
       "id": "chips",
