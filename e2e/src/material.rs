@@ -22,6 +22,8 @@ mod material_date_picker_gestures;
 mod material_date_range_picker;
 #[path = "material_dialog.rs"]
 mod material_dialog;
+#[path = "material_divider.rs"]
+mod material_divider;
 #[path = "material_docked_date_picker.rs"]
 mod material_docked_date_picker;
 #[path = "material_drawer.rs"]
@@ -120,7 +122,7 @@ pub const STEPS: &[&str] = &[
     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
-    "M263",
+    "M263", "M264", "M265", "M266",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -236,7 +238,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_scroll_modal_fields::run(env, chrome, &url).await?;
     material_web_contrast::run(env, chrome, &url).await?;
     material_search_overlay::run(env, chrome, &url).await?;
-    material_dialog::run(env, chrome, &url).await
+    material_dialog::run(env, chrome, &url).await?;
+    material_divider::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
