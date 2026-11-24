@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<scratch>/native-scripts/replay-fab-dialog.py", line 330, in <module>
+    main()
+  File "<scratch>/native-scripts/replay-fab-dialog.py", line 316, in main
+    profiles = [replay(plan, *config) for config in PROFILES]
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "<scratch>/native-scripts/replay-fab-dialog.py", line 210, in replay
+    "clearance_targets": check_clearance(closed, fab_bounds),
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<scratch>/native-scripts/replay-fab-dialog.py", line 80, in check_clearance
+    require(overlap_x <= 0. or overlap_y <= 0.,
+  File "<scratch>/native-scripts/gallery_transport.py", line 20, in require
+    raise RuntimeError(message)
+RuntimeError: FAB covers dialog-demo-saved: (52.0, 12.0) dp overlap

@@ -1,0 +1,1099 @@
+--- /dev/null
++++ b/crates/surface-wgpu/src/isolated_transform.wgsl
+@@ -0,0 +1,80 @@
++struct VertexOutput {
++    @builtin(position) position: vec4<f32>,
++    @location(0) @interpolate(flat) source: vec4<f32>,
++    @location(1) @interpolate(flat) destination: vec4<f32>,
++    @location(2) @interpolate(flat) clip: vec4<f32>,
++    @location(3) @interpolate(flat) radius_opacity: vec2<f32>,
++};
++
++@group(0) @binding(0) var group_image: texture_2d<f32>;
++
++@vertex fn vs_main(
++    @location(0) source: vec4<f32>,
++    @location(1) destination: vec4<f32>,
++    @location(2) clip: vec4<f32>,
++    @location(3) radius_opacity: vec2<f32>,
++    @builtin(vertex_index) index: u32,
++) -> VertexOutput {
++    let positions = array<vec2<f32>, 3>(
++        vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0),
++    );
++    return VertexOutput(
++        vec4(positions[index], 0.0, 1.0), source, destination, clip, radius_opacity,
++    );
++}
++
++fn rounded_distance(pixel: vec2<f32>, bounds: vec4<f32>, radius: f32) -> f32 {
++    let half_bounds = bounds.zw * 0.5;
++    let relative = abs(pixel - (bounds.xy + half_bounds)) - half_bounds + vec2(radius);
++    return length(max(relative, vec2(0.0))) + min(max(relative.x, relative.y), 0.0) - radius;
++}
++
++fn load_pixel(tap: vec2<f32>, texture_extent: vec2<f32>) -> vec4<f32> {
++    if any(tap < vec2(0.0)) || any(tap >= texture_extent) {
++        return vec4(0.0);
++    }
++    return textureLoad(group_image, vec2<i32>(tap), 0);
++}
++
++fn sample_cropped(source: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
++    let extent = vec2<f32>(textureDimensions(group_image));
++    let centered = source.xy + uv * source.zw - vec2(0.5);
++    let base = floor(centered);
++    let weight = fract(centered);
++    // Pixel centers that lie within the crop. Use the containing pixel for
++    // any subpixel crop with no center of its own.
++    let low = ceil(source.xy - vec2(0.5));
++    let high = ceil(source.xy + source.zw - vec2(0.5)) - vec2(1.0);
++    let center = floor(source.xy + source.zw * 0.5);
++    let first = select(center, low, high >= low);
++    let last = select(center, high, high >= low);
++    let left_top = clamp(base, first, last);
++    let right_bottom = clamp(base + vec2(1.0), first, last);
++    let top = mix(
++        load_pixel(left_top, extent),
++        load_pixel(vec2(right_bottom.x, left_top.y), extent),
++        weight.x,
++    );
++    let bottom = mix(
++        load_pixel(vec2(left_top.x, right_bottom.y), extent),
++        load_pixel(right_bottom, extent),
++        weight.x,
++    );
++    return mix(top, bottom, weight.y);
++}
++
++@fragment fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
++    let pixel = vertex.position.xy;
++    let distance = max(
++        rounded_distance(pixel, vertex.destination, 0.0),
++        rounded_distance(pixel, vertex.clip, vertex.radius_opacity.x),
++    );
++    let mask = 1.0 - smoothstep(-0.5, 0.5, distance);
++    if mask == 0.0 {
++        return vec4(0.0);
++    }
++    let uv = clamp((pixel - vertex.destination.xy) / vertex.destination.zw, vec2(0.0), vec2(1.0));
++    // The intermediate already contains premultiplied colors. Filter samples
++    // in that space and apply the final coverage and opacity only once.
++    return sample_cropped(vertex.source, uv) * (mask * vertex.radius_opacity.y);
++}
+--- a/crates/surface-wgpu/src/lib.rs
++++ b/crates/surface-wgpu/src/lib.rs
+@@ -41,8 +41,10 @@
+     UnsupportedOperation,
+     #[error("invalid opacity group: {0}")]
+     InvalidOpacityGroup(&'static str),
+-    #[error("fractional opacity groups are not supported on target format {0:?}")]
++    #[error("isolated paint groups are not supported on target format {0:?}")]
+     OpacityTargetFormat(wgpu::TextureFormat),
++    #[error("invalid paint transform: {0}")]
++    InvalidPaintTransform(&'static str),
+     #[error("raster image of {width}x{height} exceeds the device's {max} pixel side limit")]
+     RasterTooLarge { width: u32, height: u32, max: u32 },
+ }
+@@ -151,7 +153,7 @@
+ 
+ enum RenderOp<'a> {
+     Paint(&'a PaintOp, Option<TextAlignment>),
+-    BeginOpacityGroup(f32),
++    BeginGroup(opacity::Effect),
+     EndOpacityGroup,
+     Fill(&'a PathFill),
+     Raster(&'a RasterPaint),
+@@ -496,7 +498,7 @@
+         )
+     }
+ 
+-    /// Paint an ordered display list including vector fills, raster images, and opacity groups.
++    /// Paint ordered commands, including vector fills, rasters and isolated groups.
+     pub fn render_extended(
+         &mut self,
+         list: &ExtendedDisplayList,
+@@ -506,13 +508,19 @@
+         scale: f32,
+     ) -> Result<(), ExtendedRenderError> {
+         opacity::validate(list.ops())?;
+-        if !opacity::supports_format(self.format)
+-            && list.ops().iter().any(|op| {
+-                matches!(op, ExtendedPaintOp::BeginOpacityGroup { opacity } if *opacity > 0. && *opacity < 1.)
+-            })
+-        {
+-            return Err(ExtendedRenderError::OpacityTargetFormat(self.format));
+-        }
++        let format = self.format;
++        let supports_isolation = opacity::supports_format(format);
++        let space = RasterSpace {
++            width,
++            height,
++            scale,
++        };
++        let begin = |effect: opacity::Effect| {
++            if effect.needs_surface() && !supports_isolation {
++                return Err(ExtendedRenderError::OpacityTargetFormat(format));
++            }
++            Ok(RenderOp::BeginGroup(effect))
++        };
+         let max = self.device.limits().max_texture_dimension_2d;
+         self.render_ops(
+             list.ops().iter().map(|op| match op {
+@@ -532,7 +540,10 @@
+                 }
+                 ExtendedPaintOp::FillPath(fill) => Ok(RenderOp::Fill(fill)),
+                 ExtendedPaintOp::BeginOpacityGroup { opacity } => {
+-                    Ok(RenderOp::BeginOpacityGroup(*opacity))
++                    begin(opacity::Effect::Opacity(*opacity))
++                }
++                ExtendedPaintOp::BeginTransformGroup { transform } => {
++                    begin(opacity::Effect::transform(*transform, space)?)
+                 }
+                 ExtendedPaintOp::EndOpacityGroup => Ok(RenderOp::EndOpacityGroup),
+                 ExtendedPaintOp::Raster(paint) => {
+@@ -588,8 +599,8 @@
+         let mut groups = Vec::new();
+         for op in ops {
+             let (op, alignment) = match op? {
+-                RenderOp::BeginOpacityGroup(value) => {
+-                    active_group = opacity::ActiveGroup::begin(value, draws.len());
++                RenderOp::BeginGroup(effect) => {
++                    active_group = opacity::ActiveGroup::begin(effect, draws.len());
+                     continue;
+                 }
+                 RenderOp::EndOpacityGroup => {
+@@ -808,7 +819,7 @@
+                 compositor
+                     .as_ref()
+                     .expect("group surface prepared")
+-                    .composite(&mut pass, index);
++                    .composite(&mut pass, index, &groups[index]);
+             }
+             for &draw in &draws[range] {
+                 match draw {
+--- a/crates/surface-wgpu/src/opacity.rs
++++ b/crates/surface-wgpu/src/opacity.rs
+@@ -1,9 +1,9 @@
+ use std::ops::Range;
+ 
+-use surface::ExtendedPaintOp;
++use surface::{ExtendedPaintOp, PaintTransform, Rect};
+ use wgpu::util::DeviceExt;
+ 
+-use crate::ExtendedRenderError;
++use crate::{ExtendedRenderError, RasterSpace};
+ 
+ // The intermediate is in the same space and format as the target. It needs
+ // enough alpha precision to store the coverage from the ordinary draw lanes.
+@@ -19,16 +19,27 @@
+     let mut open = false;
+     for op in ops {
+         match op {
+-            ExtendedPaintOp::BeginOpacityGroup { opacity } => {
++            ExtendedPaintOp::BeginOpacityGroup { .. }
++            | ExtendedPaintOp::BeginTransformGroup { .. } => {
+                 if open {
+                     return Err(ExtendedRenderError::InvalidOpacityGroup(
+                         "groups cannot nest",
+                     ));
+                 }
+-                if !(0. ..=1.).contains(opacity) {
+-                    return Err(ExtendedRenderError::InvalidOpacityGroup(
+-                        "opacity must be finite and between zero and one",
+-                    ));
++                match op {
++                    ExtendedPaintOp::BeginOpacityGroup { opacity }
++                        if !(0. ..=1.).contains(opacity) =>
++                    {
++                        return Err(ExtendedRenderError::InvalidOpacityGroup(
++                            "opacity must be finite and between zero and one",
++                        ));
++                    }
++                    ExtendedPaintOp::BeginTransformGroup { transform } if !transform.is_valid() => {
++                        return Err(ExtendedRenderError::InvalidPaintTransform(
++                            "rectangles must have finite edges and positive area, radius must be finite and nonnegative, and opacity must be in 0..=1",
++                        ));
++                    }
++                    _ => {}
+                 }
+                 open = true;
+             }
+@@ -51,29 +62,148 @@
+     Ok(())
+ }
+ 
++#[repr(C)]
++#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
++struct Instance {
++    source: [f32; 4],
++    destination: [f32; 4],
++    clip: [f32; 4],
++    radius: f32,
++    opacity: f32,
++}
++
++const OPACITY_ATTRIBUTES: [wgpu::VertexAttribute; 1] = [wgpu::VertexAttribute {
++    format: wgpu::VertexFormat::Float32,
++    offset: std::mem::offset_of!(Instance, opacity) as u64,
++    shader_location: 0,
++}];
++const TRANSFORM_ATTRIBUTES: [wgpu::VertexAttribute; 4] =
++    wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4, 2 => Float32x4, 3 => Float32x2];
++
++#[derive(Clone, Copy)]
++pub(super) struct Transform {
++    instance: Instance,
++    scissor: [u32; 4],
++}
++
++#[derive(Clone, Copy)]
++pub(super) enum Effect {
++    Opacity(f32),
++    Transform(Transform),
++}
++
++impl Effect {
++    pub(super) fn transform(
++        transform: PaintTransform,
++        space: RasterSpace,
++    ) -> Result<Self, ExtendedRenderError> {
++        let scale = |rect: Rect| {
++            Rect::new(
++                rect.x * space.scale,
++                rect.y * space.scale,
++                rect.width * space.scale,
++                rect.height * space.scale,
++            )
++        };
++        let radius = transform
++            .radius
++            .min(transform.clip.width.min(transform.clip.height) * 0.5);
++        let device = PaintTransform {
++            source: scale(transform.source),
++            destination: scale(transform.destination),
++            clip: scale(transform.clip),
++            radius: radius * space.scale,
++            opacity: transform.opacity,
++        };
++        if !device.is_valid() {
++            return Err(ExtendedRenderError::InvalidPaintTransform(
++                "scaled geometry cannot be represented in device pixels",
++            ));
++        }
++        if device.opacity == 0. {
++            return Ok(Self::Opacity(0.));
++        }
++        let viewport = Rect::new(0., 0., space.width as f32, space.height as f32);
++        if device.source == device.destination
++            && device.radius == 0.
++            && device.source.intersect(viewport) == viewport
++            && device.clip.intersect(viewport) == viewport
++        {
++            return Ok(Self::Opacity(device.opacity));
++        }
++        let bounds = device
++            .destination
++            .intersect(device.clip)
++            .intersect(viewport);
++        if bounds.width == 0. || bounds.height == 0. {
++            return Ok(Self::Opacity(0.));
++        }
++        // Allow the antialias fringe outside the rectangles. The shader
++        // evaluates actual fractional bounds and rounded intersections.
++        let fringe = Rect::new(
++            bounds.x - 0.5,
++            bounds.y - 0.5,
++            bounds.width + 1.,
++            bounds.height + 1.,
++        );
++        let scissor = RasterSpace { scale: 1., ..space }
++            .scissor(fringe)
++            .expect("visible bounds and their fringe intersect the device viewport");
++        let to_array = |rect: Rect| [rect.x, rect.y, rect.width, rect.height];
++        Ok(Self::Transform(Transform {
++            instance: Instance {
++                source: to_array(device.source),
++                destination: to_array(device.destination),
++                clip: to_array(device.clip),
++                radius: device.radius,
++                opacity: device.opacity,
++            },
++            scissor,
++        }))
++    }
++
++    pub(super) fn needs_surface(self) -> bool {
++        match self {
++            Self::Opacity(opacity) => opacity > 0. && opacity < 1.,
++            Self::Transform(_) => true,
++        }
++    }
++
++    fn instance(self) -> Instance {
++        match self {
++            Self::Transform(transform) => transform.instance,
++            Self::Opacity(opacity) => Instance {
++                source: [0.; 4],
++                destination: [0.; 4],
++                clip: [0.; 4],
++                radius: 0.,
++                opacity,
++            },
++        }
++    }
++}
++
+ pub(super) enum ActiveGroup {
+     Direct,
+     Hidden,
+-    Intermediate { start: usize, opacity: f32 },
++    Intermediate { start: usize, effect: Effect },
+ }
+ 
+ impl ActiveGroup {
+-    pub(super) fn begin(opacity: f32, start: usize) -> Self {
+-        if opacity == 0. {
+-            Self::Hidden
+-        } else if opacity == 1. {
+-            Self::Direct
+-        } else {
+-            Self::Intermediate { start, opacity }
++    pub(super) fn begin(effect: Effect, start: usize) -> Self {
++        match effect {
++            Effect::Opacity(0.) => Self::Hidden,
++            Effect::Opacity(1.) => Self::Direct,
++            _ => Self::Intermediate { start, effect },
+         }
+     }
+ 
+     pub(super) fn end(&mut self, end: usize, groups: &mut Vec<DrawGroup>) {
+-        if let Self::Intermediate { start, opacity } = std::mem::replace(self, Self::Direct) {
++        if let Self::Intermediate { start, effect } = std::mem::replace(self, Self::Direct) {
+             if start < end {
+                 groups.push(DrawGroup {
+                     draws: start..end,
+-                    opacity,
++                    effect,
+                 });
+             }
+         }
+@@ -82,7 +212,7 @@
+ 
+ pub(super) struct DrawGroup {
+     draws: Range<usize>,
+-    opacity: f32,
++    effect: Effect,
+ }
+ 
+ pub(super) enum Pass {
+@@ -119,7 +249,9 @@
+ 
+ pub(super) struct Compositor {
+     layout: wgpu::BindGroupLayout,
+-    pipeline: wgpu::RenderPipeline,
++    pipeline_layout: wgpu::PipelineLayout,
++    opacity_pipeline: wgpu::RenderPipeline,
++    transform_pipeline: Option<wgpu::RenderPipeline>,
+     surface: Option<Surface>,
+ }
+ 
+@@ -143,39 +275,18 @@
+             bind_group_layouts: &[&layout],
+             push_constant_ranges: &[],
+         });
+-        let shader = device.create_shader_module(wgpu::include_wgsl!("opacity.wgsl"));
+-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+-            label: Some("Surface opacity composite"),
+-            layout: Some(&pipeline_layout),
+-            vertex: wgpu::VertexState {
+-                module: &shader,
+-                entry_point: Some("vs_main"),
+-                buffers: &[wgpu::VertexBufferLayout {
+-                    array_stride: size_of::<f32>() as u64,
+-                    step_mode: wgpu::VertexStepMode::Instance,
+-                    attributes: &wgpu::vertex_attr_array![0 => Float32],
+-                }],
+-                compilation_options: Default::default(),
+-            },
+-            fragment: Some(wgpu::FragmentState {
+-                module: &shader,
+-                entry_point: Some("fs_main"),
+-                targets: &[Some(wgpu::ColorTargetState {
+-                    format,
+-                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
+-                    write_mask: wgpu::ColorWrites::ALL,
+-                })],
+-                compilation_options: Default::default(),
+-            }),
+-            primitive: wgpu::PrimitiveState::default(),
+-            depth_stencil: None,
+-            multisample: wgpu::MultisampleState::default(),
+-            multiview: None,
+-            cache: None,
+-        });
++        let opacity_pipeline = create_pipeline(
++            device,
++            &pipeline_layout,
++            wgpu::include_wgsl!("opacity.wgsl"),
++            &OPACITY_ATTRIBUTES,
++            format,
++        );
+         Self {
+             layout,
+-            pipeline,
++            pipeline_layout,
++            opacity_pipeline,
++            transform_pipeline: None,
+             surface: None,
+         }
+     }
+@@ -224,27 +335,83 @@
+                 binding,
+             });
+         }
+-        let values: Vec<_> = groups.iter().map(|group| group.opacity).collect();
+-        let opacities = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+-            label: Some("Surface opacity instances"),
++        let values: Vec<_> = groups.iter().map(|group| group.effect.instance()).collect();
++        let instances = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
++            label: Some("Surface isolated paint instances"),
+             contents: bytemuck::cast_slice(&values),
+             usage: wgpu::BufferUsages::VERTEX,
+         });
++        if groups
++            .iter()
++            .any(|group| matches!(group.effect, Effect::Transform(_)))
++        {
++            self.transform_pipeline.get_or_insert_with(|| {
++                create_pipeline(
++                    device,
++                    &self.pipeline_layout,
++                    wgpu::include_wgsl!("isolated_transform.wgsl"),
++                    &TRANSFORM_ATTRIBUTES,
++                    format,
++                )
++            });
++        }
+         Prepared {
+             surface: self
+                 .surface
+                 .as_ref()
+                 .expect("intermediate surface prepared"),
+-            pipeline: &self.pipeline,
+-            opacities,
+-        }
+-    }
++            opacity_pipeline: &self.opacity_pipeline,
++            transform_pipeline: self.transform_pipeline.as_ref(),
++            instances,
++        }
++    }
++}
++
++fn create_pipeline(
++    device: &wgpu::Device,
++    layout: &wgpu::PipelineLayout,
++    source: wgpu::ShaderModuleDescriptor<'_>,
++    attributes: &[wgpu::VertexAttribute],
++    format: wgpu::TextureFormat,
++) -> wgpu::RenderPipeline {
++    let label = source.label;
++    let shader = device.create_shader_module(source);
++    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
++        label,
++        layout: Some(layout),
++        vertex: wgpu::VertexState {
++            module: &shader,
++            entry_point: Some("vs_main"),
++            buffers: &[wgpu::VertexBufferLayout {
++                array_stride: size_of::<Instance>() as u64,
++                step_mode: wgpu::VertexStepMode::Instance,
++                attributes,
++            }],
++            compilation_options: Default::default(),
++        },
++        fragment: Some(wgpu::FragmentState {
++            module: &shader,
++            entry_point: Some("fs_main"),
++            targets: &[Some(wgpu::ColorTargetState {
++                format,
++                blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
++                write_mask: wgpu::ColorWrites::ALL,
++            })],
++            compilation_options: Default::default(),
++        }),
++        primitive: wgpu::PrimitiveState::default(),
++        depth_stencil: None,
++        multisample: wgpu::MultisampleState::default(),
++        multiview: None,
++        cache: None,
++    })
+ }
+ 
+ pub(super) struct Prepared<'a> {
+     surface: &'a Surface,
+-    pipeline: &'a wgpu::RenderPipeline,
+-    opacities: wgpu::Buffer,
++    opacity_pipeline: &'a wgpu::RenderPipeline,
++    transform_pipeline: Option<&'a wgpu::RenderPipeline>,
++    instances: wgpu::Buffer,
+ }
+ 
+ impl Prepared<'_> {
+@@ -252,13 +419,30 @@
+         &self.surface.view
+     }
+ 
+-    pub(super) fn composite(&self, pass: &mut wgpu::RenderPass<'_>, group: usize) {
+-        let start = (group * size_of::<f32>()) as u64;
+-        pass.set_scissor_rect(0, 0, self.surface.width, self.surface.height);
+-        pass.set_pipeline(self.pipeline);
++    pub(super) fn composite(
++        &self,
++        pass: &mut wgpu::RenderPass<'_>,
++        index: usize,
++        group: &DrawGroup,
++    ) {
++        let (pipeline, [x, y, width, height]) = match group.effect {
++            Effect::Opacity(_) => (
++                self.opacity_pipeline,
++                [0, 0, self.surface.width, self.surface.height],
++            ),
++            Effect::Transform(transform) => (
++                self.transform_pipeline
++                    .expect("a transform pipeline was prepared"),
++                transform.scissor,
++            ),
++        };
++        let start = (index * size_of::<Instance>()) as u64;
++        pass.set_scissor_rect(x, y, width, height);
++        pass.set_pipeline(pipeline);
+         pass.set_vertex_buffer(
+             0,
+-            self.opacities.slice(start..start + size_of::<f32>() as u64),
++            self.instances
++                .slice(start..start + size_of::<Instance>() as u64),
+         );
+         pass.set_bind_group(0, &self.surface.binding, &[]);
+         pass.draw(0..3, 0..1);
+--- a/crates/surface-wgpu/tests/it.rs
++++ b/crates/surface-wgpu/tests/it.rs
+@@ -3,6 +3,8 @@
+ 
+ #[path = "it/basic_dialog_motion.rs"]
+ mod basic_dialog_motion;
++#[path = "it/isolated_transform.rs"]
++mod isolated_transform;
+ #[path = "it/list_ripple.rs"]
+ mod list_ripple;
+ #[path = "it/loading_indicator.rs"]
+--- /dev/null
++++ b/crates/surface-wgpu/tests/it/isolated_transform.rs
+@@ -0,0 +1,347 @@
++use surface::{Color, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PaintTransform, Rect};
++use surface_wgpu::{Capture, ExtendedRenderError, Renderer};
++
++const WIDTH: u32 = 144;
++const HEIGHT: u32 = 104;
++const VIEWPORT: Rect = Rect {
++    x: 0.,
++    y: 0.,
++    width: WIDTH as f32,
++    height: HEIGHT as f32,
++};
++const BASE: Color = Color::rgb(16, 40, 73);
++const GREEN: Color = Color::rgb(36, 216, 95);
++const RED: Color = Color::rgb(233, 69, 45);
++const BLUE: Color = Color::rgb(60, 193, 226);
++const GOLD: Color = Color::rgb(236, 171, 42);
++const WHITE: Color = Color::rgb(255, 255, 255);
++const MAGENTA: Color = Color::rgb(250, 16, 227);
++
++fn quad(rect: Rect, color: Color) -> ExtendedPaintOp {
++    PaintOp::Quad {
++        rect,
++        clip: VIEWPORT,
++        radius: 0.,
++        color,
++    }
++    .into()
++}
++
++fn transform() -> PaintTransform {
++    PaintTransform {
++        source: Rect::new(12., 14., 32., 20.),
++        destination: Rect::new(52., 28., 64., 40.),
++        clip: Rect::new(60., 31., 46., 34.),
++        radius: 8.,
++        opacity: 0.625,
++    }
++}
++
++fn source_paint() -> Vec<ExtendedPaintOp> {
++    vec![
++        quad(Rect::new(11., 14., 1., 20.), MAGENTA),
++        quad(Rect::new(44., 14., 1., 20.), MAGENTA),
++        quad(Rect::new(12., 14., 16., 16.), GREEN),
++        quad(Rect::new(28., 14., 16., 16.), RED),
++        quad(
++            Rect::new(12., 30., 32., 4.),
++            Color(BLUE.0, BLUE.1, BLUE.2, 128),
++        ),
++    ]
++}
++
++fn scene(transform: PaintTransform) -> ExtendedDisplayList {
++    let mut ops = vec![
++        quad(VIEWPORT, BASE),
++        ExtendedPaintOp::BeginOpacityGroup { opacity: 0.5 },
++        quad(Rect::new(4., 61., 14., 11.), GOLD),
++        ExtendedPaintOp::EndOpacityGroup,
++        ExtendedPaintOp::BeginTransformGroup { transform },
++    ];
++    ops.extend(source_paint());
++    ops.extend([
++        ExtendedPaintOp::EndOpacityGroup,
++        quad(Rect::new(98., 46., 5., 7.), WHITE),
++    ]);
++    ExtendedDisplayList::new(VIEWPORT, ops)
++}
++
++fn pixel(capture: &Capture, x: u32, y: u32) -> [u8; 4] {
++    let byte = ((y * capture.width + x) * 4) as usize;
++    capture.rgba[byte..byte + 4].try_into().unwrap()
++}
++
++fn rgba(color: Color) -> [u8; 4] {
++    [color.0, color.1, color.2, color.3]
++}
++
++fn blend(under: Color, over: Color, alpha: f32) -> [u8; 4] {
++    let a = rgba(under);
++    let b = rgba(over);
++    std::array::from_fn(|index| {
++        (f32::from(a[index]) * (1. - alpha) + f32::from(b[index]) * alpha).round() as u8
++    })
++}
++
++fn near(actual: [u8; 4], expected: [u8; 4]) {
++    assert!(
++        actual
++            .into_iter()
++            .zip(expected)
++            .all(|(channel, target)| channel.abs_diff(target) <= 2),
++        "actual {actual:?}, expected {expected:?}"
++    );
++}
++
++fn save(capture: &Capture, name: &str) {
++    let Ok(path) = std::env::var("SURFACE_GPU_EVIDENCE") else {
++        return;
++    };
++    let path = std::path::Path::new(&path).with_file_name(format!("gpu-transform-{name}.png"));
++    let mut encoder = png::Encoder::new(
++        std::fs::File::create(path).unwrap(),
++        capture.width,
++        capture.height,
++    );
++    encoder.set_color(png::ColorType::Rgba);
++    encoder.set_depth(png::BitDepth::Eight);
++    encoder
++        .write_header()
++        .unwrap()
++        .write_image_data(&capture.rgba)
++        .unwrap();
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_transform_groups_scale_crop_round_and_composite_in_device_pixels() {
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None).await.unwrap();
++        eprintln!("GPU transformed-group evidence: {:?}", adapter.get_info());
++        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
++            .await
++            .unwrap();
++        for scale in [1, 2] {
++            let mut render = |list: &ExtendedDisplayList| {
++                renderer
++                    .capture_extended(list, WIDTH * scale, HEIGHT * scale, scale as f32)
++                    .unwrap()
++            };
++            let transform = transform();
++            let rounded = render(&scene(transform));
++            let sample = |x, y| pixel(&rounded, x * scale, y * scale);
++            // This old isolated opacity group is adjacent in draw order.
++            near(sample(10, 66), blend(BASE, GOLD, 0.5));
++            // Source pixels are mapped away. The following ordinary draw
++            // stays on the real target and covers a section of the group.
++            assert_eq!(sample(18, 20), rgba(BASE));
++            assert_eq!(sample(100, 49), rgba(WHITE));
++            near(sample(72, 42), blend(BASE, GREEN, transform.opacity));
++            near(sample(93, 42), blend(BASE, RED, transform.opacity));
++            near(
++                sample(74, 63),
++                blend(BASE, BLUE, transform.opacity * 128. / 255.),
++            );
++            assert_eq!(sample(60, 31), rgba(BASE), "rounded corner");
++            assert_eq!(sample(57, 49), rgba(BASE), "independent clip");
++            assert_eq!(sample(80, 66), rgba(BASE), "clip shorter than destination");
++            let nominal = blend(BASE, GREEN, transform.opacity)[1];
++            assert!(
++                (60 * scale..68 * scale).any(|x| {
++                    (31 * scale..39 * scale).any(|y| {
++                        let green = pixel(&rounded, x, y)[1];
++                        green > BASE.1 + 4 && green < nominal - 4
++                    })
++                }),
++                "rounded clip edge must antialias at {scale}x"
++            );
++
++            let cropped = render(&scene(PaintTransform {
++                clip: transform.destination,
++                radius: 0.,
++                opacity: 1.,
++                ..transform
++            }));
++            // A mapping that sampled outside the source rect would mix the
++            // purple trim into these edge samples.
++            assert_eq!(pixel(&cropped, 52 * scale, 40 * scale), rgba(GREEN));
++            assert_eq!(pixel(&cropped, 116 * scale - 1, 40 * scale), rgba(RED));
++            near(
++                pixel(&cropped, 84 * scale - 1, 40 * scale),
++                blend(GREEN, RED, 0.25),
++            );
++            near(
++                pixel(&cropped, 84 * scale, 40 * scale),
++                blend(GREEN, RED, 0.75),
++            );
++            assert_eq!(pixel(&cropped, 52 * scale - 1, 40 * scale), rgba(BASE));
++            assert_eq!(pixel(&cropped, 116 * scale, 40 * scale), rgba(BASE));
++
++            let offscreen_source = PaintTransform {
++                source: Rect::new(-4., -3., 12., 9.),
++                destination: Rect::new(20., 75., 24., 18.),
++                clip: VIEWPORT,
++                radius: 0.,
++                opacity: 1.,
++            };
++            let outside = render(&ExtendedDisplayList::new(
++                VIEWPORT,
++                vec![
++                    quad(VIEWPORT, BASE),
++                    ExtendedPaintOp::BeginTransformGroup {
++                        transform: offscreen_source,
++                    },
++                    quad(VIEWPORT, GREEN),
++                    ExtendedPaintOp::EndOpacityGroup,
++                ],
++            ));
++            assert_eq!(pixel(&outside, 24 * scale, 87 * scale), rgba(BASE));
++            assert_eq!(pixel(&outside, 38 * scale, 78 * scale), rgba(BASE));
++            assert_eq!(pixel(&outside, 38 * scale, 88 * scale), rgba(GREEN));
++            assert_eq!(render(&scene(transform)).rgba, rounded.rgba);
++            if scale == 2 {
++                save(&rounded, "rounded");
++                save(&cropped, "crop");
++            }
++        }
++    });
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_transform_identity_matches_direct_and_opacity_and_rejects_invalid_groups() {
++    use ExtendedPaintOp::{
++        BeginOpacityGroup as BeginOpacity, BeginTransformGroup as Begin, EndOpacityGroup as End,
++    };
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None).await.unwrap();
++        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Bgra8UnormSrgb)
++            .await
++            .unwrap();
++        let identity = PaintTransform {
++            source: VIEWPORT,
++            destination: VIEWPORT,
++            clip: VIEWPORT,
++            radius: 0.,
++            opacity: 1.,
++        };
++        let base = quad(VIEWPORT, BASE);
++        let leaf = quad(Rect::new(10., 11., 40., 20.), GREEN);
++        let scale = 2.;
++        let mut render = |ops| {
++            renderer.capture_extended(
++                &ExtendedDisplayList::new(VIEWPORT, ops),
++                WIDTH * 2,
++                HEIGHT * 2,
++                scale,
++            )
++        };
++        for opacity in [0., 0.5, 1.] {
++            let transformed = render(vec![
++                base.clone(),
++                Begin {
++                    transform: PaintTransform {
++                        opacity,
++                        ..identity
++                    },
++                },
++                leaf.clone(),
++                End,
++            ])
++            .unwrap();
++            let ordinary = render(vec![
++                base.clone(),
++                BeginOpacity { opacity },
++                leaf.clone(),
++                End,
++            ])
++            .unwrap();
++            assert_eq!(transformed.rgba, ordinary.rgba);
++        }
++        let direct = render(vec![base.clone(), leaf.clone()]).unwrap();
++        let identity = render(vec![
++            base.clone(),
++            Begin {
++                transform: identity,
++            },
++            leaf,
++            End,
++        ])
++        .unwrap();
++        assert_eq!(identity.rgba, direct.rgba);
++
++        let full = transform();
++        let no_intersection = PaintTransform {
++            clip: Rect::new(0., 0., 5., 5.),
++            ..full
++        };
++        assert_eq!(
++            render(vec![
++                base.clone(),
++                Begin {
++                    transform: no_intersection
++                },
++                quad(VIEWPORT, RED),
++                End
++            ])
++            .unwrap()
++            .rgba,
++            render(vec![base]).unwrap().rgba,
++        );
++        for bad in [
++            PaintTransform {
++                radius: -1.,
++                ..full
++            },
++            PaintTransform {
++                opacity: 1.25,
++                ..full
++            },
++            PaintTransform {
++                opacity: f32::NAN,
++                ..full
++            },
++            PaintTransform {
++                source: Rect::new(1., 1., 0., 5.),
++                opacity: 0.,
++                ..full
++            },
++            PaintTransform {
++                clip: Rect::new(f32::NAN, 1., 2., 5.),
++                ..full
++            },
++            PaintTransform {
++                destination: Rect::new(1., 1., f32::MAX, 8.),
++                ..full
++            },
++        ] {
++            assert!(matches!(
++                render(vec![Begin { transform: bad }, End]),
++                Err(ExtendedRenderError::InvalidPaintTransform(_))
++            ));
++        }
++        for ops in [
++            vec![Begin { transform: full }],
++            vec![
++                BeginOpacity { opacity: 0. },
++                Begin { transform: full },
++                End,
++                End,
++            ],
++            vec![
++                Begin { transform: full },
++                BeginOpacity { opacity: 1. },
++                End,
++                End,
++            ],
++            vec![Begin { transform: full }, End, End],
++        ] {
++            assert!(matches!(
++                render(ops),
++                Err(ExtendedRenderError::InvalidOpacityGroup(_))
++            ));
++        }
++    });
++}
+--- a/crates/surface/src/lib.rs
++++ b/crates/surface/src/lib.rs
+@@ -47,7 +47,8 @@
+ pub use motion::{Easing, Transition};
+ pub use paint::{
+     AlignedTextPaint, DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp,
+-    TextAlignment, TextDecoration, TextSelectionColors, TextSelectionPaint, TextSelectionRegion,
++    PaintTransform, TextAlignment, TextDecoration, TextSelectionColors, TextSelectionPaint,
++    TextSelectionRegion,
+ };
+ pub use raster::{RasterImage, RasterPaint};
+ pub use scroll_extent::scroll_extent;
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -186,6 +186,44 @@
+     }
+ }
+ 
++/// Map an isolated paint group from a source rectangle to a destination.
++///
++/// All geometry uses logical pixels, in the same coordinates as the display
++/// list. The source crops the original group paint. The destination is masked
++/// to the independent rounded `clip`. The radius is capped at half the clip's
++/// shorter side. Opacity applies once to the whole transformed group.
++#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
++pub struct PaintTransform {
++    pub source: Rect,
++    pub destination: Rect,
++    pub clip: Rect,
++    pub radius: f32,
++    pub opacity: f32,
++}
++
++impl PaintTransform {
++    /// All rectangles must have finite edges and positive area. Opacity must
++    /// be in `0..=1` and radius must be finite and nonnegative.
++    pub fn is_valid(self) -> bool {
++        let valid_rect = |rect: Rect| {
++            let far_x = rect.x + rect.width;
++            let far_y = rect.y + rect.height;
++            rect.x.is_finite()
++                && rect.y.is_finite()
++                && far_x.is_finite()
++                && far_y.is_finite()
++                && far_x > rect.x
++                && far_y > rect.y
++        };
++        valid_rect(self.source)
++            && valid_rect(self.destination)
++            && valid_rect(self.clip)
++            && self.radius.is_finite()
++            && self.radius >= 0.
++            && (0. ..=1.).contains(&self.opacity)
++    }
++}
++
+ /// Ordered drawing commands that retain vector fills and live raster images.
+ #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+ #[non_exhaustive]
+@@ -206,6 +244,11 @@
+         opacity: f32,
+     },
+     EndOpacityGroup,
++    /// Start a transformed isolated group. End it with `EndOpacityGroup`.
++    /// Group ranges cannot nest.
++    BeginTransformGroup {
++        transform: PaintTransform,
++    },
+ }
+ 
+ trait CompileOp: From<PaintOp> {
+--- a/crates/surface/tests/opacity_group.rs
++++ b/crates/surface/tests/opacity_group.rs
+@@ -1,5 +1,7 @@
+ use serde_json::json;
+-use surface::{Color, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, Rect};
++use surface::{
++    Color, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PaintTransform, Rect,
++};
+ 
+ #[test]
+ fn opacity_markers_round_trip_without_changing_legacy_paint() {
+@@ -48,3 +50,65 @@
+     assert_eq!(decoded.viewport(), viewport);
+     assert_eq!(decoded.into_ops(), grouped.into_ops());
+ }
++
++#[test]
++fn transform_group_preserves_geometry_and_uses_the_existing_end_marker() {
++    let viewport = Rect::new(0., 0., 120., 80.);
++    let transform = PaintTransform {
++        source: Rect::new(6., -4., 40., 20.),
++        destination: Rect::new(40., 18., 72., 36.),
++        clip: Rect::new(44., 20., 60., 28.),
++        radius: 6.25,
++        opacity: 0.625,
++    };
++    assert!(transform.is_valid());
++    let list = ExtendedDisplayList::new(
++        viewport,
++        vec![
++            ExtendedPaintOp::BeginTransformGroup { transform },
++            ExtendedPaintOp::EndOpacityGroup,
++        ],
++    );
++    let wire = serde_json::to_value(&list).unwrap();
++    assert_eq!(
++        wire["ops"][0],
++        json!({"BeginTransformGroup": {"transform": transform}})
++    );
++    assert_eq!(wire["ops"][1], json!("EndOpacityGroup"));
++    assert_eq!(
++        serde_json::from_value::<ExtendedDisplayList>(wire).unwrap(),
++        list
++    );
++    for invalid in [
++        PaintTransform {
++            radius: -1.,
++            ..transform
++        },
++        PaintTransform {
++            radius: f32::INFINITY,
++            ..transform
++        },
++        PaintTransform {
++            opacity: f32::NAN,
++            ..transform
++        },
++        PaintTransform {
++            opacity: 1.1,
++            ..transform
++        },
++        PaintTransform {
++            source: Rect::new(f32::MAX, 0., f32::MAX, 2.),
++            ..transform
++        },
++        PaintTransform {
++            destination: Rect::new(3., 2., 0., 1.),
++            ..transform
++        },
++        PaintTransform {
++            clip: Rect::new(3., 2., 5., -1.),
++            ..transform
++        },
++    ] {
++        assert!(!invalid.is_valid(), "{invalid:?}");
++    }
++}
+--- a/docs/provenance.json
++++ b/docs/provenance.json
+@@ -33,7 +33,7 @@
+   },
+   "modified_since_import": {
+     "crates/surface/src/element.rs": "Allows clippy::large_enum_variant on Element so its public variants stay unchanged.",
+-    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, live raster paint, static text alignment and paired text selection paint, after the Core exports. The Core lines are unchanged.",
++    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, live raster paint, static text alignment, paired text selection paint and isolated group transforms, after the Core exports. The Core lines are unchanged.",
+     "crates/surface/src/snapshot.rs": "Passes tag instead of *tag to two helpers to satisfy Clippy. Behavior is unchanged.",
+     "crates/ui-runtime/src/domain/use_reducer.rs": "Names the reducer type with a Reducer alias to satisfy Clippy type_complexity. The signature is unchanged."
+   },

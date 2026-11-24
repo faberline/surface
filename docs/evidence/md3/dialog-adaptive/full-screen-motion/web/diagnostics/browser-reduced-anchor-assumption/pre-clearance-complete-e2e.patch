@@ -1,0 +1,1712 @@
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -20,6 +20,8 @@
+ mod material_date_picker_gestures;
+ #[path = "material_date_range_picker.rs"]
+ mod material_date_range_picker;
++#[path = "material_dialog.rs"]
++mod material_dialog;
+ #[path = "material_docked_date_picker.rs"]
+ mod material_docked_date_picker;
+ #[path = "material_drawer.rs"]
+@@ -117,7 +119,8 @@
+     "M215", "M216", "M217", "M218", "M219", "M220", "M221", "M222", "M223", "M224", "M225", "M226",
+     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
+     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
+-    "M251", "M252", "M253", "M254", "M255",
++    "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
++    "M263",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -232,7 +235,8 @@
+     material_scroll_popup_fields::run(env, chrome, &url).await?;
+     material_scroll_modal_fields::run(env, chrome, &url).await?;
+     material_web_contrast::run(env, chrome, &url).await?;
+-    material_search_overlay::run(env, chrome, &url).await
++    material_search_overlay::run(env, chrome, &url).await?;
++    material_dialog::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+--- /dev/null
++++ b/e2e/src/material_dialog.rs
+@@ -0,0 +1,795 @@
++//! Basic, alert and responsive full-screen dialogs through the real Chrome host.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, projected,
++    resize, Raster,
++};
++use super::{click, point, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++#[path = "material_dialog_motion.rs"]
++mod motion;
++#[path = "material_dialog_transform.rs"]
++mod transform;
++
++const SHOW: &str = "dialog-demo-show";
++const BASIC: &str = "dialog-demo-basic";
++const ALERT: &str = "dialog-demo-alert";
++const EDIT: &str = "dialog-demo-edit";
++const DISCARD: &str = "dialog-demo-discard";
++const EDITOR: &str = "dialog-demo-editor";
++const INPUT: &str = "document.getElementById('surface-text-input')";
++const INITIAL: &str = "週末行程";
++const CHANGED: &str = "秋日散步";
++
++type Rect = [f64; 4];
++
++async fn ready(tab: &Tab, condition: &str) -> Result<()> {
++    until(tab, &format!("(d => {condition})(s.dialog_demo)")).await?;
++    tab.settle().await
++}
++
++async fn route(tab: &Tab, url: &str, width: u32, height: u32) -> Result<()> {
++    tab.viewport(960, 1844).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1800).await?;
++    activate(tab, "section-2").await?;
++    until(tab, "s.section === 2").await?;
++    activate(tab, SHOW).await?;
++    ready(tab, "d.visible && d.open === null").await?;
++    resize(tab, width, height).await
++}
++
++async fn open(tab: &Tab, id: &str, kind: &str) -> Result<()> {
++    activate(tab, &format!("{id}-open")).await?;
++    ready(tab, &format!("d.open === {}", js(kind))).await
++}
++
++async fn tab_to(tab: &Tab, key: &str, id: &str) -> Result<()> {
++    tab.press(key).await?;
++    focused(tab, id).await
++}
++
++async fn dismiss(tab: &Tab, opener: &str) -> Result<()> {
++    ready(tab, "d.open === null").await?;
++    focused(tab, opener).await
++}
++
++async fn pointer_focus(tab: &Tab, id: &str) -> Result<()> {
++    until(tab, &format!("s.focused === {}", js(id))).await?;
++    tab.wait_for(&format!(
++        "document.activeElement === document.getElementById('surface') || document.activeElement === {}",
++        projected(id)
++    )).await
++}
++
++async fn screen(env: &Env, tab: &Tab, name: &str) -> Result<()> {
++    tab.settle().await?;
++    tab.screenshot(&env.artifact(&format!("material-dialog-adaptive-{name}.png")))
++        .await
++}
++
++async fn named_modal(tab: &Tab, id: &str, role: &str, label: &str) -> Result<Value> {
++    let target = projected(id);
++    tab.wait_for(&format!(
++        "{target}?.getAttribute('role') === {} && {target}?.getAttribute('aria-modal') === 'true'",
++        js(role)
++    ))
++    .await?;
++    let relation = tab
++        .eval(&format!(
++            "(() => {{const e={target}; const heading=document.getElementById(e.getAttribute('aria-labelledby')); return {{id:heading?.dataset.surfaceId,text:heading?.textContent}};}})()"
++        ))
++        .await?;
++    check_eq!(
++        relation["text"],
++        label,
++        "dialog refers to its projected heading"
++    );
++    let tree = ax_tree(tab).await?;
++    let node = ax(&tree, role, label)?;
++    check_eq!(
++        ax_property(node, "modal"),
++        Some(&json!(true)),
++        "Chrome AX marks the named dialog modal"
++    );
++    Ok(json!({"role":role,"name":node["name"]["value"],"heading":relation,"modal":true}))
++}
++
++async fn background_blocked(tab: &Tab) -> Result<()> {
++    for id in [
++        "dialog-demo-back",
++        "dialog-demo-basic-open",
++        "dialog-demo-alert-open",
++        "dialog-demo-edit-open",
++    ] {
++        check_eq!(
++            tab.eval(&format!("{} === null", projected(id))).await?,
++            true,
++            "background {id} is pruned from projected AX"
++        );
++    }
++    Ok(())
++}
++
++async fn basic(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 960, 720).await?;
++    open(tab, BASIC, "basic").await?;
++    let role = named_modal(tab, BASIC, "dialog", "行程通知").await?;
++    check_eq!(
++        role["heading"]["id"],
++        "dialog-demo-basic-heading",
++        "Basic heading ID"
++    );
++    background_blocked(tab).await?;
++    focused(tab, "dialog-demo-basic-confirm").await?;
++    tab_to(tab, "Tab", "dialog-demo-basic-cancel").await?;
++    tab_to(tab, "Tab", "dialog-demo-basic-confirm").await?;
++    tab_to(tab, "Shift+Tab", "dialog-demo-basic-cancel").await?;
++    ready(tab, "d.opacity.basic === 1").await?;
++    screen(env, tab, "basic-wide").await?;
++    tab.press("Escape").await?;
++    dismiss(tab, "dialog-demo-basic-open").await?;
++
++    open(tab, BASIC, "basic").await?;
++    let panel = bounds(tab, BASIC).await?;
++    let [x, y, ..] = tab.canvas_box().await?;
++    check!(
++        panel[0] > 8. && panel[1] > 8.,
++        "pointer is outside the Basic panel: {panel:?}"
++    );
++    tab.click(x + 4., y + 4.).await?;
++    ready(tab, "d.open === null").await?;
++    pointer_focus(tab, "dialog-demo-basic-open").await?;
++    Ok(
++        json!({"ax":role,"panel":panel,"tab_cycle":["confirm","cancel","confirm","cancel"],"escape_return":true,"scrim_return":true}),
++    )
++}
++
++async fn pinned_bounds(tab: &Tab) -> Result<[Rect; 4]> {
++    Ok([
++        bounds(tab, "dialog-demo-basic-heading").await?,
++        bounds(tab, "dialog-demo-basic-body").await?,
++        bounds(tab, "dialog-demo-basic-cancel").await?,
++        bounds(tab, "dialog-demo-basic-confirm").await?,
++    ])
++}
++
++async fn short(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 320, 400).await?;
++    activate(tab, "dialog-demo-theme").await?;
++    activate(tab, "dialog-demo-large-text").await?;
++    until(tab, "s.dark && s.dialog_demo.text_scale === 2").await?;
++    open(tab, BASIC, "basic").await?;
++    let panel = bounds(tab, BASIC).await?;
++    let [heading, body, cancel, confirm] = pinned_bounds(tab).await?;
++    check!(
++        contains([0., 0., 320., 400.], panel),
++        "Basic stays within the 320×400 viewport: {panel:?}"
++    );
++    for target in [heading, body, cancel, confirm] {
++        check!(
++            contains(panel, target),
++            "pinned component remains inside panel: {target:?} / {panel:?}"
++        );
++    }
++    for target in [cancel, confirm] {
++        check!(
++            target[2] >= 48. && target[3] >= 48.,
++            "complete 48 dp action target: {target:?}"
++        );
++        check!(
++            body[1] + body[3] <= target[1] + 0.5,
++            "actions remain below body: {target:?} / {body:?}"
++        );
++    }
++    check!(
++        heading[1] + heading[3] <= body[1] && body[3] > 0.,
++        "heading stays above a nonempty scroll body"
++    );
++    let tail = "dialog-demo-basic-offline";
++    let before = bounds(tab, tail).await?;
++    check!(
++        before[1] >= body[1] + body[3],
++        "last description initially below body: {before:?}"
++    );
++    ready(tab, "d.opacity.basic === 1").await?;
++    screen(env, tab, "basic-short-before").await?;
++
++    let target = point(tab, "dialog-demo-basic-body").await?;
++    tab.mouse_move(target.x, target.y).await?;
++    tab.wheel(0., 1800.).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({})[1] < {}",
++        js(tail),
++        before[1] - 40.
++    ))
++    .await?;
++    tab.settle().await?;
++    let after = bounds(tab, tail).await?;
++    check!(
++        after[1] < body[1] + body[3] && after[1] + after[3] > body[1],
++        "trusted wheel reveals the last description: {after:?} / {body:?}"
++    );
++    check_eq!(
++        pinned_bounds(tab).await?,
++        [heading, body, cancel, confirm],
++        "heading, scroll frame and both action targets stay pinned"
++    );
++    screen(env, tab, "basic-short-after").await?;
++    tab.press("Enter").await?;
++    dismiss(tab, "dialog-demo-basic-open").await?;
++    Ok(
++        json!({"viewport":[320,400],"dark":true,"text_scale":2,"panel":panel,"heading":heading,"body":body,"actions":[cancel,confirm],"last_content_before":before,"last_content_after":after,"pinned":true}),
++    )
++}
++
++async fn alert(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 960, 720).await?;
++    open(tab, ALERT, "alert").await?;
++    let role = named_modal(tab, ALERT, "alertdialog", "連線中斷").await?;
++    check_eq!(
++        role["heading"]["id"],
++        "dialog-demo-alert-heading",
++        "Alert heading ID"
++    );
++    let tree = ax_tree(tab).await?;
++    let dialog = ax(&tree, "alertdialog", "連線中斷")?;
++    let description = "目前無法同步行程。請確認網路連線後再試。";
++    check_eq!(
++        dialog["description"]["value"],
++        description,
++        "Chrome AX reads the linked alert description"
++    );
++    ax(&tree, "button", "知道了")?;
++    check!(
++        ax(&tree, "button", "編輯行程").is_err(),
++        "Chrome AX suppresses the background control"
++    );
++    background_blocked(tab).await?;
++    focused(tab, "dialog-demo-alert-confirm").await?;
++    tab_to(tab, "Tab", "dialog-demo-alert-confirm").await?;
++    tab_to(tab, "Shift+Tab", "dialog-demo-alert-confirm").await?;
++    tab.press("Escape").await?;
++    ready(tab, "d.open === 'alert' && d.alerts === 0").await?;
++
++    let panel = bounds(tab, ALERT).await?;
++    let background = point(tab, "dialog-demo-edit-open").await?;
++    check!(
++        background.x < background.canvas[0] + panel[0]
++            || background.y < background.canvas[1] + panel[1],
++        "real background button lies outside the alert"
++    );
++    tab.click(background.x, background.y).await?;
++    ready(tab, "d.open === 'alert' && d.alerts === 0 && d.saves === 0").await?;
++    pointer_focus(tab, "dialog-demo-alert-confirm").await?;
++    ready(tab, "d.opacity.alert === 1").await?;
++    screen(env, tab, "alert").await?;
++    focus_projected(tab, "dialog-demo-alert-confirm").await?;
++    tab.press("Enter").await?;
++    dismiss(tab, "dialog-demo-alert-open").await?;
++    ready(tab, "d.alerts === 1").await?;
++    Ok(
++        json!({"ax":role,"description":description,"panel":panel,"escape_blocked":true,"click_through_blocked":true,"acknowledgements":1}),
++    )
++}
++
++async fn editor_focus(tab: &Tab) -> Result<()> {
++    until(tab, &format!("s.focused === {}", js(EDITOR))).await?;
++    tab.wait_for(&format!(
++        "document.activeElement === {INPUT} && {INPUT}.getAttribute('aria-label') === '行程名稱'"
++    ))
++    .await?;
++    tab.settle().await
++}
++
++async fn fill(tab: &Tab, value: &str) -> Result<()> {
++    editor_focus(tab).await?;
++    tab.shortcut("a").await?;
++    tab.insert_text(value).await?;
++    ready(tab, &format!("d.draft === {} && d.saves === 0", js(value))).await
++}
++
++async fn selection(tab: &Tab) -> Result<Value> {
++    tab.eval(&format!(
++        "(() => {{const e={INPUT}; const input=JSON.parse(window.gallery.export_dom()).text_inputs[{}]; return {{same:e===window.__dialogEditor,value:e.value,range:[e.selectionStart,e.selectionEnd],direction:e.selectionDirection,runtime:input}};}})()",
++        js(EDITOR)
++    )).await
++}
++
++async fn select_last_character(tab: &Tab) -> Result<Value> {
++    tab.eval(&format!("window.__dialogEditor={INPUT}")).await?;
++    tab.press("End").await?;
++    tab.press("Shift+ArrowLeft").await?;
++    tab.wait_for(&format!("{INPUT}.selectionStart === 3 && {INPUT}.selectionEnd === 4 && {INPUT}.selectionDirection === 'backward'")).await?;
++    tab.settle().await?;
++    selection(tab).await
++}
++
++async fn breakpoint(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 599, 500).await?;
++    open(tab, EDIT, "edit").await?;
++    ready(tab, "d.presentation === 'fullscreen'").await?;
++    editor_focus(tab).await?;
++    let compact = bounds(tab, EDIT).await?;
++    check_eq!(
++        compact,
++        [0., 0., 599., 500.],
++        "599dp uses the measured full-screen panel"
++    );
++    let full_role = named_modal(tab, EDIT, "dialog", "編輯行程").await?;
++    check_eq!(
++        full_role["heading"]["id"],
++        "dialog-demo-edit-title",
++        "full-screen title ID"
++    );
++    let editor_ax = ax_tree(tab).await?;
++    ax(&editor_ax, "textbox", "行程名稱")?;
++    fill(tab, CHANGED).await?;
++    let before = select_last_character(tab).await?;
++    check_eq!(
++        before["same"],
++        true,
++        "original textarea identity is captured"
++    );
++    check_eq!(before["value"], CHANGED, "browser holds the changed draft");
++    check_eq!(
++        before["range"],
++        json!([3, 4]),
++        "trusted backward selection in the draft"
++    );
++    check!(
++        before["runtime"].is_object(),
++        "Runtime exports the focused editor"
++    );
++    screen(env, tab, "edit-compact").await?;
++
++    resize(tab, 600, 500).await?;
++    ready(
++        tab,
++        "d.presentation === 'basic' && d.draft === '秋日散步' && d.saved === '週末行程'",
++    )
++    .await?;
++    editor_focus(tab).await?;
++    let wide = bounds(tab, EDIT).await?;
++    check!(
++        contains([0., 0., 600., 500.], wide) && wide[0] > 0. && wide[1] > 0. && wide[2] < 600.,
++        "600dp uses the centered Basic panel: {wide:?}"
++    );
++    let wide_role = named_modal(tab, EDIT, "dialog", "編輯行程").await?;
++    check_eq!(
++        wide_role["heading"]["id"],
++        "dialog-demo-edit-heading",
++        "Basic heading ID after breakpoint"
++    );
++    check_eq!(
++        selection(tab).await?,
++        before,
++        "same textarea, browser backward selection, and Runtime editor across resize"
++    );
++    screen(env, tab, "edit-wide").await?;
++
++    resize(tab, 599, 500).await?;
++    ready(tab, "d.presentation === 'fullscreen'").await?;
++    editor_focus(tab).await?;
++    check_eq!(
++        selection(tab).await?,
++        before,
++        "the same selection returns to full-screen"
++    );
++    tab_to(tab, "Tab", "dialog-demo-edit-close").await?;
++    tab_to(tab, "Tab", "dialog-demo-edit-action").await?;
++    tab.press("Tab").await?;
++    editor_focus(tab).await?;
++    tab.press("Shift+Tab").await?;
++    focused(tab, "dialog-demo-edit-action").await?;
++    Ok(
++        json!({"viewport_widths":[599,600,599],"full_screen":compact,"basic":wide,"full_screen_ax":full_role,"basic_ax":wide_role,"selection":before,"same_editor":true,"tab_cycle":["editor","close","save","editor","save"]}),
++    )
++}
++
++async fn transaction(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 320, 400).await?;
++    open(tab, EDIT, "edit").await?;
++    editor_focus(tab).await?;
++    tab.press("Escape").await?;
++    dismiss(tab, "dialog-demo-edit-open").await?;
++    open(tab, EDIT, "edit").await?;
++    fill(tab, CHANGED).await?;
++    click(tab, "dialog-demo-edit-close").await?;
++    ready(
++        tab,
++        "d.open === 'discard' && d.draft === '秋日散步' && d.saved === '週末行程' && d.saves === 0",
++    )
++    .await?;
++    let role = named_modal(tab, DISCARD, "dialog", "捨棄變更？").await?;
++    pointer_focus(tab, "dialog-demo-discard-cancel").await?;
++    let tree = ax_tree(tab).await?;
++    ax(&tree, "button", "繼續編輯")?;
++    ax(&tree, "button", "捨棄變更")?;
++    check!(
++        ax(&tree, "textbox", "行程名稱").is_err() && ax(&tree, "button", "儲存").is_err(),
++        "nested confirmation hides editor and Save from Chrome AX"
++    );
++    ready(tab, "d.opacity.discard === 1").await?;
++    screen(env, tab, "dirty-confirm").await?;
++    tab.press("Enter").await?;
++    ready(
++        tab,
++        "d.open === 'edit' && d.draft === '秋日散步' && d.saved === '週末行程' && d.saves === 0",
++    )
++    .await?;
++    pointer_focus(tab, "dialog-demo-edit-close").await?;
++
++    // The separate keyboard route starts from a real editable selection.
++    // Unlike pointer Close, Escape does not move focus before opening the prompt.
++    focus_projected(tab, "dialog-demo-edit-close").await?;
++    tab.press("Shift+Tab").await?;
++    editor_focus(tab).await?;
++    let before = select_last_character(tab).await?;
++    tab.press("Escape").await?;
++    ready(tab, "d.open === 'discard'").await?;
++    focused(tab, "dialog-demo-discard-cancel").await?;
++    tab.press("Enter").await?;
++    ready(
++        tab,
++        "d.open === 'edit' && d.draft === '秋日散步' && d.saves === 0",
++    )
++    .await?;
++    editor_focus(tab).await?;
++    check_eq!(
++        selection(tab).await?,
++        before,
++        "Continue after Escape restores the same focused editor and backward selection"
++    );
++    tab.press("Shift+Tab").await?;
++    focused(tab, "dialog-demo-edit-action").await?;
++    tab.press("Enter").await?;
++    dismiss(tab, "dialog-demo-edit-open").await?;
++    ready(
++        tab,
++        "d.saved === '秋日散步' && d.saves === 1 && d.discards === 0",
++    )
++    .await?;
++
++    open(tab, EDIT, "edit").await?;
++    editor_focus(tab).await?;
++    check_eq!(
++        tab.eval(&format!("{INPUT}.value")).await?,
++        CHANGED,
++        "reopening loads accepted text"
++    );
++    tab.shortcut("a").await?;
++    tab.insert_text("待捨棄").await?;
++    ready(tab, "d.draft === '待捨棄' && d.saved === '秋日散步'").await?;
++    tab.press("Escape").await?;
++    ready(tab, "d.open === 'discard'").await?;
++    focused(tab, "dialog-demo-discard-cancel").await?;
++    tab_to(tab, "Tab", "dialog-demo-discard-confirm").await?;
++    tab.press("Enter").await?;
++    dismiss(tab, "dialog-demo-edit-open").await?;
++    ready(
++        tab,
++        "d.saved === '秋日散步' && d.draft === d.saved && d.saves === 1 && d.discards === 1",
++    )
++    .await?;
++    activate(tab, "dialog-demo-back").await?;
++    ready(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"ax":role,"initial":INITIAL,"continued":CHANGED,"saved":CHANGED,"discarded":"待捨棄","saves":1,"discards":1,"clean_escape_return":true,"close_continue_focus":"dialog-demo-edit-close","escape_continue_focus":EDITOR,"escape_continue_selection":before,"route_focus_restored":true}),
++    )
++}
++
++const DISCARD_DESCRIPTION: &str = "未儲存的行程變更會遺失。";
++
++type Ink = Vec<[usize; 2]>;
++
++async fn text_paint(tab: &Tab, id: &str) -> Result<([u8; 3], f64)> {
++    let node = tab
++        .eval(&format!(
++            "JSON.parse(window.gallery.export_dom()).dom.nodes.find(n => n.stable_id === {})",
++            js(id)
++        ))
++        .await?;
++    let [r, g, b, a]: [u8; 4] = serde_json::from_value(node["style"]["foreground"].clone())?;
++    check_eq!(a, 255, "the sampled title/supporting color is opaque");
++    let line_height = node["style"]["line_height"]
++        .as_f64()
++        .context("authored logical line height")?;
++    Ok(([r, g, b], line_height * 2.))
++}
++
++async fn raster(env: &Env, tab: &Tab, name: &str) -> Result<Raster> {
++    screen(env, tab, name).await?;
++    Raster::read(
++        tab,
++        env.artifact(&format!("material-dialog-adaptive-{name}.png")),
++    )
++    .await
++}
++
++fn line_box(rect: Rect, row: u32, pitch: f64) -> Rect {
++    let [x, y, width, _] = rect;
++    [x, y + f64::from(row) * pitch, width, pitch]
++}
++
++fn color_points(image: &Raster, rect: Rect, clip: Rect, rgb: [u8; 3]) -> Result<Ink> {
++    let [x, y, width, height] = rect;
++    let mut ink = Vec::new();
++    // The Gallery runs at verified 2× device scale. Keep each mask relative
++    // to its text line to compare the compact view to the unclipped view.
++    for row in 0..(height * 2.).round() as usize {
++        let py = y + (row as f64 + 0.5) / 2.;
++        if py < clip[1] || py >= clip[1] + clip[3] {
++            continue;
++        }
++        for column in 0..(width * 2.).round() as usize {
++            let px = x + (column as f64 + 0.5) / 2.;
++            if px < clip[0] || px >= clip[0] + clip[2] {
++                continue;
++            }
++            if image
++                .sample(px, py)?
++                .iter()
++                .zip(rgb)
++                .all(|(a, b)| a.abs_diff(b) <= 24)
++            {
++                ink.push([column, row]);
++            }
++        }
++    }
++    Ok(ink)
++}
++
++fn horizontal_ink(ink: &Ink) -> Result<[usize; 2]> {
++    let left = ink
++        .iter()
++        .map(|p| p[0])
++        .min()
++        .context("leftmost title ink")?;
++    let right = ink
++        .iter()
++        .map(|p| p[0])
++        .max()
++        .context("rightmost title ink")?;
++    Ok([left, right])
++}
++
++async fn discard_description(tab: &Tab) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let dialog = ax(&tree, "dialog", "捨棄變更？")?;
++    let relation = tab.eval(&format!(
++        "(() => {{const e={}; return e.getAttribute('aria-describedby').split(/\\s+/).map(id => document.getElementById(id)?.textContent).join(' ');}})()",
++        projected(DISCARD)
++    )).await?;
++    check_eq!(
++        relation,
++        DISCARD_DESCRIPTION,
++        "projected description resolves to the complete authored support text"
++    );
++    check_eq!(
++        dialog["description"]["value"],
++        DISCARD_DESCRIPTION,
++        "Chrome AX retains every word while supporting text is clipped or scrolled"
++    );
++    Ok(relation)
++}
++
++async fn rtl_short(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 320, 400).await?;
++    for id in [
++        "dialog-demo-theme",
++        "dialog-demo-rtl",
++        "dialog-demo-large-text",
++    ] {
++        activate(tab, id).await?;
++    }
++    until(
++        tab,
++        "s.dark && s.dialog_demo.rtl && s.dialog_demo.text_scale === 2",
++    )
++    .await?;
++    check_eq!(
++        tab.eval("devicePixelRatio").await?,
++        2,
++        "read physical pixels at DPR 2"
++    );
++    open(tab, EDIT, "edit").await?;
++    ready(tab, "d.presentation === 'fullscreen'").await?;
++    editor_focus(tab).await?;
++    let viewport = [0., 0., 320., 400.];
++    check_eq!(
++        bounds(tab, EDIT).await?,
++        viewport,
++        "compact Full-screen dialog fits exactly"
++    );
++    let title_id = "dialog-demo-edit-title";
++    let title = bounds(tab, title_id).await?;
++    let (title_rgb, title_pitch) = text_paint(tab, title_id).await?;
++    check_eq!(
++        title[3],
++        2. * title_pitch,
++        "the compact title wraps across exactly two visual lines"
++    );
++    let edit = raster(env, tab, "rtl-200-edit").await?;
++    let mut extents = Vec::new();
++    for row in [0, 1] {
++        let line = line_box(title, row, title_pitch);
++        let ink = color_points(&edit, line, title, title_rgb)?;
++        check!(
++            ink.len() > 100,
++            "each wrapped title line has meaningful glyph ink"
++        );
++        extents.push(horizontal_ink(&ink)?);
++    }
++    let [first, second] = [extents[0], extents[1]];
++    check!(
++        second[0] > first[0] + 24 && first[1].abs_diff(second[1]) <= 6,
++        "the shorter line shares the longer line's physical right edge: {extents:?}"
++    );
++    check!(
++        extents
++            .iter()
++            .all(|line| title[2] * 2. - (line[1] as f64) <= 14.),
++        "both title lines paint at logical start on the right: {title:?} {extents:?}"
++    );
++
++    fill(tab, CHANGED).await?;
++    tab.press("Escape").await?;
++    ready(tab, "d.open === 'discard'").await?;
++    focused(tab, "dialog-demo-discard-cancel").await?;
++    named_modal(tab, DISCARD, "dialog", "捨棄變更？").await?;
++    let description = discard_description(tab).await?;
++    let heading = bounds(tab, "dialog-demo-discard-heading").await?;
++    let body = bounds(tab, "dialog-demo-discard-body").await?;
++    let cancel = bounds(tab, "dialog-demo-discard-cancel").await?;
++    let confirm = bounds(tab, "dialog-demo-discard-confirm").await?;
++    let panel = bounds(tab, DISCARD).await?;
++    for part in [heading, body, cancel, confirm] {
++        check!(
++            contains(panel, part),
++            "all compact regions stay fully in the panel: {part:?}"
++        );
++    }
++    check!(body[3] > 0. && body[1] + body[3] <= confirm[1] && confirm[1] + confirm[3] <= cancel[1],
++        "wheel body stays between the heading and both stacked actions: {body:?}, {cancel:?}, {confirm:?}");
++    check!(
++        [cancel, confirm].iter().all(|r| r[2] >= 48. && r[3] >= 48.),
++        "complete compact action targets"
++    );
++    let supporting = "dialog-demo-discard-supporting";
++    let before = bounds(tab, supporting).await?;
++    let (support_rgb, support_pitch) = text_paint(tab, supporting).await?;
++    check_eq!(
++        before[3],
++        2. * support_pitch,
++        "supporting text wraps across exactly two lines"
++    );
++    ready(tab, "d.opacity.discard === 1").await?;
++    let first = raster(env, tab, "rtl-200-discard-before").await?;
++    let initial = color_points(
++        &first,
++        line_box(before, 1, support_pitch),
++        body,
++        support_rgb,
++    )?;
++    check!(
++        initial.is_empty(),
++        "the final line starts clipped at 400 dp height"
++    );
++
++    let p = point(tab, "dialog-demo-discard-body").await?;
++    tab.mouse_move(p.x, p.y).await?;
++    tab.wheel(0., 220.).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({})[1] < {}",
++        js(supporting),
++        before[1] - 8.
++    ))
++    .await?;
++    tab.settle().await?;
++    let after = bounds(tab, supporting).await?;
++    let last = raster(env, tab, "rtl-200-discard-after").await?;
++    let revealed = color_points(&last, line_box(after, 1, support_pitch), body, support_rgb)?;
++    check!(
++        revealed.len() > 100,
++        "trusted wheel reveals meaningful last-line ink in the clipped body"
++    );
++    for (id, pinned) in [
++        ("dialog-demo-discard-heading", heading),
++        ("dialog-demo-discard-body", body),
++        ("dialog-demo-discard-cancel", cancel),
++        ("dialog-demo-discard-confirm", confirm),
++    ] {
++        check_eq!(
++            bounds(tab, id).await?,
++            pinned,
++            "{id} stays fixed during wheel"
++        );
++    }
++    check_eq!(
++        discard_description(tab).await?,
++        description,
++        "the projected full description is unchanged across wheel"
++    );
++    focused(tab, "dialog-demo-discard-cancel").await?;
++
++    resize(tab, 320, 520).await?;
++    ready(
++        tab,
++        "d.open === 'discard' && d.draft === '秋日散步' && d.saves === 0",
++    )
++    .await?;
++    let tall_body = bounds(tab, "dialog-demo-discard-body").await?;
++    let tall_support = bounds(tab, supporting).await?;
++    check!(contains(tall_body, tall_support), "taller same-width viewport exposes the complete supporting paragraph: {tall_body:?}, {tall_support:?}");
++    let reference = raster(env, tab, "rtl-200-discard-unclipped").await?;
++    let full_tail = color_points(
++        &reference,
++        line_box(tall_support, 1, support_pitch),
++        tall_body,
++        support_rgb,
++    )?;
++    check!(revealed == full_tail, "scroll reveals the complete final line seen in the same-width unclipped reference: {} vs {} stroke pixels", revealed.len(), full_tail.len());
++    focused(tab, "dialog-demo-discard-cancel").await?;
++    tab.press("Enter").await?;
++    ready(
++        tab,
++        "d.open === 'edit' && d.saves === 0 && d.draft === '秋日散步'",
++    )
++    .await?;
++    editor_focus(tab).await?;
++    Ok(
++        json!({"viewport":viewport,"text_scale":2,"rtl":true,"title":{"bounds":title,"pitch":title_pitch,"rgb":title_rgb,"line_ink_pixels_x":extents},"discard":{"description":description,"panel":panel,"heading":heading,"body":body,"actions":[cancel,confirm],"support_bounds_before":before,"support_bounds_after":after,"support_bounds_unclipped":tall_support,"unclipped_body":tall_body,"support_rgb":support_rgb,"support_pitch":support_pitch,"last_line_ink_before":initial.len(),"last_line_ink_after":revealed.len(),"unclipped_ink":full_tail.len(),"same_ink_mask":true,"focus_during_wheel":"dialog-demo-discard-cancel","continue_focus":EDITOR}}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 844, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step("M256", "Basic exposes a named modal and traps Tab, Escape and scrim return focus");
++        report["basic"] = basic(env, &tab, url).await.context("M256")?;
++        report["adapter"] = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter(); if(!a)return null; const {isFallbackAdapter,vendor,architecture}=a.info; return {isFallbackAdapter,vendor,architecture};})()").await?;
++        check_eq!(report["adapter"]["isFallbackAdapter"], false, "actual non-fallback WebGPU adapter");
++        step("M257", "trusted wheel scrolls a short Basic under its pinned heading and complete action targets");
++        report["short"] = short(env, &tab, url).await.context("M257")?;
++        step("M258", "named Alert requires acknowledgement and blocks outside input and Escape");
++        report["alert"] = alert(env, &tab, url).await.context("M258")?;
++        step("M259", "599 to 600 dp keeps the named editor, draft and backward selection across presentations");
++        report["breakpoint"] = breakpoint(env, &tab, url).await.context("M259")?;
++        step("M260", "dirty Close and Escape ask first, Continue restores exact prior focus, and explicit Save or Discard acts once");
++        report["transaction"] = transaction(env, &tab, url).await.context("M260")?;
++        step("M261", "320 dp dark RTL 200% aligns both title lines and wheels the entire discard description without moving actions");
++        report["rtl_short"] = rtl_short(env, &tab, url).await.context("M261")?;
++        step("M262", "real Basic and nested Discard opacity frames, immediate modal handback, reversal and Reduce Motion");
++        report["motion"] = motion::run(env, &tab, url).await.context("M262")?;
++        step("M263", "actual measured FAB container expands, retires, reverses, reduces motion and keeps the adaptive draft");
++        report["full_screen_transform"] = transform::run(env, &tab, url).await.context("M263")?;
++        check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["ax_at_failure"] = json!(ax_tree(&tab).await.unwrap_or_default());
++        report["state_at_failure"] = state(&tab).await.unwrap_or(Value::Null);
++        report["dom_at_failure"] = tab
++            .eval_json("window.gallery.export_dom()")
++            .await
++            .unwrap_or(Value::Null);
++        report["web_input_at_failure"] = tab.eval(&format!("(() => {{const e={INPUT}; return {{focus:document.activeElement?.outerHTML,value:e?.value,start:e?.selectionStart,end:e?.selectionEnd,direction:e?.selectionDirection}};}})()")).await.unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-dialog-adaptive-failure.png"))
++            .await;
++    }
++    env.write_json("browser-material-dialog.json", &report)?;
++    result
++}
+--- /dev/null
++++ b/e2e/src/material_dialog_motion.rs
+@@ -0,0 +1,417 @@
++//! Actual Basic Dialog pixels under a controlled browser animation clock.
++
++use super::*;
++
++const BASIC_OPEN: &str = "dialog-demo-basic-open";
++const BASIC_CONFIRM: &str = "dialog-demo-basic-confirm";
++const DISCARD_CONTINUE: &str = "dialog-demo-discard-cancel";
++pub(super) const CLOCK: &str = "__surfaceDialogMotionTestMs";
++
++type Pixel = [u8; 3];
++
++pub(super) async fn preference(tab: &Tab, reduced: bool) -> Result<()> {
++    let value = if reduced { "reduce" } else { "no-preference" };
++    tab.cdp(
++        "Emulation.setEmulatedMedia",
++        json!({"features":[
++            {"name":"prefers-reduced-motion","value":value},
++            {"name":"forced-colors","value":"none"}
++        ]}),
++    )
++    .await?;
++    tab.wait_for(&format!(
++        "matchMedia({}).matches",
++        js(format!("(prefers-reduced-motion: {value})"))
++    ))
++    .await
++}
++
++async fn scene(tab: &Tab, url: &str, width: u32, height: u32, reduced: bool) -> Result<()> {
++    preference(tab, reduced).await?;
++    route(tab, url, width, height).await?;
++    activate(tab, "dialog-demo-theme").await?;
++    until(tab, "s.dark").await?;
++    freeze(tab).await
++}
++
++pub(super) async fn freeze(tab: &Tab) -> Result<()> {
++    tab.eval(&format!(
++        r#"(() => {{
++            const origin=performance.now();
++            window.{CLOCK}=0;
++            Object.defineProperty(performance,"now",{{configurable:true,value:()=>origin+window.{CLOCK}}});
++            return true;
++        }})()"#
++    )).await?;
++    tab.settle().await
++}
++
++pub(super) async fn tick(tab: &Tab, now: u32) -> Result<()> {
++    tab.eval(&format!("window.{CLOCK}={now}")).await?;
++    tab.settle().await
++}
++
++async fn alpha(tab: &Tab, name: &str) -> Result<f64> {
++    state(tab).await?["dialog_demo"]["opacity"][name]
++        .as_f64()
++        .context("real Dialog opacity state")
++}
++
++async fn absent(tab: &Tab, id: &str) -> Result<()> {
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({}).length === 0",
++        js(id)
++    ))
++    .await
++}
++
++pub(super) async fn visible_ax(tab: &Tab, panel: &str, label: &str, action: &str) -> Result<()> {
++    check_eq!(
++        tab.eval(&format!("{} !== null", projected(panel))).await?,
++        true,
++        "active dialog has a real DOM projection"
++    );
++    let tree = ax_tree(tab).await?;
++    check_eq!(
++        ax_property(ax(&tree, "dialog", label)?, "modal"),
++        Some(&json!(true)),
++        "Chrome exposes the active dialog as modal"
++    );
++    ax(&tree, "button", action)?;
++    Ok(())
++}
++
++pub(super) async fn retired_ax(
++    tab: &Tab,
++    id: &str,
++    label: &str,
++    control_id: &str,
++    control_name: &str,
++) -> Result<()> {
++    let tree = ax_tree(tab).await?;
++    check!(
++        ax(&tree, "dialog", label).is_err(),
++        "retained visual dialog is absent in Chrome AX"
++    );
++    check!(
++        ax(&tree, "button", control_name).is_err(),
++        "retired action is absent in Chrome AX"
++    );
++    for id in [id, control_id] {
++        check_eq!(
++            tab.eval(&format!("{} === null", projected(id))).await?,
++            true,
++            "retained {id} has no projected DOM input target"
++        );
++    }
++    Ok(())
++}
++
++fn spring_40_ms() -> f64 {
++    1. - 2.6 * (-1.6_f64).exp()
++}
++
++fn lerp_channel(start: u8, end: u8, actual: u8) -> bool {
++    let low = start.min(end);
++    let high = start.max(end);
++    actual >= low && actual <= high
++}
++
++fn mid_pixels(rest: [Pixel; 2], mid: [Pixel; 2], full: [Pixel; 2]) -> Result<()> {
++    let [rest_scrim, _] = rest;
++    let [mid_scrim, mid_panel] = mid;
++    let [full_scrim, full_panel] = full;
++    check!(
++        rest_scrim.iter().zip(mid_scrim).zip(full_scrim).all(|((rest, mid), full)| *rest > mid && mid > full),
++        "the actual intermediate scrim shade lies strictly between endpoints: {rest_scrim:?}/{mid_scrim:?}/{full_scrim:?}"
++    );
++    check!(
++        mid_scrim.iter().zip(full_panel).zip(mid_panel).all(|((behind, opaque), mid)| lerp_channel(*behind, opaque, mid))
++            && mid_panel != mid_scrim && mid_panel != full_panel,
++        "the visible panel is composited between the same-frame backdrop and its opaque endpoint: {mid_scrim:?}/{mid_panel:?}/{full_panel:?}"
++    );
++    Ok(())
++}
++
++fn sample(frame: &Raster, points: [[f64; 2]; 2]) -> Result<[Pixel; 2]> {
++    let [[a, b], [c, d]] = points;
++    Ok([frame.sample(a, b)?, frame.sample(c, d)?])
++}
++
++async fn basic_motion(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    scene(tab, url, 960, 720, false).await?;
++    let rest = raster(env, tab, "motion-basic-rest").await?;
++    open(tab, BASIC, "basic").await?;
++    focused(tab, BASIC_CONFIRM).await?;
++    ready(tab, "d.opacity.basic === 0").await?;
++    visible_ax(tab, BASIC, "行程通知", "我已閱讀").await?;
++    background_blocked(tab).await?;
++    let panel = bounds(tab, BASIC).await?;
++    let points = [[940., 690.], [panel[0] + 14., panel[1] + panel[3] / 2.]];
++    let rest_pixels = sample(&rest, points)?;
++    check_eq!(
++        rest_pixels[0],
++        rest_pixels[1],
++        "both samples start over the same blank surface"
++    );
++    let first = raster(env, tab, "motion-basic-enter-zero").await?;
++    check_eq!(
++        sample(&first, points)?,
++        rest_pixels,
++        "zero-opacity entry has no visible panel or scrim flash"
++    );
++
++    tick(tab, 40).await?;
++    let entering_alpha = alpha(tab, "basic").await?;
++    check!(
++        (entering_alpha - spring_40_ms()).abs() < 0.002,
++        "40 ms entry opacity matches the critical step: {entering_alpha}"
++    );
++    let entering = sample(&raster(env, tab, "motion-basic-entering").await?, points)?;
++    tick(tab, 450).await?;
++    ready(tab, "d.open === 'basic' && d.opacity.basic === 1").await?;
++    focused(tab, BASIC_CONFIRM).await?;
++    check_eq!(
++        bounds(tab, BASIC).await?,
++        panel,
++        "Basic changes opacity without moving the panel"
++    );
++    let full = sample(&raster(env, tab, "motion-basic-open").await?, points)?;
++    mid_pixels(rest_pixels, entering, full)?;
++
++    tab.press("Escape").await?;
++    ready(tab, "d.open === null && d.opacity.basic === 1").await?;
++    focused(tab, BASIC_OPEN).await?;
++    retired_ax(tab, BASIC, "行程通知", BASIC_CONFIRM, "我已閱讀").await?;
++    ax(&ax_tree(tab).await?, "button", "基本對話框")?;
++    check_eq!(
++        bounds(tab, BASIC).await?,
++        panel,
++        "first exit frame keeps the real paint panel at the same bounds"
++    );
++    let first_exit = sample(&raster(env, tab, "motion-basic-exit-start").await?, points)?;
++    check_eq!(
++        first_exit,
++        full,
++        "first exit frame still paints the fully visible dialog surface and scrim"
++    );
++
++    tick(tab, 490).await?;
++    let exit_alpha = alpha(tab, "basic").await?;
++    check!(
++        (exit_alpha + spring_40_ms() - 1.).abs() < 0.002,
++        "40 ms exit opacity matches the reverse critical step: {exit_alpha}"
++    );
++    let exiting = sample(&raster(env, tab, "motion-basic-exiting").await?, points)?;
++    mid_pixels(rest_pixels, exiting, full)?;
++
++    let opener = point(tab, BASIC_OPEN).await?;
++    let [cx, cy, ..] = opener.canvas;
++    check!(
++        !contains(panel, [opener.x - cx, opener.y - cy, 1., 1.]),
++        "actual opener hit lies covered by the retiring scrim, outside the panel: {panel:?}"
++    );
++    tab.click(opener.x, opener.y).await?;
++    ready(tab, "d.open === 'basic'").await?;
++    pointer_focus(tab, BASIC_CONFIRM).await?;
++    visible_ax(tab, BASIC, "行程通知", "我已閱讀").await?;
++    check!(
++        (alpha(tab, "basic").await? - exit_alpha).abs() < 0.0001,
++        "trusted pointer passes through and reverses from the currently visible opacity"
++    );
++    let reversed = sample(&raster(env, tab, "motion-basic-reversed").await?, points)?;
++    check_eq!(
++        reversed,
++        exiting,
++        "opening in the same frame keeps the exact intermediate surface pixels"
++    );
++    tick(tab, 590).await?;
++    check!(
++        alpha(tab, "basic").await? > exit_alpha,
++        "the reversed panel becomes more opaque"
++    );
++
++    tick(tab, 1000).await?;
++    ready(tab, "d.opacity.basic === 1").await?;
++    tab.press("Escape").await?;
++    ready(tab, "d.open === null").await?;
++    tick(tab, 1450).await?;
++    ready(tab, "d.opacity.basic === 0").await?;
++    absent(tab, BASIC).await?;
++    absent(tab, "dialog-demo-basic-layer").await?;
++    pointer_focus(tab, BASIC_OPEN).await?;
++    let gone = sample(&raster(env, tab, "motion-basic-closed").await?, points)?;
++    check_eq!(
++        gone,
++        rest_pixels,
++        "fully retired Basic leaves exact resting pixels"
++    );
++    Ok(
++        json!({"panel":panel,"sample_points":points,"entry_40ms":entering_alpha,"exit_40ms":exit_alpha,
++        "pixels":{"rest":rest_pixels,"enter_zero":rest_pixels,"entering":entering,"opaque":full,
++                  "exit_start":first_exit,"exiting":exiting,"reversed":reversed,"closed":gone},
++        "enter_scope":BASIC_CONFIRM,"exit_scope":BASIC_OPEN,"exit_ax_absent":true,
++        "trusted_pass_through_reopened":true}),
++    )
++}
++
++async fn nested(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    scene(tab, url, 320, 400, false).await?;
++    open(tab, EDIT, "edit").await?;
++    ready(tab, "d.presentation === 'fullscreen'").await?;
++    fill(tab, CHANGED).await?;
++    editor_focus(tab).await?;
++    let corner = [312., 390.];
++    let outer = raster(env, tab, "motion-nested-edit")
++        .await?
++        .sample(corner[0], corner[1])?;
++
++    tab.press("Escape").await?;
++    ready(tab, "d.open === 'discard' && d.opacity.discard === 0").await?;
++    focused(tab, DISCARD_CONTINUE).await?;
++    visible_ax(tab, DISCARD, "捨棄變更？", "繼續編輯").await?;
++    check!(
++        ax(&ax_tree(tab).await?, "dialog", "編輯行程").is_err(),
++        "the entering nested scope owns AX even at opacity zero"
++    );
++    let bounds_before = bounds(tab, DISCARD).await?;
++    tick(tab, 40).await?;
++    let entering_alpha = alpha(tab, "discard").await?;
++    check!(
++        (entering_alpha - spring_40_ms()).abs() < 0.002,
++        "nested uses the same 40 ms opacity"
++    );
++    let entering = raster(env, tab, "motion-nested-entering")
++        .await?
++        .sample(corner[0], corner[1])?;
++    tick(tab, 450).await?;
++    ready(tab, "d.open === 'discard' && d.opacity.discard === 1").await?;
++    let covered = raster(env, tab, "motion-nested-open")
++        .await?
++        .sample(corner[0], corner[1])?;
++    check!(outer.iter().zip(entering).zip(covered).all(|((a, b), c)| *a > b && b > c),
++        "the real nested scrim composites above the still-painted full-screen editor: {outer:?}/{entering:?}/{covered:?}");
++
++    tab.press("Enter").await?;
++    ready(
++        tab,
++        "d.open === 'edit' && d.opacity.discard === 1 && d.saves === 0 && d.draft === '秋日散步'",
++    )
++    .await?;
++    editor_focus(tab).await?;
++    visible_ax(tab, EDIT, "編輯行程", "儲存").await?;
++    retired_ax(tab, DISCARD, "捨棄變更？", DISCARD_CONTINUE, "繼續編輯").await?;
++    check_eq!(
++        bounds(tab, DISCARD).await?,
++        bounds_before,
++        "retired nested panel keeps its physical order and bounds"
++    );
++    let first_exit = raster(env, tab, "motion-nested-exit-start")
++        .await?
++        .sample(corner[0], corner[1])?;
++    check_eq!(
++        first_exit,
++        covered,
++        "lower focused editor is still visually covered by the real retiring nested scrim"
++    );
++    tick(tab, 490).await?;
++    let exit_alpha = alpha(tab, "discard").await?;
++    let exiting = raster(env, tab, "motion-nested-exiting")
++        .await?
++        .sample(corner[0], corner[1])?;
++    check!(outer.iter().zip(exiting).zip(covered).all(|((a,b),c)| *a>b && b>c),
++        "exit still paints above the active editor at an intermediate opacity: {outer:?}/{exiting:?}/{covered:?}");
++
++    tab.insert_text("！").await?;
++    ready(
++        tab,
++        "d.open === 'edit' && d.draft === '秋日散步！' && d.saves === 0",
++    )
++    .await?;
++    check_eq!(
++        bounds(tab, DISCARD).await?,
++        bounds_before,
++        "trusted typing reaches the lower editor while nested paint remains"
++    );
++    tick(tab, 950).await?;
++    ready(tab, "d.opacity.discard === 0").await?;
++    absent(tab, DISCARD).await?;
++    editor_focus(tab).await?;
++    let gone = raster(env, tab, "motion-nested-closed")
++        .await?
++        .sample(corner[0], corner[1])?;
++    check_eq!(
++        gone,
++        outer,
++        "removing the retired nested layer fully restores the lower page shade"
++    );
++    Ok(
++        json!({"sample_point":corner,"retained_panel":bounds_before,"entry_40ms":entering_alpha,"exit_40ms":exit_alpha,
++             "scrim":{"initial":outer,"entering":entering,"covered":covered,"exit_start":first_exit,"exiting":exiting,"closed":gone},
++             "upper_ax_absent_during_exit":true,"live_lower_editor":EDITOR,"draft_after_trusted_input":"秋日散步！"}),
++    )
++}
++
++async fn reduced(env: &Env, tab: &Tab, url: &str, expected: &Value) -> Result<Value> {
++    scene(tab, url, 960, 720, true).await?;
++    check_eq!(
++        tab.eval(&format!("window.{CLOCK}")).await?,
++        0,
++        "no manual frame advances in reduce-motion profile"
++    );
++    open(tab, BASIC, "basic").await?;
++    ready(tab, "d.opacity.basic === 1").await?;
++    focused(tab, BASIC_CONFIRM).await?;
++    let panel = bounds(tab, BASIC).await?;
++    let motion_panel: Rect = serde_json::from_value(expected["panel"].clone())?;
++    check_eq!(
++        panel,
++        motion_panel,
++        "Reduced Motion uses the same panel geometry"
++    );
++    let points = serde_json::from_value(expected["sample_points"].clone())?;
++    let now = sample(
++        &raster(env, tab, "motion-basic-reduced-open").await?,
++        points,
++    )?;
++    check_eq!(
++        json!(now),
++        expected["pixels"]["opaque"],
++        "Reduced Motion snaps to identical settled paint without advancing the clock"
++    );
++    tab.press("Escape").await?;
++    dismiss(tab, BASIC_OPEN).await?;
++    ready(tab, "d.opacity.basic === 0").await?;
++    absent(tab, BASIC).await?;
++    absent(tab, "dialog-demo-basic-layer").await?;
++    retired_ax(tab, BASIC, "行程通知", BASIC_CONFIRM, "我已閱讀").await?;
++    check_eq!(
++        tab.eval(&format!("window.{CLOCK}")).await?,
++        0,
++        "Reduced Motion removes the entire retired layer with no clock advance"
++    );
++    let gone = sample(
++        &raster(env, tab, "motion-basic-reduced-closed").await?,
++        points,
++    )?;
++    check_eq!(
++        json!(gone),
++        expected["pixels"]["rest"],
++        "Reduced Motion exit restores the exact resting paint"
++    );
++    preference(tab, false).await?;
++    Ok(json!({"clock_ms":0,"open":now,"closed":gone,"exact_endpoints":true}))
++}
++
++pub(super) async fn run(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    let basic = basic_motion(env, tab, url)
++        .await
++        .context("Basic fade/reversal")?;
++    let nested = nested(env, tab, url)
++        .await
++        .context("nested Discard paint and scope")?;
++    let reduced = reduced(env, tab, url, &basic)
++        .await
++        .context("Reduced Motion")?;
++    Ok(json!({"manual_performance_time":true,"basic":basic,"nested":nested,"reduced":reduced}))
++}
+--- /dev/null
++++ b/e2e/src/material_dialog_transform.rs
+@@ -0,0 +1,460 @@
++//! Measured FAB container transform through the actual headless Chrome host.
++
++use super::*;
++
++use super::motion::{freeze, preference, retired_ax, tick, visible_ax, CLOCK};
++
++const ROUTE: &str = "dialog-demo-show-transform";
++const FAB: &str = "dialog-demo-fab-open";
++const LAYER: &str = "dialog-demo-edit-transform-layer";
++const SAVE: &str = "dialog-demo-edit-action";
++const VIEWPORT: Rect = [0., 0., 320., 400.];
++
++type Pixel = [u8; 3];
++type Point = [f64; 2];
++
++async fn scene(tab: &Tab, url: &str, width: u32, height: u32, reduced: bool) -> Result<()> {
++    preference(tab, reduced).await?;
++    tab.viewport(960, 1844).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1800).await?;
++    activate(tab, "section-2").await?;
++    until(tab, "s.section === 2").await?;
++    activate(tab, ROUTE).await?;
++    ready(tab, "d.visible && d.transform.preview && d.open === null").await?;
++    activate(tab, "dialog-demo-theme").await?;
++    activate(tab, "dialog-demo-rtl").await?;
++    until(tab, "s.dark && s.dialog_demo.rtl").await?;
++    resize(tab, width, height).await?;
++    ready(tab, &format!(
++        "d.transform.progress === 0 && d.transform.anchor !== null &&
++        [d.transform.anchor.x,d.transform.anchor.y,d.transform.anchor.width,d.transform.anchor.height]
++        .every((v,i)=>v===window.gallery.control_bounds({})[i])",
++        js(FAB)
++    )).await?;
++    freeze(tab).await
++}
++
++async fn facts(tab: &Tab) -> Result<Value> {
++    Ok(state(tab).await?["dialog_demo"]["transform"].take())
++}
++
++fn rect(value: &Value) -> Result<Rect> {
++    fn number(value: &Value, key: &str) -> Result<f64> {
++        value[key]
++            .as_f64()
++            .with_context(|| format!("transform geometry has {key}: {value}"))
++    }
++    Ok([
++        number(value, "x")?,
++        number(value, "y")?,
++        number(value, "width")?,
++        number(value, "height")?,
++    ])
++}
++
++fn progress(pose: &Value) -> Result<f64> {
++    pose["progress"]
++        .as_f64()
++        .context("Gallery transform progress")
++}
++
++async fn opening(tab: &Tab) -> Result<()> {
++    activate(tab, FAB).await?;
++    ready(tab, "d.open === 'edit' && d.presentation === 'fullscreen'").await?;
++    editor_focus(tab).await
++}
++
++async fn live(tab: &Tab) -> Result<()> {
++    editor_focus(tab).await?;
++    visible_ax(tab, EDIT, "編輯行程", "儲存").await?;
++    let tree = ax_tree(tab).await?;
++    check_eq!(
++        ax_property(ax(&tree, "textbox", "行程名稱")?, "focused"),
++        Some(&json!(true)),
++        "the actual Chrome editor owns focus"
++    );
++    check!(
++        ax(&tree, "button", "新增行程").is_err(),
++        "active transform suppresses the launcher in Chrome AX"
++    );
++    Ok(())
++}
++
++async fn retired(tab: &Tab) -> Result<()> {
++    retired_ax(tab, EDIT, "編輯行程", SAVE, "儲存").await?;
++    let tree = ax_tree(tab).await?;
++    check!(
++        ax(&tree, "textbox", "行程名稱").is_err(),
++        "retained transform cannot leave a stale textbox"
++    );
++    ax(&tree, "button", "新增行程")?;
++    tab.wait_for(&format!(
++        "{INPUT}.hidden && {INPUT}.getClientRects().length === 0 && document.activeElement !== {INPUT}"
++    )).await
++}
++
++fn sample(image: &Raster, [x, y]: Point) -> Result<Pixel> {
++    image.sample(x, y)
++}
++
++fn color_difference(a: Pixel, b: Pixel) -> u32 {
++    a.into_iter()
++        .zip(b)
++        .map(|(a, b)| u32::from(a.abs_diff(b)))
++        .sum()
++}
++
++fn intermediate(anchor: Rect, pose: &Value) -> Result<Rect> {
++    let p = progress(pose)?;
++    let aperture = rect(&pose["container"])?;
++    check!(
++        (0.2..0.9).contains(&p),
++        "real rAF advances to a clearly intermediate pose: {pose}"
++    );
++    let expected = std::array::from_fn::<_, 4, _>(|i| anchor[i] + (VIEWPORT[i] - anchor[i]) * p);
++    check!(
++        aperture
++            .into_iter()
++            .zip(expected)
++            .all(|(a, b)| (a - b).abs() < 0.015),
++        "the measured moving aperture interpolates from the real FAB: {aperture:?} / {expected:?}"
++    );
++    check!(
++        aperture[2] > anchor[2]
++            && aperture[2] < VIEWPORT[2]
++            && aperture[3] > anchor[3]
++            && aperture[3] < VIEWPORT[3],
++        "the visible aperture is larger than the FAB and smaller than the viewport: {aperture:?}"
++    );
++    Ok(aperture)
++}
++
++fn aperture_points([x, y, w, h]: Rect) -> [Point; 3] {
++    [
++        [x + w * 0.6, y + h * 0.66],
++        [x + 0.25, y + 0.25],
++        [VIEWPORT[2] - 4., y + h * 0.66],
++    ]
++}
++
++fn pixels_at(image: &Raster, points: [Point; 3]) -> Result<[Pixel; 3]> {
++    Ok([
++        sample(image, points[0])?,
++        sample(image, points[1])?,
++        sample(image, points[2])?,
++    ])
++}
++
++fn painted_aperture(rest: &Raster, painted: &Raster, aperture: Rect) -> Result<Value> {
++    let points = aperture_points(aperture);
++    let base = pixels_at(rest, points)?;
++    let actual = pixels_at(painted, points)?;
++    check!(
++        color_difference(base[0], actual[0]) >= 12,
++        "the captured aperture interior visibly changes: {base:?} / {actual:?}"
++    );
++    check_eq!(
++        actual[1],
++        base[1],
++        "an actual rounded corner pixel keeps the uncovered background"
++    );
++    check_eq!(
++        actual[2],
++        base[2],
++        "paint outside the measured aperture remains the underlying page"
++    );
++    Ok(json!({"points":points,"rest":base,"frame":actual}))
++}
++
++async fn field_pixel(tab: &Tab, image: &Raster) -> Result<(Point, Pixel)> {
++    let [x, y, _, height] = bounds(tab, EDITOR).await?;
++    let point = [x + 8., y + height * 0.72];
++    let [r,g,b,a]: [u8;4] = serde_json::from_value(tab.eval(&format!(
++        "JSON.parse(window.gallery.export_dom()).dom.nodes.find(n => n.stable_id === {}).style.background",
++        js(EDITOR)
++    )).await?)?;
++    check_eq!(a, 255, "the settled editor surface is opaque");
++    let pixel = sample(image, point)?;
++    check_eq!(
++        pixel,
++        [r, g, b],
++        "the actual frame paints the settled editor field at its authored location"
++    );
++    Ok((point, pixel))
++}
++
++async fn normal(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    scene(tab, url, 320, 400, false).await?;
++    let anchor = bounds(tab, FAB).await?;
++    check_eq!(
++        anchor,
++        [24., 320., 56., 56.],
++        "a real 56 dp RTL FAB at the lower logical end"
++    );
++    check_eq!(
++        rect(&facts(tab).await?["anchor"])?,
++        anchor,
++        "fixture measures actual painted FAB bounds"
++    );
++    let origin_point = [anchor[0] + 12., anchor[1] + 28.];
++    let rest = raster(env, tab, "transform-rest").await?;
++    let rest_fab = sample(&rest, origin_point)?;
++    opening(tab).await?;
++    ready(tab, "d.transform.progress === 0 && !d.transform.retiring").await?;
++    live(tab).await?;
++    let start = facts(tab).await?;
++    check_eq!(
++        rect(&start["container"])?,
++        anchor,
++        "first live frame starts at measured FAB, not a viewport fade"
++    );
++    check_eq!(
++        bounds(tab, EDIT).await?,
++        VIEWPORT,
++        "the active modal's logical layout is already full-screen"
++    );
++    let first = raster(env, tab, "transform-start").await?;
++    check_eq!(
++        sample(&first, origin_point)?,
++        rest_fab,
++        "first frame keeps the actual FAB appearance at the source"
++    );
++    let far = [4., 390.];
++    check_eq!(
++        sample(&first, far)?,
++        sample(&rest, far)?,
++        "no flash outside the initial FAB"
++    );
++
++    tick(tab, 60).await?;
++    let mid = facts(tab).await?;
++    let aperture = intermediate(anchor, &mid)?;
++    let entry = raster(env, tab, "transform-entering").await?;
++    let entry_pixels = painted_aperture(&rest, &entry, aperture)?;
++    tick(tab, 500).await?;
++    ready(tab, "d.transform.progress === 1 && d.open === 'edit'").await?;
++    check_eq!(
++        rect(&facts(tab).await?["container"])?,
++        VIEWPORT,
++        "the measured settled container covers the viewport"
++    );
++    let full = raster(env, tab, "transform-open").await?;
++    let (field_probe, field) = field_pixel(tab, &full).await?;
++    check!(
++        color_difference(field, sample(&rest, field_probe)?) >= 12,
++        "settled frame covers the old page with the full-size editor"
++    );
++
++    tab.press("Escape").await?;
++    ready(
++        tab,
++        "d.open === null && d.transform.retiring && d.transform.progress === 1",
++    )
++    .await?;
++    focused(tab, FAB).await?;
++    retired(tab).await?;
++    let exit_start = raster(env, tab, "transform-exit-start").await?;
++    check_eq!(
++        sample(&exit_start, field_probe)?,
++        field,
++        "the upper paint remains visible after editor input and AX have retired"
++    );
++
++    tick(tab, 560).await?;
++    let leaving = facts(tab).await?;
++    let exit_rect = intermediate(anchor, &leaving)?;
++    let exit = raster(env, tab, "transform-exiting").await?;
++    let exit_pixels = painted_aperture(&rest, &exit, exit_rect)?;
++    let trigger = point(tab, FAB).await?;
++    let [cx, cy, ..] = trigger.canvas;
++    check!(
++        contains(exit_rect, [trigger.x - cx, trigger.y - cy, 1., 1.]),
++        "the real reopening pointer lies inside the still-painted retiring layer"
++    );
++    tab.click(trigger.x, trigger.y).await?;
++    ready(tab, "d.open === 'edit' && !d.transform.retiring").await?;
++    live(tab).await?;
++    let reverse = facts(tab).await?;
++    check_eq!(
++        rect(&reverse["container"])?,
++        exit_rect,
++        "same-frame reversal keeps the exact visible aperture"
++    );
++    check_eq!(
++        progress(&reverse)?,
++        progress(&leaving)?,
++        "reversal starts with no progress jump"
++    );
++    let reversed = raster(env, tab, "transform-reversed").await?;
++    check_eq!(
++        sample(&reversed, aperture_points(exit_rect)[0])?,
++        sample(&exit, aperture_points(exit_rect)[0])?,
++        "twice-sampled painted aperture stays at the held reversal pose"
++    );
++    tick(tab, 650).await?;
++    check!(
++        progress(&facts(tab).await?)? > progress(&reverse)?,
++        "reversal grows toward the full-screen endpoint"
++    );
++    tick(tab, 1100).await?;
++    ready(tab, "d.transform.progress === 1").await?;
++
++    tab.press("Escape").await?;
++    ready(tab, "d.open === null && d.transform.retiring").await?;
++    tick(tab, 1600).await?;
++    ready(tab, "d.transform.progress === 0 && !d.transform.retiring").await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({}).length === 0",
++        js(LAYER)
++    ))
++    .await?;
++    pointer_focus(tab, FAB).await?;
++    retired(tab).await?;
++    let closed = raster(env, tab, "transform-closed").await?;
++    check_eq!(
++        sample(&closed, far)?,
++        sample(&rest, far)?,
++        "after exit the retired panel completely leaves the original page"
++    );
++    Ok(
++        json!({"anchor":anchor,"start":start,"entry":mid,"exit":leaving,"reversal":reverse,
++        "entry_pixels":entry_pixels,"exit_pixels":exit_pixels,"origin_point":origin_point,"origin_pixel":rest_fab,
++        "field_probe":field_probe,"field_color":field,"paint_retired_after_focus_return":true,"trusted_reverse":true}),
++    )
++}
++
++async fn reduce(env: &Env, tab: &Tab, url: &str, normal: &Value) -> Result<Value> {
++    scene(tab, url, 320, 400, true).await?;
++    opening(tab).await?;
++    ready(tab, "d.transform.progress === 1 && !d.transform.retiring").await?;
++    live(tab).await?;
++    check_eq!(
++        tab.eval(&format!("window.{CLOCK}")).await?,
++        0,
++        "Reduce Motion reaches open with no clock advance"
++    );
++    let opened = raster(env, tab, "transform-reduced-open").await?;
++    let (field_probe, field) = field_pixel(tab, &opened).await?;
++    check_eq!(
++        json!(field_probe),
++        normal["field_probe"],
++        "same field location after Reduce Motion"
++    );
++    check_eq!(
++        json!(field),
++        normal["field_color"],
++        "same exact endpoint paint after Reduce Motion"
++    );
++    tab.press("Escape").await?;
++    ready(
++        tab,
++        "d.open === null && d.transform.progress === 0 && !d.transform.retiring",
++    )
++    .await?;
++    focused(tab, FAB).await?;
++    retired(tab).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({}).length === 0",
++        js(LAYER)
++    ))
++    .await?;
++    check_eq!(
++        tab.eval(&format!("window.{CLOCK}")).await?,
++        0,
++        "Reduce Motion clears retirement with no clock advance"
++    );
++    raster(env, tab, "transform-reduced-closed").await?;
++    Ok(json!({"clock_ms":0,"field_probe":field_probe,"field_color":field,"exact_endpoints":true}))
++}
++
++async fn adaptive(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    scene(tab, url, 599, 500, false).await?;
++    opening(tab).await?;
++    ready(tab, "d.transform.progress === 0").await?;
++    tick(tab, 60).await?;
++    let starting = facts(tab).await?;
++    check!(
++        (0.2..0.9).contains(&progress(&starting)?),
++        "start resizing with the FAB expansion in flight"
++    );
++    fill(tab, CHANGED).await?;
++    let before = select_last_character(tab).await?;
++    tab.ime_compose("ㄅ", 0, 1).await?;
++    tab.wait_for(&format!(
++        "JSON.parse(window.gallery.export_dom()).text_inputs[{}]?.composing === true",
++        js(EDITOR)
++    ))
++    .await?;
++    tab.settle().await?;
++    let composition = selection(tab).await?;
++    check_eq!(
++        composition["same"],
++        true,
++        "same real textarea owns active synthetic preedit"
++    );
++    raster(env, tab, "transform-adaptive-full-preedit").await?;
++
++    resize(tab, 600, 500).await?;
++    ready(tab,"d.open === 'edit' && d.presentation === 'basic' && d.transform.progress === 1 && d.draft === '秋日散步'").await?;
++    editor_focus(tab).await?;
++    let wide = bounds(tab, EDIT).await?;
++    check!(
++        wide[0] > 0. && wide[1] > 0. && wide[2] < 600.,
++        "600 dp selects separately measured Basic layout: {wide:?}"
++    );
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({}).length === 0",
++        js(LAYER)
++    ))
++    .await?;
++    check_eq!(selection(tab).await?, composition, "progress-to-Basic resize keeps the real textarea, draft, preedit and directed selection intact");
++    raster(env, tab, "transform-adaptive-basic-preedit").await?;
++
++    resize(tab, 599, 500).await?;
++    ready(tab,"d.open === 'edit' && d.presentation === 'fullscreen' && d.transform.progress === 1 && d.draft === '秋日散步'").await?;
++    editor_focus(tab).await?;
++    check_eq!(
++        selection(tab).await?,
++        composition,
++        "the same still-active editor returns to the Full-screen layout"
++    );
++    tab.ime_compose("", 0, 0).await?;
++    tab.wait_for(&format!(
++        "JSON.parse(window.gallery.export_dom()).text_inputs[{}]?.composing === false",
++        js(EDITOR)
++    ))
++    .await?;
++    tab.settle().await?;
++    check_eq!(
++        selection(tab).await?,
++        before,
++        "preedit cancellation preserves the original draft and backward range"
++    );
++    ready(
++        tab,
++        "d.saved === '週末行程' && d.saves === 0 && d.discards === 0",
++    )
++    .await?;
++    Ok(
++        json!({"widths":[599,600,599],"starting":starting,"basic_bounds":wide,"selection":before,"preedit":composition,
++        "same_textarea":true,"draft":CHANGED,"saved":INITIAL}),
++    )
++}
++
++pub(super) async fn run(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    let normal = normal(env, tab, url)
++        .await
++        .context("missing or misplaced Full-screen FAB container")?;
++    let reduced = reduce(env, tab, url, &normal)
++        .await
++        .context("Full-screen Reduced Motion")?;
++    let adaptive = adaptive(env, tab, url)
++        .await
++        .context("Full-screen to Basic responsive edit")?;
++    preference(tab, false).await?;
++    Ok(
++        json!({"normal":normal,"reduced":reduced,"adaptive":adaptive,"manual_performance_time":true}),
++    )
++}

@@ -1,0 +1,613 @@
+--- a/crates/surface-app/src/frame_paint.rs
++++ b/crates/surface-app/src/frame_paint.rs
+@@ -2,7 +2,7 @@
+ use std::{collections::BTreeMap, ops::Range};
+ use surface::{
+     ComputedDom, DisplayList, ExtendedDisplayList, InteractionState, MicroDom, NodeId,
+-    TextDecoration, TextSelectionColors,
++    PaintGroupEffect, PaintTransform, Rect, TextDecoration, TextSelectionColors,
+ };
+ 
+ pub(crate) fn selection_colors(contrast: DisplayContrast) -> Option<TextSelectionColors> {
+@@ -15,9 +15,32 @@
+     })
+ }
+ 
++pub(crate) fn modal_panel_effect(
++    viewport: Rect,
++    opacity: Option<f32>,
++    transform: Option<PaintTransform>,
++) -> Option<PaintGroupEffect> {
++    let mut opacity = opacity
++        .filter(|value| value.is_finite())
++        .unwrap_or(1.)
++        .clamp(0., 1.);
++    if let Some(mut transform) = transform.filter(|value| value.is_valid()) {
++        opacity *= transform.opacity;
++        let neutral_geometry = transform.source == transform.destination
++            && transform.radius == 0.
++            && transform.source.intersect(viewport) == viewport
++            && transform.clip.intersect(viewport) == viewport;
++        if !neutral_geometry {
++            transform.opacity = opacity;
++            return Some(PaintGroupEffect::Transform(transform));
++        }
++    }
++    (opacity < 1.).then_some(PaintGroupEffect::Opacity(opacity))
++}
++
+ /// Compile one completed runtime frame into the caller's display list format.
+ pub(crate) trait FramePaint {
+-    const PANEL_OPACITY: bool = false;
++    const PANEL_EFFECTS: bool = false;
+ 
+     fn compile(
+         dom: &MicroDom,
+@@ -26,7 +49,7 @@
+         decorations: &BTreeMap<NodeId, TextDecoration>,
+         interaction: InteractionState,
+         selection: Option<TextSelectionColors>,
+-        opacity_groups: &[(Range<usize>, f32)],
++        panel_effects: &[(Range<usize>, PaintGroupEffect)],
+     ) -> Self;
+ 
+     #[cfg(feature = "devtools")]
+@@ -41,7 +64,7 @@
+         decorations: &BTreeMap<NodeId, TextDecoration>,
+         interaction: InteractionState,
+         _selection: Option<TextSelectionColors>,
+-        _opacity_groups: &[(Range<usize>, f32)],
++        _panel_effects: &[(Range<usize>, PaintGroupEffect)],
+     ) -> Self {
+         Self::compile_with_interaction(dom, layout, focused, decorations, interaction)
+     }
+@@ -53,7 +76,7 @@
+ }
+ 
+ impl FramePaint for ExtendedDisplayList {
+-    const PANEL_OPACITY: bool = true;
++    const PANEL_EFFECTS: bool = true;
+ 
+     fn compile(
+         dom: &MicroDom,
+@@ -62,17 +85,17 @@
+         decorations: &BTreeMap<NodeId, TextDecoration>,
+         interaction: InteractionState,
+         selection: Option<TextSelectionColors>,
+-        opacity_groups: &[(Range<usize>, f32)],
++        panel_effects: &[(Range<usize>, PaintGroupEffect)],
+     ) -> Self {
+-        if !opacity_groups.is_empty() {
+-            return Self::compile_with_opacity_groups(
++        if !panel_effects.is_empty() {
++            return Self::compile_with_paint_groups(
+                 dom,
+                 layout,
+                 focused,
+                 decorations,
+                 interaction,
+                 selection,
+-                opacity_groups,
++                panel_effects,
+             );
+         }
+         match selection {
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -64,10 +64,11 @@
+ };
+ use surface::{
+     Color, ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
+-    LayoutError, MicroDom, Node, NodeId, Rect, Role, TextMeasurer,
++    LayoutError, MicroDom, Node, NodeId, PaintTransform, Rect, Role, TextMeasurer,
+ };
+ 
+ type ContourPainter = Box<dyn Fn() -> FillContour>;
++type ModalTransformPainter = Box<dyn Fn() -> Option<PaintTransform>>;
+ 
+ /// One view of application state. Messages return through `Application::update`.
+ pub struct View<M> {
+@@ -114,6 +115,7 @@
+     visual_overlay: bool,
+     modal_layer: Option<ModalLayer>,
+     modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
++    modal_panel_transform: Option<ModalTransformPainter>,
+ }
+ struct InteractionSuppression {
+     focus_fallback: Option<String>,
+@@ -198,6 +200,7 @@
+             visual_overlay: false,
+             modal_layer: None,
+             modal_panel_opacity: None,
++            modal_panel_transform: None,
+         }
+     }
+     /// Paint a node-local contour from retained state on each rendered frame.
+@@ -703,6 +706,22 @@
+     /// values of one or more and nonfinite inputs leave the panel opaque.
+     pub fn paint_modal_panel_opacity(mut self, opacity: impl Fn() -> f32 + 'static) -> Self {
+         self.modal_panel_opacity = Some(Box::new(opacity));
++        self
++    }
++
++    /// Map the explicitly layered panel paint in `Runtime::render_extended`.
++    /// Attach the painter to the panel before wrapping it in a backdrop.
++    /// The backdrop and separate modal layers keep their own paint.
++    ///
++    /// The painter runs each frame. This leaves layout, hit testing, focus
++    /// and accessibility unchanged. Return `None` to leave paint untransformed.
++    /// Invalid transforms are ignored. A transform and an independently
++    /// authored panel opacity share one group with their opacities multiplied.
++    pub fn paint_modal_panel_transform(
++        mut self,
++        transform: impl Fn() -> Option<PaintTransform> + 'static,
++    ) -> Self {
++        self.modal_panel_transform = Some(Box::new(transform));
+         self
+     }
+     /// Set which implicit inputs send this modal's dismiss message.
+@@ -996,6 +1015,7 @@
+     visual_overlay: bool,
+     modal_layer: Option<ModalLayer>,
+     modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
++    modal_panel_transform: Option<ModalTransformPainter>,
+ }
+ 
+ impl<M> Binding<M> {
+@@ -1465,6 +1485,7 @@
+                     visual_overlay: view.visual_overlay,
+                     modal_layer: view.modal_layer,
+                     modal_panel_opacity: view.modal_panel_opacity,
++                    modal_panel_transform: view.modal_panel_transform,
+                     interaction_suppression: suppression.cloned(),
+                 },
+             );
+@@ -1669,24 +1690,27 @@
+             (display_dom, decorations, computed) =
+                 self.layout_editing(width, height, text_scale, measurer)?;
+         }
+-        let mut opacity_groups = Vec::new();
++        let mut panel_effects = Vec::new();
++        let viewport = computed.viewport;
+         self.dom.apply_modal_layers_with_panel_ranges(
+             &mut computed.paint_order,
+             &self.modal_layers,
+             |panel, range| {
+-                if !P::PANEL_OPACITY {
++                if !P::PANEL_EFFECTS {
+                     return;
+                 }
+                 let binding = &self.bindings[&panel];
+                 if binding.visual_overlay || binding.modal_layer.is_none() {
+                     return;
+                 }
+-                let Some(paint) = binding.modal_panel_opacity.as_ref() else {
+-                    return;
+-                };
+-                let opacity = paint();
+-                if opacity.is_finite() && opacity < 1. {
+-                    opacity_groups.push((range, opacity.max(0.)));
++                let opacity = binding.modal_panel_opacity.as_ref().map(|paint| paint());
++                let transform = binding
++                    .modal_panel_transform
++                    .as_ref()
++                    .and_then(|paint| paint());
++                if let Some(effect) = frame_paint::modal_panel_effect(viewport, opacity, transform)
++                {
++                    panel_effects.push((range, effect));
+                 }
+             },
+         );
+@@ -1716,7 +1740,7 @@
+             &decorations,
+             interaction,
+             frame_paint::selection_colors(self.display_contrast),
+-            &opacity_groups,
++            &panel_effects,
+         );
+         #[cfg(feature = "devtools")]
+         self.trace_paint(start, list.len());
+--- a/crates/surface-app/tests/modal_retirement.rs
++++ b/crates/surface-app/tests/modal_retirement.rs
+@@ -2,7 +2,7 @@
+ 
+ use surface::{
+     Color, Corners, ExtendedDisplayList, ExtendedPaintOp, Insets, Length, Node, PaintOp,
+-    RasterImage, Role, Style, TextMeasurer,
++    PaintTransform, RasterImage, Rect, Role, Style, TextMeasurer,
+ };
+ use surface_app::{Application, Event, Runtime, View};
+ 
+@@ -44,7 +44,10 @@
+     inner_with_backdrop: bool,
+     outer_alpha: Rc<Cell<f32>>,
+     inner_alpha: Rc<Cell<f32>>,
++    outer_transform: Rc<Cell<Option<PaintTransform>>>,
++    inner_transform: Rc<Cell<Option<PaintTransform>>>,
+     opacity_calls: Rc<Cell<usize>>,
++    transform_calls: Rc<Cell<usize>>,
+     messages: Vec<Message>,
+ }
+ 
+@@ -90,7 +93,9 @@
+ impl App {
+     fn outer_panel(&self) -> View<Message> {
+         let alpha = self.outer_alpha.clone();
++        let transform = self.outer_transform.clone();
+         let calls = self.opacity_calls.clone();
++        let transform_calls = self.transform_calls.clone();
+         let reopen = button(
+             "open-inner",
+             Message::OpenInner,
+@@ -126,6 +131,10 @@
+         .paint_modal_panel_opacity(move || {
+             calls.set(calls.get() + 1);
+             alpha.get()
++        })
++        .paint_modal_panel_transform(move || {
++            transform_calls.set(transform_calls.get() + 1);
++            transform.get()
+         });
+ 
+         let scrim = backdrop("outer-scrim", OUTER_SCRIM);
+@@ -138,6 +147,7 @@
+ 
+     fn inner_panel(&self) -> View<Message> {
+         let alpha = self.inner_alpha.clone();
++        let transform = self.inner_transform.clone();
+         let image = RasterImage::new(1, 1, [56, 211, 153, 255]).unwrap();
+         let art = View::new(
+             Node::new(Role::Group, "")
+@@ -157,7 +167,8 @@
+         )
+         .children([target, art])
+         .modal_initial_focus("inner-action")
+-        .paint_modal_panel_opacity(move || alpha.get());
++        .paint_modal_panel_opacity(move || alpha.get())
++        .paint_modal_panel_transform(move || transform.get());
+         match (self.inner, self.inner_with_backdrop) {
+             (Phase::Active, true) => panel
+                 .modal_with_backdrop(backdrop("inner-scrim", INNER_SCRIM), Message::RetireInner),
+@@ -351,6 +362,7 @@
+ #[derive(Debug, PartialEq)]
+ enum Mark {
+     Begin(f32),
++    Transform(PaintTransform),
+     End,
+     Fill(Color),
+     Wave,
+@@ -364,6 +376,7 @@
+         .iter()
+         .filter_map(|op| match op {
+             ExtendedPaintOp::BeginOpacityGroup { opacity } => Some(Mark::Begin(*opacity)),
++            ExtendedPaintOp::BeginTransformGroup { transform } => Some(Mark::Transform(*transform)),
+             ExtendedPaintOp::EndOpacityGroup => Some(Mark::End),
+             ExtendedPaintOp::FillPath(_) => Some(Mark::Wave),
+             ExtendedPaintOp::Raster(_) => Some(Mark::Art),
+@@ -467,3 +480,137 @@
+     assert!(end < position(&grouped, Mark::Fill(INNER_SCRIM)));
+     assert!(position(&grouped, Mark::Begin(0.25)) < position(&grouped, Mark::Art));
+ }
++
++#[test]
++fn absent_invalid_and_neutral_transforms_use_ordinary_paint_or_independent_opacity() {
++    let mut rt = fixture(true);
++    rt.activate("open").unwrap();
++    let steady = draw(&mut rt);
++    let legacy = rt.render(320., 240., &mut Metrics).unwrap();
++    let viewport = Rect::new(0., 0., 320., 240.);
++    let identity = PaintTransform {
++        source: viewport,
++        destination: viewport,
++        clip: viewport,
++        radius: 0.,
++        opacity: 1.,
++    };
++    rt.app().outer_transform.set(Some(identity));
++    assert_eq!(draw(&mut rt), steady);
++
++    rt.app().outer_transform.set(Some(PaintTransform {
++        opacity: 0.5,
++        ..identity
++    }));
++    rt.app().outer_alpha.set(0.5);
++    let translucent = sequence(&draw(&mut rt));
++    assert!(translucent.contains(&Mark::Begin(0.25)));
++    assert!(!translucent
++        .iter()
++        .any(|mark| matches!(mark, Mark::Transform(_))));
++
++    rt.app().outer_transform.set(Some(PaintTransform {
++        radius: f32::NAN,
++        ..identity
++    }));
++    let invalid = sequence(&draw(&mut rt));
++    assert!(invalid.contains(&Mark::Begin(0.5)));
++    assert!(!invalid
++        .iter()
++        .any(|mark| matches!(mark, Mark::Transform(_))));
++
++    let crop = Rect::new(50., 40., 210., 160.);
++    let cropping_identity = PaintTransform {
++        source: crop,
++        destination: crop,
++        ..identity
++    };
++    rt.app().outer_alpha.set(1.);
++    rt.app().outer_transform.set(Some(cropping_identity));
++    assert!(sequence(&draw(&mut rt)).contains(&Mark::Transform(cropping_identity)));
++
++    let before_legacy = rt.app().transform_calls.get();
++    assert_eq!(rt.render(320., 240., &mut Metrics).unwrap(), legacy);
++    assert_eq!(rt.app().transform_calls.get(), before_legacy);
++    rt.app().outer_transform.set(None);
++    assert_eq!(draw(&mut rt), steady);
++}
++
++#[test]
++fn separate_nested_transforms_keep_fixed_content_and_scrims_in_order() {
++    let mut rt = fixture(true);
++    rt.activate("open").unwrap();
++    rt.activate("open-inner").unwrap();
++    draw(&mut rt);
++    let geometry = rt.computed().unwrap().nodes.clone();
++    let revision = rt.accessibility_frame().unwrap().generation();
++
++    let outer = PaintTransform {
++        source: Rect::new(60., 40., 190., 150.),
++        destination: Rect::new(18., 22., 100., 90.),
++        clip: Rect::new(22., 25., 94., 80.),
++        radius: 12.,
++        opacity: 0.8,
++    };
++    let inner = PaintTransform {
++        source: Rect::new(95., 86., 112., 70.),
++        destination: Rect::new(130., 120., 105., 54.),
++        clip: Rect::new(132., 122., 100., 50.),
++        radius: 6.,
++        opacity: 0.75,
++    };
++    rt.app().outer_transform.set(Some(outer));
++    rt.app().inner_transform.set(Some(inner));
++    rt.app().outer_alpha.set(0.5);
++    rt.app().inner_alpha.set(0.5);
++
++    use Mark::{Art, End, Fill, Transform};
++    let transformed = draw(&mut rt);
++    assert_eq!(
++        sequence(&transformed),
++        [
++            Fill(PAGE),
++            Fill(VISUAL),
++            Fill(OUTER_SCRIM),
++            Transform(PaintTransform {
++                opacity: 0.4,
++                ..outer
++            }),
++            Fill(OUTER),
++            Fill(ROW),
++            Fill(FIXED),
++            End,
++            Fill(INNER_SCRIM),
++            Transform(PaintTransform {
++                opacity: 0.375,
++                ..inner
++            }),
++            Fill(INNER),
++            Fill(INNER_ACTION),
++            Art,
++            End,
++        ]
++    );
++    assert_eq!(rt.computed().unwrap().nodes, geometry);
++    assert_eq!(rt.accessibility_frame().unwrap().generation(), revision);
++    assert_eq!(rt.focused(), Some("inner-action"));
++    scope(&rt, Some("inner"));
++
++    // Input uses the authored layout while active. A press from that scope
++    // is rejected once the retained transform becomes paint-only.
++    down(&mut rt);
++    rt.apply(Message::RetireInner).unwrap();
++    let retiring = sequence(&draw(&mut rt));
++    assert!(retiring.contains(&Transform(PaintTransform {
++        opacity: 0.375,
++        ..inner
++    })));
++    no_ax(&rt, &["inner-scrim", "inner", "inner-action", "art"]);
++    scope(&rt, Some("outer"));
++    assert_eq!(rt.focused(), Some("open-inner"));
++    up(&mut rt);
++    assert_eq!(rt.app().messages.last(), Some(&Message::RetireInner));
++    down(&mut rt);
++    up(&mut rt);
++    assert_eq!(rt.app().messages.last(), Some(&Message::Row));
++}
+--- a/crates/surface/src/lib.rs
++++ b/crates/surface/src/lib.rs
+@@ -45,6 +45,8 @@
+     OverlayHorizontalEdge, RangeValue, Role,
+ };
+ pub use motion::{Easing, Transition};
++#[doc(hidden)]
++pub use paint::PaintGroupEffect;
+ pub use paint::{
+     AlignedTextPaint, DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp,
+     PaintTransform, TextAlignment, TextDecoration, TextSelectionColors, TextSelectionPaint,
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -224,6 +224,23 @@
+     }
+ }
+ 
++/// The effect applied to one isolated range in the final paint order.
++#[derive(Clone, Copy, Debug, PartialEq)]
++#[doc(hidden)]
++pub enum PaintGroupEffect {
++    Opacity(f32),
++    Transform(PaintTransform),
++}
++
++impl PaintGroupEffect {
++    fn is_valid(self) -> bool {
++        match self {
++            Self::Opacity(opacity) => (0. ..=1.).contains(&opacity),
++            Self::Transform(transform) => transform.is_valid(),
++        }
++    }
++}
++
+ /// Ordered drawing commands that retain vector fills and live raster images.
+ #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+ #[non_exhaustive]
+@@ -277,11 +294,11 @@
+     ) {
+     }
+ 
+-    fn begin_opacity_group(_opacity: f32) -> Option<Self> {
++    fn begin_paint_group(_effect: PaintGroupEffect) -> Option<Self> {
+         None
+     }
+ 
+-    fn end_opacity_group() -> Option<Self> {
++    fn end_paint_group() -> Option<Self> {
+         None
+     }
+ }
+@@ -325,11 +342,14 @@
+         }
+     }
+ 
+-    fn begin_opacity_group(opacity: f32) -> Option<Self> {
+-        Some(Self::BeginOpacityGroup { opacity })
+-    }
+-
+-    fn end_opacity_group() -> Option<Self> {
++    fn begin_paint_group(effect: PaintGroupEffect) -> Option<Self> {
++        Some(match effect {
++            PaintGroupEffect::Opacity(opacity) => Self::BeginOpacityGroup { opacity },
++            PaintGroupEffect::Transform(transform) => Self::BeginTransformGroup { transform },
++        })
++    }
++
++    fn end_paint_group() -> Option<Self> {
+         Some(Self::EndOpacityGroup)
+     }
+ }
+@@ -671,16 +691,44 @@
+         selection_colors: Option<TextSelectionColors>,
+         groups: &[(Range<usize>, f32)],
+     ) -> Self {
++        let groups: Vec<_> = groups
++            .iter()
++            .map(|(range, opacity)| (range.clone(), PaintGroupEffect::Opacity(*opacity)))
++            .collect();
++        Self::compile_with_paint_groups(
++            dom,
++            computed,
++            focused,
++            decorations,
++            interaction,
++            selection_colors,
++            &groups,
++        )
++    }
++
++    /// Compile isolated effects over disjoint, ordered ranges of painted
++    /// nodes. A range must be nonempty and lie inside the final paint order.
++    /// Invalid inputs leave the entire frame ungrouped.
++    #[doc(hidden)]
++    pub fn compile_with_paint_groups(
++        dom: &MicroDom,
++        computed: &ComputedDom,
++        focused: Option<NodeId>,
++        decorations: &BTreeMap<NodeId, TextDecoration>,
++        interaction: InteractionState,
++        selection_colors: Option<TextSelectionColors>,
++        groups: &[(Range<usize>, PaintGroupEffect)],
++    ) -> Self {
+         let mut previous_end = 0;
+-        let valid = groups.iter().all(|(range, opacity)| {
++        let valid = groups.iter().all(|(range, effect)| {
+             let valid = range.start >= previous_end
+                 && range.start < range.end
+                 && range.end <= computed.paint_order.len()
+-                && (0. ..=1.).contains(opacity);
++                && effect.is_valid();
+             previous_end = range.end;
+             valid
+         });
+-        let opacity_groups = if valid { groups } else { &[] };
++        let paint_groups = if valid { groups } else { &[] };
+         Self::new(
+             computed.viewport,
+             compile_into(
+@@ -692,7 +740,7 @@
+                 None,
+                 CompileOptions {
+                     selection_colors,
+-                    opacity_groups,
++                    paint_groups,
+                 },
+             ),
+         )
+@@ -706,7 +754,7 @@
+ #[derive(Default)]
+ struct CompileOptions<'a> {
+     selection_colors: Option<TextSelectionColors>,
+-    opacity_groups: &'a [(Range<usize>, f32)],
++    paint_groups: &'a [(Range<usize>, PaintGroupEffect)],
+ }
+ 
+ /// The one compile loop. `owners`, when present, gets the owner of each
+@@ -725,18 +773,18 @@
+         owners,
+     };
+     let mut deferred: Option<(NodeId, FeedbackPaint)> = None;
+-    let mut pending_groups = options.opacity_groups.iter();
++    let mut pending_groups = options.paint_groups.iter();
+     let mut next_group = pending_groups.next();
+     let mut active_group: Option<(usize, NodeId)> = None;
+     for (index, id) in computed.paint_order.iter().enumerate() {
+         if let Some((_, panel)) = active_group.filter(|(end, _)| *end == index) {
+-            if let Some(op) = Op::end_opacity_group() {
++            if let Some(op) = Op::end_paint_group() {
+                 ops.push_owned(panel, op);
+             }
+             active_group = None;
+         }
+-        if let Some((range, opacity)) = next_group.filter(|(range, _)| range.start == index) {
+-            if let Some(op) = Op::begin_opacity_group(*opacity) {
++        if let Some((range, effect)) = next_group.filter(|(range, _)| range.start == index) {
++            if let Some(op) = Op::begin_paint_group(*effect) {
+                 ops.push_owned(*id, op);
+             }
+             active_group = Some((range.end, *id));
+@@ -868,7 +916,7 @@
+                 focus,
+             };
+             let checkpoint = after.filter(|_| deferred.is_none()).and_then(|name| {
+-                // Deferred feedback belongs in its owner's opacity slice.
++                // Deferred feedback belongs in its owner's isolated range.
+                 // Do not move it across a later begin or end marker.
+                 let limit = active_group
+                     .map(|(end, _)| end)
+@@ -1014,7 +1062,7 @@
+         }
+     }
+     if let Some((_, panel)) = active_group {
+-        if let Some(op) = Op::end_opacity_group() {
++        if let Some(op) = Op::end_paint_group() {
+             ops.push_owned(panel, op);
+         }
+     }
+--- a/docs/provenance.json
++++ b/docs/provenance.json
+@@ -33,7 +33,7 @@
+   },
+   "modified_since_import": {
+     "crates/surface/src/element.rs": "Allows clippy::large_enum_variant on Element so its public variants stay unchanged.",
+-    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, live raster paint, static text alignment, paired text selection paint and isolated group transforms, after the Core exports. The Core lines are unchanged.",
++    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, live raster paint, static text alignment, paired text selection paint and isolated paint group effects and transforms, after the Core exports. The Core lines are unchanged.",
+     "crates/surface/src/snapshot.rs": "Passes tag instead of *tag to two helpers to satisfy Clippy. Behavior is unchanged.",
+     "crates/ui-runtime/src/domain/use_reducer.rs": "Names the reducer type with a Reducer alias to satisfy Clippy type_complexity. The signature is unchanged."
+   },

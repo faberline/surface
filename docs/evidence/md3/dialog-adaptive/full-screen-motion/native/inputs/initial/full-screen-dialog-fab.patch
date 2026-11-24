@@ -1,0 +1,1250 @@
+--- a/crates/surface-material/src/full_screen_dialog.rs
++++ b/crates/surface-material/src/full_screen_dialog.rs
+@@ -1,8 +1,12 @@
+ //! A full-screen Material dialog with a measured header and scrollable body.
+ 
++mod motion;
++
++pub use motion::{FullScreenDialogAnchor, FullScreenDialogMotion};
++
+ use surface::{
+-    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
+-    TextMeasurer,
++    Align, Color, Insets, Length, MeasuredGroupLayout, Node, PaintTransform, Rect, Role, Style,
++    TextAlignment, TextMeasurer,
+ };
+ use surface_app::{ModalDismissal, View};
+ 
+@@ -81,6 +85,13 @@
+     })
+ }
+ 
++/// Presentation inputs for a dialog opened from a measured FAB.
++pub struct FullScreenDialogTransition<'a> {
++    pub open: bool,
++    pub anchor: Option<FullScreenDialogAnchor>,
++    pub motion: &'a FullScreenDialogMotion,
++}
++
+ impl Theme {
+     /// Build a modal dialog over the entire supplied viewport.
+     ///
+@@ -89,6 +100,77 @@
+     /// for discarding edits. Pending composition receives Escape first and
+     /// guards both header actions until it has ended.
+     pub fn full_screen_dialog<M: Clone + 'static>(
++        &self,
++        options: FullScreenDialogOptions<'_>,
++        body: View<M>,
++        on_close: M,
++        on_action: M,
++    ) -> Option<View<M>> {
++        self.full_screen_dialog_panel(options, body, on_close.clone(), on_action)
++            .map(|panel| panel.modal_overlay(on_close))
++    }
++
++    /// Build a dialog whose rounded container expands from a measured FAB.
++    /// Keep the body and stable IDs while the outgoing view paints. The live
++    /// modal owns input on entry. Retirement restores the previous scope
++    /// immediately. A missing origin uses the resting full-screen layout.
++    pub fn full_screen_dialog_with_motion<M: Clone + 'static>(
++        &self,
++        options: FullScreenDialogOptions<'_>,
++        body: View<M>,
++        on_close: M,
++        on_action: M,
++        transition: FullScreenDialogTransition<'_>,
++    ) -> Option<View<M>> {
++        let viewport = options.viewport;
++        let Some(anchor) = transition.anchor.filter(|anchor| anchor.fits(viewport)) else {
++            return if transition.open {
++                self.full_screen_dialog(options, body, on_close, on_action)
++            } else {
++                None
++            };
++        };
++        if !transition.motion.should_mount(transition.open) {
++            return None;
++        }
++        let pose = transition.motion.pose_painter(anchor, viewport);
++        let panel = self
++            .full_screen_dialog_panel(options, body, on_close.clone(), on_action)?
++            .paint_modal_panel_transform(move || {
++                let pose = pose()?;
++                Some(PaintTransform {
++                    source: viewport,
++                    destination: pose.destination,
++                    clip: pose.clip,
++                    radius: pose.radius,
++                    opacity: pose.content_opacity,
++                })
++            });
++        let backdrop = Node::new(Role::Group, "")
++            .id(format!("{}-transform-layer", options.id))
++            .styled(
++                Style::column()
++                    .width(Length::Px(viewport.width))
++                    .height(Length::Px(viewport.height))
++                    .fixed(Insets {
++                        left: Length::Px(viewport.x),
++                        top: Length::Px(viewport.y),
++                        ..Insets::default()
++                    }),
++            );
++        let layer = if transition.open {
++            panel.modal_with_backdrop(backdrop, on_close)
++        } else {
++            panel.retiring_modal_with_backdrop(backdrop)
++        };
++        Some(layer.paint_fill_contour(transition.motion.shell_painter(
++            anchor,
++            viewport,
++            self.colors.surface,
++        )))
++    }
++
++    fn full_screen_dialog_panel<M: Clone + 'static>(
+         &self,
+         options: FullScreenDialogOptions<'_>,
+         body: View<M>,
+@@ -135,7 +217,7 @@
+                 .styled(surface),
+         )
+         .children([
+-            self.full_screen_dialog_header(options, rail_width, on_close.clone(), on_action),
++            self.full_screen_dialog_header(options, rail_width, on_close, on_action),
+             body,
+         ]);
+         if let Some(target) = options.initial_focus {
+@@ -147,8 +229,7 @@
+         Some(
+             panel
+                 .modal_dismissal(ModalDismissal::Escape)
+-                .block_application_shortcuts()
+-                .modal_overlay(on_close),
++                .block_application_shortcuts(),
+         )
+     }
+ 
+--- /dev/null
++++ b/crates/surface-material/src/full_screen_dialog/motion.rs
+@@ -0,0 +1,336 @@
++//! Motion from a measured FAB to a full-screen dialog.
++
++use std::{cell::Cell, rc::Rc};
++
++use surface::{Color, FillContour, Rect};
++use surface_app::{AnimationFrame, AnimationUpdate, ToggleMotion, ToggleSpring};
++
++/// Measured visual bounds, corner radius and fill of the originating FAB.
++/// The bounds use logical window coordinates, excluding shadow and focus ink.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct FullScreenDialogAnchor {
++    pub bounds: Rect,
++    pub radius: f32,
++    pub fill: Color,
++}
++
++impl FullScreenDialogAnchor {
++    /// Read the last fully visible bounds of an authored FAB or its visual face.
++    pub fn measured(
++        frame: &AnimationFrame<'_>,
++        id: &str,
++        radius: f32,
++        fill: Color,
++    ) -> Option<Self> {
++        let layout = frame.layout?;
++        let node = layout.nodes.get(frame.dom.by_id(id)?.index())?;
++        let anchor = Self {
++            bounds: node.bounds,
++            radius,
++            fill,
++        };
++        (anchor.fits(layout.viewport) && contains(node.clip, node.bounds)).then_some(anchor)
++    }
++
++    pub(super) fn fits(self, viewport: Rect) -> bool {
++        valid_rect(viewport)
++            && valid_rect(self.bounds)
++            && self.radius.is_finite()
++            && self.radius >= 0.
++            && contains(viewport, self.bounds)
++    }
++}
++
++fn valid_rect(rect: Rect) -> bool {
++    rect.width > 0.
++        && rect.height > 0.
++        && [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height]
++            .into_iter()
++            .all(f32::is_finite)
++}
++
++fn contains(outer: Rect, inner: Rect) -> bool {
++    inner.x >= outer.x
++        && inner.y >= outer.y
++        && inner.x + inner.width <= outer.x + outer.width
++        && inner.y + inner.height <= outer.y + outer.height
++}
++
++/// Retained motion for one full-screen dialog launched by a FAB.
++/// Keep the same stable IDs when switching the application-owned open flag.
++pub struct FullScreenDialogMotion {
++    track: ToggleMotion,
++    progress: Rc<Cell<f32>>,
++}
++
++impl Default for FullScreenDialogMotion {
++    fn default() -> Self {
++        Self::new(false)
++    }
++}
++
++impl FullScreenDialogMotion {
++    /// Start at the requested resting state.
++    pub fn new(open: bool) -> Self {
++        Self {
++            track: ToggleMotion::new(open),
++            progress: Rc::new(Cell::new(if open { 1. } else { 0. })),
++        }
++    }
++
++    /// Current spatial progress. Zero is the FAB and one is the viewport.
++    pub fn progress(&self) -> f32 {
++        self.progress.get()
++    }
++
++    /// Whether to build the live dialog or keep its outgoing paint.
++    pub fn should_mount(&self, open: bool) -> bool {
++        open || self.progress() > 0.
++    }
++
++    /// Advance from the last pose. An unavailable origin, missing clock or
++    /// Reduce Motion settles immediately. A valid retiring view is removed
++    /// only after it reaches the opener again.
++    pub fn advance(
++        &mut self,
++        frame: &AnimationFrame<'_>,
++        open: bool,
++        anchor: Option<FullScreenDialogAnchor>,
++        viewport: Rect,
++    ) -> AnimationUpdate {
++        let was_mounted = self.progress() > 0.;
++        let origin_available = anchor.is_some_and(|anchor| anchor.fits(viewport));
++        let snap = frame.reduced_motion || !origin_available || (!open && !was_mounted);
++        let (progress, request_next) = self.track.sample(
++            open,
++            frame.now_ms,
++            snap,
++            ToggleSpring::StandardDefaultSpatial,
++        );
++        self.progress.set(progress);
++        AnimationUpdate {
++            rebuild: !open && was_mounted && progress == 0.,
++            request_next,
++        }
++    }
++
++    pub(super) fn pose_painter(
++        &self,
++        anchor: FullScreenDialogAnchor,
++        viewport: Rect,
++    ) -> impl Fn() -> Option<TransformPose> + 'static {
++        let progress = self.progress.clone();
++        move || {
++            let progress = progress.get();
++            (progress < 1.)
++                .then(|| TransformPose::at(anchor, viewport, progress))
++                .flatten()
++        }
++    }
++
++    pub(super) fn shell_painter(
++        &self,
++        anchor: FullScreenDialogAnchor,
++        viewport: Rect,
++        surface: Color,
++    ) -> impl Fn() -> FillContour + 'static {
++        let progress = self.progress.clone();
++        move || {
++            let progress = progress.get();
++            let pose = TransformPose::at(anchor, viewport, progress)
++                .expect("shell geometry was validated when building the modal");
++            let color = crate::tokens::blend(anchor.fill, surface, fade(progress, 0.15, 0.84));
++            // At the first sample the actual launcher remains visible. The
++            // growing shell covers its glyph before the incoming content fades in.
++            let opacity = if progress == 1. {
++                0.
++            } else {
++                pose.cover_opacity
++            };
++            let color = Color(color.0, color.1, color.2, (255. * opacity).round() as u8);
++            let local = Rect::new(
++                pose.clip.x - viewport.x,
++                pose.clip.y - viewport.y,
++                pose.clip.width,
++                pose.clip.height,
++            );
++            rounded_shell(local, pose.radius, color)
++        }
++    }
++
++    /// The rounded container's current logical bounds. An unavailable
++    /// anchor uses the full viewport, which is the resting dialog layout.
++    pub fn container_bounds(&self, anchor: Option<FullScreenDialogAnchor>, viewport: Rect) -> Rect {
++        anchor
++            .and_then(|anchor| TransformPose::at(anchor, viewport, self.progress()))
++            .map_or(viewport, |pose| pose.clip)
++    }
++}
++
++pub(super) struct TransformPose {
++    pub(super) clip: Rect,
++    pub(super) destination: Rect,
++    pub(super) radius: f32,
++    cover_opacity: f32,
++    pub(super) content_opacity: f32,
++}
++
++impl TransformPose {
++    fn at(anchor: FullScreenDialogAnchor, viewport: Rect, progress: f32) -> Option<Self> {
++        if !anchor.fits(viewport) {
++            return None;
++        }
++        let lerp = |from: f32, to: f32| from + (to - from) * progress;
++        let start = anchor.bounds;
++        let clip = if progress == 1. {
++            viewport
++        } else {
++            Rect::new(
++                lerp(start.x, viewport.x),
++                lerp(start.y, viewport.y),
++                lerp(start.width, viewport.width),
++                lerp(start.height, viewport.height),
++            )
++        };
++        // Scale the content to the animated width and keep its top edge
++        // pinned. A separate shell fills the rounded aperture even when a
++        // wide destination makes the scaled content shorter than the shell.
++        let destination = Rect::new(
++            clip.x,
++            clip.y,
++            clip.width,
++            viewport.height * (clip.width / viewport.width),
++        );
++        let origin_radius = anchor.radius.min(start.width.min(start.height) / 2.);
++        Some(Self {
++            clip,
++            destination,
++            radius: lerp(origin_radius, 0.),
++            cover_opacity: fade(progress, 0., 0.20),
++            content_opacity: fade(progress, 0.20, 0.76),
++        })
++    }
++}
++
++fn rounded_shell(rect: Rect, radius: f32, color: Color) -> FillContour {
++    use std::f32::consts::FRAC_PI_2;
++
++    let radius = radius.min(rect.width.min(rect.height) / 2.);
++    if radius == 0. || color.3 == 0 {
++        return FillContour::new(
++            [
++                [rect.x, rect.y],
++                [rect.x + rect.width, rect.y],
++                [rect.x + rect.width, rect.y + rect.height],
++                [rect.x, rect.y + rect.height],
++            ],
++            color,
++        )
++        .expect("a positive finite rectangle is a valid shell");
++    }
++    let centers = [
++        [rect.x + rect.width - radius, rect.y + radius],
++        [rect.x + rect.width - radius, rect.y + rect.height - radius],
++        [rect.x + radius, rect.y + rect.height - radius],
++        [rect.x + radius, rect.y + radius],
++    ];
++    let corners = centers
++        .into_iter()
++        .enumerate()
++        .flat_map(|(corner, [x, y])| {
++            (0..=8).map(move |step| {
++                let angle = (corner as f32 - 1. + step as f32 / 8.) * FRAC_PI_2;
++                let (sin, cos) = angle.sin_cos();
++                [x + radius * cos, y + radius * sin]
++            })
++        });
++    FillContour::new(corners, color).expect("a rounded rectangle is a valid shell")
++}
++
++fn fade(progress: f32, start: f32, end: f32) -> f32 {
++    let t = ((progress - start) / (end - start)).clamp(0., 1.);
++    t * t * (3. - 2. * t)
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use surface::{MicroDom, Node, Role};
++
++    fn anchor(bounds: Rect) -> FullScreenDialogAnchor {
++        FullScreenDialogAnchor {
++            bounds,
++            radius: 16.,
++            fill: Color::rgb(110, 90, 140),
++        }
++    }
++
++    #[test]
++    fn shell_tracks_the_real_origin_and_content_pins_to_its_top_edge() {
++        let viewport = Rect::new(3., 5., 320., 400.);
++        let anchor = anchor(Rect::new(251., 333., 56., 56.));
++        let start = TransformPose::at(anchor, viewport, 0.).unwrap();
++        assert_eq!(start.clip, anchor.bounds);
++        assert_eq!(start.radius, 16.);
++        assert_eq!(start.cover_opacity, 0.);
++        assert_eq!(start.content_opacity, 0.);
++        let middle = TransformPose::at(anchor, viewport, 0.5).unwrap();
++        assert_eq!(middle.clip, Rect::new(127., 169., 188., 228.));
++        assert_eq!(middle.radius, 8.);
++        assert_eq!((middle.destination.x, middle.destination.y), (127., 169.));
++        assert_eq!(middle.destination.width, 188.);
++        assert!((middle.destination.height - 235.).abs() < 0.001);
++        assert_eq!(middle.cover_opacity, 1.);
++        assert!((0. ..1.).contains(&middle.content_opacity));
++        let rest = TransformPose::at(anchor, viewport, 1.).unwrap();
++        assert_eq!(rest.destination, viewport);
++        assert_eq!(rest.clip, viewport);
++        assert_eq!(rest.radius, 0.);
++        assert_eq!(rest.content_opacity, 1.);
++    }
++
++    #[test]
++    fn landscape_keeps_content_proportions_under_the_aperture() {
++        let viewport = Rect::new(0., 0., 560., 320.);
++        let anchor = anchor(Rect::new(488., 248., 56., 56.));
++        let pose = TransformPose::at(anchor, viewport, 0.).unwrap();
++        assert_eq!(pose.destination, Rect::new(488., 248., 56., 32.));
++        assert_eq!(pose.clip, anchor.bounds);
++        assert_eq!(
++            FullScreenDialogMotion::default()
++                .container_bounds(Some(anchor), Rect::new(0., 0., 320., 280.),),
++            Rect::new(0., 0., 320., 280.)
++        );
++    }
++
++    #[test]
++    fn reverse_preserves_the_current_pose_and_reduced_motion_clears_retirement() {
++        let viewport = Rect::new(0., 0., 320., 400.);
++        let origin = Some(anchor(Rect::new(248., 328., 56., 56.)));
++        let dom = MicroDom::new(Node::new(Role::Window, ""));
++        let frame = |now_ms, reduced_motion| AnimationFrame {
++            now_ms,
++            reduced_motion,
++            dom: &dom,
++            layout: None,
++        };
++        let mut motion = FullScreenDialogMotion::default();
++        motion.advance(&frame(Some(0.), false), true, origin, viewport);
++        assert!(
++            motion
++                .advance(&frame(Some(60.), false), true, origin, viewport)
++                .request_next
++        );
++        let presented = motion.container_bounds(origin, viewport);
++        assert!(presented.width > 56. && presented.width < 320.);
++        motion.advance(&frame(Some(60.), false), false, origin, viewport);
++        assert_eq!(motion.container_bounds(origin, viewport), presented);
++        assert!(motion.should_mount(false));
++        let stop = motion.advance(&frame(Some(70.), true), false, origin, viewport);
++        assert!(stop.rebuild && !stop.request_next);
++        assert!(!motion.should_mount(false));
++        let fallback = motion.advance(&frame(Some(80.), false), true, None, viewport);
++        assert!(!fallback.request_next);
++        assert_eq!(motion.progress(), 1.);
++    }
++}
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -130,7 +130,8 @@
+ pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
+ pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
+ pub use full_screen_dialog::{
+-    full_screen_dialog_layout, FullScreenDialogLayout, FullScreenDialogOptions,
++    full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
++    FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,
+ };
+ pub use list::{
+     ExpandableListOptions, ExpandableListRow, ListExpansionMotion, ListItem, ListLines, ListMedia,
+--- a/crates/surface-wgpu/tests/it.rs
++++ b/crates/surface-wgpu/tests/it.rs
+@@ -3,6 +3,8 @@
+ 
+ #[path = "it/basic_dialog_motion.rs"]
+ mod basic_dialog_motion;
++#[path = "it/full_screen_dialog_motion.rs"]
++mod full_screen_dialog_motion;
+ #[path = "it/isolated_transform.rs"]
+ mod isolated_transform;
+ #[path = "it/list_ripple.rs"]
+--- /dev/null
++++ b/crates/surface-wgpu/tests/it/full_screen_dialog_motion.rs
+@@ -0,0 +1,251 @@
++use surface::{Color, ExtendedPaintOp, Insets, Length, Node, PaintTransform, Rect, Role, Style};
++use surface_app::{AnimationFrame, AnimationUpdate, Application, Event, Runtime, View};
++use surface_material::{
++    shape::{self, LayoutDirection},
++    FabColor, FabSize, FullScreenDialogAnchor, FullScreenDialogMotion, FullScreenDialogOptions,
++    FullScreenDialogTransition, Theme,
++};
++use surface_wgpu::{Capture, Renderer, TextSystem};
++
++const WIDTH: u32 = 320;
++const HEIGHT: u32 = 400;
++const SCALE: f32 = 2.;
++const PAGE: Color = Color::rgb(24, 43, 71);
++const PROBE: Color = Color::rgb(236, 34, 52);
++
++struct Editor {
++    theme: Theme,
++    motion: FullScreenDialogMotion,
++    anchor: Option<FullScreenDialogAnchor>,
++    open: bool,
++}
++
++impl Application for Editor {
++    type Message = bool;
++
++    fn update(&mut self, open: bool) {
++        self.open = open;
++    }
++
++    fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
++        if frame
++            .layout
++            .is_some_and(|layout| layout.viewport == viewport())
++        {
++            self.anchor = FullScreenDialogAnchor::measured(
++                &frame,
++                "fab",
++                shape::LARGE.top_left,
++                self.theme.colors.primary_container,
++            );
++        }
++        self.motion
++            .advance(&frame, self.open, self.anchor, viewport())
++    }
++
++    fn view(&self) -> View<bool> {
++        let fab = View::new(
++            Node::new(Role::Group, "").styled(
++                Style::row()
++                    .width(Length::Px(56.))
++                    .height(Length::Px(56.))
++                    .fixed(Insets {
++                        left: Length::Px(24.),
++                        bottom: Length::Px(24.),
++                        ..Insets::default()
++                    }),
++            ),
++        )
++        .children([self.theme.fab(
++            "fab",
++            "新增行程",
++            "+",
++            FabSize::Regular,
++            FabColor::Primary,
++            false,
++            true,
++        )]);
++        let body = View::new(
++            Node::new(Role::Group, "").id("probe").styled(
++                Style::column()
++                    .width(Length::Px(88.))
++                    .height(Length::Px(44.))
++                    .background(PROBE),
++            ),
++        );
++        let dialog = self.theme.full_screen_dialog_with_motion(
++            FullScreenDialogOptions {
++                id: "edit",
++                title: "編輯行程",
++                body_label: "行程",
++                close_label: "關閉",
++                action_label: "儲存",
++                action_disabled: false,
++                initial_focus: Some("edit-close"),
++                restore_focus_to: Some("fab"),
++                viewport: viewport(),
++                direction: LayoutDirection::RightToLeft,
++            },
++            body,
++            false,
++            false,
++            FullScreenDialogTransition {
++                open: self.open,
++                anchor: self.anchor,
++                motion: &self.motion,
++            },
++        );
++        View::new(
++            Node::new(Role::Window, "").styled(
++                Style::column()
++                    .width(Length::Percent(1.))
++                    .height(Length::Percent(1.))
++                    .background(PAGE),
++            ),
++        )
++        .children(std::iter::once(fab).chain(dialog))
++    }
++}
++
++fn viewport() -> Rect {
++    Rect::new(0., 0., WIDTH as f32, HEIGHT as f32)
++}
++
++fn sample(image: &Capture, x: f32, y: f32) -> [u8; 4] {
++    let x = (x * SCALE) as u32;
++    let y = (y * SCALE) as u32;
++    let offset = ((y * image.width + x) * 4) as usize;
++    image.rgba[offset..offset + 4].try_into().unwrap()
++}
++
++fn save(image: &Capture, name: &str) {
++    let Ok(path) = std::env::var("SURFACE_GPU_EVIDENCE") else {
++        return;
++    };
++    let path =
++        std::path::Path::new(&path).with_file_name(format!("gpu-full-screen-fab-{name}.png"));
++    let mut encoder = png::Encoder::new(
++        std::fs::File::create(path).unwrap(),
++        image.width,
++        image.height,
++    );
++    encoder.set_color(png::ColorType::Rgba);
++    encoder.set_depth(png::BitDepth::Eight);
++    encoder
++        .write_header()
++        .unwrap()
++        .write_image_data(&image.rgba)
++        .unwrap();
++}
++
++fn bounds(runtime: &Runtime<Editor>, id: &str) -> Rect {
++    let node = runtime.dom().by_id(id).unwrap();
++    runtime.computed().unwrap().nodes[node.index()].bounds
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_full_screen_fab_moves_and_clips_real_dialog_pixels() {
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None)
++            .await
++            .expect("native GPU adapter is required");
++        eprintln!("GPU Full-screen FAB evidence: {:?}", adapter.get_info());
++        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
++            .await
++            .unwrap();
++        let mut text = TextSystem::default();
++        let mut runtime = Runtime::new(Editor {
++            theme: Theme::dark(),
++            motion: FullScreenDialogMotion::default(),
++            anchor: None,
++            open: false,
++        })
++        .unwrap();
++        let mut frame = |runtime: &mut Runtime<Editor>, now| {
++            runtime.set_time(now);
++            let display = runtime
++                .render_extended(WIDTH as f32, HEIGHT as f32, &mut text)
++                .unwrap();
++            let transform = display.ops().iter().find_map(|op| match op {
++                ExtendedPaintOp::BeginTransformGroup { transform } => Some(*transform),
++                _ => None,
++            });
++            let capture = renderer
++                .capture_extended(&display, WIDTH * 2, HEIGHT * 2, SCALE)
++                .unwrap();
++            (capture, transform)
++        };
++        let (closed, _) = frame(&mut runtime, 0.);
++        frame(&mut runtime, 20.);
++        let origin = bounds(&runtime, "fab");
++        assert_eq!(origin, Rect::new(24., 320., 56., 56.));
++        runtime.activate("fab").unwrap();
++        let (first, start) = frame(&mut runtime, 100.);
++        assert_eq!(start.unwrap().clip, origin);
++        assert_eq!(first.rgba, closed.rgba);
++        assert_eq!(runtime.focused(), Some("edit-close"));
++
++        let (entering, active) = frame(&mut runtime, 170.);
++        let PaintTransform {
++            clip,
++            destination,
++            source,
++            opacity,
++            radius,
++        } = active.unwrap();
++        assert!(radius > 3. && clip.width > origin.width && clip.width < viewport().width);
++        assert!((0. ..1.).contains(&opacity));
++        let background = sample(&closed, 4., 4.);
++        assert_eq!(sample(&entering, 4., 4.), background);
++        assert_eq!(sample(&entering, clip.x + 0.5, clip.y + 0.5), background);
++        let probe = bounds(&runtime, "probe");
++        let scale = destination.width / source.width;
++        let probe_x = destination.x + (probe.x + probe.width * 0.5 - source.x) * scale;
++        let probe_y = destination.y + (probe.y + probe.height * 0.5 - source.y) * scale;
++        assert!(clip.contains(probe_x, probe_y));
++        let probe_pixel = sample(&entering, probe_x, probe_y);
++        let near_probe = sample(
++            &entering,
++            probe_x - (probe.width * 0.5 + 7.) * scale,
++            probe_y,
++        );
++        assert!(
++            u16::from(probe_pixel[0]) > u16::from(near_probe[0]) + 25,
++            "{probe_pixel:?} and {near_probe:?}"
++        );
++        save(&entering, "enter");
++
++        let (open, complete) = frame(&mut runtime, 650.);
++        assert!(complete.is_none());
++        let probe = bounds(&runtime, "probe");
++        assert_eq!(
++            sample(
++                &open,
++                probe.x + probe.width * 0.5,
++                probe.y + probe.height * 0.5
++            ),
++            [PROBE.0, PROBE.1, PROBE.2, 255],
++        );
++        save(&open, "settled");
++        runtime.dispatch(Event::Cancel).unwrap();
++        assert_eq!(runtime.focused(), Some("fab"));
++        frame(&mut runtime, 700.);
++        let (exiting, transition) = frame(&mut runtime, 770.);
++        assert!(transition.is_some());
++        let accessibility = runtime.accessibility_frame().unwrap();
++        assert_eq!(accessibility.modal_root(), None);
++        assert!(accessibility
++            .node(runtime.dom().by_id("edit").unwrap())
++            .is_none());
++        assert_eq!(sample(&exiting, 4., 4.), background);
++        save(&exiting, "exit");
++
++        runtime.set_reduced_motion(true);
++        let (done, transition) = frame(&mut runtime, 780.);
++        assert!(transition.is_none());
++        assert!(runtime.dom().by_id("edit").is_none());
++        assert_eq!(sample(&done, 4., 4.), background);
++    });
++}
+--- a/examples/material-gallery/src/dialog_demo.rs
++++ b/examples/material-gallery/src/dialog_demo.rs
+@@ -1,9 +1,10 @@
+-use surface::{Align, Length, Node, Rect, Role, Style};
++use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style};
+ use surface_app::{AnimationFrame, AnimationUpdate, CursorStyle, ModalDismissal, View};
+ use surface_material::{
+     adaptive::WindowWidthSizeClass, full_screen_dialog_layout, shape, shape::LayoutDirection,
+     typography, BasicDialogContent, BasicDialogMotion, BasicDialogOptions, ButtonKind, ChoiceState,
+-    FullScreenDialogOptions, Theme,
++    FabColor, FabSize, FullScreenDialogAnchor, FullScreenDialogMotion, FullScreenDialogOptions,
++    FullScreenDialogTransition, Theme,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+@@ -18,6 +19,8 @@
+ const BASIC_OPEN: &str = "dialog-demo-basic-open";
+ const ALERT_OPEN: &str = "dialog-demo-alert-open";
+ const EDIT_OPEN: &str = "dialog-demo-edit-open";
++const SHOW_TRANSFORM: &str = "dialog-demo-show-transform";
++const FAB_OPEN: &str = "dialog-demo-fab-open";
+ const EDITOR: &str = "dialog-demo-editor";
+ const SAVED: &str = "dialog-demo-saved";
+ const EDIT_TITLE: &str = "編輯行程";
+@@ -26,6 +29,7 @@
+ #[derive(Clone)]
+ pub enum DialogDemoEvent {
+     Show,
++    ShowTransform,
+     Back,
+     ToggleDirection,
+     ToggleLargeText,
+@@ -56,6 +60,10 @@
+     basic_motion: BasicDialogMotion,
+     alert_motion: BasicDialogMotion,
+     discard_motion: BasicDialogMotion,
++    transform_preview: bool,
++    full_motion: FullScreenDialogMotion,
++    fab_anchor: Option<FullScreenDialogAnchor>,
++    retiring_editor: Option<String>,
+     saved: String,
+     saves: usize,
+     discards: usize,
+@@ -73,6 +81,10 @@
+             basic_motion: BasicDialogMotion::default(),
+             alert_motion: BasicDialogMotion::default(),
+             discard_motion: BasicDialogMotion::default(),
++            transform_preview: false,
++            full_motion: FullScreenDialogMotion::default(),
++            fab_anchor: None,
++            retiring_editor: None,
+             saved: INITIAL.into(),
+             saves: 0,
+             discards: 0,
+@@ -107,6 +119,9 @@
+         self.basic_motion = BasicDialogMotion::default();
+         self.alert_motion = BasicDialogMotion::default();
+         self.discard_motion = BasicDialogMotion::default();
++        self.transform_preview = false;
++        self.fab_anchor = None;
++        self.reset_full_motion();
+     }
+ 
+     pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
+@@ -129,26 +144,87 @@
+                 })
+             ),
+         );
++        let full = self.advance_full_motion(frame);
+         AnimationUpdate {
+-            rebuild: basic.rebuild || alert.rebuild || discard.rebuild,
+-            request_next: basic.request_next || alert.request_next || discard.request_next,
+-        }
++            rebuild: basic.rebuild || alert.rebuild || discard.rebuild || full.rebuild,
++            request_next: basic.request_next
++                || alert.request_next
++                || discard.request_next
++                || full.request_next,
++        }
++    }
++
++    fn advance_full_motion(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
++        if !self.transform_preview {
++            return AnimationUpdate::default();
++        }
++        let previous_anchor = self.fab_anchor;
++        if frame
++            .layout
++            .is_some_and(|layout| layout.viewport == self.viewport)
++        {
++            self.fab_anchor = FullScreenDialogAnchor::measured(
++                frame,
++                FAB_OPEN,
++                shape::LARGE.top_left,
++                Color::TRANSPARENT,
++            )
++            .filter(|anchor| anchor.bounds.width == 56. && anchor.bounds.height == 56.);
++        }
++        let is_full = self.is_full_screen();
++        let editor_open = matches!(self.active, Some(Active::Edit { .. }));
++        let anchor = if is_full { self.fab_anchor } else { None };
++        let mut update = self
++            .full_motion
++            .advance(frame, editor_open, anchor, self.viewport);
++        if self.retiring_editor.is_some() && (!is_full || !self.full_motion.should_mount(false)) {
++            self.retiring_editor = None;
++            update.rebuild = true;
++        }
++        if is_full
++            && (editor_open || self.retiring_editor.is_some())
++            && previous_anchor != self.fab_anchor
++        {
++            update.rebuild = true;
++        }
++        update
++    }
++
++    fn finish_editor(&mut self) {
++        if let Some(Active::Edit { draft, .. }) = self.active.take() {
++            if self.transform_preview
++                && self.is_full_screen()
++                && self.full_motion.should_mount(false)
++            {
++                self.retiring_editor = Some(draft);
++            }
++        }
++    }
++
++    fn reset_full_motion(&mut self) {
++        self.full_motion = FullScreenDialogMotion::default();
++        self.retiring_editor = None;
+     }
+ 
+     pub(crate) fn update(&mut self, event: DialogDemoEvent) {
+         use DialogDemoEvent::*;
+         match event {
+-            Show => self.visible = true,
++            Show | ShowTransform => {
++                self.visible = true;
++                self.transform_preview = matches!(event, ShowTransform);
++            }
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+             OpenBasic => {
++                self.reset_full_motion();
+                 self.alert_motion = BasicDialogMotion::default();
+                 self.discard_motion = BasicDialogMotion::default();
+                 self.active = Some(Active::Basic);
+             }
+             CloseBasic if matches!(self.active, Some(Active::Basic)) => self.active = None,
+             OpenAlert => {
++                self.reset_full_motion();
+                 self.basic_motion = BasicDialogMotion::default();
+                 self.discard_motion = BasicDialogMotion::default();
+                 self.active = Some(Active::Alert);
+@@ -158,6 +234,7 @@
+                 self.active = None;
+             }
+             OpenEdit => {
++                self.retiring_editor = None;
+                 self.basic_motion = BasicDialogMotion::default();
+                 self.alert_motion = BasicDialogMotion::default();
+                 self.discard_motion = BasicDialogMotion::default();
+@@ -178,7 +255,7 @@
+             RequestClose => {
+                 if let Some(Active::Edit { draft, ask_discard }) = &mut self.active {
+                     if *draft == self.saved {
+-                        self.active = None;
++                        self.finish_editor();
+                     } else {
+                         *ask_discard = true;
+                     }
+@@ -199,7 +276,7 @@
+                 ) =>
+             {
+                 self.discards += 1;
+-                self.active = None;
++                self.finish_editor();
+             }
+             Save => {
+                 if let Some(Active::Edit {
+@@ -207,9 +284,9 @@
+                     ask_discard: false,
+                 }) = &mut self.active
+                 {
+-                    self.saved = std::mem::take(draft);
++                    self.saved.clone_from(draft);
+                     self.saves += 1;
+-                    self.active = None;
++                    self.finish_editor();
+                 }
+             }
+             CloseBasic | Acknowledge | Discard => {}
+@@ -233,7 +310,7 @@
+             action_label: "儲存",
+             action_disabled: false,
+             initial_focus: Some(EDITOR),
+-            restore_focus_to: Some(EDIT_OPEN),
++            restore_focus_to: Some(self.editor_opener()),
+             viewport: self.viewport,
+             direction: self.direction(),
+         }
+@@ -242,6 +319,69 @@
+     fn is_full_screen(&self) -> bool {
+         WindowWidthSizeClass::from_dp(self.viewport.width) == Some(WindowWidthSizeClass::Compact)
+             && full_screen_dialog_layout(self.full_options()).is_some()
++    }
++
++    fn editor_opener(&self) -> &'static str {
++        if self.transform_preview {
++            FAB_OPEN
++        } else {
++            EDIT_OPEN
++        }
++    }
++
++    fn demo_opener(&self) -> &'static str {
++        if self.transform_preview {
++            SHOW_TRANSFORM
++        } else {
++            SHOW
++        }
++    }
++
++    pub(crate) fn show_transform_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW_TRANSFORM,
++                "全螢幕轉場",
++                ButtonKind::Outlined,
++                false,
++                Message::DialogDemo(DialogDemoEvent::ShowTransform),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn fab_launcher(&self, theme: &Theme) -> View<Message> {
++        let mut inset = Insets {
++            bottom: Length::Px(24.),
++            ..Insets::default()
++        };
++        if self.rtl {
++            inset.left = Length::Px(24.);
++        } else {
++            inset.right = Length::Px(24.);
++        }
++        View::new(
++            Node::new(Role::Group, "")
++                .id("dialog-demo-fab-anchor")
++                .styled(
++                    Style::row()
++                        .fixed(inset)
++                        .width(Length::Px(56.))
++                        .height(Length::Px(56.)),
++                ),
++        )
++        .children([theme
++            .fab(
++                FAB_OPEN,
++                "新增行程",
++                "+",
++                FabSize::Regular,
++                FabColor::Primary,
++                false,
++                Message::DialogDemo(DialogDemoEvent::OpenEdit),
++            )
++            .suppress_repeated_activation()
++            .accessible_activation()])
+     }
+ 
+     fn basic_options(&self, id: &'static str, label: &'static str) -> BasicDialogOptions<'static> {
+@@ -300,12 +440,19 @@
+                 )
+                 .accessible_activation()
+         };
++        let mut previews = vec![
++            preview(BASIC_OPEN, "基本對話框", OpenBasic),
++            preview(ALERT_OPEN, "重要提示", OpenAlert),
++        ];
++        if !self.transform_preview {
++            previews.push(preview(EDIT_OPEN, EDIT_TITLE, OpenEdit));
++        }
+         let mut page = vec![
+             theme.heading("dialog-demo-title", "對話框"),
+             control_row(vec![
+                 theme
+                     .tonal_button(BACK, "返回", Message::DialogDemo(Back))
+-                    .restore_focus_on_removal(SHOW)
++                    .restore_focus_on_removal(self.demo_opener())
+                     .accessible_activation(),
+                 theme
+                     .switch(
+@@ -326,13 +473,12 @@
+                     ToggleLargeText,
+                 ),
+             ]),
+-            control_row(vec![
+-                preview(BASIC_OPEN, "基本對話框", OpenBasic),
+-                preview(ALERT_OPEN, "重要提示", OpenAlert),
+-                preview(EDIT_OPEN, EDIT_TITLE, OpenEdit),
+-            ]),
++            control_row(previews),
+             theme.text(SAVED, format!("已儲存：{}", self.saved)),
+         ];
++        if self.transform_preview {
++            page.push(self.fab_launcher(theme));
++        }
+         page.extend(self.basic(theme, matches!(self.active, Some(Active::Basic))));
+         page.extend(self.alert(theme, matches!(self.active, Some(Active::Alert))));
+         let mut ask_discard = false;
+@@ -341,8 +487,10 @@
+             ask_discard: ask,
+         }) = &self.active
+         {
+-            page.extend(self.editor(theme, draft));
++            page.extend(self.editor(theme, draft, true));
+             ask_discard = *ask;
++        } else if let Some(draft) = &self.retiring_editor {
++            page.extend(self.editor(theme, draft, false));
+         }
+         page.extend(self.confirmation(theme, ask_discard));
+         theme.page(page)
+@@ -419,7 +567,7 @@
+         )
+     }
+ 
+-    fn editor(&self, theme: &Theme, value: &str) -> Option<View<Message>> {
++    fn editor(&self, theme: &Theme, value: &str, open: bool) -> Option<View<Message>> {
+         use DialogDemoEvent::{Input, RequestClose, Save};
+         let editor = View::new(
+             Node::new(Role::TextInput, "行程名稱")
+@@ -489,6 +637,23 @@
+             ),
+         ]);
+         if self.is_full_screen() {
++            if self.transform_preview {
++                let anchor = self.fab_anchor.map(|anchor| FullScreenDialogAnchor {
++                    fill: theme.colors.primary_container,
++                    ..anchor
++                });
++                return theme.full_screen_dialog_with_motion(
++                    self.full_options(),
++                    body,
++                    Message::DialogDemo(RequestClose),
++                    Message::DialogDemo(Save),
++                    FullScreenDialogTransition {
++                        open,
++                        anchor,
++                        motion: &self.full_motion,
++                    },
++                );
++            }
+             return theme.full_screen_dialog(
+                 self.full_options(),
+                 body,
+@@ -496,10 +661,13 @@
+                 Message::DialogDemo(Save),
+             );
+         }
++        if !open {
++            return None;
++        }
+         let mut options = self.basic_options(EDIT, EDIT_TITLE);
+         options.dismissal = ModalDismissal::Escape;
+         options.initial_focus = Some(EDITOR);
+-        options.restore_focus_to = Some(EDIT_OPEN);
++        options.restore_focus_to = Some(self.editor_opener());
+         theme.basic_dialog(
+             options,
+             BasicDialogContent {
+@@ -571,6 +739,13 @@
+             "visible": self.visible, "open": open, "presentation": presentation, "draft": draft,
+             "saved": self.saved, "saves": self.saves, "discards": self.discards, "alerts": self.alerts,
+             "rtl": self.rtl, "text_scale": self.text_scale(),
++            "transform": {
++                "preview": self.transform_preview,
++                "anchor": self.fab_anchor.map(|anchor| anchor.bounds),
++                "progress": self.full_motion.progress(),
++                "container": self.full_motion.container_bounds(self.fab_anchor, self.viewport),
++                "retiring": self.retiring_editor.is_some(),
++            },
+             "opacity": {
+                 "basic": self.basic_motion.opacity(),
+                 "alert": self.alert_motion.opacity(),
+@@ -657,6 +832,109 @@
+     ) -> ExtendedDisplayList {
+         runtime.set_time(now);
+         runtime.render_extended(width, height, &mut Fonts).unwrap()
++    }
++
++    fn transform(frame: &ExtendedDisplayList) -> Option<surface::PaintTransform> {
++        frame.ops().iter().find_map(|op| match op {
++            ExtendedPaintOp::BeginTransformGroup { transform } => Some(*transform),
++            _ => None,
++        })
++    }
++
++    fn transform_route(viewport: (f32, f32), rtl: bool) -> Runtime<Gallery> {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        draw(&mut runtime, viewport);
++        runtime.apply(Message::Section(SECTION)).unwrap();
++        runtime.activate(SHOW_TRANSFORM).unwrap();
++        if rtl {
++            runtime.activate("dialog-demo-rtl").unwrap();
++        }
++        draw(&mut runtime, viewport);
++        runtime
++    }
++
++    #[test]
++    fn measured_fab_starts_modal_and_reverses_transformed_exit() {
++        let viewport = (320., 400.);
++        for rtl in [false, true] {
++            let mut runtime = transform_route(viewport, rtl);
++            let fab = rect(&runtime, FAB_OPEN);
++            assert_eq!(fab, Rect::new(if rtl { 24. } else { 240. }, 320., 56., 56.));
++            click(&mut runtime, fab.x + 28., fab.y + 28.);
++
++            let first = timed_frame(&mut runtime, viewport, 100.);
++            let start = transform(&first).expect("entry from actual FAB");
++            assert_eq!(start.clip, fab);
++            assert_eq!(start.radius, shape::LARGE.top_left);
++            assert_eq!(start.opacity, 0.);
++            active_panel(&runtime, EDIT);
++            assert_eq!(runtime.focused(), Some(EDITOR));
++            assert!(runtime.activate(FAB_OPEN).is_err());
++
++            let halfway = timed_frame(&mut runtime, viewport, 160.);
++            let open = transform(&halfway).expect("intermediate transform");
++            assert!(open.clip.width > fab.width && open.clip.width < viewport.0);
++            assert!(open.clip.height > fab.height && open.clip.height < viewport.1);
++            assert!(open.radius > 0. && open.radius < start.radius);
++            assert!(open.opacity > 0. && open.opacity < 1.);
++            assert_eq!(open.destination.x, open.clip.x);
++            assert_eq!(open.destination.y, open.clip.y);
++            assert_eq!(open.destination.width, open.clip.width);
++            assert_eq!(
++                rect(&runtime, EDIT),
++                Rect::new(0., 0., viewport.0, viewport.1)
++            );
++
++            let full = timed_frame(&mut runtime, viewport, 650.);
++            assert!(transform(&full).is_none());
++            assert!(!runtime.needs_frame());
++            runtime.dispatch(Event::Cancel).unwrap();
++            assert_eq!(runtime.focused(), Some(FAB_OPEN));
++            timed_frame(&mut runtime, viewport, 700.);
++            let out = timed_frame(&mut runtime, viewport, 760.);
++            let exit = transform(&out).expect("inert full-screen exit");
++            assert!(exit.clip.width > fab.width && exit.clip.width < viewport.0);
++            let accessibility = runtime.accessibility_frame().unwrap();
++            assert_eq!(accessibility.modal_root(), None);
++            assert!(accessibility
++                .node(runtime.dom().by_id(EDIT).unwrap())
++                .is_none());
++            assert!(runtime.activate("dialog-demo-edit-action").is_err());
++
++            click(&mut runtime, fab.x + 28., fab.y + 28.);
++            let reversal = timed_frame(&mut runtime, viewport, 760.);
++            assert_eq!(transform(&reversal), Some(exit));
++            active_panel(&runtime, EDIT);
++            assert_eq!(runtime.focused(), Some(EDITOR));
++            let settled = timed_frame(&mut runtime, viewport, 1340.);
++            assert!(transform(&settled).is_none());
++        }
++    }
++
++    #[test]
++    fn resizing_a_transform_keeps_editor_value_selection_and_composition() {
++        let mut runtime = transform_route((320., 400.), true);
++        runtime.activate(FAB_OPEN).unwrap();
++        timed_frame(&mut runtime, (320., 400.), 100.);
++        timed_frame(&mut runtime, (320., 400.), 160.);
++        set_input(&mut runtime, "秋日散步", 12, 9);
++        runtime
++            .dispatch(Event::Ime(surface_app::ImeEvent::Preedit {
++                text: "ㄅ".into(),
++                selection: None,
++            }))
++            .unwrap();
++        let before = runtime.input_snapshot().unwrap();
++        for viewport in [(360., 420.), (600., 550.), (320., 400.)] {
++            timed_frame(&mut runtime, viewport, 180.);
++            let after = runtime.input_snapshot().unwrap();
++            assert_eq!(after.id, EDITOR);
++            assert_eq!(after.value, before.value);
++            assert_eq!(after.selection, before.selection);
++            assert_eq!(after.composing, before.composing);
++            assert!(after.composing);
++            active_panel(&runtime, EDIT);
++        }
+     }
+ 
+     fn opacity_group(frame: &ExtendedDisplayList) -> Option<f32> {
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1411,6 +1411,7 @@
+                         BottomSheetDemo::show_button(&t),
+                         TooltipDemo::show_button(&t),
+                         DialogDemo::show_button(&t),
++                        DialogDemo::show_transform_button(&t),
+                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
+                     ],
+                 ));

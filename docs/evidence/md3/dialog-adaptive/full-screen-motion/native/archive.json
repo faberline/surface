@@ -1,0 +1,72 @@
+{
+  "schema": "surface.evidence.full-screen-dialog-native.v1",
+  "inputs": [
+    {
+      "stage": "basic-motion",
+      "source_files": 572,
+      "source_manifest": "inputs/basic-motion/source.sha256",
+      "source_manifest_sha256": "6e9faca3b07a7057f652c18967a9109a23c7ad4f0124859789dc4696e1f7f044"
+    },
+    {
+      "stage": "core-transform",
+      "source_files": 574,
+      "source_manifest": "inputs/core-transform/source.sha256",
+      "source_manifest_sha256": "2273a9fad52bfbe7167d5e206ae87fe62791ac892861581553ca60718d0a68ef",
+      "patch": "inputs/core-transform/isolated-transform.patch",
+      "patch_sha256": "1e448f105d6d1d30fb04740c753e64b8dc322eeb9a492ae3c7a75d67ee9c350c"
+    },
+    {
+      "stage": "runtime-transform",
+      "source_files": 574,
+      "source_manifest": "inputs/runtime-transform/source.sha256",
+      "source_manifest_sha256": "d7c52221f56b056227dc2911336ce2c70344dce2ab36d5362c7f5bc30bef90ab",
+      "patch": "inputs/runtime-transform/modal-transform-runtime.patch",
+      "patch_sha256": "235de31951eb74042adc88c774d2cef14c6d7add71da9a40bc985e60b00283f2"
+    },
+    {
+      "stage": "initial",
+      "source_files": 576,
+      "source_manifest": "inputs/initial/source.sha256",
+      "source_manifest_sha256": "79dde50444aed15a299710228978083d9aece35c0a1d0aea2e465db9185e449e",
+      "binary_manifest": "inputs/initial/native-binaries.sha256",
+      "patch": "inputs/initial/full-screen-dialog-fab.patch",
+      "patch_sha256": "2b8f9b90d73cc0024f651131d987b993fc124df4b0954589dca0beb33561080b"
+    },
+    {
+      "stage": "first-clearance",
+      "source_files": 576,
+      "source_manifest": "inputs/first-clearance/source.sha256",
+      "source_manifest_sha256": "cca7cce1344b1519b27fa5d1147cded57275989dbf56ab0eb4d9df8001620184",
+      "binary_manifest": "inputs/first-clearance/native-binaries.sha256",
+      "patch": "inputs/first-clearance/fab-clearance.patch",
+      "patch_sha256": "040b585d5ee9660f1316dd53fe168e1aba018f6d20fa6700bba6da27b32db956"
+    },
+    {
+      "stage": "final",
+      "source_files": 576,
+      "source_manifest": "inputs/final/source.sha256",
+      "source_manifest_sha256": "bb0e450ddb5c7a6ebaf7d592cf6c3f54e97f8db51ba118e5dc74d743ac9eba6a",
+      "binary_manifest": "inputs/final/native-binaries.sha256",
+      "patch": "inputs/final/fab-scroll-preview.patch",
+      "patch_sha256": "932f3d08d47c699473051ec7660a4fd0c9c33e843b3899e8a1e676774d0fd80b"
+    }
+  ],
+  "replay": {
+    "runs": 2,
+    "pngs_per_run": 14,
+    "zero_window_samples_per_run": 22,
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ],
+    "motion_mode": "stock headless Reduce Motion",
+    "repeat_manifest": "native/repeat.sha256",
+    "repeat_manifest_sha256": "4c34b52edb5859261f8cec77dfcf19b82b7c40047d59209e5034c51bb1a8b6c0"
+  },
+  "negative": {
+    "alert_overlap_png": "negative/initial/compact-dark-rtl-200-fab.png",
+    "saved_text_comparison": "negative/first-clearance/comparison.json",
+    "saved_text_ink_pixels_covered": 60
+  }
+}

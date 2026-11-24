@@ -1,0 +1,44 @@
+--- a/examples/material-gallery/src/dialog_demo.rs
++++ b/examples/material-gallery/src/dialog_demo.rs
+@@ -440,13 +440,6 @@
+                 )
+                 .accessible_activation()
+         };
+-        let mut previews = vec![
+-            preview(BASIC_OPEN, "基本對話框", OpenBasic),
+-            preview(ALERT_OPEN, "重要提示", OpenAlert),
+-        ];
+-        if !self.transform_preview {
+-            previews.push(preview(EDIT_OPEN, EDIT_TITLE, OpenEdit));
+-        }
+         let mut page = vec![
+             theme.heading("dialog-demo-title", "對話框"),
+             control_row(vec![
+@@ -473,9 +466,15 @@
+                     ToggleLargeText,
+                 ),
+             ]),
+-            control_row(previews),
+-            theme.text(SAVED, format!("已儲存：{}", self.saved)),
+         ];
++        if !self.transform_preview {
++            page.push(control_row(vec![
++                preview(BASIC_OPEN, "基本對話框", OpenBasic),
++                preview(ALERT_OPEN, "重要提示", OpenAlert),
++                preview(EDIT_OPEN, EDIT_TITLE, OpenEdit),
++            ]));
++        }
++        page.push(theme.text(SAVED, format!("已儲存：{}", self.saved)));
+         if self.transform_preview {
+             page.push(self.fab_launcher(theme));
+         }
+@@ -859,6 +858,9 @@
+         for rtl in [false, true] {
+             let mut runtime = transform_route(viewport, rtl);
+             let fab = rect(&runtime, FAB_OPEN);
++            for launcher in [BASIC_OPEN, ALERT_OPEN, EDIT_OPEN] {
++                assert!(runtime.dom().by_id(launcher).is_none());
++            }
+             assert_eq!(fab, Rect::new(if rtl { 24. } else { 240. }, 320., 56., 56.));
+             click(&mut runtime, fab.x + 28., fab.y + 28.);
+ 

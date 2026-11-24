@@ -1,0 +1,17 @@
+case material ...
+browser: Chrome/158.0.8127.37 (<Chrome executable>)
+  [M256] Basic exposes a named modal and traps Tab, Escape and scrim return focus
+  [M257] trusted wheel scrolls a short Basic under its pinned heading and complete action targets
+  [M258] named Alert requires acknowledgement and blocks outside input and Escape
+  [M259] 599 to 600 dp keeps the named editor, draft and backward selection across presentations
+  [M260] dirty Close and Escape ask first, Continue restores exact prior focus, and explicit Save or Discard acts once
+  [M261] 320 dp dark RTL 200% aligns both title lines and wheels the entire discard description without moving actions
+  [M262] real Basic and nested Discard opacity frames, immediate modal handback, reversal and Reduce Motion
+  [M263] actual measured FAB container expands, retires, reverses, reduces motion and keeps the adaptive draft
+case material ... FAILED after 46.8s: M263: Full-screen Reduced Motion: timed out after 30s waiting for `(s => (d => d.transform.progress === 0 && d.transform.anchor !== null &&
+        [d.transform.anchor.x,d.transform.anchor.y,d.transform.anchor.width,d.transform.anchor.height]
+        .every((v,i)=>v===window.gallery.control_bounds("dialog-demo-fab-open")[i]))(s.dialog_demo))(JSON.parse(window.gallery.inspect()))`
+  last step: M263
+
+e2e result: 0 passed; 1 failed; 656 checks; artifacts in <browser-scratch>/focused.9fchcUQS/run.abGU7wHX
+no case passed

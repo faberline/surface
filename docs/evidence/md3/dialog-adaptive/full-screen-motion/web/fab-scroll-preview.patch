@@ -1,0 +1,193 @@
+--- a/examples/material-gallery/src/dialog_demo.rs
++++ b/examples/material-gallery/src/dialog_demo.rs
+@@ -21,6 +21,9 @@
+ const EDIT_OPEN: &str = "dialog-demo-edit-open";
+ const SHOW_TRANSFORM: &str = "dialog-demo-show-transform";
+ const FAB_OPEN: &str = "dialog-demo-fab-open";
++const FAB_PREVIEW_SCROLL: &str = "dialog-demo-fab-preview-scroll";
++const FAB_SIZE: f32 = 56.;
++const FAB_INSET: f32 = 24.;
+ const EDITOR: &str = "dialog-demo-editor";
+ const SAVED: &str = "dialog-demo-saved";
+ const EDIT_TITLE: &str = "編輯行程";
+@@ -169,7 +172,7 @@
+                 shape::LARGE.top_left,
+                 Color::TRANSPARENT,
+             )
+-            .filter(|anchor| anchor.bounds.width == 56. && anchor.bounds.height == 56.);
++            .filter(|anchor| anchor.bounds.width == FAB_SIZE && anchor.bounds.height == FAB_SIZE);
+         }
+         let is_full = self.is_full_screen();
+         let editor_open = matches!(self.active, Some(Active::Edit { .. }));
+@@ -352,13 +355,13 @@
+ 
+     fn fab_launcher(&self, theme: &Theme) -> View<Message> {
+         let mut inset = Insets {
+-            bottom: Length::Px(24.),
++            bottom: Length::Px(FAB_INSET),
+             ..Insets::default()
+         };
+         if self.rtl {
+-            inset.left = Length::Px(24.);
++            inset.left = Length::Px(FAB_INSET);
+         } else {
+-            inset.right = Length::Px(24.);
++            inset.right = Length::Px(FAB_INSET);
+         }
+         View::new(
+             Node::new(Role::Group, "")
+@@ -366,8 +369,8 @@
+                 .styled(
+                     Style::row()
+                         .fixed(inset)
+-                        .width(Length::Px(56.))
+-                        .height(Length::Px(56.)),
++                        .width(Length::Px(FAB_SIZE))
++                        .height(Length::Px(FAB_SIZE)),
+                 ),
+         )
+         .children([theme
+@@ -440,44 +443,65 @@
+                 )
+                 .accessible_activation()
+         };
+-        let mut page = vec![
+-            theme.heading("dialog-demo-title", "對話框"),
+-            control_row(vec![
+-                theme
+-                    .tonal_button(BACK, "返回", Message::DialogDemo(Back))
+-                    .restore_focus_on_removal(self.demo_opener())
+-                    .accessible_activation(),
+-                theme
+-                    .switch(
+-                        "dialog-demo-theme",
+-                        "深色",
+-                        ChoiceState {
+-                            selected: dark,
+-                            disabled: false,
+-                        },
+-                        Message::Theme,
+-                    )
+-                    .accessible_activation(),
+-                toggle("dialog-demo-rtl", "右起", self.rtl, ToggleDirection),
+-                toggle(
+-                    "dialog-demo-large-text",
+-                    "大字",
+-                    self.large_text,
+-                    ToggleLargeText,
+-                ),
+-            ]),
+-        ];
+-        if !self.transform_preview {
+-            page.push(control_row(vec![
+-                preview(BASIC_OPEN, "基本對話框", OpenBasic),
+-                preview(ALERT_OPEN, "重要提示", OpenAlert),
+-                preview(EDIT_OPEN, EDIT_TITLE, OpenEdit),
+-            ]));
+-        }
+-        page.push(theme.text(SAVED, format!("已儲存：{}", self.saved)));
+-        if self.transform_preview {
+-            page.push(self.fab_launcher(theme));
+-        }
++        let title = theme.heading("dialog-demo-title", "對話框");
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::DialogDemo(Back))
++                .restore_focus_on_removal(self.demo_opener())
++                .accessible_activation(),
++            theme
++                .switch(
++                    "dialog-demo-theme",
++                    "深色",
++                    ChoiceState {
++                        selected: dark,
++                        disabled: false,
++                    },
++                    Message::Theme,
++                )
++                .accessible_activation(),
++            toggle("dialog-demo-rtl", "右起", self.rtl, ToggleDirection),
++            toggle(
++                "dialog-demo-large-text",
++                "大字",
++                self.large_text,
++                ToggleLargeText,
++            ),
++        ]);
++        let saved = theme.text(SAVED, format!("已儲存：{}", self.saved));
++        let mut page = if self.transform_preview {
++            // Keep the scroll clip above the fixed FAB, including when text wraps.
++            let page_top_inset = 28.;
++            let fab_clearance = 8.;
++            let scroll_height =
++                (self.viewport.height - FAB_INSET - FAB_SIZE - page_top_inset - fab_clearance)
++                    .max(0.);
++            let content = View::new(
++                Node::new(Role::Group, "對話框設定")
++                    .id(FAB_PREVIEW_SCROLL)
++                    .styled(
++                        Style::column()
++                            .width(Length::Percent(1.))
++                            .height(Length::Px(scroll_height))
++                            .gap(8.)
++                            .clip(true),
++                    ),
++            )
++            .accessibility_scroll_pages()
++            .children([title, controls, saved]);
++            vec![content, self.fab_launcher(theme)]
++        } else {
++            vec![
++                title,
++                controls,
++                control_row(vec![
++                    preview(BASIC_OPEN, "基本對話框", OpenBasic),
++                    preview(ALERT_OPEN, "重要提示", OpenAlert),
++                    preview(EDIT_OPEN, EDIT_TITLE, OpenEdit),
++                ]),
++                saved,
++            ]
++        };
+         page.extend(self.basic(theme, matches!(self.active, Some(Active::Basic))));
+         page.extend(self.alert(theme, matches!(self.active, Some(Active::Alert))));
+         let mut ask_discard = false;
+@@ -914,6 +938,39 @@
+     }
+ 
+     #[test]
++    fn short_fab_preview_scrolls_text_above_the_fixed_button() {
++        let viewport = (320., 240.);
++        let mut runtime = transform_route(viewport, true);
++        runtime.activate("dialog-demo-large-text").unwrap();
++        draw(&mut runtime, viewport);
++
++        let fab = rect(&runtime, FAB_OPEN);
++        let scroller = rect(&runtime, FAB_PREVIEW_SCROLL);
++        let saved = rect(&runtime, SAVED);
++        assert_eq!(scroller.y + scroller.height + 8., fab.y);
++        assert!(saved.y + saved.height > scroller.y + scroller.height);
++        runtime
++            .dispatch(Event::Scroll {
++                x: scroller.x + scroller.width / 2.,
++                y: scroller.y + scroller.height / 2.,
++                delta_x: 0.,
++                delta_y: 800.,
++            })
++            .unwrap();
++        draw(&mut runtime, viewport);
++        let revealed = rect(&runtime, SAVED);
++        assert_eq!(scroller.intersect(revealed), revealed);
++        assert_eq!(rect(&runtime, FAB_OPEN), fab);
++        click(
++            &mut runtime,
++            fab.x + fab.width / 2.,
++            fab.y + fab.height / 2.,
++        );
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, EDIT);
++    }
++
++    #[test]
+     fn resizing_a_transform_keeps_editor_value_selection_and_composition() {
+         let mut runtime = transform_route((320., 400.), true);
+         runtime.activate(FAB_OPEN).unwrap();

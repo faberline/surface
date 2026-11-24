@@ -1,0 +1,6136 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "basic": {
+    "ax": {
+      "role": "dialog",
+      "name": "行程通知",
+      "heading": {
+        "id": "dialog-demo-basic-heading",
+        "text": "行程通知"
+      },
+      "modal": true
+    },
+    "panel": [
+      280.0,
+      92.0,
+      400.0,
+      536.0
+    ],
+    "tab_cycle": [
+      "confirm",
+      "cancel",
+      "confirm",
+      "cancel"
+    ],
+    "escape_return": true,
+    "scrim_return": true
+  },
+  "adapter": {
+    "isFallbackAdapter": false,
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "short": {
+    "viewport": [
+      320,
+      400
+    ],
+    "dark": true,
+    "text_scale": 2,
+    "panel": [
+      20.0,
+      24.0,
+      280.0,
+      352.0
+    ],
+    "heading": [
+      44.0,
+      48.0,
+      232.0,
+      64.0
+    ],
+    "body": [
+      44.0,
+      128.0,
+      232.0,
+      96.0
+    ],
+    "actions": [
+      [
+        140.0,
+        304.0,
+        136.0,
+        48.0
+      ],
+      [
+        140.0,
+        248.0,
+        136.0,
+        48.0
+      ]
+    ],
+    "last_content_before": [
+      44.0,
+      960.0,
+      232.0,
+      80.0
+    ],
+    "last_content_after": [
+      44.0,
+      144.0,
+      232.0,
+      80.0
+    ],
+    "pinned": true
+  },
+  "alert": {
+    "ax": {
+      "role": "alertdialog",
+      "name": "連線中斷",
+      "heading": {
+        "id": "dialog-demo-alert-heading",
+        "text": "連線中斷"
+      },
+      "modal": true
+    },
+    "description": "目前無法同步行程。請確認網路連線後再試。",
+    "panel": [
+      280.0,
+      252.0,
+      400.0,
+      216.0
+    ],
+    "escape_blocked": true,
+    "click_through_blocked": true,
+    "acknowledgements": 1
+  },
+  "breakpoint": {
+    "viewport_widths": [
+      599,
+      600,
+      599
+    ],
+    "full_screen": [
+      0.0,
+      0.0,
+      599.0,
+      500.0
+    ],
+    "basic": [
+      100.0,
+      40.0,
+      400.0,
+      420.0
+    ],
+    "full_screen_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-title",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "basic_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-heading",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "same_editor": true,
+    "tab_cycle": [
+      "editor",
+      "close",
+      "save",
+      "editor",
+      "save"
+    ]
+  },
+  "transaction": {
+    "ax": {
+      "role": "dialog",
+      "name": "捨棄變更？",
+      "heading": {
+        "id": "dialog-demo-discard-heading",
+        "text": "捨棄變更？"
+      },
+      "modal": true
+    },
+    "initial": "週末行程",
+    "continued": "秋日散步",
+    "saved": "秋日散步",
+    "discarded": "待捨棄",
+    "saves": 1,
+    "discards": 1,
+    "clean_escape_return": true,
+    "close_continue_focus": "dialog-demo-edit-close",
+    "escape_continue_focus": "dialog-demo-editor",
+    "escape_continue_selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "route_focus_restored": true
+  },
+  "rtl_short": {
+    "viewport": [
+      0.0,
+      0.0,
+      320.0,
+      400.0
+    ],
+    "text_scale": 2,
+    "rtl": true,
+    "title": {
+      "bounds": [
+        92.0,
+        4.0,
+        160.0,
+        112.0
+      ],
+      "pitch": 56.0,
+      "rgb": [
+        230,
+        224,
+        233
+      ],
+      "line_ink_pixels_x": [
+        [
+          59,
+          315
+        ],
+        [
+          235,
+          315
+        ]
+      ]
+    },
+    "discard": {
+      "description": "未儲存的行程變更會遺失。",
+      "panel": [
+        20.0,
+        24.0,
+        280.0,
+        352.0
+      ],
+      "heading": [
+        44.0,
+        48.0,
+        232.0,
+        128.0
+      ],
+      "body": [
+        44.0,
+        192.0,
+        232.0,
+        32.0
+      ],
+      "actions": [
+        [
+          44.0,
+          304.0,
+          136.0,
+          48.0
+        ],
+        [
+          44.0,
+          248.0,
+          136.0,
+          48.0
+        ]
+      ],
+      "support_bounds_before": [
+        44.0,
+        192.0,
+        232.0,
+        80.0
+      ],
+      "support_bounds_after": [
+        44.0,
+        144.0,
+        232.0,
+        80.0
+      ],
+      "support_bounds_unclipped": [
+        44.0,
+        228.0,
+        232.0,
+        80.0
+      ],
+      "unclipped_body": [
+        44.0,
+        228.0,
+        232.0,
+        80.0
+      ],
+      "support_rgb": [
+        202,
+        196,
+        207
+      ],
+      "support_pitch": 40.0,
+      "last_line_ink_before": 0,
+      "last_line_ink_after": 2741,
+      "unclipped_ink": 2741,
+      "same_ink_mask": true,
+      "focus_during_wheel": "dialog-demo-discard-cancel",
+      "continue_focus": "dialog-demo-editor"
+    }
+  },
+  "motion": {
+    "manual_performance_time": true,
+    "basic": {
+      "panel": [
+        280.0,
+        92.0,
+        400.0,
+        536.0
+      ],
+      "sample_points": [
+        [
+          940.0,
+          690.0
+        ],
+        [
+          294.0,
+          360.0
+        ]
+      ],
+      "entry_40ms": 0.4750690460205078,
+      "exit_40ms": 0.5249309539794922,
+      "pixels": {
+        "rest": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ],
+        "enter_zero": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ],
+        "entering": [
+          [
+            17,
+            15,
+            20
+          ],
+          [
+            29,
+            27,
+            33
+          ]
+        ],
+        "opaque": [
+          [
+            14,
+            12,
+            16
+          ],
+          [
+            43,
+            41,
+            47
+          ]
+        ],
+        "exit_start": [
+          [
+            14,
+            12,
+            16
+          ],
+          [
+            43,
+            41,
+            47
+          ]
+        ],
+        "exiting": [
+          [
+            17,
+            15,
+            20
+          ],
+          [
+            31,
+            29,
+            34
+          ]
+        ],
+        "reversed": [
+          [
+            17,
+            15,
+            20
+          ],
+          [
+            31,
+            29,
+            34
+          ]
+        ],
+        "closed": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ]
+      },
+      "enter_scope": "dialog-demo-basic-confirm",
+      "exit_scope": "dialog-demo-basic-open",
+      "exit_ax_absent": true,
+      "trusted_pass_through_reopened": true
+    },
+    "nested": {
+      "sample_point": [
+        312.0,
+        390.0
+      ],
+      "retained_panel": [
+        20.0,
+        92.0,
+        280.0,
+        216.0
+      ],
+      "entry_40ms": 0.4750690460205078,
+      "exit_40ms": 0.5249309539794922,
+      "scrim": {
+        "initial": [
+          20,
+          18,
+          24
+        ],
+        "entering": [
+          17,
+          15,
+          20
+        ],
+        "covered": [
+          14,
+          12,
+          16
+        ],
+        "exit_start": [
+          14,
+          12,
+          16
+        ],
+        "exiting": [
+          17,
+          15,
+          20
+        ],
+        "closed": [
+          20,
+          18,
+          24
+        ]
+      },
+      "upper_ax_absent_during_exit": true,
+      "live_lower_editor": "dialog-demo-editor",
+      "draft_after_trusted_input": "秋日散步！"
+    },
+    "reduced": {
+      "clock_ms": 0,
+      "open": [
+        [
+          14,
+          12,
+          16
+        ],
+        [
+          43,
+          41,
+          47
+        ]
+      ],
+      "closed": [
+        [
+          20,
+          18,
+          24
+        ],
+        [
+          20,
+          18,
+          24
+        ]
+      ],
+      "exact_endpoints": true
+    }
+  },
+  "errors": [],
+  "failure": "M263: Full-screen Reduced Motion: timed out after 30s waiting for `(s => (d => d.transform.progress === 0 && d.transform.anchor !== null &&\n        [d.transform.anchor.x,d.transform.anchor.y,d.transform.anchor.width,d.transform.anchor.height]\n        .every((v,i)=>v===window.gallery.control_bounds(\"dialog-demo-fab-open\")[i]))(s.dialog_demo))(JSON.parse(window.gallery.inspect()))`",
+  "ax_at_failure": [
+    {
+      "nodeId": "1211",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "RootWebArea"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 144
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Surface · Material gallery",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label",
+            "superseded": true
+          },
+          {
+            "type": "relatedElement",
+            "value": {
+              "type": "computedString",
+              "value": "Surface · Material gallery"
+            },
+            "nativeSource": "title"
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "focused",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "url",
+          "value": {
+            "type": "string",
+            "value": "http://<ephemeral-loopback>/"
+          }
+        }
+      ],
+      "childIds": [
+        "1218"
+      ],
+      "backendDOMNodeId": 1211,
+      "frameId": "858C5EA4920668E24675646F99C55A55"
+    },
+    {
+      "nodeId": "1218",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1211",
+      "childIds": [
+        "1219"
+      ],
+      "backendDOMNodeId": 1218
+    },
+    {
+      "nodeId": "1219",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1218",
+      "childIds": [
+        "1220",
+        "1213",
+        "1225",
+        "1217"
+      ],
+      "backendDOMNodeId": 1219
+    },
+    {
+      "nodeId": "1220",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "banner"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 94
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "type": "attribute",
+            "attribute": "title"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1219",
+      "childIds": [
+        "1215",
+        "1212"
+      ],
+      "backendDOMNodeId": 1220
+    },
+    {
+      "nodeId": "1213",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "Canvas"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 10
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Material gallery",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "Material gallery"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "Material gallery"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "1219",
+      "childIds": [],
+      "backendDOMNodeId": 1213
+    },
+    {
+      "nodeId": "1225",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "notRendered",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1219",
+      "childIds": [],
+      "backendDOMNodeId": 1225
+    },
+    {
+      "nodeId": "1217",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1219",
+      "childIds": [
+        "1226",
+        "1261"
+      ],
+      "backendDOMNodeId": 1217
+    },
+    {
+      "nodeId": "1215",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1220",
+      "childIds": [
+        "1221"
+      ],
+      "backendDOMNodeId": 1215
+    },
+    {
+      "nodeId": "1221",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Surface · Material gallery",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "Surface · Material gallery"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1215",
+      "childIds": [
+        "-1000000603",
+        "-1000000604"
+      ],
+      "backendDOMNodeId": 1221
+    },
+    {
+      "nodeId": "1212",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1220",
+      "childIds": [
+        "1222"
+      ],
+      "backendDOMNodeId": 1212
+    },
+    {
+      "nodeId": "1226",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "group"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 93
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Application",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "Application"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "Application"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1217",
+      "childIds": [
+        "1227",
+        "1229",
+        "1245",
+        "1255",
+        "1256"
+      ],
+      "backendDOMNodeId": 1226
+    },
+    {
+      "nodeId": "1261",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "live",
+          "value": {
+            "type": "token",
+            "value": "polite"
+          }
+        },
+        {
+          "name": "atomic",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "relevant",
+          "value": {
+            "type": "tokenList",
+            "value": "additions text"
+          }
+        }
+      ],
+      "parentId": "1217",
+      "childIds": [],
+      "backendDOMNodeId": 1261
+    },
+    {
+      "nodeId": "-1000000603",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Surface · Material "
+      },
+      "properties": [],
+      "parentId": "1221",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000604",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "gallery"
+      },
+      "properties": [],
+      "parentId": "1221",
+      "childIds": []
+    },
+    {
+      "nodeId": "1222",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Ready · Rust / WASM / WebGPU",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "Ready · Rust / WASM / WebGPU"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1212",
+      "childIds": [
+        "-1000000605",
+        "-1000000606"
+      ],
+      "backendDOMNodeId": 1222
+    },
+    {
+      "nodeId": "1227",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "heading"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 96
+      },
+      "name": {
+        "type": "computedString",
+        "value": "對話框",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "對話框"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "level",
+          "value": {
+            "type": "integer",
+            "value": 2
+          }
+        }
+      ],
+      "parentId": "1226",
+      "childIds": [
+        "1228"
+      ],
+      "backendDOMNodeId": 1227
+    },
+    {
+      "nodeId": "1229",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1226",
+      "childIds": [
+        "1230",
+        "1234",
+        "1239",
+        "1242"
+      ],
+      "backendDOMNodeId": 1229
+    },
+    {
+      "nodeId": "1230",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 9
+      },
+      "name": {
+        "type": "computedString",
+        "value": "返回",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "返回"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "返回"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "返回"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "1229",
+      "childIds": [
+        "1231"
+      ],
+      "backendDOMNodeId": 1230
+    },
+    {
+      "nodeId": "1234",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "switch"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 163
+      },
+      "name": {
+        "type": "computedString",
+        "value": "深色",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "深色"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "深色"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "深色"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "checked",
+          "value": {
+            "type": "tristate",
+            "value": "true"
+          }
+        }
+      ],
+      "parentId": "1229",
+      "childIds": [
+        "1235",
+        "1238"
+      ],
+      "backendDOMNodeId": 1234
+    },
+    {
+      "nodeId": "1239",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 175
+      },
+      "name": {
+        "type": "computedString",
+        "value": "右起",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "右起"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "右起"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "右起"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "focused",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "pressed",
+          "value": {
+            "type": "tristate",
+            "value": "true"
+          }
+        }
+      ],
+      "parentId": "1229",
+      "childIds": [
+        "1241"
+      ],
+      "backendDOMNodeId": 1239
+    },
+    {
+      "nodeId": "1242",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 175
+      },
+      "name": {
+        "type": "computedString",
+        "value": "大字",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "大字"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "大字"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "大字"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "pressed",
+          "value": {
+            "type": "tristate",
+            "value": "false"
+          }
+        }
+      ],
+      "parentId": "1229",
+      "childIds": [
+        "1244"
+      ],
+      "backendDOMNodeId": 1242
+    },
+    {
+      "nodeId": "1245",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1226",
+      "childIds": [
+        "1246",
+        "1250"
+      ],
+      "backendDOMNodeId": 1245
+    },
+    {
+      "nodeId": "1246",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 9
+      },
+      "name": {
+        "type": "computedString",
+        "value": "基本對話框",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "基本對話框"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "基本對話框"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "基本對話框"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "1245",
+      "childIds": [
+        "1247"
+      ],
+      "backendDOMNodeId": 1246
+    },
+    {
+      "nodeId": "1250",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 9
+      },
+      "name": {
+        "type": "computedString",
+        "value": "重要提示",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "重要提示"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "重要提示"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "重要提示"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "1245",
+      "childIds": [
+        "1251"
+      ],
+      "backendDOMNodeId": 1250
+    },
+    {
+      "nodeId": "1255",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "已儲存：週末行程",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "已儲存：週末行程"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1226",
+      "childIds": [
+        "-1000000614"
+      ],
+      "backendDOMNodeId": 1255
+    },
+    {
+      "nodeId": "1256",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1226",
+      "childIds": [
+        "1257"
+      ],
+      "backendDOMNodeId": 1256
+    },
+    {
+      "nodeId": "1257",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 9
+      },
+      "name": {
+        "type": "computedString",
+        "value": "新增行程",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "新增行程"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "新增行程"
+            }
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "+"
+            },
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "1256",
+      "childIds": [
+        "1258"
+      ],
+      "backendDOMNodeId": 1257
+    },
+    {
+      "nodeId": "-1000000605",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Ready · Rust / WASM / "
+      },
+      "properties": [],
+      "parentId": "1222",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000606",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "WebGPU"
+      },
+      "properties": [],
+      "parentId": "1222",
+      "childIds": []
+    },
+    {
+      "nodeId": "1228",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "對話框",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "對話框"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1227",
+      "childIds": [
+        "-1000000607"
+      ],
+      "backendDOMNodeId": 1228
+    },
+    {
+      "nodeId": "1231",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1230",
+      "childIds": [
+        "1233"
+      ],
+      "backendDOMNodeId": 1231
+    },
+    {
+      "nodeId": "1235",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1234",
+      "childIds": [
+        "1236"
+      ],
+      "backendDOMNodeId": 1235
+    },
+    {
+      "nodeId": "1236",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "1235",
+      "childIds": [],
+      "backendDOMNodeId": 1236
+    },
+    {
+      "nodeId": "1238",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "深色",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "深色"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1234",
+      "childIds": [
+        "-1000000609"
+      ],
+      "backendDOMNodeId": 1238
+    },
+    {
+      "nodeId": "1241",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "右起",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "右起"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1239",
+      "childIds": [
+        "-1000000610"
+      ],
+      "backendDOMNodeId": 1241
+    },
+    {
+      "nodeId": "1244",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "大字",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "大字"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1242",
+      "childIds": [
+        "-1000000611"
+      ],
+      "backendDOMNodeId": 1244
+    },
+    {
+      "nodeId": "1247",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1246",
+      "childIds": [
+        "1249"
+      ],
+      "backendDOMNodeId": 1247
+    },
+    {
+      "nodeId": "1251",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1250",
+      "childIds": [
+        "1253"
+      ],
+      "backendDOMNodeId": 1251
+    },
+    {
+      "nodeId": "-1000000614",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "已儲存：週末行程"
+      },
+      "properties": [],
+      "parentId": "1255",
+      "childIds": []
+    },
+    {
+      "nodeId": "1258",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1257",
+      "childIds": [
+        "1260"
+      ],
+      "backendDOMNodeId": 1258
+    },
+    {
+      "nodeId": "-1000000607",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "對話框"
+      },
+      "properties": [],
+      "parentId": "1228",
+      "childIds": []
+    },
+    {
+      "nodeId": "1233",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "返回",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "返回"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1231",
+      "childIds": [
+        "-1000000608"
+      ],
+      "backendDOMNodeId": 1233
+    },
+    {
+      "nodeId": "-1000000609",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "深色"
+      },
+      "properties": [],
+      "parentId": "1238",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000610",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "右起"
+      },
+      "properties": [],
+      "parentId": "1241",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000611",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "大字"
+      },
+      "properties": [],
+      "parentId": "1244",
+      "childIds": []
+    },
+    {
+      "nodeId": "1249",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "基本對話框",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "基本對話框"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1247",
+      "childIds": [
+        "-1000000612"
+      ],
+      "backendDOMNodeId": 1249
+    },
+    {
+      "nodeId": "1253",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "重要提示",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "重要提示"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1251",
+      "childIds": [
+        "-1000000613"
+      ],
+      "backendDOMNodeId": 1253
+    },
+    {
+      "nodeId": "1260",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "+",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "+"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "1258",
+      "childIds": [
+        "-1000000615"
+      ],
+      "backendDOMNodeId": 1260
+    },
+    {
+      "nodeId": "-1000000608",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "返回"
+      },
+      "properties": [],
+      "parentId": "1233",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000612",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "基本對話框"
+      },
+      "properties": [],
+      "parentId": "1249",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000613",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "重要提示"
+      },
+      "properties": [],
+      "parentId": "1253",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000615",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "+"
+      },
+      "properties": [],
+      "parentId": "1260",
+      "childIds": []
+    }
+  ],
+  "state_at_failure": {
+    "app_bar": {
+      "actions": 0,
+      "behavior": "pinned",
+      "body_offset": 0.0,
+      "collapse": 0.0,
+      "contextual": false,
+      "kind": "small",
+      "query": "",
+      "rtl": false,
+      "scrolled": false,
+      "scrolled_surface": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "search_open": false,
+      "search_selections": 0,
+      "selected": null,
+      "subtitle": true,
+      "surface": [
+        20,
+        18,
+        24,
+        255
+      ],
+      "text_scale": 1.0
+    },
+    "badges": {
+      "count": 999,
+      "error": [
+        255,
+        180,
+        171,
+        255
+      ],
+      "kind": "dot",
+      "nav": 0,
+      "on_error": [
+        105,
+        0,
+        5,
+        255
+      ],
+      "presses": 0,
+      "rtl": false,
+      "scroll_presses": 0,
+      "selected": false,
+      "text_scale": 1.0
+    },
+    "baseline_time_colors": null,
+    "bottom_sheet": {
+      "dismissals": 0,
+      "dragging": false,
+      "expanded_height": 376.0,
+      "main_actions": 0,
+      "panel_actions": 0,
+      "peek_height": 206.0,
+      "presentation": "standard",
+      "reduced_motion": true,
+      "settling": false,
+      "skip_peek": false,
+      "state": "closed",
+      "text_scale": 1.0,
+      "visible_height": 0.0
+    },
+    "button_group": {
+      "activations": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "appearance": "tonal",
+      "kind": "standard",
+      "open": false,
+      "overflow_open": false,
+      "pressed": null,
+      "reduced_motion": false,
+      "required": false,
+      "rtl": false,
+      "selected": [
+        1
+      ],
+      "selection": "single",
+      "shape": "round",
+      "size": "s",
+      "text_scale": 1.0
+    },
+    "cards": {
+      "activations": 0,
+      "disabled": false,
+      "drag_offset": 0.0,
+      "dragging": false,
+      "moves": 0,
+      "nested_activations": 0,
+      "open": false,
+      "position": 0,
+      "rtl": false,
+      "selected": false,
+      "text_scale": 1.0,
+      "toggle_mode": false,
+      "variant": "elevated"
+    },
+    "carousel": {
+      "activations": 0,
+      "active": 0,
+      "dragging": false,
+      "items": [
+        {
+          "aspect_ratio": 0.5625,
+          "bounds": null,
+          "id": "carousel-card-0",
+          "label": "山野",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.7777777910232544,
+          "bounds": null,
+          "id": "carousel-card-1",
+          "label": "海灣",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.0,
+          "bounds": null,
+          "id": "carousel-card-2",
+          "label": "森林",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.3333333730697632,
+          "bounds": null,
+          "id": "carousel-card-3",
+          "label": "沙丘",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 0.6666666865348816,
+          "bounds": null,
+          "id": "carousel-card-4",
+          "label": "湖畔",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.5,
+          "bounds": null,
+          "id": "carousel-card-5",
+          "label": "夜空",
+          "visible": false
+        }
+      ],
+      "last_activated": null,
+      "offset": 0.0,
+      "open": false,
+      "reduced_motion": false,
+      "rtl": false,
+      "settling": false,
+      "show_all": false,
+      "text_scale": 1.0,
+      "variant": "multi-browse"
+    },
+    "check": "Mixed",
+    "clicks": 0,
+    "dark": true,
+    "date_picker": {
+      "commits": 0,
+      "committed": "2024-02-28",
+      "english": false,
+      "rtl": false,
+      "session": null,
+      "swipe": {
+        "offset": null
+      },
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "date_range_picker": {
+      "commits": 0,
+      "committed": [
+        "2024-02-24",
+        "2024-03-05"
+      ],
+      "outside_actions": 0,
+      "rtl": false,
+      "session": null,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "dialog": false,
+    "dialog_demo": {
+      "alerts": 0,
+      "discards": 0,
+      "draft": "週末行程",
+      "opacity": {
+        "alert": 0.0,
+        "basic": 0.0,
+        "discard": 0.0
+      },
+      "open": null,
+      "presentation": null,
+      "rtl": true,
+      "saved": "週末行程",
+      "saves": 0,
+      "text_scale": 1.0,
+      "transform": {
+        "anchor": null,
+        "container": {
+          "height": 400.0,
+          "width": 320.0,
+          "x": 0.0,
+          "y": 0.0
+        },
+        "preview": true,
+        "progress": 0.0,
+        "retiring": false
+      },
+      "visible": true
+    },
+    "display_contrast": {
+      "mode": "normal",
+      "system_colors": null,
+      "theme": {
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "is_dark": true,
+        "on_primary": [
+          54,
+          39,
+          93,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_tonal": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "outline": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "surface_container_lowest": [
+          15,
+          13,
+          19,
+          255
+        ],
+        "tonal": [
+          74,
+          68,
+          88,
+          255
+        ]
+      }
+    },
+    "docked_date_picker": {
+      "active": "2024-02-28",
+      "anchor": null,
+      "bottom": false,
+      "commits": 0,
+      "committed": "2024-02-28",
+      "error": null,
+      "mode": null,
+      "month": [
+        2024,
+        2
+      ],
+      "outside_actions": 0,
+      "raw": "2024/02/28",
+      "rtl": false,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "draft": "",
+    "enabled": false,
+    "expressive_fab": {
+      "actions": 0,
+      "disabled": false,
+      "hide_on_press": false,
+      "lowered": false,
+      "open": false,
+      "palette": "tonal-primary",
+      "reduced_motion": false,
+      "ripple": null,
+      "rtl": false,
+      "scroll_y": 0.0,
+      "size": "regular",
+      "text_scale": 1.0,
+      "tooltip_shown": false,
+      "visibility_opacity": 1.0,
+      "visibility_scale": 1.0,
+      "visible": true
+    },
+    "extended_fab": {
+      "actions": 0,
+      "auto_scroll": true,
+      "center": false,
+      "disabled": false,
+      "expanded": true,
+      "expansion": 1.0,
+      "hide_on_press": false,
+      "label_opacity": 1.0,
+      "lowered": false,
+      "open": false,
+      "palette": "tonal-primary",
+      "reduced_motion": false,
+      "requested_expanded": true,
+      "rtl": false,
+      "scroll_y": 0.0,
+      "size": "small",
+      "text_only": false,
+      "text_scale": 1.0,
+      "visibility_opacity": 1.0,
+      "visibility_scale": 1.0,
+      "visible": true
+    },
+    "fab_menu": {
+      "actions": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_disabled": false,
+      "anchor": null,
+      "count": 2,
+      "disabled": false,
+      "dismissals": 0,
+      "is_open": false,
+      "item_motion": [
+        {
+          "opacity": 0.0,
+          "width": 0.0
+        },
+        {
+          "opacity": 0.0,
+          "width": 0.0
+        }
+      ],
+      "items_present": false,
+      "open": false,
+      "outside_actions": 0,
+      "palette": "primary",
+      "presentation": "web",
+      "progress": 0.0,
+      "reduced_motion": false,
+      "rtl": false,
+      "size": "regular",
+      "text_scale": 1.0,
+      "toggles": 0,
+      "top": false,
+      "visible_items": 0.0
+    },
+    "filter": false,
+    "focused": "dialog-demo-rtl",
+    "input_chip": true,
+    "list_actions": {
+      "actions": [
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-a",
+          "label": "山"
+        },
+        {
+          "bounds": null,
+          "checked": true,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-a-pin",
+          "label": "固定山"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-a-more",
+          "label": "更多山的選項"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": true,
+          "id": "list-action-b",
+          "label": "海"
+        },
+        {
+          "bounds": null,
+          "checked": false,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-b-pin",
+          "label": "固定海"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": true,
+          "id": "list-action-b-more",
+          "label": "更多海的選項"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c",
+          "label": "長文字會在窄畫面自動換行"
+        },
+        {
+          "bounds": null,
+          "checked": false,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c-pin",
+          "label": "固定步道"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c-archive",
+          "label": "封存步道"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c-more",
+          "label": "更多步道的選項"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-d",
+          "label": "步道"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-e",
+          "label": "島"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-f",
+          "label": "森林"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-f-more",
+          "label": "更多森林的選項"
+        }
+      ],
+      "activations": 0,
+      "available_width": 296.0,
+      "colors": {
+        "on_secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "secondary_container": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "last": null,
+      "rtl": false,
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "list_expand": {
+      "activations": 0,
+      "colors": {
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "outline_variant": [
+          73,
+          69,
+          78,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "expanded": false,
+      "last": null,
+      "rtl": false,
+      "text_scale": 1.0,
+      "toggles": 0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "list_media": {
+      "activations": 0,
+      "colors": {
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "details": null,
+      "mode": "passive",
+      "rtl": false,
+      "scroll_y": null,
+      "selected": [],
+      "selection_changes": 0,
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false,
+      "wide": false
+    },
+    "list_reorder": {
+      "activations": 0,
+      "colors": {
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "on_tertiary_container": [
+          255,
+          217,
+          227,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "shadow": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "surface_container_low": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "tertiary_container": [
+          99,
+          59,
+          72,
+          255
+        ]
+      },
+      "external_changes": 0,
+      "last_activation": null,
+      "last_move": null,
+      "moves": 0,
+      "order": [
+        "list-reorder-a",
+        "list-reorder-b",
+        "list-reorder-c",
+        "list-reorder-d",
+        "list-reorder-e",
+        "list-reorder-f",
+        "list-reorder-g",
+        "list-reorder-h",
+        "list-reorder-i",
+        "list-reorder-fixed",
+        "list-reorder-j",
+        "list-reorder-k"
+      ],
+      "revision": 0,
+      "rtl": false,
+      "scroll_y": null,
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "lists": {
+      "activations": 0,
+      "colors": {
+        "on_primary": [
+          54,
+          39,
+          93,
+          255
+        ],
+        "on_secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "secondary_container": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "items": [
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-a",
+          "label": "山"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-b",
+          "label": "海"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-c",
+          "label": "河"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-d",
+          "label": "長文字會在窄畫面自動換行"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-e",
+          "label": "島"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-f",
+          "label": "森林"
+        }
+      ],
+      "last": null,
+      "mode": "select",
+      "rtl": false,
+      "selected": "lists-c",
+      "selected_ids": [],
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "loading": {
+      "active_size": 38.0,
+      "elapsed_ms": 0.0,
+      "morph": 0.0,
+      "palette": {
+        "background": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "on_primary_container": [
+          233,
+          221,
+          255,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "primary_container": [
+          77,
+          61,
+          117,
+          255
+        ]
+      },
+      "reduced_motion": true,
+      "requested_size": 48.0,
+      "requests_frame": false,
+      "rotation_degrees": 90.0,
+      "rtl": false,
+      "running": false,
+      "shape_index": 0,
+      "size": 48.0,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "menu": false,
+    "modal_wide_navigation_rail": {
+      "actions": 0,
+      "dismissals": 0,
+      "open": false,
+      "rail": 0.0,
+      "retain_inline": false,
+      "rtl": false,
+      "scrim": 0.0,
+      "scroll": null,
+      "selected": "home",
+      "settling": false,
+      "slide": 0.0,
+      "swipe": null,
+      "swipe_settling": false,
+      "text_scale": 1.0
+    },
+    "name": "Surface",
+    "nav": 0,
+    "navigation_drawer": {
+      "actions": 0,
+      "background_actions": 0,
+      "dismissals": 0,
+      "open": false,
+      "progress": 0.0,
+      "rtl": false,
+      "scroll": null,
+      "selected": "home",
+      "settling": false,
+      "shared_clicks": 0,
+      "standard_actions": 0,
+      "standard_mode": "permanent",
+      "standard_open": true,
+      "standard_selected": "home",
+      "text_scale": 1.0
+    },
+    "progress": {
+      "active_color": [
+        207,
+        189,
+        254,
+        255
+      ],
+      "elapsed_ms": 0.0,
+      "known": true,
+      "linear_width": 240.0,
+      "reduced_motion": true,
+      "rtl": false,
+      "running": false,
+      "text_scale": 1.0,
+      "track_color": [
+        74,
+        68,
+        88,
+        255
+      ],
+      "value": 0.25
+    },
+    "radio": 0,
+    "scroll_choice": {
+      "commits": 0,
+      "committed": "banqiao",
+      "disabled": false,
+      "dragging": false,
+      "error": null,
+      "face_height": null,
+      "fits": false,
+      "height": 200.0,
+      "labels": [
+        "板橋",
+        "台北 北門",
+        "台北 車站",
+        "桃園",
+        "新竹"
+      ],
+      "looping": false,
+      "mode": "input",
+      "offset": 0.0,
+      "order": [
+        "banqiao",
+        "taipei-north",
+        "taipei-station",
+        "taoyuan",
+        "hsinchu"
+      ],
+      "ordinal": 1,
+      "palette": {
+        "center": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "editing": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "face": [
+          15,
+          13,
+          19,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "neighbor": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ]
+      },
+      "preview": "banqiao",
+      "raw": "板橋",
+      "reduced_motion": false,
+      "requests_frame": false,
+      "row_height": null,
+      "rtl": false,
+      "scroll_top": null,
+      "settling": false,
+      "suggestion": null,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "scroll_field": {
+      "commits": 0,
+      "committed": 14,
+      "disabled": false,
+      "dragging": false,
+      "error": null,
+      "face_height": 200.0,
+      "fits": true,
+      "height": 200.0,
+      "looping": false,
+      "mode": "scroll",
+      "offset": 7.0,
+      "palette": {
+        "center": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "editing": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "face": [
+          15,
+          13,
+          19,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "neighbor": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ]
+      },
+      "preview": 14,
+      "raw": "14",
+      "reduced_motion": false,
+      "requests_frame": false,
+      "row_height": 92.0,
+      "rtl": false,
+      "scroll_top": null,
+      "settling": false,
+      "size": "medium",
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "scroll_modal": {
+      "accepted": {
+        "quantity": 1200,
+        "unit_id": "ml"
+      },
+      "body_scroll_top": null,
+      "open": false,
+      "outside_presses": 0,
+      "rtl": false,
+      "saves": 0,
+      "text_scale": 1.0,
+      "visible": false,
+      "working": null
+    },
+    "scroll_pair": {
+      "quantity": {
+        "commits": 0,
+        "disabled": false,
+        "error": null,
+        "mode": "scroll",
+        "raw": "1200",
+        "value": 1200
+      },
+      "quantity_fits": true,
+      "rtl": false,
+      "scroll_top": null,
+      "stacked": true,
+      "text_scale": 1.0,
+      "unit": {
+        "commits": 0,
+        "disabled": false,
+        "error": null,
+        "id": "ml",
+        "mode": "scroll",
+        "ordinal": 1,
+        "raw": "毫升",
+        "suggestion": null
+      },
+      "unit_fits": false,
+      "visible": false
+    },
+    "scroll_popup": {
+      "above": null,
+      "anchor": null,
+      "body_scroll_top": null,
+      "bounds": null,
+      "hide_opener": false,
+      "near_bottom": false,
+      "open": false,
+      "outside_presses": 0,
+      "quantity": {
+        "commits": 0,
+        "error": null,
+        "mode": "scroll",
+        "raw": "1200",
+        "value": 1200
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "unit": {
+        "commits": 0,
+        "error": null,
+        "id": "ml",
+        "mode": "scroll",
+        "ordinal": 1,
+        "raw": "毫升"
+      },
+      "visible": false
+    },
+    "search_overlay": {
+      "motion": {
+        "moving": false,
+        "progress": 0.0
+      },
+      "open": false,
+      "query": "",
+      "result_ids": [
+        "search-doc-design",
+        "search-doc-archive",
+        "search-doc-review",
+        "search-doc-tests",
+        "search-doc-accessibility",
+        "search-doc-release",
+        "search-doc-palette",
+        "search-doc-localization",
+        "search-doc-gesture",
+        "search-doc-guide",
+        "search-doc-notes",
+        "search-doc-handoff"
+      ],
+      "rtl": false,
+      "selected": null,
+      "style": "Contained",
+      "submissions": 0,
+      "text_scale": 1.0
+    },
+    "section": 2,
+    "segment": 0,
+    "side_sheet": {
+      "active_surface": [
+        29,
+        27,
+        32,
+        255
+      ],
+      "dismissals": 0,
+      "dragging": false,
+      "edge": "end",
+      "effective_presentation": "modal",
+      "main_actions": 0,
+      "open": false,
+      "panel_actions": 0,
+      "presentation": "coplanar",
+      "reduced_motion": true,
+      "reveal": 0.0,
+      "rtl": false,
+      "scrim_color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "settling": false,
+      "standard_surface": [
+        20,
+        18,
+        24,
+        255
+      ],
+      "style": "docked",
+      "text_scale": 1.0
+    },
+    "snackbar": {
+      "acted": 0,
+      "dismissed": 0,
+      "expired": 0,
+      "id": null,
+      "pending": 0,
+      "rtl": false,
+      "text_scale": 1.0,
+      "view_id": null,
+      "visible": null
+    },
+    "split_button": {
+      "angle": 0.0,
+      "appearance": "filled",
+      "bottom": false,
+      "command_counts": [
+        0,
+        0,
+        0
+      ],
+      "leading": "both",
+      "leading_disabled": false,
+      "menu_open": false,
+      "open": false,
+      "physical_angle": 0.0,
+      "primary_count": 0,
+      "reduced_motion": false,
+      "rtl": false,
+      "size": "m",
+      "text_scale": 1.0,
+      "trailing_disabled": false
+    },
+    "time_dial": {
+      "clock": "TwelveHour",
+      "commits": 0,
+      "draft": null,
+      "locale": "zh-Hant",
+      "orientation": null,
+      "outside_actions": 0,
+      "rtl": false,
+      "saved": "09:07",
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "time_input": {
+      "format": "TwelveHour",
+      "inline": {
+        "candidate": "00:05",
+        "hour_error": null,
+        "minute_error": null,
+        "period": "Am",
+        "raw_hour": "12",
+        "raw_minute": "05"
+      },
+      "inline_commits": 0,
+      "inline_committed": "00:05",
+      "locale": "zh-Hant",
+      "modal": null,
+      "modal_commits": 0,
+      "modal_committed": "09:07",
+      "outside_actions": 0,
+      "rtl": false,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "time_scroll": {
+      "clock": "TwelveHour",
+      "commits": 0,
+      "disabled": false,
+      "inline": null,
+      "inline_commits": 0,
+      "inline_saved": "09:07",
+      "locale": "zh-Hant",
+      "modal": null,
+      "outside_actions": 0,
+      "rtl": false,
+      "saved": "09:07",
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "toolbar": {
+      "actions": 0,
+      "behavior": "pinned",
+      "body_actions": 0,
+      "container": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "edge": "bottom",
+      "fab": false,
+      "keep_visible": false,
+      "kind": "docked",
+      "overflow_open": false,
+      "palette": "standard",
+      "rtl": false,
+      "scrolled_offset": 0.0,
+      "selected": false,
+      "selected_container": [
+        74,
+        68,
+        88,
+        255
+      ],
+      "text_scale": 1.0,
+      "visibility": "expanded"
+    },
+    "tooltip": {
+      "actions": 0,
+      "active": null,
+      "body_actions": 0,
+      "caret": true,
+      "copies": 0,
+      "plain_surface": [
+        230,
+        224,
+        233,
+        255
+      ],
+      "rich_surface": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "rtl": false,
+      "shown": false,
+      "side": null,
+      "text_scale": 1.0,
+      "top": false
+    },
+    "volume": 40.0,
+    "wide_navigation_rail": {
+      "actions": 0,
+      "compact": true,
+      "expanded": false,
+      "mode": "bottom",
+      "rail": 0.0,
+      "rtl": false,
+      "selected": "wide-rail-home",
+      "settling": false,
+      "text_scale": 1.0
+    }
+  },
+  "dom_at_failure": {
+    "version": 1,
+    "dom": {
+      "version": 1,
+      "nodes": [
+        {
+          "stable_id": "surface-page",
+          "role": "Window",
+          "name": "Application",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 24.0,
+            "padding": 28.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": true,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": null,
+          "first_child": 1,
+          "last_child": 22,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-title",
+          "role": "Heading",
+          "name": "對話框",
+          "text": "對話框",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 32.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 40.0
+          },
+          "parent": 0,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 2
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Percent": 1.0
+            },
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 8.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": true,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 0,
+          "first_child": 3,
+          "last_child": 12,
+          "next_sibling": 14
+        },
+        {
+          "stable_id": "dialog-demo-back",
+          "role": "Button",
+          "name": "返回",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 2,
+          "first_child": 4,
+          "last_child": 4,
+          "next_sibling": 6
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 3,
+          "first_child": 5,
+          "last_child": 5,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "返回",
+          "text": "返回",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 4,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-theme",
+          "role": "Switch",
+          "name": "深色",
+          "text": null,
+          "disabled": false,
+          "checked": true,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 48.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 12.0,
+            "padding": 12.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 2,
+          "first_child": 7,
+          "last_child": 9,
+          "next_sibling": 10
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 52.0
+            },
+            "height": {
+              "Px": 32.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "End",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 2.0,
+            "border_color": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 6,
+          "first_child": 8,
+          "last_child": 8,
+          "next_sibling": 9
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 24.0
+            },
+            "height": {
+              "Px": 24.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              54,
+              39,
+              93,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 7,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "深色",
+          "text": "深色",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 6,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-rtl",
+          "role": "Button",
+          "name": "右起",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": true,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 12.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 1.0,
+            "border_color": [
+              148,
+              143,
+              153,
+              255
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 2,
+          "first_child": 11,
+          "last_child": 11,
+          "next_sibling": 12
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "右起",
+          "text": "右起",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 10,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-large-text",
+          "role": "Button",
+          "name": "大字",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": false,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 12.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 1.0,
+            "border_color": [
+              148,
+              143,
+              153,
+              255
+            ],
+            "state_layer": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 2,
+          "first_child": 13,
+          "last_child": 13,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "大字",
+          "text": "大字",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 12,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Percent": 1.0
+            },
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 8.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": true,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 0,
+          "first_child": 15,
+          "last_child": 18,
+          "next_sibling": 21
+        },
+        {
+          "stable_id": "dialog-demo-basic-open",
+          "role": "Button",
+          "name": "基本對話框",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 14,
+          "first_child": 16,
+          "last_child": 16,
+          "next_sibling": 18
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 15,
+          "first_child": 17,
+          "last_child": 17,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "基本對話框",
+          "text": "基本對話框",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 16,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-alert-open",
+          "role": "Button",
+          "name": "重要提示",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 14,
+          "first_child": 19,
+          "last_child": 19,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 18,
+          "first_child": 20,
+          "last_child": 20,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "重要提示",
+          "text": "重要提示",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 19,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-saved",
+          "role": "Text",
+          "name": "已儲存：週末行程",
+          "text": "已儲存：週末行程",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 0,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 22
+        },
+        {
+          "stable_id": "dialog-demo-fab-anchor",
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 56.0
+            },
+            "height": {
+              "Px": 56.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Fixed",
+            "inset": {
+              "left": {
+                "Px": 24.0
+              },
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": {
+                "Px": 24.0
+              }
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 0,
+          "first_child": 23,
+          "last_child": 23,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-fab-open",
+          "role": "Button",
+          "name": "新增行程",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 56.0
+            },
+            "height": {
+              "Px": 56.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 16.0,
+              "top_right": 16.0,
+              "bottom_right": 16.0,
+              "bottom_left": 16.0
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 22,
+          "first_child": 24,
+          "last_child": 24,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 56.0
+            },
+            "height": {
+              "Px": 56.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              77,
+              61,
+              117,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 16.0,
+              "top_right": 16.0,
+              "bottom_right": 16.0,
+              "bottom_left": 16.0
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 23,
+          "first_child": 25,
+          "last_child": 25,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "+",
+          "text": "+",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 24.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 24,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        }
+      ]
+    },
+    "layout": {
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 320.0,
+        "height": 400.0
+      },
+      "nodes": [
+        {
+          "id": 0,
+          "bounds": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 1,
+          "bounds": {
+            "x": 28.0,
+            "y": 28.0,
+            "width": 264.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 2,
+          "bounds": {
+            "x": 28.0,
+            "y": 92.0,
+            "width": 264.0,
+            "height": 112.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 3,
+          "bounds": {
+            "x": 28.0,
+            "y": 96.0,
+            "width": 80.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 4,
+          "bounds": {
+            "x": 32.0,
+            "y": 100.0,
+            "width": 72.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 5,
+          "bounds": {
+            "x": 54.0,
+            "y": 110.0,
+            "width": 28.0,
+            "height": 20.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 6,
+          "bounds": {
+            "x": 116.0,
+            "y": 92.0,
+            "width": 120.0,
+            "height": 56.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 7,
+          "bounds": {
+            "x": 128.0,
+            "y": 104.0,
+            "width": 52.0,
+            "height": 32.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 8,
+          "bounds": {
+            "x": 152.0,
+            "y": 108.0,
+            "width": 24.0,
+            "height": 24.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 9,
+          "bounds": {
+            "x": 192.0,
+            "y": 108.0,
+            "width": 32.0,
+            "height": 24.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 10,
+          "bounds": {
+            "x": 28.0,
+            "y": 156.0,
+            "width": 52.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 11,
+          "bounds": {
+            "x": 40.0,
+            "y": 170.0,
+            "width": 28.0,
+            "height": 20.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 12,
+          "bounds": {
+            "x": 88.0,
+            "y": 156.0,
+            "width": 52.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 13,
+          "bounds": {
+            "x": 100.0,
+            "y": 170.0,
+            "width": 28.0,
+            "height": 20.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 14,
+          "bounds": {
+            "x": 28.0,
+            "y": 228.0,
+            "width": 264.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 15,
+          "bounds": {
+            "x": 28.0,
+            "y": 228.0,
+            "width": 94.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 16,
+          "bounds": {
+            "x": 32.0,
+            "y": 232.0,
+            "width": 86.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 17,
+          "bounds": {
+            "x": 40.0,
+            "y": 242.0,
+            "width": 70.0,
+            "height": 20.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 18,
+          "bounds": {
+            "x": 130.0,
+            "y": 228.0,
+            "width": 80.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 19,
+          "bounds": {
+            "x": 134.0,
+            "y": 232.0,
+            "width": 72.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 20,
+          "bounds": {
+            "x": 142.0,
+            "y": 242.0,
+            "width": 56.0,
+            "height": 20.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 21,
+          "bounds": {
+            "x": 28.0,
+            "y": 300.0,
+            "width": 264.0,
+            "height": 24.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 22,
+          "bounds": {
+            "x": 24.0,
+            "y": 320.0,
+            "width": 56.0,
+            "height": 56.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 23,
+          "bounds": {
+            "x": 24.0,
+            "y": 320.0,
+            "width": 56.0,
+            "height": 56.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 24,
+          "bounds": {
+            "x": 24.0,
+            "y": 320.0,
+            "width": 56.0,
+            "height": 56.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 25,
+          "bounds": {
+            "x": 45.0,
+            "y": 330.0,
+            "width": 14.0,
+            "height": 36.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        }
+      ],
+      "paint_order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25
+      ]
+    },
+    "interaction": {
+      "focused": "dialog-demo-rtl",
+      "hovered": null,
+      "pressed": null
+    },
+    "text_inputs": {}
+  },
+  "web_input_at_failure": {
+    "focus": "<div role=\"button\" aria-label=\"右起\" aria-pressed=\"true\" data-surface-id=\"dialog-demo-rtl\" data-surface-node=\"10\" tabindex=\"-1\" data-surface-action=\"press\"><span>右起</span></div>",
+    "value": "",
+    "start": 0,
+    "end": 0,
+    "direction": "none"
+  }
+}
