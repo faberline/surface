@@ -3,8 +3,8 @@ set -eu
 cd "$(dirname "$0")/.."
 export PATH="$HOME/.cargo/bin:$PATH"
 export CARGO_BUILD_JOBS=2
-mkdir -p artifacts
-export SURFACE_GPU_EVIDENCE="$PWD/artifacts/gpu-offscreen.png"
+export SURFACE_GPU_EVIDENCE="${SURFACE_GPU_EVIDENCE:-$PWD/artifacts/gpu-offscreen.png}"
+mkdir -p "$(dirname "$SURFACE_GPU_EVIDENCE")"
 # Runs every ignored GPU test: gpu_offscreen_paints_clips_rounding_text_and_order,
 # gpu_offscreen_bottom_corners_are_not_swapped,
 # gpu_offscreen_per_corner_shapes, gpu_offscreen_motion_animates_color_and_corners

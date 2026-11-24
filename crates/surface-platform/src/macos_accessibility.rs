@@ -205,6 +205,10 @@ impl Tree {
             node.set_children(children);
             if let Some(description) = frame.description_target(id) {
                 descriptions.push((nodes.len(), description));
+            } else if let Some((_, text)) = frame.clipped_validation_text(id) {
+                // AXHelp can describe the editor without a reference to an
+                // unpublished, fully clipped accessibility node.
+                node.set_description(text);
             }
             nodes.push((native_id, node));
             ids.insert(id, native_id);
@@ -1449,6 +1453,97 @@ mod tests {
             assert_eq!(field.role(), Role::TextInput);
             assert_eq!(field.invalid(), invalid.then_some(Invalid::True));
         }
+    }
+
+    #[test]
+    fn clipped_validation_text_maps_to_accesskit_help_without_a_dangling_relation() {
+        use surface_app::ScrollTarget;
+
+        const ERROR: &str = "請輸入偶數";
+
+        struct Validation(bool);
+
+        impl Application for Validation {
+            type Message = bool;
+
+            fn update(&mut self, invalid: bool) {
+                self.0 = invalid;
+            }
+
+            fn view(&self) -> View<bool> {
+                let sized = |height| Style::column().height(Length::Px(height));
+                let editor = View::new(
+                    SurfaceNode::new(SurfaceRole::TextInput, "Quantity")
+                        .id("quantity")
+                        .text(if self.0 { "15" } else { "16" })
+                        .invalid(self.0)
+                        .described_by_text("validation-error")
+                        .styled(sized(48.)),
+                )
+                .on_input(|_| false);
+                let scroller = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Validation details")
+                        .id("validation-scroll")
+                        .styled(sized(48.).clip(true)),
+                )
+                .children([
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Text, "")
+                            .id("validation-error")
+                            .text(ERROR)
+                            .styled(sized(20.)),
+                    ),
+                    View::new(SurfaceNode::new(SurfaceRole::Group, "").styled(sized(96.))),
+                ]);
+                let dialog = View::new(
+                    SurfaceNode::new(SurfaceRole::Dialog, "Edit quantity")
+                        .id("validation-dialog")
+                        .styled(Style::column()),
+                )
+                .children([editor, scroller])
+                .modal(false)
+                .modal_initial_focus("quantity");
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Application")).children([dialog])
+            }
+        }
+
+        let mut runtime = Runtime::new(Validation(true)).unwrap();
+        let mut tree = Tree::default();
+        let visible = update(&mut runtime, &mut tree);
+        let (visible_error, _) = named(&visible, ERROR);
+        let (_, visible_editor) = named(&visible, "Quantity");
+        assert_eq!(visible_editor.described_by(), &[visible_error]);
+        assert_eq!(visible_editor.description(), Some(ERROR));
+
+        assert!(runtime.scroll_to("validation-scroll", ScrollTarget::Bottom));
+        let clipped = update(&mut runtime, &mut tree);
+        let target = runtime.dom().by_id("validation-error").unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let error = frame
+            .node(target)
+            .expect("clipped error is still mounted in scope");
+        let bounds = error.layout.bounds;
+        let visible_bounds = bounds.intersect(error.layout.clip);
+        assert!(bounds.width > 0. && bounds.height > 0.);
+        assert!(visible_bounds.width <= 0. || visible_bounds.height <= 0.);
+        assert!(!clipped
+            .nodes
+            .iter()
+            .any(|(_, node)| node.label() == Some(ERROR)));
+        let (editor_id, editor) = named(&clipped, "Quantity");
+        assert_eq!(editor_id, clipped.focus);
+        assert!(editor.supports_action(Action::Focus));
+        assert_eq!(editor.invalid(), Some(Invalid::True));
+        assert!(editor.described_by().is_empty());
+        assert_eq!(editor.description(), Some(ERROR));
+
+        runtime.apply(false).unwrap();
+        assert!(runtime.scroll_to("validation-scroll", ScrollTarget::Bottom));
+        let corrected = update(&mut runtime, &mut tree);
+        let (_, editor) = named(&corrected, "Quantity");
+        assert_eq!(editor.invalid(), None);
+        assert!(editor.described_by().is_empty());
+        assert_eq!(editor.description(), None);
     }
 
     #[test]

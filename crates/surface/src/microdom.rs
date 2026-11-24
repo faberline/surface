@@ -434,9 +434,13 @@ impl Node {
         self.focus_outline_from_parent = true;
         self
     }
+    /// Whether this node outlines its parent while the parent has focus.
+    pub fn outlines_parent_focus(&self) -> bool {
+        self.focus_outline_from_parent
+    }
     pub(crate) fn paints_focus_outline(&self, id: NodeId, focused: Option<NodeId>) -> bool {
         focused.is_some_and(|focus| {
-            focus == id || (self.focus_outline_from_parent && self.parent() == Some(focus))
+            focus == id || (self.outlines_parent_focus() && self.parent() == Some(focus))
         })
     }
     /// Lay out a row from right to left. Its children keep their logical
