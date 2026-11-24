@@ -4,6 +4,7 @@ mod bottom_sheet_demo;
 mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
+mod checkbox_demo;
 mod date_picker_demo;
 mod date_range_picker_demo;
 mod dialog_demo;
@@ -47,6 +48,7 @@ use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
 use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
+use checkbox_demo::{CheckboxDemo, CheckboxDemoEvent};
 use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
 use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
 use dialog_demo::{DialogDemo, DialogDemoEvent};
@@ -119,6 +121,7 @@ pub struct Gallery {
     badge_demo: BadgeDemo,
     divider_demo: DividerDemo,
     switch_demo: SwitchDemo,
+    checkbox_demo: CheckboxDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -185,6 +188,7 @@ impl Default for Gallery {
             badge_demo: BadgeDemo::default(),
             divider_demo: DividerDemo::default(),
             switch_demo: SwitchDemo::default(),
+            checkbox_demo: CheckboxDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -296,6 +300,7 @@ pub enum Message {
     TimeScroll(TimeScrollDemoEvent),
     ScrollField(ScrollFieldDemoEvent),
     SwitchDemo(SwitchDemoEvent),
+    CheckboxDemo(CheckboxDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -460,6 +465,9 @@ impl Application for Gallery {
         if self.switch_demo.visible() {
             return self.switch_demo.text_scale();
         }
+        if self.checkbox_demo.visible() {
+            return self.checkbox_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -537,7 +545,8 @@ impl Application for Gallery {
             || tooltip
     }
     fn observes_frame_input(&self) -> bool {
-        self.switch_demo.visible()
+        self.checkbox_demo.visible()
+            || self.switch_demo.visible()
             || self.tooltip_demo.visible()
             || self.scroll_popup_demo.visible()
             || self.button_group_demo.visible()
@@ -620,10 +629,14 @@ impl Application for Gallery {
         let fab = self.fab_demo.frame(&frame, &input, pressed, press, hovered);
         let menu = self.fab_menu_demo.frame(&frame, &input, press, hovered);
         let switch = self.switch_demo.frame(&frame, &input, press, hovered);
+        let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
         let mut update = self.animation_frame_with_press(frame, input, pressed);
-        update.animation.rebuild |= fab.animation.rebuild || menu.rebuild || switch.rebuild;
-        update.animation.request_next |=
-            fab.animation.request_next || menu.request_next || switch.request_next;
+        update.animation.rebuild |=
+            fab.animation.rebuild || menu.rebuild || switch.rebuild || checkbox.rebuild;
+        update.animation.request_next |= fab.animation.request_next
+            || menu.request_next
+            || switch.request_next
+            || checkbox.request_next;
         update.suppress_touch_activation |= fab.suppress_touch_activation;
         update
     }
@@ -803,6 +816,9 @@ impl Application for Gallery {
                 if i != switch_demo::SECTION {
                     self.switch_demo.leave();
                 }
+                if i != checkbox_demo::SECTION {
+                    self.checkbox_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -815,6 +831,7 @@ impl Application for Gallery {
             Message::Badge(event) => self.badge_demo.update(event),
             Message::DividerDemo(event) => self.divider_demo.update(event),
             Message::SwitchDemo(event) => self.switch_demo.update(event),
+            Message::CheckboxDemo(event) => self.checkbox_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1009,6 +1026,9 @@ impl Application for Gallery {
         if self.switch_demo.visible() {
             return self.switch_demo.view(&t, self.dark);
         }
+        if self.checkbox_demo.visible() {
+            return self.checkbox_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1108,6 +1128,7 @@ impl Application for Gallery {
                             ScrollPopupDemo::show_button(&t),
                             ScrollModalDemo::show_button(&t),
                             SwitchDemo::show_button(&t),
+                            CheckboxDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1734,6 +1755,7 @@ mod web {
         state["menu_demo"] = s.menu_demo.inspect();
         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
         state["switch_demo"] = s.switch_demo.inspect(&theme);
+        state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

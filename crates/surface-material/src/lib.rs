@@ -16,6 +16,7 @@ mod card;
 mod carousel;
 mod carousel_layout;
 mod carousel_state;
+mod checkbox;
 mod command_menu;
 mod components;
 mod date_picker;
@@ -90,6 +91,7 @@ pub use card::{CardAction, CardContent, CardInteraction, MaterialCardOptions};
 pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientation};
 pub use carousel_layout::{CarouselLayout, CarouselSlot};
 pub use carousel_state::{CarouselInput, CarouselState};
+pub use checkbox::{CheckboxMotion, CheckboxOptions, CheckboxPose};
 pub use command_menu::{
     CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
 };
