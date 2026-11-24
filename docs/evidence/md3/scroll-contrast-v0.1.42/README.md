@@ -4,9 +4,11 @@
 
 Draft PR #217 now points to `ab8615c8495d99a652f4fac38d4db37f08c82c7f`. The candidate keeps the browser caret at the new position during a forced-color redraw. It accepts selection after composition and preserves positions in authored CRLF and CR text.
 
-The focused headless Chrome runs passed 20 Showcase input steps and seven Material contrast steps. The isolated keyboard stress replay passed 100 of 100 attempts. Full stock, native, workspace, and hosted checks are running.
+The focused headless Chrome runs passed 20 Showcase input steps and seven Material contrast steps. The isolated keyboard stress replay passed 100 of 100 attempts.
 
-[Correction proof](web-correction-preflight/README.md) · [Candidate PR](https://github.com/faberline/surface/pull/217)
+Eleven Metal checks and two independent native offscreen replays passed on this commit. The three screenshot transports agree on every capture. The eight PNGs match between replays. All 28 window checks reported zero. Full stock, workspace, and hosted checks are running.
+
+[Correction proof](web-correction-preflight/README.md) · [Corrected native replay](native-corrected/README.md) · [Candidate PR](https://github.com/faberline/surface/pull/217)
 
 ## Initial candidate
 
