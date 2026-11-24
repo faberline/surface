@@ -1,0 +1,960 @@
+{
+  "head": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+  "tree": "d512db1b4bc02b2d82ec738f304c7be3dabc592c",
+  "status": "blocked by repeatable M266 endpoint failure",
+  "identical_compact_heavy_png_bytes": true,
+  "events": {
+    "push": {
+      "run": 45472881234,
+      "attempt": 1,
+      "source_head": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+      "checkout_commit": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+      "checkout_tree": "d512db1b4bc02b2d82ec738f304c7be3dabc592c",
+      "jobs": {
+        "browser-e2e": {
+          "id": 138725260508,
+          "html_url": "https://github.com/faberline/surface/actions/runs/45472881234/job/138725260508",
+          "name": "browser-e2e",
+          "run_id": 45472881234,
+          "run_attempt": 1,
+          "head_sha": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T19:41:34Z",
+          "completed_at": "2026-11-24T20:10:18Z"
+        },
+        "build-and-behavior": {
+          "id": 138725260701,
+          "html_url": "https://github.com/faberline/surface/actions/runs/45472881234/job/138725260701",
+          "name": "build-and-behavior",
+          "run_id": 45472881234,
+          "run_attempt": 1,
+          "head_sha": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+          "conclusion": "success",
+          "started_at": "2026-11-24T19:41:34Z",
+          "completed_at": "2026-11-24T19:47:41Z"
+        }
+      },
+      "build": {
+        "checkout_commit": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+        "steps": [
+          "cargo xtask provenance",
+          "cargo fmt --all --check",
+          "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "cargo test --locked --workspace --all-features",
+          "cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract"
+        ],
+        "test_summaries": 175,
+        "workspace_test_cases_passed": 1273,
+        "workspace_test_cases_ignored": 19
+      },
+      "artifact": {
+        "id": 14961610122,
+        "digest": "sha256:49819bee546cdd8066840a65a028e98e718e90bf458b0e23c8858868eef0ddae",
+        "original_zip_size": 56152409,
+        "created_at": "2026-11-24T20:10:17Z",
+        "browser_job_attempt": 1
+      },
+      "failure": "M266: PNG uses outline variant: expected [73, 69, 78], got [65, 61, 70]",
+      "case_count": 8,
+      "passing_cases": 7,
+      "failing_cases": 1,
+      "total_checks": 18685,
+      "browser": "Chrome/158.0.8127.88",
+      "adapter": {
+        "isFallbackAdapter": true,
+        "vendor": "google",
+        "architecture": "swiftshader"
+      },
+      "divider_page_errors": [],
+      "ime_checks": 77,
+      "ime_cancellations": {
+        "select_all_survives_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 6
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_range_and_next_edit": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "line_endings": {
+        "authored": "ab\r\n你🦀\rZ",
+        "browser_value": "ab\n你🦀\nZ",
+        "steps": [
+          {
+            "key": "ArrowLeft",
+            "browser": [
+              1,
+              1
+            ],
+            "runtime": [
+              1,
+              1
+            ],
+            "direction": "forward"
+          },
+          {
+            "key": "Shift+ArrowLeft",
+            "browser": [
+              2,
+              3
+            ],
+            "runtime": [
+              4,
+              2
+            ],
+            "direction": "backward"
+          },
+          {
+            "key": "ArrowRight",
+            "browser": [
+              6,
+              6
+            ],
+            "runtime": [
+              11,
+              11
+            ],
+            "direction": "forward"
+          }
+        ]
+      },
+      "dialog_pngs_verified": 41,
+      "pixels": {
+        "captures_byte_identical": true,
+        "compact_heavy_png_sha256": "927d56ba5f05d1f9a7d836b41e1aafc24749d7772acda8c24bb9580b4d4452c0",
+        "fixture_geometry_basis": "exact local same-source Metal report, confirmed by every original Linux rectangle pixel",
+        "shape_pixels": {
+          "full": {
+            "logical_geometry": [
+              28.0,
+              336.0,
+              264.0,
+              8.0
+            ],
+            "physical_rectangle": [
+              56,
+              760,
+              584,
+              776
+            ],
+            "solid_palette_pixels": 8445,
+            "corner_pixels": [
+              [
+                583,
+                774
+              ],
+              [
+                582,
+                775
+              ],
+              [
+                583,
+                775
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  291.0,
+                  343.5
+                ],
+                "physical": [
+                  582,
+                  775
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          },
+          "inset": {
+            "logical_geometry": [
+              28.0,
+              420.0,
+              248.0,
+              8.0
+            ],
+            "physical_rectangle": [
+              56,
+              928,
+              552,
+              944
+            ],
+            "solid_palette_pixels": 7933,
+            "corner_pixels": [
+              [
+                551,
+                942
+              ],
+              [
+                550,
+                943
+              ],
+              [
+                551,
+                943
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  275.0,
+                  427.5
+                ],
+                "physical": [
+                  550,
+                  943
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          },
+          "middle": {
+            "logical_geometry": [
+              44.0,
+              504.0,
+              232.0,
+              8.0
+            ],
+            "physical_rectangle": [
+              88,
+              1096,
+              552,
+              1112
+            ],
+            "solid_palette_pixels": 7421,
+            "corner_pixels": [
+              [
+                551,
+                1110
+              ],
+              [
+                550,
+                1111
+              ],
+              [
+                551,
+                1111
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  275.0,
+                  511.5
+                ],
+                "physical": [
+                  550,
+                  1111
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          },
+          "vertical": {
+            "logical_geometry": [
+              108.0,
+              588.0,
+              8.0,
+              64.0
+            ],
+            "physical_rectangle": [
+              216,
+              1264,
+              232,
+              1392
+            ],
+            "solid_palette_pixels": 2045,
+            "corner_pixels": [
+              [
+                231,
+                1390
+              ],
+              [
+                230,
+                1391
+              ],
+              [
+                231,
+                1391
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  115.5,
+                  651.0
+                ],
+                "physical": [
+                  231,
+                  1390
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          }
+        },
+        "portable_strict_interior_adjacency_check": {
+          "file": "material-divider-compact-dark-rtl-200-heavy.png",
+          "sha256": "927d56ba5f05d1f9a7d836b41e1aafc24749d7772acda8c24bb9580b4d4452c0",
+          "lines": {
+            "full": {
+              "bounds_dp": [
+                28.0,
+                336.0,
+                264.0,
+                8.0
+              ],
+              "solid_pixels_checked": 8384,
+              "physical_thickness_px": 16
+            },
+            "inset": {
+              "bounds_dp": [
+                28.0,
+                420.0,
+                248.0,
+                8.0
+              ],
+              "solid_pixels_checked": 7872,
+              "physical_thickness_px": 16
+            },
+            "middle": {
+              "bounds_dp": [
+                44.0,
+                504.0,
+                232.0,
+                8.0
+              ],
+              "solid_pixels_checked": 7360,
+              "physical_thickness_px": 16
+            },
+            "vertical": {
+              "bounds_dp": [
+                108.0,
+                588.0,
+                8.0,
+                64.0
+              ],
+              "solid_pixels_checked": 1984,
+              "physical_thickness_px": 16
+            }
+          }
+        }
+      }
+    },
+    "pull_request": {
+      "run": 45472903154,
+      "attempt": 2,
+      "source_head": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+      "checkout_commit": "b20351038f906cbb69a74afceeed5ee00c1a26cc",
+      "checkout_tree": "d512db1b4bc02b2d82ec738f304c7be3dabc592c",
+      "jobs": {
+        "browser-e2e": {
+          "id": 138730392339,
+          "html_url": "https://github.com/faberline/surface/actions/runs/45472903154/job/138730392339",
+          "name": "browser-e2e",
+          "run_id": 45472903154,
+          "run_attempt": 2,
+          "head_sha": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+          "conclusion": "failure",
+          "started_at": "2026-11-24T19:49:50Z",
+          "completed_at": "2026-11-24T20:13:38Z"
+        },
+        "build-and-behavior": {
+          "id": 138725343386,
+          "html_url": "https://github.com/faberline/surface/actions/runs/45472903154/job/138725343386",
+          "name": "build-and-behavior",
+          "run_id": 45472903154,
+          "run_attempt": 1,
+          "head_sha": "d817ae4194f0dca6d81e5fadc895bf58585fbc92",
+          "conclusion": "success",
+          "started_at": "2026-11-24T19:41:42Z",
+          "completed_at": "2026-11-24T19:49:20Z"
+        }
+      },
+      "build": {
+        "checkout_commit": "b20351038f906cbb69a74afceeed5ee00c1a26cc",
+        "steps": [
+          "cargo xtask provenance",
+          "cargo fmt --all --check",
+          "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "cargo test --locked --workspace --all-features",
+          "cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract"
+        ],
+        "test_summaries": 175,
+        "workspace_test_cases_passed": 1273,
+        "workspace_test_cases_ignored": 19
+      },
+      "artifact": {
+        "id": 14959972345,
+        "digest": "sha256:f7f792787edd5189577969ed62871e901e3deefc7be6ba9fcd7b6e7d9f195bd3",
+        "original_zip_size": 56165078,
+        "created_at": "2026-11-24T20:13:35Z",
+        "browser_job_attempt": 2
+      },
+      "failure": "M266: PNG uses outline variant: expected [73, 69, 78], got [65, 61, 70]",
+      "case_count": 8,
+      "passing_cases": 7,
+      "failing_cases": 1,
+      "total_checks": 18685,
+      "browser": "Chrome/158.0.8127.88",
+      "adapter": {
+        "isFallbackAdapter": true,
+        "vendor": "google",
+        "architecture": "swiftshader"
+      },
+      "divider_page_errors": [],
+      "ime_checks": 77,
+      "ime_cancellations": {
+        "select_all_survives_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 6
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_range_and_next_edit": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "line_endings": {
+        "authored": "ab\r\n你🦀\rZ",
+        "browser_value": "ab\n你🦀\nZ",
+        "steps": [
+          {
+            "key": "ArrowLeft",
+            "browser": [
+              1,
+              1
+            ],
+            "runtime": [
+              1,
+              1
+            ],
+            "direction": "forward"
+          },
+          {
+            "key": "Shift+ArrowLeft",
+            "browser": [
+              2,
+              3
+            ],
+            "runtime": [
+              4,
+              2
+            ],
+            "direction": "backward"
+          },
+          {
+            "key": "ArrowRight",
+            "browser": [
+              6,
+              6
+            ],
+            "runtime": [
+              11,
+              11
+            ],
+            "direction": "forward"
+          }
+        ]
+      },
+      "dialog_pngs_verified": 41,
+      "pixels": {
+        "captures_byte_identical": true,
+        "compact_heavy_png_sha256": "927d56ba5f05d1f9a7d836b41e1aafc24749d7772acda8c24bb9580b4d4452c0",
+        "fixture_geometry_basis": "exact local same-source Metal report, confirmed by every original Linux rectangle pixel",
+        "shape_pixels": {
+          "full": {
+            "logical_geometry": [
+              28.0,
+              336.0,
+              264.0,
+              8.0
+            ],
+            "physical_rectangle": [
+              56,
+              760,
+              584,
+              776
+            ],
+            "solid_palette_pixels": 8445,
+            "corner_pixels": [
+              [
+                583,
+                774
+              ],
+              [
+                582,
+                775
+              ],
+              [
+                583,
+                775
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  291.0,
+                  343.5
+                ],
+                "physical": [
+                  582,
+                  775
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          },
+          "inset": {
+            "logical_geometry": [
+              28.0,
+              420.0,
+              248.0,
+              8.0
+            ],
+            "physical_rectangle": [
+              56,
+              928,
+              552,
+              944
+            ],
+            "solid_palette_pixels": 7933,
+            "corner_pixels": [
+              [
+                551,
+                942
+              ],
+              [
+                550,
+                943
+              ],
+              [
+                551,
+                943
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  275.0,
+                  427.5
+                ],
+                "physical": [
+                  550,
+                  943
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          },
+          "middle": {
+            "logical_geometry": [
+              44.0,
+              504.0,
+              232.0,
+              8.0
+            ],
+            "physical_rectangle": [
+              88,
+              1096,
+              552,
+              1112
+            ],
+            "solid_palette_pixels": 7421,
+            "corner_pixels": [
+              [
+                551,
+                1110
+              ],
+              [
+                550,
+                1111
+              ],
+              [
+                551,
+                1111
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  275.0,
+                  511.5
+                ],
+                "physical": [
+                  550,
+                  1111
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          },
+          "vertical": {
+            "logical_geometry": [
+              108.0,
+              588.0,
+              8.0,
+              64.0
+            ],
+            "physical_rectangle": [
+              216,
+              1264,
+              232,
+              1392
+            ],
+            "solid_palette_pixels": 2045,
+            "corner_pixels": [
+              [
+                231,
+                1390
+              ],
+              [
+                230,
+                1391
+              ],
+              [
+                231,
+                1391
+              ]
+            ],
+            "original_endpoint_probe_failures": [
+              {
+                "logical": [
+                  115.5,
+                  651.0
+                ],
+                "physical": [
+                  231,
+                  1390
+                ],
+                "rgb": [
+                  65,
+                  61,
+                  70
+                ]
+              }
+            ],
+            "inset_1_5dp_endpoint_probe_failures": [],
+            "four_outside_edges_same_background": true
+          }
+        },
+        "portable_strict_interior_adjacency_check": {
+          "file": "material-divider-compact-dark-rtl-200-heavy.png",
+          "sha256": "927d56ba5f05d1f9a7d836b41e1aafc24749d7772acda8c24bb9580b4d4452c0",
+          "lines": {
+            "full": {
+              "bounds_dp": [
+                28.0,
+                336.0,
+                264.0,
+                8.0
+              ],
+              "solid_pixels_checked": 8384,
+              "physical_thickness_px": 16
+            },
+            "inset": {
+              "bounds_dp": [
+                28.0,
+                420.0,
+                248.0,
+                8.0
+              ],
+              "solid_pixels_checked": 7872,
+              "physical_thickness_px": 16
+            },
+            "middle": {
+              "bounds_dp": [
+                44.0,
+                504.0,
+                232.0,
+                8.0
+              ],
+              "solid_pixels_checked": 7360,
+              "physical_thickness_px": 16
+            },
+            "vertical": {
+              "bounds_dp": [
+                108.0,
+                588.0,
+                8.0,
+                64.0
+              ],
+              "solid_pixels_checked": 1984,
+              "physical_thickness_px": 16
+            }
+          }
+        }
+      }
+    }
+  }
+}
