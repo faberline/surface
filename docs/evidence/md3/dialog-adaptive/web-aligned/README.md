@@ -31,3 +31,7 @@ python3 -B verify-integrated.py "$pin"/run.*
 ```
 
 All browser runs use `--headless=new`. The independent image check uses Pillow 12 or later. This lane used browser focus and accessibility metadata. Live VoiceOver, live operating-system composition and motion timing are separate checks.
+
+## Coverage record
+
+The [docs overlay](dialog-docs.patch) updates the Dialog row and API guide. It applies after the aligned and browser patches. The row stays partial while motion and live-platform checks are open.

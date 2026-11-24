@@ -1,0 +1,21 @@
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -233,5 +233,6 @@
+       "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Adaptive basic dialog; controlled draft; focus trap and restore; outside/Escape dismiss"
++      "desktop_evidence": "Two headless Metal replays verify Basic, Alert and adaptive Full-screen at wide light LTR and 320 dp dark RTL at 200% text. Native title ink aligns per line. Eight PNGs match each replay and all three screenshot transports. https://github.com/faberline/surface/tree/0d7ce33017ef7acdfe5156d56e2964bb9eb492da/docs/evidence/md3/dialog-adaptive/alignment",
++      "web_evidence": "Focused Chrome WebGPU M256–M261 verifies accessibility names, descriptions and modal scope, pinned actions, wheel scroll, stable editor identity and backward selection at 599/600 dp, RTL ink, and controlled Continue/Save/Discard. https://github.com/faberline/surface/tree/4644216976eb3e00b64ae61ad1bcb59fff431090/docs/evidence/md3/dialog-adaptive/web-aligned",
++      "implemented": "Basic and Full-screen layouts with explicit dismissal control and optional alert semantics. Basic uses a bounded panel, elevation, pinned title and actions, and a scrollable body. Full-screen preserves the editor across a width breakpoint. Dialog actions leave draft ownership with the application. Whole-panel motion, the Full-screen FAB transform, live input methods, screen-reader speech and additional platform settings remain open.",
++      "unit_evidence": "Focused Material and Runtime tests verify geometry, keyboard isolation, scroll clipping, focus and mixed composition. Core and Metal tests verify wrapped left, center and right ink and unchanged editor paint."
+     },
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -181,3 +181,5 @@
+ | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
+-| `dialog_with` | Basic dialog with optional icon, headline, supporting text, actions; container `surface_container_high`, scrim from `colors.scrim`; no full-screen variant, shadow or motion yet |
++| `dialog_with` | Earlier Basic dialog builder with icon, headline, supporting text and actions. |
++| `basic_dialog` | 280–560 dp panel where space permits, Level 3 elevation, bounded scrolling, 48 dp actions, optional icon and alert semantics. An explicit dismissal policy controls Escape and backdrop input. |
++| `full_screen_dialog` | Full viewport, compact header and bounded content rail. Keeps identity across the breakpoint when the caller uses the same panel and editor IDs. |
+ | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
