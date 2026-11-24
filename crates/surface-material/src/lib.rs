@@ -143,8 +143,9 @@ pub use scroll_choice_catalog::{
 };
 pub use scroll_choice_field_state::{ScrollChoiceEvent, ScrollChoiceState};
 pub use scroll_field::{
-    scroll_choice_field_layout, scroll_field_layout, ScrollChoiceFieldOptions, ScrollFieldLayout,
-    ScrollFieldOptions, ScrollFieldSize,
+    scroll_choice_field_layout, scroll_field_layout, scroll_field_pair_layout,
+    ScrollChoiceFieldOptions, ScrollFieldLayout, ScrollFieldOptions, ScrollFieldPairLayout,
+    ScrollFieldPairOptions, ScrollFieldSize,
 };
 pub use scroll_field_state::{
     ScrollFieldDrag, ScrollFieldError, ScrollFieldEvent, ScrollFieldMode, ScrollFieldRange,

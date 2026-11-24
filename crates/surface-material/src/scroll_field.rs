@@ -1,7 +1,9 @@
 //! Material 3 Expressive Scroll Fields.
 
 mod choice;
+mod pair;
 pub use choice::{scroll_choice_field_layout, ScrollChoiceFieldOptions};
+pub use pair::{scroll_field_pair_layout, ScrollFieldPairLayout, ScrollFieldPairOptions};
 
 use std::rc::Rc;
 
@@ -237,6 +239,17 @@ fn width_for_ems(size: ScrollFieldSize, ems: f32, scale: f32) -> f32 {
     (ems * CENTER.font_size * scale + 2. * size.padding())
         .ceil()
         .max(size.min_width())
+}
+
+fn compact_field_width(available_width: f32, preferred_width: f32) -> (f32, f32) {
+    let available = if available_width.is_finite() {
+        available_width.max(0.)
+    } else {
+        0.
+    };
+    let outset = ((available - TARGET) / 2.).clamp(0., FOCUS_OUTSET);
+    let width = preferred_width.min(available - 2. * outset);
+    (width, outset)
 }
 
 impl Theme {
@@ -593,14 +606,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
     }
 
     fn compact_width(&self) -> (f32, f32) {
-        let available = if self.options.available_width.is_finite() {
-            self.options.available_width.max(0.)
-        } else {
-            0.
-        };
-        let outset = ((available - TARGET) / 2.).clamp(0., FOCUS_OUTSET);
-        let width = self.preferred_width.min(available - 2. * outset);
-        (width, outset)
+        compact_field_width(self.options.available_width, self.preferred_width)
     }
 
     fn editor(&self, fit: Option<ScrollFieldLayout>, description: Option<&str>) -> View<M> {
