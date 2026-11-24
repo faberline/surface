@@ -155,6 +155,7 @@ enum FormatHint {
     ClippedValidation,
     ClippedValidationSuppressed,
     ClippedValidationOutsideModal,
+    ClippedValidationWithChild,
 }
 
 impl Application for FormatHint {
@@ -170,6 +171,7 @@ impl Application for FormatHint {
             Self::ClippedValidation
                 | Self::ClippedValidationSuppressed
                 | Self::ClippedValidationOutsideModal
+                | Self::ClippedValidationWithChild
         );
         let field = View::new(
             Node::new(Role::TextInput, "Event date")
@@ -210,6 +212,23 @@ impl Application for FormatHint {
         let mut hint = View::new(hint);
         if matches!(self, Self::Suppressed | Self::ClippedValidationSuppressed) {
             hint = hint.without_interaction(None);
+        }
+        if matches!(self, Self::ClippedValidationWithChild) {
+            hint = hint.children([View::new(
+                Node::new(Role::Text, "Visible note")
+                    .id("visible-note")
+                    .text("Visible note")
+                    .styled(
+                        Style::default()
+                            .width(Length::Px(100.))
+                            .height(Length::Px(20.))
+                            .fixed(Insets {
+                                left: Length::Px(40.),
+                                top: Length::Px(100.),
+                                ..Default::default()
+                            }),
+                    ),
+            )]);
         }
         let date = View::new(
             Node::new(Role::Button, "Monday, November 23, 2026")
@@ -291,6 +310,26 @@ fn only_a_mounted_clipped_validation_error_in_scope_can_describe_an_invalid_edit
         let frame = runtime.accessibility_frame().unwrap();
         assert_eq!(frame.clipped_validation_text(field), None);
     }
+}
+
+#[test]
+fn a_clipped_text_parent_with_a_visible_child_is_not_a_validation_target() {
+    let mut runtime = Runtime::new(FormatHint::ClippedValidationWithChild).unwrap();
+    runtime.render(320., 240., &mut Metrics).unwrap();
+    let editor = runtime.dom().by_id("date").unwrap();
+    let text = runtime.dom().by_id("format").unwrap();
+    let child = runtime.dom().by_id("visible-note").unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    let visible = |id| {
+        let node = frame.node(id).unwrap();
+        let geometry = node.layout.bounds.intersect(node.layout.clip);
+        geometry.width > 0. && geometry.height > 0.
+    };
+    assert!(!visible(text));
+    assert!(visible(child));
+    assert_eq!(frame.children(text).collect::<Vec<_>>(), [child]);
+    assert_eq!(frame.description_target(editor), None);
+    assert_eq!(frame.clipped_validation_text(editor), None);
 }
 
 #[cfg(feature = "devtools")]

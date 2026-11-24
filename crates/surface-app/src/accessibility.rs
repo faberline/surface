@@ -315,9 +315,9 @@ impl<M> AccessibilityFrame<'_, M> {
     }
 
     /// Read an invalid editor's mounted description when it is fully clipped.
-    /// Only a visible editor and a noninteractive text target in the current
-    /// accessibility scope can use this fallback. The target stays out of
-    /// the visible tree.
+    /// Only a visible editor and a noninteractive text target without children
+    /// in the current accessibility scope can use this fallback. The target
+    /// stays out of the visible tree.
     pub fn clipped_validation_text(&self, id: NodeId) -> Option<(NodeId, &str)> {
         let source = self.node(id)?;
         let key = invalid_editor_description(source.node)?;
@@ -326,7 +326,11 @@ impl<M> AccessibilityFrame<'_, M> {
         }
         let (target, description) = self.description_node(id, key, Role::Text)?;
         let bounds = description.layout.bounds;
-        if has_visible_bounds(&description) || bounds.width <= 0. || bounds.height <= 0. {
+        if has_visible_bounds(&description)
+            || bounds.width <= 0.
+            || bounds.height <= 0.
+            || self.children(target).next().is_some()
+        {
             return None;
         }
         Some((target, static_description_text(description.node)?))
