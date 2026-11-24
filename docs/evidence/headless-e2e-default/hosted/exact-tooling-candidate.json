@@ -1,0 +1,25 @@
+{
+  "pr": 222,
+  "url": "https://github.com/faberline/surface/pull/222",
+  "head": "2c0f0c3b6b6b9444f41230a4f166f9d51af45fc6",
+  "tree": "6489dcd4d3e130e57342916e54d8964b110f965c",
+  "base": "455d76eccdf64e7579b544ddea929bb5005e8632",
+  "branch": "codex/headless-e2e-default",
+  "changed_paths": [
+    ".github/workflows/ci.yml",
+    "AGENTS.md",
+    "README.md",
+    "docs/application-bridge.md",
+    "docs/verification.md",
+    "e2e/src/main.rs"
+  ],
+  "checkout_workflow_git_blob": "e065ab3132e24b686f9bef7cb2cc6f9b415448a3",
+  "workflow_sha256": "52191ee199f0ed2aa53ae36a74d1539c9b5879d5e209387fe39e69adeece42c9",
+  "invocation": "xvfb-run -a -s \"-screen 0 1920x1080x24\" cargo xtask web e2e all",
+  "pull_request_run": 45489582963,
+  "push_run": 45489561619,
+  "expected_cases": 8,
+  "material_steps": 265,
+  "ime_steps": 20,
+  "reference_divider_checks_per_run": 18922
+}
