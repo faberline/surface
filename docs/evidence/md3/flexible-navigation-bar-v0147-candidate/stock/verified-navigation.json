@@ -1,0 +1,691 @@
+{
+  "schema": "surface.test.flexible-navigation-portable-verification.v1",
+  "platform": "macos",
+  "case_scope": "stock",
+  "navigation_steps": [
+    "M270",
+    "M271",
+    "M272",
+    "M273"
+  ],
+  "material_steps": 272,
+  "case_results": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 272,
+      "checks": 18850
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 19131,
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "metadata_comparison": {
+    "stock_smoke_sha256": "2ac992b1247aed550463cb23d75b2251d5d1d91e7d950db66a8fe4b0b8204a86",
+    "expected_metadata_sha256": "01de148bb8cc0aeb1b63676c5a057d3164de326eb08658916bfddf2ce5561030"
+  },
+  "window_observation": {
+    "chrome_process_samples": 145306,
+    "native_gallery_process_samples": 15,
+    "visible_windows": 0,
+    "remaining_owned_processes": 0,
+    "sha256": "d3b5e92bbcb84160d3addd22b45b0c343deb27f4cf32f36cdc21a38ef69dd30d"
+  },
+  "page_errors": 0,
+  "report_sha256": "4a663cd7489976a25d3f33dee8cd4fadbe1130c2e5ad8b239ec203ad5182f297",
+  "runner_log_sha256": "06797ccad029a2fda50f5e614430c2224fc7d014c4bc819569a2543ef8ffa565",
+  "geometry": {
+    "wide": [
+      {
+        "preview": [
+          240.0,
+          0.0,
+          480.0,
+          800.0
+        ],
+        "bar": [
+          240.0,
+          736.0,
+          480.0,
+          64.0
+        ],
+        "scroll": [
+          240.0,
+          80.0,
+          480.0,
+          656.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              240.0,
+              736.0,
+              160.0,
+              64.0
+            ],
+            "pill": [
+              292.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              244.0,
+              778.0,
+              152.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              400.0,
+              736.0,
+              160.0,
+              64.0
+            ],
+            "pill": [
+              452.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              404.0,
+              778.0,
+              152.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              560.0,
+              736.0,
+              160.0,
+              64.0
+            ],
+            "pill": [
+              612.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              564.0,
+              778.0,
+              152.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "preview": [
+          240.0,
+          0.0,
+          480.0,
+          800.0
+        ],
+        "bar": [
+          240.0,
+          736.0,
+          480.0,
+          64.0
+        ],
+        "scroll": [
+          240.0,
+          80.0,
+          480.0,
+          656.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              240.0,
+              736.0,
+              120.0,
+              64.0
+            ],
+            "pill": [
+              272.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              244.0,
+              778.0,
+              112.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              360.0,
+              736.0,
+              120.0,
+              64.0
+            ],
+            "pill": [
+              392.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              364.0,
+              778.0,
+              112.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              480.0,
+              736.0,
+              120.0,
+              64.0
+            ],
+            "pill": [
+              512.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              484.0,
+              778.0,
+              112.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              600.0,
+              736.0,
+              120.0,
+              64.0
+            ],
+            "pill": [
+              632.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              604.0,
+              778.0,
+              112.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "preview": [
+          240.0,
+          0.0,
+          480.0,
+          800.0
+        ],
+        "bar": [
+          240.0,
+          736.0,
+          480.0,
+          64.0
+        ],
+        "scroll": [
+          240.0,
+          80.0,
+          480.0,
+          656.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              240.0,
+              736.0,
+              96.0,
+              64.0
+            ],
+            "pill": [
+              260.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              244.0,
+              778.0,
+              88.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              336.0,
+              736.0,
+              96.0,
+              64.0
+            ],
+            "pill": [
+              356.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              340.0,
+              778.0,
+              88.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              432.0,
+              736.0,
+              96.0,
+              64.0
+            ],
+            "pill": [
+              452.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              436.0,
+              778.0,
+              88.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              528.0,
+              736.0,
+              96.0,
+              64.0
+            ],
+            "pill": [
+              548.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              532.0,
+              778.0,
+              88.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-settings",
+            "hit": [
+              624.0,
+              736.0,
+              96.0,
+              64.0
+            ],
+            "pill": [
+              644.0,
+              742.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              628.0,
+              778.0,
+              88.0,
+              16.0
+            ]
+          }
+        ]
+      }
+    ],
+    "compact": {
+      "preview": [
+        0.0,
+        0.0,
+        320.0,
+        480.0
+      ],
+      "bar": [
+        0.0,
+        368.0,
+        320.0,
+        112.0
+      ],
+      "scroll": [
+        0.0,
+        80.0,
+        320.0,
+        288.0
+      ],
+      "destinations": [
+        {
+          "id": "navigation-bar-demo-home",
+          "hit": [
+            256.0,
+            368.0,
+            64.0,
+            112.0
+          ],
+          "pill": [
+            260.0,
+            374.0,
+            56.0,
+            32.0
+          ],
+          "label": [
+            260.0,
+            410.0,
+            56.0,
+            32.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-explore",
+          "hit": [
+            192.0,
+            368.0,
+            64.0,
+            112.0
+          ],
+          "pill": [
+            196.0,
+            374.0,
+            56.0,
+            32.0
+          ],
+          "label": [
+            196.0,
+            410.0,
+            56.0,
+            64.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-saved",
+          "hit": [
+            128.0,
+            368.0,
+            64.0,
+            112.0
+          ],
+          "pill": [
+            132.0,
+            374.0,
+            56.0,
+            32.0
+          ],
+          "label": [
+            132.0,
+            410.0,
+            56.0,
+            32.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-updates",
+          "hit": [
+            64.0,
+            368.0,
+            64.0,
+            112.0
+          ],
+          "pill": [
+            68.0,
+            374.0,
+            56.0,
+            32.0
+          ],
+          "label": [
+            68.0,
+            410.0,
+            56.0,
+            64.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-settings",
+          "hit": [
+            0.0,
+            368.0,
+            64.0,
+            112.0
+          ],
+          "pill": [
+            4.0,
+            374.0,
+            56.0,
+            32.0
+          ],
+          "label": [
+            4.0,
+            410.0,
+            56.0,
+            32.0
+          ]
+        }
+      ]
+    }
+  },
+  "accessibility": {
+    "landmark": "\u4e3b\u8981\u5c0e\u89bd",
+    "roles": [
+      "\u9996\u9801",
+      "\u63a2\u7d22\u8def\u7dda",
+      "\u6536\u85cf\u7684\u5730\u9ede",
+      "\u6700\u65b0\u6d88\u606f",
+      "\u8a2d\u5b9a"
+    ],
+    "disabled": "navigation-bar-demo-explore",
+    "current": "navigation-bar-demo-home",
+    "tab_order": [
+      "navigation-bar-demo-home",
+      "navigation-bar-demo-saved",
+      "navigation-bar-demo-updates",
+      "navigation-bar-demo-settings"
+    ],
+    "shift_tab_order": [
+      "navigation-bar-demo-updates",
+      "navigation-bar-demo-saved",
+      "navigation-bar-demo-home"
+    ],
+    "preactivations": 0
+  },
+  "actions": {
+    "enter": "navigation-bar-demo-saved",
+    "space": "navigation-bar-demo-updates",
+    "disabled_pointer": "navigation-bar-demo-explore",
+    "contact_target": "navigation-bar-demo-settings",
+    "activations": 3,
+    "visible_titles": [
+      [
+        348.0,
+        28.0,
+        32.0,
+        24.0
+      ],
+      [
+        348.0,
+        28.0,
+        64.0,
+        24.0
+      ],
+      [
+        348.0,
+        28.0,
+        32.0,
+        24.0
+      ]
+    ]
+  },
+  "wheel": {
+    "before": [
+      16.0,
+      344.0,
+      288.0,
+      48.0
+    ],
+    "after": [
+      16.0,
+      304.0,
+      288.0,
+      48.0
+    ],
+    "scroll_dp": 40.0,
+    "bar_and_title_pixels_unchanged": true,
+    "focus_after": "navigation-bar-demo-settings",
+    "focus_restored": "navigation-bar-demo-show",
+    "line_pixels": [
+      1158,
+      904
+    ]
+  },
+  "pngs": {
+    "light": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "0b43e391a8d87ebb6ca3569baae4a42b752f2efedb6ea05a915945ad8e6b065d",
+      "surface_rgb": [
+        242,
+        236,
+        244
+      ],
+      "pill_rgb": [
+        232,
+        222,
+        248
+      ],
+      "corner_rgb": [
+        242,
+        236,
+        244
+      ],
+      "icon_rgb": [
+        30,
+        25,
+        43
+      ],
+      "icon_pixels": 944
+    },
+    "dark": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "df03f4f3729bdd3c3fef0ee1f99b259f0863605930a4de18fd85e26e68ba054b",
+      "surface_rgb": [
+        33,
+        31,
+        36
+      ],
+      "pill_rgb": [
+        74,
+        68,
+        88
+      ],
+      "corner_rgb": [
+        33,
+        31,
+        36
+      ],
+      "icon_rgb": [
+        232,
+        222,
+        248
+      ],
+      "icon_pixels": 944
+    },
+    "rtl-large": {
+      "size": [
+        640,
+        1048
+      ],
+      "sha256": "19011d41cdfe43fe1151b6ca726dd9a4a7cbd4b8807e08fdde00c5adc7f605c9",
+      "surface_rgb": [
+        33,
+        31,
+        36
+      ],
+      "pill_rgb": [
+        74,
+        68,
+        88
+      ],
+      "corner_rgb": [
+        33,
+        31,
+        36
+      ],
+      "icon_rgb": [
+        232,
+        222,
+        248
+      ],
+      "icon_pixels": 692
+    },
+    "rtl-large-scrolled": {
+      "size": [
+        640,
+        1048
+      ],
+      "sha256": "ec69512d41db8c0ce67ffabac8a06ad0396d4536ea0287f644d98f12ae16ada1",
+      "surface_rgb": [
+        33,
+        31,
+        36
+      ],
+      "pill_rgb": [
+        74,
+        68,
+        88
+      ],
+      "corner_rgb": [
+        33,
+        31,
+        36
+      ],
+      "icon_rgb": [
+        232,
+        222,
+        248
+      ],
+      "icon_pixels": 692
+    }
+  }
+}
