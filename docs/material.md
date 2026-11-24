@@ -173,6 +173,7 @@ does not change application state.
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
 | `switch` | Controlled on/off choice and disabled state |
+| `switch_with_options` | Controlled Material 3 switch with three icon styles, RTL, press motion and a wrapping label |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
 | `scroll_field` | Inline finite numeric values with three sizes, a snap-to-center wheel, direct entry and validation |
 | `scroll_choice_field` | Inline finite text choices with stable IDs, qualified labels and direct-entry completion |
@@ -211,6 +212,32 @@ revealed from its inner scroll container to its outer container. A viewport
 resize also reveals focus. Fixed overlays do not move the background.
 Repeated frames preserve a deliberate manual scroll when focus and viewport
 have not changed. A target larger than its viewport is aligned at its start.
+
+## Switch
+
+Use `switch_with_options(options, &motion, on_change)` for a Material 3
+switch. Keep one `SwitchMotion` per stable ID. The application owns the
+checked value and receives the requested next value in `on_change`.
+A tap, Enter, Space or accessible press sends one request. Disabled
+switches expose their state and reject activation.
+
+Choose `SwitchIcons::None`, `SwitchIcons::Selected` or `SwitchIcons::Both`
+for the handle. The visual track stays 52 × 32 dp. The handle is 16 dp
+when off without an icon, 24 dp when on or showing an icon, and 28 dp
+while held. The label wraps to the space beside the track. The whole
+row has one target at least 48 dp high. Use the layout direction and
+text scale from the current application settings.
+
+Opt in to `Application::observes_frame_input`. In
+`animation_frame_with_press_detail`, pass the current options, frame,
+input, press and hover state to `SwitchMotion::advance`. Apply its
+rebuild and next-frame flags as you would for other retained motion.
+Reduce Motion goes directly to the current endpoint. The earlier
+`Theme::switch` API stays available.
+
+The Gallery's `switch-demo-show` opens a preview with all three icon
+styles, disabled examples, dark mode, RTL, and 200% text.
+[Material 3 Switch specifications](https://m3.material.io/components/switch/specs)
 
 ## Snackbar
 

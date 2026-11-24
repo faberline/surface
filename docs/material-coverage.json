@@ -317,10 +317,10 @@
       "id": "switch",
       "spec": "https://m3.material.io/components/switch/overview",
       "status": "partial",
-      "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Controlled on/off and disabled"
+      "variant_review": "Reviewed the three Baseline icon configurations against the 2026-11-19 Google Switch specification and DSDB 41.1.12. The review covers the 52 × 32 dp track, 16/24/28 dp handle sizes, state layer and exterior focus ring.",
+      "desktop_evidence": "The headless native Gallery replay checks keyboard state and PNG parity across Page.screenshot, CLI and MCP.",
+      "web_evidence": "Material Gallery M274 through M277 exercise the Chrome accessibility tree, activation, inactive targets, hover and press geometry, cancellation and 320 dp dark RTL at 200% text.",
+      "implemented": "Additive M3 builder with no icon, selected icon or icons in both states. Controlled checked state, disabled colors, a unified named switch target, logical placement, wrapping text, fixed focus ring, state layers, reversible spatial motion and Reduce Motion. Drag to select, live native screen-reader speech and system high contrast remain open."
     },
     {
       "id": "tabs",

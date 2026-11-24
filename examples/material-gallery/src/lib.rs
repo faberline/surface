@@ -33,6 +33,7 @@ mod search_overlay_demo;
 mod side_sheet_demo;
 mod snackbar_demo;
 mod split_demo;
+mod switch_demo;
 mod time_dial_demo;
 mod time_input_demo;
 mod time_scroll_demo;
@@ -83,6 +84,7 @@ use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
     IconButtonKind, NavigationRailItem, SegmentPosition, Theme,
 };
+use switch_demo::{SwitchDemo, SwitchDemoEvent};
 use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
 use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
 use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
@@ -116,6 +118,7 @@ pub struct Gallery {
     snackbar_demo: SnackbarDemo,
     badge_demo: BadgeDemo,
     divider_demo: DividerDemo,
+    switch_demo: SwitchDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -181,6 +184,7 @@ impl Default for Gallery {
             snackbar_demo: SnackbarDemo::default(),
             badge_demo: BadgeDemo::default(),
             divider_demo: DividerDemo::default(),
+            switch_demo: SwitchDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -291,6 +295,7 @@ pub enum Message {
     TimeDial(TimeDialDemoEvent),
     TimeScroll(TimeScrollDemoEvent),
     ScrollField(ScrollFieldDemoEvent),
+    SwitchDemo(SwitchDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -452,6 +457,9 @@ impl Application for Gallery {
         if self.divider_demo.visible() {
             return self.divider_demo.text_scale();
         }
+        if self.switch_demo.visible() {
+            return self.switch_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -529,7 +537,8 @@ impl Application for Gallery {
             || tooltip
     }
     fn observes_frame_input(&self) -> bool {
-        self.tooltip_demo.visible()
+        self.switch_demo.visible()
+            || self.tooltip_demo.visible()
             || self.scroll_popup_demo.visible()
             || self.button_group_demo.visible()
             || self.split_demo.visible()
@@ -610,9 +619,11 @@ impl Application for Gallery {
     ) -> InputAnimationUpdate {
         let fab = self.fab_demo.frame(&frame, &input, pressed, press, hovered);
         let menu = self.fab_menu_demo.frame(&frame, &input, press, hovered);
+        let switch = self.switch_demo.frame(&frame, &input, press, hovered);
         let mut update = self.animation_frame_with_press(frame, input, pressed);
-        update.animation.rebuild |= fab.animation.rebuild || menu.rebuild;
-        update.animation.request_next |= fab.animation.request_next || menu.request_next;
+        update.animation.rebuild |= fab.animation.rebuild || menu.rebuild || switch.rebuild;
+        update.animation.request_next |=
+            fab.animation.request_next || menu.request_next || switch.request_next;
         update.suppress_touch_activation |= fab.suppress_touch_activation;
         update
     }
@@ -789,6 +800,9 @@ impl Application for Gallery {
                 if i != divider_demo::SECTION {
                     self.divider_demo.leave();
                 }
+                if i != switch_demo::SECTION {
+                    self.switch_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -800,6 +814,7 @@ impl Application for Gallery {
             Message::Snackbar(event) => self.snackbar_demo.update(event),
             Message::Badge(event) => self.badge_demo.update(event),
             Message::DividerDemo(event) => self.divider_demo.update(event),
+            Message::SwitchDemo(event) => self.switch_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -991,6 +1006,9 @@ impl Application for Gallery {
         if self.divider_demo.visible() {
             return self.divider_demo.view(&t, self.dark);
         }
+        if self.switch_demo.visible() {
+            return self.switch_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1089,6 +1107,7 @@ impl Application for Gallery {
                             ScrollPairDemo::show_button(&t),
                             ScrollPopupDemo::show_button(&t),
                             ScrollModalDemo::show_button(&t),
+                            SwitchDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1714,6 +1733,7 @@ mod web {
         state["dialog_demo"] = s.dialog_demo.inspect();
         state["menu_demo"] = s.menu_demo.inspect();
         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
+        state["switch_demo"] = s.switch_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
