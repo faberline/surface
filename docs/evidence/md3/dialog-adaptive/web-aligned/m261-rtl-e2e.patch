@@ -1,0 +1,308 @@
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -119,7 +119,7 @@
+     "M215", "M216", "M217", "M218", "M219", "M220", "M221", "M222", "M223", "M224", "M225", "M226",
+     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
+     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
+-    "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260",
++    "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+--- a/e2e/src/material_dialog.rs
++++ b/e2e/src/material_dialog.rs
+@@ -5,7 +5,7 @@
+ 
+ use super::material_time_input::{
+     activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, projected,
+-    resize,
++    resize, Raster,
+ };
+ use super::{click, point, state, until};
+ use crate::browser::{js, Chrome, Tab};
+@@ -475,6 +475,269 @@
+     focused(tab, SHOW).await?;
+     Ok(
+         json!({"ax":role,"initial":INITIAL,"continued":CHANGED,"saved":CHANGED,"discarded":"待捨棄","saves":1,"discards":1,"clean_escape_return":true,"close_continue_focus":"dialog-demo-edit-close","escape_continue_focus":EDITOR,"escape_continue_selection":before,"route_focus_restored":true}),
++    )
++}
++
++const DISCARD_DESCRIPTION: &str = "未儲存的行程變更會遺失。";
++
++type Ink = Vec<[usize; 2]>;
++
++async fn text_paint(tab: &Tab, id: &str) -> Result<([u8; 3], f64)> {
++    let node = tab
++        .eval(&format!(
++            "JSON.parse(window.gallery.export_dom()).dom.nodes.find(n => n.stable_id === {})",
++            js(id)
++        ))
++        .await?;
++    let [r, g, b, a]: [u8; 4] = serde_json::from_value(node["style"]["foreground"].clone())?;
++    check_eq!(a, 255, "the sampled title/supporting color is opaque");
++    let line_height = node["style"]["line_height"]
++        .as_f64()
++        .context("authored logical line height")?;
++    Ok(([r, g, b], line_height * 2.))
++}
++
++async fn raster(env: &Env, tab: &Tab, name: &str) -> Result<Raster> {
++    screen(env, tab, name).await?;
++    Raster::read(
++        tab,
++        env.artifact(&format!("material-dialog-adaptive-{name}.png")),
++    )
++    .await
++}
++
++fn line_box(rect: Rect, row: u32, pitch: f64) -> Rect {
++    let [x, y, width, _] = rect;
++    [x, y + f64::from(row) * pitch, width, pitch]
++}
++
++fn color_points(image: &Raster, rect: Rect, clip: Rect, rgb: [u8; 3]) -> Result<Ink> {
++    let [x, y, width, height] = rect;
++    let mut ink = Vec::new();
++    // The Gallery runs at verified 2× device scale. Keep each mask relative
++    // to its text line to compare the compact view to the unclipped view.
++    for row in 0..(height * 2.).round() as usize {
++        let py = y + (row as f64 + 0.5) / 2.;
++        if py < clip[1] || py >= clip[1] + clip[3] {
++            continue;
++        }
++        for column in 0..(width * 2.).round() as usize {
++            let px = x + (column as f64 + 0.5) / 2.;
++            if px < clip[0] || px >= clip[0] + clip[2] {
++                continue;
++            }
++            if image
++                .sample(px, py)?
++                .iter()
++                .zip(rgb)
++                .all(|(a, b)| a.abs_diff(b) <= 24)
++            {
++                ink.push([column, row]);
++            }
++        }
++    }
++    Ok(ink)
++}
++
++fn horizontal_ink(ink: &Ink) -> Result<[usize; 2]> {
++    let left = ink
++        .iter()
++        .map(|p| p[0])
++        .min()
++        .context("leftmost title ink")?;
++    let right = ink
++        .iter()
++        .map(|p| p[0])
++        .max()
++        .context("rightmost title ink")?;
++    Ok([left, right])
++}
++
++async fn discard_description(tab: &Tab) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let dialog = ax(&tree, "dialog", "捨棄變更？")?;
++    let relation = tab.eval(&format!(
++        "(() => {{const e={}; return e.getAttribute('aria-describedby').split(/\\s+/).map(id => document.getElementById(id)?.textContent).join(' ');}})()",
++        projected(DISCARD)
++    )).await?;
++    check_eq!(
++        relation,
++        DISCARD_DESCRIPTION,
++        "projected description resolves to the complete authored support text"
++    );
++    check_eq!(
++        dialog["description"]["value"],
++        DISCARD_DESCRIPTION,
++        "Chrome AX retains every word while supporting text is clipped or scrolled"
++    );
++    Ok(relation)
++}
++
++async fn rtl_short(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
++    route(tab, url, 320, 400).await?;
++    for id in [
++        "dialog-demo-theme",
++        "dialog-demo-rtl",
++        "dialog-demo-large-text",
++    ] {
++        activate(tab, id).await?;
++    }
++    until(
++        tab,
++        "s.dark && s.dialog_demo.rtl && s.dialog_demo.text_scale === 2",
++    )
++    .await?;
++    check_eq!(
++        tab.eval("devicePixelRatio").await?,
++        2,
++        "read physical pixels at DPR 2"
++    );
++    open(tab, EDIT, "edit").await?;
++    ready(tab, "d.presentation === 'fullscreen'").await?;
++    editor_focus(tab).await?;
++    let viewport = [0., 0., 320., 400.];
++    check_eq!(
++        bounds(tab, EDIT).await?,
++        viewport,
++        "compact Full-screen dialog fits exactly"
++    );
++    let title_id = "dialog-demo-edit-title";
++    let title = bounds(tab, title_id).await?;
++    let (title_rgb, title_pitch) = text_paint(tab, title_id).await?;
++    check_eq!(
++        title[3],
++        2. * title_pitch,
++        "the compact title wraps across exactly two visual lines"
++    );
++    let edit = raster(env, tab, "rtl-200-edit").await?;
++    let mut extents = Vec::new();
++    for row in [0, 1] {
++        let line = line_box(title, row, title_pitch);
++        let ink = color_points(&edit, line, title, title_rgb)?;
++        check!(
++            ink.len() > 100,
++            "each wrapped title line has meaningful glyph ink"
++        );
++        extents.push(horizontal_ink(&ink)?);
++    }
++    let [first, second] = [extents[0], extents[1]];
++    check!(
++        second[0] > first[0] + 24 && first[1].abs_diff(second[1]) <= 6,
++        "the shorter line shares the longer line's physical right edge: {extents:?}"
++    );
++    check!(
++        extents
++            .iter()
++            .all(|line| title[2] * 2. - (line[1] as f64) <= 14.),
++        "both title lines paint at logical start on the right: {title:?} {extents:?}"
++    );
++
++    fill(tab, CHANGED).await?;
++    tab.press("Escape").await?;
++    ready(tab, "d.open === 'discard'").await?;
++    focused(tab, "dialog-demo-discard-cancel").await?;
++    named_modal(tab, DISCARD, "dialog", "捨棄變更？").await?;
++    let description = discard_description(tab).await?;
++    let heading = bounds(tab, "dialog-demo-discard-heading").await?;
++    let body = bounds(tab, "dialog-demo-discard-body").await?;
++    let cancel = bounds(tab, "dialog-demo-discard-cancel").await?;
++    let confirm = bounds(tab, "dialog-demo-discard-confirm").await?;
++    let panel = bounds(tab, DISCARD).await?;
++    for part in [heading, body, cancel, confirm] {
++        check!(
++            contains(panel, part),
++            "all compact regions stay fully in the panel: {part:?}"
++        );
++    }
++    check!(body[3] > 0. && body[1] + body[3] <= confirm[1] && confirm[1] + confirm[3] <= cancel[1],
++        "wheel body stays between the heading and both stacked actions: {body:?}, {cancel:?}, {confirm:?}");
++    check!(
++        [cancel, confirm].iter().all(|r| r[2] >= 48. && r[3] >= 48.),
++        "complete compact action targets"
++    );
++    let supporting = "dialog-demo-discard-supporting";
++    let before = bounds(tab, supporting).await?;
++    let (support_rgb, support_pitch) = text_paint(tab, supporting).await?;
++    check_eq!(
++        before[3],
++        2. * support_pitch,
++        "supporting text wraps across exactly two lines"
++    );
++    let first = raster(env, tab, "rtl-200-discard-before").await?;
++    let initial = color_points(
++        &first,
++        line_box(before, 1, support_pitch),
++        body,
++        support_rgb,
++    )?;
++    check!(
++        initial.is_empty(),
++        "the final line starts clipped at 400 dp height"
++    );
++
++    let p = point(tab, "dialog-demo-discard-body").await?;
++    tab.mouse_move(p.x, p.y).await?;
++    tab.wheel(0., 220.).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({})[1] < {}",
++        js(supporting),
++        before[1] - 8.
++    ))
++    .await?;
++    tab.settle().await?;
++    let after = bounds(tab, supporting).await?;
++    let last = raster(env, tab, "rtl-200-discard-after").await?;
++    let revealed = color_points(&last, line_box(after, 1, support_pitch), body, support_rgb)?;
++    check!(
++        revealed.len() > 100,
++        "trusted wheel reveals meaningful last-line ink in the clipped body"
++    );
++    for (id, pinned) in [
++        ("dialog-demo-discard-heading", heading),
++        ("dialog-demo-discard-body", body),
++        ("dialog-demo-discard-cancel", cancel),
++        ("dialog-demo-discard-confirm", confirm),
++    ] {
++        check_eq!(
++            bounds(tab, id).await?,
++            pinned,
++            "{id} stays fixed during wheel"
++        );
++    }
++    check_eq!(
++        discard_description(tab).await?,
++        description,
++        "the projected full description is unchanged across wheel"
++    );
++    focused(tab, "dialog-demo-discard-cancel").await?;
++
++    resize(tab, 320, 520).await?;
++    ready(
++        tab,
++        "d.open === 'discard' && d.draft === '秋日散步' && d.saves === 0",
++    )
++    .await?;
++    let tall_body = bounds(tab, "dialog-demo-discard-body").await?;
++    let tall_support = bounds(tab, supporting).await?;
++    check!(contains(tall_body, tall_support), "taller same-width viewport exposes the complete supporting paragraph: {tall_body:?}, {tall_support:?}");
++    let reference = raster(env, tab, "rtl-200-discard-unclipped").await?;
++    let full_tail = color_points(
++        &reference,
++        line_box(tall_support, 1, support_pitch),
++        tall_body,
++        support_rgb,
++    )?;
++    check!(revealed == full_tail, "scroll reveals the complete final line seen in the same-width unclipped reference: {} vs {} stroke pixels", revealed.len(), full_tail.len());
++    focused(tab, "dialog-demo-discard-cancel").await?;
++    tab.press("Enter").await?;
++    ready(
++        tab,
++        "d.open === 'edit' && d.saves === 0 && d.draft === '秋日散步'",
++    )
++    .await?;
++    editor_focus(tab).await?;
++    Ok(
++        json!({"viewport":viewport,"text_scale":2,"rtl":true,"title":{"bounds":title,"pitch":title_pitch,"rgb":title_rgb,"line_ink_pixels_x":extents},"discard":{"description":description,"panel":panel,"heading":heading,"body":body,"actions":[cancel,confirm],"support_bounds_before":before,"support_bounds_after":after,"support_bounds_unclipped":tall_support,"unclipped_body":tall_body,"support_rgb":support_rgb,"support_pitch":support_pitch,"last_line_ink_before":initial.len(),"last_line_ink_after":revealed.len(),"unclipped_ink":full_tail.len(),"same_ink_mask":true,"focus_during_wheel":"dialog-demo-discard-cancel","continue_focus":EDITOR}}),
+     )
+ }
+ 
+@@ -494,12 +757,15 @@
+         report["breakpoint"] = breakpoint(env, &tab, url).await.context("M259")?;
+         step("M260", "dirty Close and Escape ask first, Continue restores exact prior focus, and explicit Save or Discard acts once");
+         report["transaction"] = transaction(env, &tab, url).await.context("M260")?;
++        step("M261", "320 dp dark RTL 200% aligns both title lines and wheels the entire discard description without moving actions");
++        report["rtl_short"] = rtl_short(env, &tab, url).await.context("M261")?;
+         check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
+         Ok(())
+     }.await;
+     report["errors"] = json!(tab.errors());
+     if let Err(error) = &result {
+         report["failure"] = json!(format!("{error:#}"));
++        report["ax_at_failure"] = json!(ax_tree(&tab).await.unwrap_or_default());
+         report["state_at_failure"] = state(&tab).await.unwrap_or(Value::Null);
+         report["dom_at_failure"] = tab
+             .eval_json("window.gallery.export_dom()")

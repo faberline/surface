@@ -1,0 +1,6595 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "basic": {
+    "ax": {
+      "role": "dialog",
+      "name": "行程通知",
+      "heading": {
+        "id": "dialog-demo-basic-heading",
+        "text": "行程通知"
+      },
+      "modal": true
+    },
+    "panel": [
+      280.0,
+      92.0,
+      400.0,
+      536.0
+    ],
+    "tab_cycle": [
+      "confirm",
+      "cancel",
+      "confirm",
+      "cancel"
+    ],
+    "escape_return": true,
+    "scrim_return": true
+  },
+  "adapter": {
+    "isFallbackAdapter": false,
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "short": {
+    "viewport": [
+      320,
+      400
+    ],
+    "dark": true,
+    "text_scale": 2,
+    "panel": [
+      20.0,
+      24.0,
+      280.0,
+      352.0
+    ],
+    "heading": [
+      44.0,
+      48.0,
+      232.0,
+      64.0
+    ],
+    "body": [
+      44.0,
+      128.0,
+      232.0,
+      96.0
+    ],
+    "actions": [
+      [
+        140.0,
+        304.0,
+        136.0,
+        48.0
+      ],
+      [
+        140.0,
+        248.0,
+        136.0,
+        48.0
+      ]
+    ],
+    "last_content_before": [
+      44.0,
+      960.0,
+      232.0,
+      80.0
+    ],
+    "last_content_after": [
+      44.0,
+      144.0,
+      232.0,
+      80.0
+    ],
+    "pinned": true
+  },
+  "alert": {
+    "ax": {
+      "role": "alertdialog",
+      "name": "連線中斷",
+      "heading": {
+        "id": "dialog-demo-alert-heading",
+        "text": "連線中斷"
+      },
+      "modal": true
+    },
+    "description": "目前無法同步行程。請確認網路連線後再試。",
+    "panel": [
+      280.0,
+      252.0,
+      400.0,
+      216.0
+    ],
+    "escape_blocked": true,
+    "click_through_blocked": true,
+    "acknowledgements": 1
+  },
+  "breakpoint": {
+    "viewport_widths": [
+      599,
+      600,
+      599
+    ],
+    "full_screen": [
+      0.0,
+      0.0,
+      599.0,
+      500.0
+    ],
+    "basic": [
+      100.0,
+      40.0,
+      400.0,
+      420.0
+    ],
+    "full_screen_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-title",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "basic_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-heading",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "same_editor": true,
+    "tab_cycle": [
+      "editor",
+      "close",
+      "save",
+      "editor",
+      "save"
+    ]
+  },
+  "transaction": {
+    "ax": {
+      "role": "dialog",
+      "name": "捨棄變更？",
+      "heading": {
+        "id": "dialog-demo-discard-heading",
+        "text": "捨棄變更？"
+      },
+      "modal": true
+    },
+    "initial": "週末行程",
+    "continued": "秋日散步",
+    "saved": "秋日散步",
+    "discarded": "待捨棄",
+    "saves": 1,
+    "discards": 1,
+    "clean_escape_return": true,
+    "close_continue_focus": "dialog-demo-edit-close",
+    "escape_continue_focus": "dialog-demo-editor",
+    "escape_continue_selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "route_focus_restored": true
+  },
+  "errors": [],
+  "failure": "M261: the shorter line shares the longer line's physical right edge: [[3, 259], [3, 83]]",
+  "ax_at_failure": [
+    {
+      "nodeId": "639",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "RootWebArea"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 144
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Surface · Material gallery",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label",
+            "superseded": true
+          },
+          {
+            "type": "relatedElement",
+            "value": {
+              "type": "computedString",
+              "value": "Surface · Material gallery"
+            },
+            "nativeSource": "title"
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "focused",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "url",
+          "value": {
+            "type": "string",
+            "value": "http://127.0.0.1:64290/"
+          }
+        }
+      ],
+      "childIds": [
+        "648"
+      ],
+      "backendDOMNodeId": 639,
+      "frameId": "3DAF3A4E88014D47B0A2E58C3636D262"
+    },
+    {
+      "nodeId": "648",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "639",
+      "childIds": [
+        "649"
+      ],
+      "backendDOMNodeId": 648
+    },
+    {
+      "nodeId": "649",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "648",
+      "childIds": [
+        "650",
+        "641",
+        "644"
+      ],
+      "backendDOMNodeId": 649
+    },
+    {
+      "nodeId": "650",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "banner"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 94
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "type": "attribute",
+            "attribute": "title"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "649",
+      "childIds": [
+        "643",
+        "640"
+      ],
+      "backendDOMNodeId": 650
+    },
+    {
+      "nodeId": "641",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "Canvas"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 10
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Material gallery",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "Material gallery"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "Material gallery"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "649",
+      "childIds": [],
+      "backendDOMNodeId": 641
+    },
+    {
+      "nodeId": "644",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "649",
+      "childIds": [
+        "645"
+      ],
+      "backendDOMNodeId": 644
+    },
+    {
+      "nodeId": "643",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "650",
+      "childIds": [
+        "651"
+      ],
+      "backendDOMNodeId": 643
+    },
+    {
+      "nodeId": "651",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Surface · Material gallery",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "Surface · Material gallery"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "643",
+      "childIds": [
+        "-1000000334",
+        "-1000000335"
+      ],
+      "backendDOMNodeId": 651
+    },
+    {
+      "nodeId": "640",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "650",
+      "childIds": [
+        "652"
+      ],
+      "backendDOMNodeId": 640
+    },
+    {
+      "nodeId": "645",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "dialog"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 35
+      },
+      "name": {
+        "type": "computedString",
+        "value": "編輯行程",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "value": {
+              "type": "computedString",
+              "value": "編輯行程"
+            },
+            "attribute": "aria-labelledby",
+            "attributeValue": {
+              "type": "idrefList",
+              "value": "surface-accessibility-heading-29",
+              "relatedNodes": [
+                {
+                  "backendDOMNodeId": 646,
+                  "idref": "surface-accessibility-heading-29",
+                  "text": "編輯行程"
+                }
+              ]
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label",
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "modal",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "labelledby",
+          "value": {
+            "type": "nodeList",
+            "relatedNodes": [
+              {
+                "backendDOMNodeId": 646,
+                "idref": "surface-accessibility-heading-29",
+                "text": "編輯行程"
+              }
+            ]
+          }
+        }
+      ],
+      "parentId": "644",
+      "childIds": [
+        "657",
+        "661",
+        "666"
+      ],
+      "backendDOMNodeId": 645
+    },
+    {
+      "nodeId": "-1000000334",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Surface · Material "
+      },
+      "properties": [],
+      "parentId": "651",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000335",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "gallery"
+      },
+      "properties": [],
+      "parentId": "651",
+      "childIds": []
+    },
+    {
+      "nodeId": "652",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Ready · Rust / WASM / WebGPU",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "Ready · Rust / WASM / WebGPU"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "640",
+      "childIds": [
+        "-1000000336",
+        "-1000000337"
+      ],
+      "backendDOMNodeId": 652
+    },
+    {
+      "nodeId": "657",
+      "ignored": true,
+      "ignoredReasons": [
+        {
+          "name": "uninteresting",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        }
+      ],
+      "role": {
+        "type": "role",
+        "value": "none"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 0
+      },
+      "parentId": "645",
+      "childIds": [
+        "658",
+        "646",
+        "660"
+      ],
+      "backendDOMNodeId": 657
+    },
+    {
+      "nodeId": "658",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 9
+      },
+      "name": {
+        "type": "computedString",
+        "value": "關閉",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "關閉"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "關閉"
+            }
+          },
+          {
+            "type": "contents",
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "657",
+      "childIds": [],
+      "backendDOMNodeId": 658
+    },
+    {
+      "nodeId": "646",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "heading"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 96
+      },
+      "name": {
+        "type": "computedString",
+        "value": "編輯行程",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "編輯行程"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "level",
+          "value": {
+            "type": "integer",
+            "value": 2
+          }
+        }
+      ],
+      "parentId": "657",
+      "childIds": [
+        "659"
+      ],
+      "backendDOMNodeId": 646
+    },
+    {
+      "nodeId": "660",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "button"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 9
+      },
+      "name": {
+        "type": "computedString",
+        "value": "儲存",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "儲存"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "儲存"
+            }
+          },
+          {
+            "type": "contents",
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        }
+      ],
+      "parentId": "657",
+      "childIds": [],
+      "backendDOMNodeId": 660
+    },
+    {
+      "nodeId": "661",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "group"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 93
+      },
+      "name": {
+        "type": "computedString",
+        "value": "行程內容",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "行程內容"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "行程內容"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "645",
+      "childIds": [
+        "647"
+      ],
+      "backendDOMNodeId": 661
+    },
+    {
+      "nodeId": "666",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "live",
+          "value": {
+            "type": "token",
+            "value": "polite"
+          }
+        },
+        {
+          "name": "atomic",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "relevant",
+          "value": {
+            "type": "tokenList",
+            "value": "additions text"
+          }
+        }
+      ],
+      "parentId": "645",
+      "childIds": [],
+      "backendDOMNodeId": 666
+    },
+    {
+      "nodeId": "-1000000336",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "Ready · Rust / WASM / "
+      },
+      "properties": [],
+      "parentId": "652",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000337",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "WebGPU"
+      },
+      "properties": [],
+      "parentId": "652",
+      "childIds": []
+    },
+    {
+      "nodeId": "659",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "編輯行程",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "編輯行程"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "646",
+      "childIds": [
+        "-1000000339"
+      ],
+      "backendDOMNodeId": 659
+    },
+    {
+      "nodeId": "647",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "group"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 93
+      },
+      "name": {
+        "type": "computedString",
+        "value": "行程內容",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "行程內容"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "行程內容"
+            }
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "owns",
+          "value": {
+            "type": "idrefList",
+            "value": "surface-text-input",
+            "relatedNodes": [
+              {
+                "backendDOMNodeId": 642,
+                "idref": "surface-text-input"
+              }
+            ]
+          }
+        }
+      ],
+      "parentId": "661",
+      "childIds": [
+        "663",
+        "665",
+        "642"
+      ],
+      "backendDOMNodeId": 647
+    },
+    {
+      "nodeId": "-1000000339",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "編輯行程"
+      },
+      "properties": [],
+      "parentId": "659",
+      "childIds": []
+    },
+    {
+      "nodeId": "663",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "行程名稱",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "行程名稱"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "647",
+      "childIds": [
+        "-1000000340"
+      ],
+      "backendDOMNodeId": 663
+    },
+    {
+      "nodeId": "665",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "時間　週六上午十點",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "時間　週六上午十點"
+            }
+          }
+        ]
+      },
+      "properties": [],
+      "parentId": "647",
+      "childIds": [
+        "-1000000341"
+      ],
+      "backendDOMNodeId": 665
+    },
+    {
+      "nodeId": "642",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "textbox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 170
+      },
+      "name": {
+        "type": "computedString",
+        "value": "行程名稱",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "value": {
+              "type": "computedString",
+              "value": "行程名稱"
+            },
+            "attribute": "aria-label",
+            "attributeValue": {
+              "type": "string",
+              "value": "行程名稱"
+            }
+          },
+          {
+            "type": "relatedElement",
+            "superseded": true,
+            "nativeSource": "label"
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          },
+          {
+            "type": "placeholder",
+            "attribute": "placeholder",
+            "superseded": true
+          },
+          {
+            "type": "placeholder",
+            "attribute": "aria-placeholder",
+            "superseded": true
+          },
+          {
+            "type": "attribute",
+            "attribute": "title",
+            "superseded": true
+          }
+        ]
+      },
+      "value": {
+        "type": "string",
+        "value": "週末行程"
+      },
+      "properties": [
+        {
+          "name": "invalid",
+          "value": {
+            "type": "token",
+            "value": "false"
+          }
+        },
+        {
+          "name": "focusable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "focused",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "editable",
+          "value": {
+            "type": "token",
+            "value": "plaintext"
+          }
+        },
+        {
+          "name": "settable",
+          "value": {
+            "type": "booleanOrUndefined",
+            "value": true
+          }
+        },
+        {
+          "name": "multiline",
+          "value": {
+            "type": "boolean",
+            "value": true
+          }
+        },
+        {
+          "name": "readonly",
+          "value": {
+            "type": "boolean",
+            "value": false
+          }
+        },
+        {
+          "name": "required",
+          "value": {
+            "type": "boolean",
+            "value": false
+          }
+        }
+      ],
+      "parentId": "647",
+      "childIds": [
+        "655"
+      ],
+      "backendDOMNodeId": 642
+    },
+    {
+      "nodeId": "-1000000340",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "行程名稱"
+      },
+      "properties": [],
+      "parentId": "663",
+      "childIds": []
+    },
+    {
+      "nodeId": "-1000000341",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "時間　週六上午十點"
+      },
+      "properties": [],
+      "parentId": "665",
+      "childIds": []
+    },
+    {
+      "nodeId": "655",
+      "ignored": false,
+      "role": {
+        "type": "role",
+        "value": "generic"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 88
+      },
+      "name": {
+        "type": "computedString",
+        "value": "",
+        "sources": [
+          {
+            "type": "relatedElement",
+            "attribute": "aria-labelledby"
+          },
+          {
+            "type": "attribute",
+            "attribute": "aria-label"
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "editable",
+          "value": {
+            "type": "token",
+            "value": "plaintext"
+          }
+        }
+      ],
+      "parentId": "642",
+      "childIds": [
+        "656"
+      ],
+      "backendDOMNodeId": 655
+    },
+    {
+      "nodeId": "656",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "StaticText"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 158
+      },
+      "name": {
+        "type": "computedString",
+        "value": "週末行程",
+        "sources": [
+          {
+            "type": "contents",
+            "value": {
+              "type": "computedString",
+              "value": "週末行程"
+            }
+          }
+        ]
+      },
+      "properties": [
+        {
+          "name": "editable",
+          "value": {
+            "type": "token",
+            "value": "plaintext"
+          }
+        }
+      ],
+      "parentId": "655",
+      "childIds": [
+        "-1000000338"
+      ],
+      "backendDOMNodeId": 656
+    },
+    {
+      "nodeId": "-1000000338",
+      "ignored": false,
+      "role": {
+        "type": "internalRole",
+        "value": "InlineTextBox"
+      },
+      "chromeRole": {
+        "type": "internalRole",
+        "value": 101
+      },
+      "name": {
+        "type": "computedString",
+        "value": "週末行程"
+      },
+      "properties": [
+        {
+          "name": "editable",
+          "value": {
+            "type": "token",
+            "value": "plaintext"
+          }
+        }
+      ],
+      "parentId": "656",
+      "childIds": []
+    }
+  ],
+  "state_at_failure": {
+    "app_bar": {
+      "actions": 0,
+      "behavior": "pinned",
+      "body_offset": 0.0,
+      "collapse": 0.0,
+      "contextual": false,
+      "kind": "small",
+      "query": "",
+      "rtl": false,
+      "scrolled": false,
+      "scrolled_surface": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "search_open": false,
+      "search_selections": 0,
+      "selected": null,
+      "subtitle": true,
+      "surface": [
+        20,
+        18,
+        24,
+        255
+      ],
+      "text_scale": 1.0
+    },
+    "badges": {
+      "count": 999,
+      "error": [
+        255,
+        180,
+        171,
+        255
+      ],
+      "kind": "dot",
+      "nav": 0,
+      "on_error": [
+        105,
+        0,
+        5,
+        255
+      ],
+      "presses": 0,
+      "rtl": false,
+      "scroll_presses": 0,
+      "selected": false,
+      "text_scale": 2.0
+    },
+    "baseline_time_colors": null,
+    "bottom_sheet": {
+      "dismissals": 0,
+      "dragging": false,
+      "expanded_height": 376.0,
+      "main_actions": 0,
+      "panel_actions": 0,
+      "peek_height": 206.0,
+      "presentation": "standard",
+      "reduced_motion": false,
+      "settling": false,
+      "skip_peek": false,
+      "state": "closed",
+      "text_scale": 1.0,
+      "visible_height": 0.0
+    },
+    "button_group": {
+      "activations": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "appearance": "tonal",
+      "kind": "standard",
+      "open": false,
+      "overflow_open": false,
+      "pressed": null,
+      "reduced_motion": false,
+      "required": false,
+      "rtl": false,
+      "selected": [
+        1
+      ],
+      "selection": "single",
+      "shape": "round",
+      "size": "s",
+      "text_scale": 1.0
+    },
+    "cards": {
+      "activations": 0,
+      "disabled": false,
+      "drag_offset": 0.0,
+      "dragging": false,
+      "moves": 0,
+      "nested_activations": 0,
+      "open": false,
+      "position": 0,
+      "rtl": false,
+      "selected": false,
+      "text_scale": 1.0,
+      "toggle_mode": false,
+      "variant": "elevated"
+    },
+    "carousel": {
+      "activations": 0,
+      "active": 0,
+      "dragging": false,
+      "items": [
+        {
+          "aspect_ratio": 0.5625,
+          "bounds": null,
+          "id": "carousel-card-0",
+          "label": "山野",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.7777777910232544,
+          "bounds": null,
+          "id": "carousel-card-1",
+          "label": "海灣",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.0,
+          "bounds": null,
+          "id": "carousel-card-2",
+          "label": "森林",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.3333333730697632,
+          "bounds": null,
+          "id": "carousel-card-3",
+          "label": "沙丘",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 0.6666666865348816,
+          "bounds": null,
+          "id": "carousel-card-4",
+          "label": "湖畔",
+          "visible": false
+        },
+        {
+          "aspect_ratio": 1.5,
+          "bounds": null,
+          "id": "carousel-card-5",
+          "label": "夜空",
+          "visible": false
+        }
+      ],
+      "last_activated": null,
+      "offset": 0.0,
+      "open": false,
+      "reduced_motion": false,
+      "rtl": false,
+      "settling": false,
+      "show_all": false,
+      "text_scale": 1.0,
+      "variant": "multi-browse"
+    },
+    "check": "Mixed",
+    "clicks": 0,
+    "dark": true,
+    "date_picker": {
+      "commits": 0,
+      "committed": "2024-02-28",
+      "english": false,
+      "rtl": false,
+      "session": null,
+      "swipe": {
+        "offset": null
+      },
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "date_range_picker": {
+      "commits": 0,
+      "committed": [
+        "2024-02-24",
+        "2024-03-05"
+      ],
+      "outside_actions": 0,
+      "rtl": false,
+      "session": null,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "dialog": false,
+    "dialog_demo": {
+      "alerts": 0,
+      "discards": 0,
+      "draft": "週末行程",
+      "open": "edit",
+      "presentation": "fullscreen",
+      "rtl": true,
+      "saved": "週末行程",
+      "saves": 0,
+      "text_scale": 2.0,
+      "visible": true
+    },
+    "display_contrast": {
+      "mode": "normal",
+      "system_colors": null,
+      "theme": {
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "is_dark": true,
+        "on_primary": [
+          54,
+          39,
+          93,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_tonal": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "outline": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "surface_container_lowest": [
+          15,
+          13,
+          19,
+          255
+        ],
+        "tonal": [
+          74,
+          68,
+          88,
+          255
+        ]
+      }
+    },
+    "docked_date_picker": {
+      "active": "2024-02-28",
+      "anchor": null,
+      "bottom": false,
+      "commits": 0,
+      "committed": "2024-02-28",
+      "error": null,
+      "mode": null,
+      "month": [
+        2024,
+        2
+      ],
+      "outside_actions": 0,
+      "raw": "2024/02/28",
+      "rtl": false,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "draft": "",
+    "enabled": false,
+    "expressive_fab": {
+      "actions": 0,
+      "disabled": false,
+      "hide_on_press": false,
+      "lowered": false,
+      "open": false,
+      "palette": "tonal-primary",
+      "reduced_motion": false,
+      "ripple": null,
+      "rtl": false,
+      "scroll_y": 0.0,
+      "size": "regular",
+      "text_scale": 1.0,
+      "tooltip_shown": false,
+      "visibility_opacity": 1.0,
+      "visibility_scale": 1.0,
+      "visible": true
+    },
+    "extended_fab": {
+      "actions": 0,
+      "auto_scroll": true,
+      "center": false,
+      "disabled": false,
+      "expanded": true,
+      "expansion": 1.0,
+      "hide_on_press": false,
+      "label_opacity": 1.0,
+      "lowered": false,
+      "open": false,
+      "palette": "tonal-primary",
+      "reduced_motion": false,
+      "requested_expanded": true,
+      "rtl": false,
+      "scroll_y": 0.0,
+      "size": "small",
+      "text_only": false,
+      "text_scale": 1.0,
+      "visibility_opacity": 1.0,
+      "visibility_scale": 1.0,
+      "visible": true
+    },
+    "fab_menu": {
+      "actions": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "all_disabled": false,
+      "anchor": null,
+      "count": 2,
+      "disabled": false,
+      "dismissals": 0,
+      "is_open": false,
+      "item_motion": [
+        {
+          "opacity": 0.0,
+          "width": 0.0
+        },
+        {
+          "opacity": 0.0,
+          "width": 0.0
+        }
+      ],
+      "items_present": false,
+      "open": false,
+      "outside_actions": 0,
+      "palette": "primary",
+      "presentation": "web",
+      "progress": 0.0,
+      "reduced_motion": false,
+      "rtl": false,
+      "size": "regular",
+      "text_scale": 1.0,
+      "toggles": 0,
+      "top": false,
+      "visible_items": 0.0
+    },
+    "filter": false,
+    "focused": "dialog-demo-editor",
+    "input_chip": true,
+    "list_actions": {
+      "actions": [
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-a",
+          "label": "山"
+        },
+        {
+          "bounds": null,
+          "checked": true,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-a-pin",
+          "label": "固定山"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-a-more",
+          "label": "更多山的選項"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": true,
+          "id": "list-action-b",
+          "label": "海"
+        },
+        {
+          "bounds": null,
+          "checked": false,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-b-pin",
+          "label": "固定海"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": true,
+          "id": "list-action-b-more",
+          "label": "更多海的選項"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c",
+          "label": "長文字會在窄畫面自動換行"
+        },
+        {
+          "bounds": null,
+          "checked": false,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c-pin",
+          "label": "固定步道"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c-archive",
+          "label": "封存步道"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-c-more",
+          "label": "更多步道的選項"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-d",
+          "label": "步道"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-e",
+          "label": "島"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-f",
+          "label": "森林"
+        },
+        {
+          "bounds": null,
+          "checked": null,
+          "clip": null,
+          "disabled": false,
+          "id": "list-action-f-more",
+          "label": "更多森林的選項"
+        }
+      ],
+      "activations": 0,
+      "available_width": 296.0,
+      "colors": {
+        "on_secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "secondary_container": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "last": null,
+      "rtl": false,
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "list_expand": {
+      "activations": 0,
+      "colors": {
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "outline_variant": [
+          73,
+          69,
+          78,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "expanded": false,
+      "last": null,
+      "rtl": false,
+      "text_scale": 1.0,
+      "toggles": 0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "list_media": {
+      "activations": 0,
+      "colors": {
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "details": null,
+      "mode": "passive",
+      "rtl": false,
+      "scroll_y": null,
+      "selected": [],
+      "selection_changes": 0,
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false,
+      "wide": false
+    },
+    "list_reorder": {
+      "activations": 0,
+      "colors": {
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "on_tertiary_container": [
+          255,
+          217,
+          227,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "shadow": [
+          0,
+          0,
+          0,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "surface_container_low": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "tertiary_container": [
+          99,
+          59,
+          72,
+          255
+        ]
+      },
+      "external_changes": 0,
+      "last_activation": null,
+      "last_move": null,
+      "moves": 0,
+      "order": [
+        "list-reorder-a",
+        "list-reorder-b",
+        "list-reorder-c",
+        "list-reorder-d",
+        "list-reorder-e",
+        "list-reorder-f",
+        "list-reorder-g",
+        "list-reorder-h",
+        "list-reorder-i",
+        "list-reorder-fixed",
+        "list-reorder-j",
+        "list-reorder-k"
+      ],
+      "revision": 0,
+      "rtl": false,
+      "scroll_y": null,
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "lists": {
+      "activations": 0,
+      "colors": {
+        "on_primary": [
+          54,
+          39,
+          93,
+          255
+        ],
+        "on_secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "secondary": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "secondary_container": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "surface_container": [
+          33,
+          31,
+          36,
+          255
+        ]
+      },
+      "items": [
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-a",
+          "label": "山"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-b",
+          "label": "海"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-c",
+          "label": "河"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-d",
+          "label": "長文字會在窄畫面自動換行"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-e",
+          "label": "島"
+        },
+        {
+          "bounds": null,
+          "clip": null,
+          "id": "lists-f",
+          "label": "森林"
+        }
+      ],
+      "last": null,
+      "mode": "select",
+      "rtl": false,
+      "selected": "lists-c",
+      "selected_ids": [],
+      "text_scale": 1.0,
+      "variant": "segmented",
+      "visible": false
+    },
+    "loading": {
+      "active_size": 38.0,
+      "elapsed_ms": 0.0,
+      "morph": 0.0,
+      "palette": {
+        "background": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "on_primary_container": [
+          233,
+          221,
+          255,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "primary_container": [
+          77,
+          61,
+          117,
+          255
+        ]
+      },
+      "reduced_motion": false,
+      "requested_size": 48.0,
+      "requests_frame": false,
+      "rotation_degrees": 90.0,
+      "rtl": false,
+      "running": false,
+      "shape_index": 0,
+      "size": 48.0,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "menu": false,
+    "modal_wide_navigation_rail": {
+      "actions": 0,
+      "dismissals": 0,
+      "open": false,
+      "rail": 0.0,
+      "retain_inline": false,
+      "rtl": false,
+      "scrim": 0.0,
+      "scroll": null,
+      "selected": "home",
+      "settling": false,
+      "slide": 0.0,
+      "swipe": null,
+      "swipe_settling": false,
+      "text_scale": 2.0
+    },
+    "name": "Surface",
+    "nav": 0,
+    "navigation_drawer": {
+      "actions": 0,
+      "background_actions": 0,
+      "dismissals": 0,
+      "open": false,
+      "progress": 0.0,
+      "rtl": false,
+      "scroll": null,
+      "selected": "home",
+      "settling": false,
+      "shared_clicks": 0,
+      "standard_actions": 0,
+      "standard_mode": "permanent",
+      "standard_open": true,
+      "standard_selected": "home",
+      "text_scale": 2.0
+    },
+    "progress": {
+      "active_color": [
+        207,
+        189,
+        254,
+        255
+      ],
+      "elapsed_ms": 0.0,
+      "known": true,
+      "linear_width": 240.0,
+      "reduced_motion": false,
+      "rtl": false,
+      "running": false,
+      "text_scale": 1.0,
+      "track_color": [
+        74,
+        68,
+        88,
+        255
+      ],
+      "value": 0.25
+    },
+    "radio": 0,
+    "scroll_choice": {
+      "commits": 0,
+      "committed": "banqiao",
+      "disabled": false,
+      "dragging": false,
+      "error": null,
+      "face_height": null,
+      "fits": false,
+      "height": 200.0,
+      "labels": [
+        "板橋",
+        "台北 北門",
+        "台北 車站",
+        "桃園",
+        "新竹"
+      ],
+      "looping": false,
+      "mode": "input",
+      "offset": 0.0,
+      "order": [
+        "banqiao",
+        "taipei-north",
+        "taipei-station",
+        "taoyuan",
+        "hsinchu"
+      ],
+      "ordinal": 1,
+      "palette": {
+        "center": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "editing": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "face": [
+          15,
+          13,
+          19,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "neighbor": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ]
+      },
+      "preview": "banqiao",
+      "raw": "板橋",
+      "reduced_motion": false,
+      "requests_frame": false,
+      "row_height": null,
+      "rtl": false,
+      "scroll_top": null,
+      "settling": false,
+      "suggestion": null,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "scroll_field": {
+      "commits": 0,
+      "committed": 14,
+      "disabled": false,
+      "dragging": false,
+      "error": null,
+      "face_height": 200.0,
+      "fits": true,
+      "height": 200.0,
+      "looping": false,
+      "mode": "scroll",
+      "offset": 7.0,
+      "palette": {
+        "center": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "editing": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "face": [
+          15,
+          13,
+          19,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "neighbor": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ]
+      },
+      "preview": 14,
+      "raw": "14",
+      "reduced_motion": false,
+      "requests_frame": false,
+      "row_height": 92.0,
+      "rtl": false,
+      "scroll_top": null,
+      "settling": false,
+      "size": "medium",
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "scroll_modal": {
+      "accepted": {
+        "quantity": 1200,
+        "unit_id": "ml"
+      },
+      "body_scroll_top": null,
+      "open": false,
+      "outside_presses": 0,
+      "rtl": false,
+      "saves": 0,
+      "text_scale": 1.0,
+      "visible": false,
+      "working": null
+    },
+    "scroll_pair": {
+      "quantity": {
+        "commits": 0,
+        "disabled": false,
+        "error": null,
+        "mode": "scroll",
+        "raw": "1200",
+        "value": 1200
+      },
+      "quantity_fits": true,
+      "rtl": false,
+      "scroll_top": null,
+      "stacked": true,
+      "text_scale": 1.0,
+      "unit": {
+        "commits": 0,
+        "disabled": false,
+        "error": null,
+        "id": "ml",
+        "mode": "scroll",
+        "ordinal": 1,
+        "raw": "毫升",
+        "suggestion": null
+      },
+      "unit_fits": false,
+      "visible": false
+    },
+    "scroll_popup": {
+      "above": null,
+      "anchor": null,
+      "body_scroll_top": null,
+      "bounds": null,
+      "hide_opener": false,
+      "near_bottom": false,
+      "open": false,
+      "outside_presses": 0,
+      "quantity": {
+        "commits": 0,
+        "error": null,
+        "mode": "scroll",
+        "raw": "1200",
+        "value": 1200
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "unit": {
+        "commits": 0,
+        "error": null,
+        "id": "ml",
+        "mode": "scroll",
+        "ordinal": 1,
+        "raw": "毫升"
+      },
+      "visible": false
+    },
+    "search_overlay": {
+      "motion": {
+        "moving": false,
+        "progress": 0.0
+      },
+      "open": false,
+      "query": "",
+      "result_ids": [
+        "search-doc-design",
+        "search-doc-archive",
+        "search-doc-review",
+        "search-doc-tests",
+        "search-doc-accessibility",
+        "search-doc-release",
+        "search-doc-palette",
+        "search-doc-localization",
+        "search-doc-gesture",
+        "search-doc-guide",
+        "search-doc-notes",
+        "search-doc-handoff"
+      ],
+      "rtl": false,
+      "selected": null,
+      "style": "Contained",
+      "submissions": 0,
+      "text_scale": 1.0
+    },
+    "section": 2,
+    "segment": 0,
+    "side_sheet": {
+      "active_surface": [
+        29,
+        27,
+        32,
+        255
+      ],
+      "dismissals": 0,
+      "dragging": false,
+      "edge": "end",
+      "effective_presentation": "modal",
+      "main_actions": 0,
+      "open": false,
+      "panel_actions": 0,
+      "presentation": "coplanar",
+      "reduced_motion": false,
+      "reveal": 0.0,
+      "rtl": false,
+      "scrim_color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "settling": false,
+      "standard_surface": [
+        20,
+        18,
+        24,
+        255
+      ],
+      "style": "docked",
+      "text_scale": 1.0
+    },
+    "snackbar": {
+      "acted": 0,
+      "dismissed": 0,
+      "expired": 0,
+      "id": null,
+      "pending": 0,
+      "rtl": false,
+      "text_scale": 2.0,
+      "view_id": null,
+      "visible": null
+    },
+    "split_button": {
+      "angle": 0.0,
+      "appearance": "filled",
+      "bottom": false,
+      "command_counts": [
+        0,
+        0,
+        0
+      ],
+      "leading": "both",
+      "leading_disabled": false,
+      "menu_open": false,
+      "open": false,
+      "physical_angle": 0.0,
+      "primary_count": 0,
+      "reduced_motion": false,
+      "rtl": false,
+      "size": "m",
+      "text_scale": 1.0,
+      "trailing_disabled": false
+    },
+    "time_dial": {
+      "clock": "TwelveHour",
+      "commits": 0,
+      "draft": null,
+      "locale": "zh-Hant",
+      "orientation": null,
+      "outside_actions": 0,
+      "rtl": false,
+      "saved": "09:07",
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "time_input": {
+      "format": "TwelveHour",
+      "inline": {
+        "candidate": "00:05",
+        "hour_error": null,
+        "minute_error": null,
+        "period": "Am",
+        "raw_hour": "12",
+        "raw_minute": "05"
+      },
+      "inline_commits": 0,
+      "inline_committed": "00:05",
+      "locale": "zh-Hant",
+      "modal": null,
+      "modal_commits": 0,
+      "modal_committed": "09:07",
+      "outside_actions": 0,
+      "rtl": false,
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "time_scroll": {
+      "clock": "TwelveHour",
+      "commits": 0,
+      "disabled": false,
+      "inline": null,
+      "inline_commits": 0,
+      "inline_saved": "09:07",
+      "locale": "zh-Hant",
+      "modal": null,
+      "outside_actions": 0,
+      "rtl": false,
+      "saved": "09:07",
+      "text_scale": 1.0,
+      "visible": false
+    },
+    "toolbar": {
+      "actions": 0,
+      "behavior": "pinned",
+      "body_actions": 0,
+      "container": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "edge": "bottom",
+      "fab": false,
+      "keep_visible": false,
+      "kind": "docked",
+      "overflow_open": false,
+      "palette": "standard",
+      "rtl": false,
+      "scrolled_offset": 0.0,
+      "selected": false,
+      "selected_container": [
+        74,
+        68,
+        88,
+        255
+      ],
+      "text_scale": 1.0,
+      "visibility": "expanded"
+    },
+    "tooltip": {
+      "actions": 0,
+      "active": null,
+      "body_actions": 0,
+      "caret": true,
+      "copies": 0,
+      "plain_surface": [
+        230,
+        224,
+        233,
+        255
+      ],
+      "rich_surface": [
+        33,
+        31,
+        36,
+        255
+      ],
+      "rtl": false,
+      "shown": false,
+      "side": null,
+      "text_scale": 1.0,
+      "top": false
+    },
+    "volume": 40.0,
+    "wide_navigation_rail": {
+      "actions": 0,
+      "compact": true,
+      "expanded": false,
+      "mode": "bottom",
+      "rail": 0.0,
+      "rtl": false,
+      "selected": "wide-rail-home",
+      "settling": false,
+      "text_scale": 2.0
+    }
+  },
+  "dom_at_failure": {
+    "version": 1,
+    "dom": {
+      "version": 4,
+      "nodes": [
+        {
+          "stable_id": "surface-page",
+          "role": "Window",
+          "name": "Application",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 24.0,
+            "padding": 28.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": true,
+            "scroll_x": 0.0,
+            "scroll_y": 72.0,
+            "z_index": 0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": null,
+          "first_child": 1,
+          "last_child": 25,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-title",
+          "role": "Heading",
+          "name": "對話框",
+          "text": "對話框",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 32.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 40.0
+          },
+          "parent": 0,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 2
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Percent": 1.0
+            },
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 8.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": true,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 0,
+          "first_child": 3,
+          "last_child": 12,
+          "next_sibling": 14
+        },
+        {
+          "stable_id": "dialog-demo-back",
+          "role": "Button",
+          "name": "返回",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 2,
+          "first_child": 4,
+          "last_child": 4,
+          "next_sibling": 6
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 3,
+          "first_child": 5,
+          "last_child": 5,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "返回",
+          "text": "返回",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 4,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-theme",
+          "role": "Switch",
+          "name": "深色",
+          "text": null,
+          "disabled": false,
+          "checked": true,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 48.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 12.0,
+            "padding": 12.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 2,
+          "first_child": 7,
+          "last_child": 9,
+          "next_sibling": 10
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 52.0
+            },
+            "height": {
+              "Px": 32.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "End",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 2.0,
+            "border_color": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 6,
+          "first_child": 8,
+          "last_child": 8,
+          "next_sibling": 9
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 24.0
+            },
+            "height": {
+              "Px": 24.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              54,
+              39,
+              93,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 7,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "深色",
+          "text": "深色",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 6,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-rtl",
+          "role": "Button",
+          "name": "右起",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": true,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 12.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 1.0,
+            "border_color": [
+              148,
+              143,
+              153,
+              255
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 2,
+          "first_child": 11,
+          "last_child": 11,
+          "next_sibling": 12
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "右起",
+          "text": "右起",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 10,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-large-text",
+          "role": "Button",
+          "name": "大字",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": true,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 12.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 1.0,
+            "border_color": [
+              148,
+              143,
+              153,
+              255
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 2,
+          "first_child": 13,
+          "last_child": 13,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "大字",
+          "text": "大字",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 12,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Percent": 1.0
+            },
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 8.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": true,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 0,
+          "first_child": 15,
+          "last_child": 21,
+          "next_sibling": 24
+        },
+        {
+          "stable_id": "dialog-demo-basic-open",
+          "role": "Button",
+          "name": "基本對話框",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 14,
+          "first_child": 16,
+          "last_child": 16,
+          "next_sibling": 18
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 15,
+          "first_child": 17,
+          "last_child": 17,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "基本對話框",
+          "text": "基本對話框",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 16,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-alert-open",
+          "role": "Button",
+          "name": "重要提示",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 14,
+          "first_child": 19,
+          "last_child": 19,
+          "next_sibling": 21
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 18,
+          "first_child": 20,
+          "last_child": 20,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "重要提示",
+          "text": "重要提示",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 19,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-edit-open",
+          "role": "Button",
+          "name": "編輯行程",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 48.0
+            },
+            "min_width": 80.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 4.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 14,
+          "first_child": 22,
+          "last_child": 22,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": {
+              "Px": 40.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Center",
+            "justify": "Center",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "transition": {
+              "duration_ms": 200.0,
+              "easing": {
+                "CubicBezier": [
+                  0.2,
+                  0.0,
+                  0.0,
+                  1.0
+                ]
+              }
+            }
+          },
+          "parent": 21,
+          "first_child": 23,
+          "last_child": 23,
+          "next_sibling": null
+        },
+        {
+          "stable_id": null,
+          "role": "Text",
+          "name": "編輯行程",
+          "text": "編輯行程",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 22,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-saved",
+          "role": "Text",
+          "name": "已儲存：週末行程",
+          "text": "已儲存：週末行程",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 0,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 25
+        },
+        {
+          "dialog_heading": "dialog-demo-edit-title",
+          "focus_color": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "stable_id": "dialog-demo-edit",
+          "role": "Dialog",
+          "name": "編輯行程",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": -1,
+          "style": {
+            "width": {
+              "Px": 320.0
+            },
+            "height": {
+              "Px": 400.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Center",
+            "justify": "Start",
+            "position": "Fixed",
+            "inset": {
+              "left": {
+                "Px": 0.0
+              },
+              "top": {
+                "Px": 0.0
+              },
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": true,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 0,
+          "first_child": 26,
+          "last_child": 32,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-edit-header",
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 320.0
+            },
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 25,
+          "first_child": 27,
+          "last_child": 31,
+          "next_sibling": 32
+        },
+        {
+          "stable_id": "dialog-demo-edit-close",
+          "role": "Button",
+          "name": "關閉",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              230,
+              224,
+              233,
+              255
+            ]
+          },
+          "parent": 26,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 28
+        },
+        {
+          "fill_contour": {
+            "points": [
+              [
+                6.4,
+                5.0
+              ],
+              [
+                12.0,
+                10.6
+              ],
+              [
+                17.6,
+                5.0
+              ],
+              [
+                19.0,
+                6.4
+              ],
+              [
+                13.4,
+                12.0
+              ],
+              [
+                19.0,
+                17.6
+              ],
+              [
+                17.6,
+                19.0
+              ],
+              [
+                12.0,
+                13.4
+              ],
+              [
+                6.4,
+                19.0
+              ],
+              [
+                5.0,
+                17.6
+              ],
+              [
+                10.6,
+                12.0
+              ],
+              [
+                5.0,
+                6.4
+              ]
+            ],
+            "color": [
+              230,
+              224,
+              233,
+              255
+            ]
+          },
+          "stable_id": "dialog-demo-edit-close-icon",
+          "role": "Group",
+          "name": "",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 26,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 29
+        },
+        {
+          "stable_id": "dialog-demo-edit-title",
+          "role": "Heading",
+          "name": "編輯行程",
+          "text": "編輯行程",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": true,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 22.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 28.0
+          },
+          "parent": 26,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 30
+        },
+        {
+          "stable_id": "dialog-demo-edit-action",
+          "role": "Button",
+          "name": "儲存",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Row",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 3.4028235e+38,
+              "top_right": 3.4028235e+38,
+              "bottom_right": 3.4028235e+38,
+              "bottom_left": 3.4028235e+38
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              207,
+              189,
+              254,
+              255
+            ]
+          },
+          "parent": 26,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 31
+        },
+        {
+          "stable_id": "dialog-demo-edit-action-label",
+          "role": "Text",
+          "name": "",
+          "text": "儲存",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": true,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 26,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-edit-body",
+          "role": "Group",
+          "name": "行程內容",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Px": 320.0
+            },
+            "height": {
+              "Px": 0.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "End",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 24.0,
+            "grow": 1.0,
+            "wrap": false,
+            "clip": true,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 25,
+          "first_child": 33,
+          "last_child": 33,
+          "next_sibling": null
+        },
+        {
+          "stable_id": "dialog-demo-edit-form",
+          "role": "Group",
+          "name": "行程內容",
+          "text": null,
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Percent": 1.0
+            },
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "End",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 16.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "parent": 32,
+          "first_child": 34,
+          "last_child": 39,
+          "next_sibling": null
+        },
+        {
+          "shrink_to_fit_width": true,
+          "stable_id": "dialog-demo-editor-label",
+          "role": "Text",
+          "name": "行程名稱",
+          "text": "行程名稱",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              202,
+              196,
+              207,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 14.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "font_weight": 500,
+            "line_height": 20.0,
+            "letter_spacing": 0.1
+          },
+          "parent": 33,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 35
+        },
+        {
+          "stable_id": "dialog-demo-editor",
+          "role": "TextInput",
+          "name": "行程名稱",
+          "text": "週末行程",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": {
+              "Percent": 1.0
+            },
+            "height": {
+              "Px": 72.0
+            },
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 8.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              54,
+              52,
+              58,
+              255
+            ],
+            "foreground": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "radius": 0.0,
+            "corners": {
+              "top_left": 4.0,
+              "top_right": 4.0,
+              "bottom_right": 4.0,
+              "bottom_left": 4.0
+            },
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 33,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 36
+        },
+        {
+          "shrink_to_fit_width": true,
+          "stable_id": "dialog-demo-edit-when",
+          "role": "Text",
+          "name": "時間　週六上午十點",
+          "text": "時間　週六上午十點",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              202,
+              196,
+              207,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 33,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 37
+        },
+        {
+          "shrink_to_fit_width": true,
+          "stable_id": "dialog-demo-edit-where",
+          "role": "Text",
+          "name": "地點　市立圖書館",
+          "text": "地點　市立圖書館",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              202,
+              196,
+              207,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 33,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 38
+        },
+        {
+          "shrink_to_fit_width": true,
+          "stable_id": "dialog-demo-edit-who",
+          "role": "Text",
+          "name": "分享　只有自己",
+          "text": "分享　只有自己",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              202,
+              196,
+              207,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 33,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": 39
+        },
+        {
+          "shrink_to_fit_width": true,
+          "stable_id": "dialog-demo-edit-notice",
+          "role": "Text",
+          "name": "提醒　開始前一小時",
+          "text": "提醒　開始前一小時",
+          "disabled": false,
+          "checked": null,
+          "selected": null,
+          "mixed": false,
+          "range": null,
+          "tab_index": null,
+          "style": {
+            "width": "Auto",
+            "height": "Auto",
+            "min_width": 0.0,
+            "min_height": 0.0,
+            "max_width": "Auto",
+            "max_height": "Auto",
+            "direction": "Column",
+            "align": "Stretch",
+            "justify": "Start",
+            "position": "Flow",
+            "inset": {
+              "left": "Auto",
+              "top": "Auto",
+              "right": "Auto",
+              "bottom": "Auto"
+            },
+            "gap": 0.0,
+            "padding": 0.0,
+            "grow": 0.0,
+            "wrap": false,
+            "clip": false,
+            "scroll_x": 0.0,
+            "scroll_y": 0.0,
+            "z_index": 0,
+            "background": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "foreground": [
+              202,
+              196,
+              207,
+              255
+            ],
+            "radius": 0.0,
+            "font_size": 16.0,
+            "border_width": 0.0,
+            "border_color": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "state_layer": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "line_height": 24.0,
+            "letter_spacing": 0.5
+          },
+          "parent": 33,
+          "first_child": null,
+          "last_child": null,
+          "next_sibling": null
+        }
+      ]
+    },
+    "layout": {
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 320.0,
+        "height": 400.0
+      },
+      "nodes": [
+        {
+          "id": 0,
+          "bounds": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 1,
+          "bounds": {
+            "x": 28.0,
+            "y": -44.0,
+            "width": 264.0,
+            "height": 80.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 2,
+          "bounds": {
+            "x": 28.0,
+            "y": 60.0,
+            "width": 264.0,
+            "height": 128.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 3,
+          "bounds": {
+            "x": 28.0,
+            "y": 72.0,
+            "width": 80.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 4,
+          "bounds": {
+            "x": 32.0,
+            "y": 76.0,
+            "width": 72.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 5,
+          "bounds": {
+            "x": 40.0,
+            "y": 76.0,
+            "width": 56.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 6,
+          "bounds": {
+            "x": 116.0,
+            "y": 60.0,
+            "width": 152.0,
+            "height": 72.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 7,
+          "bounds": {
+            "x": 128.0,
+            "y": 80.0,
+            "width": 52.0,
+            "height": 32.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 8,
+          "bounds": {
+            "x": 152.0,
+            "y": 84.0,
+            "width": 24.0,
+            "height": 24.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 9,
+          "bounds": {
+            "x": 192.0,
+            "y": 72.0,
+            "width": 64.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 10,
+          "bounds": {
+            "x": 28.0,
+            "y": 140.0,
+            "width": 80.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 11,
+          "bounds": {
+            "x": 40.0,
+            "y": 144.0,
+            "width": 56.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 12,
+          "bounds": {
+            "x": 116.0,
+            "y": 140.0,
+            "width": 80.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 13,
+          "bounds": {
+            "x": 128.0,
+            "y": 144.0,
+            "width": 56.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 14,
+          "bounds": {
+            "x": 28.0,
+            "y": 212.0,
+            "width": 264.0,
+            "height": 160.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 15,
+          "bounds": {
+            "x": 28.0,
+            "y": 212.0,
+            "width": 164.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 16,
+          "bounds": {
+            "x": 32.0,
+            "y": 216.0,
+            "width": 156.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 17,
+          "bounds": {
+            "x": 40.0,
+            "y": 216.0,
+            "width": 140.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 18,
+          "bounds": {
+            "x": 28.0,
+            "y": 268.0,
+            "width": 136.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 19,
+          "bounds": {
+            "x": 32.0,
+            "y": 272.0,
+            "width": 128.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 20,
+          "bounds": {
+            "x": 40.0,
+            "y": 272.0,
+            "width": 112.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 21,
+          "bounds": {
+            "x": 28.0,
+            "y": 324.0,
+            "width": 136.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 22,
+          "bounds": {
+            "x": 32.0,
+            "y": 328.0,
+            "width": 128.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 23,
+          "bounds": {
+            "x": 40.0,
+            "y": 328.0,
+            "width": 112.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 24,
+          "bounds": {
+            "x": 28.0,
+            "y": 396.0,
+            "width": 264.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 25,
+          "bounds": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 26,
+          "bounds": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 120.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 27,
+          "bounds": {
+            "x": 260.0,
+            "y": 36.0,
+            "width": 48.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 28,
+          "bounds": {
+            "x": 272.0,
+            "y": 48.0,
+            "width": 24.0,
+            "height": 24.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 29,
+          "bounds": {
+            "x": 92.0,
+            "y": 4.0,
+            "width": 160.0,
+            "height": 112.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 30,
+          "bounds": {
+            "x": 12.0,
+            "y": 36.0,
+            "width": 72.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 31,
+          "bounds": {
+            "x": 20.0,
+            "y": 40.0,
+            "width": 56.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 32,
+          "bounds": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 0.0,
+            "width": 320.0,
+            "height": 400.0
+          }
+        },
+        {
+          "id": 33,
+          "bounds": {
+            "x": 24.0,
+            "y": 144.0,
+            "width": 272.0,
+            "height": 480.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        },
+        {
+          "id": 34,
+          "bounds": {
+            "x": 184.0,
+            "y": 144.0,
+            "width": 112.0,
+            "height": 40.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        },
+        {
+          "id": 35,
+          "bounds": {
+            "x": 24.0,
+            "y": 200.0,
+            "width": 272.0,
+            "height": 72.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        },
+        {
+          "id": 36,
+          "bounds": {
+            "x": 40.0,
+            "y": 288.0,
+            "width": 256.0,
+            "height": 96.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        },
+        {
+          "id": 37,
+          "bounds": {
+            "x": 40.0,
+            "y": 400.0,
+            "width": 256.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        },
+        {
+          "id": 38,
+          "bounds": {
+            "x": 72.0,
+            "y": 464.0,
+            "width": 224.0,
+            "height": 48.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        },
+        {
+          "id": 39,
+          "bounds": {
+            "x": 40.0,
+            "y": 528.0,
+            "width": 256.0,
+            "height": 96.0
+          },
+          "clip": {
+            "x": 0.0,
+            "y": 120.0,
+            "width": 320.0,
+            "height": 280.0
+          }
+        }
+      ],
+      "paint_order": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    },
+    "interaction": {
+      "focused": "dialog-demo-editor",
+      "hovered": null,
+      "pressed": null
+    },
+    "text_inputs": {
+      "dialog-demo-editor": {
+        "value": "週末行程",
+        "display_value": "週末行程",
+        "selection_anchor": 12,
+        "selection_cursor": 12,
+        "composing": false,
+        "preedit_range": null
+      }
+    }
+  },
+  "web_input_at_failure": {
+    "focus": "<textarea id=\"surface-text-input\" tabindex=\"-1\" spellcheck=\"false\" autocomplete=\"off\" autocapitalize=\"off\" style=\"position: fixed; opacity: 0; width: 320px; padding: 0px; margin: 0px; border: 0px; resize: none; pointer-events: none; overflow: hidden; white-space: pre; z-index: -1; left: 286px; top: 256px; height: 48px; line-height: 48px; font-size: 48px;\" aria-label=\"行程名稱\"></textarea>",
+    "value": "週末行程",
+    "start": 4,
+    "end": 4,
+    "direction": "none"
+  }
+}
