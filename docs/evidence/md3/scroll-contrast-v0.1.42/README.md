@@ -1,5 +1,9 @@
 # Surface v0.1.42 Scroll Field display contrast
 
+## Cancellation regression
+
+The current draft is on hold. A trusted Select All after a canceled composition can lose its selection during a real redraw. The controlled replay passed on v0.1.41 and failed on this draft. [Reproduction and traces](web-cancel-regression/README.md)
+
 ## Corrected candidate
 
 Draft PR #217 now points to `ab8615c8495d99a652f4fac38d4db37f08c82c7f`. The candidate keeps the browser caret at the new position during a forced-color redraw. It accepts selection after composition and preserves positions in authored CRLF and CR text.
