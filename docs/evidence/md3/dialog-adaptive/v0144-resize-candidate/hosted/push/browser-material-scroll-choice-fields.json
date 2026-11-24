@@ -1,0 +1,420 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "tokens": {
+    "face": [
+      33.0,
+      186.0,
+      302.0,
+      200.0
+    ],
+    "center": [
+      126.5,
+      254.0,
+      115.0,
+      64.0
+    ],
+    "glyph_counts": [
+      3713,
+      4136
+    ],
+    "ax": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 1,
+        "text": "板橋",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 1,
+      "chrome_description": "板橋 可輸入部分地名"
+    },
+    "order": [
+      "banqiao",
+      "taipei-north",
+      "taipei-station",
+      "taoyuan",
+      "hsinchu"
+    ]
+  },
+  "prefix": {
+    "query": [
+      "桃",
+      1,
+      1
+    ],
+    "suggestion": {
+      "description": "建議選項 桃園",
+      "bounds": [
+        28.0,
+        404.0,
+        368.0,
+        16.0
+      ],
+      "invalid": false
+    },
+    "commits": 1,
+    "id": "taoyuan",
+    "ax": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 4,
+        "text": "桃園",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 4,
+      "chrome_description": "桃園 可輸入部分地名"
+    }
+  },
+  "validation": {
+    "errors": [
+      {
+        "raw": "台北",
+        "kind": "Ambiguous { kind: Exact, count: 2 }",
+        "ax": {
+          "description": "有多個相符地點，請輸入完整名稱",
+          "bounds": [
+            28.0,
+            404.0,
+            368.0,
+            16.0
+          ],
+          "invalid": true
+        }
+      },
+      {
+        "raw": "無",
+        "kind": "NoMatch",
+        "ax": {
+          "description": "找不到地點",
+          "bounds": [
+            28.0,
+            404.0,
+            368.0,
+            16.0
+          ],
+          "invalid": true
+        }
+      },
+      {
+        "raw": "",
+        "kind": "Empty",
+        "ax": {
+          "description": "請輸入地點",
+          "bounds": [
+            28.0,
+            404.0,
+            368.0,
+            16.0
+          ],
+          "invalid": true
+        }
+      }
+    ],
+    "resolved_query": "台北車站",
+    "id": "taipei-station",
+    "commits": 1,
+    "ax": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 3,
+        "text": "台北 車站",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 3,
+      "chrome_description": "台北 車站 可輸入部分地名"
+    },
+    "unchanged_duplicate_commits": 0
+  },
+  "catalog": {
+    "order": [
+      "hsinchu",
+      "taoyuan",
+      "taipei-station",
+      "taipei-north",
+      "banqiao"
+    ],
+    "external_commits": 0,
+    "id_retained": "banqiao",
+    "reordered": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 5,
+        "text": "板橋",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 5,
+      "chrome_description": "板橋 可輸入部分地名"
+    },
+    "renamed": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 5,
+        "text": "板橋站",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 5,
+      "chrome_description": "板橋站 可輸入部分地名"
+    },
+    "rematched_suggestion": {
+      "description": "建議選項 板橋站",
+      "bounds": [
+        28.0,
+        404.0,
+        368.0,
+        16.0
+      ],
+      "invalid": false
+    },
+    "derived_previous_id": "taipei-north",
+    "commits": 1,
+    "previous": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 4,
+        "text": "台北 北門",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 4,
+      "chrome_description": "台北 北門 可輸入部分地名"
+    }
+  },
+  "gestures": {
+    "face": [
+      33.0,
+      186.0,
+      302.0,
+      120.0
+    ],
+    "zones": [
+      [
+        33.0,
+        172.0,
+        302.0,
+        48.0
+      ],
+      [
+        33.0,
+        272.0,
+        302.0,
+        48.0
+      ]
+    ],
+    "outside": [
+      [
+        184.0,
+        179.0
+      ],
+      [
+        184.0,
+        313.0
+      ]
+    ],
+    "tap_ids": [
+      "taipei-north",
+      "banqiao"
+    ],
+    "held_offset": 1.2299999860556208,
+    "cancel_restored_id": "banqiao",
+    "after_replacement_ax": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 5,
+        "text": "板橋",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 5,
+      "chrome_description": "板橋 可輸入部分地名"
+    },
+    "before_ax": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 1,
+        "text": "板橋",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 1,
+      "chrome_description": "板橋 可輸入部分地名"
+    },
+    "stale_release_ignored": true,
+    "reduced_motion_id": "taipei-north",
+    "commits": 3,
+    "disabled_inert": true,
+    "trusted_contacts": [
+      {
+        "type": "pointerdown",
+        "device": "mouse",
+        "id": 1,
+        "x": 184,
+        "y": 223
+      },
+      {
+        "type": "pointerup",
+        "device": "mouse",
+        "id": 1,
+        "x": 184,
+        "y": 223
+      },
+      {
+        "type": "pointerdown",
+        "device": "touch",
+        "id": 2,
+        "x": 184,
+        "y": 357
+      },
+      {
+        "type": "pointerup",
+        "device": "touch",
+        "id": 2,
+        "x": 184,
+        "y": 357
+      },
+      {
+        "type": "pointerdown",
+        "device": "touch",
+        "id": 3,
+        "x": 184,
+        "y": 290
+      },
+      {
+        "type": "pointercancel",
+        "device": "touch",
+        "id": 3,
+        "x": 184,
+        "y": 367.3916015625
+      },
+      {
+        "type": "pointerdown",
+        "device": "touch",
+        "id": 4,
+        "x": 184,
+        "y": 290
+      },
+      {
+        "type": "pointerup",
+        "device": "touch",
+        "id": 4,
+        "x": 184,
+        "y": 367.3916015625
+      },
+      {
+        "type": "pointerdown",
+        "device": "touch",
+        "id": 5,
+        "x": 184,
+        "y": 290
+      },
+      {
+        "type": "pointerup",
+        "device": "touch",
+        "id": 5,
+        "x": 184,
+        "y": 212.6083984375
+      },
+      {
+        "type": "pointerdown",
+        "device": "mouse",
+        "id": 1,
+        "x": 184,
+        "y": 223
+      },
+      {
+        "type": "pointerup",
+        "device": "mouse",
+        "id": 1,
+        "x": 184,
+        "y": 223
+      },
+      {
+        "type": "pointerdown",
+        "device": "touch",
+        "id": 6,
+        "x": 184,
+        "y": 290
+      },
+      {
+        "type": "pointerup",
+        "device": "touch",
+        "id": 6,
+        "x": 184,
+        "y": 367.3916015625
+      }
+    ]
+  },
+  "compact": {
+    "viewport": [
+      320,
+      820
+    ],
+    "rtl": true,
+    "text_scale": 2,
+    "editor": [
+      33.0,
+      325.0,
+      254.0,
+      88.0
+    ],
+    "editor_ink": 9906,
+    "preedit_survived_resize": true,
+    "raw": "桃",
+    "first_enter_commits": 0,
+    "committed_id": "taoyuan",
+    "commits": 1,
+    "restored_editor_focus": true,
+    "description": {
+      "description": "建議選項 桃園",
+      "bounds": [
+        28.0,
+        422.0,
+        264.0,
+        32.0
+      ],
+      "invalid": false
+    },
+    "roomy_ax": {
+      "dom": {
+        "role": "spinbutton",
+        "name": "地點",
+        "min": 1,
+        "max": 5,
+        "now": 4,
+        "text": "桃園",
+        "descendants": 0,
+        "wheel_count": 1
+      },
+      "chrome_value": 4,
+      "chrome_description": "桃園 可輸入部分地名"
+    }
+  },
+  "errors": []
+}

@@ -1,0 +1,92 @@
+{
+  "id": 138705483145,
+  "name": "build-and-behavior",
+  "run_id": 45467288705,
+  "run_attempt": 1,
+  "head_sha": "9b8e02b8668eba8da49c1fdcdf1832dee05865fb",
+  "html_url": "https://github.com/faberline/surface/actions/runs/45467288705/job/138705483145",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-11-24T19:09:57Z",
+  "completed_at": "2026-11-24T19:15:29Z",
+  "steps": [
+    {
+      "number": 1,
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 2,
+      "name": "Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 3,
+      "name": "Run dtolnay/rust-toolchain@1.96.1",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 4,
+      "name": "Run sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 5,
+      "name": "Run cargo xtask provenance",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 6,
+      "name": "Run cargo fmt --all --check",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 7,
+      "name": "Run cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 8,
+      "name": "Run cargo test --locked --workspace --all-features",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 9,
+      "name": "Run cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 10,
+      "name": "Run cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 11,
+      "name": "Run cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 22,
+      "name": "Post Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 23,
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ]
+}

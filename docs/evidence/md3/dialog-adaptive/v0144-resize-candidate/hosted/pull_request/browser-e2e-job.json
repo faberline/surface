@@ -1,0 +1,80 @@
+{
+  "id": 138705482421,
+  "name": "browser-e2e",
+  "run_id": 45467288705,
+  "run_attempt": 1,
+  "head_sha": "9b8e02b8668eba8da49c1fdcdf1832dee05865fb",
+  "html_url": "https://github.com/faberline/surface/actions/runs/45467288705/job/138705482421",
+  "status": "completed",
+  "conclusion": "success",
+  "started_at": "2026-11-24T19:09:57Z",
+  "completed_at": "2026-11-24T19:35:37Z",
+  "steps": [
+    {
+      "number": 1,
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 2,
+      "name": "Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 3,
+      "name": "Run dtolnay/rust-toolchain@1.96.1",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 4,
+      "name": "Run sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev xvfb libxkbcommon-x11-0 mesa-vulkan-drivers libvulkan1",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 5,
+      "name": "Install wasm-bindgen CLI",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 6,
+      "name": "Install wasm-opt",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 7,
+      "name": "Run browser-actions/setup-chrome@v1",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 8,
+      "name": "Run surface-e2e",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 9,
+      "name": "Run actions/upload-artifact@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 18,
+      "name": "Post Run actions/checkout@v4",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "number": 19,
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ]
+}

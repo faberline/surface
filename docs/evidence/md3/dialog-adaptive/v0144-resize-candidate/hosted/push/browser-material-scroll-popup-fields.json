@@ -1,0 +1,243 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "opening": {
+    "dialog": [
+      12.0,
+      212.0,
+      696.0,
+      440.0
+    ],
+    "anchor": [
+      12.0,
+      160.0,
+      80.0,
+      48.0
+    ],
+    "gap": 4.0,
+    "side": "below",
+    "focus": "scroll-popup-demo-quantity-adjustable",
+    "expanded": [
+      false,
+      true
+    ],
+    "ax": {
+      "dom": {
+        "role": "dialog",
+        "name": "編輯容量",
+        "modal": null,
+        "options": [
+          "數量",
+          "單位"
+        ],
+        "outside": "外部 0 次",
+        "close": "關閉"
+      },
+      "chrome_modal": false,
+      "quantity": 1200,
+      "unit_description": "毫升 可輸入單位名稱"
+    }
+  },
+  "modeless": {
+    "pointer_open_focus": "scroll-popup-demo-opener",
+    "tab_focus": "scroll-popup-demo-quantity-adjustable",
+    "outside_focus": "scroll-popup-demo-outside",
+    "outside_presses": 1,
+    "outside_label": "外部 1 次",
+    "outside_escape_leaves_open": true,
+    "close_focus": "scroll-popup-demo-opener"
+  },
+  "edits": {
+    "quantity": 1202,
+    "unit": "fluid-ounce",
+    "alias": "Fl Oz",
+    "commits": [
+      1,
+      1
+    ],
+    "rejected": [
+      "1203",
+      "無"
+    ],
+    "errors": [
+      {
+        "dom": {
+          "invalid": "true",
+          "text": "請輸入偶數",
+          "linked": true
+        },
+        "description": "請輸入偶數"
+      },
+      {
+        "dom": {
+          "invalid": "true",
+          "text": "找不到單位",
+          "linked": true
+        },
+        "description": "找不到單位"
+      }
+    ],
+    "discarded_both": true,
+    "restored_focus": "scroll-popup-demo-opener"
+  },
+  "escape": {
+    "preedit_escape_preserved_popup": true,
+    "draft_escape_preserved_popup": true,
+    "discarded": "1206",
+    "escapes_from": [
+      "scroll-popup-demo-quantity-adjustable",
+      "scroll-popup-demo-close"
+    ],
+    "restored_focus": "scroll-popup-demo-opener",
+    "commits": [
+      0,
+      0
+    ]
+  },
+  "anchor": {
+    "ltr": {
+      "popup": [
+        12.0,
+        316.0,
+        696.0,
+        440.0
+      ],
+      "anchor": [
+        12.0,
+        760.0,
+        80.0,
+        48.0
+      ],
+      "gap": 4.0
+    },
+    "rtl": {
+      "popup": [
+        252.0,
+        316.0,
+        696.0,
+        440.0
+      ],
+      "anchor": [
+        868.0,
+        760.0,
+        80.0,
+        48.0
+      ],
+      "gap": 4.0
+    },
+    "closed_without_anchor": true,
+    "retained_outside_focus": "scroll-popup-demo-hide-opener",
+    "reopened_clean": true,
+    "back_focus": "scroll-popup-demo-show"
+  },
+  "compact": {
+    "viewport": [
+      320,
+      400
+    ],
+    "rtl": true,
+    "text_scale": 2,
+    "dialog": [
+      8.0,
+      8.0,
+      304.0,
+      328.0
+    ],
+    "anchor": [
+      172.0,
+      340.0,
+      136.0,
+      48.0
+    ],
+    "gap": 4.0,
+    "body": [
+      8.0,
+      8.0,
+      304.0,
+      280.0
+    ],
+    "close": [
+      13.0,
+      288.0,
+      48.0,
+      48.0
+    ],
+    "outside": [
+      27.0,
+      340.0,
+      137.0,
+      48.0
+    ],
+    "outside_label": "外部 1 次",
+    "editors": [
+      [
+        18.0,
+        62.0,
+        284.0,
+        104.0
+      ],
+      [
+        18.0,
+        195.0,
+        284.0,
+        88.0
+      ],
+      [
+        18.0,
+        13.0,
+        284.0,
+        104.0
+      ]
+    ],
+    "rings": [
+      [
+        13.0,
+        57.0,
+        294.0,
+        114.0
+      ],
+      [
+        13.0,
+        190.0,
+        294.0,
+        98.0
+      ],
+      [
+        13.0,
+        8.0,
+        294.0,
+        114.0
+      ]
+    ],
+    "unit_ring_ink": [
+      [
+        203,
+        194,
+        219
+      ],
+      [
+        203,
+        194,
+        219
+      ]
+    ],
+    "scroll_offsets": [
+      0.0,
+      77.0,
+      49.0
+    ],
+    "covered_setting": "scroll-popup-demo-theme",
+    "shielded_point": [
+      176.0,
+      48.0
+    ],
+    "fallback_escape_discards_draft": true,
+    "close_focus": "scroll-popup-demo-opener",
+    "shielded_outside_presses": 0,
+    "outside_presses": 1,
+    "commits": [
+      0,
+      0
+    ]
+  },
+  "errors": []
+}
