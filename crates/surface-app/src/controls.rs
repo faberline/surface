@@ -5,7 +5,7 @@ use surface::{ComputedDom, Direction, MicroDom, Node, NodeId, Position, RangeVal
 /// Mount or update a named control, then focus it without activating it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FocusNavigation<M> {
-    /// Stable ID of the enabled control to focus after the rebuild.
+    /// Stable ID of the control to focus after the rebuild.
     pub target: String,
     /// Message that runs before the runtime checks the target.
     pub message: M,
@@ -13,7 +13,8 @@ pub struct FocusNavigation<M> {
 
 pub(crate) type FocusNavigationHandler<M> = Rc<dyn Fn(EditKey, bool) -> Option<FocusNavigation<M>>>;
 
-/// One tab stop per group. Arrows move within it and skip disabled controls.
+/// One tab stop per group. Arrows move among its focusable controls.
+/// Disabled controls are skipped unless the view opts in to disabled menu focus.
 #[derive(Clone, Copy, Debug)]
 pub struct Roving {
     pub direction: Direction,
@@ -95,9 +96,11 @@ impl<A: Application> Runtime<A> {
         navigation: FocusNavigation<A::Message>,
     ) -> Result<bool, AppError> {
         self.apply(navigation.message)?;
-        if self.dom.by_id(&navigation.target).is_some_and(|target| {
-            self.in_scope(target) && self.dom.get(target).is_ok_and(Node::is_focusable)
-        }) {
+        if self
+            .dom
+            .by_id(&navigation.target)
+            .is_some_and(|target| self.in_scope(target) && self.focus_eligible(target))
+        {
             self.focused = Some(navigation.target);
             self.layout_focus = None;
         }
@@ -121,6 +124,23 @@ impl<A: Application> Runtime<A> {
                 .active_scope_root()
                 .is_none_or(|root| self.descendant(id, root))
     }
+    pub(crate) fn focus_eligible(&self, id: NodeId) -> bool {
+        self.dom.get(id).is_ok_and(Node::is_focusable)
+            || self
+                .bindings
+                .get(&id)
+                .is_some_and(super::Binding::disabled_menu_focus)
+    }
+
+    pub(crate) fn tab_candidate(&self, id: NodeId, node: &Node) -> bool {
+        node.is_tab_stop()
+            || self
+                .bindings
+                .get(&id)
+                .and_then(|binding| binding.disabled_menu_tab_stop)
+                == Some(true)
+    }
+
     fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
         let mut parent = self.dom.get(id).ok()?.parent();
         while let Some(id) = parent {
@@ -143,7 +163,7 @@ impl<A: Application> Runtime<A> {
         self.dom
             .iter()
             .filter(|(id, node)| {
-                node.is_tab_stop()
+                self.tab_candidate(*id, node)
                     && self.in_scope(*id)
                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
                     && collapsed
@@ -218,7 +238,7 @@ impl<A: Application> Runtime<A> {
         };
         if let Some(focused) = self
             .focused_node()
-            .filter(|&id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
+            .filter(|&id| self.in_scope(id) && self.focus_eligible(id))
         {
             if self.group(focused).is_some_and(|(owner, _)| owner == group)
                 && ((options.reveal_after_rebuild && retained.fully_visible)
@@ -312,7 +332,7 @@ impl<A: Application> Runtime<A> {
         self.dom
             .iter()
             .find(|(id, n)| {
-                n.is_tab_stop()
+                self.tab_candidate(*id, n)
                     && measured.is_none_or(|layout| has_extent(layout, *id))
                     && self.tab_stop_in_layout(*id, None, measured.or(self.computed.as_ref()))
             })
@@ -321,14 +341,14 @@ impl<A: Application> Runtime<A> {
                 self.scopes
                     .last()
                     .and_then(|s| self.dom.by_id(&s.id))
-                    .filter(|id| self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
+                    .filter(|id| self.focus_eligible(*id))
                     .and_then(|id| self.stable(id))
             })
     }
     fn focusable_in_scope(&self, key: &str) -> bool {
         self.dom
             .by_id(key)
-            .is_some_and(|id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
+            .is_some_and(|id| self.in_scope(id) && self.focus_eligible(id))
     }
 
     pub(crate) fn reconcile_controls(
@@ -428,8 +448,7 @@ impl<A: Application> Runtime<A> {
                 self.layout_focus = None;
             } else if let Some(target) = focus_after_removal.into_iter().find(|target| {
                 self.focused_node()
-                    .and_then(|id| self.dom.get(id).ok())
-                    .is_none_or(|node| !node.is_focusable())
+                    .is_none_or(|id| !self.focus_eligible(id))
                     && self.focusable_in_scope(target)
             }) {
                 self.focused = Some(target);
@@ -484,10 +503,11 @@ impl<A: Application> Runtime<A> {
                 let geometry = &layout.nodes[id.index()];
                 geometry.bounds.intersect(geometry.clip).contains(x, y)
             };
-            if contains(root) {
+            let binding = &self.bindings[&root];
+            if !binding.modal_descendants_only && contains(root) {
                 return false;
             }
-            if self.bindings[&root].modal_layer.is_none() {
+            if binding.modal_layer.is_none() {
                 return true;
             }
             // A painted or scrollable positioned descendant is part of the
@@ -648,8 +668,9 @@ impl<A: Application> Runtime<A> {
             }
             _ => return Ok(false),
         };
-        let target = self.stable(members[next]).expect("control has ID");
-        if options.automatic {
+        let next = members[next];
+        let target = self.stable(next).expect("control has ID");
+        if options.automatic && !self.dom.get(next)?.is_disabled() {
             self.activate(&target)
         } else {
             self.focused = Some(target);

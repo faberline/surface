@@ -18,6 +18,7 @@ mod list_media_demo;
 mod list_reorder_demo;
 mod lists_demo;
 mod loading_indicator_demo;
+mod menu_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
@@ -58,6 +59,7 @@ use list_media_demo::{ListMediaDemo, ListMediaEvent};
 use list_reorder_demo::{ListReorderDemo, ListReorderEvent};
 use lists_demo::{ListsDemo, ListsEvent};
 use loading_indicator_demo::{LoadingDemo, LoadingEvent};
+use menu_demo::{MenuDemo, MenuDemoEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -131,6 +133,7 @@ pub struct Gallery {
     scroll_modal_demo: ScrollModalDemo,
     search_overlay_demo: SearchOverlayDemo,
     dialog_demo: DialogDemo,
+    menu_demo: MenuDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
@@ -194,6 +197,7 @@ impl Default for Gallery {
             scroll_modal_demo: ScrollModalDemo::default(),
             search_overlay_demo: SearchOverlayDemo::default(),
             dialog_demo: DialogDemo::default(),
+            menu_demo: MenuDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
@@ -289,6 +293,7 @@ pub enum Message {
     ScrollModal(ScrollModalDemoEvent),
     SearchOverlay(SearchOverlayDemoEvent),
     DialogDemo(DialogDemoEvent),
+    MenuDemo(MenuDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
@@ -402,6 +407,9 @@ impl Application for Gallery {
         }
         if self.dialog_demo.visible() {
             return self.dialog_demo.text_scale();
+        }
+        if self.menu_demo.visible() {
+            return self.menu_demo.text_scale();
         }
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
@@ -619,6 +627,7 @@ impl Application for Gallery {
         let scroll_popup = self.scroll_popup_demo.frame(&frame);
         let scroll_modal = self.scroll_modal_demo.frame(&frame);
         let dialog = self.dialog_demo.frame(&frame);
+        let menu = self.menu_demo.frame(&frame);
         let list_expand = self.list_expand_demo.frame(&frame);
         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
         AnimationUpdate {
@@ -641,6 +650,7 @@ impl Application for Gallery {
                 || scroll_popup.rebuild
                 || scroll_modal.rebuild
                 || dialog.rebuild
+                || menu.rebuild
                 || list_expand.rebuild
                 || list_reorder.rebuild,
             request_next: inline.request_next
@@ -660,6 +670,7 @@ impl Application for Gallery {
                 || scroll_popup.request_next
                 || scroll_modal.request_next
                 || dialog.request_next
+                || menu.request_next
                 || list_expand.request_next
                 || list_reorder.request_next,
         }
@@ -756,6 +767,9 @@ impl Application for Gallery {
                 if i != dialog_demo::SECTION {
                     self.dialog_demo.leave();
                 }
+                if i != menu_demo::SECTION {
+                    self.menu_demo.leave();
+                }
                 if i != toolbar_demo::SECTION {
                     self.toolbar_demo.leave();
                 }
@@ -812,6 +826,7 @@ impl Application for Gallery {
             Message::AppBar(event) => self.app_bar_demo.update(event),
             Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
             Message::DialogDemo(event) => self.dialog_demo.update(event),
+            Message::MenuDemo(event) => self.menu_demo.update(event),
             Message::Toolbar(event) => self.toolbar_demo.update(event),
             Message::Tooltip(event) => self.tooltip_demo.update(event),
             Message::Nav(i) => self.nav = i,
@@ -944,6 +959,9 @@ impl Application for Gallery {
         }
         if self.dialog_demo.visible() {
             return self.dialog_demo.view(&t, self.dark);
+        }
+        if self.menu_demo.visible() {
+            return self.menu_demo.view(&t, self.dark);
         }
         if self.toolbar_demo.visible() {
             return self.toolbar_demo.view(&t, self.dark);
@@ -1446,6 +1464,7 @@ impl Application for Gallery {
                     DialogDemo::show_button(&t),
                     DialogDemo::show_transform_button(&t),
                 ]));
+                children.push(MenuDemo::show_button(&t));
             }
             _ => {
                 children.push(CardDemo::show_button(&t));
@@ -1673,6 +1692,7 @@ mod web {
         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
         state["search_overlay"] = s.search_overlay_demo.inspect();
         state["dialog_demo"] = s.dialog_demo.inspect();
+        state["menu_demo"] = s.menu_demo.inspect();
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

@@ -145,6 +145,7 @@ does not change application state.
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
 | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
 | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
+| `command_menu` | Baseline M3 commands anchored to a caller's button, with grouped rows, keyboard focus, and scrolling |
 | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
 | `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
 | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
@@ -1415,6 +1416,38 @@ selection actions and scroll the content with each scroll setting.
 [Material 3 App Bars](https://m3.material.io/components/app-bars/overview) ·
 [MDC 1.14.0 app bars](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/TopAppBar.md) ·
 [Pinned Compose layout and scroll](https://android.googlesource.com/platform/frameworks/support/+/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt)
+
+## Command menus
+
+Use `Theme::command_menu` next to a button that opens a group of commands.
+Give the button, menu and each entry a stable ID. Pass the button's ID and
+the accessible menu name in `CommandMenuOptions`. Supply each action as a
+`CommandMenuEntry::Item`. Use `CommandMenuEntry::Separator` between groups.
+Each item can show a leading or trailing icon. Its label names the action.
+
+Store `open` and one `CommandMenuMeasurement` per menu in your application.
+Call `measurement.advance(menu_id, trigger_id, &frame)` in your animation
+callback and return its `AnimationUpdate`. The first frame measures the
+visible button. Subsequent frames track the natural menu height and changes
+to the viewport. Pass the measurement back to the builder. Open on the
+button message, then close on a command or the dismissal message.
+
+The menu follows the button's logical leading edge. It can open above a
+low button or scroll when rows take more height. The preferred width is
+112 to 280 dp. Rows start at 48 dp and grow for wrapped text. The width
+can shrink in a narrower viewport.
+
+The trigger exposes its expanded state. Arrow keys, Home and End move
+focus. A disabled command receives focus so a user can discover it.
+Pressing, clicking or invoking that command leaves it inactive. Escape
+and outside clicks close the menu. Tab and Shift+Tab close it and move
+to the next or previous control. Set `restore_focus_to` for a fallback
+when the button can disappear.
+
+Open **命令選單** in the Gallery's **浮層** tab. Try the bottom trigger
+with right-to-left layout and large text.
+[Material 3 Menu specifications](https://m3.material.io/components/menus/specs) ·
+[WAI menu keyboard guidance](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/#keyboard-interaction)
 
 ## Dividers
 

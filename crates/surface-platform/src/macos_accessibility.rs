@@ -585,6 +585,75 @@ mod tests {
     }
 
     #[test]
+    fn disabled_menu_item_projects_focus_separately_from_press() {
+        #[derive(Default)]
+        struct Menu(usize);
+
+        impl Application for Menu {
+            type Message = ();
+
+            fn update(&mut self, (): ()) {
+                self.0 += 1;
+            }
+
+            fn view(&self) -> View<()> {
+                let item = |name, disabled| {
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::MenuItem, name)
+                            .id(name)
+                            .disabled(disabled)
+                            .styled(Style::row().height(Length::Px(48.))),
+                    )
+                    .on_press(())
+                    .accessible_activation()
+                };
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop")).children([View::new(
+                    SurfaceNode::new(SurfaceRole::Menu, "Edit").styled(Style::column()),
+                )
+                .children([
+                    item("Copy", false),
+                    item("Paste", true).focus_disabled_menu_item(),
+                    item("Undo", true),
+                ])])
+            }
+        }
+
+        let mut runtime = Runtime::new(Menu::default()).unwrap();
+        let mut tree = Tree::default();
+        let projected = update(&mut runtime, &mut tree);
+        let (paste_id, paste) = named(&projected, "Paste");
+        assert_eq!(paste.role(), Role::MenuItem);
+        assert!(paste.is_disabled());
+        assert!(paste.supports_action(Action::Focus));
+        assert!(!paste.supports_action(Action::Click));
+        let undo = named(&projected, "Undo").1;
+        assert!(undo.is_disabled());
+        assert!(!undo.supports_action(Action::Focus));
+        assert!(!undo.supports_action(Action::Click));
+        let request = |action, target_node| ActionRequest {
+            action,
+            target_tree: TreeId::ROOT,
+            target_node,
+            data: None,
+        };
+        assert!(tree
+            .action(&mut runtime, request(Action::Focus, paste_id))
+            .unwrap());
+        assert_eq!(runtime.focused(), Some("Paste"));
+        let focused = update(&mut runtime, &mut tree);
+        assert_eq!(focused.focus, paste_id);
+        assert!(!tree
+            .action(&mut runtime, request(Action::Click, paste_id))
+            .unwrap());
+        assert_eq!(runtime.app().0, 0);
+        let copy = named(&focused, "Copy").0;
+        assert!(tree
+            .action(&mut runtime, request(Action::Click, copy))
+            .unwrap());
+        assert_eq!(runtime.app().0, 1);
+    }
+
+    #[test]
     fn visible_alert_heading_and_description_reach_accesskit_and_rebuild_safely() {
         #[derive(Clone, Copy, PartialEq, Eq)]
         enum Mode {

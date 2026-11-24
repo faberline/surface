@@ -261,9 +261,10 @@
       "spec": "https://m3.material.io/components/menus/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Positioned popup; keyboard navigation and disabled skip"
+      "desktop_evidence": "Headless Metal covers a named command menu, keyboard action, focus on a disabled item, focus return, and scroll in a 320 dp RTL viewport at 200% text. Two runs reproduce five PNGs through Page.screenshot, CLI and MCP.",
+      "web_evidence": "Chrome WebGPU M267–M269 cover trusted keyboard and pointer input, menu and separator roles, expanded and disabled semantics, Tab in both directions, and outside dismissal. They check paint in light and dark and scroll at 320 dp with 200% RTL text.",
+      "implemented": "A Baseline M3 menu with measured placement, grouped commands, leading and trailing icons, wrapped labels, and bounded scrolling. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup still supports the original skip-disabled policy. Expressive variants, submenus, system high contrast, and live screen-reader speech remain open.",
+      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection."
     },
     {
       "id": "radio-button",
