@@ -752,6 +752,32 @@ remaining draft when the caller closes the popup.
 In Material Gallery, choose 選取, then 浮層捲動欄位. Use 靠近底部 to
 see the popup flip above the opener. The 外部 button stays available.
 
+### Modal dialog
+
+Use a modal when the inline fields or anchored popup would make the
+screen too crowded. Plan it with `scroll_field_modal_layout`. Set the
+minimum body height to the height of the tallest compact input target.
+`ScrollFieldSize::compact_editor_height` gives that height at the app's text scale.
+Use the planned body width and height to build the fields.
+
+`Theme::scroll_field_modal` places the fields inside a named dialog with a
+scrolling body. Cancel and Save stay visible. Tab and Shift+Tab stay
+inside the dialog. Closing restores focus to the opener when it is
+available. A very short viewport can yield no usable placement. Keep
+pending edits in caller state so they can return when the space returns.
+
+Open a fresh draft from the saved values. Each field updates that draft
+independently. Save can validate both fields, reveal a visible summary
+when a value fails, or commit both values and close. Cancel discards
+the draft. Composition gets Escape before the dialog can use it.
+
+When focus moves to an editor, Surface reveals its exterior outline.
+When space permits, Surface also reveals the error text. A clipped
+error can still describe the focused editor on Web and through AccessKit.
+
+In Material Gallery, choose 選取, then 對話框捲動欄位. Try a valid
+pair and an invalid pair. Use Escape or Cancel to discard changes.
+
 [W3C Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)
 
 [Material 3 Scroll Fields specs](https://m3.material.io/components/scroll-fields/specs) ·

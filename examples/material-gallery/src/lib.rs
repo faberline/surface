@@ -22,6 +22,7 @@ mod progress_demo;
 mod rail_icons;
 mod scroll_choice_demo;
 mod scroll_field_demo;
+mod scroll_modal_demo;
 mod scroll_pair_demo;
 mod scroll_popup_demo;
 mod side_sheet_demo;
@@ -57,6 +58,7 @@ use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
 use scroll_choice_demo::{ScrollChoiceDemo, ScrollChoiceDemoEvent};
 use scroll_field_demo::{ScrollFieldDemo, ScrollFieldDemoEvent};
+use scroll_modal_demo::{ScrollModalDemo, ScrollModalDemoEvent};
 use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
 use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
@@ -118,6 +120,7 @@ pub struct Gallery {
     scroll_choice_demo: ScrollChoiceDemo,
     scroll_pair_demo: ScrollPairDemo,
     scroll_popup_demo: ScrollPopupDemo,
+    scroll_modal_demo: ScrollModalDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
@@ -176,6 +179,7 @@ impl Default for Gallery {
             scroll_choice_demo: ScrollChoiceDemo::default(),
             scroll_pair_demo: ScrollPairDemo::default(),
             scroll_popup_demo: ScrollPopupDemo::default(),
+            scroll_modal_demo: ScrollModalDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
@@ -220,6 +224,7 @@ pub enum Message {
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
+    ScrollModal(ScrollModalDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
@@ -316,6 +321,9 @@ impl Application for Gallery {
         if self.scroll_popup_demo.visible() {
             return self.scroll_popup_demo.text_scale();
         }
+        if self.scroll_modal_demo.visible() {
+            return self.scroll_modal_demo.text_scale();
+        }
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
         }
@@ -375,6 +383,7 @@ impl Application for Gallery {
         let scroll_choice = self.scroll_choice_demo.viewport_changed(width, height);
         let scroll_pair = self.scroll_pair_demo.viewport_changed(width, height);
         let scroll_popup = self.scroll_popup_demo.viewport_changed(width, height);
+        let scroll_modal = self.scroll_modal_demo.viewport_changed(width, height);
         let list_actions = self.list_actions_demo.viewport_changed(width);
         let list_media = self.list_media_demo.viewport_changed(width, height);
         let list_reorder = self.list_reorder_demo.viewport_changed(width);
@@ -406,6 +415,7 @@ impl Application for Gallery {
             || scroll_choice
             || scroll_pair
             || scroll_popup
+            || scroll_modal
             || list_actions
             || list_media
             || list_reorder
@@ -518,6 +528,7 @@ impl Application for Gallery {
         let scroll_choice = self.scroll_choice_demo.frame(&frame);
         let scroll_pair = self.scroll_pair_demo.frame(&frame);
         let scroll_popup = self.scroll_popup_demo.frame(&frame);
+        let scroll_modal = self.scroll_modal_demo.frame(&frame);
         let list_expand = self.list_expand_demo.frame(&frame);
         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
         AnimationUpdate {
@@ -538,6 +549,7 @@ impl Application for Gallery {
                 || scroll_choice.rebuild
                 || scroll_pair.rebuild
                 || scroll_popup.rebuild
+                || scroll_modal.rebuild
                 || list_expand.rebuild
                 || list_reorder.rebuild,
             request_next: inline.request_next
@@ -555,6 +567,7 @@ impl Application for Gallery {
                 || scroll_choice.request_next
                 || scroll_pair.request_next
                 || scroll_popup.request_next
+                || scroll_modal.request_next
                 || list_expand.request_next
                 || list_reorder.request_next,
         }
@@ -626,6 +639,9 @@ impl Application for Gallery {
                 if i != scroll_popup_demo::SECTION {
                     self.scroll_popup_demo.leave();
                 }
+                if i != scroll_modal_demo::SECTION {
+                    self.scroll_modal_demo.leave();
+                }
                 if i != lists_demo::SECTION {
                     self.lists_demo.leave();
                     self.list_actions_demo.leave();
@@ -673,6 +689,12 @@ impl Application for Gallery {
             Message::ScrollChoice(event) => self.scroll_choice_demo.update(event),
             Message::ScrollPair(event) => self.scroll_pair_demo.update(event),
             Message::ScrollPopup(event) => self.scroll_popup_demo.update(event),
+            Message::ScrollModal(event) => {
+                let reveal = self.scroll_modal_demo.update(event);
+                if let Some(queue) = self.queue.as_ref().filter(|_| reveal) {
+                    ScrollModalDemo::reveal_validation(queue);
+                }
+            }
             Message::Lists(event) => self.lists_demo.update(event),
             Message::ListActions(event) => self.list_actions_demo.update(event),
             Message::ListExpand(event) => self.list_expand_demo.update(event),
@@ -789,6 +811,9 @@ impl Application for Gallery {
         }
         if self.scroll_popup_demo.visible() {
             return self.scroll_popup_demo.view(&t, self.dark);
+        }
+        if self.scroll_modal_demo.visible() {
+            return self.scroll_modal_demo.view(&t, self.dark);
         }
         if self.lists_demo.visible() {
             return self.lists_demo.view(&t);
@@ -917,6 +942,7 @@ impl Application for Gallery {
                             ScrollChoiceDemo::show_button(&t, true),
                             ScrollPairDemo::show_button(&t),
                             ScrollPopupDemo::show_button(&t),
+                            ScrollModalDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1488,6 +1514,7 @@ mod web {
         state["scroll_choice"] = s.scroll_choice_demo.inspect(&runtime, &theme);
         state["scroll_pair"] = s.scroll_pair_demo.inspect(&runtime);
         state["scroll_popup"] = s.scroll_popup_demo.inspect(&runtime);
+        state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

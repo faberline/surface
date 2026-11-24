@@ -1,9 +1,11 @@
 //! Material 3 Expressive Scroll Fields.
 
 mod choice;
+mod modal;
 mod pair;
 mod popup;
 pub use choice::{scroll_choice_field_layout, ScrollChoiceFieldOptions};
+pub use modal::{scroll_field_modal_layout, ScrollFieldModalLayout, ScrollFieldModalOptions};
 pub use pair::{scroll_field_pair_layout, ScrollFieldPairLayout, ScrollFieldPairOptions};
 pub use popup::{scroll_field_popup_layout, ScrollFieldPopupLayout, ScrollFieldPopupOptions};
 
@@ -50,6 +52,12 @@ pub enum ScrollFieldSize {
 }
 
 impl ScrollFieldSize {
+    /// Target height for the compact editor at this text scale, before any
+    /// exterior focus stroke. In a narrow field the padding can shrink.
+    pub fn compact_editor_height(self, text_scale: f32) -> f32 {
+        editor_target_height(&typography::TITLE_LARGE, text_scale, self.padding())
+    }
+
     const fn min_width(self) -> f32 {
         match self {
             Self::Small => 100.,
@@ -217,6 +225,10 @@ fn scale(scale: f32) -> f32 {
     } else {
         1.
     }
+}
+
+fn editor_target_height(font: &TextStyle, text_scale: f32, padding: f32) -> f32 {
+    TARGET.max(font.line_height_px() * scale(text_scale) + 2. * padding)
 }
 
 fn numeric_width(size: ScrollFieldSize, state: &ScrollFieldState, scale: f32) -> f32 {
@@ -627,8 +639,7 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
             .size
             .padding()
             .min((width - TARGET).max(0.) / 2.);
-        let line = font.line_height_px() * scale(self.options.text_scale);
-        let editor_height = TARGET.max(line + 2. * padding);
+        let editor_height = editor_target_height(&font, self.options.text_scale, padding);
         let face_height = fit.map_or(editor_height, |layout| {
             layout.face_height.max(editor_height)
         });

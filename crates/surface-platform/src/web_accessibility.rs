@@ -45,6 +45,7 @@ struct Target {
 struct Descriptions {
     references: BTreeMap<NodeId, NodeId>,
     text_targets: BTreeSet<NodeId>,
+    clipped_text: BTreeMap<NodeId, String>,
 }
 
 impl Descriptions {
@@ -215,6 +216,10 @@ impl WebAccessibility {
                 {
                     descriptions.text_targets.insert(target);
                 }
+            } else if let Some((target, text)) = frame.clipped_validation_text(*source) {
+                descriptions.references.insert(*source, target);
+                descriptions.text_targets.insert(target);
+                descriptions.clipped_text.insert(target, text.to_owned());
             }
         }
         let statuses = visible
@@ -247,6 +252,15 @@ impl WebAccessibility {
                 &descriptions,
                 &mut targets,
             )?;
+            // A referenced hidden element still supplies its description.
+            // Keep it separate from the focusable and readable projection.
+            for (id, text) in &descriptions.clipped_text {
+                let hidden = self.document.create_element("span")?;
+                hidden.set_id(&descriptions.target_id(*id));
+                hidden.set_attribute("hidden", "")?;
+                hidden.set_text_content(Some(text));
+                tree.append_child(&hidden)?;
+            }
             // Put the live region inside the active modal. A browser may
             // prune accessibility content outside an aria-modal dialog.
             self.live_status.mount(if frame.modal_root().is_some() {

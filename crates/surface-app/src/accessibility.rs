@@ -305,24 +305,51 @@ impl<M> AccessibilityFrame<'_, M> {
         if source.node.is_disabled() || !has_visible_bounds(&source) {
             return None;
         }
-        let resolve = |key: &str, role| {
-            let target = self.dom.by_id(key)?;
-            let description = self.node(target)?;
-            let node = description.node;
-            (target != id
-                && node.role() == role
-                && !node.is_disabled()
-                && has_visible_bounds(&description)
-                && (role != Role::Text
-                    || (!node.is_focusable()
-                        && node
-                            .text_value()
-                            .is_some_and(|text| !text.trim().is_empty()))))
-            .then_some(target)
+        let resolve = |key, role| {
+            let (target, description) = self.description_node(id, key, role)?;
+            has_visible_bounds(&description).then_some(target)
         };
         static_text
             .and_then(|key| resolve(key, Role::Text))
             .or_else(|| resolve(tooltip?, Role::Tooltip))
+    }
+
+    /// Read an invalid editor's mounted description when it is fully clipped.
+    /// Only a visible editor and a noninteractive text target without children
+    /// in the current accessibility scope can use this fallback. The target
+    /// stays out of the visible tree.
+    pub fn clipped_validation_text(&self, id: NodeId) -> Option<(NodeId, &str)> {
+        let source = self.node(id)?;
+        let key = invalid_editor_description(source.node)?;
+        if !has_visible_bounds(&source) {
+            return None;
+        }
+        let (target, description) = self.description_node(id, key, Role::Text)?;
+        let bounds = description.layout.bounds;
+        if has_visible_bounds(&description)
+            || bounds.width <= 0.
+            || bounds.height <= 0.
+            || self.children(target).next().is_some()
+        {
+            return None;
+        }
+        Some((target, static_description_text(description.node)?))
+    }
+
+    fn description_node(
+        &self,
+        source: NodeId,
+        key: &str,
+        role: Role,
+    ) -> Option<(NodeId, AccessibilityNode<'_>)> {
+        let target = self.dom.by_id(key)?;
+        let description = self.node(target)?;
+        let node = description.node;
+        (target != source
+            && node.role() == role
+            && !node.is_disabled()
+            && (role != Role::Text || static_description_text(node).is_some()))
+        .then_some((target, description))
     }
 
     /// Whether this named group uses roving focus within the current tree.
@@ -517,6 +544,22 @@ fn focusable(node: &AccessibilityNode<'_>) -> bool {
 fn has_visible_bounds(node: &AccessibilityNode<'_>) -> bool {
     let visible = node.layout.bounds.intersect(node.layout.clip);
     visible.width > 0. && visible.height > 0.
+}
+
+pub(crate) fn invalid_editor_description(node: &Node) -> Option<&str> {
+    if node.role() == Role::TextInput && node.is_invalid() && !node.is_disabled() {
+        node.description_text_target()
+    } else {
+        None
+    }
+}
+
+pub(crate) fn static_description_text(node: &Node) -> Option<&str> {
+    if node.role() == Role::Text && !node.is_focusable() && !node.is_disabled() {
+        node.text_value().filter(|text| !text.trim().is_empty())
+    } else {
+        None
+    }
 }
 
 impl<A: Application> Runtime<A> {
