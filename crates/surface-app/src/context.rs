@@ -2,7 +2,7 @@
 //! sends `Event::SecondaryDown`; the runtime walks from the hit node to the
 //! nearest ancestor with an `on_context_menu` handler and posts its message.
 //! The app opens the menu itself (for example `Theme::menu_at` at the point).
-use crate::{AppError, Application, Runtime};
+use crate::{controls::ModalDismissInput, AppError, Application, Runtime};
 use std::rc::Rc;
 
 /// A point in logical pixels, in window coordinates.
@@ -23,7 +23,7 @@ impl<A: Application> Runtime<A> {
         let mut node = self.hit(x, y);
         self.cancel_composition();
         if self.outside_scope(x, y, node) {
-            return self.dismiss_scope();
+            return self.dismiss_scope(ModalDismissInput::Outside);
         }
         while let Some(id) = node.filter(|id| self.in_scope(*id)) {
             if let Some(handler) = self.bindings.get(&id).and_then(|b| b.context.clone()) {

@@ -12,7 +12,11 @@ pub(super) fn element(
     leaf: bool,
 ) -> Result<Element, JsValue> {
     let node = source.node;
-    let role = aria_role(node);
+    let role = if modal && node.is_alert_dialog() {
+        Some("alertdialog")
+    } else {
+        aria_role(node)
+    };
     let element = document.create_element(if node.role() == Role::Text {
         "span"
     } else {
@@ -21,7 +25,7 @@ pub(super) fn element(
     if let Some(role) = role {
         element.set_attribute("role", role)?;
     }
-    if modal && role == Some("dialog") {
+    if modal && matches!(role, Some("dialog" | "alertdialog")) {
         element.set_attribute("aria-modal", "true")?;
     }
     if node.role() == Role::Heading {

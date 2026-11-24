@@ -1,10 +1,20 @@
 use surface::{Color, Corners, DisplayList, FontFamily, PaintOp, Rect, TextMeasurer, TextStyle};
 use surface_wgpu::{Renderer, TextSystem};
 
+#[path = "it/basic_dialog_motion.rs"]
+mod basic_dialog_motion;
+#[path = "it/full_screen_dialog_motion.rs"]
+mod full_screen_dialog_motion;
+#[path = "it/isolated_transform.rs"]
+mod isolated_transform;
 #[path = "it/list_ripple.rs"]
 mod list_ripple;
 #[path = "it/loading_indicator.rs"]
 mod loading_indicator;
+#[path = "it/opacity_group.rs"]
+mod opacity_group;
+#[path = "it/text_alignment.rs"]
+mod text_alignment;
 
 /// A copy of the bundled font that claims weight 700 and half the units per em,
 /// so every glyph is twice as wide. It is built in memory for this test only.

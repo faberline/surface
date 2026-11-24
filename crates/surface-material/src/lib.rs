@@ -6,6 +6,7 @@ mod app_bar;
 mod app_bar_scroll;
 mod app_bar_search;
 mod badge;
+mod basic_dialog;
 mod bottom_sheet;
 mod bottom_sheet_motion;
 mod button_group;
@@ -30,6 +31,7 @@ mod fab_menu;
 mod fab_menu_layout;
 mod fab_menu_motion;
 mod fab_motion;
+mod full_screen_dialog;
 mod list;
 mod loading_indicator;
 pub mod motion;
@@ -68,6 +70,7 @@ pub use app_bar::{AppBarContent, AppBarKind, AppBarOptions};
 pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
 pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
 pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
+pub use basic_dialog::{BasicDialogContent, BasicDialogMotion, BasicDialogOptions};
 pub use bottom_sheet::{
     BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
     BottomSheetState,
@@ -126,6 +129,10 @@ pub use fab_menu_layout::{
 };
 pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
 pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
+pub use full_screen_dialog::{
+    full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
+    FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,
+};
 pub use list::{
     ExpandableListOptions, ExpandableListRow, ListExpansionMotion, ListItem, ListLines, ListMedia,
     ListMediaKind, ListMode, ListOptions, ListReorderEntry, ListReorderInput, ListReorderRequest,

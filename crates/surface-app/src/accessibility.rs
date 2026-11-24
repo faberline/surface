@@ -292,6 +292,25 @@ impl<M> AccessibilityFrame<'_, M> {
         })
     }
 
+    /// Resolve a dialog's visible descendant heading in the active frame.
+    /// Hosts use the dialog's authored name when the heading is unavailable.
+    pub fn dialog_heading_target(&self, id: NodeId) -> Option<NodeId> {
+        let key = self.dom.get(id).ok()?.dialog_heading_target()?;
+        let source = self.node(id)?;
+        if !has_visible_bounds(&source) {
+            return None;
+        }
+        let target = self.dom.by_id(key)?;
+        let heading = self.node(target)?;
+        let node = heading.node;
+        (node.role() == Role::Heading
+            && !node.is_disabled()
+            && !node.text_value().unwrap_or(node.name()).trim().is_empty()
+            && has_visible_bounds(&heading)
+            && descendant(self.dom, target, id))
+        .then_some(target)
+    }
+
     /// Resolve the visible text or tooltip that describes a node in this frame.
     /// Prefer a valid static text reference to a tooltip.
     pub fn description_target(&self, id: NodeId) -> Option<NodeId> {

@@ -64,10 +64,11 @@ use std::{
 };
 use surface::{
     Color, ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
-    LayoutError, MicroDom, Node, NodeId, Rect, Role, TextMeasurer,
+    LayoutError, MicroDom, Node, NodeId, PaintTransform, Rect, Role, TextMeasurer,
 };
 
 type ContourPainter = Box<dyn Fn() -> FillContour>;
+type ModalTransformPainter = Box<dyn Fn() -> Option<PaintTransform>>;
 
 /// One view of application state. Messages return through `Application::update`.
 pub struct View<M> {
@@ -86,6 +87,8 @@ pub struct View<M> {
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    modal_dismissal: ModalDismissal,
+    block_application_shortcuts: bool,
     dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
     modal_initial_focus: Option<String>,
@@ -111,6 +114,8 @@ pub struct View<M> {
     interaction_suppression: Option<Rc<InteractionSuppression>>,
     visual_overlay: bool,
     modal_layer: Option<ModalLayer>,
+    modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
+    modal_panel_transform: Option<ModalTransformPainter>,
 }
 struct InteractionSuppression {
     focus_fallback: Option<String>,
@@ -120,6 +125,30 @@ struct InteractionSuppression {
 enum ModalLayer {
     BackdropParent,
     Panel,
+    RetiringBackdropParent,
+    RetiringPanel,
+}
+
+impl ModalLayer {
+    fn is_retiring(self) -> bool {
+        matches!(self, Self::RetiringBackdropParent | Self::RetiringPanel)
+    }
+
+    fn has_backdrop(self) -> bool {
+        matches!(self, Self::BackdropParent | Self::RetiringBackdropParent)
+    }
+}
+
+/// The implicit inputs that can dismiss an active modal.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ModalDismissal {
+    /// Send the dismiss message on Escape and on an outside press.
+    #[default]
+    EscapeOrOutside,
+    /// Send the dismiss message on Escape.
+    Escape,
+    /// Wait for an explicit action in the modal.
+    ActionOnly,
 }
 
 /// A key handler. `Some(message)` consumes the press, `None` passes it on.
@@ -143,6 +172,8 @@ impl<M> View<M> {
             accessible_step: None,
             roving: None,
             dismiss: None,
+            modal_dismissal: ModalDismissal::default(),
+            block_application_shortcuts: false,
             dismiss_on_tab: false,
             modal_focus_fallback: None,
             modal_initial_focus: None,
@@ -168,6 +199,8 @@ impl<M> View<M> {
             interaction_suppression: None,
             visual_overlay: false,
             modal_layer: None,
+            modal_panel_opacity: None,
+            modal_panel_transform: None,
         }
     }
     /// Paint a node-local contour from retained state on each rendered frame.
@@ -643,6 +676,69 @@ impl<M> View<M> {
         self.modal_layer = Some(ModalLayer::Panel);
         self
     }
+    /// Keep a departing panel at its authored modal paint position. It takes
+    /// no input, focus or accessibility actions, and it does not open a
+    /// modal focus scope. Remove it when the exit paint is finished.
+    pub fn retiring_modal_overlay(mut self) -> Self {
+        self.dismiss = None;
+        self.visual_overlay = false;
+        self.modal_layer = Some(ModalLayer::RetiringPanel);
+        self.without_interaction(None)
+    }
+
+    /// Retain an outgoing modal and its backdrop at their modal paint
+    /// position. Neither surface can receive input, focus or accessibility
+    /// actions. Remove the retained view when exit paint is finished.
+    pub fn retiring_modal_with_backdrop(self, backdrop: Node) -> Self {
+        let mut panel = self.retiring_modal_overlay();
+        panel.modal_layer = Some(ModalLayer::RetiringBackdropParent);
+        Self::new(backdrop)
+            .children([panel])
+            .without_interaction(None)
+    }
+
+    /// Give an explicitly layered modal panel isolated opacity when using
+    /// `Runtime::render_extended`. Attach this to the panel before wrapping
+    /// it in a backdrop. The backdrop and other modal layers paint separately.
+    ///
+    /// The painter runs each frame without changing layout or semantics.
+    /// Return a finite opacity. Values below zero are transparent, and
+    /// values of one or more and nonfinite inputs leave the panel opaque.
+    pub fn paint_modal_panel_opacity(mut self, opacity: impl Fn() -> f32 + 'static) -> Self {
+        self.modal_panel_opacity = Some(Box::new(opacity));
+        self
+    }
+
+    /// Map the explicitly layered panel paint in `Runtime::render_extended`.
+    /// Attach the painter to the panel before wrapping it in a backdrop.
+    /// The backdrop and separate modal layers keep their own paint.
+    ///
+    /// The painter runs each frame. This leaves layout, hit testing, focus
+    /// and accessibility unchanged. Return `None` to leave paint untransformed.
+    /// Invalid transforms are ignored. A transform and an independently
+    /// authored panel opacity share one group with their opacities multiplied.
+    pub fn paint_modal_panel_transform(
+        mut self,
+        transform: impl Fn() -> Option<PaintTransform> + 'static,
+    ) -> Self {
+        self.modal_panel_transform = Some(Box::new(transform));
+        self
+    }
+    /// Set which implicit inputs send this modal's dismiss message.
+    /// The active modal still blocks interaction with the page behind it.
+    pub fn modal_dismissal(mut self, policy: ModalDismissal) -> Self {
+        self.modal_dismissal = policy;
+        self
+    }
+
+    /// Keep matched application-wide shortcuts in the active modal scope.
+    /// The modal and its nested panels consume those chords without sending their global
+    /// messages. Focused controls and their scoped key handlers run first.
+    pub fn block_application_shortcuts(mut self) -> Self {
+        self.block_application_shortcuts = true;
+        self
+    }
+
     /// Let Tab and Shift+Tab dismiss this modal menu. The same key continues
     /// traversal from the restored opener when only this scope closes.
     pub fn dismiss_modal_on_tab(mut self) -> Self {
@@ -891,6 +987,8 @@ struct Binding<M> {
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
+    modal_dismissal: ModalDismissal,
+    block_application_shortcuts: bool,
     dismiss_on_tab: bool,
     modal_focus_fallback: Option<String>,
     modal_initial_focus: Option<String>,
@@ -916,6 +1014,8 @@ struct Binding<M> {
     interaction_suppression: Option<Rc<InteractionSuppression>>,
     visual_overlay: bool,
     modal_layer: Option<ModalLayer>,
+    modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
+    modal_panel_transform: Option<ModalTransformPainter>,
 }
 
 impl<M> Binding<M> {
@@ -1302,6 +1402,7 @@ impl<A: Application> Runtime<A> {
             if (node.is_focusable()
                 || view.roving.is_some()
                 || view.dismiss.is_some()
+                || view.modal_layer.is_some_and(ModalLayer::is_retiring)
                 || view.stick
                 || view.vertical_scroll.is_some()
                 || view.horizontal_scroll.is_some()
@@ -1357,6 +1458,8 @@ impl<A: Application> Runtime<A> {
                     accessible_step: view.accessible_step,
                     roving: view.roving,
                     dismiss: view.dismiss,
+                    modal_dismissal: view.modal_dismissal,
+                    block_application_shortcuts: view.block_application_shortcuts,
                     dismiss_on_tab: view.dismiss_on_tab,
                     modal_focus_fallback: view.modal_focus_fallback,
                     modal_initial_focus: view.modal_initial_focus,
@@ -1381,6 +1484,8 @@ impl<A: Application> Runtime<A> {
                     accessible_scroll_pages: view.accessible_scroll_pages,
                     visual_overlay: view.visual_overlay,
                     modal_layer: view.modal_layer,
+                    modal_panel_opacity: view.modal_panel_opacity,
+                    modal_panel_transform: view.modal_panel_transform,
                     interaction_suppression: suppression.cloned(),
                 },
             );
@@ -1585,8 +1690,30 @@ impl<A: Application> Runtime<A> {
             (display_dom, decorations, computed) =
                 self.layout_editing(width, height, text_scale, measurer)?;
         }
-        self.dom
-            .apply_modal_layers(&mut computed.paint_order, &self.modal_layers);
+        let mut panel_effects = Vec::new();
+        let viewport = computed.viewport;
+        self.dom.apply_modal_layers_with_panel_ranges(
+            &mut computed.paint_order,
+            &self.modal_layers,
+            |panel, range| {
+                if !P::PANEL_EFFECTS {
+                    return;
+                }
+                let binding = &self.bindings[&panel];
+                if binding.visual_overlay || binding.modal_layer.is_none() {
+                    return;
+                }
+                let opacity = binding.modal_panel_opacity.as_ref().map(|paint| paint());
+                let transform = binding
+                    .modal_panel_transform
+                    .as_ref()
+                    .and_then(|paint| paint());
+                if let Some(effect) = frame_paint::modal_panel_effect(viewport, opacity, transform)
+                {
+                    panel_effects.push((range, effect));
+                }
+            },
+        );
         #[cfg(feature = "devtools")]
         self.trace_span(
             start,
@@ -1613,6 +1740,7 @@ impl<A: Application> Runtime<A> {
             &decorations,
             interaction,
             frame_paint::selection_colors(self.display_contrast),
+            &panel_effects,
         );
         #[cfg(feature = "devtools")]
         self.trace_paint(start, list.len());
@@ -1802,7 +1930,7 @@ impl<A: Application> Runtime<A> {
         let Some(shortcut) = self.app.shortcuts().into_iter().find(|s| s.matches(press)) else {
             return Ok(false);
         };
-        if press.repeat {
+        if press.repeat || self.scopes_block_application_shortcuts() {
             return Ok(true);
         }
         self.message(Some(shortcut.message))
@@ -1952,7 +2080,7 @@ impl<A: Application> Runtime<A> {
                 if std::mem::take(&mut self.modal_outside) {
                     return if !suppress_touch_activation && self.outside_scope(x, y, self.hit(x, y))
                     {
-                        self.dismiss_scope()
+                        self.dismiss_scope(controls::ModalDismissInput::Outside)
                     } else {
                         Ok(true)
                     };
@@ -2117,7 +2245,8 @@ impl<A: Application> Runtime<A> {
                     self.flush()?;
                     return Ok(true);
                 }
-                self.dismiss_scope().map(|handled| handled || pointer)
+                self.dismiss_scope(controls::ModalDismissInput::Escape)
+                    .map(|handled| handled || pointer)
             }
             Event::Scroll {
                 x,

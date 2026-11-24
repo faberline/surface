@@ -1,7 +1,10 @@
-use glyphon::fontdb::{Stretch, Style};
+use glyphon::{
+    cosmic_text::Align,
+    fontdb::{Stretch, Style},
+};
 use glyphon::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Weight, Wrap};
 use std::sync::Arc;
-use surface::{FontFamily, Rect, TextCluster, TextLayout, TextMeasurer, TextStyle};
+use surface::{FontFamily, Rect, TextAlignment, TextCluster, TextLayout, TextMeasurer, TextStyle};
 
 /// The family that the sans-serif alias names. `FontFamily::Default` shapes
 /// with it, and `add_font` only widens the default family's weights for faces
@@ -131,6 +134,16 @@ impl TextSystem {
     }
     /// Shape `text` with the size, line height, weight and family of `style`.
     pub(crate) fn buffer(&mut self, text: &str, style: &TextStyle, width: Option<f32>) -> Buffer {
+        self.buffer_with_alignment(text, style, width, None)
+    }
+
+    pub(crate) fn buffer_with_alignment(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        width: Option<f32>,
+        alignment: Option<TextAlignment>,
+    ) -> Buffer {
         let (family, weight) = self.resolve(&style.family, style.weight);
         let mut buffer = Buffer::new(
             &mut self.fonts,
@@ -144,6 +157,16 @@ impl TextSystem {
             Attrs::new().family(family).weight(Weight(weight)),
             Shaping::Advanced,
         );
+        if let Some(alignment) = alignment {
+            let align = match alignment {
+                TextAlignment::Left => Align::Left,
+                TextAlignment::Center => Align::Center,
+                TextAlignment::Right => Align::Right,
+            };
+            for line in &mut buffer.lines {
+                line.set_align(Some(align));
+            }
+        }
         buffer.shape_until_scroll(&mut self.fonts, false);
         buffer
     }

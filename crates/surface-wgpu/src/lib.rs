@@ -1,4 +1,5 @@
 //! One ordered wgpu renderer for native GPU surfaces and browser WebGPU.
+mod opacity;
 mod path;
 mod raster;
 mod text;
@@ -8,7 +9,7 @@ use glyphon::{
 use std::borrow::Cow;
 use surface::{
     Color, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PathFill,
-    RasterPaint, Rect, TextSelectionPaint, TextStyle,
+    RasterPaint, Rect, TextAlignment, TextSelectionPaint, TextStyle,
 };
 pub use text::TextSystem;
 use wgpu::util::DeviceExt;
@@ -38,6 +39,12 @@ pub enum ExtendedRenderError {
     Render(#[from] RenderError),
     #[error("this renderer does not support an operation in the extended display list")]
     UnsupportedOperation,
+    #[error("invalid opacity group: {0}")]
+    InvalidOpacityGroup(&'static str),
+    #[error("isolated paint groups are not supported on target format {0:?}")]
+    OpacityTargetFormat(wgpu::TextureFormat),
+    #[error("invalid paint transform: {0}")]
+    InvalidPaintTransform(&'static str),
     #[error("raster image of {width}x{height} exceeds the device's {max} pixel side limit")]
     RasterTooLarge { width: u32, height: u32, max: u32 },
 }
@@ -145,12 +152,15 @@ impl RasterSpace {
 }
 
 enum RenderOp<'a> {
-    Legacy(&'a PaintOp),
+    Paint(&'a PaintOp, Option<TextAlignment>),
+    BeginGroup(opacity::Effect),
+    EndOpacityGroup,
     Fill(&'a PathFill),
     Raster(&'a RasterPaint),
     TextSelection(&'a TextSelectionPaint),
 }
 
+#[derive(Clone, Copy)]
 enum Draw {
     Quad { start: u32, scissor: [u32; 4] },
     Text { index: usize, scissor: [u32; 4] },
@@ -249,6 +259,7 @@ pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     path_pipeline: Option<path::Pipeline>,
     raster_pipeline: Option<raster::Pipeline>,
+    opacity_compositor: Option<opacity::Compositor>,
     atlas: TextAtlas,
     viewport: Viewport,
     cache: SwashCache,
@@ -344,6 +355,7 @@ impl Renderer {
             pipeline,
             path_pipeline: None,
             raster_pipeline: None,
+            opacity_compositor: None,
             atlas,
             viewport,
             cache: SwashCache::new(),
@@ -478,7 +490,7 @@ impl Renderer {
         scale: f32,
     ) -> Result<(), RenderError> {
         self.render_ops(
-            list.ops.iter().map(|op| Ok(RenderOp::Legacy(op))),
+            list.ops.iter().map(|op| Ok(RenderOp::Paint(op, None))),
             target,
             width,
             height,
@@ -486,7 +498,7 @@ impl Renderer {
         )
     }
 
-    /// Paint an ordered display list including vector fills and raster images.
+    /// Paint ordered commands, including vector fills, rasters and isolated groups.
     pub fn render_extended(
         &mut self,
         list: &ExtendedDisplayList,
@@ -495,11 +507,45 @@ impl Renderer {
         height: u32,
         scale: f32,
     ) -> Result<(), ExtendedRenderError> {
+        opacity::validate(list.ops())?;
+        let format = self.format;
+        let supports_isolation = opacity::supports_format(format);
+        let space = RasterSpace {
+            width,
+            height,
+            scale,
+        };
+        let begin = |effect: opacity::Effect| {
+            if effect.needs_surface() && !supports_isolation {
+                return Err(ExtendedRenderError::OpacityTargetFormat(format));
+            }
+            Ok(RenderOp::BeginGroup(effect))
+        };
         let max = self.device.limits().max_texture_dimension_2d;
         self.render_ops(
             list.ops().iter().map(|op| match op {
-                ExtendedPaintOp::Legacy(op) => Ok(RenderOp::Legacy(op)),
+                ExtendedPaintOp::Legacy(op) => Ok(RenderOp::Paint(op, None)),
+                ExtendedPaintOp::AlignedText(text)
+                    if matches!(
+                        text.run(),
+                        PaintOp::Text { .. }
+                            | PaintOp::StyledText {
+                                editable: false,
+                                multiline: true,
+                                ..
+                            }
+                    ) =>
+                {
+                    Ok(RenderOp::Paint(text.run(), Some(text.alignment())))
+                }
                 ExtendedPaintOp::FillPath(fill) => Ok(RenderOp::Fill(fill)),
+                ExtendedPaintOp::BeginOpacityGroup { opacity } => {
+                    begin(opacity::Effect::Opacity(*opacity))
+                }
+                ExtendedPaintOp::BeginTransformGroup { transform } => {
+                    begin(opacity::Effect::transform(*transform, space)?)
+                }
+                ExtendedPaintOp::EndOpacityGroup => Ok(RenderOp::EndOpacityGroup),
                 ExtendedPaintOp::Raster(paint) => {
                     let width = paint.image().width();
                     let height = paint.image().height();
@@ -549,9 +595,20 @@ impl Renderer {
         let mut paths = path::Frame::default();
         let mut rasters = raster::Frame::default();
         let mut next_text_renderer = 0;
+        let mut active_group = opacity::ActiveGroup::Direct;
+        let mut groups = Vec::new();
         for op in ops {
-            let op = match op? {
-                RenderOp::Legacy(op) => op,
+            let (op, alignment) = match op? {
+                RenderOp::BeginGroup(effect) => {
+                    active_group = opacity::ActiveGroup::begin(effect, draws.len());
+                    continue;
+                }
+                RenderOp::EndOpacityGroup => {
+                    active_group.end(draws.len(), &mut groups);
+                    continue;
+                }
+                _ if matches!(active_group, opacity::ActiveGroup::Hidden) => continue,
+                RenderOp::Paint(op, alignment) => (op, alignment),
                 RenderOp::TextSelection(selection) => {
                     let regions = selection.pixel_regions(scale, (width, height));
                     if regions.is_empty() {
@@ -573,6 +630,7 @@ impl Renderer {
                     self.prepare_text_run(
                         space,
                         &run,
+                        None,
                         regions.into_iter().map(|region| {
                             let ink = if region.selected {
                                 colors.foreground
@@ -678,6 +736,7 @@ impl Renderer {
                     self.prepare_text_run(
                         space,
                         &run,
+                        alignment,
                         [(scissor, *run.color)],
                         &mut next_text_renderer,
                         &mut draws,
@@ -710,14 +769,45 @@ impl Renderer {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Surface frame"),
             });
-        {
+        let compositor = if groups.is_empty() {
+            None
+        } else {
+            let max = self.device.limits().max_texture_dimension_2d;
+            if width > max || height > max {
+                return Err(RenderError::Dimensions.into());
+            }
+            Some(
+                self.opacity_compositor
+                    .get_or_insert_with(|| opacity::Compositor::new(&self.device, self.format))
+                    .prepare(&self.device, self.format, width, height, &groups),
+            )
+        };
+        for stage in opacity::passes(&groups, draws.len()) {
+            let (view, load, range, composite) = match stage {
+                opacity::Pass::Target { draws, composite } => (
+                    target,
+                    if composite.is_some() {
+                        wgpu::LoadOp::Load
+                    } else {
+                        wgpu::LoadOp::Clear(wgpu::Color::BLACK)
+                    },
+                    draws,
+                    composite,
+                ),
+                opacity::Pass::Intermediate { draws } => (
+                    compositor.as_ref().expect("group surface prepared").view(),
+                    wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    draws,
+                    None,
+                ),
+            };
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Surface paint"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: target,
+                    view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                        load,
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -725,7 +815,13 @@ impl Renderer {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            for draw in draws {
+            if let Some(index) = composite {
+                compositor
+                    .as_ref()
+                    .expect("group surface prepared")
+                    .composite(&mut pass, index, &groups[index]);
+            }
+            for &draw in &draws[range] {
                 match draw {
                     Draw::Quad {
                         start,
@@ -779,15 +875,19 @@ impl Renderer {
         &mut self,
         space: RasterSpace,
         run: &TextRun<'_>,
+        alignment: Option<TextAlignment>,
         regions: impl IntoIterator<Item = ([u32; 4], Color)>,
         next_renderer: &mut usize,
         draws: &mut Vec<Draw>,
     ) -> Result<(), RenderError> {
         // Shape the complete run before splitting ink. Glyphon keeps its
         // prepared vertices, so every region can borrow the same buffer.
-        let buffer = self
-            .text
-            .buffer(run.text, &run.style, run.wrap.then_some(run.rect.width));
+        let buffer = self.text.buffer_with_alignment(
+            run.text,
+            &run.style,
+            run.wrap.then_some(run.rect.width),
+            alignment,
+        );
         let left = (run.rect.x - run.scroll.0) * space.scale;
         let top = (run.rect.y - run.scroll.1) * space.scale;
         for (scissor, color) in regions {
