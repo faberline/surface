@@ -465,7 +465,7 @@ impl<A: Application> WebInput<A> {
                 let Some(event) = event.dyn_ref::<web_sys::CompositionEvent>() else {
                     return;
                 };
-                composing.set(false);
+                let was_composing = composing.replace(false);
                 text.borrow_mut().clear();
                 let value = event.data().unwrap_or_default();
                 let id = owner.borrow_mut().take();
@@ -485,18 +485,22 @@ impl<A: Application> WebInput<A> {
                         ImeEvent::Cancel
                     },
                 );
-                if commit {
-                    let snapshot = runtime.borrow().input_snapshot();
-                    let mut mirror = mirror.borrow_mut();
-                    if let Some(snapshot) = snapshot.filter(|snapshot| {
-                        !snapshot.composing
-                            && id.as_deref() == Some(snapshot.id.as_str())
-                            && mirror.owns(snapshot)
-                            && textarea_value(&snapshot.value).as_ref() == area.value()
-                    }) {
-                        // The browser finished the same edit. The next select
-                        // may arrive before a frame can acknowledge the commit.
-                        mirror.state = Some(EditorState::from_snapshot(&snapshot));
+                let snapshot = runtime.borrow().input_snapshot();
+                if let Some(snapshot) = snapshot.filter(|snapshot| {
+                    !snapshot.composing
+                        && id.as_deref() == Some(snapshot.id.as_str())
+                        && mirror.borrow().owns(snapshot)
+                }) {
+                    if !commit && was_composing {
+                        // Cancel restores the authoritative value and its
+                        // saved range. The browser may have removed the
+                        // selected text with the temporary composition.
+                        // Finish synchronization before the next native edit.
+                        write_host_input(&area, &snapshot, &mirror, true);
+                    } else if commit && textarea_value(&snapshot.value).as_ref() == area.value() {
+                        // The next select may arrive before the first frame
+                        // that acknowledges this browser commit.
+                        mirror.borrow_mut().state = Some(EditorState::from_snapshot(&snapshot));
                     }
                 }
             })?;
