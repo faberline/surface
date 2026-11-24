@@ -1,0 +1,171 @@
+{
+  "schema": "surface.test.tabs.native.v1",
+  "binaries": {
+    "gallery": "b53a723490baf6882d28812fcdfffd76c27204cf03ee0b6174eef961758853dd",
+    "cli": "95acbbedfb27510b9910b05b3dd968e5978f7ad82e0dcaf6474f05b1da1d53c4"
+  },
+  "rendering": "headless",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "viewport": [
+        960,
+        800
+      ],
+      "rtl": false,
+      "text_scale": 1,
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "initial": "tabs-demo-overview",
+      "physical_next": "right",
+      "active": "tabs-demo-activity",
+      "geometry": {
+        "tab": {
+          "height": 64.0,
+          "width": 240.0,
+          "x": 496.0,
+          "y": 128.0
+        },
+        "label": {
+          "height": 20.0,
+          "width": 56.0,
+          "x": 588.0,
+          "y": 164.0
+        },
+        "strip": {
+          "height": 64.0,
+          "width": 720.0,
+          "x": 16.0,
+          "y": 128.0
+        },
+        "mark": [
+          616,
+          190
+        ],
+        "rgba": [
+          101,
+          85,
+          143,
+          255
+        ]
+      },
+      "png": {
+        "name": "wide-light-fixed.png",
+        "sha256": "ddca48207c378b3a320b1c3362e14511a05b9015bf8330bf45decd05230ff134",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0,
+        "ink": {
+          "tabs-demo-activity-label": {
+            "bounds": {
+              "height": 20.0,
+              "width": 56.0,
+              "x": 588.0,
+              "y": 164.0
+            },
+            "ink_bounds": [
+              589,
+              168,
+              54,
+              14
+            ],
+            "rgba": [
+              101,
+              85,
+              143,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 242
+          }
+        }
+      }
+    },
+    {
+      "viewport": [
+        320,
+        760
+      ],
+      "rtl": true,
+      "text_scale": 2,
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "initial": "tabs-demo-overview",
+      "physical_next": "left",
+      "active": "tabs-demo-history",
+      "geometry": {
+        "tab": {
+          "height": 84.0,
+          "width": 184.0,
+          "x": 16.0,
+          "y": 224.0
+        },
+        "label": {
+          "height": 40.0,
+          "width": 168.0,
+          "x": 24.0,
+          "y": 246.0
+        },
+        "strip": {
+          "height": 84.0,
+          "width": 288.0,
+          "x": 16.0,
+          "y": 224.0
+        },
+        "mark": [
+          108,
+          306
+        ],
+        "rgba": [
+          207,
+          189,
+          254,
+          255
+        ]
+      },
+      "png": {
+        "name": "compact-dark-rtl-200.png",
+        "sha256": "a56c75c1f2c55e9c17d96b50413d84d4d1200ed3563b63f9ef83cb6b3b2b686f",
+        "format": "png",
+        "width": 320,
+        "height": 760,
+        "scale": 1.0,
+        "ink": {
+          "tabs-demo-history-label": {
+            "bounds": {
+              "height": 40.0,
+              "width": 168.0,
+              "x": 24.0,
+              "y": 246.0
+            },
+            "ink_bounds": [
+              25,
+              254,
+              166,
+              26
+            ],
+            "rgba": [
+              207,
+              189,
+              254,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 1304
+          }
+        }
+      }
+    }
+  ]
+}
