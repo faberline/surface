@@ -1,0 +1,9 @@
+case material ...
+browser: Chrome/158.0.8127.37 (/Applications/Google Chrome.app/Contents/MacOS/Google Chrome)
+  [M267] named command menu keeps a disabled command focusable and rejects its activation
+  [M268] Tab leaves the menu in both directions and outside clicks dismiss without activating the page
+case material ... FAILED after 2.8s: M268: the opener exposes its collapsed state after pointer dismissal: expected "false", got String("true")
+  last step: M268
+
+e2e result: 0 passed; 1 failed; 84 checks; artifacts in $RUN_DIRECTORY
+no case passed

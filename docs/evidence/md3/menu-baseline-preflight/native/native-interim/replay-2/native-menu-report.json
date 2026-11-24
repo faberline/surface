@@ -1,0 +1,580 @@
+{
+  "schema": "surface.test.material-command-menu-native.v1",
+  "binaries": {
+    "gallery": "d33aa71bcf807c3bcc02df52941e9e99c9045b2cab9f5b5ba2ec2cf844f83750",
+    "cli": "95fc9bbb95994c5e974fdadba4d400273f2e9ebcf76e89e892324c6e06bb82d6"
+  },
+  "transport": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "profile": "wide-light-ltr",
+      "viewport": [
+        960,
+        800
+      ],
+      "navigation_to_route": [
+        "open-dialog",
+        "open-menu",
+        "open-sheet",
+        "drawer-demo-show",
+        "side-sheet-demo-show",
+        "bottom-sheet-demo-show",
+        "tooltip-demo-show",
+        "snackbar-show-text",
+        "snackbar-show-undo",
+        "snackbar-show-long",
+        "snackbar-direction",
+        "snackbar-scale",
+        "date-picker-demo-show",
+        "docked-date-picker-demo-show",
+        "date-range-picker-demo-show",
+        "time-input-demo-show",
+        "time-dial-demo-show",
+        "show-time-scroll-demo",
+        "time-input-baseline-demo-show",
+        "time-dial-baseline-demo-show",
+        "lists-demo-show",
+        "list-actions-demo-show",
+        "list-expand-demo-show",
+        "list-reorder-demo-show",
+        "list-media-demo-show",
+        "dialog-demo-show",
+        "dialog-demo-show-transform",
+        "menu-demo-show"
+      ],
+      "menu_focus_history": [
+        "menu-demo-inbox",
+        "menu-demo-archive",
+        "menu-demo-find",
+        "menu-demo-opener",
+        "menu-demo-list",
+        "menu-demo-bottom",
+        "menu-demo-opener"
+      ],
+      "geometry": {
+        "trigger": {
+          "height": 48.0,
+          "width": 904.0,
+          "x": 28.0,
+          "y": 172.0
+        },
+        "panel": {
+          "height": 369.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 224.0
+        },
+        "first": {
+          "height": 48.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 232.0
+        },
+        "leading_icon": {
+          "height": 24.0,
+          "width": 24.0,
+          "x": 40.0,
+          "y": 244.0
+        },
+        "separator": {
+          "height": 1.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 384.0
+        },
+        "rename": {
+          "height": 48.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 393.0
+        },
+        "side": "below"
+      },
+      "checks": {
+        "disabled": {
+          "focus_kept": "menu-demo-archive",
+          "keys_rejected": [
+            "enter",
+            "space"
+          ],
+          "direct_error": "disabled"
+        },
+        "choice": "已執行「在清單中尋找」",
+        "tab_focus": "menu-demo-list",
+        "reverse_tab_focus": "menu-demo-bottom",
+        "escape_focus": "menu-demo-opener"
+      },
+      "captures": [
+        {
+          "name": "wide-light-ltr-opened.png",
+          "sha256": "5b6d29300aea9ab766919f5aa6333c3d2f8b1cc81c22b2d873a9faef1c91f673",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "menu-demo-inbox-label": {
+              "bounds": {
+                "height": 24.0,
+                "width": 180.0,
+                "x": 76.0,
+                "y": 244.0
+              },
+              "ink_bounds": [
+                77,
+                250,
+                78,
+                15
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 286
+            }
+          },
+          "outline": {
+            "target": "menu-demo-inbox",
+            "bounds": {
+              "height": 48.0,
+              "width": 240.0,
+              "x": 28.0,
+              "y": 232.0
+            },
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "matching_pixels": 416,
+            "samples": 416
+          },
+          "palette": {
+            "panel": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "page": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "solid_panel_pixels": 1056,
+            "total_panel_samples": 1071,
+            "page_point": [
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wide-light-ltr-disabled-focused.png",
+          "sha256": "910bb20234b8966b2d82a730ca8b53bee039bc6048d4edacd46137a6cb086dc0",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "menu-demo-inbox-label": {
+              "bounds": {
+                "height": 24.0,
+                "width": 180.0,
+                "x": 76.0,
+                "y": 244.0
+              },
+              "ink_bounds": [
+                77,
+                250,
+                78,
+                15
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 286
+            }
+          },
+          "outline": {
+            "target": "menu-demo-archive",
+            "bounds": {
+              "height": 48.0,
+              "width": 240.0,
+              "x": 28.0,
+              "y": 280.0
+            },
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "matching_pixels": 416,
+            "samples": 416
+          },
+          "palette": {
+            "panel": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "page": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "solid_panel_pixels": 1056,
+            "total_panel_samples": 1071,
+            "page_point": [
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "name": "wide-light-ltr-find-focused.png",
+          "sha256": "e98dcecfb79223378ac2620214c463081745e4902c467fd422a6ae41e5659837",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "menu-demo-find-label": {
+              "bounds": {
+                "height": 24.0,
+                "width": 180.0,
+                "x": 40.0,
+                "y": 340.0
+              },
+              "ink_bounds": [
+                41,
+                345,
+                94,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 379
+            }
+          },
+          "outline": {
+            "target": "menu-demo-find",
+            "bounds": {
+              "height": 48.0,
+              "width": 240.0,
+              "x": 28.0,
+              "y": 328.0
+            },
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "matching_pixels": 416,
+            "samples": 416
+          },
+          "palette": {
+            "panel": [
+              242,
+              236,
+              244,
+              255
+            ],
+            "page": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "solid_panel_pixels": 1056,
+            "total_panel_samples": 1071,
+            "page_point": [
+              2,
+              2
+            ]
+          }
+        }
+      ],
+      "restored_focus": "menu-demo-show",
+      "visible_windows": [
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "profile": "compact-dark-rtl-200",
+      "viewport": [
+        320,
+        480
+      ],
+      "navigation_to_route": [
+        "open-dialog",
+        "open-menu",
+        "open-sheet",
+        "drawer-demo-show",
+        "side-sheet-demo-show",
+        "bottom-sheet-demo-show",
+        "tooltip-demo-show",
+        "snackbar-show-text",
+        "snackbar-show-undo",
+        "snackbar-show-long",
+        "snackbar-direction",
+        "snackbar-scale",
+        "date-picker-demo-show",
+        "docked-date-picker-demo-show",
+        "date-range-picker-demo-show",
+        "time-input-demo-show",
+        "time-dial-demo-show",
+        "show-time-scroll-demo",
+        "time-input-baseline-demo-show",
+        "time-dial-baseline-demo-show",
+        "lists-demo-show",
+        "list-actions-demo-show",
+        "list-expand-demo-show",
+        "list-reorder-demo-show",
+        "list-media-demo-show",
+        "dialog-demo-show",
+        "dialog-demo-show-transform",
+        "menu-demo-show"
+      ],
+      "menu_focus_history": [
+        "menu-demo-inbox",
+        "menu-demo-details"
+      ],
+      "geometry": {
+        "trigger": {
+          "height": 48.0,
+          "width": 136.0,
+          "x": 156.0,
+          "y": 404.0
+        },
+        "panel": {
+          "height": 392.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 8.0
+        },
+        "first": {
+          "height": 72.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 16.0
+        },
+        "leading_icon": {
+          "height": 24.0,
+          "width": 24.0,
+          "x": 256.0,
+          "y": 40.0
+        },
+        "separator": {
+          "height": 1.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 288.0
+        },
+        "rename": {
+          "height": 120.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 297.0
+        },
+        "side": "above"
+      },
+      "checks": {
+        "last_before": {
+          "bounds": {
+            "height": 72.0,
+            "width": 240.0,
+            "x": 52.0,
+            "y": 561.0
+          },
+          "clip": {
+            "height": 392.0,
+            "width": 240.0,
+            "x": 52.0,
+            "y": 8.0
+          },
+          "id": 41
+        },
+        "last_after": {
+          "height": 72.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 328.0
+        },
+        "escape_focus": "menu-demo-opener"
+      },
+      "captures": [
+        {
+          "name": "compact-dark-rtl-200-opened.png",
+          "sha256": "95e58790fd2f4787be7f3b3c572189bde28546b1821656bc871b4af206a58e8f",
+          "format": "png",
+          "width": 320,
+          "height": 480,
+          "scale": 1.0,
+          "ink": {
+            "menu-demo-inbox-label": {
+              "bounds": {
+                "height": 48.0,
+                "width": 180.0,
+                "x": 64.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                85,
+                39,
+                157,
+                30
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 1376
+            }
+          },
+          "outline": {
+            "target": "menu-demo-inbox",
+            "bounds": {
+              "height": 72.0,
+              "width": 240.0,
+              "x": 52.0,
+              "y": 16.0
+            },
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "matching_pixels": 416,
+            "samples": 416
+          },
+          "palette": {
+            "panel": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "page": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "solid_panel_pixels": 1125,
+            "total_panel_samples": 1140,
+            "page_point": [
+              2,
+              2
+            ]
+          }
+        },
+        {
+          "name": "compact-dark-rtl-200-scrolled-end.png",
+          "sha256": "d8cd0b88e5b18fe943db3e1af24c478031cd717159cbf89ef134ea6d5e9a6463",
+          "format": "png",
+          "width": 320,
+          "height": 480,
+          "scale": 1.0,
+          "ink": {
+            "menu-demo-details-label": {
+              "bounds": {
+                "height": 48.0,
+                "width": 216.0,
+                "x": 64.0,
+                "y": 340.0
+              },
+              "ink_bounds": [
+                90,
+                351,
+                189,
+                30
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 1632
+            }
+          },
+          "outline": {
+            "target": "menu-demo-details",
+            "bounds": {
+              "height": 72.0,
+              "width": 240.0,
+              "x": 52.0,
+              "y": 328.0
+            },
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "matching_pixels": 416,
+            "samples": 416
+          },
+          "palette": {
+            "panel": [
+              33,
+              31,
+              36,
+              255
+            ],
+            "page": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "solid_panel_pixels": 1131,
+            "total_panel_samples": 1140,
+            "page_point": [
+              2,
+              2
+            ]
+          }
+        }
+      ],
+      "restored_focus": "menu-demo-show",
+      "visible_windows": [
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

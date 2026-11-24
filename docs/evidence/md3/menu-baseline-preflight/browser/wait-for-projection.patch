@@ -1,0 +1,24 @@
+--- a/e2e/src/material_command_menu.rs
++++ b/e2e/src/material_command_menu.rs
+@@ -163,15 +163,12 @@
+     )
+     .await?;
+     canvas_focus(tab, OPENER).await?;
+-    check_eq!(
+-        tab.eval(&format!(
+-            "{}?.getAttribute('aria-expanded')",
+-            projected(OPENER)
+-        ))
+-        .await?,
+-        "false",
+-        "the opener exposes its collapsed state after pointer dismissal"
+-    );
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-expanded') === 'false'",
++        projected(OPENER)
++    ))
++    .await
++    .context("the opener exposes its collapsed state after pointer dismissal")?;
+     Ok(
+         json!({"tab_forward":OUTSIDE,"tab_backward":"menu-demo-bottom","outside_action_suppressed":true}),
+     )

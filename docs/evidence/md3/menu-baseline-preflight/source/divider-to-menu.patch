@@ -1,0 +1,2630 @@
+--- a/crates/surface-app/src/accessibility.rs
++++ b/crates/surface-app/src/accessibility.rs
+@@ -250,8 +250,7 @@
+     }
+ 
+     pub fn focused(&self) -> Option<NodeId> {
+-        self.focused
+-            .filter(|id| self.node(*id).is_some_and(|node| focusable(&node)))
++        self.focused.filter(|id| self.accepts_focus(*id))
+     }
+ 
+     pub fn children(&self, id: NodeId) -> impl Iterator<Item = NodeId> + '_ {
+@@ -384,11 +383,24 @@
+ 
+     /// Whether current visible geometry allows focus without issuing a target.
+     pub fn accepts_focus(&self, id: NodeId) -> bool {
+-        self.node(id).is_some_and(|node| focusable(&node))
+-    }
+-
+-    /// Focus is available to enabled controls whose bounds are not completely
+-    /// clipped. This test does not detect occlusion by other painted nodes.
++        self.visible_focusable_node(id).is_some()
++    }
++
++    fn visible_focusable_node(&self, id: NodeId) -> Option<AccessibilityNode<'_>> {
++        self.node(id).filter(|source| {
++            (source.node.is_focusable()
++                || self
++                    .bindings
++                    .get(&id)
++                    .is_some_and(Binding::disabled_menu_focus))
++                && source.node.stable_id().is_some()
++                && has_visible_bounds(source)
++        })
++    }
++
++    /// Focus is available to focusable controls whose bounds are not fully
++    /// clipped. This includes disabled menu items that opt in to focus.
++    /// This test does not detect occlusion by other painted nodes.
+     pub fn focus_target(&self, id: NodeId) -> Option<AccessibilityFocusTarget> {
+         if !self.accepts_focus(id) {
+             return None;
+@@ -520,7 +532,7 @@
+     }
+ 
+     fn adjustment_binding(&self, id: NodeId) -> Option<AdjustmentBinding<'_, M>> {
+-        let source = self.node(id).filter(focusable)?;
++        let source = self.node(id).filter(visible_enabled_control)?;
+         let range = source.node.accessibility_adjustable()?;
+         let binding = self.bindings.get(&id)?;
+         Some(AdjustmentBinding {
+@@ -531,7 +543,7 @@
+     }
+ 
+     fn press_binding(&self, id: NodeId) -> Option<(AccessibilityNode<'_>, &M)> {
+-        let node = self.node(id).filter(focusable)?;
++        let node = self.node(id).filter(visible_enabled_control)?;
+         if !offers_press(node.node.role()) {
+             return None;
+         }
+@@ -556,7 +568,7 @@
+     )
+ }
+ 
+-fn focusable(node: &AccessibilityNode<'_>) -> bool {
++fn visible_enabled_control(node: &AccessibilityNode<'_>) -> bool {
+     node.node.is_focusable() && node.node.stable_id().is_some() && has_visible_bounds(node)
+ }
+ 
+@@ -609,7 +621,7 @@
+                 .issued_targets
+                 .borrow()
+                 .iter()
+-                .any(|id| !frame.node(*id).is_some_and(|node| focusable(&node)))
++                .any(|id| !frame.accepts_focus(*id))
+                 || frame
+                     .revision
+                     .issued_adjustment_targets
+@@ -815,7 +827,7 @@
+             return Ok(Outcome::Rebuilt);
+         }
+         let Some(stable_id) = self.accessibility_frame().and_then(|frame| {
+-            let node = frame.node(target.id).filter(focusable)?;
++            let node = frame.visible_focusable_node(target.id)?;
+             node.node.stable_id().map(str::to_owned)
+         }) else {
+             return Ok(Outcome::Rejected);
+@@ -849,7 +861,7 @@
+         {
+             return Ok(false);
+         }
+-        let focusable = |id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable);
++        let focusable = |id| self.in_scope(id) && self.focus_eligible(id);
+         let Some(focused) = self.focused_node().filter(|&id| focusable(id)) else {
+             return Ok(false);
+         };
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -5,7 +5,7 @@
+ /// Mount or update a named control, then focus it without activating it.
+ #[derive(Clone, Debug, PartialEq, Eq)]
+ pub struct FocusNavigation<M> {
+-    /// Stable ID of the enabled control to focus after the rebuild.
++    /// Stable ID of the control to focus after the rebuild.
+     pub target: String,
+     /// Message that runs before the runtime checks the target.
+     pub message: M,
+@@ -13,7 +13,8 @@
+ 
+ pub(crate) type FocusNavigationHandler<M> = Rc<dyn Fn(EditKey, bool) -> Option<FocusNavigation<M>>>;
+ 
+-/// One tab stop per group. Arrows move within it and skip disabled controls.
++/// One tab stop per group. Arrows move among its focusable controls.
++/// Disabled controls are skipped unless the view opts in to disabled menu focus.
+ #[derive(Clone, Copy, Debug)]
+ pub struct Roving {
+     pub direction: Direction,
+@@ -95,9 +96,11 @@
+         navigation: FocusNavigation<A::Message>,
+     ) -> Result<bool, AppError> {
+         self.apply(navigation.message)?;
+-        if self.dom.by_id(&navigation.target).is_some_and(|target| {
+-            self.in_scope(target) && self.dom.get(target).is_ok_and(Node::is_focusable)
+-        }) {
++        if self
++            .dom
++            .by_id(&navigation.target)
++            .is_some_and(|target| self.in_scope(target) && self.focus_eligible(target))
++        {
+             self.focused = Some(navigation.target);
+             self.layout_focus = None;
+         }
+@@ -121,6 +124,23 @@
+                 .active_scope_root()
+                 .is_none_or(|root| self.descendant(id, root))
+     }
++    pub(crate) fn focus_eligible(&self, id: NodeId) -> bool {
++        self.dom.get(id).is_ok_and(Node::is_focusable)
++            || self
++                .bindings
++                .get(&id)
++                .is_some_and(super::Binding::disabled_menu_focus)
++    }
++
++    pub(crate) fn tab_candidate(&self, id: NodeId, node: &Node) -> bool {
++        node.is_tab_stop()
++            || self
++                .bindings
++                .get(&id)
++                .and_then(|binding| binding.disabled_menu_tab_stop)
++                == Some(true)
++    }
++
+     fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
+         let mut parent = self.dom.get(id).ok()?.parent();
+         while let Some(id) = parent {
+@@ -143,7 +163,7 @@
+         self.dom
+             .iter()
+             .filter(|(id, node)| {
+-                node.is_tab_stop()
++                self.tab_candidate(*id, node)
+                     && self.in_scope(*id)
+                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
+                     && collapsed
+@@ -218,7 +238,7 @@
+         };
+         if let Some(focused) = self
+             .focused_node()
+-            .filter(|&id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
++            .filter(|&id| self.in_scope(id) && self.focus_eligible(id))
+         {
+             if self.group(focused).is_some_and(|(owner, _)| owner == group)
+                 && ((options.reveal_after_rebuild && retained.fully_visible)
+@@ -312,7 +332,7 @@
+         self.dom
+             .iter()
+             .find(|(id, n)| {
+-                n.is_tab_stop()
++                self.tab_candidate(*id, n)
+                     && measured.is_none_or(|layout| has_extent(layout, *id))
+                     && self.tab_stop_in_layout(*id, None, measured.or(self.computed.as_ref()))
+             })
+@@ -321,14 +341,14 @@
+                 self.scopes
+                     .last()
+                     .and_then(|s| self.dom.by_id(&s.id))
+-                    .filter(|id| self.dom.get(*id).is_ok_and(|n| n.is_focusable()))
++                    .filter(|id| self.focus_eligible(*id))
+                     .and_then(|id| self.stable(id))
+             })
+     }
+     fn focusable_in_scope(&self, key: &str) -> bool {
+         self.dom
+             .by_id(key)
+-            .is_some_and(|id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable))
++            .is_some_and(|id| self.in_scope(id) && self.focus_eligible(id))
+     }
+ 
+     pub(crate) fn reconcile_controls(
+@@ -428,8 +448,7 @@
+                 self.layout_focus = None;
+             } else if let Some(target) = focus_after_removal.into_iter().find(|target| {
+                 self.focused_node()
+-                    .and_then(|id| self.dom.get(id).ok())
+-                    .is_none_or(|node| !node.is_focusable())
++                    .is_none_or(|id| !self.focus_eligible(id))
+                     && self.focusable_in_scope(target)
+             }) {
+                 self.focused = Some(target);
+@@ -484,10 +503,11 @@
+                 let geometry = &layout.nodes[id.index()];
+                 geometry.bounds.intersect(geometry.clip).contains(x, y)
+             };
+-            if contains(root) {
++            let binding = &self.bindings[&root];
++            if !binding.modal_descendants_only && contains(root) {
+                 return false;
+             }
+-            if self.bindings[&root].modal_layer.is_none() {
++            if binding.modal_layer.is_none() {
+                 return true;
+             }
+             // A painted or scrollable positioned descendant is part of the
+@@ -648,8 +668,9 @@
+             }
+             _ => return Ok(false),
+         };
+-        let target = self.stable(members[next]).expect("control has ID");
+-        if options.automatic {
++        let next = members[next];
++        let target = self.stable(next).expect("control has ID");
++        if options.automatic && !self.dom.get(next)?.is_disabled() {
+             self.activate(&target)
+         } else {
+             self.focused = Some(target);
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -77,6 +77,7 @@
+     paint_contour: Option<ContourPainter>,
+     activate: Option<M>,
+     suppress_repeated_activation: bool,
++    focus_disabled_menu_item: bool,
+     input: Option<Rc<dyn Fn(String) -> M>>,
+     text_options: TextOptions,
+     center_single_line_text: bool,
+@@ -114,6 +115,7 @@
+     interaction_suppression: Option<Rc<InteractionSuppression>>,
+     visual_overlay: bool,
+     modal_layer: Option<ModalLayer>,
++    modal_descendants_only: bool,
+     modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
+     modal_panel_transform: Option<ModalTransformPainter>,
+ }
+@@ -162,6 +164,7 @@
+             paint_contour: None,
+             activate: None,
+             suppress_repeated_activation: false,
++            focus_disabled_menu_item: false,
+             input: None,
+             text_options: TextOptions::default(),
+             center_single_line_text: false,
+@@ -199,6 +202,7 @@
+             interaction_suppression: None,
+             visual_overlay: false,
+             modal_layer: None,
++            modal_descendants_only: false,
+             modal_panel_opacity: None,
+             modal_panel_transform: None,
+         }
+@@ -227,6 +231,17 @@
+         self.suppress_repeated_activation = true;
+         self
+     }
++    /// Keep an explicitly disabled `Role::MenuItem` reachable with keyboard
++    /// navigation and accessibility focus. It still cannot be pressed.
++    /// The item needs a stable ID and keeps its authored Tab eligibility.
++    /// An item made disabled by an ancestor keeps the normal disabled behavior.
++    pub fn focus_disabled_menu_item(mut self) -> Self {
++        self.focus_disabled_menu_item = true;
++        self
++    }
++    fn permits_disabled_menu_focus(&self) -> bool {
++        self.focus_disabled_menu_item && self.node.role() == Role::MenuItem
++    }
+     /// When the focused control is removed or disabled, move focus to an
+     /// enabled target in the same scope. This does not press the target.
+     pub fn restore_focus_on_removal(mut self, target: impl Into<String>) -> Self {
+@@ -239,7 +254,9 @@
+     /// fallback if the first target cannot receive focus in the current scope.
+     pub fn restore_focus_in_subtree_on_removal(mut self, target: impl Into<String>) -> Self {
+         fn apply<M>(view: &mut View<M>, target: &str) {
+-            if view.node.is_focusable() && !view.focus_after_removal.iter().any(|id| id == target) {
++            if (view.node.is_focusable() || view.permits_disabled_menu_focus())
++                && !view.focus_after_removal.iter().any(|id| id == target)
++            {
+                 view.focus_after_removal.push(target.to_owned());
+             }
+             for child in &mut view.children {
+@@ -674,7 +691,17 @@
+     pub fn modal_overlay(mut self, dismiss: M) -> Self {
+         self.dismiss = Some(dismiss);
+         self.modal_layer = Some(ModalLayer::Panel);
+-        self
++        self.modal_descendants_only = false;
++        self
++    }
++    /// Open an overlay whose transparent layout wrapper is not a pointer
++    /// boundary. The wrapper must not itself be an interactive control.
++    /// Interactive descendants and painted or scrollable positioned
++    /// descendants still count as inside the overlay.
++    pub fn modal_overlay_descendants(self, dismiss: M) -> Self {
++        let mut overlay = self.modal_overlay(dismiss);
++        overlay.modal_descendants_only = true;
++        overlay
+     }
+     /// Keep a departing panel at its authored modal paint position. It takes
+     /// no input, focus or accessibility actions, and it does not open a
+@@ -764,6 +791,7 @@
+     pub fn modal_with_backdrop(mut self, backdrop: Node, dismiss: M) -> Self {
+         self.dismiss = Some(dismiss);
+         self.modal_layer = Some(ModalLayer::BackdropParent);
++        self.modal_descendants_only = false;
+         Self::new(backdrop).children([self])
+     }
+ }
+@@ -977,6 +1005,9 @@
+ struct Binding<M> {
+     activate: Option<M>,
+     suppress_repeated_activation: bool,
++    // None is the ordinary path. Some remembers the authored Tab eligibility
++    // before applying disabled, which still blocks every activation path.
++    disabled_menu_tab_stop: Option<bool>,
+     input: Option<Rc<dyn Fn(String) -> M>>,
+     text_options: TextOptions,
+     center_single_line_text: bool,
+@@ -1014,11 +1045,16 @@
+     interaction_suppression: Option<Rc<InteractionSuppression>>,
+     visual_overlay: bool,
+     modal_layer: Option<ModalLayer>,
++    modal_descendants_only: bool,
+     modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
+     modal_panel_transform: Option<ModalTransformPainter>,
+ }
+ 
+ impl<M> Binding<M> {
++    fn disabled_menu_focus(&self) -> bool {
++        self.disabled_menu_tab_stop.is_some()
++    }
++
+     fn accepts_interaction(&self) -> bool {
+         self.interaction_suppression.is_none()
+     }
+@@ -1396,10 +1432,14 @@
+             disabled: bool,
+             inherited_suppression: Option<&Rc<InteractionSuppression>>,
+         ) -> Result<(), AppError> {
++            let disabled_menu_tab_stop =
++                (!disabled && view.node.is_disabled() && view.permits_disabled_menu_focus())
++                    .then(|| view.node.clone().disabled(false).is_tab_stop());
+             let disabled = disabled || view.node.is_disabled();
+             let suppression = inherited_suppression.or(view.interaction_suppression.as_ref());
+             let node = view.node.disabled(disabled);
+             if (node.is_focusable()
++                || disabled_menu_tab_stop.is_some()
+                 || view.roving.is_some()
+                 || view.dismiss.is_some()
+                 || view.modal_layer.is_some_and(ModalLayer::is_retiring)
+@@ -1448,6 +1488,7 @@
+                 Binding {
+                     activate: view.activate,
+                     suppress_repeated_activation: view.suppress_repeated_activation,
++                    disabled_menu_tab_stop,
+                     input: view.input,
+                     text_options: view.text_options,
+                     center_single_line_text: view.center_single_line_text,
+@@ -1484,6 +1525,7 @@
+                     accessible_scroll_pages: view.accessible_scroll_pages,
+                     visual_overlay: view.visual_overlay,
+                     modal_layer: view.modal_layer,
++                    modal_descendants_only: view.modal_descendants_only,
+                     modal_panel_opacity: view.modal_panel_opacity,
+                     modal_panel_transform: view.modal_panel_transform,
+                     interaction_suppression: suppression.cloned(),
+@@ -1553,8 +1595,7 @@
+         if self.focused.as_ref().is_some_and(|key| {
+             self.dom
+                 .by_id(key)
+-                .and_then(|id| self.dom.get(id).ok())
+-                .is_none_or(|n| !n.is_focusable())
++                .is_none_or(|id| !self.focus_eligible(id))
+         }) {
+             self.focused = None;
+         }
+@@ -1809,9 +1850,22 @@
+         let Some(id) = self.focused_node() else {
+             return Ok(false);
+         };
++        let disabled_menu_item = self
++            .bindings
++            .get(&id)
++            .is_some_and(Binding::disabled_menu_focus);
++        let modifiers = press.modifiers;
++        let activation_key = matches!(press.key, Key::Enter | Key::Space)
++            && !modifiers.control
++            && !modifiers.alt
++            && !modifiers.meta;
++        if disabled_menu_item && activation_key {
++            return Ok(true);
++        }
+         if let Some(message) = self
+             .bindings
+             .get(&id)
++            .filter(|binding| !binding.disabled_menu_focus())
+             .and_then(|binding| binding.key.clone())
+             .and_then(|handler| handler(press))
+         {
+@@ -1824,12 +1878,8 @@
+         if self.navigate_key_focus(id, press)? || self.focus_shortcut(id, press) {
+             return Ok(true);
+         }
+-        let modifiers = press.modifiers;
+         Ok(press.repeat
+-            && matches!(press.key, Key::Enter | Key::Space)
+-            && !modifiers.control
+-            && !modifiers.alt
+-            && !modifiers.meta
++            && activation_key
+             && !self.has_pending_composition()
+             && self.in_scope(id)
+             && self.bindings.get(&id).is_some_and(|binding| {
+@@ -1889,7 +1939,7 @@
+ 
+     fn focus_shortcut_target(&self, source: NodeId, press: &KeyPress) -> Option<&str> {
+         let focused = self.dom.get(source).ok()?;
+-        if !focused.is_focusable()
++        if !self.focus_eligible(source)
+             || focused.role() == Role::TextInput
+             || self.has_pending_composition()
+         {
+@@ -1906,7 +1956,7 @@
+                 let target = self.dom.by_id(&shortcut.message)?;
+                 return (self.in_scope(target)
+                     && self.descendant(target, id)
+-                    && self.dom.get(target).is_ok_and(Node::is_focusable)
++                    && self.focus_eligible(target)
+                     && self.has_tab_extent(target))
+                 .then_some(shortcut.message.as_str());
+             }
+@@ -2120,7 +2170,7 @@
+                     .iter()
+                     .filter_map(|(id, node)| {
+                         let key = node.stable_id()?;
+-                        (node.is_tab_stop()
++                        (self.tab_candidate(id, node)
+                             && self.has_tab_extent(id)
+                             && !collapsed.as_ref().is_some_and(|ids| ids.contains(key))
+                             && self.tab_stop(id, collapsed.as_ref()))
+@@ -2162,6 +2212,13 @@
+                 Ok(true)
+             }
+             Event::Activate => {
++                if self
++                    .focused_node()
++                    .and_then(|id| self.bindings.get(&id))
++                    .is_some_and(Binding::disabled_menu_focus)
++                {
++                    return Ok(false);
++                }
+                 if let Some(id) = self.focused.clone() {
+                     self.activate_id(&id)
+                 } else {
+--- /dev/null
++++ b/crates/surface-app/tests/disabled_menu_focus.rs
+@@ -0,0 +1,297 @@
++use surface::{Color, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer};
++use surface_app::{
++    AccessibilityActivationResult, AccessibilityFocusResult, Application, EditKey, Event, Key,
++    KeyPress, Modifiers, Roving, Runtime, View,
++};
++
++const FOCUS_INK: Color = Color(200, 20, 45, 255);
++
++#[derive(Clone, Copy)]
++enum Message {
++    Show,
++    Dismiss,
++    Press,
++    Key,
++    Context,
++    SetDisabled(bool),
++    Rebuild,
++}
++
++#[derive(Default)]
++struct App {
++    open: bool,
++    automatic: bool,
++    disabled: bool,
++    initial: Option<&'static str>,
++    actions: usize,
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Show => self.open = true,
++            Message::Dismiss => self.open = false,
++            Message::Press | Message::Key | Message::Context => self.actions += 1,
++            Message::SetDisabled(disabled) => self.disabled = disabled,
++            Message::Rebuild => {}
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let menu = self.open.then(|| {
++            let menu = View::new(
++                Node::new(Role::Menu, "Commands").id("commands").styled(
++                    Style::column()
++                        .width(Length::Px(140.))
++                        .height(Length::Px(56.))
++                        .clip(true),
++                ),
++            )
++            .children([
++                item("first", Role::MenuItem, false, false),
++                item("legacy", Role::MenuItem, true, false),
++                item("wrong-role", Role::Button, true, true),
++                View::new(Node::new(Role::Group, "").disabled(true)).children([item(
++                    "inherited",
++                    Role::MenuItem,
++                    true,
++                    true,
++                )]),
++                item("unavailable", Role::MenuItem, self.disabled, true)
++                    .restore_focus_on_removal("last"),
++                item("last", Role::MenuItem, false, false),
++            ])
++            .roving_retained(Roving::vertical(self.automatic))
++            .modal_overlay(Message::Dismiss);
++            if let Some(initial) = self.initial {
++                menu.modal_initial_focus(initial)
++            } else {
++                menu
++            }
++        });
++        View::new(Node::new(Role::Window, "Test").styled(Style::column())).children(
++            std::iter::once(
++                View::new(Node::new(Role::Button, "Open").id("open")).on_press(Message::Show),
++            )
++            .chain(menu),
++        )
++    }
++}
++
++fn item(id: &str, role: Role, disabled: bool, focusable_when_disabled: bool) -> View<Message> {
++    let mut style = Style::row().width(Length::Px(140.)).height(Length::Px(48.));
++    style.min_height = 48.;
++    let row = View::new(
++        Node::new(role, id)
++            .id(id)
++            .disabled(disabled)
++            .styled(style)
++            .focus_color(FOCUS_INK)
++            .focus_outline_width(3.),
++    )
++    .on_press(Message::Press)
++    .on_key(|press| (press.key == Key::Enter).then_some(Message::Key))
++    .on_context_menu(|_| Message::Context)
++    .accessible_activation();
++    if focusable_when_disabled {
++        row.focus_disabled_menu_item()
++    } else {
++        row
++    }
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, _: &str, _: f32, _: Option<f32>) -> (f32, f32) {
++        (0., 0.)
++    }
++}
++
++fn render(runtime: &mut Runtime<App>) {
++    runtime.render(220., 180., &mut Metrics).unwrap();
++}
++
++fn open(disabled: bool, automatic: bool, initial: Option<&'static str>) -> Runtime<App> {
++    let mut runtime = Runtime::new(App {
++        disabled,
++        automatic,
++        initial,
++        ..App::default()
++    })
++    .unwrap();
++    runtime.activate("open").unwrap();
++    render(&mut runtime);
++    runtime
++}
++
++fn edit(key: EditKey) -> Event {
++    Event::Edit {
++        key,
++        extend: false,
++        by_word: false,
++    }
++}
++
++fn bounds(runtime: &Runtime<App>, id: &str) -> (Rect, Rect) {
++    let id = runtime.dom().by_id(id).unwrap();
++    let node = &runtime.computed().unwrap().nodes[id.index()];
++    (node.bounds, node.bounds.intersect(node.clip))
++}
++
++#[test]
++fn roving_reaches_and_reveals_only_the_opted_in_disabled_item_without_pressing_it() {
++    for automatic in [false, true] {
++        let mut runtime = open(true, automatic, None);
++        assert_eq!(runtime.focused(), Some("first"));
++        assert_eq!(bounds(&runtime, "unavailable").1.height, 0.);
++        assert!(runtime.dispatch(edit(EditKey::Down)).unwrap());
++        assert_eq!(runtime.focused(), Some("unavailable"));
++        assert_eq!(runtime.app().actions, 0);
++        let paint = runtime.render(220., 180., &mut Metrics).unwrap();
++        let (row, visible) = bounds(&runtime, "unavailable");
++        assert!(paint.ops.iter().any(|op| matches!(
++            op,
++            PaintOp::Stroke { rect, color, .. } if *rect == row && *color == FOCUS_INK
++        )));
++        assert_eq!(row, visible);
++        assert_eq!(visible.height, 48.);
++        let menu_id = runtime.dom().by_id("commands").unwrap();
++        let target_id = runtime.dom().by_id("unavailable").unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        assert_eq!(frame.focused(), Some(target_id));
++        assert!(frame.focus_target(target_id).is_some());
++        assert!(frame.activation_target(target_id).is_none());
++        assert!(!runtime.dom().get(target_id).unwrap().is_focusable());
++        assert!(
++            runtime.computed().unwrap().nodes[menu_id.index()]
++                .bounds
++                .height
++                < 2. * row.height
++        );
++
++        runtime.apply(Message::Rebuild).unwrap();
++        render(&mut runtime);
++        assert_eq!(runtime.focused(), Some("unavailable"));
++        assert_eq!(bounds(&runtime, "unavailable").1, visible);
++
++        assert!(runtime.dispatch(edit(EditKey::Down)).unwrap());
++        assert_eq!(runtime.focused(), Some("last"));
++        assert_eq!(runtime.app().actions, usize::from(automatic));
++    }
++}
++
++#[test]
++fn disabled_focus_blocks_pointer_touch_and_every_activation_route() {
++    let mut runtime = open(true, false, Some("unavailable"));
++    assert_eq!(runtime.focused(), Some("unavailable"));
++    let (row, visible) = bounds(&runtime, "unavailable");
++    assert_eq!(row, visible);
++    let (x, y) = (row.x + row.width / 2., row.y + row.height / 2.);
++    for key in [Key::Enter, Key::Space] {
++        let press = KeyPress::new(key, Modifiers::default());
++        assert!(runtime.key(&press).unwrap());
++        assert!(!runtime.dispatch(Event::Activate).unwrap());
++    }
++    assert!(matches!(
++        runtime.activate("unavailable"),
++        Err(surface_app::AppError::MissingControl(_))
++    ));
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    runtime.dispatch(Event::SecondaryDown { x, y }).unwrap();
++    runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch_touch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().actions, 0);
++    assert_eq!(runtime.focused(), Some("unavailable"));
++
++    let target = runtime.dom().by_id("unavailable").unwrap();
++    let source = runtime
++        .accessibility_frame()
++        .unwrap()
++        .focus_target(target)
++        .unwrap();
++    assert!(runtime
++        .accessibility_key(
++            &source,
++            &KeyPress::new(Key::Enter, Modifiers::default()),
++            Event::Activate,
++        )
++        .unwrap());
++    assert_eq!(runtime.app().actions, 0);
++    assert!(runtime
++        .accessibility_key(
++            &source,
++            &KeyPress::new(Key::ArrowDown, Modifiers::default()),
++            edit(EditKey::Down),
++        )
++        .unwrap());
++    assert_eq!(runtime.focused(), Some("last"));
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert_eq!(runtime.focused(), Some("open"));
++    assert!(!runtime.app().open);
++}
++
++#[test]
++fn changing_to_disabled_keeps_focus_and_retires_previously_issued_press_tokens() {
++    let mut runtime = open(false, false, Some("unavailable"));
++    let id = runtime.dom().by_id("unavailable").unwrap();
++    let press = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(id)
++        .unwrap();
++    runtime.apply(Message::SetDisabled(true)).unwrap();
++    render(&mut runtime);
++    assert_eq!(runtime.focused(), Some("unavailable"));
++    assert_eq!(
++        runtime.accessibility_activate(&press).unwrap(),
++        AccessibilityActivationResult::Rejected
++    );
++    let id = runtime.dom().by_id("unavailable").unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.activation_target(id).is_none());
++    let focus = frame.focus_target(id).unwrap();
++    assert_eq!(
++        runtime.accessibility_focus(&focus).unwrap(),
++        AccessibilityFocusResult::Unchanged
++    );
++    // An already visible next row may take focus. The previous disabled
++    // item can take it back through the same host focus lane.
++    assert!(runtime.dispatch(edit(EditKey::Down)).unwrap());
++    assert_eq!(runtime.focused(), Some("last"));
++    assert_eq!(
++        runtime.accessibility_focus(&focus).unwrap(),
++        AccessibilityFocusResult::Moved
++    );
++    assert_eq!(runtime.focused(), Some("unavailable"));
++    assert_eq!(runtime.app().actions, 0);
++}
++
++#[cfg(feature = "devtools")]
++#[test]
++fn devtools_reports_disabled_for_a_direct_action_but_keys_can_navigate() {
++    use serde_json::json;
++    use surface_devtools_protocol::{ErrorCode, Request, VERSION};
++
++    let mut runtime = open(true, false, None);
++    let mut request = |method: &str, params| {
++        runtime.execute_devtools(Request {
++            v: VERSION,
++            id: 1,
++            method: method.into(),
++            params,
++        })
++    };
++    let down = request("Action.key", json!({ "key": "down" }));
++    assert_eq!(down.result.unwrap()["focused"], "unavailable");
++    let direct = request("Action.activate", json!({ "id": "unavailable" }));
++    assert_eq!(direct.error.unwrap().code, ErrorCode::Disabled);
++    let enter = request("Action.key", json!({ "key": "enter" }));
++    let result = enter.result.unwrap();
++    assert_eq!(result["focused"], "unavailable");
++    assert_eq!(result["changed"], false);
++    assert_eq!(runtime.app().actions, 0);
++}
+--- /dev/null
++++ b/crates/surface-material/src/command_menu.rs
+@@ -0,0 +1,304 @@
++//! Baseline Material 3 menu for commands launched by a button.
++
++use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style, TextAlignment};
++use surface_app::{AnimationFrame, AnimationUpdate, CursorStyle, Roving, View};
++
++use crate::{
++    menu_layout::{place_menu, MenuAnchor, MIN_ITEM_HEIGHT},
++    shape::{self, LayoutDirection},
++    typography, Elevation, Theme, VectorIcon,
++};
++
++const OUTER_PADDING: f32 = 8.;
++const ITEM_SPACE: f32 = 12.;
++const ICON_SIZE: f32 = 24.;
++const SEPARATOR_HEIGHT: f32 = 1.;
++const SEPARATOR_SPACE: f32 = 8.;
++
++/// The stable identities, measured width and controlled state of a button menu.
++pub struct CommandMenuOptions<'a> {
++    /// Stable ID of the named menu panel.
++    pub id: &'a str,
++    /// Localized accessible name of the menu.
++    pub label: &'a str,
++    /// Stable ID already assigned to the caller's trigger button.
++    pub trigger_id: &'a str,
++    pub open: bool,
++    pub direction: LayoutDirection,
++    /// Preferred width, normally between 112 and 280 dp.
++    pub preferred_width: f32,
++    /// Alternate control to focus if the invoking control goes away.
++    pub restore_focus_to: Option<&'a str>,
++}
++
++/// One command or a passive, semantic separator between command groups.
++pub enum CommandMenuEntry<'a, M> {
++    Item(CommandMenuItem<'a, M>),
++    Separator { id: &'a str },
++}
++
++/// The row's label also names its single accessible action. Icons are passive.
++pub struct CommandMenuItem<'a, M> {
++    pub id: &'a str,
++    pub label: &'a str,
++    pub leading_icon: Option<VectorIcon>,
++    pub trailing_icon: Option<VectorIcon>,
++    pub disabled: bool,
++    pub on_press: M,
++}
++
++/// Retain one measurement value per menu in the application.
++#[derive(Default, Clone, Copy, PartialEq)]
++pub struct CommandMenuMeasurement {
++    anchor: Option<MenuAnchor>,
++    content_height: Option<f32>,
++}
++
++impl CommandMenuMeasurement {
++    /// Read the clipped trigger bounds and the full laid out menu contents.
++    /// Use the result from the application's frame callback so the first
++    /// valid measurement and later changes can update the popup placement.
++    pub fn advance(
++        &mut self,
++        menu_id: &str,
++        trigger_id: &str,
++        frame: &AnimationFrame<'_>,
++    ) -> AnimationUpdate {
++        let previous = *self;
++        if let Some(layout) = frame.layout {
++            self.anchor = MenuAnchor::from_frame(frame, trigger_id);
++            self.content_height = frame
++                .dom
++                .by_id(&content_id(menu_id))
++                .and_then(|id| layout.nodes.get(id.index()))
++                .map(|node| node.bounds.height)
++                .filter(|height| height.is_finite() && *height > 0.);
++        }
++        let changed = previous != *self;
++        AnimationUpdate {
++            rebuild: changed,
++            request_next: changed
++                || (frame.layout.is_none() && frame.dom.by_id(trigger_id).is_some()),
++        }
++    }
++
++    /// The visible portion of the trigger and its viewport, if measured.
++    pub fn anchor(&self) -> Option<MenuAnchor> {
++        self.anchor
++    }
++
++    /// Natural height before the viewport clips the currently mounted panel.
++    pub fn content_height(&self) -> Option<f32> {
++        self.content_height
++    }
++}
++
++impl Theme {
++    /// Build an anchored, scrollable command menu next to a caller-authored
++    /// button. The returned group occupies the button's slot in the layout.
++    /// The application changes `open` when the button, dismissal or command
++    /// sends a message. This builder exposes the trigger as expanded only
++    /// after it has a visible anchor and there is at least one command.
++    ///
++    /// [Material 3 menu specifications](https://m3.material.io/components/menus/specs)
++    pub fn command_menu<'a, M>(
++        &self,
++        options: CommandMenuOptions<'_>,
++        trigger: View<M>,
++        entries: impl IntoIterator<Item = CommandMenuEntry<'a, M>>,
++        on_dismiss: M,
++        measurement: &CommandMenuMeasurement,
++    ) -> View<M>
++    where
++        M: 'a,
++    {
++        let scope = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-scope", options.id))
++                .styled(Style::column()),
++        );
++        let Some(anchor) = measurement.anchor.filter(|_| options.open) else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let entries: Vec<_> = entries.into_iter().collect();
++        let first = entries.iter().find_map(|entry| match entry {
++            CommandMenuEntry::Item(item) => Some(item.id),
++            CommandMenuEntry::Separator { .. } => None,
++        });
++        let Some(first) = first else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let minimum_height = 2. * OUTER_PADDING
++            + entries
++                .iter()
++                .map(|entry| match entry {
++                    CommandMenuEntry::Item(_) => MIN_ITEM_HEIGHT,
++                    CommandMenuEntry::Separator { .. } => 2. * SEPARATOR_SPACE + SEPARATOR_HEIGHT,
++                })
++                .sum::<f32>();
++        let desired_height = measurement.content_height.unwrap_or(0.).max(minimum_height);
++        let Some(layout) = place_menu(
++            anchor,
++            (options.preferred_width, desired_height),
++            options.direction,
++        ) else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let menu = self.command_menu_panel(&options, entries, layout.bounds);
++        scope
++            .children([trigger.menu_expanded(true), menu])
++            .modal_overlay_descendants(on_dismiss)
++            .modal_initial_focus(first)
++            .modal_focus_fallback(options.restore_focus_to.unwrap_or(options.trigger_id))
++            .dismiss_modal_on_tab()
++    }
++
++    fn command_menu_panel<'a, M>(
++        &self,
++        options: &CommandMenuOptions<'_>,
++        entries: impl IntoIterator<Item = CommandMenuEntry<'a, M>>,
++        bounds: Rect,
++    ) -> View<M>
++    where
++        M: 'a,
++    {
++        let contents = View::new(
++            Node::new(Role::Group, "")
++                .id(content_id(options.id))
++                .styled(Style::column().width(Length::Percent(1.))),
++        )
++        .children(
++            std::iter::once(spacer(OUTER_PADDING))
++                .chain(entries.into_iter().map(|entry| match entry {
++                    CommandMenuEntry::Item(item) => self.command_menu_item(item, options.direction),
++                    CommandMenuEntry::Separator { id } => self.command_menu_separator(id),
++                }))
++                .chain(std::iter::once(spacer(OUTER_PADDING))),
++        );
++        let style = Style::column()
++            .width(Length::Px(bounds.width))
++            .height(Length::Px(bounds.height))
++            .fixed(Insets {
++                left: Length::Px(bounds.x),
++                top: Length::Px(bounds.y),
++                ..Insets::default()
++            })
++            .clip(true)
++            .background(self.colors.surface_container)
++            .corners(shape::EXTRA_SMALL);
++        View::new(
++            Node::new(Role::Menu, options.label)
++                .id(options.id)
++                .styled(style)
++                .box_shadows(self.elevation(Elevation::Level2)),
++        )
++        .children([contents])
++        .roving(Roving::vertical(false))
++        .accessibility_scroll_pages()
++    }
++
++    fn command_menu_item<M>(
++        &self,
++        item: CommandMenuItem<'_, M>,
++        direction: LayoutDirection,
++    ) -> View<M> {
++        let label_ink = self.colors.on_surface;
++        let (label_ink, icon_ink) = if item.disabled {
++            let Color(r, g, b, _) = label_ink;
++            (Color(r, g, b, 97), Color(r, g, b, 97))
++        } else {
++            (label_ink, self.colors.on_surface_variant)
++        };
++        let mut style = Style::row()
++            .width(Length::Percent(1.))
++            .padding(ITEM_SPACE)
++            .gap(ITEM_SPACE)
++            .align(Align::Center)
++            .state_layer(self.colors.on_surface);
++        style.min_height = MIN_ITEM_HEIGHT;
++        let control = Node::new(Role::MenuItem, item.label)
++            .id(item.id)
++            .disabled(item.disabled)
++            .focus_color(self.colors.secondary)
++            .styled(style);
++        let (control, alignment) = match direction {
++            LayoutDirection::LeftToRight => (control, TextAlignment::Left),
++            LayoutDirection::RightToLeft => (control.reverse_row(), TextAlignment::Right),
++        };
++        let text = View::new(
++            Node::new(Role::Text, "")
++                .id(format!("{}-label", item.id))
++                .text(item.label)
++                .text_alignment(alignment)
++                .shrink_to_fit_width()
++                .styled(
++                    Style::column()
++                        .grow(1.)
++                        .with_text_style(typography::BODY_LARGE)
++                        .foreground(label_ink),
++                ),
++        )
++        .without_interaction(None);
++        let leading = item
++            .leading_icon
++            .map(|icon| icon_view(format!("{}-leading", item.id), icon, icon_ink));
++        let trailing = item
++            .trailing_icon
++            .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink));
++        let control = View::new(control)
++            .children(leading.into_iter().chain([text]).chain(trailing))
++            .accessibility_scroll_into_view();
++        if item.disabled {
++            control.focus_disabled_menu_item()
++        } else {
++            control
++                .on_press(item.on_press)
++                .accessible_activation()
++                .suppress_repeated_activation()
++                .cursor(CursorStyle::Pointer)
++        }
++    }
++
++    fn command_menu_separator<M>(&self, id: &str) -> View<M> {
++        let line = View::new(
++            Node::new(Role::Separator, "").id(id).styled(
++                Style::column()
++                    .height(Length::Px(SEPARATOR_HEIGHT))
++                    .background(self.colors.outline_variant),
++            ),
++        );
++        View::new(
++            Node::new(Role::Group, "").styled(
++                Style::column()
++                    .height(Length::Px(2. * SEPARATOR_SPACE + SEPARATOR_HEIGHT))
++                    .justify(Align::Center),
++            ),
++        )
++        .children([line])
++    }
++}
++
++fn content_id(menu_id: &str) -> String {
++    format!("{menu_id}-content")
++}
++
++fn spacer<M>(height: f32) -> View<M> {
++    View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(height))))
++}
++
++fn icon_view<M>(id: String, icon: VectorIcon, ink: Color) -> View<M> {
++    View::new(
++        Node::new(Role::Group, "")
++            .id(id)
++            .styled(
++                Style::column()
++                    .width(Length::Px(ICON_SIZE))
++                    .height(Length::Px(ICON_SIZE)),
++            )
++            .fill_contour(
++                icon.contour_dp(ICON_SIZE, ink)
++                    .expect("validated icon contour"),
++            ),
++    )
++    .without_interaction(None)
++}
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -16,6 +16,7 @@
+ mod carousel;
+ mod carousel_layout;
+ mod carousel_state;
++mod command_menu;
+ mod components;
+ mod date_picker;
+ mod date_picker_state;
+@@ -35,6 +36,7 @@
+ mod full_screen_dialog;
+ mod list;
+ mod loading_indicator;
++mod menu_layout;
+ pub mod motion;
+ mod navigation_drawer;
+ mod progress_indicator;
+@@ -86,6 +88,9 @@
+ pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientation};
+ pub use carousel_layout::{CarouselLayout, CarouselSlot};
+ pub use carousel_state::{CarouselInput, CarouselState};
++pub use command_menu::{
++    CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
++};
+ pub use components::{
+     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
+     FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,
+@@ -145,6 +150,7 @@
+ pub use loading_indicator::{
+     LoadingIndicatorMotion, LoadingIndicatorOptions, LoadingIndicatorPose,
+ };
++pub use menu_layout::{place_menu, MenuAnchor, MenuLayout, MenuPlacement};
+ pub use navigation_drawer::{
+     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
+ };
+--- /dev/null
++++ b/crates/surface-material/src/menu_layout.rs
+@@ -0,0 +1,157 @@
++//! Viewport placement for a Material command menu.
++
++use surface::Rect;
++use surface_app::AnimationFrame;
++
++use crate::shape::LayoutDirection;
++
++const MIN_WIDTH: f32 = 112.;
++const MAX_WIDTH: f32 = 280.;
++const VIEWPORT_INSET: f32 = 8.;
++const ANCHOR_GAP: f32 = 4.;
++pub(super) const MIN_ITEM_HEIGHT: f32 = 48.;
++
++/// Visible trigger and viewport in the same logical coordinate space.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct MenuAnchor {
++    pub trigger: Rect,
++    pub viewport: Rect,
++}
++
++impl MenuAnchor {
++    /// Read the visible part of a stable trigger from the current layout.
++    pub fn from_frame(frame: &AnimationFrame<'_>, trigger_id: &str) -> Option<Self> {
++        let layout = frame.layout?;
++        let node = layout.nodes.get(frame.dom.by_id(trigger_id)?.index())?;
++        let trigger = node.bounds.intersect(node.clip).intersect(layout.viewport);
++        valid(trigger).then_some(Self {
++            trigger,
++            viewport: layout.viewport,
++        })
++    }
++}
++
++/// Where the menu was placed relative to its trigger.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum MenuPlacement {
++    Below,
++    Above,
++    Trailing,
++    Leading,
++    Overlapping,
++}
++
++/// Bounds available for the scrollable menu and their relation to the trigger.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct MenuLayout {
++    pub bounds: Rect,
++    pub placement: MenuPlacement,
++}
++
++/// Position a command menu using its preferred outer width and content height.
++///
++/// The usual width is 112 to 280 dp. A smaller viewport constrains the width.
++/// Try below, above, then the logical trailing and leading sides. A bounded
++/// placement on the roomier vertical side can scroll longer content. If
++/// neither side can display a row, the bounded menu may overlap the trigger.
++pub fn place_menu(
++    anchor: MenuAnchor,
++    preferred_size: (f32, f32),
++    direction: LayoutDirection,
++) -> Option<MenuLayout> {
++    let (preferred_width, preferred_height) = preferred_size;
++    if !valid(anchor.trigger)
++        || !valid(anchor.viewport)
++        || !positive(preferred_width)
++        || !positive(preferred_height)
++    {
++        return None;
++    }
++    let trigger = anchor.trigger.intersect(anchor.viewport);
++    let safe = anchor.viewport.inset(VIEWPORT_INSET);
++    if !valid(trigger) || !valid(safe) {
++        return None;
++    }
++
++    let right = safe.x + safe.width;
++    let bottom = safe.y + safe.height;
++    let width = preferred_width.clamp(MIN_WIDTH, MAX_WIDTH).min(safe.width);
++    let height = preferred_height.min(safe.height);
++    let last_x = (right - width).max(safe.x);
++    let last_y = (bottom - height).max(safe.y);
++    let alignments = match direction {
++        LayoutDirection::LeftToRight => [trigger.x, trigger.x + trigger.width - width],
++        LayoutDirection::RightToLeft => [trigger.x + trigger.width - width, trigger.x],
++    };
++    let x = alignments
++        .into_iter()
++        .find(|edge| (safe.x..=last_x).contains(edge))
++        .unwrap_or_else(|| alignments[0].clamp(safe.x, last_x));
++    let below = (trigger.y + trigger.height + ANCHOR_GAP).max(safe.y);
++    let above = (trigger.y - ANCHOR_GAP).min(bottom);
++    let below_room = (bottom - below).max(0.);
++    let above_room = (above - safe.y).max(0.);
++
++    if height <= below_room {
++        return Some(MenuLayout {
++            bounds: Rect::new(x, below, width, height),
++            placement: MenuPlacement::Below,
++        });
++    }
++    if height <= above_room {
++        return Some(MenuLayout {
++            bounds: Rect::new(x, above - height, width, height),
++            placement: MenuPlacement::Above,
++        });
++    }
++
++    let left_side = trigger.x - ANCHOR_GAP - width;
++    let right_side = trigger.x + trigger.width + ANCHOR_GAP;
++    let sides = match direction {
++        LayoutDirection::LeftToRight => [right_side, left_side],
++        LayoutDirection::RightToLeft => [left_side, right_side],
++    };
++    for (edge, placement) in sides
++        .into_iter()
++        .zip([MenuPlacement::Trailing, MenuPlacement::Leading])
++    {
++        if (safe.x..=last_x).contains(&edge) {
++            return Some(MenuLayout {
++                bounds: Rect::new(edge, trigger.y.clamp(safe.y, last_y), width, height),
++                placement,
++            });
++        }
++    }
++
++    let row_height = height.min(MIN_ITEM_HEIGHT);
++    let (y, height, placement) = if below_room >= above_room && below_room >= row_height {
++        (below, below_room, MenuPlacement::Below)
++    } else if above_room >= row_height {
++        (safe.y, above_room, MenuPlacement::Above)
++    } else {
++        (
++            trigger.y.clamp(safe.y, last_y),
++            height,
++            MenuPlacement::Overlapping,
++        )
++    };
++    Some(MenuLayout {
++        bounds: Rect::new(x, y, width, height),
++        placement,
++    })
++}
++
++fn valid(rect: Rect) -> bool {
++    positive(rect.width)
++        && positive(rect.height)
++        && [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height]
++            .into_iter()
++            .all(f32::is_finite)
++}
++
++fn positive(value: f32) -> bool {
++    value.is_finite() && value > 0.
++}
++
++#[cfg(test)]
++mod tests;
+--- /dev/null
++++ b/crates/surface-material/src/menu_layout/tests.rs
+@@ -0,0 +1,145 @@
++use super::*;
++use crate::shape::LayoutDirection::{LeftToRight, RightToLeft};
++use surface::{Insets, Length, Node, Role, Style};
++use surface_app::{Application, Runtime, View};
++use surface_wgpu::TextSystem;
++
++#[test]
++fn places_below_and_applies_the_minimum_width() {
++    let anchor = MenuAnchor {
++        trigger: Rect::new(50., 70., 48., 44.),
++        viewport: Rect::new(10., 20., 340., 360.),
++    };
++    let layout = place_menu(anchor, (80., 96.), LeftToRight).unwrap();
++    assert_eq!(layout.placement, MenuPlacement::Below);
++    assert_eq!(layout.bounds, Rect::new(50., 118., 112., 96.));
++}
++
++#[test]
++fn places_above_and_aligns_to_a_fitting_trigger_edge() {
++    let anchor = MenuAnchor {
++        trigger: Rect::new(300., 335., 40., 30.),
++        viewport: Rect::new(10., 20., 340., 360.),
++    };
++    for direction in [LeftToRight, RightToLeft] {
++        let layout = place_menu(anchor, (180., 120.), direction).unwrap();
++        assert_eq!(layout.placement, MenuPlacement::Above);
++        assert_eq!(layout.bounds, Rect::new(160., 211., 180., 120.));
++    }
++}
++
++#[test]
++fn repositions_to_either_horizontal_side_and_clamps_its_height() {
++    let mut anchor = MenuAnchor {
++        trigger: Rect::new(260., 120., 80., 48.),
++        viewport: Rect::new(0., 0., 600., 320.),
++    };
++    for (direction, x) in [(LeftToRight, 344.), (RightToLeft, 56.)] {
++        let layout = place_menu(anchor, (200., 400.), direction).unwrap();
++        assert_eq!(layout.placement, MenuPlacement::Trailing);
++        assert_eq!(layout.bounds, Rect::new(x, 8., 200., 304.));
++    }
++
++    anchor.trigger.x = 480.;
++    let layout = place_menu(anchor, (200., 240.), LeftToRight).unwrap();
++    assert_eq!(layout.placement, MenuPlacement::Leading);
++    assert_eq!(layout.bounds, Rect::new(276., 72., 200., 240.));
++}
++
++#[test]
++fn bounds_a_long_menu_on_the_roomier_side_in_a_narrow_viewport() {
++    let anchor = MenuAnchor {
++        trigger: Rect::new(60., 95., 110., 48.),
++        viewport: Rect::new(0., 0., 230., 245.),
++    };
++    let layout = place_menu(anchor, (400., 300.), RightToLeft).unwrap();
++    assert_eq!(layout.placement, MenuPlacement::Below);
++    assert_eq!(layout.bounds, Rect::new(8., 147., 214., 90.));
++
++    let spacious = MenuAnchor {
++        viewport: Rect::new(0., 0., 620., 800.),
++        ..anchor
++    };
++    assert_eq!(
++        place_menu(spacious, (400., 50.), LeftToRight)
++            .unwrap()
++            .bounds
++            .width,
++        280.
++    );
++}
++
++#[test]
++fn uses_the_viewport_when_adjacent_space_is_too_small_for_a_row() {
++    let anchor = MenuAnchor {
++        trigger: Rect::new(25., 27., 118., 70.),
++        viewport: Rect::new(0., 0., 168., 120.),
++    };
++    let layout = place_menu(anchor, (112., 200.), LeftToRight).unwrap();
++    assert_eq!(layout.placement, MenuPlacement::Overlapping);
++    assert_eq!(layout.bounds, Rect::new(25., 8., 112., 104.));
++}
++
++#[test]
++fn uses_the_visible_trigger_and_rejects_unusable_geometry() {
++    let mut anchor = MenuAnchor {
++        trigger: Rect::new(-20., -12., 48., 30.),
++        viewport: Rect::new(0., 0., 360., 300.),
++    };
++    let layout = place_menu(anchor, (160., 80.), LeftToRight).unwrap();
++    assert_eq!(layout.bounds, Rect::new(8., 22., 160., 80.));
++    assert!(place_menu(anchor, (f32::NAN, 80.), LeftToRight).is_none());
++    anchor.trigger.x = 362.;
++    assert!(place_menu(anchor, (160., 80.), LeftToRight).is_none());
++    anchor.trigger.x = f32::INFINITY;
++    assert!(place_menu(anchor, (160., 80.), LeftToRight).is_none());
++}
++
++#[test]
++fn reads_the_clipped_trigger_from_the_active_layout() {
++    struct Host;
++    impl Application for Host {
++        type Message = ();
++
++        fn update(&mut self, _: ()) {}
++
++        fn view(&self) -> View<()> {
++            let trigger = |id: &str, x| {
++                View::new(
++                    Node::new(Role::Button, id).id(id).styled(
++                        Style::column()
++                            .width(Length::Px(48.))
++                            .height(Length::Px(40.))
++                            .fixed(Insets {
++                                left: Length::Px(x),
++                                top: Length::Px(20.),
++                                ..Insets::default()
++                            }),
++                    ),
++                )
++            };
++            View::new(Node::new(Role::Window, "Menu anchors").styled(Style::column().clip(true)))
++                .children([trigger("partly-visible", -12.), trigger("hidden", 400.)])
++        }
++    }
++
++    let mut runtime = Runtime::new(Host).unwrap();
++    runtime
++        .render(360., 300., &mut TextSystem::default())
++        .unwrap();
++    let frame = AnimationFrame {
++        now_ms: None,
++        reduced_motion: false,
++        dom: runtime.dom(),
++        layout: runtime.computed(),
++    };
++    assert_eq!(
++        MenuAnchor::from_frame(&frame, "partly-visible"),
++        Some(MenuAnchor {
++            trigger: Rect::new(0., 20., 36., 40.),
++            viewport: Rect::new(0., 0., 360., 300.),
++        })
++    );
++    assert!(MenuAnchor::from_frame(&frame, "hidden").is_none());
++    assert!(MenuAnchor::from_frame(&frame, "removed").is_none());
++}
+--- /dev/null
++++ b/crates/surface-material/tests/command_menu.rs
+@@ -0,0 +1,454 @@
++use surface::{ExtendedDisplayList, Length, Node, Rect, Role, Style};
++use surface_app::{AnimationFrame, AnimationUpdate, Application, EditKey, Event, Runtime, View};
++use surface_material::{
++    shape::{self, LayoutDirection},
++    ButtonKind, CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
++    Theme, VectorIcon,
++};
++use surface_wgpu::TextSystem;
++
++#[derive(Clone, Copy)]
++enum Message {
++    Toggle,
++    Dismiss,
++    Choose(u8),
++    Background,
++    HideTrigger,
++}
++
++struct Demo {
++    open: bool,
++    hide: bool,
++    trigger_width: Option<Length>,
++    rtl: bool,
++    scale: f32,
++    wrapped: bool,
++    chosen: Option<u8>,
++    dismissed: usize,
++    background: usize,
++    measurement: CommandMenuMeasurement,
++}
++
++impl Default for Demo {
++    fn default() -> Self {
++        Self {
++            open: false,
++            hide: false,
++            trigger_width: None,
++            rtl: false,
++            scale: 1.,
++            wrapped: false,
++            chosen: None,
++            dismissed: 0,
++            background: 0,
++            measurement: CommandMenuMeasurement::default(),
++        }
++    }
++}
++
++impl Application for Demo {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Toggle => self.open = !self.open,
++            Message::Dismiss => {
++                self.open = false;
++                self.dismissed += 1;
++            }
++            Message::Choose(index) => {
++                self.open = false;
++                self.chosen = Some(index);
++            }
++            Message::Background => self.background += 1,
++            Message::HideTrigger => {
++                self.hide = true;
++                self.open = false;
++            }
++        }
++    }
++
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++
++    fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
++        self.measurement.advance("commands", "trigger", &frame)
++    }
++
++    fn view(&self) -> View<Message> {
++        let theme = if self.rtl {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let open_button = if let Some(width) = self.trigger_width {
++            View::new(
++                Node::new(Role::Button, "開啟")
++                    .id("trigger")
++                    .styled(Style::row().width(width).height(Length::Px(48.))),
++            )
++            .on_press(Message::Toggle)
++            .accessible_activation()
++        } else {
++            theme.button("trigger", "開啟", Message::Toggle)
++        };
++        let icon = || VectorIcon::new([[3., 3.], [21., 3.], [21., 21.], [3., 21.]]);
++        let item = |id, label, leading, trailing, disabled, action| {
++            CommandMenuEntry::Item(CommandMenuItem {
++                id,
++                label,
++                leading_icon: leading,
++                trailing_icon: trailing,
++                disabled,
++                on_press: Message::Choose(action),
++            })
++        };
++        let ordinary = if self.wrapped {
++            "儲存報告及工作區的最新版本"
++        } else {
++            "儲存"
++        };
++        let options = CommandMenuOptions {
++            id: "commands",
++            label: "報告操作",
++            trigger_id: "trigger",
++            open: self.open,
++            direction,
++            preferred_width: 240.,
++            restore_focus_to: Some("after"),
++        };
++        let menu = (!self.hide).then(|| {
++            theme.command_menu(
++                options,
++                open_button,
++                [
++                    item("first", ordinary, icon(), icon(), false, 1),
++                    CommandMenuEntry::Separator {
++                        id: "group-separator",
++                    },
++                    item("disabled", "列印", None, None, true, 2),
++                    item("last", "刪除", None, None, false, 3),
++                ],
++                Message::Dismiss,
++                &self.measurement,
++            )
++        });
++        let after = theme.button("after", "下一個", Message::Background);
++        let children = menu.into_iter().chain([after]);
++        let neighbors = if self.trigger_width.is_some() {
++            View::new(Node::new(Role::Group, "").styled(Style::column())).children(children)
++        } else {
++            theme.row(children)
++        };
++        View::new(
++            Node::new(Role::Window, "Example").styled(
++                Style::column()
++                    .padding(20.)
++                    .gap(16.)
++                    .background(theme.background)
++                    .clip(true),
++            ),
++        )
++        .children([
++            theme.button_with(
++                "before",
++                "前一個",
++                ButtonKind::Text,
++                false,
++                Message::Background,
++            ),
++            View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(20.)))),
++            neighbors,
++        ])
++    }
++}
++
++fn paint(app: &mut Runtime<Demo>, viewport: (f32, f32)) -> ExtendedDisplayList {
++    let mut fonts = TextSystem::default();
++    app.render_extended(viewport.0, viewport.1, &mut fonts)
++        .unwrap()
++}
++
++fn settle(app: &mut Runtime<Demo>, viewport: (f32, f32)) {
++    for _ in 0..5 {
++        paint(app, viewport);
++    }
++}
++
++fn node<'a>(app: &'a Runtime<Demo>, key: &str) -> &'a Node {
++    app.dom().get(app.dom().by_id(key).unwrap()).unwrap()
++}
++
++fn bounds(app: &Runtime<Demo>, key: &str) -> Rect {
++    app.computed().unwrap().nodes[app.dom().by_id(key).unwrap().index()].bounds
++}
++
++fn tab(app: &mut Runtime<Demo>, reverse: bool) {
++    app.dispatch(Event::FocusNext { reverse }).unwrap();
++}
++
++fn edit(app: &mut Runtime<Demo>, key: EditKey) {
++    app.dispatch(Event::Edit {
++        key,
++        extend: false,
++        by_word: false,
++    })
++    .unwrap();
++}
++
++fn open(app: &mut Runtime<Demo>, viewport: (f32, f32)) {
++    settle(app, viewport);
++    if app.focused().is_none() {
++        tab(app, false);
++    }
++    if app.focused() == Some("before") {
++        tab(app, false);
++    }
++    assert_eq!(app.focused(), Some("trigger"));
++    app.dispatch(Event::Activate).unwrap();
++    settle(app, viewport);
++    assert_eq!(app.focused(), Some("first"));
++}
++
++fn click(app: &mut Runtime<Demo>, rect: Rect) {
++    let (x, y) = (rect.x + rect.width / 2., rect.y + rect.height / 2.);
++    app.dispatch(Event::PointerDown { x, y }).unwrap();
++    app.dispatch(Event::PointerUp { x, y }).unwrap();
++}
++
++#[test]
++fn layout_keeps_trigger_and_neighbors_fixed_and_mirrors_exact_material_slots() {
++    let viewport = (640., 600.);
++    for rtl in [false, true] {
++        let mut app = Runtime::new(Demo {
++            rtl,
++            ..Demo::default()
++        })
++        .unwrap();
++        settle(&mut app, viewport);
++        let trigger = bounds(&app, "trigger");
++        let after = bounds(&app, "after");
++        assert_eq!(node(&app, "trigger").expanded_state(), Some(false));
++        open(&mut app, viewport);
++        assert_eq!(bounds(&app, "trigger"), trigger);
++        assert_eq!(bounds(&app, "after"), after);
++        let panel = bounds(&app, "commands");
++        let row = bounds(&app, "first");
++        let label = bounds(&app, "first-label");
++        let leading = bounds(&app, "first-leading");
++        let trailing = bounds(&app, "first-trailing");
++        let separator = bounds(&app, "group-separator");
++        assert_eq!(panel.width, 240.);
++        assert_eq!(panel.y - trigger.y - trigger.height, 4.);
++        assert_eq!(row.y - panel.y, 8.);
++        assert_eq!(row.height, 48.);
++        assert_eq!((leading.width, leading.height), (24., 24.));
++        assert_eq!((trailing.width, trailing.height), (24., 24.));
++        let (left, right) = if rtl {
++            (trailing, leading)
++        } else {
++            (leading, trailing)
++        };
++        assert_eq!(left.x - row.x, 12.);
++        assert_eq!(row.x + row.width - right.x - right.width, 12.);
++        assert_eq!(label.x - left.x - left.width, 12.);
++        assert_eq!(right.x - label.x - label.width, 12.);
++        assert_eq!(
++            separator,
++            Rect::new(row.x, row.y + row.height + 8., row.width, 1.)
++        );
++        assert_eq!(
++            bounds(&app, "disabled").y - separator.y - separator.height,
++            8.
++        );
++        assert_eq!(node(&app, "commands").role(), Role::Menu);
++        assert_eq!(node(&app, "commands").name(), "報告操作");
++        let theme = if rtl { Theme::dark() } else { Theme::light() };
++        assert_eq!(
++            node(&app, "commands").style().background,
++            theme.colors.surface_container
++        );
++        assert_eq!(
++            node(&app, "commands").style().corners,
++            Some(shape::EXTRA_SMALL)
++        );
++        assert_eq!(
++            node(&app, "group-separator").style().background,
++            theme.colors.outline_variant
++        );
++        let frame = app.accessibility_frame().unwrap();
++        for (key, role) in [
++            ("trigger", Role::Button),
++            ("commands", Role::Menu),
++            ("first", Role::MenuItem),
++            ("group-separator", Role::Separator),
++        ] {
++            assert_eq!(
++                frame
++                    .node(app.dom().by_id(key).unwrap())
++                    .unwrap()
++                    .node
++                    .role(),
++                role
++            );
++        }
++        assert!(frame
++            .node(app.dom().by_id("first-leading").unwrap())
++            .is_none());
++        assert!(frame.node(app.dom().by_id("after").unwrap()).is_none());
++        assert_eq!(node(&app, "trigger").expanded_state(), Some(true));
++    }
++}
++
++#[test]
++fn dispatch_keeps_disabled_items_in_navigation_without_running_them() {
++    let viewport = (640., 600.);
++    let mut app = Runtime::new(Demo::default()).unwrap();
++    open(&mut app, viewport);
++    edit(&mut app, EditKey::Down);
++    assert_eq!(app.focused(), Some("disabled"));
++    settle(&mut app, viewport);
++    {
++        let accessibility = app.accessibility_frame().unwrap();
++        let id = app.dom().by_id("disabled").unwrap();
++        assert!(accessibility.node(id).unwrap().node.is_disabled());
++        assert!(accessibility.activation_target(id).is_none());
++    }
++    assert!(!app.dispatch(Event::Activate).unwrap());
++    let disabled = bounds(&app, "disabled");
++    click(&mut app, disabled);
++    assert!(app.app().open);
++    assert!(app.app().chosen.is_none());
++    assert_eq!(app.focused(), Some("disabled"));
++    edit(&mut app, EditKey::Down);
++    assert_eq!(app.focused(), Some("last"));
++    app.dispatch(Event::Activate).unwrap();
++    assert_eq!(app.app().chosen, Some(3));
++    assert_eq!(app.focused(), Some("trigger"));
++}
++
++#[test]
++fn menu_dismissal_restores_focus_or_continues_tab_and_never_clicks_through() {
++    let viewport = (640., 600.);
++    let mut app = Runtime::new(Demo::default()).unwrap();
++    open(&mut app, viewport);
++    let after = bounds(&app, "after");
++    click(&mut app, after);
++    assert_eq!(app.app().dismissed, 1);
++    assert_eq!(app.app().background, 0);
++    assert_eq!(app.focused(), Some("trigger"));
++    open(&mut app, viewport);
++    app.dispatch(Event::Cancel).unwrap();
++    assert_eq!(app.focused(), Some("trigger"));
++    open(&mut app, viewport);
++    tab(&mut app, false);
++    assert!(!app.app().open);
++    assert_eq!(app.focused(), Some("after"));
++    tab(&mut app, true);
++    open(&mut app, viewport);
++    tab(&mut app, true);
++    assert_eq!(app.focused(), Some("before"));
++    assert_eq!(app.app().dismissed, 4);
++    open(&mut app, viewport);
++    app.apply(Message::HideTrigger).unwrap();
++    assert_eq!(app.focused(), Some("after"));
++}
++
++#[test]
++fn natural_content_size_responds_to_wrapping_and_constraints_without_losing_focus() {
++    let mut app = Runtime::new(Demo {
++        rtl: true,
++        scale: 2.,
++        wrapped: true,
++        ..Demo::default()
++    })
++    .unwrap();
++    let roomy = (320., 760.);
++    open(&mut app, roomy);
++    let panel = bounds(&app, "commands");
++    assert!(bounds(&app, "first").height > 48.);
++    let measured = bounds(&app, "commands-content").height;
++    assert_eq!(panel.height, measured);
++    assert_eq!(app.app().measurement.content_height(), Some(measured));
++    let short = (320., 392.);
++    settle(&mut app, short);
++    let bounded = bounds(&app, "commands");
++    assert!(bounded.height < measured && bounded.height >= 48.);
++    assert_eq!(bounded, bounded.intersect(Rect::new(8., 8., 304., 376.)));
++    assert_eq!(app.focused(), Some("first"));
++    let original_offset = app.scroll_metrics("commands").unwrap().offset.1;
++    app.dispatch(Event::Scroll {
++        x: bounded.x + bounded.width / 2.,
++        y: bounded.y + bounded.height / 2.,
++        delta_x: 0.,
++        delta_y: 24.,
++    })
++    .unwrap();
++    settle(&mut app, short);
++    assert!(app.scroll_metrics("commands").unwrap().offset.1 > original_offset);
++    assert!(app.app().open);
++    edit(&mut app, EditKey::End);
++    settle(&mut app, short);
++    assert_eq!(app.focused(), Some("last"));
++    let last = bounds(&app, "last");
++    assert_eq!(last, last.intersect(bounds(&app, "commands")));
++    assert!(app.scroll_metrics("commands").unwrap().offset.1 > 0.);
++}
++
++#[test]
++fn popup_uses_the_anchored_rectangles_instead_of_the_wide_layout_wrapper() {
++    for width in [Length::Px(100.), Length::Percent(0.5)] {
++        let viewport = (640., 600.);
++        let mut app = Runtime::new(Demo {
++            trigger_width: Some(width),
++            ..Demo::default()
++        })
++        .unwrap();
++        settle(&mut app, viewport);
++        let trigger = bounds(&app, "trigger");
++        let after = bounds(&app, "after");
++        open(&mut app, viewport);
++        assert_eq!(bounds(&app, "trigger"), trigger);
++        assert_eq!(bounds(&app, "after"), after);
++
++        let panel = bounds(&app, "commands");
++        click(&mut app, Rect::new(panel.x + 2., panel.y + 3., 0., 0.));
++        assert!(
++            app.app().open,
++            "blank scrollable panel padding stays inside"
++        );
++        assert_eq!(app.focused(), Some("first"));
++
++        let smaller = (440., 600.);
++        settle(&mut app, smaller);
++        let trigger = bounds(&app, "trigger");
++        let after = bounds(&app, "after");
++        let x = trigger.x + trigger.width + 40.;
++        let y = trigger.y + trigger.height / 2.;
++        assert!(bounds(&app, "commands-scope").contains(x, y));
++        assert!(!trigger.contains(x, y));
++        assert!(!bounds(&app, "commands").contains(x, y));
++        click(&mut app, Rect::new(x, y, 0., 0.));
++        assert_eq!(app.app().dismissed, 1);
++        assert_eq!(app.focused(), Some("trigger"));
++        settle(&mut app, smaller);
++        assert_eq!(bounds(&app, "trigger"), trigger);
++        assert_eq!(bounds(&app, "after"), after);
++
++        open(&mut app, smaller);
++        click(&mut app, trigger);
++        assert!(!app.app().open, "the opener still receives its own action");
++        assert_eq!(
++            app.app().dismissed,
++            1,
++            "the opener did not use outside dismiss"
++        );
++        assert_eq!(app.focused(), Some("trigger"));
++    }
++}
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -585,6 +585,75 @@
+     }
+ 
+     #[test]
++    fn disabled_menu_item_projects_focus_separately_from_press() {
++        #[derive(Default)]
++        struct Menu(usize);
++
++        impl Application for Menu {
++            type Message = ();
++
++            fn update(&mut self, (): ()) {
++                self.0 += 1;
++            }
++
++            fn view(&self) -> View<()> {
++                let item = |name, disabled| {
++                    View::new(
++                        SurfaceNode::new(SurfaceRole::MenuItem, name)
++                            .id(name)
++                            .disabled(disabled)
++                            .styled(Style::row().height(Length::Px(48.))),
++                    )
++                    .on_press(())
++                    .accessible_activation()
++                };
++                View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop")).children([View::new(
++                    SurfaceNode::new(SurfaceRole::Menu, "Edit").styled(Style::column()),
++                )
++                .children([
++                    item("Copy", false),
++                    item("Paste", true).focus_disabled_menu_item(),
++                    item("Undo", true),
++                ])])
++            }
++        }
++
++        let mut runtime = Runtime::new(Menu::default()).unwrap();
++        let mut tree = Tree::default();
++        let projected = update(&mut runtime, &mut tree);
++        let (paste_id, paste) = named(&projected, "Paste");
++        assert_eq!(paste.role(), Role::MenuItem);
++        assert!(paste.is_disabled());
++        assert!(paste.supports_action(Action::Focus));
++        assert!(!paste.supports_action(Action::Click));
++        let undo = named(&projected, "Undo").1;
++        assert!(undo.is_disabled());
++        assert!(!undo.supports_action(Action::Focus));
++        assert!(!undo.supports_action(Action::Click));
++        let request = |action, target_node| ActionRequest {
++            action,
++            target_tree: TreeId::ROOT,
++            target_node,
++            data: None,
++        };
++        assert!(tree
++            .action(&mut runtime, request(Action::Focus, paste_id))
++            .unwrap());
++        assert_eq!(runtime.focused(), Some("Paste"));
++        let focused = update(&mut runtime, &mut tree);
++        assert_eq!(focused.focus, paste_id);
++        assert!(!tree
++            .action(&mut runtime, request(Action::Click, paste_id))
++            .unwrap());
++        assert_eq!(runtime.app().0, 0);
++        let copy = named(&focused, "Copy").0;
++        assert!(tree
++            .action(&mut runtime, request(Action::Click, copy))
++            .unwrap());
++        assert_eq!(runtime.app().0, 1);
++    }
++
++    #[test]
+     fn visible_alert_heading_and_description_reach_accesskit_and_rebuild_safely() {
+         #[derive(Clone, Copy, PartialEq, Eq)]
+         enum Mode {
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -14,6 +14,8 @@
+ mod material_card;
+ #[path = "material_carousel.rs"]
+ mod material_carousel;
++#[path = "material_command_menu.rs"]
++mod material_command_menu;
+ #[path = "material_date_picker.rs"]
+ mod material_date_picker;
+ #[path = "material_date_picker_gestures.rs"]
+@@ -122,7 +124,7 @@
+     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
+     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
+     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
+-    "M263", "M264", "M265", "M266",
++    "M263", "M264", "M265", "M266", "M267", "M268", "M269",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -239,7 +241,8 @@
+     material_web_contrast::run(env, chrome, &url).await?;
+     material_search_overlay::run(env, chrome, &url).await?;
+     material_dialog::run(env, chrome, &url).await?;
+-    material_divider::run(env, chrome, &url).await
++    material_divider::run(env, chrome, &url).await?;
++    material_command_menu::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+--- /dev/null
++++ b/e2e/src/material_command_menu.rs
+@@ -0,0 +1,241 @@
++//! Command menu interactions and viewport behavior with trusted headless input.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_tree, bounds, contains, focus_projected, focused, projected, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "menu-demo-show";
++const BACK: &str = "menu-demo-back";
++const OPENER: &str = "menu-demo-opener";
++const PANEL: &str = "menu-demo-panel";
++const FIRST: &str = "menu-demo-inbox";
++const DISABLED: &str = "menu-demo-archive";
++const FIND: &str = "menu-demo-find";
++const LAST: &str = "menu-demo-details";
++const OUTSIDE: &str = "menu-demo-list";
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 2040).await?;
++    activate(tab, "section-2").await?;
++    until(tab, "s.section === 2").await?;
++    activate(tab, SHOW).await?;
++    focused(tab, BACK).await?;
++    resize(tab, 960, 800).await
++}
++
++async fn open(tab: &Tab) -> Result<()> {
++    focus_projected(tab, OPENER).await?;
++    tab.press("Enter").await?;
++    until(tab, "s.menu_demo.open").await?;
++    focused(tab, FIRST).await
++}
++
++async fn canvas_focus(tab: &Tab, id: &str) -> Result<()> {
++    until(tab, &format!("s.focused === {id:?}")).await?;
++    // A trusted canvas press hands keyboard input back to the canvas. Its
++    // accessibility projection remains available for browser navigation.
++    tab.wait_for(&format!(
++        "document.activeElement === document.querySelector('canvas') && {} !== null",
++        projected(id)
++    ))
++    .await
++}
++
++async fn point(tab: &Tab, id: &str, x_fraction: f64) -> Result<(f64, f64)> {
++    let [x, y, width, height] = bounds(tab, id).await?;
++    let [left, top, _, _] = tab.canvas_box().await?;
++    Ok((left + x + width * x_fraction, top + y + height / 2.))
++}
++
++async fn keyboard(env: &Env, tab: &Tab) -> Result<Value> {
++    open(tab).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-expanded')",
++            projected(OPENER)
++        ))
++        .await?,
++        "true",
++        "opener remains expanded while its menu owns focus"
++    );
++    let tree = ax_tree(tab).await?;
++    ax(&tree, "menu", "檔案動作")?;
++    ax(&tree, "menuitem", "移到收件匣")?;
++    check!(
++        tree.iter()
++            .any(|node| node["ignored"] == false && node["role"]["value"] == "separator"),
++        "menu exposes the grouping separator"
++    );
++    tab.press("ArrowDown").await?;
++    focused(tab, DISABLED).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-disabled')",
++            projected(DISABLED)
++        ))
++        .await?,
++        "true",
++        "the focused item still reports disabled"
++    );
++    for input in ["Enter", "Space"] {
++        tab.press(input).await?;
++        until(tab, "s.menu_demo.open && s.menu_demo.last === null").await?;
++        focused(tab, DISABLED).await?;
++    }
++    let (x, y) = point(tab, DISABLED, 0.5).await?;
++    tab.click(x, y).await?;
++    until(tab, "s.menu_demo.open && s.menu_demo.last === null").await?;
++    canvas_focus(tab, DISABLED).await?;
++    tab.press("ArrowDown").await?;
++    canvas_focus(tab, FIND).await?;
++    focus_projected(tab, FIND).await?;
++    focused(tab, FIND).await?;
++    tab.press("End").await?;
++    focused(tab, LAST).await?;
++    tab.press("Home").await?;
++    focused(tab, FIRST).await?;
++
++    let panel = bounds(tab, PANEL).await?;
++    let trigger = bounds(tab, OPENER).await?;
++    check!(
++        panel[1] >= trigger[1] + trigger[3],
++        "the wide menu opens below its trigger"
++    );
++    check_eq!(panel[2], 240., "the preferred menu width is applied");
++    let capture = env.artifact("material-command-menu-wide.png");
++    tab.screenshot(&capture).await?;
++    let raster = Raster::read(tab, capture).await?;
++    let center = raster.sample(panel[0] + 3., panel[1] + panel[3] / 2.)?;
++    let corner = raster.sample(panel[0], panel[1])?;
++    check!(center != corner, "the rounded panel clips its top corner");
++
++    tab.press("Enter").await?;
++    until(
++        tab,
++        "!s.menu_demo.open && s.menu_demo.last === '移到收件匣'",
++    )
++    .await?;
++    focused(tab, OPENER).await?;
++    Ok(
++        json!({"trigger":trigger,"panel":panel,"center_rgb":center,"corner_rgb":corner,"disabled_focus":true}),
++    )
++}
++
++async fn dismissal(tab: &Tab) -> Result<Value> {
++    open(tab).await?;
++    tab.press("Tab").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OUTSIDE).await?;
++    open(tab).await?;
++    tab.press("Shift+Tab").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, "menu-demo-bottom").await?;
++    open(tab).await?;
++    let [x, y, width, height] = bounds(tab, PANEL).await?;
++    let target = bounds(tab, OUTSIDE).await?;
++    let fraction = if target[0] + target[2] * 0.5 >= x + width {
++        0.5
++    } else {
++        0.98
++    };
++    let [left, top, _, _] = tab.canvas_box().await?;
++    let (click_x, click_y) = point(tab, OUTSIDE, fraction).await?;
++    check!(
++        click_x < left + x
++            || click_x >= left + x + width
++            || click_y < top + y
++            || click_y >= top + y + height,
++        "outside point clears the menu panel"
++    );
++    tab.click(click_x, click_y).await?;
++    until(
++        tab,
++        "!s.menu_demo.open && s.menu_demo.outside_actions === 0",
++    )
++    .await?;
++    canvas_focus(tab, OPENER).await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-expanded') === 'false'",
++        projected(OPENER)
++    ))
++    .await
++    .context("the opener exposes its collapsed state after pointer dismissal")?;
++    Ok(
++        json!({"tab_forward":OUTSIDE,"tab_backward":"menu-demo-bottom","outside_action_suppressed":true}),
++    )
++}
++
++async fn compact(env: &Env, tab: &Tab) -> Result<Value> {
++    for control in [
++        "menu-demo-theme",
++        "menu-demo-rtl",
++        "menu-demo-large-text",
++        "menu-demo-bottom",
++    ] {
++        activate(tab, control).await?;
++    }
++    resize(tab, 320, 480).await?;
++    open(tab).await?;
++    let panel = bounds(tab, PANEL).await?;
++    let trigger = bounds(tab, OPENER).await?;
++    check!(
++        contains([8., 8., 304., 464.], panel),
++        "the compact RTL panel is inside the safe viewport"
++    );
++    check!(
++        panel[1] + panel[3] <= trigger[1],
++        "the bottom trigger opens above at 320 dp"
++    );
++    let rename = bounds(tab, "menu-demo-rename").await?;
++    check!(rename[3] > 48., "200 percent text wraps in a taller row");
++    tab.press("End").await?;
++    focused(tab, LAST).await?;
++    let last = bounds(tab, LAST).await?;
++    check!(
++        contains(panel, last),
++        "keyboard scroll reveals the final command"
++    );
++    tab.screenshot(&env.artifact("material-command-menu-compact.png"))
++        .await?;
++    tab.press("Escape").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OPENER).await?;
++    Ok(
++        json!({"trigger":trigger,"panel":panel,"last":last,"wrapped_height":rename[3],"state":state(tab).await?["menu_demo"]}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 2084, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step("M267", "named command menu keeps a disabled command focusable and rejects its activation");
++        route(&tab, url).await.context("M267 route")?;
++        report["keyboard"] = keyboard(env, &tab).await.context("M267")?;
++        step("M268", "Tab leaves the menu in both directions and outside clicks dismiss without activating the page");
++        report["dismissal"] = dismissal(&tab).await.context("M268")?;
++        step("M269", "short dark RTL menu flips above, wraps 200 percent text and scrolls its last command into view");
++        report["compact"] = compact(env, &tab).await.context("M269")?;
++        check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["state_at_failure"] = state(&tab).await.unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-command-menu-failure.png"))
++            .await;
++    }
++    env.write_json("browser-material-command-menu.json", &report)?;
++    result
++}
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -18,6 +18,7 @@
+ mod list_reorder_demo;
+ mod lists_demo;
+ mod loading_indicator_demo;
++mod menu_demo;
+ mod modal_wide_navigation_rail_demo;
+ mod navigation_drawer_demo;
+ mod progress_demo;
+@@ -58,6 +59,7 @@
+ use list_reorder_demo::{ListReorderDemo, ListReorderEvent};
+ use lists_demo::{ListsDemo, ListsEvent};
+ use loading_indicator_demo::{LoadingDemo, LoadingEvent};
++use menu_demo::{MenuDemo, MenuDemoEvent};
+ use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
+ use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
+ use progress_demo::{ProgressDemo, ProgressEvent};
+@@ -131,6 +133,7 @@
+     scroll_modal_demo: ScrollModalDemo,
+     search_overlay_demo: SearchOverlayDemo,
+     dialog_demo: DialogDemo,
++    menu_demo: MenuDemo,
+     lists_demo: ListsDemo,
+     list_actions_demo: ListActionsDemo,
+     list_expand_demo: ListExpandDemo,
+@@ -194,6 +197,7 @@
+             scroll_modal_demo: ScrollModalDemo::default(),
+             search_overlay_demo: SearchOverlayDemo::default(),
+             dialog_demo: DialogDemo::default(),
++            menu_demo: MenuDemo::default(),
+             lists_demo: ListsDemo::default(),
+             list_actions_demo: ListActionsDemo::default(),
+             list_expand_demo: ListExpandDemo::default(),
+@@ -289,6 +293,7 @@
+     ScrollModal(ScrollModalDemoEvent),
+     SearchOverlay(SearchOverlayDemoEvent),
+     DialogDemo(DialogDemoEvent),
++    MenuDemo(MenuDemoEvent),
+     Lists(ListsEvent),
+     ListActions(ListActionsEvent),
+     ListExpand(ListExpandEvent),
+@@ -402,6 +407,9 @@
+         }
+         if self.dialog_demo.visible() {
+             return self.dialog_demo.text_scale();
++        }
++        if self.menu_demo.visible() {
++            return self.menu_demo.text_scale();
+         }
+         if self.lists_demo.visible() {
+             return self.lists_demo.text_scale();
+@@ -619,6 +627,7 @@
+         let scroll_popup = self.scroll_popup_demo.frame(&frame);
+         let scroll_modal = self.scroll_modal_demo.frame(&frame);
+         let dialog = self.dialog_demo.frame(&frame);
++        let menu = self.menu_demo.frame(&frame);
+         let list_expand = self.list_expand_demo.frame(&frame);
+         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
+         AnimationUpdate {
+@@ -641,6 +650,7 @@
+                 || scroll_popup.rebuild
+                 || scroll_modal.rebuild
+                 || dialog.rebuild
++                || menu.rebuild
+                 || list_expand.rebuild
+                 || list_reorder.rebuild,
+             request_next: inline.request_next
+@@ -660,6 +670,7 @@
+                 || scroll_popup.request_next
+                 || scroll_modal.request_next
+                 || dialog.request_next
++                || menu.request_next
+                 || list_expand.request_next
+                 || list_reorder.request_next,
+         }
+@@ -755,6 +766,9 @@
+                 }
+                 if i != dialog_demo::SECTION {
+                     self.dialog_demo.leave();
++                }
++                if i != menu_demo::SECTION {
++                    self.menu_demo.leave();
+                 }
+                 if i != toolbar_demo::SECTION {
+                     self.toolbar_demo.leave();
+@@ -812,6 +826,7 @@
+             Message::AppBar(event) => self.app_bar_demo.update(event),
+             Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
+             Message::DialogDemo(event) => self.dialog_demo.update(event),
++            Message::MenuDemo(event) => self.menu_demo.update(event),
+             Message::Toolbar(event) => self.toolbar_demo.update(event),
+             Message::Tooltip(event) => self.tooltip_demo.update(event),
+             Message::Nav(i) => self.nav = i,
+@@ -944,6 +959,9 @@
+         }
+         if self.dialog_demo.visible() {
+             return self.dialog_demo.view(&t, self.dark);
++        }
++        if self.menu_demo.visible() {
++            return self.menu_demo.view(&t, self.dark);
+         }
+         if self.toolbar_demo.visible() {
+             return self.toolbar_demo.view(&t, self.dark);
+@@ -1446,6 +1464,7 @@
+                     DialogDemo::show_button(&t),
+                     DialogDemo::show_transform_button(&t),
+                 ]));
++                children.push(MenuDemo::show_button(&t));
+             }
+             _ => {
+                 children.push(CardDemo::show_button(&t));
+@@ -1673,6 +1692,7 @@
+         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
+         state["search_overlay"] = s.search_overlay_demo.inspect();
+         state["dialog_demo"] = s.dialog_demo.inspect();
++        state["menu_demo"] = s.menu_demo.inspect();
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
+--- /dev/null
++++ b/examples/material-gallery/src/menu_demo.rs
+@@ -0,0 +1,275 @@
++use surface::{Insets, Length, Node, Role, Style};
++use surface_app::{AnimationFrame, AnimationUpdate, View};
++use surface_material::{
++    shape::LayoutDirection, ButtonKind, ChoiceState, CommandMenuEntry, CommandMenuItem,
++    CommandMenuMeasurement, CommandMenuOptions, Theme,
++};
++
++use crate::{
++    rail_icons::{self, Destination},
++    scroll_field_demo::control_row,
++    Message,
++};
++
++pub(crate) const SECTION: usize = 2;
++const SHOW: &str = "menu-demo-show";
++const BACK: &str = "menu-demo-back";
++const OPENER: &str = "menu-demo-opener";
++const MENU: &str = "menu-demo-panel";
++
++#[derive(Clone)]
++pub enum MenuDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleBottomAnchor,
++    ToggleOpen,
++    Dismiss,
++    Choose(&'static str),
++    OpenList,
++}
++
++#[derive(Default)]
++pub(crate) struct MenuDemo {
++    measurement: CommandMenuMeasurement,
++    visible: bool,
++    open: bool,
++    rtl: bool,
++    large_text: bool,
++    bottom_anchor: bool,
++    last: Option<&'static str>,
++    outside_actions: usize,
++}
++
++impl MenuDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.open = false;
++        self.measurement = CommandMenuMeasurement::default();
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn update(&mut self, event: MenuDemoEvent) {
++        use MenuDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleBottomAnchor => self.bottom_anchor = !self.bottom_anchor,
++            ToggleOpen => self.open = !self.open,
++            Dismiss => self.open = false,
++            Choose(label) => {
++                self.last = Some(label);
++                self.open = false;
++            }
++            OpenList => self.outside_actions += 1,
++        }
++    }
++
++    pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
++        if !self.visible {
++            return AnimationUpdate::default();
++        }
++        let mut update = self.measurement.advance(MENU, OPENER, frame);
++        if self.open && frame.layout.is_some() && self.measurement.anchor().is_none() {
++            self.open = false;
++            update.rebuild = true;
++        }
++        update
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "命令選單",
++                ButtonKind::Outlined,
++                false,
++                Message::MenuDemo(MenuDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use MenuDemoEvent::*;
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let trigger = theme
++            .button_with(
++                OPENER,
++                "檔案動作",
++                ButtonKind::Tonal,
++                false,
++                Message::MenuDemo(ToggleOpen),
++            )
++            .accessible_activation();
++        let item = |id, label, leading_icon, trailing_icon, disabled| {
++            CommandMenuEntry::Item(CommandMenuItem {
++                id,
++                label,
++                leading_icon,
++                trailing_icon,
++                disabled,
++                on_press: Message::MenuDemo(Choose(label)),
++            })
++        };
++        let entries = [
++            item(
++                "menu-demo-inbox",
++                "移到收件匣",
++                Some(Destination::Inbox.icon().clone()),
++                None,
++                false,
++            ),
++            item(
++                "menu-demo-archive",
++                "封存",
++                Some(Destination::Archive.icon().clone()),
++                None,
++                true,
++            ),
++            item(
++                "menu-demo-find",
++                "在清單中尋找",
++                None,
++                Some(rail_icons::search().clone()),
++                false,
++            ),
++            CommandMenuEntry::Separator {
++                id: "menu-demo-divider",
++            },
++            item(
++                "menu-demo-rename",
++                "重新命名目前選取的檔案",
++                None,
++                None,
++                false,
++            ),
++            item("menu-demo-copy", "建立副本", None, None, false),
++            item("menu-demo-export", "匯出檔案", None, None, false),
++            item("menu-demo-details", "顯示詳細資料", None, None, false),
++        ];
++        let menu = theme.command_menu(
++            CommandMenuOptions {
++                id: MENU,
++                label: "檔案動作",
++                trigger_id: OPENER,
++                open: self.open,
++                direction,
++                preferred_width: 240.,
++                restore_focus_to: Some(OPENER),
++            },
++            trigger,
++            entries,
++            Message::MenuDemo(Dismiss),
++            &self.measurement,
++        );
++        let aligned = if self.bottom_anchor {
++            let side = Length::Px(28.);
++            let mut inset = Insets {
++                bottom: side,
++                ..Insets::default()
++            };
++            match direction {
++                LayoutDirection::LeftToRight => inset.left = side,
++                LayoutDirection::RightToLeft => inset.right = side,
++            }
++            View::new(Node::new(Role::Group, "").styled(Style::column().fixed(inset)))
++                .children([menu])
++        } else {
++            menu
++        };
++        let toggle = |id, label, selected, event| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    Message::MenuDemo(event),
++                )
++                .accessible_activation()
++        };
++        let controls = [
++            theme.heading("menu-demo-title", "命令選單"),
++            control_row(vec![
++                theme
++                    .tonal_button(BACK, "返回", Message::MenuDemo(Back))
++                    .restore_focus_on_removal(SHOW)
++                    .accessible_activation(),
++                theme
++                    .switch(
++                        "menu-demo-theme",
++                        "深色",
++                        ChoiceState {
++                            selected: dark,
++                            disabled: false,
++                        },
++                        Message::Theme,
++                    )
++                    .accessible_activation(),
++                toggle("menu-demo-rtl", "右起", self.rtl, ToggleDirection),
++                toggle(
++                    "menu-demo-large-text",
++                    "大字",
++                    self.large_text,
++                    ToggleLargeText,
++                ),
++                toggle(
++                    "menu-demo-bottom",
++                    "底部入口",
++                    self.bottom_anchor,
++                    ToggleBottomAnchor,
++                ),
++            ]),
++            aligned,
++            theme
++                .button_with(
++                    "menu-demo-list",
++                    "查看清單",
++                    ButtonKind::Text,
++                    false,
++                    Message::MenuDemo(OpenList),
++                )
++                .accessible_activation(),
++        ];
++        theme.page(
++            controls.into_iter().chain(
++                self.last
++                    .map(|label| theme.text("menu-demo-last", format!("已執行「{label}」"))),
++            ),
++        )
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self) -> serde_json::Value {
++        serde_json::json!({
++            "visible": self.visible,
++            "open": self.open,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "bottom_anchor": self.bottom_anchor,
++            "last": self.last,
++            "outside_actions": self.outside_actions,
++        })
++    }
++}
