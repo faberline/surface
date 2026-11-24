@@ -1,0 +1,208 @@
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -20,6 +20,8 @@
+ mod material_date_picker_gestures;
+ #[path = "material_date_range_picker.rs"]
+ mod material_date_range_picker;
++#[path = "material_divider.rs"]
++mod material_divider;
+ #[path = "material_docked_date_picker.rs"]
+ mod material_docked_date_picker;
+ #[path = "material_drawer.rs"]
+@@ -117,7 +119,7 @@
+     "M215", "M216", "M217", "M218", "M219", "M220", "M221", "M222", "M223", "M224", "M225", "M226",
+     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
+     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
+-    "M251", "M252", "M253", "M254", "M255",
++    "M251", "M252", "M253", "M254", "M255", "M262", "M263",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -232,7 +234,8 @@
+     material_scroll_popup_fields::run(env, chrome, &url).await?;
+     material_scroll_modal_fields::run(env, chrome, &url).await?;
+     material_web_contrast::run(env, chrome, &url).await?;
+-    material_search_overlay::run(env, chrome, &url).await
++    material_search_overlay::run(env, chrome, &url).await?;
++    material_divider::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+--- /dev/null
++++ b/e2e/src/material_divider.rs
+@@ -0,0 +1,175 @@
++//! Decorative divider paint and keyboard traversal on headless Chrome WebGPU.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_tree, bounds, contains, focus_projected, focused, projected, resize, Raster,
++};
++use super::until;
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "divider-demo-show";
++const BACK: &str = "divider-demo-back";
++const THEME: &str = "divider-demo-theme";
++const RTL: &str = "divider-demo-rtl";
++const LARGE_TEXT: &str = "divider-demo-large-text";
++
++type Rect = [f64; 4];
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.viewport(960, 1004).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 960).await?;
++    activate(tab, "section-3").await?;
++    until(tab, "s.section === 3").await?;
++    activate(tab, SHOW).await?;
++    focused(tab, BACK).await
++}
++
++fn ink(raster: &Raster, rect: Rect, vertical: bool, expected: [u8; 3]) -> Result<Value> {
++    let [x, y, width, height] = rect;
++    let points = if vertical {
++        [
++            [x + 0.5, y + 1.],
++            [x + 0.5, y + height / 2.],
++            [x + 0.5, y + height - 1.],
++        ]
++    } else {
++        [
++            [x + 1., y + 0.5],
++            [x + width / 2., y + 0.5],
++            [x + width - 1., y + 0.5],
++        ]
++    };
++    for [x, y] in points {
++        check_eq!(raster.sample(x, y)?, expected, "PNG uses outline variant");
++    }
++    let adjacent = if vertical {
++        [[x - 0.5, y + height / 2.], [x + 1.5, y + height / 2.]]
++    } else {
++        [[x + width / 2., y - 0.5], [x + width / 2., y + 1.5]]
++    };
++    for [x, y] in adjacent {
++        check!(
++            raster.sample(x, y)? != expected,
++            "line has no extra ink outside its measured thickness"
++        );
++    }
++    Ok(json!({"bounds":rect,"rgb":expected}))
++}
++
++async fn profile(env: &Env, tab: &Tab, width: u32, compact: bool) -> Result<Value> {
++    resize(tab, width, 640).await?;
++    if compact {
++        activate(tab, THEME).await?;
++        activate(tab, RTL).await?;
++        activate(tab, LARGE_TEXT).await?;
++        until(tab, "s.dark").await?;
++    }
++    focus_projected(tab, BACK).await?;
++    for control in [THEME, RTL, LARGE_TEXT] {
++        tab.press("Tab").await?;
++        focused(tab, control).await?;
++    }
++    focus_projected(tab, BACK).await?;
++    let full = bounds(tab, "divider-demo-full").await?;
++    let inset = bounds(tab, "divider-demo-inset").await?;
++    let middle = bounds(tab, "divider-demo-middle").await?;
++    let vertical = bounds(tab, "divider-demo-vertical").await?;
++    let exposed = ax_tree(tab).await?;
++    for label in ["全寬", "單側內縮", "兩側內縮", "垂直"] {
++        ax(&exposed, "heading", label)?;
++    }
++    check!(
++        !exposed
++            .iter()
++            .any(|node| node["ignored"] == false && node["role"]["value"] == "separator"),
++        "Chrome does not announce decorative lines"
++    );
++    for id in [
++        "divider-demo-full",
++        "divider-demo-inset",
++        "divider-demo-middle",
++        "divider-demo-vertical",
++    ] {
++        check_eq!(
++            tab.eval(&format!("{} === null", projected(id))).await?,
++            true,
++            "the DOM accessibility proxy omits {id}"
++        );
++    }
++    for rect in [full, inset, middle, vertical] {
++        check!(
++            contains([0., 0., f64::from(width), 640.], rect),
++            "{rect:?} lies within the viewport"
++        );
++    }
++    check_eq!(
++        [full[3], inset[3], middle[3], vertical[2], vertical[3]],
++        [1., 1., 1., 1., 64.],
++        "all divider variants retain 1 dp thickness"
++    );
++    check_eq!(
++        [
++            inset[0] - full[0],
++            full[2] - inset[2],
++            middle[0] - full[0],
++            full[2] - middle[2]
++        ],
++        [if compact { 0. } else { 16. }, 16., 16., 32.],
++        "only the single leading inset mirrors"
++    );
++
++    let name = if compact {
++        "compact-dark-rtl-200"
++    } else {
++        "wide-light-ltr"
++    };
++    let path = env.artifact(&format!("material-divider-{name}.png"));
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    let palette = if compact {
++        [73, 69, 78]
++    } else {
++        [202, 196, 207]
++    };
++    Ok(json!({
++        "profile":name,"viewport":[width,640],"accessible_groups":true,"decorative_focus":false,
++        "full":ink(&raster,full,false,palette)?,"inset":ink(&raster,inset,false,palette)?,
++        "middle":ink(&raster,middle,false,palette)?,"vertical":ink(&raster,vertical,true,palette)?,
++    }))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1004, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step("M262", "wide light dividers paint the named layouts without adding focus or AX stops");
++        route(&tab, url).await.context("M262")?;
++        report["adapter"] = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter();if(!a)return null;const {isFallbackAdapter,vendor,architecture}=a.info;return {isFallbackAdapter,vendor,architecture};})()").await?;
++        check_eq!(report["adapter"]["isFallbackAdapter"], false, "actual nonfallback WebGPU");
++        report["wide"] = profile(env, &tab, 960, false).await.context("M262")?;
++        step("M263", "320 dp dark RTL and 200 percent text keep the four dividers visible and restore route focus");
++        report["compact"] = profile(env, &tab, 320, true).await.context("M263")?;
++        resize(&tab, 960, 960).await?;
++        activate(&tab, BACK).await?;
++        focused(&tab, SHOW).await?;
++        report["focus_restored"] = json!(true);
++        check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["state_at_failure"] = super::state(&tab).await.unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-divider-failure.png"))
++            .await;
++    }
++    env.write_json("browser-material-divider.json", &report)?;
++    result
++}
