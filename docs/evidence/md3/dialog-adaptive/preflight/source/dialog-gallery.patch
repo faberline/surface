@@ -1,0 +1,857 @@
+--- /dev/null
++++ b/examples/material-gallery/src/dialog_demo.rs
+@@ -0,0 +1,742 @@
++use surface::{Align, Length, Node, Rect, Role, Style};
++use surface_app::{CursorStyle, ModalDismissal, View};
++use surface_material::{
++    adaptive::WindowWidthSizeClass, full_screen_dialog_layout, shape, shape::LayoutDirection,
++    typography, BasicDialogContent, BasicDialogOptions, ButtonKind, ChoiceState,
++    FullScreenDialogOptions, Theme,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 2;
++const SHOW: &str = "dialog-demo-show";
++const BACK: &str = "dialog-demo-back";
++const BASIC: &str = "dialog-demo-basic";
++const ALERT: &str = "dialog-demo-alert";
++const EDIT: &str = "dialog-demo-edit";
++const DISCARD: &str = "dialog-demo-discard";
++const BASIC_OPEN: &str = "dialog-demo-basic-open";
++const ALERT_OPEN: &str = "dialog-demo-alert-open";
++const EDIT_OPEN: &str = "dialog-demo-edit-open";
++const EDITOR: &str = "dialog-demo-editor";
++const SAVED: &str = "dialog-demo-saved";
++const EDIT_TITLE: &str = "編輯行程";
++const INITIAL: &str = "週末行程";
++
++#[derive(Clone)]
++pub enum DialogDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    OpenBasic,
++    CloseBasic,
++    OpenAlert,
++    Acknowledge,
++    OpenEdit,
++    Input(String),
++    RequestClose,
++    KeepEditing,
++    Discard,
++    Save,
++}
++
++enum Active {
++    Basic,
++    Alert,
++    Edit { draft: String, ask_discard: bool },
++}
++
++pub(crate) struct DialogDemo {
++    visible: bool,
++    viewport: Rect,
++    rtl: bool,
++    large_text: bool,
++    active: Option<Active>,
++    saved: String,
++    saves: usize,
++    discards: usize,
++    alerts: usize,
++}
++
++impl Default for DialogDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            viewport: Rect::default(),
++            rtl: false,
++            large_text: false,
++            active: None,
++            saved: INITIAL.into(),
++            saves: 0,
++            discards: 0,
++            alerts: 0,
++        }
++    }
++}
++
++impl DialogDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let next = Rect::new(0., 0., width, height);
++        let changed = self.viewport != next;
++        self.viewport = next;
++        self.visible && changed
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.active = None;
++    }
++
++    pub(crate) fn update(&mut self, event: DialogDemoEvent) {
++        use DialogDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            OpenBasic => self.active = Some(Active::Basic),
++            CloseBasic if matches!(self.active, Some(Active::Basic)) => self.active = None,
++            OpenAlert => self.active = Some(Active::Alert),
++            Acknowledge if matches!(self.active, Some(Active::Alert)) => {
++                self.alerts += 1;
++                self.active = None;
++            }
++            OpenEdit => {
++                self.active = Some(Active::Edit {
++                    draft: self.saved.clone(),
++                    ask_discard: false,
++                });
++            }
++            Input(value) => {
++                if let Some(Active::Edit {
++                    draft,
++                    ask_discard: false,
++                }) = &mut self.active
++                {
++                    *draft = value;
++                }
++            }
++            RequestClose => {
++                if let Some(Active::Edit { draft, ask_discard }) = &mut self.active {
++                    if *draft == self.saved {
++                        self.active = None;
++                    } else {
++                        *ask_discard = true;
++                    }
++                }
++            }
++            KeepEditing => {
++                if let Some(Active::Edit { ask_discard, .. }) = &mut self.active {
++                    *ask_discard = false;
++                }
++            }
++            Discard
++                if matches!(
++                    self.active,
++                    Some(Active::Edit {
++                        ask_discard: true,
++                        ..
++                    })
++                ) =>
++            {
++                self.discards += 1;
++                self.active = None;
++            }
++            Save => {
++                if let Some(Active::Edit {
++                    draft,
++                    ask_discard: false,
++                }) = &mut self.active
++                {
++                    self.saved = std::mem::take(draft);
++                    self.saves += 1;
++                    self.active = None;
++                }
++            }
++            CloseBasic | Acknowledge | Discard => {}
++        }
++    }
++
++    fn direction(&self) -> LayoutDirection {
++        if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        }
++    }
++
++    fn full_options(&self) -> FullScreenDialogOptions<'static> {
++        FullScreenDialogOptions {
++            id: EDIT,
++            title: EDIT_TITLE,
++            body_label: "行程內容",
++            close_label: "關閉",
++            action_label: "儲存",
++            action_disabled: false,
++            initial_focus: Some(EDITOR),
++            restore_focus_to: Some(EDIT_OPEN),
++            viewport: self.viewport,
++            direction: self.direction(),
++        }
++    }
++
++    fn is_full_screen(&self) -> bool {
++        WindowWidthSizeClass::from_dp(self.viewport.width) == Some(WindowWidthSizeClass::Compact)
++            && full_screen_dialog_layout(self.full_options()).is_some()
++    }
++
++    fn basic_options(&self, id: &'static str, label: &'static str) -> BasicDialogOptions<'static> {
++        BasicDialogOptions {
++            id,
++            label,
++            heading: Some(label),
++            supporting: None,
++            icon: None,
++            window_size: (self.viewport.width, self.viewport.height),
++            preferred_width: 400.,
++            direction: self.direction(),
++            dismissal: ModalDismissal::EscapeOrOutside,
++            alert: false,
++            initial_focus: None,
++            restore_focus_to: None,
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "對話框",
++                ButtonKind::Outlined,
++                false,
++                Message::DialogDemo(DialogDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use DialogDemoEvent::*;
++        let toggle = |id, label, selected, event| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    Message::DialogDemo(event),
++                )
++                .accessible_activation()
++        };
++        let preview = |id, label, event| {
++            theme
++                .button_with(
++                    id,
++                    label,
++                    ButtonKind::Tonal,
++                    false,
++                    Message::DialogDemo(event),
++                )
++                .accessible_activation()
++        };
++        let mut page = vec![
++            theme.heading("dialog-demo-title", "對話框"),
++            control_row(vec![
++                theme
++                    .tonal_button(BACK, "返回", Message::DialogDemo(Back))
++                    .restore_focus_on_removal(SHOW)
++                    .accessible_activation(),
++                theme
++                    .switch(
++                        "dialog-demo-theme",
++                        "深色",
++                        ChoiceState {
++                            selected: dark,
++                            disabled: false,
++                        },
++                        Message::Theme,
++                    )
++                    .accessible_activation(),
++                toggle("dialog-demo-rtl", "右起", self.rtl, ToggleDirection),
++                toggle(
++                    "dialog-demo-large-text",
++                    "大字",
++                    self.large_text,
++                    ToggleLargeText,
++                ),
++            ]),
++            control_row(vec![
++                preview(BASIC_OPEN, "基本對話框", OpenBasic),
++                preview(ALERT_OPEN, "重要提示", OpenAlert),
++                preview(EDIT_OPEN, EDIT_TITLE, OpenEdit),
++            ]),
++            theme.text(SAVED, format!("已儲存：{}", self.saved)),
++        ];
++        match &self.active {
++            Some(Active::Basic) => page.extend(self.basic(theme)),
++            Some(Active::Alert) => page.extend(self.alert(theme)),
++            Some(Active::Edit { draft, ask_discard }) => {
++                page.extend(self.editor(theme, draft));
++                if *ask_discard {
++                    page.extend(self.confirmation(theme));
++                }
++            }
++            None => {}
++        }
++        theme.page(page)
++    }
++
++    fn basic(&self, theme: &Theme) -> Option<View<Message>> {
++        use DialogDemoEvent::CloseBasic;
++        let mut options = self.basic_options(BASIC, "行程通知");
++        options.restore_focus_to = Some(BASIC_OPEN);
++        options.initial_focus = Some("dialog-demo-basic-confirm");
++        let extra = [
++            ("reminders", "提醒時間", "行程開始前一天及一小時發送提醒。"),
++            ("timezone", "時區", "依照行程所在地的時間顯示。"),
++            ("invitees", "受邀者", "只有你和受邀者能查看行程。"),
++            ("updates", "變更通知", "時間或地點變更時會通知受邀者。"),
++            ("repeat", "重複行程", "每次調整前可選擇是否套用到整個系列。"),
++            ("offline", "離線草稿", "尚未同步的編輯保留在此裝置。"),
++        ]
++        .map(|(key, title, text)| {
++            View::new(
++                Node::new(Role::Group, "")
++                    .styled(Style::column().width(Length::Percent(1.)).gap(4.)),
++            )
++            .children([
++                self.body_text(
++                    theme,
++                    &format!("{BASIC}-{key}-title"),
++                    title,
++                    typography::TITLE_MEDIUM,
++                ),
++                self.body_text(
++                    theme,
++                    &format!("{BASIC}-{key}"),
++                    text,
++                    typography::BODY_MEDIUM,
++                ),
++            ])
++        })
++        .into_iter()
++        .collect();
++        theme.basic_dialog(
++            options,
++            BasicDialogContent {
++                extra,
++                confirm: ("我已閱讀", Message::DialogDemo(CloseBasic)),
++                cancel: Some(("稍後再看", Message::DialogDemo(CloseBasic))),
++                on_dismiss: Message::DialogDemo(CloseBasic),
++            },
++        )
++    }
++
++    fn alert(&self, theme: &Theme) -> Option<View<Message>> {
++        use DialogDemoEvent::Acknowledge;
++        let mut options = self.basic_options(ALERT, "連線中斷");
++        options.alert = true;
++        options.dismissal = ModalDismissal::ActionOnly;
++        options.supporting = Some("目前無法同步行程。請確認網路連線後再試。");
++        options.restore_focus_to = Some(ALERT_OPEN);
++        theme.basic_dialog(
++            options,
++            BasicDialogContent {
++                extra: Vec::new(),
++                confirm: ("知道了", Message::DialogDemo(Acknowledge)),
++                cancel: None,
++                on_dismiss: Message::DialogDemo(Acknowledge),
++            },
++        )
++    }
++
++    fn editor(&self, theme: &Theme, value: &str) -> Option<View<Message>> {
++        use DialogDemoEvent::{Input, RequestClose, Save};
++        let editor = View::new(
++            Node::new(Role::TextInput, "行程名稱")
++                .id(EDITOR)
++                .text(value)
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Px(if self.large_text { 72. } else { 56. }))
++                        .padding(8.)
++                        .corners(shape::EXTRA_SMALL)
++                        .background(theme.colors.surface_container_highest)
++                        .foreground(theme.colors.on_surface)
++                        .with_text_style(typography::BODY_LARGE),
++                ),
++        )
++        .on_input(|value| Message::DialogDemo(Input(value)))
++        .cursor(CursorStyle::Text)
++        .center_single_line_text()
++        .accessibility_scroll_into_view();
++        let editor = if self.rtl {
++            editor.right_align_single_line_text()
++        } else {
++            editor
++        };
++        let body = View::new(
++            Node::new(Role::Group, "行程內容")
++                .id("dialog-demo-edit-form")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .gap(16.)
++                        .align(if self.rtl { Align::End } else { Align::Start }),
++                ),
++        )
++        .children([
++            self.body_text(
++                theme,
++                "dialog-demo-editor-label",
++                "行程名稱",
++                typography::LABEL_LARGE,
++            ),
++            editor,
++            self.body_text(
++                theme,
++                "dialog-demo-edit-when",
++                "時間　週六上午十點",
++                typography::BODY_LARGE,
++            ),
++            self.body_text(
++                theme,
++                "dialog-demo-edit-where",
++                "地點　市立圖書館",
++                typography::BODY_LARGE,
++            ),
++            self.body_text(
++                theme,
++                "dialog-demo-edit-who",
++                "分享　只有自己",
++                typography::BODY_LARGE,
++            ),
++            self.body_text(
++                theme,
++                "dialog-demo-edit-notice",
++                "提醒　開始前一小時",
++                typography::BODY_LARGE,
++            ),
++        ]);
++        if self.is_full_screen() {
++            return theme.full_screen_dialog(
++                self.full_options(),
++                body,
++                Message::DialogDemo(RequestClose),
++                Message::DialogDemo(Save),
++            );
++        }
++        let mut options = self.basic_options(EDIT, EDIT_TITLE);
++        options.dismissal = ModalDismissal::Escape;
++        options.initial_focus = Some(EDITOR);
++        options.restore_focus_to = Some(EDIT_OPEN);
++        theme.basic_dialog(
++            options,
++            BasicDialogContent {
++                extra: vec![body],
++                confirm: ("儲存", Message::DialogDemo(Save)),
++                cancel: Some(("關閉", Message::DialogDemo(RequestClose))),
++                on_dismiss: Message::DialogDemo(RequestClose),
++            },
++        )
++    }
++
++    fn confirmation(&self, theme: &Theme) -> Option<View<Message>> {
++        use DialogDemoEvent::{Discard, KeepEditing};
++        let mut options = self.basic_options(DISCARD, "捨棄變更？");
++        options.supporting = Some("未儲存的行程變更會遺失。");
++        options.dismissal = ModalDismissal::Escape;
++        options.initial_focus = Some("dialog-demo-discard-cancel");
++        options.restore_focus_to = Some(EDITOR);
++        theme.basic_dialog(
++            options,
++            BasicDialogContent {
++                extra: Vec::new(),
++                confirm: ("捨棄變更", Message::DialogDemo(Discard)),
++                cancel: Some(("繼續編輯", Message::DialogDemo(KeepEditing))),
++                on_dismiss: Message::DialogDemo(KeepEditing),
++            },
++        )
++    }
++
++    fn body_text(
++        &self,
++        theme: &Theme,
++        id: &str,
++        caption: &str,
++        style: surface::TextStyle,
++    ) -> View<Message> {
++        View::new(
++            Node::new(Role::Text, caption)
++                .id(id)
++                .text(caption)
++                .shrink_to_fit_width()
++                .styled(
++                    Style::column()
++                        .with_text_style(style)
++                        .foreground(theme.colors.on_surface_variant),
++                ),
++        )
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self) -> serde_json::Value {
++        let (open, presentation, draft) = match &self.active {
++            None => (None, None, self.saved.as_str()),
++            Some(Active::Basic) => (Some("basic"), Some("basic"), self.saved.as_str()),
++            Some(Active::Alert) => (Some("alert"), Some("basic"), self.saved.as_str()),
++            Some(Active::Edit { draft, ask_discard }) => (
++                Some(if *ask_discard { "discard" } else { "edit" }),
++                Some(if self.is_full_screen() {
++                    "fullscreen"
++                } else {
++                    "basic"
++                }),
++                draft.as_str(),
++            ),
++        };
++        serde_json::json!({
++            "visible": self.visible, "open": open, "presentation": presentation, "draft": draft,
++            "saved": self.saved, "saves": self.saves, "discards": self.discards, "alerts": self.alerts,
++            "rtl": self.rtl, "text_scale": self.text_scale(),
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::Gallery;
++    use surface::TextMeasurer;
++    use surface_app::{Event, ImeEvent, Key, KeyPress, Modifiers, Runtime};
++
++    struct Fonts;
++
++    impl TextMeasurer for Fonts {
++        fn measure(&mut self, value: &str, size: f32, width: Option<f32>) -> (f32, f32) {
++            let natural = value
++                .chars()
++                .map(|character| size * if character.is_ascii() { 0.58 } else { 1. })
++                .sum::<f32>();
++            let width = width.unwrap_or(natural).min(natural);
++            (width, (natural / width.max(1.)).ceil().max(1.) * size * 1.5)
++        }
++    }
++
++    fn draw(runtime: &mut Runtime<Gallery>, (width, height): (f32, f32)) {
++        for _ in 0..2 {
++            runtime.render(width, height, &mut Fonts).unwrap();
++        }
++    }
++
++    fn route(viewport: (f32, f32), compact_profile: bool) -> Runtime<Gallery> {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        draw(&mut runtime, viewport);
++        runtime.apply(Message::Section(SECTION)).unwrap();
++        runtime.activate(SHOW).unwrap();
++        if compact_profile {
++            for choice in [
++                "dialog-demo-theme",
++                "dialog-demo-rtl",
++                "dialog-demo-large-text",
++            ] {
++                runtime.activate(choice).unwrap();
++            }
++        }
++        draw(&mut runtime, viewport);
++        runtime
++    }
++
++    fn rect(runtime: &Runtime<Gallery>, id: &str) -> Rect {
++        runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++    }
++
++    fn active_panel(runtime: &Runtime<Gallery>, id: &str) {
++        assert_eq!(
++            runtime.accessibility_frame().unwrap().modal_root(),
++            runtime.dom().by_id(id)
++        );
++    }
++
++    fn click(runtime: &mut Runtime<Gallery>, x: f32, y: f32) {
++        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    }
++
++    fn set_input(runtime: &mut Runtime<Gallery>, value: &str, anchor: usize, cursor: usize) {
++        runtime
++            .dispatch(Event::InputValue {
++                value: value.into(),
++                anchor,
++                cursor,
++            })
++            .unwrap();
++    }
++
++    #[test]
++    fn basic_scrolls_under_pinned_actions_and_alert_requires_its_button() {
++        let viewport = (320., 400.);
++        let mut runtime = route(viewport, true);
++        runtime.activate(BASIC_OPEN).unwrap();
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, BASIC);
++        let body = rect(&runtime, "dialog-demo-basic-body");
++        let cancel = rect(&runtime, "dialog-demo-basic-cancel");
++        let confirm = rect(&runtime, "dialog-demo-basic-confirm");
++        assert!(body.height > 0.);
++        assert_eq!(runtime.focused(), Some("dialog-demo-basic-confirm"));
++        assert!(confirm.height >= 48. && confirm.y + confirm.height <= cancel.y);
++        let panel = rect(&runtime, BASIC);
++        for target in [confirm, cancel] {
++            assert_eq!(panel.intersect(target), target);
++        }
++        let trailing = rect(&runtime, "dialog-demo-basic-offline").y;
++        runtime
++            .dispatch(Event::Scroll {
++                x: body.x + body.width / 2.,
++                y: body.y + body.height / 2.,
++                delta_x: 0.,
++                delta_y: 260.,
++            })
++            .unwrap();
++        draw(&mut runtime, viewport);
++        assert!(rect(&runtime, "dialog-demo-basic-offline").y < trailing);
++        assert_eq!(rect(&runtime, "dialog-demo-basic-cancel"), cancel);
++        assert_eq!(rect(&runtime, "dialog-demo-basic-confirm"), confirm);
++        runtime.dispatch(Event::Cancel).unwrap();
++        assert_eq!(runtime.focused(), Some(BASIC_OPEN));
++
++        runtime.activate(ALERT_OPEN).unwrap();
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, ALERT);
++        assert!(runtime
++            .dom()
++            .get(runtime.dom().by_id(ALERT).unwrap())
++            .unwrap()
++            .is_alert_dialog());
++        runtime.dispatch(Event::Cancel).unwrap();
++        draw(&mut runtime, viewport);
++        click(&mut runtime, 2., 2.);
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, ALERT);
++        assert_eq!(runtime.app().dialog_demo.alerts, 0);
++        runtime.activate("dialog-demo-alert-confirm").unwrap();
++        assert_eq!(runtime.app().dialog_demo.alerts, 1);
++        assert_eq!(runtime.focused(), Some(ALERT_OPEN));
++    }
++
++    #[test]
++    fn edit_breakpoint_preserves_the_active_editor_selection_and_preedit() {
++        let compact = (599., 500.);
++        let wide = (600., 500.);
++        let mut runtime = route(compact, false);
++        runtime.activate(EDIT_OPEN).unwrap();
++        draw(&mut runtime, compact);
++        active_panel(&runtime, EDIT);
++        assert!(runtime.dom().by_id("dialog-demo-edit-header").is_some());
++        assert_eq!(runtime.focused(), Some(EDITOR));
++        set_input(&mut runtime, "秋日散步", 12, 3);
++        runtime
++            .dispatch(Event::Ime(ImeEvent::Preedit {
++                text: "ㄅ".into(),
++                selection: None,
++            }))
++            .unwrap();
++        draw(&mut runtime, compact);
++        let before = runtime.input_snapshot().unwrap();
++        assert!(before.composing);
++        for (viewport, full) in [(wide, false), ((320., 400.), true)] {
++            draw(&mut runtime, viewport);
++            active_panel(&runtime, EDIT);
++            assert!(runtime.dom().by_id("dialog-demo-edit-body").is_some());
++            assert_eq!(
++                runtime.dom().by_id("dialog-demo-edit-header").is_some(),
++                full
++            );
++            assert_eq!(
++                runtime.dom().by_id("dialog-demo-edit-actions").is_some(),
++                !full
++            );
++            let now = runtime.input_snapshot().unwrap();
++            assert_eq!(now.id, EDITOR);
++            assert_eq!(now.value, before.value);
++            assert_eq!(now.selection, before.selection);
++            assert!(now.composing);
++            assert_eq!(
++                runtime.editor(EDITOR).unwrap().composition().unwrap().text,
++                "ㄅ"
++            );
++        }
++        assert!(!runtime
++            .key(&KeyPress::new(Key::Enter, Modifiers::default()))
++            .unwrap());
++        runtime.dispatch(Event::Cancel).unwrap();
++        draw(&mut runtime, (320., 400.));
++        active_panel(&runtime, EDIT);
++        assert!(!runtime.input_snapshot().unwrap().composing);
++        runtime.dispatch(Event::Cancel).unwrap();
++        draw(&mut runtime, (320., 400.));
++        active_panel(&runtime, DISCARD);
++        assert_eq!(runtime.focused(), Some("dialog-demo-discard-cancel"));
++        assert_eq!(runtime.app().dialog_demo.saved, INITIAL);
++        assert_eq!(runtime.app().dialog_demo.saves, 0);
++    }
++
++    #[test]
++    fn caller_retains_drafts_and_commits_or_discards_once() {
++        let viewport = (320., 400.);
++        let mut runtime = route(viewport, true);
++        runtime.activate(EDIT_OPEN).unwrap();
++        draw(&mut runtime, viewport);
++        set_input(&mut runtime, "秋日散步", 12, 12);
++        draw(&mut runtime, viewport);
++        let close = rect(&runtime, "dialog-demo-edit-close");
++        click(&mut runtime, close.x + 24., close.y + 24.);
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, DISCARD);
++        assert!(runtime.activate("dialog-demo-edit-action").is_err());
++        runtime.activate("dialog-demo-discard-cancel").unwrap();
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, EDIT);
++        assert_eq!(runtime.editor(EDITOR).unwrap().value(), "秋日散步");
++        runtime.activate("dialog-demo-edit-action").unwrap();
++        assert_eq!(runtime.app().dialog_demo.saves, 1);
++        assert_eq!(runtime.app().dialog_demo.saved, "秋日散步");
++        assert_eq!(runtime.focused(), Some(EDIT_OPEN));
++        runtime
++            .apply(Message::DialogDemo(DialogDemoEvent::Save))
++            .unwrap();
++        assert_eq!(runtime.app().dialog_demo.saves, 1);
++
++        runtime.activate(EDIT_OPEN).unwrap();
++        draw(&mut runtime, viewport);
++        set_input(&mut runtime, "待捨棄", 9, 9);
++        runtime.dispatch(Event::Cancel).unwrap();
++        draw(&mut runtime, viewport);
++        active_panel(&runtime, DISCARD);
++        runtime.activate("dialog-demo-discard-confirm").unwrap();
++        assert_eq!(runtime.app().dialog_demo.discards, 1);
++        assert_eq!(runtime.app().dialog_demo.saved, "秋日散步");
++        assert_eq!(runtime.focused(), Some(EDIT_OPEN));
++        runtime.activate(BACK).unwrap();
++        draw(&mut runtime, viewport);
++        assert_eq!(runtime.focused(), Some(SHOW));
++        assert!(runtime.dom().by_id("open-dialog").is_some());
++    }
++}
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -6,6 +6,7 @@
+ mod carousel_demo;
+ mod date_picker_demo;
+ mod date_range_picker_demo;
++mod dialog_demo;
+ mod docked_date_picker_demo;
+ mod extended_fab_demo;
+ mod fab_demo;
+@@ -44,6 +45,7 @@
+ use carousel_demo::{CarouselDemo, CarouselEvent};
+ use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
+ use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
++use dialog_demo::{DialogDemo, DialogDemoEvent};
+ use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
+ use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
+ use fab_demo::{FabDemo, FabEvent};
+@@ -125,6 +127,7 @@
+     scroll_popup_demo: ScrollPopupDemo,
+     scroll_modal_demo: ScrollModalDemo,
+     search_overlay_demo: SearchOverlayDemo,
++    dialog_demo: DialogDemo,
+     lists_demo: ListsDemo,
+     list_actions_demo: ListActionsDemo,
+     list_expand_demo: ListExpandDemo,
+@@ -186,6 +189,7 @@
+             scroll_popup_demo: ScrollPopupDemo::default(),
+             scroll_modal_demo: ScrollModalDemo::default(),
+             search_overlay_demo: SearchOverlayDemo::default(),
++            dialog_demo: DialogDemo::default(),
+             lists_demo: ListsDemo::default(),
+             list_actions_demo: ListActionsDemo::default(),
+             list_expand_demo: ListExpandDemo::default(),
+@@ -279,6 +283,7 @@
+     ScrollPopup(ScrollPopupDemoEvent),
+     ScrollModal(ScrollModalDemoEvent),
+     SearchOverlay(SearchOverlayDemoEvent),
++    DialogDemo(DialogDemoEvent),
+     Lists(ListsEvent),
+     ListActions(ListActionsEvent),
+     ListExpand(ListExpandEvent),
+@@ -390,6 +395,9 @@
+         if self.search_overlay_demo.visible() {
+             return self.search_overlay_demo.text_scale();
+         }
++        if self.dialog_demo.visible() {
++            return self.dialog_demo.text_scale();
++        }
+         if self.lists_demo.visible() {
+             return self.lists_demo.text_scale();
+         }
+@@ -451,6 +459,7 @@
+         let scroll_popup = self.scroll_popup_demo.viewport_changed(width, height);
+         let scroll_modal = self.scroll_modal_demo.viewport_changed(width, height);
+         let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
++        let dialog = self.dialog_demo.viewport_changed(width, height);
+         let list_actions = self.list_actions_demo.viewport_changed(width);
+         let list_media = self.list_media_demo.viewport_changed(width, height);
+         let list_reorder = self.list_reorder_demo.viewport_changed(width);
+@@ -484,6 +493,7 @@
+             || scroll_popup
+             || scroll_modal
+             || search_overlay
++            || dialog
+             || list_actions
+             || list_media
+             || list_reorder
+@@ -732,6 +742,9 @@
+                 if i != search_overlay_demo::SECTION {
+                     self.search_overlay_demo.leave();
+                 }
++                if i != dialog_demo::SECTION {
++                    self.dialog_demo.leave();
++                }
+                 if i != toolbar_demo::SECTION {
+                     self.toolbar_demo.leave();
+                 }
+@@ -783,6 +796,7 @@
+             Message::Carousel(event) => self.carousel_demo.update(event),
+             Message::AppBar(event) => self.app_bar_demo.update(event),
+             Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
++            Message::DialogDemo(event) => self.dialog_demo.update(event),
+             Message::Toolbar(event) => self.toolbar_demo.update(event),
+             Message::Tooltip(event) => self.tooltip_demo.update(event),
+             Message::Nav(i) => self.nav = i,
+@@ -912,6 +926,9 @@
+         }
+         if self.search_overlay_demo.visible() {
+             return self.search_overlay_demo.view(&t, self.dark);
++        }
++        if self.dialog_demo.visible() {
++            return self.dialog_demo.view(&t, self.dark);
+         }
+         if self.toolbar_demo.visible() {
+             return self.toolbar_demo.view(&t, self.dark);
+@@ -1390,6 +1407,7 @@
+                         ]),
+                         BottomSheetDemo::show_button(&t),
+                         TooltipDemo::show_button(&t),
++                        DialogDemo::show_button(&t),
+                         t.text("overlay-help", "使用 Tab 切換焦點。按 Escape 關閉。"),
+                     ],
+                 ));
+@@ -1632,6 +1650,7 @@
+         state["scroll_popup"] = s.scroll_popup_demo.inspect(&runtime);
+         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
+         state["search_overlay"] = s.search_overlay_demo.inspect();
++        state["dialog_demo"] = s.dialog_demo.inspect();
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

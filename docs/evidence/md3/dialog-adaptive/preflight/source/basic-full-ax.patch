@@ -1,0 +1,2270 @@
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -150,6 +150,10 @@
+     current_date: bool,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     described_by_text: Option<String>,
++    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
++    alert_dialog: bool,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    dialog_heading: Option<String>,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     expanded: Option<bool>,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+@@ -239,6 +243,8 @@
+             grid_multiselectable: false,
+             current_date: false,
+             described_by_text: None,
++            alert_dialog: false,
++            dialog_heading: None,
+             expanded: None,
+             disclosure: false,
+             horizontal_slide: 0.,
+@@ -640,6 +646,27 @@
+     pub fn description_text_target(&self) -> Option<&str> {
+         self.described_by_text.as_deref()
+     }
++    /// Ask accessibility hosts to expose this dialog as an alert while it is
++    /// modal. The base role, keyboard behavior, and dismissal policy stay
++    /// with the caller.
++    pub fn alert_dialog(mut self) -> Self {
++        self.alert_dialog = self.role == Role::Dialog;
++        self
++    }
++    pub fn is_alert_dialog(&self) -> bool {
++        self.alert_dialog && self.role == Role::Dialog
++    }
++    /// Label a dialog with a visible descendant heading's stable ID. The
++    /// authored name remains the fallback if the heading cannot be resolved.
++    pub fn dialog_labelled_by_heading(mut self, target: impl Into<String>) -> Self {
++        self.dialog_heading = (self.role == Role::Dialog).then(|| target.into());
++        self
++    }
++    pub fn dialog_heading_target(&self) -> Option<&str> {
++        self.dialog_heading
++            .as_deref()
++            .filter(|_| self.role == Role::Dialog)
++    }
+     /// Set the open or closed state of a button that controls a disclosure.
+     pub fn disclosure_expanded(mut self, value: bool) -> Self {
+         self.expanded = (self.role == Role::Button).then_some(value);
+--- /dev/null
++++ b/crates/surface/tests/dialog_semantics.rs
+@@ -0,0 +1,29 @@
++use surface::{Node, Role};
++
++#[test]
++fn dialog_accessibility_metadata_is_opt_in_and_keeps_the_base_role() {
++    let plain = Node::new(Role::Dialog, "Rename document");
++    let legacy = serde_json::to_value(&plain).unwrap();
++    assert_eq!(legacy["role"], "Dialog");
++    assert!(legacy.get("alert_dialog").is_none());
++    assert!(legacy.get("dialog_heading").is_none());
++    let restored: Node = serde_json::from_value(legacy).unwrap();
++    assert_eq!(restored, plain);
++    assert!(!restored.is_alert_dialog());
++    assert_eq!(restored.dialog_heading_target(), None);
++
++    let alert = plain.alert_dialog().dialog_labelled_by_heading("heading");
++    let restored: Node = serde_json::from_value(serde_json::to_value(&alert).unwrap()).unwrap();
++    assert_eq!(restored.role(), Role::Dialog);
++    assert!(restored.is_alert_dialog());
++    assert_eq!(restored.dialog_heading_target(), Some("heading"));
++
++    let button = Node::new(Role::Button, "Open dialog");
++    assert_eq!(
++        button
++            .clone()
++            .alert_dialog()
++            .dialog_labelled_by_heading("heading"),
++        button
++    );
++}
+--- a/crates/surface-app/src/accessibility.rs
++++ b/crates/surface-app/src/accessibility.rs
+@@ -290,6 +290,25 @@
+             layout,
+             text_options,
+         })
++    }
++
++    /// Resolve a dialog's visible descendant heading in the active frame.
++    /// Hosts use the dialog's authored name when the heading is unavailable.
++    pub fn dialog_heading_target(&self, id: NodeId) -> Option<NodeId> {
++        let key = self.dom.get(id).ok()?.dialog_heading_target()?;
++        let source = self.node(id)?;
++        if !has_visible_bounds(&source) {
++            return None;
++        }
++        let target = self.dom.by_id(key)?;
++        let heading = self.node(target)?;
++        let node = heading.node;
++        (node.role() == Role::Heading
++            && !node.is_disabled()
++            && !node.text_value().unwrap_or(node.name()).trim().is_empty()
++            && has_visible_bounds(&heading)
++            && descendant(self.dom, target, id))
++        .then_some(target)
+     }
+ 
+     /// Resolve the visible text or tooltip that describes a node in this frame.
+--- a/crates/surface-app/src/context.rs
++++ b/crates/surface-app/src/context.rs
+@@ -2,7 +2,7 @@
+ //! sends `Event::SecondaryDown`; the runtime walks from the hit node to the
+ //! nearest ancestor with an `on_context_menu` handler and posts its message.
+ //! The app opens the menu itself (for example `Theme::menu_at` at the point).
+-use crate::{AppError, Application, Runtime};
++use crate::{controls::ModalDismissInput, AppError, Application, Runtime};
+ use std::rc::Rc;
+ 
+ /// A point in logical pixels, in window coordinates.
+@@ -23,7 +23,7 @@
+         let mut node = self.hit(x, y);
+         self.cancel_composition();
+         if self.outside_scope(x, y, node) {
+-            return self.dismiss_scope();
++            return self.dismiss_scope(ModalDismissInput::Outside);
+         }
+         while let Some(id) = node.filter(|id| self.in_scope(*id)) {
+             if let Some(handler) = self.bindings.get(&id).and_then(|b| b.context.clone()) {
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -1,4 +1,6 @@
+-use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalLayer, Runtime};
++use crate::{
++    AccessibilityAdjustment, AppError, Application, EditKey, ModalDismissal, ModalLayer, Runtime,
++};
+ use std::{collections::BTreeSet, rc::Rc};
+ use surface::{ComputedDom, Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
+ 
+@@ -53,6 +55,11 @@
+     id: String,
+     restore: Option<String>,
+     fallback: Option<String>,
++}
++
++pub(crate) enum ModalDismissInput {
++    Escape,
++    Outside,
+ }
+ 
+ pub(crate) enum TabDismissal {
+@@ -496,13 +503,25 @@
+                 })
+         })
+     }
+-    pub(crate) fn dismiss_scope(&mut self) -> Result<bool, AppError> {
++    pub(crate) fn scopes_block_application_shortcuts(&self) -> bool {
++        self.scopes.iter().any(|scope| {
++            self.dom
++                .by_id(&scope.id)
++                .and_then(|id| self.bindings.get(&id))
++                .is_some_and(|binding| binding.block_application_shortcuts)
++        })
++    }
++
++    pub(crate) fn dismiss_scope(&mut self, input: ModalDismissInput) -> Result<bool, AppError> {
+         let message = self
+-            .scopes
+-            .last()
+-            .and_then(|s| self.dom.by_id(&s.id))
++            .active_scope_root()
+             .and_then(|id| self.bindings.get(&id))
+-            .and_then(|b| b.dismiss.clone());
++            .filter(|binding| match binding.modal_dismissal {
++                ModalDismissal::EscapeOrOutside => true,
++                ModalDismissal::Escape => matches!(input, ModalDismissInput::Escape),
++                ModalDismissal::ActionOnly => false,
++            })
++            .and_then(|binding| binding.dismiss.clone());
+         self.message(message).map(|_| true)
+     }
+     /// Deliver the top scope's opt-in dismiss message. Consume the key if
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -86,6 +86,8 @@
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+     dismiss: Option<M>,
++    modal_dismissal: ModalDismissal,
++    block_application_shortcuts: bool,
+     dismiss_on_tab: bool,
+     modal_focus_fallback: Option<String>,
+     modal_initial_focus: Option<String>,
+@@ -122,6 +124,18 @@
+     Panel,
+ }
+ 
++/// The implicit inputs that can dismiss an active modal.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum ModalDismissal {
++    /// Send the dismiss message on Escape and on an outside press.
++    #[default]
++    EscapeOrOutside,
++    /// Send the dismiss message on Escape.
++    Escape,
++    /// Wait for an explicit action in the modal.
++    ActionOnly,
++}
++
+ /// A key handler. `Some(message)` consumes the press, `None` passes it on.
+ type KeyHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<M>>;
+ type KeyFocusNavigationHandler<M> = Rc<dyn Fn(&KeyPress) -> Option<FocusNavigation<M>>>;
+@@ -143,6 +157,8 @@
+             accessible_step: None,
+             roving: None,
+             dismiss: None,
++            modal_dismissal: ModalDismissal::default(),
++            block_application_shortcuts: false,
+             dismiss_on_tab: false,
+             modal_focus_fallback: None,
+             modal_initial_focus: None,
+@@ -643,6 +659,21 @@
+         self.modal_layer = Some(ModalLayer::Panel);
+         self
+     }
++    /// Set which implicit inputs send this modal's dismiss message.
++    /// The active modal still blocks interaction with the page behind it.
++    pub fn modal_dismissal(mut self, policy: ModalDismissal) -> Self {
++        self.modal_dismissal = policy;
++        self
++    }
++
++    /// Keep matched application-wide shortcuts in the active modal scope.
++    /// The modal and its nested panels consume those chords without sending their global
++    /// messages. Focused controls and their scoped key handlers run first.
++    pub fn block_application_shortcuts(mut self) -> Self {
++        self.block_application_shortcuts = true;
++        self
++    }
++
+     /// Let Tab and Shift+Tab dismiss this modal menu. The same key continues
+     /// traversal from the restored opener when only this scope closes.
+     pub fn dismiss_modal_on_tab(mut self) -> Self {
+@@ -891,6 +922,8 @@
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+     dismiss: Option<M>,
++    modal_dismissal: ModalDismissal,
++    block_application_shortcuts: bool,
+     dismiss_on_tab: bool,
+     modal_focus_fallback: Option<String>,
+     modal_initial_focus: Option<String>,
+@@ -1357,6 +1390,8 @@
+                     accessible_step: view.accessible_step,
+                     roving: view.roving,
+                     dismiss: view.dismiss,
++                    modal_dismissal: view.modal_dismissal,
++                    block_application_shortcuts: view.block_application_shortcuts,
+                     dismiss_on_tab: view.dismiss_on_tab,
+                     modal_focus_fallback: view.modal_focus_fallback,
+                     modal_initial_focus: view.modal_initial_focus,
+@@ -1802,7 +1837,7 @@
+         let Some(shortcut) = self.app.shortcuts().into_iter().find(|s| s.matches(press)) else {
+             return Ok(false);
+         };
+-        if press.repeat {
++        if press.repeat || self.scopes_block_application_shortcuts() {
+             return Ok(true);
+         }
+         self.message(Some(shortcut.message))
+@@ -1952,7 +1987,7 @@
+                 if std::mem::take(&mut self.modal_outside) {
+                     return if !suppress_touch_activation && self.outside_scope(x, y, self.hit(x, y))
+                     {
+-                        self.dismiss_scope()
++                        self.dismiss_scope(controls::ModalDismissInput::Outside)
+                     } else {
+                         Ok(true)
+                     };
+@@ -2117,7 +2152,8 @@
+                     self.flush()?;
+                     return Ok(true);
+                 }
+-                self.dismiss_scope().map(|handled| handled || pointer)
++                self.dismiss_scope(controls::ModalDismissInput::Escape)
++                    .map(|handled| handled || pointer)
+             }
+             Event::Scroll {
+                 x,
+--- /dev/null
++++ b/crates/surface-material/src/basic_dialog.rs
+@@ -0,0 +1,352 @@
++//! Material 3 Basic dialogs with separate heading, scroll body and actions.
++
++use surface::{
++    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer,
++    TextScaling,
++};
++use surface_app::{CursorStyle, ModalDismissal, View};
++
++use crate::{shape, shape::LayoutDirection, typography, Elevation, Theme};
++
++const MIN_WIDTH: f32 = 280.;
++const MAX_WIDTH: f32 = 560.;
++const CONTENT_INSET: f32 = 24.;
++const SECTION_GAP: f32 = 16.;
++const ACTION_GAP: f32 = 8.;
++const ACTION_SIDE_INSET: f32 = 12.;
++const ACTION_VERTICAL_INSET: f32 = 4.;
++const TOUCH_TARGET: f32 = 48.;
++
++/// Names, presentation and focus for a Basic dialog.
++#[derive(Clone, Copy, Debug)]
++pub struct BasicDialogOptions<'a> {
++    /// Stable prefix for the panel and its slots.
++    pub id: &'a str,
++    /// Accessible name of the dialog, including when the heading is omitted.
++    pub label: &'a str,
++    pub heading: Option<&'a str>,
++    pub supporting: Option<&'a str>,
++    pub icon: Option<&'a str>,
++    /// Current window dimensions in logical pixels.
++    pub window_size: (f32, f32),
++    /// Preferred outer width. A Basic dialog normally uses 280 to 560 dp.
++    pub preferred_width: f32,
++    pub direction: LayoutDirection,
++    pub dismissal: ModalDismissal,
++    /// Publish an urgent alert role when the message requires attention.
++    /// The dismissal policy remains a separate choice.
++    pub alert: bool,
++    pub initial_focus: Option<&'a str>,
++    pub restore_focus_to: Option<&'a str>,
++}
++
++/// Body views and actions authored by the application.
++pub struct BasicDialogContent<'a, M> {
++    pub extra: Vec<View<M>>,
++    /// The sole acknowledgement or the positive choice of a two-action dialog.
++    pub confirm: (&'a str, M),
++    pub cancel: Option<(&'a str, M)>,
++    /// The application message for an allowed Escape or backdrop dismissal.
++    pub on_dismiss: M,
++}
++
++impl Theme {
++    /// Build a Basic dialog with a scrollable middle region. Mount it beside
++    /// the page. Keep the same prefix and body IDs through resize and rebuilds.
++    /// The heading and actions stay above and below the scrolling region.
++    /// Action labels are measured at the current text scale before placement.
++    /// The Tab order stays stable when a narrow layout stacks the actions.
++    ///
++    /// This reserves `{id}-layer`, `{id}-heading`, `{id}-body`,
++    /// `{id}-actions`, `{id}-confirm` and `{id}-cancel`.
++    pub fn basic_dialog<M>(
++        &self,
++        options: BasicDialogOptions<'_>,
++        content: BasicDialogContent<'_, M>,
++    ) -> Option<View<M>> {
++        let (window_width, window_height) = options.window_size;
++        if [window_width, window_height, options.preferred_width]
++            .into_iter()
++            .any(|extent| !extent.is_finite() || extent <= 0.)
++        {
++            return None;
++        }
++        let margin_x = CONTENT_INSET.min(((window_width - MIN_WIDTH) / 2.).max(0.));
++        let width = options
++            .preferred_width
++            .clamp(MIN_WIDTH, MAX_WIDTH)
++            .min(window_width - 2. * margin_x);
++        let margin_y = CONTENT_INSET.min((window_height / 8.).floor());
++        let max_height = window_height - 2. * margin_y;
++        let inset = CONTENT_INSET.min(width / 4.).min(max_height / 8.);
++        let id = |suffix| format!("{}-{suffix}", options.id);
++
++        let mut children = Vec::new();
++        if let Some(glyph) = options.icon {
++            let mut icon = Style::column()
++                .width(Length::Px(24.))
++                .height(Length::Px(24.))
++                .font_size(24.)
++                .line_height(24.)
++                .foreground(self.colors.secondary);
++            icon.align = Align::Center;
++            children.push(
++                View::new(
++                    Node::new(Role::Group, "")
++                        .id(id("icon"))
++                        .text(glyph)
++                        .text_scaling(TextScaling::Fixed)
++                        .styled(icon),
++                )
++                .without_interaction(None),
++            );
++            if options.heading.is_some() {
++                children.push(gap(SECTION_GAP));
++            }
++        }
++        if let Some(heading) = options.heading {
++            let mut style = Style::column()
++                .with_text_style(typography::HEADLINE_SMALL)
++                .foreground(self.colors.on_surface);
++            style.max_width = Length::Percent(1.);
++            children.push(View::new(
++                Node::new(Role::Heading, heading)
++                    .id(id("heading"))
++                    .text(heading)
++                    .styled(style),
++            ));
++        }
++        let status_text = options.supporting.filter(|text| !text.is_empty());
++        let has_body = status_text.is_some() || !content.extra.is_empty();
++        if has_body {
++            if !children.is_empty() {
++                children.push(gap(SECTION_GAP));
++            }
++            let supporting = status_text.map(|text| {
++                View::new(
++                    Node::new(Role::Text, text)
++                        .id(id("supporting"))
++                        .text(text)
++                        .styled(
++                            Style::column()
++                                .with_text_style(typography::BODY_MEDIUM)
++                                .foreground(self.colors.on_surface_variant),
++                        ),
++                )
++            });
++            children.push(
++                View::new(
++                    Node::new(Role::Group, "")
++                        .id(id("body"))
++                        .shrink_to_fit_height()
++                        .styled(
++                            Style::column()
++                                .width(Length::Percent(1.))
++                                .gap(SECTION_GAP)
++                                .clip(true),
++                        ),
++                )
++                .children(supporting.into_iter().chain(content.extra))
++                .accessibility_scroll_pages(),
++            );
++        }
++        if !children.is_empty() {
++            children.push(gap(CONTENT_INSET));
++        }
++        let actions = content
++            .cancel
++            .map(|action| self.basic_dialog_action(&id("cancel"), action))
++            .into_iter()
++            .chain(std::iter::once(
++                self.basic_dialog_action(&id("confirm"), content.confirm),
++            ))
++            .flatten();
++        children.push(
++            View::new(
++                Node::new(Role::Group, "")
++                    .id(id("actions"))
++                    .styled(Style::column().width(Length::Percent(1.)))
++                    .measured_group(ActionLayout {
++                        rtl: options.direction == LayoutDirection::RightToLeft,
++                    }),
++            )
++            .children(actions),
++        );
++
++        let mut style = Style::column()
++            .width(Length::Px(width))
++            .padding(inset)
++            .corners(shape::EXTRA_LARGE)
++            .background(self.colors.surface_container_high)
++            .clip(true);
++        style.max_height = Length::Px(max_height);
++        if options.icon.is_some() {
++            style.align = Align::Center;
++        }
++        let mut panel = Node::new(Role::Dialog, options.label)
++            .id(options.id)
++            .tab_index(-1)
++            .focus_color(Color::TRANSPARENT)
++            .styled(style)
++            .box_shadows(self.elevation(Elevation::Level3));
++        if options.alert {
++            panel = panel.alert_dialog();
++        }
++        if options.heading.is_some() {
++            panel = panel.dialog_labelled_by_heading(id("heading"));
++        }
++        if status_text.is_some() {
++            panel = panel.described_by_text(id("supporting"));
++        }
++        let mut panel = View::new(panel)
++            .children(children)
++            .modal_dismissal(options.dismissal)
++            .block_application_shortcuts();
++        if let Some(target) = options.initial_focus {
++            panel = panel.modal_initial_focus(target);
++        }
++        if let Some(target) = options.restore_focus_to {
++            panel = panel.modal_focus_fallback(target);
++        }
++        let Color(red, green, blue, _) = self.colors.scrim;
++        let mut backdrop = Style::column()
++            .fixed(Insets::all(0.))
++            .align(Align::Center)
++            .justify(Align::Center)
++            .background(Color(red, green, blue, 82));
++        backdrop.z_index = 1000;
++        Some(panel.modal_with_backdrop(
++            Node::new(Role::Group, "").id(id("layer")).styled(backdrop),
++            content.on_dismiss,
++        ))
++    }
++
++    fn basic_dialog_action<M>(&self, id: &str, (label, action): (&str, M)) -> [View<M>; 2] {
++        let ink = self.colors.primary;
++        [
++            View::new(
++                Node::new(Role::Button, label).id(id).styled(
++                    Style::column()
++                        .corners(shape::FULL)
++                        .foreground(ink)
++                        .state_layer(ink),
++                ),
++            )
++            .on_press(action)
++            .accessible_activation()
++            .protect_composition_on_press()
++            .cursor(CursorStyle::Pointer),
++            View::new(
++                Node::new(Role::Group, "").text(label).styled(
++                    Style::column()
++                        .with_text_style(typography::LABEL_LARGE)
++                        .foreground(ink),
++                ),
++            )
++            .without_interaction(None),
++        ]
++    }
++}
++
++fn gap<M>(height: f32) -> View<M> {
++    View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(height))))
++}
++
++#[derive(Debug)]
++struct ActionLayout {
++    rtl: bool,
++}
++
++impl MeasuredGroupLayout for ActionLayout {
++    fn measure(
++        &self,
++        children: &[&Node],
++        available_width: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let width = available_width.unwrap_or(MAX_WIDTH - 2. * CONTENT_INSET);
++        let (_, height) = self.arrange(children, width, fonts);
++        (width, height)
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, _): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        self.arrange(children, width, fonts).0
++    }
++}
++
++impl ActionLayout {
++    fn arrange(
++        &self,
++        children: &[&Node],
++        width: f32,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (Vec<Rect>, f32) {
++        let metrics: Vec<_> = children
++            .chunks_exact(2)
++            .map(|pair| {
++                let label = pair[1];
++                let text = label.text_value().unwrap_or_default();
++                let style = label.style().text_style();
++                let desired = fonts.measure_text(text, &style, None).0;
++                let side = ACTION_SIDE_INSET.min(width / 4.);
++                let button_width = (desired + 2. * side).max(TOUCH_TARGET).min(width);
++                let line_width = (button_width - 2. * side).max(0.);
++                let (label_width, label_height) =
++                    fonts.measure_text(text, &style, Some(line_width));
++                let height = (label_height + 2. * ACTION_VERTICAL_INSET).max(TOUCH_TARGET);
++                (
++                    button_width,
++                    height,
++                    label_width.min(line_width),
++                    label_height,
++                )
++            })
++            .collect();
++        let row_width = metrics.iter().map(|item| item.0).sum::<f32>()
++            + ACTION_GAP * (metrics.len() - 1) as f32;
++        let row_height = metrics.iter().map(|item| item.1).fold(0., f32::max);
++        let stacked = row_width > width;
++        let height = if stacked {
++            metrics.iter().map(|item| item.1).sum::<f32>() + ACTION_GAP
++        } else {
++            row_height
++        };
++        let mut next_x = width - row_width;
++        let mut placed = Vec::with_capacity(children.len());
++        for (index, &(button_width, button_height, label_width, label_height)) in
++            metrics.iter().enumerate()
++        {
++            let x = if stacked {
++                width - button_width
++            } else {
++                next_x
++            };
++            let y = if stacked && index == 0 {
++                metrics[1].1 + ACTION_GAP
++            } else if stacked {
++                0.
++            } else {
++                (row_height - button_height) / 2.
++            };
++            let x = if self.rtl {
++                width - x - button_width
++            } else {
++                x
++            };
++            placed.push(Rect::new(x, y, button_width, button_height));
++            placed.push(Rect::new(
++                x + (button_width - label_width) / 2.,
++                y + (button_height - label_height) / 2.,
++                label_width,
++                label_height,
++            ));
++            next_x += button_width + ACTION_GAP;
++        }
++        (placed, height)
++    }
++}
+--- /dev/null
++++ b/crates/surface-material/src/full_screen_dialog.rs
+@@ -0,0 +1,348 @@
++//! A full-screen Material dialog with a measured header and scrollable body.
++
++use surface::{
++    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer,
++};
++use surface_app::{ModalDismissal, View};
++
++use crate::{
++    date_picker::{button, disabled_ink, Glyph},
++    shape::{self, LayoutDirection},
++    typography, Theme,
++};
++
++const MAX_CONTENT_RAIL: f32 = 560.;
++const BODY_GUTTER: f32 = 24.;
++const HEADER_SIDE: f32 = 12.;
++const HEADER_HEIGHT: f32 = 56.;
++const HEADER_VERTICAL_PADDING: f32 = 4.;
++const HEADER_GAP: f32 = 8.;
++const TOUCH_TARGET: f32 = 48.;
++const CLOSE_ICON: f32 = 24.;
++const ACTION_INSET: f32 = 8.;
++
++/// Names and placement for a full-screen dialog with one header action.
++///
++/// Give the dialog a stable prefix. Controls use the suffixes `-close` and
++/// `-action`. The dialog uses the supplied ID directly. Its header and
++/// scrolling area use `-header` and `-body`.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct FullScreenDialogOptions<'a> {
++    pub id: &'a str,
++    /// Visible heading and accessible dialog name.
++    pub title: &'a str,
++    /// Accessible name for the scrolling group.
++    pub body_label: &'a str,
++    pub close_label: &'a str,
++    /// Localized action caption, such as Save.
++    pub action_label: &'a str,
++    pub action_disabled: bool,
++    /// Preferred focus target in this dialog, otherwise use the first control.
++    pub initial_focus: Option<&'a str>,
++    /// Fallback if the control that opened the dialog is gone.
++    pub restore_focus_to: Option<&'a str>,
++    /// The area to cover, in logical window coordinates.
++    pub viewport: Rect,
++    pub direction: LayoutDirection,
++}
++
++/// Outer bounds and available width for the caller's body.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct FullScreenDialogLayout {
++    pub bounds: Rect,
++    /// Width available after the body gutters. The actual header and body
++    /// heights are measured with the app's fonts and text scale.
++    pub content_width: f32,
++}
++
++/// Plan the full viewport surface and its interior column.
++/// A viewport must have room for both header controls and a scrolling area.
++pub fn full_screen_dialog_layout(
++    options: FullScreenDialogOptions<'_>,
++) -> Option<FullScreenDialogLayout> {
++    let bounds = options.viewport;
++    if ![
++        bounds.x,
++        bounds.y,
++        bounds.x + bounds.width,
++        bounds.y + bounds.height,
++    ]
++    .into_iter()
++    .all(f32::is_finite)
++        || bounds.width < 2. * (HEADER_SIDE + TOUCH_TARGET) + HEADER_GAP
++        || bounds.height < HEADER_HEIGHT + 2. * BODY_GUTTER
++    {
++        return None;
++    }
++    Some(FullScreenDialogLayout {
++        bounds,
++        content_width: bounds.width.min(MAX_CONTENT_RAIL) - 2. * BODY_GUTTER,
++    })
++}
++
++impl Theme {
++    /// Build a modal dialog over the entire supplied viewport.
++    ///
++    /// The close button and Escape send `on_close`. The header action sends
++    /// `on_action`. The caller owns the task, validation, and any confirmation
++    /// for discarding edits. Pending composition receives Escape first and
++    /// guards both header actions until it has ended.
++    pub fn full_screen_dialog<M: Clone + 'static>(
++        &self,
++        options: FullScreenDialogOptions<'_>,
++        body: View<M>,
++        on_close: M,
++        on_action: M,
++    ) -> Option<View<M>> {
++        let layout = full_screen_dialog_layout(options)?;
++        let bounds = layout.bounds;
++        let rail_width = layout.content_width + 2. * BODY_GUTTER;
++        let id = |suffix| format!("{}-{suffix}", options.id);
++        let rtl = options.direction == LayoutDirection::RightToLeft;
++        let body = View::new(
++            Node::new(Role::Group, options.body_label)
++                .id(id("body"))
++                .styled(
++                    Style::column()
++                        .width(Length::Px(rail_width))
++                        .height(Length::Px(0.))
++                        .grow(1.)
++                        .align(if rtl { Align::End } else { Align::Start })
++                        .padding(BODY_GUTTER)
++                        .clip(true),
++                ),
++        )
++        .children([body])
++        .accessibility_scroll_pages();
++        let surface = Style::column()
++            .width(Length::Px(bounds.width))
++            .height(Length::Px(bounds.height))
++            .fixed(Insets {
++                left: Length::Px(bounds.x),
++                top: Length::Px(bounds.y),
++                ..Insets::default()
++            })
++            .align(Align::Center)
++            .background(self.colors.surface)
++            .clip(true);
++        let mut panel = View::new(
++            Node::new(Role::Dialog, options.title)
++                .id(options.id)
++                .dialog_labelled_by_heading(id("title"))
++                .tab_index(-1)
++                .focus_color(Color::TRANSPARENT)
++                .styled(surface),
++        )
++        .children([
++            self.full_screen_dialog_header(options, rail_width, on_close.clone(), on_action),
++            body,
++        ]);
++        if let Some(target) = options.initial_focus {
++            panel = panel.modal_initial_focus(target);
++        }
++        if let Some(target) = options.restore_focus_to {
++            panel = panel.modal_focus_fallback(target);
++        }
++        Some(
++            panel
++                .modal_dismissal(ModalDismissal::Escape)
++                .block_application_shortcuts()
++                .modal_overlay(on_close),
++        )
++    }
++
++    fn full_screen_dialog_header<M>(
++        &self,
++        options: FullScreenDialogOptions<'_>,
++        width: f32,
++        on_close: M,
++        on_action: M,
++    ) -> View<M> {
++        let id = |suffix| format!("{}-{suffix}", options.id);
++        let on_surface = self.colors.on_surface;
++        let primary = self.colors.primary;
++        let close = header_button(id("close"), options.close_label, on_surface, Some(on_close));
++        let icon = View::new(
++            Node::new(Role::Group, "")
++                .id(id("close-icon"))
++                .fill_contour(
++                    Glyph::Close
++                        .vector()
++                        .contour_dp(CLOSE_ICON, on_surface)
++                        .expect("the standard close icon has valid geometry"),
++                ),
++        )
++        .without_interaction(None);
++        let title = View::new(
++            Node::new(Role::Heading, options.title)
++                .id(id("title"))
++                .text(options.title)
++                .styled(
++                    Style::column()
++                        .clip(true)
++                        .with_text_style(typography::TITLE_LARGE)
++                        .foreground(on_surface),
++                ),
++        );
++        let action = header_button(
++            id("action"),
++            options.action_label,
++            primary,
++            (!options.action_disabled).then_some(on_action),
++        );
++        let caption = View::new(
++            Node::new(Role::Text, "")
++                .id(id("action-label"))
++                .text(options.action_label)
++                .styled(
++                    Style::column()
++                        .clip(true)
++                        .with_text_style(typography::LABEL_LARGE)
++                        .foreground(if options.action_disabled {
++                            disabled_ink(self)
++                        } else {
++                            primary
++                        }),
++                ),
++        )
++        .without_interaction(None);
++        View::new(
++            Node::new(Role::Group, "")
++                .id(id("header"))
++                .styled(
++                    Style::column()
++                        .width(Length::Px(width))
++                        .background(self.colors.surface),
++                )
++                .measured_group(HeaderLayout {
++                    width,
++                    maximum_height: options.viewport.height - 2. * BODY_GUTTER,
++                    direction: options.direction,
++                }),
++        )
++        .children([close, icon, title, action, caption])
++    }
++}
++
++fn header_button<M>(id: String, name: &str, ink: Color, message: Option<M>) -> View<M> {
++    button(
++        Node::new(Role::Button, name)
++            .id(id)
++            .styled(Style::row().corners(shape::FULL).state_layer(ink)),
++        message,
++    )
++    .suppress_repeated_activation()
++    .protect_composition_on_press()
++}
++
++#[derive(Debug)]
++struct HeaderLayout {
++    width: f32,
++    maximum_height: f32,
++    direction: LayoutDirection,
++}
++
++struct HeaderParts {
++    title_size: (f32, f32),
++    action_width: f32,
++    caption_size: (f32, f32),
++}
++
++impl HeaderLayout {
++    fn parts(width: f32, children: &[&Node], fonts: &mut dyn TextMeasurer) -> HeaderParts {
++        // The measured header always contains the three semantic leaves and
++        // two passive paint leaves in this order.
++        let [_, _, title, _, caption] = children else {
++            unreachable!("full-screen dialog header has five leaves");
++        };
++        let natural = fonts
++            .measure_text(
++                caption.text_value().unwrap_or_default(),
++                &caption.style().text_style(),
++                None,
++            )
++            .0
++            .ceil();
++        let half_remaining = (width - 2. * HEADER_SIDE - TOUCH_TARGET) / 2.;
++        let action_width =
++            (natural + 2. * ACTION_INSET).clamp(TOUCH_TARGET, half_remaining.max(TOUCH_TARGET));
++        let title_width =
++            (width - 2. * (HEADER_SIDE + HEADER_GAP) - TOUCH_TARGET - action_width).max(0.);
++        let caption_width = natural.min(action_width - 2. * ACTION_INSET);
++        HeaderParts {
++            title_size: (title_width, text_height(title, title_width, fonts)),
++            action_width,
++            caption_size: (caption_width, text_height(caption, caption_width, fonts)),
++        }
++    }
++}
++
++impl MeasuredGroupLayout for HeaderLayout {
++    fn measure(
++        &self,
++        children: &[&Node],
++        available_width: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let width = available_width.map_or(self.width, |limit| self.width.min(limit));
++        let parts = Self::parts(width, children, fonts);
++        let height = (parts.title_size.1.max(parts.caption_size.1) + 2. * HEADER_VERTICAL_PADDING)
++            .clamp(HEADER_HEIGHT, self.maximum_height);
++        (width, height)
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let parts = Self::parts(width, children, fonts);
++        let action_x = width - HEADER_SIDE - parts.action_width;
++        let rect = |x, w, h: f32| {
++            let h = h.min(height);
++            let x = if self.direction == LayoutDirection::RightToLeft {
++                width - x - w
++            } else {
++                x
++            };
++            Rect::new(x, (height - h) / 2., w, h)
++        };
++        let (title_width, title_height) = parts.title_size;
++        let (caption_width, caption_height) = parts.caption_size;
++        vec![
++            rect(HEADER_SIDE, TOUCH_TARGET, TOUCH_TARGET),
++            rect(
++                HEADER_SIDE + (TOUCH_TARGET - CLOSE_ICON) / 2.,
++                CLOSE_ICON,
++                CLOSE_ICON,
++            ),
++            rect(
++                HEADER_SIDE + TOUCH_TARGET + HEADER_GAP,
++                title_width,
++                title_height,
++            ),
++            rect(
++                action_x,
++                parts.action_width,
++                (caption_height + 2. * HEADER_VERTICAL_PADDING).max(TOUCH_TARGET),
++            ),
++            rect(
++                action_x + (parts.action_width - caption_width) / 2.,
++                caption_width,
++                caption_height,
++            ),
++        ]
++    }
++}
++
++fn text_height(node: &Node, width: f32, fonts: &mut dyn TextMeasurer) -> f32 {
++    if width <= 0. {
++        return 0.;
++    }
++    let style = node.style().text_style();
++    fonts
++        .measure_text(node.text_value().unwrap_or_default(), &style, Some(width))
++        .1
++        .min(2. * style.line_height_px())
++}
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -6,6 +6,7 @@
+ mod app_bar_scroll;
+ mod app_bar_search;
+ mod badge;
++mod basic_dialog;
+ mod bottom_sheet;
+ mod bottom_sheet_motion;
+ mod button_group;
+@@ -30,6 +31,7 @@
+ mod fab_menu_layout;
+ mod fab_menu_motion;
+ mod fab_motion;
++mod full_screen_dialog;
+ mod list;
+ mod loading_indicator;
+ pub mod motion;
+@@ -68,6 +70,7 @@
+ pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
+ pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
+ pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
++pub use basic_dialog::{BasicDialogContent, BasicDialogOptions};
+ pub use bottom_sheet::{
+     BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
+     BottomSheetState,
+@@ -126,6 +129,9 @@
+ };
+ pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
+ pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
++pub use full_screen_dialog::{
++    full_screen_dialog_layout, FullScreenDialogLayout, FullScreenDialogOptions,
++};
+ pub use list::{
+     ExpandableListOptions, ExpandableListRow, ListExpansionMotion, ListItem, ListLines, ListMedia,
+     ListMediaKind, ListMode, ListOptions, ListReorderEntry, ListReorderInput, ListReorderRequest,
+--- /dev/null
++++ b/crates/surface-material/tests/basic_dialog.rs
+@@ -0,0 +1,398 @@
++use surface::{Length, Node, Rect, Role, Style, TextMeasurer};
++use surface_app::{
++    AccessibilityScrollDirection, Application, Event, ImeEvent, Key, KeyPress, ModalDismissal,
++    Modifiers, Runtime, Shortcut, View,
++};
++use surface_material::{
++    shape::{self, LayoutDirection},
++    BasicDialogContent, BasicDialogOptions, ButtonKind, Elevation, Theme,
++};
++
++struct Metrics;
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, width: Option<f32>) -> (f32, f32) {
++        let natural = text.chars().count() as f32 * size * 0.6;
++        let width = width.unwrap_or(natural).max(1.);
++        let lines = (natural / width).ceil().max(1.);
++        (natural.min(width), size * 1.5 * lines)
++    }
++}
++
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++enum Message {
++    Open,
++    Background,
++    Nested(bool),
++    Dismiss,
++    Confirm,
++    Cancel,
++    Text,
++}
++
++struct App {
++    open: bool,
++    nested: bool,
++    viewport: (f32, f32),
++    rtl: bool,
++    big: bool,
++    long_labels: bool,
++    long_body: bool,
++    editor: bool,
++    policy: ModalDismissal,
++    actions: Vec<Message>,
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        self.actions.push(message);
++        match message {
++            Message::Open => self.open = true,
++            Message::Nested(open) => self.nested = open,
++            Message::Dismiss | Message::Confirm | Message::Cancel => self.open = false,
++            Message::Background | Message::Text => {}
++        }
++    }
++
++    fn shortcuts(&self) -> Vec<Shortcut<Message>> {
++        vec![Shortcut::new(
++            Key::Character("k".into()),
++            Modifiers {
++                meta: true,
++                ..Modifiers::default()
++            },
++            Message::Background,
++        )]
++    }
++
++    fn text_scale(&self) -> f32 {
++        if self.big {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let changed = self.viewport != (width, height);
++        self.viewport = (width, height);
++        changed
++    }
++
++    fn view(&self) -> View<Message> {
++        let theme = if self.rtl {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let mut children = vec![
++            theme.button_with("opener", "Open", ButtonKind::Filled, false, Message::Open),
++            theme.button_with(
++                "background",
++                "Behind dialog",
++                ButtonKind::Text,
++                false,
++                Message::Background,
++            ),
++        ];
++        if self.open {
++            let mut extra = Vec::new();
++            if self.editor {
++                extra.push(theme.text_field("d-editor", "Name", "", |_| Message::Text));
++            }
++            if self.long_body {
++                extra.extend((0..12).map(|i| {
++                    View::new(
++                        Node::new(Role::Text, "A body line")
++                            .id(format!("line-{i}"))
++                            .text("這是一段捲動內容")
++                            .styled(Style::column().height(Length::Px(72.))),
++                    )
++                }));
++            }
++            if self.nested {
++                extra.push(theme.dialog(
++                    "legacy-child",
++                    "Second prompt",
++                    [],
++                    [theme.button_with(
++                        "child-close",
++                        "Close",
++                        ButtonKind::Text,
++                        false,
++                        Message::Nested(false),
++                    )],
++                    Message::Nested(false),
++                ));
++            }
++            let (confirm, cancel) = if self.long_labels {
++                ("保留目前所選的全部設定", "取消並返回先前內容")
++            } else {
++                ("Save", "Cancel")
++            };
++            children.extend(theme.basic_dialog(
++                BasicDialogOptions {
++                    id: "d",
++                    label: "Rename document",
++                    heading: Some("重新命名"),
++                    supporting: Some("選擇儲存或返回原畫面。"),
++                    icon: Some("✎"),
++                    window_size: self.viewport,
++                    preferred_width: 360.,
++                    direction: if self.rtl {
++                        LayoutDirection::RightToLeft
++                    } else {
++                        LayoutDirection::LeftToRight
++                    },
++                    dismissal: self.policy,
++                    alert: self.policy == ModalDismissal::ActionOnly,
++                    initial_focus: Some(if self.editor { "d-editor" } else { "d-cancel" }),
++                    restore_focus_to: Some("background"),
++                },
++                BasicDialogContent {
++                    extra,
++                    confirm: (confirm, Message::Confirm),
++                    cancel: Some((cancel, Message::Cancel)),
++                    on_dismiss: Message::Dismiss,
++                },
++            ));
++        }
++        theme.page(children)
++    }
++}
++
++fn runtime(policy: ModalDismissal, rtl: bool, big: bool, long: bool, editor: bool) -> Runtime<App> {
++    Runtime::new(App {
++        open: false,
++        nested: false,
++        viewport: (640., 480.),
++        rtl,
++        big,
++        long_labels: long,
++        long_body: long,
++        editor,
++        policy,
++        actions: vec![],
++    })
++    .unwrap()
++}
++
++fn open(runtime: &mut Runtime<App>, size: (f32, f32)) {
++    render(runtime, size);
++    runtime.activate("opener").unwrap();
++    render(runtime, size);
++}
++
++fn render(runtime: &mut Runtime<App>, (width, height): (f32, f32)) {
++    runtime.render(width, height, &mut Metrics).unwrap();
++}
++
++fn rect(runtime: &Runtime<App>, id: &str) -> Rect {
++    let node = runtime.dom().by_id(id).unwrap();
++    runtime.computed().unwrap().nodes[node.index()].bounds
++}
++
++fn click(runtime: &mut Runtime<App>, x: f32, y: f32) {
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++}
++
++#[test]
++fn basic_dialog_uses_tokens_and_logical_inline_actions() {
++    for rtl in [false, true] {
++        let mut runtime = runtime(ModalDismissal::default(), rtl, false, false, false);
++        open(&mut runtime, (960., 800.));
++        let panel = rect(&runtime, "d");
++        let heading = rect(&runtime, "d-heading");
++        let body = rect(&runtime, "d-body");
++        let actions = rect(&runtime, "d-actions");
++        let confirm = rect(&runtime, "d-confirm");
++        let cancel = rect(&runtime, "d-cancel");
++        let node = runtime
++            .dom()
++            .get(runtime.dom().by_id("d").unwrap())
++            .unwrap();
++        let theme = if rtl { Theme::dark() } else { Theme::light() };
++        assert_eq!(node.name(), "Rename document");
++        assert_eq!(node.style().corners, Some(shape::EXTRA_LARGE));
++        assert_eq!(node.style().background, theme.colors.surface_container_high);
++        assert_eq!(node.box_shadow_layers(), theme.elevation(Elevation::Level3));
++        assert_eq!((panel.width, panel.x), (360., 300.));
++        assert_eq!(body.x - panel.x, 24.);
++        assert_eq!(body.y - heading.y - heading.height, 16.);
++        assert_eq!(actions.y - body.y - body.height, 24.);
++        assert_eq!(confirm.height, 48.);
++        assert_eq!(cancel.height, 48.);
++        if rtl {
++            assert_eq!(confirm.x, actions.x);
++            assert!((cancel.x - confirm.x - confirm.width - 8.).abs() < 0.01);
++        } else {
++            assert_eq!(confirm.x + confirm.width, actions.x + actions.width);
++            assert!((confirm.x - cancel.x - cancel.width - 8.).abs() < 0.01);
++        }
++        assert_eq!(runtime.focused(), Some("d-cancel"));
++        runtime
++            .dispatch(Event::FocusNext { reverse: false })
++            .unwrap();
++        assert_eq!(runtime.focused(), Some("d-confirm"));
++        assert!(runtime.activate("background").is_err());
++        assert!(!runtime.app().actions.contains(&Message::Background));
++    }
++}
++
++#[test]
++fn narrow_large_text_scrolls_only_the_middle_and_stacks_positive_action_first() {
++    let mut runtime = runtime(ModalDismissal::ActionOnly, true, true, true, false);
++    let size = (320., 400.);
++    open(&mut runtime, size);
++    let panel = rect(&runtime, "d");
++    let heading = rect(&runtime, "d-heading");
++    let body = rect(&runtime, "d-body");
++    let confirm = rect(&runtime, "d-confirm");
++    let cancel = rect(&runtime, "d-cancel");
++    assert_eq!((panel.x, panel.width), (20., 280.));
++    assert!(body.height > 0.);
++    assert!(panel.contains(cancel.x + cancel.width / 2., cancel.y + cancel.height - 1.));
++    assert!(confirm.y < cancel.y);
++    assert_eq!((confirm.x, cancel.x), (44., 44.));
++    let first = rect(&runtime, "line-0");
++    let frame = runtime.accessibility_frame().unwrap();
++    let id = runtime.dom().by_id("d-body").unwrap();
++    assert!(
++        frame.scroll_page_target(id, AccessibilityScrollDirection::Down).is_some(),
++        "panel={panel:?} heading={heading:?} body={body:?} confirm={confirm:?} cancel={cancel:?} first={first:?}, body_metrics={:?} panel_metrics={:?}",
++        runtime.scroll_metrics("d-body"), runtime.scroll_metrics("d")
++    );
++    runtime
++        .dispatch(Event::Scroll {
++            x: body.x + 20.,
++            y: body.y + 20.,
++            delta_x: 0.,
++            delta_y: 160.,
++        })
++        .unwrap();
++    render(&mut runtime, size);
++    assert!(runtime.scroll_metrics("d-body").unwrap().offset.1 > 0.);
++    assert!(rect(&runtime, "line-0").y < first.y);
++    assert_eq!(rect(&runtime, "d-heading"), heading);
++    assert_eq!(rect(&runtime, "d-confirm"), confirm);
++    assert_eq!(rect(&runtime, "d-cancel"), cancel);
++}
++
++#[test]
++fn explicit_only_and_escape_only_consume_outside_input_and_restore_focus() {
++    for policy in [
++        ModalDismissal::ActionOnly,
++        ModalDismissal::Escape,
++        ModalDismissal::EscapeOrOutside,
++    ] {
++        let mut runtime = runtime(policy, false, false, false, false);
++        open(&mut runtime, (960., 800.));
++        click(&mut runtime, 2., 2.);
++        assert!(!runtime.app().actions.contains(&Message::Background));
++        if policy == ModalDismissal::EscapeOrOutside {
++            assert!(!runtime.app().open);
++            assert_eq!(runtime.focused(), Some("opener"));
++            continue;
++        }
++        assert!(runtime.app().open);
++        assert!(runtime
++            .dispatch(Event::SecondaryDown { x: 2., y: 2. })
++            .unwrap());
++        assert!(runtime.app().open);
++        assert!(runtime.dispatch(Event::Cancel).unwrap());
++        if policy == ModalDismissal::ActionOnly {
++            assert!(runtime.app().open);
++            runtime.activate("d-confirm").unwrap();
++            assert_eq!(runtime.app().actions, [Message::Open, Message::Confirm]);
++        } else {
++            assert_eq!(runtime.app().actions, [Message::Open, Message::Dismiss]);
++        }
++        assert!(!runtime.app().open);
++        assert_eq!(runtime.focused(), Some("opener"));
++    }
++}
++
++#[test]
++fn composition_blocks_the_first_escape_and_confirming_pointer() {
++    let mut runtime = runtime(ModalDismissal::Escape, false, false, false, true);
++    let size = (640., 480.);
++    open(&mut runtime, size);
++    assert_eq!(runtime.focused(), Some("d-editor"));
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄕ".into(),
++            selection: Some((3, 3)),
++        }))
++        .unwrap();
++    render(&mut runtime, size);
++    let confirm = rect(&runtime, "d-confirm");
++    click(&mut runtime, confirm.x + 24., confirm.y + 24.);
++    assert_eq!(runtime.app().actions, [Message::Open]);
++    assert!(runtime.input_snapshot().unwrap().composing);
++    runtime.dispatch(Event::Cancel).unwrap();
++    assert!(!runtime.input_snapshot().unwrap().composing);
++    assert!(runtime.app().open);
++    runtime.dispatch(Event::Cancel).unwrap();
++    assert_eq!(runtime.app().actions, [Message::Open, Message::Dismiss]);
++    assert_eq!(runtime.focused(), Some("opener"));
++}
++
++#[test]
++fn basic_dialog_consumes_the_background_shortcut_until_it_closes() {
++    let mut runtime = runtime(ModalDismissal::ActionOnly, true, false, false, false);
++    open(&mut runtime, (640., 480.));
++    let chord = KeyPress::new(
++        Key::Character("k".into()),
++        Modifiers {
++            meta: true,
++            ..Modifiers::default()
++        },
++    );
++    assert!(runtime.shortcut(&chord).unwrap());
++    assert_eq!(runtime.app().actions, [Message::Open]);
++    runtime.activate("d-cancel").unwrap();
++    assert!(runtime.shortcut(&chord).unwrap());
++    assert_eq!(
++        runtime.app().actions,
++        [Message::Open, Message::Cancel, Message::Background]
++    );
++}
++
++#[test]
++fn nested_legacy_modal_inherits_the_new_parent_shortcut_block() {
++    let mut runtime = runtime(ModalDismissal::ActionOnly, false, false, false, false);
++    open(&mut runtime, (800., 600.));
++    runtime.apply(Message::Nested(true)).unwrap();
++    render(&mut runtime, (800., 600.));
++    let chord = KeyPress::new(
++        Key::Character("k".into()),
++        Modifiers {
++            meta: true,
++            ..Modifiers::default()
++        },
++    );
++    assert_eq!(runtime.focused(), Some("child-close"));
++    assert!(runtime.shortcut(&chord).unwrap());
++    assert_eq!(
++        runtime.app().actions,
++        [Message::Open, Message::Nested(true)]
++    );
++    runtime.activate("child-close").unwrap();
++    assert_eq!(runtime.focused(), Some("d-cancel"));
++    assert!(runtime.shortcut(&chord).unwrap());
++    runtime.activate("d-cancel").unwrap();
++    assert!(runtime.shortcut(&chord).unwrap());
++    assert_eq!(
++        runtime.app().actions,
++        [
++            Message::Open,
++            Message::Nested(true),
++            Message::Nested(false),
++            Message::Cancel,
++            Message::Background
++        ]
++    );
++}
+--- /dev/null
++++ b/crates/surface-material/tests/full_screen_dialog.rs
+@@ -0,0 +1,507 @@
++use surface::{Color, Insets, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer};
++use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
++use surface_material::{
++    full_screen_dialog_layout, shape::LayoutDirection, FullScreenDialogOptions, Theme,
++};
++
++const DIALOG: &str = "full";
++const HEADER: &str = "full-header";
++const BODY: &str = "full-body";
++const CLOSE: &str = "full-close";
++const ACTION: &str = "full-action";
++const TITLE: &str = "full-title";
++const ICON: &str = "full-close-icon";
++const CAPTION: &str = "full-action-label";
++const FIELD: &str = "entry";
++const OPENER: &str = "opener";
++const FALLBACK: &str = "background";
++
++#[derive(Clone)]
++enum Message {
++    Open,
++    Close,
++    Save,
++    Input(String),
++    Background,
++    RemoveOpener,
++    KeepEditing,
++    Discard,
++}
++
++struct Fixture {
++    viewport: Rect,
++    direction: LayoutDirection,
++    scale: f32,
++    dark: bool,
++    title: &'static str,
++    action_label: &'static str,
++    action_disabled: bool,
++    opener: bool,
++    open: bool,
++    asking: bool,
++    draft: String,
++    saved: String,
++    close_requests: usize,
++    saves: usize,
++    background_clicks: usize,
++}
++
++impl Fixture {
++    fn new(direction: LayoutDirection, scale: f32) -> Self {
++        Self {
++            viewport: Rect::default(),
++            direction,
++            scale,
++            dark: direction == LayoutDirection::RightToLeft,
++            title: "新增行程",
++            action_label: "儲存",
++            action_disabled: false,
++            opener: true,
++            open: false,
++            asking: false,
++            draft: String::new(),
++            saved: String::new(),
++            close_requests: 0,
++            saves: 0,
++            background_clicks: 0,
++        }
++    }
++
++    fn theme(&self) -> Theme {
++        if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++
++    fn options(&self) -> FullScreenDialogOptions<'_> {
++        FullScreenDialogOptions {
++            id: "full",
++            title: self.title,
++            body_label: "行程內容",
++            close_label: "關閉",
++            action_label: self.action_label,
++            action_disabled: self.action_disabled,
++            initial_focus: Some(FIELD),
++            restore_focus_to: Some(FALLBACK),
++            viewport: self.viewport,
++            direction: self.direction,
++        }
++    }
++}
++
++impl Application for Fixture {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Open => {
++                self.draft = self.saved.clone();
++                self.open = true;
++            }
++            Message::Close => {
++                self.close_requests += 1;
++                if self.draft == self.saved {
++                    self.open = false;
++                } else {
++                    self.asking = true;
++                }
++            }
++            Message::Save => {
++                self.saves += 1;
++                self.saved = self.draft.clone();
++                self.open = false;
++            }
++            Message::Input(draft) => self.draft = draft,
++            Message::Background => self.background_clicks += 1,
++            Message::RemoveOpener => self.opener = false,
++            Message::KeepEditing => self.asking = false,
++            Message::Discard => {
++                self.draft = self.saved.clone();
++                self.asking = false;
++                self.open = false;
++            }
++        }
++    }
++
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++
++    fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        self.viewport = Rect::new(0., 0., width, height);
++        true
++    }
++
++    fn view(&self) -> View<Message> {
++        let opener = self
++            .opener
++            .then(|| command(OPENER, "開啟表單", Message::Open).restore_focus_on_removal(FALLBACK));
++        let open = self
++            .open
++            .then(|| {
++                let input = View::new(
++                    Node::new(Role::TextInput, "行程名稱")
++                        .id(FIELD)
++                        .text(&self.draft)
++                        .styled(
++                            Style::column()
++                                .width(Length::Percent(1.))
++                                .height(Length::Px(48.)),
++                        ),
++                )
++                .on_input(Message::Input)
++                .accessibility_scroll_into_view();
++                let mut rows = vec![input];
++                for _ in 0..14 {
++                    rows.push(View::new(
++                        Node::new(Role::Text, "詳細資料")
++                            .text("詳細資料")
++                            .styled(Style::column().height(Length::Px(48.))),
++                    ));
++                }
++                rows.push(command("last", "最後欄位", Message::Background));
++                self.theme().full_screen_dialog(
++                    self.options(),
++                    View::new(
++                        Node::new(Role::Group, "")
++                            .id("contents")
++                            .styled(Style::column().width(Length::Percent(1.))),
++                    )
++                    .children(rows),
++                    Message::Close,
++                    Message::Save,
++                )
++            })
++            .flatten();
++        let confirm = self.asking.then(|| {
++            View::new(
++                Node::new(Role::Dialog, "捨棄變更")
++                    .id("discard-dialog")
++                    .styled(
++                        Style::column()
++                            .width(Length::Px(160.))
++                            .height(Length::Px(96.))
++                            .fixed(Insets {
++                                left: Length::Px(80.),
++                                top: Length::Px(80.),
++                                ..Insets::default()
++                            })
++                            .background(self.theme().colors.surface_container_high),
++                    ),
++            )
++            .children([
++                command("keep", "繼續編輯", Message::KeepEditing),
++                command("discard", "捨棄", Message::Discard),
++            ])
++            .modal_overlay(Message::KeepEditing)
++        });
++        View::new(Node::new(Role::Group, "").styled(Style::column())).children(
++            opener
++                .into_iter()
++                .chain([command(FALLBACK, "背景", Message::Background)])
++                .chain(open)
++                .chain(confirm),
++        )
++    }
++}
++
++fn command(id: &str, name: &str, message: Message) -> View<Message> {
++    View::new(
++        Node::new(Role::Button, name).id(id).styled(
++            Style::column()
++                .width(Length::Px(144.))
++                .height(Length::Px(48.)),
++        ),
++    )
++    .on_press(message)
++    .accessible_activation()
++}
++
++struct Fonts;
++
++impl TextMeasurer for Fonts {
++    fn measure(&mut self, text: &str, font_size: f32, width: Option<f32>) -> (f32, f32) {
++        let natural = text
++            .chars()
++            .map(|character| {
++                if character.is_ascii() {
++                    font_size * 0.58
++                } else {
++                    font_size
++                }
++            })
++            .sum::<f32>();
++        let width = width.unwrap_or(natural).min(natural);
++        let lines = (natural / width.max(1.)).ceil().max(1.);
++        (width, lines * font_size * 1.5)
++    }
++}
++
++fn open(fixture: Fixture, viewport: (f32, f32)) -> Runtime<Fixture> {
++    let mut runtime = Runtime::new(fixture).unwrap();
++    runtime.render(viewport.0, viewport.1, &mut Fonts).unwrap();
++    runtime.activate(OPENER).unwrap();
++    draw(&mut runtime);
++    assert_eq!(runtime.focused(), Some(FIELD));
++    runtime
++}
++
++fn draw(runtime: &mut Runtime<Fixture>) -> surface::DisplayList {
++    let viewport = runtime.app().viewport;
++    runtime
++        .render(viewport.width, viewport.height, &mut Fonts)
++        .unwrap()
++}
++
++fn bounds(runtime: &Runtime<Fixture>, key: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(key).unwrap().index()].bounds
++}
++
++fn click(runtime: &mut Runtime<Fixture>, x: f32, y: f32) {
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++}
++
++fn contained(outer: Rect, inner: Rect) {
++    assert_eq!(outer.intersect(inner), inner);
++}
++
++#[test]
++fn viewport_coverage_and_measured_header_match_the_dialog_tokens() {
++    for (width, height, direction, scale) in [
++        (320., 400., LayoutDirection::LeftToRight, 1.),
++        (320., 240., LayoutDirection::RightToLeft, 2.),
++        (561., 720., LayoutDirection::RightToLeft, 1.),
++        (960., 640., LayoutDirection::LeftToRight, 1.),
++    ] {
++        let mut runtime = open(Fixture::new(direction, scale), (width, height));
++        let paint = draw(&mut runtime);
++        let safe = Rect::new(0., 0., width, height);
++        let panel = bounds(&runtime, DIALOG);
++        assert_eq!(panel, safe);
++        let theme = runtime.app().theme();
++        assert!(paint.ops.iter().any(|op| matches!(
++            op,
++            PaintOp::Quad { rect, radius, color, .. }
++                if *rect == safe && *radius == 0. && *color == theme.colors.surface
++        )));
++        let header = bounds(&runtime, HEADER);
++        let body = bounds(&runtime, BODY);
++        let close = bounds(&runtime, CLOSE);
++        let icon = bounds(&runtime, ICON);
++        let action = bounds(&runtime, ACTION);
++        let caption = bounds(&runtime, CAPTION);
++        let title = bounds(&runtime, TITLE);
++        assert_eq!(header.width, width.min(560.));
++        assert!((header.x - (width - header.width) / 2.).abs() <= 0.5);
++        if scale == 1. {
++            assert_eq!(header.height, 56.);
++        } else {
++            assert_eq!(header.height, 120.);
++            assert_eq!(title.height, 112.);
++        }
++        assert_eq!(body.y, header.y + header.height);
++        assert_eq!(body.height, height - header.height);
++        assert_eq!(bounds(&runtime, "contents").width, body.width - 48.);
++        assert_eq!(bounds(&runtime, "contents").x, body.x + 24.);
++        assert_eq!((icon.width, icon.height), (24., 24.));
++        assert_eq!((close.width, close.height), (48., 48.));
++        assert!(action.width >= 48. && action.height >= 48.);
++        contained(close, icon);
++        contained(action, caption);
++        contained(header, action);
++        contained(header, title);
++        if direction == LayoutDirection::RightToLeft {
++            assert_eq!(header.x + header.width - icon.x - icon.width, 24.);
++            assert!(close.x > title.x && title.x > action.x);
++        } else {
++            assert_eq!(icon.x - header.x, 24.);
++            assert!(close.x < title.x && title.x < action.x);
++        }
++        let frame = runtime.accessibility_frame().unwrap();
++        assert_eq!(frame.modal_root(), runtime.dom().by_id(DIALOG));
++        let node = |id| frame.node(runtime.dom().by_id(id).unwrap());
++        assert_eq!(node(TITLE).unwrap().node.role(), Role::Heading);
++        assert_eq!(node(ACTION).unwrap().node.name(), "儲存");
++        assert_eq!(node(BODY).unwrap().node.name(), "行程內容");
++        assert!(node(ICON).is_none() && node(CAPTION).is_none() && node(FALLBACK).is_none());
++    }
++}
++
++#[test]
++fn body_scrolls_while_header_and_scope_stay_fixed() {
++    let mut runtime = open(Fixture::new(LayoutDirection::RightToLeft, 2.), (320., 240.));
++    let stable = [HEADER, CLOSE, TITLE, ACTION].map(|key| bounds(&runtime, key));
++    let body = bounds(&runtime, BODY);
++    let bottom = bounds(&runtime, "last").y;
++    runtime
++        .dispatch(Event::Scroll {
++            x: body.x + body.width / 2.,
++            y: body.y + body.height / 2.,
++            delta_x: 0.,
++            delta_y: 300.,
++        })
++        .unwrap();
++    draw(&mut runtime);
++    assert!(bounds(&runtime, "last").y < bottom);
++    assert_eq!(
++        stable,
++        [HEADER, CLOSE, TITLE, ACTION].map(|key| bounds(&runtime, key))
++    );
++    assert!(runtime.activate(FALLBACK).is_err());
++    click(&mut runtime, 319., 239.);
++    draw(&mut runtime);
++    assert!(runtime.app().open);
++    assert_eq!(runtime.app().background_clicks, 0);
++    assert_eq!(runtime.app().close_requests, 0);
++
++    let icon = bounds(&runtime, ICON);
++    click(&mut runtime, icon.x + 12., icon.y + 12.);
++    assert!(!runtime.app().open);
++    assert_eq!(runtime.app().close_requests, 1);
++    assert_eq!(runtime.focused(), Some(OPENER));
++}
++
++#[test]
++fn pending_composition_owns_enter_escape_and_header_presses() {
++    let mut runtime = open(Fixture::new(LayoutDirection::LeftToRight, 1.), (320., 400.));
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄅ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    draw(&mut runtime);
++    for key in [ICON, CAPTION] {
++        let target = bounds(&runtime, key);
++        click(
++            &mut runtime,
++            target.x + target.width / 2.,
++            target.y + target.height / 2.,
++        );
++        assert_eq!(runtime.focused(), Some(FIELD));
++        assert!(runtime.input_snapshot().unwrap().composing);
++    }
++    assert!(!runtime.activate(ACTION).unwrap());
++    assert!(!runtime.activate(CLOSE).unwrap());
++    assert!(!runtime
++        .key(&KeyPress::new(Key::Enter, Modifiers::default()))
++        .unwrap());
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert!(runtime.app().open);
++    assert!(!runtime.input_snapshot().unwrap().composing);
++    assert_eq!(runtime.app().saves, 0);
++    assert_eq!(runtime.app().close_requests, 0);
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert_eq!(runtime.app().close_requests, 1);
++    assert_eq!(runtime.focused(), Some(OPENER));
++
++    runtime.activate(OPENER).unwrap();
++    runtime.apply(Message::RemoveOpener).unwrap();
++    draw(&mut runtime);
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert_eq!(runtime.focused(), Some(FALLBACK));
++}
++
++#[test]
++fn caller_controls_save_discard_and_confirmation_focus() {
++    let mut runtime = open(Fixture::new(LayoutDirection::RightToLeft, 2.), (320., 400.));
++    runtime
++        .dispatch(Event::InputValue {
++            value: "旅行".into(),
++            anchor: 6,
++            cursor: 6,
++        })
++        .unwrap();
++    draw(&mut runtime);
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    draw(&mut runtime);
++    assert!(runtime.app().asking);
++    assert_eq!(runtime.focused(), Some("keep"));
++    assert!(runtime.activate(ACTION).is_err());
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    draw(&mut runtime);
++    assert_eq!(runtime.focused(), Some(FIELD));
++    assert_eq!(runtime.input_snapshot().unwrap().value, "旅行");
++    assert_eq!(runtime.app().saved, "");
++
++    runtime
++        .dispatch(Event::FocusNext { reverse: true })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some(ACTION));
++    assert!(runtime.dispatch(Event::Activate).unwrap());
++    assert_eq!(runtime.app().saved, "旅行");
++    assert_eq!(runtime.app().saves, 1);
++    assert_eq!(runtime.focused(), Some(OPENER));
++
++    runtime.activate(OPENER).unwrap();
++    runtime.apply(Message::Input("待捨棄".into())).unwrap();
++    draw(&mut runtime);
++    assert!(runtime.activate(CLOSE).unwrap());
++    draw(&mut runtime);
++    assert!(runtime.activate("discard").unwrap());
++    assert_eq!(runtime.app().draft, "旅行");
++    assert_eq!(runtime.app().saved, "旅行");
++    assert_eq!(runtime.app().saves, 1);
++    assert_eq!(runtime.focused(), Some(OPENER));
++
++    runtime.activate(OPENER).unwrap();
++    draw(&mut runtime);
++    let caption = bounds(&runtime, CAPTION);
++    click(
++        &mut runtime,
++        caption.x + caption.width / 2.,
++        caption.y + caption.height / 2.,
++    );
++    assert_eq!(runtime.app().saves, 2);
++    assert_eq!(runtime.focused(), Some(OPENER));
++}
++
++#[test]
++fn long_localized_labels_and_disabled_action_stay_bounded() {
++    let mut fixture = Fixture::new(LayoutDirection::RightToLeft, 2.);
++    fixture.title = "新增一筆長名稱的私人行程變更";
++    fixture.action_label = "儲存這份行程並關閉";
++    fixture.action_disabled = true;
++    let mut runtime = open(fixture, (320., 240.));
++    let header = bounds(&runtime, HEADER);
++    let action = bounds(&runtime, ACTION);
++    let glyph = bounds(&runtime, CAPTION);
++    contained(action, glyph);
++    contained(header, action);
++    assert!(bounds(&runtime, BODY).height >= 48.);
++    let node = runtime
++        .dom()
++        .get(runtime.dom().by_id(ACTION).unwrap())
++        .unwrap();
++    assert!(node.is_disabled());
++    assert_eq!(node.name(), "儲存這份行程並關閉");
++    assert!(runtime.activate(ACTION).is_err());
++    click(
++        &mut runtime,
++        glyph.x + glyph.width / 2.,
++        glyph.y + glyph.height / 2.,
++    );
++    assert_eq!(runtime.app().saves, 0);
++    assert!(runtime.app().open);
++}
++
++#[test]
++fn invalid_or_unfit_viewports_do_not_mount_partial_dialogs() {
++    let mut fixture = Fixture::new(LayoutDirection::LeftToRight, 1.);
++    for viewport in [
++        Rect::new(f32::NAN, 0., 320., 400.),
++        Rect::new(0., 0., 100., 400.),
++        Rect::new(0., 0., 320., 100.),
++    ] {
++        fixture.viewport = viewport;
++        assert!(full_screen_dialog_layout(fixture.options()).is_none());
++    }
++    fixture.viewport = Rect::new(0., 0., 320., 240.);
++    let layout = full_screen_dialog_layout(fixture.options()).unwrap();
++    assert_eq!(layout.bounds, fixture.viewport);
++    assert_eq!(layout.content_width, 272.);
++    assert_ne!(fixture.theme().colors.surface, Color::TRANSPARENT);
++}
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -146,7 +146,17 @@
+                 self.allocate()
+             };
+             if modal == Some(id) {
++                if source.node.is_alert_dialog() {
++                    node.set_role(Role::AlertDialog);
++                }
+                 node.set_modal();
++            }
++            if let Some(heading) = frame
++                .dialog_heading_target(id)
++                .and_then(|target| ids.get(&target))
++            {
++                node.set_labelled_by([*heading]);
++                node.clear_label();
+             }
+             if let Some(bounds) = bounds {
+                 node.set_bounds(bounds);
+@@ -575,6 +585,126 @@
+     }
+ 
+     #[test]
++    fn visible_alert_heading_and_description_reach_accesskit_and_rebuild_safely() {
++        #[derive(Clone, Copy, PartialEq, Eq)]
++        enum Mode {
++            Ordinary,
++            Visible,
++            Clipped,
++            Removed,
++            Modeless,
++        }
++
++        struct Dialog(Mode);
++
++        impl Application for Dialog {
++            type Message = Mode;
++
++            fn update(&mut self, mode: Mode) {
++                self.0 = mode;
++            }
++
++            fn view(&self) -> View<Mode> {
++                let box_at = |height| Style::column().height(Length::Px(height));
++                let heading = || {
++                    View::new(
++                        SurfaceNode::new(SurfaceRole::Heading, "Published heading")
++                            .id("heading")
++                            .text("Published heading")
++                            .styled(box_at(22.)),
++                    )
++                };
++                let description = View::new(
++                    SurfaceNode::new(SurfaceRole::Text, "")
++                        .id("message")
++                        .text("This action removes the draft.")
++                        .styled(box_at(22.)),
++                );
++                let title_view = match self.0 {
++                    Mode::Visible => Some(heading()),
++                    Mode::Clipped => Some(
++                        View::new(
++                            SurfaceNode::new(SurfaceRole::Group, "")
++                                .id("clip")
++                                .styled(box_at(24.).clip(true)),
++                        )
++                        .children([
++                            View::new(SurfaceNode::new(SurfaceRole::Group, "").styled(box_at(50.))),
++                            heading(),
++                        ]),
++                    ),
++                    _ => None,
++                };
++                let mut authored = SurfaceNode::new(SurfaceRole::Dialog, "Fallback name")
++                    .id("dialog")
++                    .styled(box_at(120.))
++                    .described_by_text("message");
++                if self.0 != Mode::Ordinary {
++                    authored = authored
++                        .alert_dialog()
++                        .dialog_labelled_by_heading("heading");
++                }
++                let dialog =
++                    View::new(authored).children(title_view.into_iter().chain([description]));
++                let (dialog, earlier_heading) = if self.0 == Mode::Modeless {
++                    (dialog, Some(heading()))
++                } else {
++                    (dialog.modal(Mode::Ordinary), None)
++                };
++                View::new(SurfaceNode::new(SurfaceRole::Window, "Application"))
++                    .children(earlier_heading.into_iter().chain([dialog]))
++            }
++        }
++
++        let mut runtime = Runtime::new(Dialog(Mode::Ordinary)).unwrap();
++        let mut tree = Tree::default();
++        let ordinary = update(&mut runtime, &mut tree);
++        let (_, dialog) = named(&ordinary, "Fallback name");
++        assert_eq!(dialog.role(), Role::Dialog);
++        assert!(dialog.is_modal());
++        assert!(dialog.labelled_by().is_empty());
++
++        runtime.apply(Mode::Visible).unwrap();
++        let alert = update(&mut runtime, &mut tree);
++        let (heading, _) = named(&alert, "Published heading");
++        let (message, _) = named(&alert, "This action removes the draft.");
++        let (_, dialog) = alert
++            .nodes
++            .iter()
++            .find(|(_, node)| node.role() == Role::AlertDialog)
++            .unwrap();
++        assert!(dialog.is_modal());
++        assert_eq!(dialog.labelled_by(), &[heading]);
++        assert!(dialog.label().is_none());
++        assert_eq!(dialog.described_by(), &[message]);
++        assert_eq!(dialog.description(), Some("This action removes the draft."));
++
++        for mode in [Mode::Clipped, Mode::Removed, Mode::Modeless] {
++            runtime.apply(mode).unwrap();
++            if mode == Mode::Clipped {
++                runtime.render(320., 240., &mut Metrics).unwrap();
++                let heading = runtime.dom().by_id("heading").unwrap();
++                let frame = runtime.accessibility_frame().unwrap();
++                let layout = frame.node(heading).unwrap().layout;
++                assert_eq!(layout.bounds.intersect(layout.clip).height, 0.);
++            }
++            let next = update(&mut runtime, &mut tree);
++            let (_, dialog) = named(&next, "Fallback name");
++            let modal = mode != Mode::Modeless;
++            assert_eq!(dialog.is_modal(), modal);
++            assert_eq!(
++                dialog.role(),
++                if modal {
++                    Role::AlertDialog
++                } else {
++                    Role::Dialog
++                }
++            );
++            assert!(dialog.labelled_by().is_empty());
++        }
++    }
++
++    #[test]
+     fn inline_list_disclosure_projects_state_and_retires_removed_child_actions() {
+         #[derive(Clone, Copy)]
+         enum Message {
+--- a/crates/surface-platform/src/web_accessibility/semantics.rs
++++ b/crates/surface-platform/src/web_accessibility/semantics.rs
+@@ -12,7 +12,11 @@
+     leaf: bool,
+ ) -> Result<Element, JsValue> {
+     let node = source.node;
+-    let role = aria_role(node);
++    let role = if modal && node.is_alert_dialog() {
++        Some("alertdialog")
++    } else {
++        aria_role(node)
++    };
+     let element = document.create_element(if node.role() == Role::Text {
+         "span"
+     } else {
+@@ -21,7 +25,7 @@
+     if let Some(role) = role {
+         element.set_attribute("role", role)?;
+     }
+-    if modal && role == Some("dialog") {
++    if modal && matches!(role, Some("dialog" | "alertdialog")) {
+         element.set_attribute("aria-modal", "true")?;
+     }
+     if node.role() == Role::Heading {
+--- a/crates/surface-platform/src/web_accessibility.rs
++++ b/crates/surface-platform/src/web_accessibility.rs
+@@ -42,13 +42,14 @@
+ }
+ 
+ #[derive(Default, PartialEq, Eq)]
+-struct Descriptions {
++struct TextRelations {
++    headings: BTreeMap<NodeId, NodeId>,
+     references: BTreeMap<NodeId, NodeId>,
+     text_targets: BTreeSet<NodeId>,
+     clipped_text: BTreeMap<NodeId, String>,
+ }
+ 
+-impl Descriptions {
++impl TextRelations {
+     fn target_id(&self, id: NodeId) -> String {
+         let kind = if self.text_targets.contains(&id) {
+             "text"
+@@ -61,12 +62,16 @@
+     fn described_by(&self, source: NodeId) -> Option<String> {
+         self.references.get(&source).map(|id| self.target_id(*id))
+     }
++
++    fn heading_id(id: NodeId) -> String {
++        format!("surface-accessibility-heading-{}", id.index())
++    }
+ }
+ 
+ struct Published {
+     generation: AccessibilityFrameId,
+     visible: BTreeSet<NodeId>,
+-    descriptions: Descriptions,
++    text_relations: TextRelations,
+     editor: Option<NodeId>,
+     tree: Element,
+ }
+@@ -203,23 +208,26 @@
+             .is_some_and(|old| old.generation == generation);
+         let mut visible = BTreeSet::new();
+         collect_visible(frame, frame.root(), &mut visible);
+-        let mut descriptions = Descriptions::default();
++        let mut text_relations = TextRelations::default();
+         for source in &visible {
++            if let Some(heading) = frame.dialog_heading_target(*source) {
++                text_relations.headings.insert(*source, heading);
++            }
+             if let Some(target) = frame
+                 .description_target(*source)
+                 .filter(|id| visible.contains(id))
+             {
+-                descriptions.references.insert(*source, target);
++                text_relations.references.insert(*source, target);
+                 if frame
+                     .node(target)
+                     .is_some_and(|node| node.node.role() == Role::Text)
+                 {
+-                    descriptions.text_targets.insert(target);
++                    text_relations.text_targets.insert(target);
+                 }
+             } else if let Some((target, text)) = frame.clipped_validation_text(*source) {
+-                descriptions.references.insert(*source, target);
+-                descriptions.text_targets.insert(target);
+-                descriptions.clipped_text.insert(target, text.to_owned());
++                text_relations.references.insert(*source, target);
++                text_relations.text_targets.insert(target);
++                text_relations.clipped_text.insert(target, text.to_owned());
+             }
+         }
+         let statuses = visible
+@@ -239,7 +247,7 @@
+         if self.published.as_ref().is_none_or(|old| {
+             old.generation != generation
+                 || old.visible != visible
+-                || old.descriptions != descriptions
++                || old.text_relations != text_relations
+                 || old.editor != editor
+         }) {
+             let mut targets = BTreeMap::new();
+@@ -249,14 +257,14 @@
+                 frame.root(),
+                 &visible,
+                 editor,
+-                &descriptions,
++                &text_relations,
+                 &mut targets,
+             )?;
+             // A referenced hidden element still supplies its description.
+             // Keep it separate from the focusable and readable projection.
+-            for (id, text) in &descriptions.clipped_text {
++            for (id, text) in &text_relations.clipped_text {
+                 let hidden = self.document.create_element("span")?;
+-                hidden.set_id(&descriptions.target_id(*id));
++                hidden.set_id(&text_relations.target_id(*id));
+                 hidden.set_attribute("hidden", "")?;
+                 hidden.set_text_content(Some(text));
+                 tree.append_child(&hidden)?;
+@@ -276,7 +284,7 @@
+             }
+             *self.targets.borrow_mut() = targets;
+             if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
+-                if let Some(id) = editor.and_then(|id| descriptions.described_by(id)) {
++                if let Some(id) = editor.and_then(|id| text_relations.described_by(id)) {
+                     textbox.set_attribute("aria-describedby", &id)?;
+                 } else {
+                     textbox.remove_attribute("aria-describedby")?;
+@@ -293,7 +301,7 @@
+             self.published = Some(Published {
+                 generation,
+                 visible,
+-                descriptions,
++                text_relations,
+                 editor,
+                 tree,
+             });
+@@ -365,7 +373,7 @@
+     id: NodeId,
+     visible: &BTreeSet<NodeId>,
+     editor: Option<NodeId>,
+-    descriptions: &Descriptions,
++    text_relations: &TextRelations,
+     targets: &mut BTreeMap<usize, Target>,
+ ) -> Result<Element, JsValue> {
+     let source = frame.node(id).expect("visible nodes belong to the frame");
+@@ -387,10 +395,18 @@
+     if let Some(stable_id) = source.node.stable_id() {
+         element.set_attribute("data-surface-id", stable_id)?;
+     }
+-    if source.node.role() == Role::Tooltip || descriptions.text_targets.contains(&id) {
+-        element.set_id(&descriptions.target_id(id));
+-    }
+-    let authored_description = descriptions.described_by(id);
++    if source.node.role() == Role::Tooltip || text_relations.text_targets.contains(&id) {
++        element.set_id(&text_relations.target_id(id));
++    } else if source.node.role() == Role::Heading
++        && text_relations.headings.values().any(|target| *target == id)
++    {
++        element.set_id(&TextRelations::heading_id(id));
++    }
++    if let Some(heading) = text_relations.headings.get(&id) {
++        element.set_attribute("aria-labelledby", &TextRelations::heading_id(*heading))?;
++        element.remove_attribute("aria-label")?;
++    }
++    let authored_description = text_relations.described_by(id);
+     let description = if let Some(text) = source.node.web_adjustable_description_text() {
+         // The referenced text stays hidden as a standalone item. Project it
+         // first so the selected value precedes any authored hint.
+@@ -437,7 +453,7 @@
+             child,
+             visible,
+             editor,
+-            descriptions,
++            text_relations,
+             targets,
+         )?;
+         element.append_child(&child_element)?;
