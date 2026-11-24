@@ -1,0 +1,441 @@
+{
+  "version": "0.1.46",
+  "headless": true,
+  "replays": 2,
+  "identical_replay_bytes": true,
+  "window_samples_per_replay": 10,
+  "max_onscreen_windows": 0,
+  "remaining_owned_processes": [],
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "source_files": 590,
+  "source_manifest_sha256": "92972f3fabec4458fab582356aba1aa21441a0413c28c22a9cb76f95df7ee3d5",
+  "binary_manifest_sha256": "e01da3b0aaa08a29d0e14ed6d5a77d8133fe860f0fb26967fbee6d93cf8f7b66",
+  "binaries": {
+    "gallery": "ae7d165b05706f3e0e86cb6c5de5932327b387728589b2c71af1f7c1349f1faa",
+    "cli": "14a38c59f3d608372a5fd2ef77c4d88206ccfa28f82d5bf315e2256478c7999d"
+  },
+  "pngs_per_replay": 7,
+  "screenshots": {
+    "wide-light-ltr-opened.png": {
+      "name": "wide-light-ltr-opened.png",
+      "sha256": "5b6d29300aea9ab766919f5aa6333c3d2f8b1cc81c22b2d873a9faef1c91f673",
+      "format": "png",
+      "width": 960,
+      "height": 800,
+      "scale": 1.0,
+      "ink": {
+        "menu-demo-inbox-label": {
+          "bounds": {
+            "height": 24.0,
+            "width": 180.0,
+            "x": 76.0,
+            "y": 244.0
+          },
+          "ink_bounds": [
+            77,
+            250,
+            78,
+            15
+          ],
+          "rgba": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "rgb_tolerance": 64,
+          "ink_pixels": 286
+        }
+      },
+      "outline": {
+        "target": "menu-demo-inbox",
+        "bounds": {
+          "height": 48.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 232.0
+        },
+        "rgba": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "matching_pixels": 416,
+        "samples": 416
+      },
+      "palette": {
+        "panel": [
+          242,
+          236,
+          244,
+          255
+        ],
+        "page": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "solid_panel_pixels": 1056,
+        "total_panel_samples": 1071,
+        "page_point": [
+          2,
+          2
+        ]
+      }
+    },
+    "wide-light-ltr-disabled-focused.png": {
+      "name": "wide-light-ltr-disabled-focused.png",
+      "sha256": "910bb20234b8966b2d82a730ca8b53bee039bc6048d4edacd46137a6cb086dc0",
+      "format": "png",
+      "width": 960,
+      "height": 800,
+      "scale": 1.0,
+      "ink": {
+        "menu-demo-inbox-label": {
+          "bounds": {
+            "height": 24.0,
+            "width": 180.0,
+            "x": 76.0,
+            "y": 244.0
+          },
+          "ink_bounds": [
+            77,
+            250,
+            78,
+            15
+          ],
+          "rgba": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "rgb_tolerance": 64,
+          "ink_pixels": 286
+        }
+      },
+      "outline": {
+        "target": "menu-demo-archive",
+        "bounds": {
+          "height": 48.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 280.0
+        },
+        "rgba": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "matching_pixels": 416,
+        "samples": 416
+      },
+      "palette": {
+        "panel": [
+          242,
+          236,
+          244,
+          255
+        ],
+        "page": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "solid_panel_pixels": 1056,
+        "total_panel_samples": 1071,
+        "page_point": [
+          2,
+          2
+        ]
+      }
+    },
+    "wide-light-ltr-find-focused.png": {
+      "name": "wide-light-ltr-find-focused.png",
+      "sha256": "e98dcecfb79223378ac2620214c463081745e4902c467fd422a6ae41e5659837",
+      "format": "png",
+      "width": 960,
+      "height": 800,
+      "scale": 1.0,
+      "ink": {
+        "menu-demo-find-label": {
+          "bounds": {
+            "height": 24.0,
+            "width": 180.0,
+            "x": 40.0,
+            "y": 340.0
+          },
+          "ink_bounds": [
+            41,
+            345,
+            94,
+            16
+          ],
+          "rgba": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "rgb_tolerance": 64,
+          "ink_pixels": 379
+        }
+      },
+      "outline": {
+        "target": "menu-demo-find",
+        "bounds": {
+          "height": 48.0,
+          "width": 240.0,
+          "x": 28.0,
+          "y": 328.0
+        },
+        "rgba": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "matching_pixels": 416,
+        "samples": 416
+      },
+      "palette": {
+        "panel": [
+          242,
+          236,
+          244,
+          255
+        ],
+        "page": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "solid_panel_pixels": 1056,
+        "total_panel_samples": 1071,
+        "page_point": [
+          2,
+          2
+        ]
+      }
+    },
+    "compact-dark-rtl-200-opened.png": {
+      "name": "compact-dark-rtl-200-opened.png",
+      "sha256": "95e58790fd2f4787be7f3b3c572189bde28546b1821656bc871b4af206a58e8f",
+      "format": "png",
+      "width": 320,
+      "height": 480,
+      "scale": 1.0,
+      "ink": {
+        "menu-demo-inbox-label": {
+          "bounds": {
+            "height": 48.0,
+            "width": 180.0,
+            "x": 64.0,
+            "y": 28.0
+          },
+          "ink_bounds": [
+            85,
+            39,
+            157,
+            30
+          ],
+          "rgba": [
+            230,
+            224,
+            233,
+            255
+          ],
+          "rgb_tolerance": 64,
+          "ink_pixels": 1376
+        }
+      },
+      "outline": {
+        "target": "menu-demo-inbox",
+        "bounds": {
+          "height": 72.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 16.0
+        },
+        "rgba": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "matching_pixels": 416,
+        "samples": 416
+      },
+      "palette": {
+        "panel": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "page": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "solid_panel_pixels": 1125,
+        "total_panel_samples": 1140,
+        "page_point": [
+          2,
+          2
+        ]
+      }
+    },
+    "compact-dark-rtl-200-scrolled-end.png": {
+      "name": "compact-dark-rtl-200-scrolled-end.png",
+      "sha256": "d8cd0b88e5b18fe943db3e1af24c478031cd717159cbf89ef134ea6d5e9a6463",
+      "format": "png",
+      "width": 320,
+      "height": 480,
+      "scale": 1.0,
+      "ink": {
+        "menu-demo-details-label": {
+          "bounds": {
+            "height": 48.0,
+            "width": 216.0,
+            "x": 64.0,
+            "y": 340.0
+          },
+          "ink_bounds": [
+            90,
+            351,
+            189,
+            30
+          ],
+          "rgba": [
+            230,
+            224,
+            233,
+            255
+          ],
+          "rgb_tolerance": 64,
+          "ink_pixels": 1632
+        }
+      },
+      "outline": {
+        "target": "menu-demo-details",
+        "bounds": {
+          "height": 72.0,
+          "width": 240.0,
+          "x": 52.0,
+          "y": 328.0
+        },
+        "rgba": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "matching_pixels": 416,
+        "samples": 416
+      },
+      "palette": {
+        "panel": [
+          33,
+          31,
+          36,
+          255
+        ],
+        "page": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "solid_panel_pixels": 1131,
+        "total_panel_samples": 1140,
+        "page_point": [
+          2,
+          2
+        ]
+      }
+    },
+    "compact-dark-rtl-200-status-200.png": {
+      "name": "compact-dark-rtl-200-status-200.png",
+      "sha256": "6eeb5bfe269b7e10a7edbe8d4413e6adcb3266a5c37560cb87a5a7ee43b27dae",
+      "format": "png",
+      "width": 320,
+      "height": 480,
+      "scale": 1.0,
+      "footer": {
+        "clear_pixels": 2112,
+        "expected_pixels": 2112,
+        "page": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "status_fully_visible": false
+      }
+    },
+    "compact-dark-rtl-200-status-100.png": {
+      "name": "compact-dark-rtl-200-status-100.png",
+      "sha256": "95b6ecfc23aa28e1c9fe70f0a92634eaef6a37e820b584bb45a7abe1a81f223d",
+      "format": "png",
+      "width": 320,
+      "height": 480,
+      "scale": 1.0,
+      "ink": {
+        "menu-demo-last": {
+          "bounds": {
+            "height": 24.0,
+            "width": 264.0,
+            "x": 28.0,
+            "y": 300.0
+          },
+          "ink_bounds": [
+            30,
+            305,
+            163,
+            16
+          ],
+          "rgba": [
+            230,
+            224,
+            233,
+            255
+          ],
+          "rgb_tolerance": 64,
+          "ink_pixels": 540
+        }
+      },
+      "footer": {
+        "clear_pixels": 2112,
+        "expected_pixels": 2112,
+        "page": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "status_fully_visible": true
+      }
+    }
+  },
+  "compact_footer": {
+    "gap_dp": 8,
+    "text_percents": [
+      200,
+      100,
+      200
+    ],
+    "full_status_at_100_percent": true,
+    "native_input": "semantic key and activation"
+  }
+}

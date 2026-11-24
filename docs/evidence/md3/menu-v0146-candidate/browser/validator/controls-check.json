@@ -1,0 +1,23 @@
+{
+  "scope": "Portable schema and rejection tests. The legacy SwiftShader and stock observer inputs are from other runs.",
+  "real_linux_adapter_input": {
+    "browser": "Chrome/158.0.8127.88",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    }
+  },
+  "prior_mac_stock_observer_input": {
+    "chrome_process_samples": 138352,
+    "native_process_samples": 15,
+    "visible_windows": 0,
+    "remaining_observed_processes": 0,
+    "receipt_sha256": "128c13ef388a2b394a35bc340920f5b8f87f7c86c9acae29c01bcc0fbdaf8cb4"
+  },
+  "wrong_run_adapter_rejected": "browser or adapter differs from the independently observed metadata",
+  "string_fallback_rejected": "adapter fallback status is not a boolean",
+  "clipped_status_rejected": "wheel did not reveal all of the status",
+  "duplicated_open_menu_png_rejected": "the footer PNG did not replace the painted open menu",
+  "truncated_footer_png_rejected": "Truncated File Read"
+}

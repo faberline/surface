@@ -1,0 +1,33 @@
+{
+  "base": {
+    "version": "0.1.45",
+    "source_files": 583,
+    "manifest_sha256": "86f886cc10ab1d1b82e62364caf738824d2ce5295e3fb82533082f155763277e"
+  },
+  "candidate": {
+    "version": "0.1.46",
+    "source_files": 590,
+    "manifest_sha256": "92972f3fabec4458fab582356aba1aa21441a0413c28c22a9cb76f95df7ee3d5"
+  },
+  "patch_sha256": "5cff7383ba368218d374b2d620a8fae8618c1f06fb7a1cba1a0a5dce73542337",
+  "changed_paths": {
+    "Cargo.lock": "modified",
+    "Cargo.toml": "modified",
+    "crates/surface-app/src/accessibility.rs": "modified",
+    "crates/surface-app/src/controls.rs": "modified",
+    "crates/surface-app/src/lib.rs": "modified",
+    "crates/surface-app/tests/disabled_menu_focus.rs": "added",
+    "crates/surface-material/src/command_menu.rs": "added",
+    "crates/surface-material/src/lib.rs": "modified",
+    "crates/surface-material/src/menu_layout.rs": "added",
+    "crates/surface-material/src/menu_layout/tests.rs": "added",
+    "crates/surface-material/tests/command_menu.rs": "added",
+    "crates/surface-platform/src/macos_accessibility.rs": "modified",
+    "docs/material-coverage.json": "modified",
+    "docs/material.md": "modified",
+    "e2e/src/material.rs": "modified",
+    "e2e/src/material_command_menu.rs": "added",
+    "examples/material-gallery/src/lib.rs": "modified",
+    "examples/material-gallery/src/menu_demo.rs": "added"
+  }
+}
