@@ -8,7 +8,7 @@ use glyphon::{
 use std::borrow::Cow;
 use surface::{
     Color, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PathFill,
-    RasterPaint, Rect, TextStyle,
+    RasterPaint, Rect, TextSelectionPaint, TextStyle,
 };
 pub use text::TextSystem;
 use wgpu::util::DeviceExt;
@@ -79,6 +79,8 @@ struct Vertex {
     stroke: f32,
 }
 const ATTRS: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![0=>Float32x2,1=>Float32x2,2=>Float32x2,3=>Float32x4,4=>Float32x4,5=>Float32];
+const QUAD_UV: [(f32, f32); 6] = [(0., 0.), (1., 0.), (0., 1.), (0., 1.), (1., 0.), (1., 1.)];
+
 fn corner_array(c: &Corners) -> [f32; 4] {
     [c.top_left, c.top_right, c.bottom_right, c.bottom_left]
 }
@@ -146,14 +148,32 @@ enum RenderOp<'a> {
     Legacy(&'a PaintOp),
     Fill(&'a PathFill),
     Raster(&'a RasterPaint),
+    TextSelection(&'a TextSelectionPaint),
 }
 
 enum Draw {
-    Quad { start: u32, clip: Rect },
+    Quad { start: u32, scissor: [u32; 4] },
     Text { index: usize, scissor: [u32; 4] },
     Fill { index: u32, clip: Rect },
     Raster { index: u32, clip: Rect },
 }
+/// A solid quad covering the render target. Everything samples the
+/// interior of the quad shader, so the integer scissors own the edges
+/// without introducing antialiasing at a boundary between two regions.
+fn solid_selection_quad(vertices: &mut Vec<Vertex>, color: Color, srgb: bool) -> u32 {
+    let start = vertices.len() as u32;
+    let color = color_channels(color, srgb);
+    vertices.extend(QUAD_UV.map(|(u, v)| Vertex {
+        position: [u * 2. - 1., 1. - v * 2.],
+        local: [0.5; 2],
+        size: [1.; 2],
+        color,
+        radius: [0.; 4],
+        stroke: 0.,
+    }));
+    start
+}
+
 /// The paint-time view shared by `Text`, `EditableText` and `StyledText`.
 struct TextRun<'a> {
     rect: &'a Rect,
@@ -489,6 +509,14 @@ impl Renderer {
                         Ok(RenderOp::Raster(paint))
                     }
                 }
+                ExtendedPaintOp::TextSelection(selection)
+                    if matches!(
+                        selection.run(),
+                        PaintOp::EditableText { .. } | PaintOp::StyledText { editable: true, .. }
+                    ) =>
+                {
+                    Ok(RenderOp::TextSelection(selection))
+                }
                 _ => Err(ExtendedRenderError::UnsupportedOperation),
             }),
             target,
@@ -520,10 +548,44 @@ impl Renderer {
         };
         let mut paths = path::Frame::default();
         let mut rasters = raster::Frame::default();
-        let mut buffers = Vec::new();
+        let mut next_text_renderer = 0;
         for op in ops {
             let op = match op? {
                 RenderOp::Legacy(op) => op,
+                RenderOp::TextSelection(selection) => {
+                    let regions = selection.pixel_regions(scale, (width, height));
+                    if regions.is_empty() {
+                        continue;
+                    }
+                    let colors = selection.colors();
+                    if colors.background.3 != 0 && regions.iter().any(|region| region.selected) {
+                        let start =
+                            solid_selection_quad(&mut vertices, colors.background, self.srgb);
+                        draws.extend(regions.iter().filter(|region| region.selected).map(
+                            |region| Draw::Quad {
+                                start,
+                                scissor: region.scissor,
+                            },
+                        ));
+                    }
+                    let run = text_run(selection.run()).expect("validated editable text run");
+                    let ordinary = *run.color;
+                    self.prepare_text_run(
+                        space,
+                        &run,
+                        regions.into_iter().map(|region| {
+                            let ink = if region.selected {
+                                colors.foreground
+                            } else {
+                                ordinary
+                            };
+                            (region.scissor, ink)
+                        }),
+                        &mut next_text_renderer,
+                        &mut draws,
+                    )?;
+                    continue;
+                }
                 RenderOp::Fill(fill) => {
                     if let Some(index) = paths.push(fill, space, self.srgb) {
                         draws.push(Draw::Fill {
@@ -582,12 +644,15 @@ impl Renderer {
                         } => (rect, clip, corner_array(corners), *width, color),
                         _ => unreachable!("only rectangle ops reach this arm"),
                     };
+                    let Some(scissor) = space.scissor(*clip) else {
+                        continue;
+                    };
                     // The shader clamps again. Clamping here keeps fully rounded
                     // radii (f32::MAX) out of vertex interpolation.
                     let limit = rect.width.min(rect.height) * 0.5;
                     let radius = radii.map(|r| r.min(limit));
                     let start = vertices.len() as u32;
-                    for (u, v) in [(0., 0.), (1., 0.), (0., 1.), (0., 1.), (1., 0.), (1., 1.)] {
+                    for (u, v) in QUAD_UV {
                         let x = (rect.x + u * rect.width) * scale;
                         let y = (rect.y + v * rect.height) * scale;
                         vertices.push(Vertex {
@@ -599,63 +664,24 @@ impl Renderer {
                             stroke,
                         });
                     }
-                    draws.push(Draw::Quad { start, clip: *clip });
+                    draws.push(Draw::Quad { start, scissor });
                 }
                 PaintOp::Text { .. }
                 | PaintOp::EditableText { .. }
                 | PaintOp::StyledText { .. } => {
-                    let Some(TextRun {
-                        rect,
-                        clip,
-                        text,
-                        style,
-                        color,
-                        scroll,
-                        wrap,
-                    }) = text_run(op)
-                    else {
+                    let Some(run) = text_run(op) else {
                         continue;
                     };
-                    let Some(scissor) = space.scissor(*clip) else {
+                    let Some(scissor) = space.scissor(*run.clip) else {
                         continue;
                     };
-                    let top = (rect.y - scroll.1) * scale;
-                    let index = buffers.len();
-                    buffers.push(self.text.buffer(
-                        text,
-                        &style,
-                        if wrap { Some(rect.width) } else { None },
-                    ));
-                    while self.text_renderers.len() <= index {
-                        self.text_renderers.push(TextRenderer::new(
-                            &mut self.atlas,
-                            &self.device,
-                            Default::default(),
-                            None,
-                        ));
-                    }
-                    self.text_renderers[index]
-                        .prepare(
-                            &self.device,
-                            &self.queue,
-                            &mut self.text.fonts,
-                            &mut self.atlas,
-                            &self.viewport,
-                            [TextArea {
-                                buffer: &buffers[index],
-                                left: (rect.x - scroll.0) * scale,
-                                top,
-                                scale,
-                                bounds: space.text_bounds(scissor, top),
-                                default_color: glyphon::Color::rgba(
-                                    color.0, color.1, color.2, color.3,
-                                ),
-                                custom_glyphs: &[],
-                            }],
-                            &mut self.cache,
-                        )
-                        .map_err(RenderError::from)?;
-                    draws.push(Draw::Text { index, scissor });
+                    self.prepare_text_run(
+                        space,
+                        &run,
+                        [(scissor, *run.color)],
+                        &mut next_text_renderer,
+                        &mut draws,
+                    )?;
                 }
             }
         }
@@ -701,10 +727,10 @@ impl Renderer {
             });
             for draw in draws {
                 match draw {
-                    Draw::Quad { start, clip } => {
-                        let Some([left, top, width, height]) = space.scissor(clip) else {
-                            continue;
-                        };
+                    Draw::Quad {
+                        start,
+                        scissor: [left, top, width, height],
+                    } => {
                         pass.set_scissor_rect(left, top, width, height);
                         pass.set_pipeline(&self.pipeline);
                         pass.set_vertex_buffer(0, vertex_buffer.slice(..));
@@ -746,6 +772,54 @@ impl Renderer {
         }
         self.queue.submit(Some(encoder.finish()));
         self.atlas.trim();
+        Ok(())
+    }
+
+    fn prepare_text_run(
+        &mut self,
+        space: RasterSpace,
+        run: &TextRun<'_>,
+        regions: impl IntoIterator<Item = ([u32; 4], Color)>,
+        next_renderer: &mut usize,
+        draws: &mut Vec<Draw>,
+    ) -> Result<(), RenderError> {
+        // Shape the complete run before splitting ink. Glyphon keeps its
+        // prepared vertices, so every region can borrow the same buffer.
+        let buffer = self
+            .text
+            .buffer(run.text, &run.style, run.wrap.then_some(run.rect.width));
+        let left = (run.rect.x - run.scroll.0) * space.scale;
+        let top = (run.rect.y - run.scroll.1) * space.scale;
+        for (scissor, color) in regions {
+            let index = *next_renderer;
+            *next_renderer += 1;
+            while self.text_renderers.len() <= index {
+                self.text_renderers.push(TextRenderer::new(
+                    &mut self.atlas,
+                    &self.device,
+                    Default::default(),
+                    None,
+                ));
+            }
+            self.text_renderers[index].prepare(
+                &self.device,
+                &self.queue,
+                &mut self.text.fonts,
+                &mut self.atlas,
+                &self.viewport,
+                [TextArea {
+                    buffer: &buffer,
+                    left,
+                    top,
+                    scale: space.scale,
+                    bounds: space.text_bounds(scissor, top),
+                    default_color: glyphon::Color::rgba(color.0, color.1, color.2, color.3),
+                    custom_glyphs: &[],
+                }],
+                &mut self.cache,
+            )?;
+            draws.push(Draw::Text { index, scissor });
+        }
         Ok(())
     }
 }

@@ -66,8 +66,8 @@ use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use split_demo::{SplitDemo, SplitEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
 use surface_app::{
-    AnimationFrame, AnimationUpdate, Application, FrameInput, FramePress, InputAnimationUpdate,
-    Queue, View,
+    AnimationFrame, AnimationUpdate, Application, DisplayContrast, FrameInput, FramePress,
+    InputAnimationUpdate, Queue, SystemColorPair, View,
 };
 use surface_material::{
     ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind, FabColor, FabSize,
@@ -83,6 +83,7 @@ use wide_navigation_rail_demo::{WideRailDemo, WideRailEvent};
 pub struct Gallery {
     pub section: usize,
     pub dark: bool,
+    display_contrast: DisplayContrast,
     pub radio: usize,
     pub enabled: bool,
     pub check: CheckValue,
@@ -142,6 +143,7 @@ impl Default for Gallery {
         Self {
             section: 0,
             dark: false,
+            display_contrast: DisplayContrast::Normal,
             radio: 0,
             enabled: false,
             check: CheckValue::Mixed,
@@ -198,6 +200,53 @@ impl Default for Gallery {
         }
     }
 }
+impl Gallery {
+    fn effective_theme(&self) -> Theme {
+        match self.display_contrast {
+            DisplayContrast::Forced(colors) => Theme::from_forced_colors(
+                (colors.canvas.background, colors.canvas.foreground),
+                (colors.button.background, colors.button.foreground),
+                forced_dark(colors.canvas, self.dark),
+            ),
+            DisplayContrast::Increased => {
+                // The Gallery uses the same authored seed as Theme::light/dark.
+                static LIGHT: std::sync::OnceLock<Theme> = std::sync::OnceLock::new();
+                static DARK: std::sync::OnceLock<Theme> = std::sync::OnceLock::new();
+                let cache = if self.dark { &DARK } else { &LIGHT };
+                *cache.get_or_init(|| {
+                    Theme::from_seed_high_contrast(Color::rgb(103, 80, 164), self.dark)
+                })
+            }
+            _ if self.dark => Theme::dark(),
+            _ => Theme::light(),
+        }
+    }
+}
+
+fn forced_dark(canvas: SystemColorPair, authored_dark: bool) -> bool {
+    if canvas.background.3 != 255 || canvas.foreground.3 != 255 {
+        return authored_dark;
+    }
+    let luminance = |Color(r, g, b, _)| {
+        let linear = |byte: u8| {
+            let channel = f64::from(byte) / 255.;
+            if channel <= 0.04045 {
+                channel / 12.92
+            } else {
+                ((channel + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+    };
+    let background = luminance(canvas.background);
+    let foreground = luminance(canvas.foreground);
+    if (background - foreground).abs() <= f64::EPSILON {
+        authored_dark
+    } else {
+        background < foreground
+    }
+}
+
 #[derive(Clone)]
 pub enum Message {
     Section(usize),
@@ -260,6 +309,15 @@ impl Application for Gallery {
     fn title(&self) -> &str {
         "Surface · Material gallery"
     }
+
+    fn display_contrast_changed(&mut self, contrast: DisplayContrast) -> bool {
+        if self.display_contrast == contrast {
+            return false;
+        }
+        self.display_contrast = contrast;
+        true
+    }
+
     fn text_scale(&self) -> f32 {
         if self.drawer_demo.visible() {
             return self.drawer_demo.text_scale();
@@ -743,11 +801,7 @@ impl Application for Gallery {
         }
     }
     fn view(&self) -> View<Message> {
-        let t = if self.dark {
-            Theme::dark()
-        } else {
-            Theme::light()
-        };
+        let t = self.effective_theme();
         let choice = |selected| ChoiceState {
             selected,
             disabled: false,
@@ -1461,14 +1515,55 @@ mod web {
                 .map_err(|error| JsValue::from_str(&error.to_string()))
         })
     }
+    fn inspect_contrast(contrast: DisplayContrast, theme: &Theme) -> serde_json::Value {
+        let pair = |colors: SystemColorPair| {
+            serde_json::json!({
+                "background": colors.background,
+                "foreground": colors.foreground,
+            })
+        };
+        let (mode, system_colors) = match contrast {
+            DisplayContrast::Normal => ("normal", None),
+            DisplayContrast::Increased => ("increased", None),
+            DisplayContrast::Forced(colors) => (
+                "forced",
+                Some(serde_json::json!({
+                    "canvas": pair(colors.canvas),
+                    "button": pair(colors.button),
+                    "highlight": pair(colors.highlight),
+                })),
+            ),
+            _ => ("unsupported", None),
+        };
+        let colors = theme.colors;
+        serde_json::json!({
+            "mode": mode,
+            "system_colors": system_colors,
+            "theme": {
+                "is_dark": theme.is_dark,
+                "surface": colors.surface,
+                "on_surface": colors.on_surface,
+                "surface_container": colors.surface_container,
+                "surface_container_lowest": colors.surface_container_lowest,
+                "outline": colors.outline,
+                "primary": colors.primary,
+                "on_primary": colors.on_primary,
+                "focus": colors.secondary,
+                "error": colors.error,
+                "tonal": theme.tonal,
+                "on_tonal": theme.on_tonal,
+            },
+        })
+    }
+
     #[wasm_bindgen]
     pub fn inspect() -> String {
         APP.with(|a|{
         let a=a.borrow();let runtime=a.as_ref().expect("started").borrow();let s=runtime.app();
+        let theme = s.effective_theme();
         let time_input = s.time_input_demo.inspect();
         let time_dial = s.time_dial_demo.inspect();
         let baseline_time_colors = [&time_input, &time_dial].into_iter().any(|demo| demo["variant"] == "Baseline").then(|| {
-            let theme = if s.dark { Theme::dark() } else { Theme::light() };
             let colors = theme.colors;
             serde_json::json!({
                 "surface_container_high": colors.surface_container_high,
@@ -1484,10 +1579,10 @@ mod web {
             "wide_navigation_rail": s.wide_rail_demo.inspect(s.text_scale()),
             "modal_wide_navigation_rail": s.modal_wide_rail_demo.inspect(s.text_scale(), &runtime),
             "snackbar": s.snackbar_demo.inspect(s.text_scale()),
-            "badges": s.badge_demo.inspect(s.text_scale(), s.dark),
+            "badges": s.badge_demo.inspect(s.text_scale(), &theme),
             "navigation_drawer": s.drawer_demo.inspect(s.text_scale(), &runtime),
-            "progress": s.progress_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
-            "side_sheet": s.side_sheet_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
+            "progress": s.progress_demo.inspect(&theme),
+            "side_sheet": s.side_sheet_demo.inspect(&theme),
             "bottom_sheet": s.bottom_sheet_demo.inspect(),
             "cards": s.card_demo.inspect(),
             "button_group": s.button_group_demo.inspect(),
@@ -1503,11 +1598,11 @@ mod web {
             "baseline_time_colors": baseline_time_colors,
             "time_scroll": s.time_scroll_demo.inspect(),
             "carousel": s.carousel_demo.inspect(&runtime),
-            "app_bar": s.app_bar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
-            "toolbar": s.toolbar_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() }),
-            "tooltip": s.tooltip_demo.inspect(&if s.dark { Theme::dark() } else { Theme::light() })
+            "app_bar": s.app_bar_demo.inspect(&theme),
+            "toolbar": s.toolbar_demo.inspect(&theme),
+            "tooltip": s.tooltip_demo.inspect(&theme)
         });
-        let theme = if s.dark { Theme::dark() } else { Theme::light() };
+        state["display_contrast"] = inspect_contrast(runtime.display_contrast(), &theme);
         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
         state["loading"] = s.loading_demo.inspect(&theme);
         state["scroll_field"] = s.scroll_field_demo.inspect(&runtime, &theme);
@@ -1534,5 +1629,78 @@ mod web {
             let b = c.nodes[id.index()].bounds;
             vec![b.x, b.y, b.width, b.height]
         })
+    }
+}
+
+#[cfg(test)]
+mod display_contrast_tests {
+    use super::*;
+    use surface_app::SystemContrastColors;
+
+    #[test]
+    fn forced_palette_uses_system_pairs_and_preserves_the_authored_theme() {
+        let mut gallery = Gallery::default();
+        let normal = gallery.effective_theme();
+        let canvas = SystemColorPair {
+            background: Color::rgb(0, 0, 0),
+            foreground: Color::rgb(255, 245, 240),
+        };
+        let button = SystemColorPair {
+            background: Color::rgb(18, 34, 45),
+            foreground: Color::rgb(255, 221, 171),
+        };
+        let highlight = SystemColorPair {
+            background: Color(0, 230, 255, 204),
+            foreground: Color::rgb(0, 0, 0),
+        };
+        let preference =
+            DisplayContrast::Forced(SystemContrastColors::new(canvas, button, highlight));
+        assert!(gallery.display_contrast_changed(preference));
+        let forced = gallery.effective_theme();
+        assert!(forced.is_dark);
+        assert!(!gallery.dark);
+        assert_eq!(forced.background, canvas.background);
+        assert_eq!(forced.on_background, canvas.foreground);
+        assert_eq!(forced.tonal, button.background);
+        assert_eq!(forced.on_tonal, button.foreground);
+        assert_eq!(forced.colors.secondary, canvas.foreground);
+        assert!(!gallery.display_contrast_changed(preference));
+
+        assert!(gallery.display_contrast_changed(DisplayContrast::Normal));
+        let restored = gallery.effective_theme();
+        assert_eq!(restored.background, normal.background);
+        assert_eq!(restored.primary, normal.primary);
+        assert_eq!(restored.outline, normal.outline);
+        assert!(!restored.is_dark);
+    }
+
+    #[test]
+    fn increased_uses_the_authored_dark_variant() {
+        let mut gallery = Gallery {
+            dark: true,
+            ..Gallery::default()
+        };
+        assert!(gallery.display_contrast_changed(DisplayContrast::Increased));
+        let increased = gallery.effective_theme();
+        assert!(increased.is_dark);
+        assert_ne!(increased.outline, Theme::dark().outline);
+        assert!(gallery.display_contrast_changed(DisplayContrast::Normal));
+        assert_eq!(gallery.effective_theme().outline, Theme::dark().outline);
+    }
+
+    #[test]
+    fn ambiguous_forced_canvas_retains_the_authored_polarity() {
+        let ink = Color::rgb(110, 122, 130);
+        let equal = SystemColorPair {
+            background: ink,
+            foreground: ink,
+        };
+        let translucent = SystemColorPair {
+            background: Color(255, 255, 255, 128),
+            foreground: Color::rgb(0, 0, 0),
+        };
+        assert!(!forced_dark(equal, false));
+        assert!(forced_dark(equal, true));
+        assert!(forced_dark(translucent, true));
     }
 }

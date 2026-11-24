@@ -8,7 +8,7 @@ use crate::{
     Elevation, IconButtonKind, Theme,
 };
 
-use super::{FOCUS_OUTSET, TARGET};
+use super::{shared_surface_edge, FOCUS_OUTSET, TARGET};
 
 const VIEWPORT_MARGIN: f32 = 8.;
 const ANCHOR_GAP: f32 = 4.;
@@ -160,6 +160,7 @@ impl Theme {
                 ..Insets::default()
             });
         style.z_index = 1000;
+        let style = shared_surface_edge(style, self.colors.surface, self.colors.outline);
         let panel = Node::new(Role::Dialog, options.label)
             .id(options.id)
             // Shield blank panel space while keeping it out of Tab order.

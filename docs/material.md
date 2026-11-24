@@ -778,6 +778,48 @@ error can still describe the focused editor on Web and through AccessKit.
 In Material Gallery, choose 選取, then 對話框捲動欄位. Try a valid
 pair and an invalid pair. Use Escape or Cancel to discard changes.
 
+### Display contrast
+
+`surface-platform` reports the host preference through
+`Application::display_contrast_changed`. Store the preference in the app's
+appearance state. Return `true` when the view needs a rebuild. Keep the
+control IDs and editor values stable to preserve focus and drafts. A
+custom host can pass a preference to `Runtime::set_display_contrast`.
+`Runtime::display_contrast` reads the accepted preference.
+
+- `DisplayContrast::Normal` is the initial preference. Use the app's
+  usual theme, such as `Theme::from_seed(seed, dark)`.
+- `DisplayContrast::Increased` signals a request for higher contrast.
+  `Theme::from_seed_high_contrast(seed, dark)` uses the same seed and
+  light or dark choice.
+- `DisplayContrast::Forced(colors)` carries the system Canvas, Button,
+  and Highlight color pairs. Each pair keeps its background, foreground,
+  and alpha values. Pass the Canvas and Button pairs to
+  `Theme::from_forced_colors(canvas, button, dark)` as tuples with the
+  background first.
+
+The Web host gives `forced-colors: active` priority over
+`prefers-contrast: more`. The macOS host reads Increase Contrast to
+report `Normal` or `Increased`.
+[W3C media features](https://www.w3.org/TR/mediaqueries-5/#mf-user-preferences)
+
+The wheel, popup and modal draw a border when their surface matches the
+surrounding color and they have no border. Disabled Scroll Fields keep
+their disabled state and dimmed text. During forced colors, the extended
+renderer uses `Highlight` for the selection background and `HighlightText`
+for selected text and the selected part of the composition underline.
+The rest of the underline uses the ordinary text color. The underline
+marks pending text from the input method editor (IME).
+
+Headless Chrome checks M241–M247 cover emulated contrast, popup and wheel
+paint, disabled actions, invalid drafts, and selection with synthetic
+composition. The macOS Metal replays read the startup setting and use a
+test control to switch between Normal and Increased. They check paint
+and focus for an invalid popup draft in light and dark themes.
+Live operating system notifications, live input methods, VoiceOver
+speech, and Windows forced-color captures remain open.
+[Contrast verification](https://github.com/faberline/surface/tree/codex/evidence-md3-scroll-contrast-v0142/docs/evidence/md3/scroll-contrast-v0.1.42)
+
 [W3C Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)
 
 [Material 3 Scroll Fields specs](https://m3.material.io/components/scroll-fields/specs) ·

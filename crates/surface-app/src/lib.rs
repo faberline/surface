@@ -8,6 +8,7 @@ mod controls;
 mod cursor;
 #[cfg(feature = "devtools")]
 mod devtools;
+mod display_contrast;
 mod drag_motion;
 mod editing;
 mod editing_runtime;
@@ -37,6 +38,7 @@ pub use captured_drag::{
 pub use context::PointerPoint;
 pub use controls::{FocusNavigation, Roving};
 pub use cursor::CursorStyle;
+pub use display_contrast::{DisplayContrast, SystemColorPair, SystemContrastColors};
 pub use editing::{
     utf16_to_utf8, utf8_to_utf16, Composition, EditKey, ImeEvent, TextEditor, TextOptions,
     TextSelection,
@@ -664,6 +666,17 @@ pub trait Application: 'static {
     fn viewport_changed(&mut self, _width: f32, _height: f32) -> bool {
         false
     }
+    /// Report a host display-contrast preference. Store the presentation
+    /// preference and return true if the view must be rebuilt. Keep stable
+    /// control IDs and authored editor values across appearance changes to
+    /// retain focus, drafts and composition.
+    ///
+    /// If the new view fails validation, the runtime calls this hook again
+    /// with the last accepted preference. This hook should only change
+    /// appearance state. `Normal` is the initial preference.
+    fn display_contrast_changed(&mut self, _contrast: DisplayContrast) -> bool {
+        false
+    }
     /// Advance frame-driven application motion.
     fn animation_frame(&mut self, _frame: AnimationFrame<'_>) -> AnimationUpdate {
         AnimationUpdate::default()
@@ -879,6 +892,12 @@ impl<M> Queue<M> {
     }
 }
 
+struct PreparedView<M> {
+    dom: MicroDom,
+    bindings: BTreeMap<NodeId, Binding<M>>,
+    contour_painters: Vec<(NodeId, ContourPainter)>,
+}
+
 pub struct Runtime<A: Application> {
     queue: Queue<A::Message>,
     app: A,
@@ -911,6 +930,7 @@ pub struct Runtime<A: Application> {
     pending_accessibility_scroll: Option<accessibility::PendingScroll>,
     app_viewport: Option<(f32, f32)>,
     viewport_rebuild_pending: bool,
+    display_contrast: DisplayContrast,
     animation_rebuild_pending: bool,
     animation_request_next: bool,
     layout_text_scale: f32,
@@ -959,6 +979,7 @@ impl<A: Application> Runtime<A> {
             pending_accessibility_scroll: None,
             app_viewport: None,
             viewport_rebuild_pending: false,
+            display_contrast: DisplayContrast::Normal,
             animation_rebuild_pending: false,
             animation_request_next: false,
             layout_text_scale: 1.,
@@ -1007,6 +1028,40 @@ impl<A: Application> Runtime<A> {
             changed = true;
         }
         Ok(changed)
+    }
+
+    /// The most recently accepted host preference, even for an app that
+    /// chooses to keep its view. Starts at `Normal`.
+    pub fn display_contrast(&self) -> DisplayContrast {
+        self.display_contrast
+    }
+
+    /// Report a changed preference and rebuild only if the app asks for it.
+    /// Return true when a new frame is needed, either for a rebuilt view or
+    /// for a changed extended selection palette. Repeating an accepted
+    /// preference does no work. If the new view fails
+    /// validation, keep the previous view and preference so a host may retry.
+    pub fn set_display_contrast(&mut self, contrast: DisplayContrast) -> Result<bool, AppError> {
+        let previous = self.display_contrast;
+        if contrast == previous {
+            return Ok(false);
+        }
+        if !self.app.display_contrast_changed(contrast) {
+            let redraw =
+                frame_paint::selection_colors(previous) != frame_paint::selection_colors(contrast);
+            self.display_contrast = contrast;
+            return Ok(redraw);
+        }
+        let prepared = match self.prepare_view() {
+            Ok(prepared) => prepared,
+            Err(error) => {
+                self.app.display_contrast_changed(previous);
+                return Err(error);
+            }
+        };
+        self.display_contrast = contrast;
+        self.rebuild_prepared(Some(prepared))?;
+        Ok(true)
     }
 
     /// Cancel a pointer sequence without invoking a destination or dismissal.
@@ -1132,6 +1187,13 @@ impl<A: Application> Runtime<A> {
         self.rebuild()
     }
     fn rebuild(&mut self) -> Result<(), AppError> {
+        self.rebuild_prepared(None)
+    }
+
+    fn rebuild_prepared(
+        &mut self,
+        prepared: Option<PreparedView<A::Message>>,
+    ) -> Result<(), AppError> {
         self.discard_wheel_burst();
         if !self.app.observes_frame_input() {
             self.press_observation.clear_application();
@@ -1139,7 +1201,9 @@ impl<A: Application> Runtime<A> {
         #[cfg(feature = "devtools")]
         let start = self.trace_now();
         self.accessibility = None;
-        let result = self.rebuild_view();
+        let result = prepared
+            .map_or_else(|| self.prepare_view(), Ok)
+            .map(|view| self.install_view(view));
         if result.is_ok() {
             self.accessibility = Some(accessibility::Revision::default());
             self.animation_rebuild_pending = false;
@@ -1161,7 +1225,7 @@ impl<A: Application> Runtime<A> {
         result?;
         self.reconcile_drag_binding()
     }
-    fn rebuild_view(&mut self) -> Result<(), AppError> {
+    fn prepare_view(&self) -> Result<PreparedView<A::Message>, AppError> {
         fn add<M>(
             view: View<M>,
             dom: &mut MicroDom,
@@ -1288,6 +1352,14 @@ impl<A: Application> Runtime<A> {
                 dom.set_style(id, style)?;
             }
         }
+        Ok(PreparedView {
+            dom,
+            bindings,
+            contour_painters,
+        })
+    }
+
+    fn install_view(&mut self, prepared: PreparedView<A::Message>) {
         let focus_after_removal = self
             .focused_node()
             .filter(|id| self.in_scope(*id))
@@ -1301,9 +1373,9 @@ impl<A: Application> Runtime<A> {
             .and_then(|key| self.dom.by_id(key))
             .and_then(|id| self.dom.get(id).ok())
             .map(Node::role);
-        self.dom = dom;
-        self.bindings = bindings;
-        self.contour_painters = contour_painters;
+        self.dom = prepared.dom;
+        self.bindings = prepared.bindings;
+        self.contour_painters = prepared.contour_painters;
         self.reconcile_editors();
         self.computed = None;
         self.reconcile_controls(focus_after_removal, retained_roving_focus);
@@ -1329,7 +1401,6 @@ impl<A: Application> Runtime<A> {
                         .is_ok_and(|node| node.is_focusable() && Some(node.role()) == pressed_role)
             })
         });
-        Ok(())
     }
 
     pub fn render(
@@ -1341,7 +1412,8 @@ impl<A: Application> Runtime<A> {
         self.render_with(width, height, measurer)
     }
 
-    /// Render one frame with the extended renderer's geometry and shadows.
+    /// Render one frame with extended geometry and shadows. The extended
+    /// renderer uses the host's selection palette in forced colors.
     pub fn render_extended(
         &mut self,
         width: f32,
@@ -1468,7 +1540,14 @@ impl<A: Application> Runtime<A> {
         for (id, paint) in &self.contour_painters {
             display_dom.set_presented_fill_contour(*id, paint())?;
         }
-        let list = P::compile(&display_dom, &computed, focused, &decorations, interaction);
+        let list = P::compile(
+            &display_dom,
+            &computed,
+            focused,
+            &decorations,
+            interaction,
+            frame_paint::selection_colors(self.display_contrast),
+        );
         #[cfg(feature = "devtools")]
         self.trace_paint(start, list.len());
         #[cfg(feature = "devtools")]

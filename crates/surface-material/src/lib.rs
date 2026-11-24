@@ -224,7 +224,29 @@ impl Theme {
         *THEME.get_or_init(|| Self::from_seed(Color::rgb(103, 80, 164), true))
     }
     pub fn from_seed(seed: Color, dark: bool) -> Self {
-        let colors = ColorScheme::from_seed(seed, dark);
+        Self::from_color_scheme(ColorScheme::from_seed(seed, dark), dark)
+    }
+
+    /// Generate a Tonal Spot theme at the highest Material contrast level.
+    ///
+    /// Keep the authored seed and light or dark appearance. Use a system
+    /// palette instead when the host provides explicit forced colors.
+    pub fn from_seed_high_contrast(seed: Color, dark: bool) -> Self {
+        Self::from_color_scheme(ColorScheme::high_contrast(seed, dark), dark)
+    }
+
+    /// Use resolved system color pairs for a Canvas-backed theme.
+    ///
+    /// Each pair is `(background, foreground)`. Pass the host's effective
+    /// light or dark appearance. Canvas and Button pairs stay separate.
+    /// Components still need an explicit edge when their surfaces coincide.
+    /// Focus, error and disabled states keep their own semantics. This theme
+    /// does not change platform text selection paint.
+    pub fn from_forced_colors(canvas: (Color, Color), button: (Color, Color), dark: bool) -> Self {
+        Self::from_color_scheme(ColorScheme::forced_colors(canvas, button), dark)
+    }
+
+    fn from_color_scheme(colors: ColorScheme, dark: bool) -> Self {
         Self {
             colors,
             is_dark: dark,

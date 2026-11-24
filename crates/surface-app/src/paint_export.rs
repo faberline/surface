@@ -29,9 +29,10 @@ pub struct PaintOwner {
 }
 
 /// The compile inputs of the last frame. `render` moves them here instead
-/// of dropping them, so keeping a frame costs no allocation; the export
-/// compiles them again with owners. Compile is pure, so the result is the
-/// list `render` returned.
+/// of dropping them, so keeping a frame costs no allocation. The export
+/// compiles the legacy drawing commands with owners, matching `render`.
+/// Use a host screenshot to inspect extended-only paint, including the
+/// forced selection colors used by `render_extended`.
 pub(crate) struct PaintFrame {
     pub(crate) dom: MicroDom,
     pub(crate) decorations: BTreeMap<NodeId, TextDecoration>,
