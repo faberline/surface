@@ -39,19 +39,22 @@ fn ink(
     expected: [u8; 3],
 ) -> Result<Value> {
     let [x, y, width, height] = rect;
+    // At DPR 2 the square quad can antialias its last two physical pixels
+    // at a corner. Stay three pixels from each end and keep every depth.
+    let end_inset = 1.5;
     for offset in 0..thickness {
         let depth = f64::from(offset) + 0.5;
         let points = if vertical {
             [
-                [x + depth, y + 1.],
+                [x + depth, y + end_inset],
                 [x + depth, y + height / 2.],
-                [x + depth, y + height - 1.],
+                [x + depth, y + height - end_inset],
             ]
         } else {
             [
-                [x + 1., y + depth],
+                [x + end_inset, y + depth],
                 [x + width / 2., y + depth],
-                [x + width - 1., y + depth],
+                [x + width - end_inset, y + depth],
             ]
         };
         for [x, y] in points {
