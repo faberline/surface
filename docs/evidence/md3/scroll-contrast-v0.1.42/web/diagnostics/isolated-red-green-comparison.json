@@ -1,0 +1,229 @@
+{
+  "base": "f5b2e24d298c60a06d7b85635baf7a47657e31e2",
+  "production_patch_sha256": "e7a7cd6563ea82e9bf48ac2b69012821d85b347e2a631364220014d428b2dbcf",
+  "full_e2e_patch_sha256": "60952400b06285ea6d63a6396b970de6652e6d19f6b004b9f0cee9d0593386f2",
+  "old_browser_offsets": {
+    "before": [
+      3,
+      3
+    ],
+    "after_key_down": [
+      4,
+      4
+    ],
+    "after_forced_redraw": [
+      3,
+      3
+    ],
+    "after_key_up": [
+      3,
+      3
+    ]
+  },
+  "fixed_controlled_offsets": {
+    "before": {
+      "browser": [
+        3,
+        3
+      ],
+      "runtime": [
+        3,
+        3
+      ]
+    },
+    "after_key_down": {
+      "browser": [
+        4,
+        4
+      ],
+      "runtime": [
+        3,
+        3
+      ]
+    },
+    "after_forced_redraw": {
+      "browser": [
+        4,
+        4
+      ],
+      "runtime": [
+        3,
+        3
+      ]
+    },
+    "after_key_up": {
+      "browser": [
+        4,
+        4
+      ],
+      "runtime": [
+        4,
+        4
+      ]
+    }
+  },
+  "repaint_pixels": {
+    "normal": [
+      20,
+      18,
+      24
+    ],
+    "forced": [
+      0,
+      0,
+      0
+    ]
+  },
+  "natural_trace": {
+    "old": {
+      "sha256": "213064c797109168ee453f64a2f33777437d586792cfed6f78b048e16371e2f0",
+      "cases": [
+        {
+          "mode": "old stock key burst",
+          "passed": 47,
+          "failed": 3
+        },
+        {
+          "mode": "wait after each trusted key",
+          "passed": 47,
+          "failed": 3
+        }
+      ],
+      "held_repaint": [
+        {
+          "select_delayed": false,
+          "before": [
+            3,
+            3
+          ],
+          "after_browser_default": [
+            4,
+            4
+          ],
+          "after_repaint": [
+            3,
+            3
+          ],
+          "runtime_after_keyup": [
+            3,
+            3
+          ]
+        },
+        {
+          "select_delayed": true,
+          "before": [
+            3,
+            3
+          ],
+          "after_browser_default": [
+            4,
+            4
+          ],
+          "after_repaint": [
+            3,
+            3
+          ],
+          "runtime_after_keyup": [
+            3,
+            3
+          ]
+        }
+      ]
+    },
+    "fixed": {
+      "sha256": "ce37673cd42de6b6e87216bc0862fbbec31370bd732c66da5481f32c62f440a9",
+      "cases": [
+        {
+          "mode": "old stock key burst",
+          "passed": 50,
+          "failed": 0
+        },
+        {
+          "mode": "wait after each trusted key",
+          "passed": 50,
+          "failed": 0
+        }
+      ],
+      "held_repaint": [
+        {
+          "select_delayed": false,
+          "before": [
+            3,
+            3
+          ],
+          "after_browser_default": [
+            4,
+            4
+          ],
+          "after_repaint": [
+            4,
+            4
+          ],
+          "runtime_after_keyup": [
+            4,
+            4
+          ]
+        },
+        {
+          "select_delayed": true,
+          "before": [
+            3,
+            3
+          ],
+          "after_browser_default": [
+            4,
+            4
+          ],
+          "after_repaint": [
+            4,
+            4
+          ],
+          "runtime_after_keyup": [
+            4,
+            4
+          ]
+        }
+      ]
+    }
+  },
+  "focused": {
+    "sha256": "3389d23e505ccdefc7ae1461463004d46f0ecee2cd47b2ea206f682c76bccbc8",
+    "checks": 794,
+    "steps": [
+      "M241",
+      "M242",
+      "M243",
+      "M244",
+      "M245",
+      "M246",
+      "M247"
+    ],
+    "pngs": 28
+  },
+  "stock_ime": {
+    "sha256": "d5322935078e350549c380f2cf644ff5d31becb5d61b17a44030659db58b7598",
+    "checks": 57,
+    "steps": [
+      "I1",
+      "I2",
+      "I3",
+      "I4",
+      "I5",
+      "I6",
+      "I7",
+      "I8",
+      "I9",
+      "I10",
+      "I11",
+      "I12",
+      "I13",
+      "I14",
+      "I15",
+      "I16",
+      "I17",
+      "I18",
+      "I19",
+      "I20"
+    ]
+  }
+}
