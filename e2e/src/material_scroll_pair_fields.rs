@@ -521,13 +521,14 @@ async fn scroll_top(tab: &Tab) -> Result<f64> {
         .context("the paired-field scroller offset")
 }
 
-async fn visible_editor(tab: &Tab, field: Field, scroller: Rect) -> Result<Rect> {
+async fn visible_editor(tab: &Tab, field: Field, scroller: Rect) -> Result<(Rect, Rect)> {
     field.editor_focus(tab).await?;
     let editor = bounds(tab, &field.part("editor")).await?;
+    let ring = bounds(tab, &field.part("focus")).await?;
     let [_, _, width, height] = tab.canvas_box().await?;
-    check!(contains(scroller, editor) && contains([0.,0.,width,height],editor),
-        "the real focused {} editor lies inside the short viewport and clip: {editor:?}/{scroller:?}",field.label);
-    Ok(editor)
+    check!(contains(ring,editor) && contains(scroller,ring) && contains([0.,0.,width,height],ring),
+        "the focused {} editor and exterior ring are fully inside the short clip: {editor:?}/{ring:?}/{scroller:?}",field.label);
+    Ok((editor, ring))
 }
 
 async fn short(env: &Env, tab: &Tab) -> Result<Value> {
@@ -546,18 +547,27 @@ async fn short(env: &Env, tab: &Tab) -> Result<Value> {
     );
 
     tab.press("Tab").await?;
-    let quantity = visible_editor(tab, QUANTITY, scroller).await?;
+    let (quantity, quantity_ring) = visible_editor(tab, QUANTITY, scroller).await?;
     let first = scroll_top(tab).await?;
     tab.press("Tab").await?;
-    let unit = visible_editor(tab, UNIT, scroller).await?;
+    let (unit, unit_ring) = visible_editor(tab, UNIT, scroller).await?;
     let second = scroll_top(tab).await?;
     check!(
         second > first && first >= before,
         "forward focus scrolls the ancestor to reveal unit: {before}/{first}/{second}"
     );
-    capture(env, tab, "short-unit-focused").await?;
+    let frame = capture(env, tab, "short-unit-focused").await?;
+    let [x, y, w, h] = unit_ring;
+    let center = x + w / 2.;
+    let ring_ink = [
+        frame.sample(center, y + 1.5)?,
+        frame.sample(center, y + h - 1.5)?,
+    ];
+    let gap = frame.sample(center, y + 4.)?;
+    check!(ring_ink[0] == ring_ink[1] && ring_ink[1] != gap,
+        "the true bottom focus stroke matches the top and differs from the gap: {ring_ink:?}/{gap:?}");
     tab.press("Shift+Tab").await?;
-    let restored_quantity = visible_editor(tab, QUANTITY, scroller).await?;
+    let (restored_quantity, restored_ring) = visible_editor(tab, QUANTITY, scroller).await?;
     let restored = scroll_top(tab).await?;
     check!(restored < second, "reverse focus scrolls back to quantity");
     ready(tab, "d.quantity.commits === 0 && d.unit.commits === 0").await?;
@@ -567,7 +577,8 @@ async fn short(env: &Env, tab: &Tab) -> Result<Value> {
     Ok(
         json!({"viewport":[320,360],"scroller":scroller,"clipped_unit":unit_initial,
         "focus_order":[QUANTITY.part("editor"),UNIT.part("editor"),QUANTITY.part("editor")],
-        "focused_editors":[quantity,unit,restored_quantity],"scroll_offsets":[before,first,second,restored],
+        "focused_editors":[quantity,unit,restored_quantity],"focus_rings":[quantity_ring,unit_ring,restored_ring],
+        "unit_ring_ink":ring_ink,"unit_ring_gap":gap,"scroll_offsets":[before,first,second,restored],
         "commits":[0,0],"back_focus":OPEN}),
     )
 }

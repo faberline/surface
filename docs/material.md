@@ -721,8 +721,36 @@ on the right in a row. Put the pair in a scroll container when the
 stack can exceed the view height. Each field keeps its own focus,
 text draft, validation and editor fallback.
 
+Use 5 dp of scroll viewport padding to give the outer focus ring room
+when Tab reveals a field at the viewport edge.
+
 In Material Gallery, choose 選取, then 數量與單位. The example keeps
 the number as entered when the unit changes.
+
+### Anchored popup
+
+Keep fields inline when there is room. Use `Theme::scroll_field_popup`
+to put an individual field or a pair in a named modeless dialog. The
+caller opens and closes it. Pass the visible opener bounds and the
+available viewport in the same coordinate space. Give the dialog,
+body, Close button and opener distinct stable IDs.
+
+Call `scroll_field_popup_layout` before building its fields. It places
+the dialog below the opener when it fits and flips above when needed.
+It can reduce the content height when neither side fits the preferred
+size. Use `body_width` and `body_height` for the field allocation.
+The body scrolls inside the dialog. The Close button stays visible.
+A hidden opener or insufficient room yields no popup.
+
+Keep the opener's disclosure state in sync. Place the popup after the
+opener in the authored focus order. Keyboard opening can move focus
+directly to the first field. Outside controls remain available. Close
+returns focus to the opener when focus was inside. Escape gives active
+composition and the current editor first use. Apply Cancel to any
+remaining draft when the caller closes the popup.
+
+In Material Gallery, choose 選取, then 浮層捲動欄位. Use 靠近底部 to
+see the popup flip above the opener. The 外部 button stays available.
 
 [W3C Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)
 

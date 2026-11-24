@@ -26,6 +26,7 @@ const SCENE: ScrollFieldScene = ScrollFieldScene {
     saved: "scroll-pair-demo-saved",
     title: "數量與單位",
     scroller_label: "容量範例",
+    scroll_padding: 5.,
 };
 
 const UNITS: [ScrollChoiceItem<'_>; 3] = [
@@ -68,6 +69,63 @@ fn unit_error(error: ScrollChoiceQueryError) -> String {
     .to_owned()
 }
 
+pub(crate) fn measurement_states() -> (ScrollFieldState, ScrollChoiceState) {
+    let range = ScrollFieldRange::new(-1800, 1800, 2).expect("valid Gallery range");
+    let quantity = ScrollFieldState::new(range, 1200).expect("valid Gallery quantity");
+    let unit = ScrollChoiceState::with_match_key(UNITS, "ml", str::to_lowercase)
+        .expect("valid Gallery unit catalog");
+    (quantity, unit)
+}
+
+pub(crate) fn measurement_options<'a>(
+    [id, quantity_id, unit_id]: [&'a str; 3],
+    (available_width, available_height): (f32, f32),
+    text_scale: f32,
+    direction: LayoutDirection,
+    (quantity_disabled, unit_disabled): (bool, bool),
+) -> ScrollFieldPairOptions<'a> {
+    ScrollFieldPairOptions {
+        id,
+        label: "容量",
+        available_width,
+        available_height,
+        direction,
+        quantity: ScrollFieldOptions {
+            id: quantity_id,
+            label: "數量",
+            size: ScrollFieldSize::Large,
+            height: 200.,
+            available_width,
+            available_height,
+            text_scale,
+            direction,
+            disabled: quantity_disabled,
+            hint: Some("每次增加或減少 2"),
+            error_text: &quantity_error,
+            value_text: &|value| value.to_string(),
+            use_input: "輸入數量",
+            use_scroll: "捲動數量",
+        },
+        unit: ScrollChoiceFieldOptions {
+            id: unit_id,
+            label: "單位",
+            size: ScrollFieldSize::Medium,
+            height: 200.,
+            available_width,
+            available_height,
+            text_scale,
+            direction,
+            disabled: unit_disabled,
+            hint: Some("可輸入單位名稱"),
+            use_input: "輸入單位",
+            use_scroll: "捲動單位",
+            error_text: &unit_error,
+            choice_text: &|label, _| label.to_owned(),
+            suggestion_text: &|label| format!("建議單位 {label}"),
+        },
+    }
+}
+
 #[derive(Clone)]
 pub enum ScrollPairDemoEvent {
     Show,
@@ -96,6 +154,7 @@ pub(crate) struct ScrollPairDemo {
 
 impl Default for ScrollPairDemo {
     fn default() -> Self {
+        let (quantity, unit) = measurement_states();
         Self {
             visible: false,
             viewport: (960., 820.),
@@ -103,13 +162,8 @@ impl Default for ScrollPairDemo {
             large_text: false,
             quantity_disabled: false,
             unit_disabled: false,
-            quantity: ScrollFieldState::new(
-                ScrollFieldRange::new(-1800, 1800, 2).expect("valid Gallery range"),
-                1200,
-            )
-            .expect("valid Gallery quantity"),
-            unit: ScrollChoiceState::with_match_key(UNITS, "ml", str::to_lowercase)
-                .expect("valid Gallery unit catalog"),
+            quantity,
+            unit,
             quantity_commits: 0,
             unit_commits: 0,
             reduced_motion: false,
@@ -137,54 +191,22 @@ impl ScrollPairDemo {
     }
 
     fn options(&self) -> ScrollFieldPairOptions<'_> {
-        let available_width = (self.viewport.0 - 2. * (PADDING + 2. * CONTENT_PADDING)).max(0.);
-        let available_height = (self.viewport.1 - 2. * PADDING).max(0.);
+        let padding = PADDING + SCENE.scroll_padding;
+        let available_width = (self.viewport.0 - 2. * (padding + 2. * CONTENT_PADDING)).max(0.);
+        let available_height = (self.viewport.1 - 2. * padding).max(0.);
         let text_scale = self.text_scale();
         let direction = if self.rtl {
             LayoutDirection::RightToLeft
         } else {
             LayoutDirection::LeftToRight
         };
-        ScrollFieldPairOptions {
-            id: "scroll-pair-demo-pair",
-            label: "容量",
-            available_width,
-            available_height,
+        measurement_options(
+            ["scroll-pair-demo-pair", QUANTITY, UNIT],
+            (available_width, available_height),
+            text_scale,
             direction,
-            quantity: ScrollFieldOptions {
-                id: QUANTITY,
-                label: "數量",
-                size: ScrollFieldSize::Large,
-                height: 200.,
-                available_width,
-                available_height,
-                text_scale,
-                direction,
-                disabled: self.quantity_disabled,
-                hint: Some("每次增加或減少 2"),
-                error_text: &quantity_error,
-                value_text: &|value| value.to_string(),
-                use_input: "輸入數量",
-                use_scroll: "捲動數量",
-            },
-            unit: ScrollChoiceFieldOptions {
-                id: UNIT,
-                label: "單位",
-                size: ScrollFieldSize::Medium,
-                height: 200.,
-                available_width,
-                available_height,
-                text_scale,
-                direction,
-                disabled: self.unit_disabled,
-                hint: Some("可輸入單位名稱"),
-                use_input: "輸入單位",
-                use_scroll: "捲動單位",
-                error_text: &unit_error,
-                choice_text: &|label, _| label.to_owned(),
-                suggestion_text: &|label| format!("建議單位 {label}"),
-            },
-        }
+            (self.quantity_disabled, self.unit_disabled),
+        )
     }
 
     fn update_fit(&mut self) {
