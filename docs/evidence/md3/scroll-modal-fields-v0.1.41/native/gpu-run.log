@@ -1,8 +1,8 @@
-   Compiling surface-wgpu v0.1.41 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-wgpu)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 26.94s
+   Compiling surface-wgpu v0.1.41 ($SURFACE_CHECKOUT/crates/surface-wgpu)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 26.44s
 warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
-     Running tests/it.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/it-afbcf1961fec643a)
+     Running tests/it.rs ($CARGO_TARGET_DIR/debug/deps/it-afbcf1961fec643a)
 
 running 9 tests
 test gpu_offscreen_bottom_corners_are_not_swapped ... GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
@@ -31,4 +31,4 @@ test loading_indicator::gpu_offscreen_loading_indicator_paints_each_shape_and_re
 Seven distinct native masks, pixel counts: [604, 690, 663, 748, 640, 676, 668]
 ok
 
-test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 79.11s
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 78.86s

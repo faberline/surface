@@ -1,10 +1,9 @@
-   Compiling surface-app v0.1.41 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-app)
-   Compiling surface-wgpu v0.1.41 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-wgpu)
-   Compiling surface-material v0.1.41 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-material)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 34.23s
+   Compiling surface-app v0.1.41 ($SURFACE_CHECKOUT/crates/surface-app)
+   Compiling surface-material v0.1.41 ($SURFACE_CHECKOUT/crates/surface-material)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 57.41s
 warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
-     Running tests/scroll_field_modal.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/scroll_field_modal-3e64e92d98284a24)
+     Running tests/scroll_field_modal.rs ($CARGO_TARGET_DIR/debug/deps/scroll_field_modal-3e64e92d98284a24)
 
 running 7 tests
 test action_guards_and_escape_give_composition_priority ... ok
@@ -17,7 +16,7 @@ test modal_plan_centers_in_safe_area_and_reserves_complete_targets ... ok
 
 test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
-     Running tests/scroll_field_pair.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/scroll_field_pair-680c83d913951e23)
+     Running tests/scroll_field_pair.rs ($CARGO_TARGET_DIR/debug/deps/scroll_field_pair-680c83d913951e23)
 
 running 3 tests
 test compact_pair_keeps_the_unit_composition_through_both_width_and_height_changes ... ok
@@ -26,7 +25,7 @@ test rtl_pair_mirrors_geometry_and_keeps_authored_focus_and_separate_actions ...
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
 
-     Running tests/scroll_field_popup.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/scroll_field_popup-cfb07ce1619cafa7)
+     Running tests/scroll_field_popup.rs ($CARGO_TARGET_DIR/debug/deps/scroll_field_popup-cfb07ce1619cafa7)
 
 running 5 tests
 test blank_panel_shields_underlying_clicks_but_outside_focus_is_preserved_on_close ... ok

@@ -27,9 +27,12 @@ text. The input path uses semantic DevTools actions.
 
 [Native report](native/native-scroll-modal-report.json) ·
 [Replay comparison](native/native-repeat.json) ·
+[Final and prior candidate PNGs](native/compare-to-previous.json) ·
 [Focused Material tests](native/material-final.log) ·
 [Gallery tests](native/gallery-final.log) ·
-[macOS AccessKit tests](native/macos-accessibility-final.log)
+[macOS AccessKit tests](native/macos-accessibility-final.log) ·
+[Clipped validation scope tests](native/clipped-description-final.log) ·
+[Clipped macOS Help test](native/clipped-macos-help-final.log)
 
 ```sh
 cap cargo build --locked -p surface-material-gallery -p surface-devtools \
