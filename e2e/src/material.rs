@@ -14,6 +14,8 @@ mod material_button_group;
 mod material_card;
 #[path = "material_carousel.rs"]
 mod material_carousel;
+#[path = "material_command_menu.rs"]
+mod material_command_menu;
 #[path = "material_date_picker.rs"]
 mod material_date_picker;
 #[path = "material_date_picker_gestures.rs"]
@@ -122,7 +124,7 @@ pub const STEPS: &[&str] = &[
     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
-    "M263", "M264", "M265", "M266",
+    "M263", "M264", "M265", "M266", "M267", "M268", "M269",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -239,7 +241,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_web_contrast::run(env, chrome, &url).await?;
     material_search_overlay::run(env, chrome, &url).await?;
     material_dialog::run(env, chrome, &url).await?;
-    material_divider::run(env, chrome, &url).await
+    material_divider::run(env, chrome, &url).await?;
+    material_command_menu::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

@@ -77,6 +77,7 @@ pub struct View<M> {
     paint_contour: Option<ContourPainter>,
     activate: Option<M>,
     suppress_repeated_activation: bool,
+    focus_disabled_menu_item: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     center_single_line_text: bool,
@@ -114,6 +115,7 @@ pub struct View<M> {
     interaction_suppression: Option<Rc<InteractionSuppression>>,
     visual_overlay: bool,
     modal_layer: Option<ModalLayer>,
+    modal_descendants_only: bool,
     modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
     modal_panel_transform: Option<ModalTransformPainter>,
 }
@@ -162,6 +164,7 @@ impl<M> View<M> {
             paint_contour: None,
             activate: None,
             suppress_repeated_activation: false,
+            focus_disabled_menu_item: false,
             input: None,
             text_options: TextOptions::default(),
             center_single_line_text: false,
@@ -199,6 +202,7 @@ impl<M> View<M> {
             interaction_suppression: None,
             visual_overlay: false,
             modal_layer: None,
+            modal_descendants_only: false,
             modal_panel_opacity: None,
             modal_panel_transform: None,
         }
@@ -227,6 +231,17 @@ impl<M> View<M> {
         self.suppress_repeated_activation = true;
         self
     }
+    /// Keep an explicitly disabled `Role::MenuItem` reachable with keyboard
+    /// navigation and accessibility focus. It still cannot be pressed.
+    /// The item needs a stable ID and keeps its authored Tab eligibility.
+    /// An item made disabled by an ancestor keeps the normal disabled behavior.
+    pub fn focus_disabled_menu_item(mut self) -> Self {
+        self.focus_disabled_menu_item = true;
+        self
+    }
+    fn permits_disabled_menu_focus(&self) -> bool {
+        self.focus_disabled_menu_item && self.node.role() == Role::MenuItem
+    }
     /// When the focused control is removed or disabled, move focus to an
     /// enabled target in the same scope. This does not press the target.
     pub fn restore_focus_on_removal(mut self, target: impl Into<String>) -> Self {
@@ -239,7 +254,9 @@ impl<M> View<M> {
     /// fallback if the first target cannot receive focus in the current scope.
     pub fn restore_focus_in_subtree_on_removal(mut self, target: impl Into<String>) -> Self {
         fn apply<M>(view: &mut View<M>, target: &str) {
-            if view.node.is_focusable() && !view.focus_after_removal.iter().any(|id| id == target) {
+            if (view.node.is_focusable() || view.permits_disabled_menu_focus())
+                && !view.focus_after_removal.iter().any(|id| id == target)
+            {
                 view.focus_after_removal.push(target.to_owned());
             }
             for child in &mut view.children {
@@ -674,7 +691,17 @@ impl<M> View<M> {
     pub fn modal_overlay(mut self, dismiss: M) -> Self {
         self.dismiss = Some(dismiss);
         self.modal_layer = Some(ModalLayer::Panel);
+        self.modal_descendants_only = false;
         self
+    }
+    /// Open an overlay whose transparent layout wrapper is not a pointer
+    /// boundary. The wrapper must not itself be an interactive control.
+    /// Interactive descendants and painted or scrollable positioned
+    /// descendants still count as inside the overlay.
+    pub fn modal_overlay_descendants(self, dismiss: M) -> Self {
+        let mut overlay = self.modal_overlay(dismiss);
+        overlay.modal_descendants_only = true;
+        overlay
     }
     /// Keep a departing panel at its authored modal paint position. It takes
     /// no input, focus or accessibility actions, and it does not open a
@@ -764,6 +791,7 @@ impl<M> View<M> {
     pub fn modal_with_backdrop(mut self, backdrop: Node, dismiss: M) -> Self {
         self.dismiss = Some(dismiss);
         self.modal_layer = Some(ModalLayer::BackdropParent);
+        self.modal_descendants_only = false;
         Self::new(backdrop).children([self])
     }
 }
@@ -977,6 +1005,9 @@ pub enum AppError {
 struct Binding<M> {
     activate: Option<M>,
     suppress_repeated_activation: bool,
+    // None is the ordinary path. Some remembers the authored Tab eligibility
+    // before applying disabled, which still blocks every activation path.
+    disabled_menu_tab_stop: Option<bool>,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     center_single_line_text: bool,
@@ -1014,11 +1045,16 @@ struct Binding<M> {
     interaction_suppression: Option<Rc<InteractionSuppression>>,
     visual_overlay: bool,
     modal_layer: Option<ModalLayer>,
+    modal_descendants_only: bool,
     modal_panel_opacity: Option<Box<dyn Fn() -> f32>>,
     modal_panel_transform: Option<ModalTransformPainter>,
 }
 
 impl<M> Binding<M> {
+    fn disabled_menu_focus(&self) -> bool {
+        self.disabled_menu_tab_stop.is_some()
+    }
+
     fn accepts_interaction(&self) -> bool {
         self.interaction_suppression.is_none()
     }
@@ -1396,10 +1432,14 @@ impl<A: Application> Runtime<A> {
             disabled: bool,
             inherited_suppression: Option<&Rc<InteractionSuppression>>,
         ) -> Result<(), AppError> {
+            let disabled_menu_tab_stop =
+                (!disabled && view.node.is_disabled() && view.permits_disabled_menu_focus())
+                    .then(|| view.node.clone().disabled(false).is_tab_stop());
             let disabled = disabled || view.node.is_disabled();
             let suppression = inherited_suppression.or(view.interaction_suppression.as_ref());
             let node = view.node.disabled(disabled);
             if (node.is_focusable()
+                || disabled_menu_tab_stop.is_some()
                 || view.roving.is_some()
                 || view.dismiss.is_some()
                 || view.modal_layer.is_some_and(ModalLayer::is_retiring)
@@ -1448,6 +1488,7 @@ impl<A: Application> Runtime<A> {
                 Binding {
                     activate: view.activate,
                     suppress_repeated_activation: view.suppress_repeated_activation,
+                    disabled_menu_tab_stop,
                     input: view.input,
                     text_options: view.text_options,
                     center_single_line_text: view.center_single_line_text,
@@ -1484,6 +1525,7 @@ impl<A: Application> Runtime<A> {
                     accessible_scroll_pages: view.accessible_scroll_pages,
                     visual_overlay: view.visual_overlay,
                     modal_layer: view.modal_layer,
+                    modal_descendants_only: view.modal_descendants_only,
                     modal_panel_opacity: view.modal_panel_opacity,
                     modal_panel_transform: view.modal_panel_transform,
                     interaction_suppression: suppression.cloned(),
@@ -1553,8 +1595,7 @@ impl<A: Application> Runtime<A> {
         if self.focused.as_ref().is_some_and(|key| {
             self.dom
                 .by_id(key)
-                .and_then(|id| self.dom.get(id).ok())
-                .is_none_or(|n| !n.is_focusable())
+                .is_none_or(|id| !self.focus_eligible(id))
         }) {
             self.focused = None;
         }
@@ -1809,9 +1850,22 @@ impl<A: Application> Runtime<A> {
         let Some(id) = self.focused_node() else {
             return Ok(false);
         };
+        let disabled_menu_item = self
+            .bindings
+            .get(&id)
+            .is_some_and(Binding::disabled_menu_focus);
+        let modifiers = press.modifiers;
+        let activation_key = matches!(press.key, Key::Enter | Key::Space)
+            && !modifiers.control
+            && !modifiers.alt
+            && !modifiers.meta;
+        if disabled_menu_item && activation_key {
+            return Ok(true);
+        }
         if let Some(message) = self
             .bindings
             .get(&id)
+            .filter(|binding| !binding.disabled_menu_focus())
             .and_then(|binding| binding.key.clone())
             .and_then(|handler| handler(press))
         {
@@ -1824,12 +1878,8 @@ impl<A: Application> Runtime<A> {
         if self.navigate_key_focus(id, press)? || self.focus_shortcut(id, press) {
             return Ok(true);
         }
-        let modifiers = press.modifiers;
         Ok(press.repeat
-            && matches!(press.key, Key::Enter | Key::Space)
-            && !modifiers.control
-            && !modifiers.alt
-            && !modifiers.meta
+            && activation_key
             && !self.has_pending_composition()
             && self.in_scope(id)
             && self.bindings.get(&id).is_some_and(|binding| {
@@ -1889,7 +1939,7 @@ impl<A: Application> Runtime<A> {
 
     fn focus_shortcut_target(&self, source: NodeId, press: &KeyPress) -> Option<&str> {
         let focused = self.dom.get(source).ok()?;
-        if !focused.is_focusable()
+        if !self.focus_eligible(source)
             || focused.role() == Role::TextInput
             || self.has_pending_composition()
         {
@@ -1906,7 +1956,7 @@ impl<A: Application> Runtime<A> {
                 let target = self.dom.by_id(&shortcut.message)?;
                 return (self.in_scope(target)
                     && self.descendant(target, id)
-                    && self.dom.get(target).is_ok_and(Node::is_focusable)
+                    && self.focus_eligible(target)
                     && self.has_tab_extent(target))
                 .then_some(shortcut.message.as_str());
             }
@@ -2120,7 +2170,7 @@ impl<A: Application> Runtime<A> {
                     .iter()
                     .filter_map(|(id, node)| {
                         let key = node.stable_id()?;
-                        (node.is_tab_stop()
+                        (self.tab_candidate(id, node)
                             && self.has_tab_extent(id)
                             && !collapsed.as_ref().is_some_and(|ids| ids.contains(key))
                             && self.tab_stop(id, collapsed.as_ref()))
@@ -2162,6 +2212,13 @@ impl<A: Application> Runtime<A> {
                 Ok(true)
             }
             Event::Activate => {
+                if self
+                    .focused_node()
+                    .and_then(|id| self.bindings.get(&id))
+                    .is_some_and(Binding::disabled_menu_focus)
+                {
+                    return Ok(false);
+                }
                 if let Some(id) = self.focused.clone() {
                     self.activate_id(&id)
                 } else {

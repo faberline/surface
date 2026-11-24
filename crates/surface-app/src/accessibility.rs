@@ -250,8 +250,7 @@ impl<M> AccessibilityFrame<'_, M> {
     }
 
     pub fn focused(&self) -> Option<NodeId> {
-        self.focused
-            .filter(|id| self.node(*id).is_some_and(|node| focusable(&node)))
+        self.focused.filter(|id| self.accepts_focus(*id))
     }
 
     pub fn children(&self, id: NodeId) -> impl Iterator<Item = NodeId> + '_ {
@@ -384,11 +383,24 @@ impl<M> AccessibilityFrame<'_, M> {
 
     /// Whether current visible geometry allows focus without issuing a target.
     pub fn accepts_focus(&self, id: NodeId) -> bool {
-        self.node(id).is_some_and(|node| focusable(&node))
+        self.visible_focusable_node(id).is_some()
     }
 
-    /// Focus is available to enabled controls whose bounds are not completely
-    /// clipped. This test does not detect occlusion by other painted nodes.
+    fn visible_focusable_node(&self, id: NodeId) -> Option<AccessibilityNode<'_>> {
+        self.node(id).filter(|source| {
+            (source.node.is_focusable()
+                || self
+                    .bindings
+                    .get(&id)
+                    .is_some_and(Binding::disabled_menu_focus))
+                && source.node.stable_id().is_some()
+                && has_visible_bounds(source)
+        })
+    }
+
+    /// Focus is available to focusable controls whose bounds are not fully
+    /// clipped. This includes disabled menu items that opt in to focus.
+    /// This test does not detect occlusion by other painted nodes.
     pub fn focus_target(&self, id: NodeId) -> Option<AccessibilityFocusTarget> {
         if !self.accepts_focus(id) {
             return None;
@@ -520,7 +532,7 @@ impl<M> AccessibilityFrame<'_, M> {
     }
 
     fn adjustment_binding(&self, id: NodeId) -> Option<AdjustmentBinding<'_, M>> {
-        let source = self.node(id).filter(focusable)?;
+        let source = self.node(id).filter(visible_enabled_control)?;
         let range = source.node.accessibility_adjustable()?;
         let binding = self.bindings.get(&id)?;
         Some(AdjustmentBinding {
@@ -531,7 +543,7 @@ impl<M> AccessibilityFrame<'_, M> {
     }
 
     fn press_binding(&self, id: NodeId) -> Option<(AccessibilityNode<'_>, &M)> {
-        let node = self.node(id).filter(focusable)?;
+        let node = self.node(id).filter(visible_enabled_control)?;
         if !offers_press(node.node.role()) {
             return None;
         }
@@ -556,7 +568,7 @@ fn offers_press(role: Role) -> bool {
     )
 }
 
-fn focusable(node: &AccessibilityNode<'_>) -> bool {
+fn visible_enabled_control(node: &AccessibilityNode<'_>) -> bool {
     node.node.is_focusable() && node.node.stable_id().is_some() && has_visible_bounds(node)
 }
 
@@ -609,7 +621,7 @@ impl<A: Application> Runtime<A> {
                 .issued_targets
                 .borrow()
                 .iter()
-                .any(|id| !frame.node(*id).is_some_and(|node| focusable(&node)))
+                .any(|id| !frame.accepts_focus(*id))
                 || frame
                     .revision
                     .issued_adjustment_targets
@@ -815,7 +827,7 @@ impl<A: Application> Runtime<A> {
             return Ok(Outcome::Rebuilt);
         }
         let Some(stable_id) = self.accessibility_frame().and_then(|frame| {
-            let node = frame.node(target.id).filter(focusable)?;
+            let node = frame.visible_focusable_node(target.id)?;
             node.node.stable_id().map(str::to_owned)
         }) else {
             return Ok(Outcome::Rejected);
@@ -849,7 +861,7 @@ impl<A: Application> Runtime<A> {
         {
             return Ok(false);
         }
-        let focusable = |id| self.in_scope(id) && self.dom.get(id).is_ok_and(Node::is_focusable);
+        let focusable = |id| self.in_scope(id) && self.focus_eligible(id);
         let Some(focused) = self.focused_node().filter(|&id| focusable(id)) else {
             return Ok(false);
         };

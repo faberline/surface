@@ -16,6 +16,7 @@ mod card;
 mod carousel;
 mod carousel_layout;
 mod carousel_state;
+mod command_menu;
 mod components;
 mod date_picker;
 mod date_picker_state;
@@ -35,6 +36,7 @@ mod fab_motion;
 mod full_screen_dialog;
 mod list;
 mod loading_indicator;
+mod menu_layout;
 pub mod motion;
 mod navigation_drawer;
 mod progress_indicator;
@@ -86,6 +88,9 @@ pub use card::{CardAction, CardContent, CardInteraction, MaterialCardOptions};
 pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientation};
 pub use carousel_layout::{CarouselLayout, CarouselSlot};
 pub use carousel_state::{CarouselInput, CarouselState};
+pub use command_menu::{
+    CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
+};
 pub use components::{
     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
     FabColor, FabSize, IconButtonKind, LoadingKind, NavigationBarIcon, NavigationRailItem,
@@ -145,6 +150,7 @@ pub use list::{
 pub use loading_indicator::{
     LoadingIndicatorMotion, LoadingIndicatorOptions, LoadingIndicatorPose,
 };
+pub use menu_layout::{place_menu, MenuAnchor, MenuLayout, MenuPlacement};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
