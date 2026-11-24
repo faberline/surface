@@ -701,6 +701,29 @@ In Material Gallery, choose 選取, then 循環數字欄位 or 循環文字欄�
 The text example uses two choices so both neighbors show the same
 label. The upper and lower targets still move in their own direction.
 
+### Quantity and unit pairs
+
+Use `Theme::scroll_field_pair` to group a numeric quantity and a text
+unit. Set the group label and give each child its own label, stable ID,
+state and event handler. The quantity and the unit can change on their
+own. The application decides how to use the selected quantity and unit.
+
+Set the available width, available height and direction on
+`ScrollFieldPairOptions`. The pair applies these values to both child
+options. Use `scroll_field_pair_layout` when the space, text scale or
+unit list changes. Pass `quantity_fits` and `unit_fits` to each state's
+`update_fit`. Retire old pointer geometry with `invalidate_layout`.
+Advance each state with the application frame clock.
+
+The fields sit side by side when they fit and stack in less width. The
+quantity comes first in keyboard order. Right-to-left layouts place it
+on the right in a row. Put the pair in a scroll container when the
+stack can exceed the view height. Each field keeps its own focus,
+text draft, validation and editor fallback.
+
+In Material Gallery, choose 選取, then 數量與單位. The example keeps
+the number as entered when the unit changes.
+
 [W3C Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)
 
 [Material 3 Scroll Fields specs](https://m3.material.io/components/scroll-fields/specs) ·

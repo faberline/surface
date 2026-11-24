@@ -139,7 +139,10 @@ pub(super) struct ChoiceCopy<'state, 'copy> {
 }
 
 impl<'state, 'copy> ChoiceCopy<'state, 'copy> {
-    fn new(options: ScrollChoiceFieldOptions<'copy>, state: &'state ScrollChoiceState) -> Self {
+    pub(super) fn new(
+        options: ScrollChoiceFieldOptions<'copy>,
+        state: &'state ScrollChoiceState,
+    ) -> Self {
         Self {
             state,
             error_text: options.error_text,
@@ -163,7 +166,7 @@ impl<'state, 'copy> ChoiceCopy<'state, 'copy> {
         Some((self.suggestion_text)(&self.qualified(choice)))
     }
 
-    fn preferred_width(&self, options: ScrollChoiceFieldOptions<'_>) -> f32 {
+    pub(super) fn preferred_width(&self, options: ScrollChoiceFieldOptions<'_>) -> f32 {
         // Reserve room before the layout pass. The common paint group measures
         // each visible label with the current text renderer.
         let longest = (0..self.state.count())

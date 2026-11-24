@@ -58,6 +58,8 @@ mod material_scroll_choice_fields;
 mod material_scroll_fields;
 #[path = "material_scroll_loop_fields.rs"]
 mod material_scroll_loop_fields;
+#[path = "material_scroll_pair_fields.rs"]
+mod material_scroll_pair_fields;
 #[path = "material_side_sheet.rs"]
 mod material_side_sheet;
 #[path = "material_snackbar.rs"]
@@ -102,7 +104,8 @@ pub const STEPS: &[&str] = &[
     "M179", "M180", "M181", "M182", "M183", "M184", "M185", "M186", "M187", "M188", "M189", "M190",
     "M191", "M192", "M193", "M194", "M195", "M196", "M197", "M198", "M199", "M200", "M201", "M202",
     "M203", "M204", "M205", "M206", "M207", "M208", "M209", "M210", "M211", "M212", "M213", "M214",
-    "M215", "M216", "M217", "M218", "M219", "M220", "M221", "M222",
+    "M215", "M216", "M217", "M218", "M219", "M220", "M221", "M222", "M223", "M224", "M225", "M226",
+    "M227", "M228",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -212,7 +215,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_loading::run(env, chrome, &url).await?;
     material_scroll_fields::run(env, chrome, &url).await?;
     material_scroll_choice_fields::run(env, chrome, &url).await?;
-    material_scroll_loop_fields::run(env, chrome, &url).await
+    material_scroll_loop_fields::run(env, chrome, &url).await?;
+    material_scroll_pair_fields::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
