@@ -1,0 +1,58 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling serde_core v1.0.229
+   Compiling syn v3.0.9
+   Compiling version_check v0.9.5
+   Compiling slotmap v1.1.1
+   Compiling serde v1.0.229
+   Compiling zmij v1.0.23
+   Compiling serde_derive v1.0.229
+   Compiling thiserror v2.0.21
+   Compiling serde_json v1.0.154
+   Compiling thiserror-impl v2.0.21
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling arrayvec v0.7.8
+   Compiling grid v0.15.0
+   Compiling taffy v0.7.7
+   Compiling surface-devtools-protocol v0.1.43 (<source>/crates/surface-devtools-protocol)
+   Compiling surface v0.1.43 (<source>/crates/surface)
+   Compiling unicode-segmentation v1.13.3
+   Compiling surface-app v0.1.43 (<source>/crates/surface-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 17.18s
+     Running tests/modal_layers.rs (<cargo-target>/debug/deps/modal_layers-83a9ca2d65192ad3)
+
+running 5 tests
+test legacy_scope_search_passes_over_a_higher_background_hit ... ok
+test visual_overlay_raises_its_whole_subtree_without_exposing_a_modal_or_press ... ok
+test nested_layer_wins_over_outer_fixed_layers_and_cancels_cross_scope_press ... ok
+test painted_and_clipped_popup_regions_are_inside_the_modal ... ok
+test normal_rebuild_preserves_pointer_but_failed_rebuild_cancels_it ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/modal_retirement.rs (<cargo-target>/debug/deps/modal_retirement-8af07f4479567ea1)
+
+running 6 tests
+test absent_invalid_and_neutral_transforms_use_ordinary_paint_or_independent_opacity ... ok
+test separate_nested_transforms_keep_fixed_content_and_scrims_in_order ... ok
+test a_raster_in_a_separate_modal_slice_cannot_defer_the_owners_wave_or_focus_past_opacity ... ok
+test nested_retirement_keeps_the_paint_slot_and_gives_input_to_the_lower_scope ... ok
+test opacity_ranges_cover_panel_and_fixed_children_without_dimmed_scrims_or_nested_groups ... ok
+test reversing_a_retained_panel_reenters_its_scope_without_reusing_a_press ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/press_ripple.rs (<cargo-target>/debug/deps/press_ripple-142bc6471818bc3b)
+
+running 6 tests
+test scroll_translates_the_local_wave_and_full_clip_retires_the_sequence ... ok
+test held_press_starts_transparent_grows_to_cover_and_fades_after_release ... ok
+test reduced_motion_and_no_clock_keep_the_steady_feedback_without_rearming ... ok
+test a_drag_claim_cancels_the_stock_wave_and_its_activation ... ok
+test a_coalesced_touch_release_still_paints_and_does_not_leak_to_an_app_observer ... ok
+test rejected_release_scope_replacement_and_geometry_changes_clear_the_wave ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

@@ -1,0 +1,36 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling unicode-ident v1.0.27
+   Compiling version_check v0.9.5
+   Compiling serde_core v1.0.229
+   Compiling syn v3.0.9
+   Compiling slotmap v1.1.1
+   Compiling zmij v1.0.23
+   Compiling serde v1.0.229
+   Compiling thiserror v2.0.21
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling serde_json v1.0.154
+   Compiling grid v0.15.0
+   Compiling arrayvec v0.7.8
+   Compiling taffy v0.7.7
+   Compiling memchr v2.8.3
+   Compiling itoa v1.0.18
+   Compiling surface v0.1.43 (<source>/crates/surface)
+    Finished `test` profile [unoptimized] target(s) in 6.55s
+     Running tests/opacity_group.rs (<cargo-target>/debug/deps/opacity_group-d5c6a1aaf8bb1971)
+
+running 2 tests
+test opacity_markers_round_trip_without_changing_legacy_paint ... ok
+test transform_group_preserves_geometry_and_uses_the_existing_end_marker ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/text_alignment.rs (<cargo-target>/debug/deps/text_alignment-a1eb7436c11af50a)
+
+running 2 tests
+test extended_alignment_keeps_static_run_clip_and_owner_and_leaves_editable_selection ... ok
+test text_alignment_node_wire_is_optional_and_text_inputs_keep_their_default ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
