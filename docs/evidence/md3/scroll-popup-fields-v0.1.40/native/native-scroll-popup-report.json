@@ -1,0 +1,1182 @@
+{
+  "source_manifest_sha256": "feaea9de139a55690d338962273ba8ac79a0b173e6bcfc954ec0333e3dc79849",
+  "gallery_sha256": "e6a7e64af04b1802cb50d8d248732e70c62efbfe5c20583020a82df9dc0eaad5",
+  "cli_sha256": "348298bbcd4a81e51e4f8b8aecdde8eff1027863e9ff7ef0715b458f577a8f56",
+  "motion": "native headless Reduce Motion",
+  "input": "headless DevTools Action.key, Action.activate and Action.fill",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "light": {
+      "placement": {
+        "side": "below",
+        "opener": {
+          "height": 48.0,
+          "width": 80.0,
+          "x": 12.0,
+          "y": 160.0
+        },
+        "dialog": {
+          "height": 440.0,
+          "width": 696.0,
+          "x": 12.0,
+          "y": 212.0
+        },
+        "body": {
+          "height": 392.0,
+          "width": 696.0,
+          "x": 12.0,
+          "y": 212.0
+        },
+        "close": {
+          "height": 48.0,
+          "width": 48.0,
+          "x": 655.0,
+          "y": 604.0
+        },
+        "gap": 4.0
+      },
+      "geometry": {
+        "quantity_face": {
+          "height": 200.0,
+          "width": 218.0,
+          "x": 22.0,
+          "y": 255.0
+        },
+        "unit_face": {
+          "height": 200.0,
+          "width": 279.0,
+          "x": 322.0,
+          "y": 255.0
+        },
+        "quantity_label": {
+          "height": 20.0,
+          "width": 284.0,
+          "x": 17.0,
+          "y": 217.0
+        },
+        "unit_label": {
+          "height": 20.0,
+          "width": 345.0,
+          "x": 317.0,
+          "y": 217.0
+        }
+      },
+      "initial": {
+        "quantity": {
+          "name": "數量",
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1200.0,
+          "value_text": "1200",
+          "center": "1200"
+        },
+        "unit": {
+          "name": "單位",
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 1.0,
+          "value_text": "毫升",
+          "center": "毫升"
+        },
+        "saved": "已選 1200 毫升"
+      },
+      "outside": {
+        "count_label": "外部 1 次",
+        "tab_path": [
+          "scroll-popup-demo-quantity-use-input",
+          "scroll-popup-demo-unit-adjustable",
+          "scroll-popup-demo-unit-use-input",
+          "scroll-popup-demo-close",
+          "scroll-popup-demo-outside"
+        ],
+        "dialog_retained": true,
+        "focus": "scroll-popup-demo-outside"
+      },
+      "after_quantity_up": {
+        "quantity": {
+          "name": "數量",
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1202.0,
+          "value_text": "1202",
+          "center": "1202"
+        },
+        "unit": {
+          "name": "單位",
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 1.0,
+          "value_text": "毫升",
+          "center": "毫升"
+        },
+        "saved": "已選 1202 毫升"
+      },
+      "accepted": {
+        "quantity": {
+          "name": "數量",
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1202.0,
+          "value_text": "1202",
+          "center": "1202"
+        },
+        "unit": {
+          "name": "單位",
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 3.0,
+          "value_text": "液量盎司",
+          "center": "液量盎司"
+        },
+        "saved": "已選 1202 液量盎司"
+      },
+      "opener_tab_path": [
+        "scroll-popup-demo-theme",
+        "scroll-popup-demo-rtl",
+        "scroll-popup-demo-large-text",
+        "scroll-popup-demo-bottom",
+        "scroll-popup-demo-hide-opener",
+        "scroll-popup-demo-opener"
+      ],
+      "quantity_tab_path": [
+        "scroll-popup-demo-back",
+        "scroll-popup-demo-theme",
+        "scroll-popup-demo-rtl",
+        "scroll-popup-demo-large-text",
+        "scroll-popup-demo-bottom",
+        "scroll-popup-demo-hide-opener",
+        "scroll-popup-demo-opener",
+        "scroll-popup-demo-quantity-adjustable"
+      ],
+      "unit_tab_path": [
+        "scroll-popup-demo-quantity-use-input",
+        "scroll-popup-demo-unit-adjustable"
+      ],
+      "close": {
+        "tab_path": [
+          "scroll-popup-demo-unit-use-input",
+          "scroll-popup-demo-close"
+        ],
+        "restored": "scroll-popup-demo-opener"
+      },
+      "back": {
+        "tab_path": [
+          "scroll-popup-demo-outside",
+          "scroll-popup-demo-back"
+        ],
+        "restored": "scroll-popup-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-popup-light-below.png",
+          "sha256": "4464d121b009442908a8c03819877a84fdd25d6c2d4fca2a38ccce82b3928b96",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "數量": {
+              "face_rgba": [
+                232,
+                232,
+                232,
+                255
+              ],
+              "base_face_rgba": [
+                255,
+                255,
+                255,
+                255
+              ],
+              "active": {
+                "text": "1200",
+                "ink_box": [
+                  72,
+                  337,
+                  119,
+                  44
+                ],
+                "ink_pixels": 1522,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "label": {
+                "text": "數量",
+                "ink_box": [
+                  18,
+                  222,
+                  26,
+                  13
+                ],
+                "ink_pixels": 110,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 26,
+              "text_contrast": 13.9356,
+              "focused": true,
+              "focus_stroke_rgba": [
+                98,
+                91,
+                113,
+                255
+              ],
+              "focus_gap_rgba": [
+                242,
+                236,
+                244,
+                255
+              ]
+            },
+            "單位": {
+              "face_rgba": [
+                255,
+                255,
+                255,
+                255
+              ],
+              "base_face_rgba": [
+                255,
+                255,
+                255,
+                255
+              ],
+              "active": {
+                "text": "毫升",
+                "ink_box": [
+                  407,
+                  332,
+                  108,
+                  53
+                ],
+                "ink_pixels": 1678,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "label": {
+                "text": "單位",
+                "ink_box": [
+                  318,
+                  221,
+                  26,
+                  13
+                ],
+                "ink_pixels": 96,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 17.0749,
+              "focused": false
+            }
+          },
+          "focus": "scroll-popup-demo-quantity-adjustable",
+          "body_scroll": 0.0,
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 655.0,
+            "y": 604.0
+          }
+        },
+        {
+          "name": "scroll-popup-light-accepted.png",
+          "sha256": "599bc3ef4774bccc6746c9d988398dfdaf1625fbd5ad3a77991d0f6cd1875b3b",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "數量": {
+              "face_rgba": [
+                255,
+                255,
+                255,
+                255
+              ],
+              "base_face_rgba": [
+                255,
+                255,
+                255,
+                255
+              ],
+              "active": {
+                "text": "1202",
+                "ink_box": [
+                  72,
+                  337,
+                  119,
+                  44
+                ],
+                "ink_pixels": 1430,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "label": {
+                "text": "數量",
+                "ink_box": [
+                  18,
+                  222,
+                  26,
+                  13
+                ],
+                "ink_pixels": 110,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 17.0749,
+              "focused": false
+            },
+            "單位": {
+              "face_rgba": [
+                232,
+                232,
+                232,
+                255
+              ],
+              "base_face_rgba": [
+                255,
+                255,
+                255,
+                255
+              ],
+              "active": {
+                "text": "液量盎司",
+                "ink_box": [
+                  350,
+                  332,
+                  218,
+                  53
+                ],
+                "ink_pixels": 3854,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "label": {
+                "text": "單位",
+                "ink_box": [
+                  318,
+                  221,
+                  26,
+                  13
+                ],
+                "ink_pixels": 96,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 26,
+              "text_contrast": 13.9356,
+              "focused": true,
+              "focus_stroke_rgba": [
+                98,
+                91,
+                113,
+                255
+              ],
+              "focus_gap_rgba": [
+                242,
+                236,
+                244,
+                255
+              ]
+            }
+          },
+          "focus": "scroll-popup-demo-unit-adjustable",
+          "body_scroll": 0.0,
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 655.0,
+            "y": 604.0
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "rtl": {
+      "rtl": true,
+      "placement": {
+        "side": "above",
+        "opener": {
+          "height": 48.0,
+          "width": 80.0,
+          "x": 868.0,
+          "y": 760.0
+        },
+        "dialog": {
+          "height": 440.0,
+          "width": 696.0,
+          "x": 252.0,
+          "y": 316.0
+        },
+        "body": {
+          "height": 392.0,
+          "width": 696.0,
+          "x": 252.0,
+          "y": 316.0
+        },
+        "close": {
+          "height": 48.0,
+          "width": 48.0,
+          "x": 257.0,
+          "y": 708.0
+        },
+        "gap": 4.0
+      },
+      "geometry": {
+        "quantity_face": {
+          "height": 200.0,
+          "width": 218.0,
+          "x": 720.0,
+          "y": 359.0
+        },
+        "unit_face": {
+          "height": 200.0,
+          "width": 279.0,
+          "x": 359.0,
+          "y": 359.0
+        },
+        "quantity_label": {
+          "height": 20.0,
+          "width": 284.0,
+          "x": 659.0,
+          "y": 321.0
+        },
+        "unit_label": {
+          "height": 20.0,
+          "width": 345.0,
+          "x": 298.0,
+          "y": 321.0
+        }
+      },
+      "opener_tab_path": [
+        "scroll-popup-demo-hide-opener",
+        "scroll-popup-demo-opener"
+      ],
+      "unit_tab_path": [
+        "scroll-popup-demo-quantity-use-input",
+        "scroll-popup-demo-unit-adjustable"
+      ],
+      "unsubmitted_draft": "L",
+      "reset_editor": {
+        "name": "單位",
+        "raw": "毫升",
+        "target": "scroll-popup-demo-unit-editor"
+      },
+      "close": {
+        "tab_path": [
+          "scroll-popup-demo-unit-use-scroll",
+          "scroll-popup-demo-close"
+        ],
+        "restored": "scroll-popup-demo-opener"
+      },
+      "reopen_tab_path": [],
+      "hide_opener": {
+        "focus": "scroll-popup-demo-hide-opener",
+        "tab_path": [
+          "scroll-popup-demo-quantity-use-input",
+          "scroll-popup-demo-unit-adjustable",
+          "scroll-popup-demo-unit-use-input",
+          "scroll-popup-demo-close",
+          "scroll-popup-demo-outside",
+          "scroll-popup-demo-back",
+          "scroll-popup-demo-theme",
+          "scroll-popup-demo-rtl",
+          "scroll-popup-demo-large-text",
+          "scroll-popup-demo-bottom",
+          "scroll-popup-demo-hide-opener"
+        ],
+        "collapsed_on_show": true
+      },
+      "back": {
+        "tab_path": [
+          "scroll-popup-demo-opener",
+          "scroll-popup-demo-outside",
+          "scroll-popup-demo-back"
+        ],
+        "restored": "scroll-popup-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-popup-rtl-above.png",
+          "sha256": "1f1c29403d574f02d08d424f8c4bd8d6d00d17bc07bb6d13c26f7713751d8b8e",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "數量": {
+              "face_rgba": [
+                37,
+                35,
+                41,
+                255
+              ],
+              "base_face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "active": {
+                "text": "1200",
+                "ink_box": [
+                  770,
+                  441,
+                  119,
+                  44
+                ],
+                "ink_pixels": 1533,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "label": {
+                "text": "數量",
+                "ink_box": [
+                  660,
+                  325,
+                  26,
+                  14
+                ],
+                "ink_pixels": 115,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 26,
+              "text_contrast": 11.9929,
+              "focused": true,
+              "focus_stroke_rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "focus_gap_rgba": [
+                33,
+                31,
+                36,
+                255
+              ]
+            },
+            "單位": {
+              "face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "base_face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "active": {
+                "text": "毫升",
+                "ink_box": [
+                  444,
+                  436,
+                  108,
+                  53
+                ],
+                "ink_pixels": 1684,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "label": {
+                "text": "單位",
+                "ink_box": [
+                  299,
+                  325,
+                  26,
+                  13
+                ],
+                "ink_pixels": 97,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 14.9027,
+              "focused": false
+            }
+          },
+          "focus": "scroll-popup-demo-quantity-adjustable",
+          "body_scroll": 0.0,
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 257.0,
+            "y": 708.0
+          }
+        },
+        {
+          "name": "scroll-popup-rtl-draft.png",
+          "sha256": "971b02acaf338f5ea4b57e2d7cebbdb9f1b3cde0eabd3b1bd21e55fa21a6a432",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "數量": {
+              "face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "base_face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "active": {
+                "text": "1200",
+                "ink_box": [
+                  770,
+                  441,
+                  119,
+                  44
+                ],
+                "ink_pixels": 1508,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "label": {
+                "text": "數量",
+                "ink_box": [
+                  660,
+                  325,
+                  26,
+                  14
+                ],
+                "ink_pixels": 115,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 14.9027,
+              "focused": false
+            },
+            "單位": {
+              "face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "base_face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "active": {
+                "text": "L",
+                "ink_box": [
+                  359,
+                  411,
+                  279,
+                  96
+                ],
+                "ink_pixels": 730,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  207,
+                  189,
+                  254,
+                  255
+                ]
+              },
+              "label": {
+                "text": "單位",
+                "ink_box": [
+                  299,
+                  325,
+                  26,
+                  13
+                ],
+                "ink_pixels": 97,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 11.3708,
+              "focused": true,
+              "focus_stroke_rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "focus_gap_rgba": [
+                33,
+                31,
+                36,
+                255
+              ],
+              "editor_stroke_rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            }
+          },
+          "focus": "scroll-popup-demo-unit-editor",
+          "body_scroll": 0.0,
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 257.0,
+            "y": 708.0
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "placement": {
+        "side": "above",
+        "opener": {
+          "height": 48.0,
+          "width": 136.0,
+          "x": 172.0,
+          "y": 340.0
+        },
+        "dialog": {
+          "height": 328.0,
+          "width": 304.0,
+          "x": 8.0,
+          "y": 8.0
+        },
+        "body": {
+          "height": 280.0,
+          "width": 304.0,
+          "x": 8.0,
+          "y": 8.0
+        },
+        "close": {
+          "height": 48.0,
+          "width": 48.0,
+          "x": 13.0,
+          "y": 288.0
+        },
+        "gap": 4.0
+      },
+      "initial": {
+        "quantity": {
+          "name": "數量",
+          "raw": "1200",
+          "target": "scroll-popup-demo-quantity-editor"
+        },
+        "unit": {
+          "name": "單位",
+          "raw": "毫升",
+          "target": "scroll-popup-demo-unit-editor"
+        },
+        "saved": "已選 1200 毫升"
+      },
+      "quantity_editor": {
+        "height": 104.0,
+        "width": 284.0,
+        "x": 18.0,
+        "y": 62.0
+      },
+      "unit_editor": {
+        "height": 88.0,
+        "width": 284.0,
+        "x": 18.0,
+        "y": 195.0
+      },
+      "body_scroll_before": 0.0,
+      "body_scroll_unit": 77.0,
+      "after_quantity_entry": {
+        "quantity": {
+          "name": "數量",
+          "raw": "1300",
+          "target": "scroll-popup-demo-quantity-editor"
+        },
+        "unit": {
+          "name": "單位",
+          "raw": "毫升",
+          "target": "scroll-popup-demo-unit-editor"
+        },
+        "saved": "已選 1300 毫升"
+      },
+      "after_unit_entry": {
+        "quantity": {
+          "name": "數量",
+          "raw": "1300",
+          "target": "scroll-popup-demo-quantity-editor"
+        },
+        "unit": {
+          "name": "單位",
+          "raw": "公升",
+          "target": "scroll-popup-demo-unit-editor"
+        },
+        "saved": "已選 1300 公升"
+      },
+      "opener_tab_path": [
+        "scroll-popup-demo-hide-opener",
+        "scroll-popup-demo-opener"
+      ],
+      "unit_tab_path": [
+        "scroll-popup-demo-unit-editor"
+      ],
+      "outside": {
+        "count_label": "外部 1 次",
+        "tab_path": [
+          "scroll-popup-demo-close",
+          "scroll-popup-demo-outside"
+        ],
+        "before": {
+          "height": 48.0,
+          "width": 137.0,
+          "x": 27.0,
+          "y": 340.0
+        },
+        "after": {
+          "height": 48.0,
+          "width": 137.0,
+          "x": 27.0,
+          "y": 340.0
+        },
+        "focus": "scroll-popup-demo-outside",
+        "dialog_retained": true
+      },
+      "close": {
+        "tab_path": [
+          "scroll-popup-demo-back",
+          "scroll-popup-demo-theme",
+          "scroll-popup-demo-rtl",
+          "scroll-popup-demo-large-text",
+          "scroll-popup-demo-bottom",
+          "scroll-popup-demo-hide-opener",
+          "scroll-popup-demo-opener",
+          "scroll-popup-demo-quantity-editor",
+          "scroll-popup-demo-unit-editor",
+          "scroll-popup-demo-close"
+        ],
+        "restored": "scroll-popup-demo-opener"
+      },
+      "back": {
+        "tab_path": [
+          "scroll-popup-demo-outside",
+          "scroll-popup-demo-back"
+        ],
+        "restored": "scroll-popup-demo-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-popup-compact-quantity.png",
+          "sha256": "20752f306dd255ba43baaedb314cca10f40663db54a06fce50499237e2214331",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "數量": {
+              "face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "base_face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "active": {
+                "text": "1200",
+                "ink_box": [
+                  18,
+                  62,
+                  284,
+                  104
+                ],
+                "ink_pixels": 2476,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  207,
+                  189,
+                  254,
+                  255
+                ]
+              },
+              "label": {
+                "text": "數量",
+                "ink_box": [
+                  14,
+                  21,
+                  54,
+                  26
+                ],
+                "ink_pixels": 467,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 11.3708,
+              "focused": true,
+              "focus_stroke_rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "focus_gap_rgba": [
+                33,
+                31,
+                36,
+                255
+              ],
+              "editor_stroke_rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            }
+          },
+          "focus": "scroll-popup-demo-quantity-editor",
+          "body_scroll": 0.0,
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 13.0,
+            "y": 288.0
+          }
+        },
+        {
+          "name": "scroll-popup-compact-unit.png",
+          "sha256": "a794ef9793182ff499625af3e0f96fc738695bf859bfba52c585176c548caa5c",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "單位": {
+              "face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "base_face_rgba": [
+                15,
+                13,
+                19,
+                255
+              ],
+              "active": {
+                "text": "公升",
+                "ink_box": [
+                  18,
+                  195,
+                  284,
+                  88
+                ],
+                "ink_pixels": 2296,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  207,
+                  189,
+                  254,
+                  255
+                ]
+              },
+              "label": {
+                "text": "單位",
+                "ink_box": [
+                  15,
+                  154,
+                  53,
+                  26
+                ],
+                "ink_pixels": 415,
+                "rgb_tolerance": 64,
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              },
+              "focus_layer_alpha": 0,
+              "text_contrast": 11.3708,
+              "focused": true,
+              "focus_stroke_rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "focus_gap_rgba": [
+                33,
+                31,
+                36,
+                255
+              ],
+              "editor_stroke_rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            }
+          },
+          "focus": "scroll-popup-demo-unit-editor",
+          "body_scroll": 77.0,
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 13.0,
+            "y": 288.0
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        400
+      ]
+    }
+  }
+}
