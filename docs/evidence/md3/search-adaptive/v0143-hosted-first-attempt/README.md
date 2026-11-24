@@ -2,8 +2,8 @@
 
 This archive records the first hosted result for candidate `2a63788e80bba537a271f5ace2514f5a9db53756`. Both builds passed on tree `433cd5d4937d66154a323931932a17d70a863f7d`. The PR workflow used GitHub's merge checkout `e8c6138e836d5c23a55692d2aae9f7931c68f260`. The push workflow used the candidate commit.
 
-- [PR run 45447002788](https://github.com/faberline/surface/actions/runs/45447002788) and [browser job 138633409256](https://github.com/faberline/surface/actions/jobs/138633409256)
-- [Push run 45446974715](https://github.com/faberline/surface/actions/runs/45446974715) and [browser job 138633304581](https://github.com/faberline/surface/actions/jobs/138633304581)
+- [PR run 45447002788](https://github.com/faberline/surface/actions/runs/45447002788) and [browser job 138633409256](https://github.com/faberline/surface/actions/runs/45447002788/job/138633409256)
+- [Push run 45446974715](https://github.com/faberline/surface/actions/runs/45446974715) and [browser job 138633304581](https://github.com/faberline/surface/actions/runs/45446974715/job/138633304581)
 
 Each browser job reported seven suite passes, one failure and 16,577 checks. IME passed 77 checks with both cancellation reports. Contrast M247 completed and decoded pixels matched the selected and unselected underline color evidence.
 
