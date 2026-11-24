@@ -1,0 +1,28 @@
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -240,9 +240,10 @@
+       "spec": "https://m3.material.io/components/divider/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Horizontal semantic divider"
++      "desktop_evidence": "Two headless Metal replays verify all four layouts, 320 dp dark RTL at 200% text, actual 1 dp paint, focus return and matching Page.screenshot, CLI and MCP PNGs. https://github.com/faberline/surface/tree/e731139e1b442dde8b86d4cd8fafbd2da2a46bc0/docs/evidence/md3/divider-preflight",
++      "web_evidence": "Focused Chrome WebGPU M262–M263 checks actual color and line thickness in two themes, 320 dp RTL layout, adjacent keyboard focus and decorative omission from the Chrome accessibility tree. https://github.com/faberline/surface/tree/e731139e1b442dde8b86d4cd8fafbd2da2a46bc0/docs/evidence/md3/divider-preflight",
++      "implemented": "Decorative full-width, leading-inset, middle-inset and vertical dividers. The Material line uses outline variant and stays inside its parent. Single insets mirror in right-to-left layouts. The original semantic separator builders keep their behavior. The full release gate and additional platform settings remain open.",
++      "unit_evidence": "Two Material Runtime tests verify variant geometry, tiny-parent clipping, palette, pointer behavior, focus order and the shared accessibility frame."
+     },
+     {
+       "id": "lists",
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -183,7 +183,8 @@
+ | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
+ | `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
+ | `divider` | One-pixel semantic separator |
+-| `divider_with` / `vertical_divider` | Full, inset and middle-inset horizontal dividers and a vertical divider; 1 dp, `outline_variant`; no list or sheet integration yet |
++| `decorative_divider` | Full, leading-inset, middle-inset and vertical Material lines with 1 dp thickness and `outline_variant`. The single inset follows layout direction. The line stays outside focus and accessibility. Use headings to label adjacent groups. |
++| `divider_with` / `vertical_divider` | Earlier named semantic separators. |
+ | `card` / `outlined_card` | Filled and outlined containers |
+ | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
+ | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |

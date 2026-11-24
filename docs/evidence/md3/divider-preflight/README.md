@@ -64,3 +64,7 @@ cap "$CARGO_TARGET_DIR/debug/surface-e2e" --chrome "$chrome" --chrome-arg --head
 ```
 
 Set `chrome` to a Chrome executable. The Web screenshots use device scale 2. The original binary digests are in the native and browser evidence folders.
+
+## Coverage record
+
+The [docs overlay](source/material-divider-docs.patch) updates the Divider row and API guide. It applies after the production and browser patches. The row remains partial until the full release and applicable platform checks pass.
