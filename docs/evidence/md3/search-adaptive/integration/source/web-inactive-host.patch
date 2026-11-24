@@ -1,0 +1,32 @@
+--- a/crates/surface-platform/src/web_input.rs
++++ b/crates/surface-platform/src/web_input.rs
+@@ -226,6 +226,7 @@
+             .dyn_into::<HtmlTextAreaElement>()?;
+         textarea.set_id("surface-text-input");
+         textarea.set_tab_index(-1);
++        textarea.set_hidden(true);
+         textarea.set_spellcheck(false);
+         textarea.set_attribute("autocomplete", "off")?;
+         textarea.set_attribute("autocapitalize", "off")?;
+@@ -709,6 +710,11 @@
+                 self.switching.set(false);
+             }
+             self.composing.set(false);
++            if !self.textarea.hidden() {
++                // The retired editor has no semantic counterpart while
++                // Surface focus belongs to a different kind of control.
++                self.textarea.set_hidden(true);
++            }
+             return;
+         };
+         self.textarea.set_read_only(snapshot.read_only);
+@@ -735,6 +741,9 @@
+             );
+         } else {
+             self.mirror.borrow_mut().state = None;
++        }
++        if self.textarea.hidden() {
++            self.textarea.set_hidden(false);
+         }
+         if needs_focus {
+             self.switching.set(true);

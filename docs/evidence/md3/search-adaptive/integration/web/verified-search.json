@@ -1,0 +1,254 @@
+{
+  "mode": "headless Chrome on loopback",
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "isFallbackAdapter": false,
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "page_errors": [],
+  "search": {
+    "steps": [
+      "M248",
+      "M249",
+      "M250",
+      "M251",
+      "M252",
+      "M253",
+      "M254",
+      "M255"
+    ],
+    "checks": 1172,
+    "canvas_pngs": 46
+  },
+  "showcase_composition": {
+    "steps": [
+      "I1",
+      "I2",
+      "I3",
+      "I4",
+      "I5",
+      "I6",
+      "I7",
+      "I8",
+      "I9",
+      "I10",
+      "I11",
+      "I12",
+      "I13",
+      "I14",
+      "I15",
+      "I16",
+      "I17",
+      "I18",
+      "I19",
+      "I20"
+    ],
+    "checks": 57
+  },
+  "negative_control": {
+    "browser_ax_name": "搜尋文件",
+    "host_backend_id": 9,
+    "passed": false
+  },
+  "repaired_cases": [
+    {
+      "presentation": "docked-contained",
+      "initial": [
+        52.0,
+        172.0,
+        572.0,
+        56.0
+      ],
+      "halfway": [
+        46.0,
+        172.0,
+        584.0,
+        262.0
+      ],
+      "final": [
+        40.0,
+        172.0,
+        596.0,
+        440.0
+      ],
+      "entry": {
+        "moving": true,
+        "progress": 0.5361850261688232
+      },
+      "exit": {
+        "moving": true,
+        "progress": 0.2650817632675171
+      },
+      "leaving": [
+        49.0,
+        172.0,
+        578.0,
+        158.0
+      ],
+      "corner": {
+        "rest": [
+          253,
+          247,
+          255
+        ],
+        "entering": [
+          209,
+          204,
+          211
+        ],
+        "expanded": [
+          172,
+          168,
+          173
+        ],
+        "exiting": [
+          231,
+          226,
+          233
+        ]
+      },
+      "exit_dimensions": [
+        1920,
+        1600
+      ],
+      "reduced_exact_endpoints": true,
+      "editor_lifecycle": {
+        "rest": {
+          "same": true,
+          "hidden": true,
+          "rects": 0,
+          "label": null,
+          "focused": false
+        },
+        "open": {
+          "same": true,
+          "hidden": false,
+          "rects": 1,
+          "label": "搜尋文件",
+          "focused": true
+        },
+        "exit": {
+          "same": true,
+          "hidden": true,
+          "rects": 0,
+          "label": "搜尋文件",
+          "focused": false
+        },
+        "reopened": {
+          "same": true,
+          "hidden": false,
+          "rects": 1,
+          "label": "搜尋文件",
+          "focused": true
+        }
+      },
+      "unfocused_persistent_web_textarea_ax": null
+    },
+    {
+      "presentation": "fullscreen-divided",
+      "initial": [
+        28.0,
+        228.0,
+        264.0,
+        56.0
+      ],
+      "halfway": [
+        19.0,
+        155.0,
+        282.0,
+        166.0
+      ],
+      "final": [
+        0.0,
+        0.0,
+        320.0,
+        400.0
+      ],
+      "entry": {
+        "moving": true,
+        "progress": 0.3197437822818756
+      },
+      "exit": {
+        "moving": true,
+        "progress": 0.4638149440288544
+      },
+      "leaving": [
+        15.0,
+        122.0,
+        290.0,
+        216.0
+      ],
+      "corner": {
+        "rest": [
+          253,
+          247,
+          255
+        ],
+        "entering": [
+          253,
+          247,
+          255
+        ],
+        "expanded": [
+          248,
+          242,
+          250
+        ],
+        "exiting": [
+          253,
+          247,
+          255
+        ]
+      },
+      "exit_dimensions": [
+        640,
+        800
+      ],
+      "reduced_exact_endpoints": true,
+      "editor_lifecycle": {
+        "rest": {
+          "same": true,
+          "hidden": true,
+          "rects": 0,
+          "label": null,
+          "focused": false
+        },
+        "open": {
+          "same": true,
+          "hidden": false,
+          "rects": 1,
+          "label": "搜尋文件",
+          "focused": true
+        },
+        "exit": {
+          "same": true,
+          "hidden": true,
+          "rects": 0,
+          "label": "搜尋文件",
+          "focused": false
+        },
+        "reopened": {
+          "same": true,
+          "hidden": false,
+          "rects": 1,
+          "label": "搜尋文件",
+          "focused": true
+        }
+      },
+      "unfocused_persistent_web_textarea_ax": null
+    }
+  ],
+  "sha256": {
+    "exact-source.sha256": "d27ce36106a7736c176550120ae44da8e43f12ccbe894142f43b18206f8e0639",
+    "repaired-source.sha256": "1b95e44bf57264a68a725703b6c07c81ecf77033c22adf2c4c682543d1da1b3b",
+    "web-candidate/web.sha256": "49d5c460ceb59357555959bbfc8af3a4c458fd45f9f3bc9829181dc48c07cd54",
+    "repaired-web/web.sha256": "a9af712d1d4c174473b5d50c38e0c5a68117e7001ff11e2154cd25ae6f1d7187",
+    "repaired-showcase/web.sha256": "5969b9419018358e045d29571dd61de6606aee89004b29df68715f710b20047e",
+    "runner.hk5lTviO/runner.sha256": "1205ee2a32d20d065390846f404d10fc8c8f9a21ca9ed02be6f256d377146e77",
+    "run-exit-red/evidence.sha256": "fa6f53fb51c045bed54f944392f341cd89e06e4f21cd2d3c8dfcbe08731cf8fe",
+    "run-repaired-final/evidence.sha256": "4c368f0ba76a36579f099f7b65d48074b60020792d867f8b67e1bd75a9942492",
+    "run-showcase-final/evidence.sha256": "03cafdd34b87b11e2164cf72e32e1b658c1739f66991972839a5c0dd667cd04c",
+    "combined-search-chrome-e2e.patch": "e8c056c4ca41aeb1373074362ccf62c86754e20bd659555e4763bf995680c958"
+  }
+}

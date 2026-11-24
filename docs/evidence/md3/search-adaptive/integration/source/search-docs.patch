@@ -1,0 +1,79 @@
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -188,7 +188,8 @@
+ | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
+ | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
+ | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
+-| `search_bar` | Pill search bar with leading glyph, controlled text input and a clear button while the query is not empty; no search view, suggestions or placeholder yet |
++| `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
++| `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
+ | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
+ | `badge` / `badged_anchor` | Passive dot, short label or count. An attached badge follows the logical top trailing edge of its anchor. |
+ 
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1335,6 +1335,49 @@
+ [MDC 1.14.0 Toolbar guide](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/DockedFloatingToolbars.md) ·
+ [Pinned Compose Toolbar layout](https://android.googlesource.com/platform/frameworks/support/+/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingToolbar.kt)
+ 
++## Search
++
++Mount `Theme::search_overlay` beside the ordinary page. Keep `open`,
++`query` and the result data in the application. Pass the viewport and the
++un-inset resting bar allocation in window coordinates. Use
++`SearchStyle::resting_bar_bounds` for the visible launcher. Recompute the
++anchor when the page reflows. Use a unique, stable `id` for each overlay.
++
++Choose Contained to keep the pill while open. Choose Divided for a row
++with a divider above the results. Search uses the full safe viewport
++below 600 dp or when the anchor cannot fit the docked panel. From 600 dp,
++a fitting docked panel has a scrim and a fixed input above scrollable
++results. Keep the same editor and result IDs through resize.
++
++Use a short localized placeholder and the matching accessible input
++label. Use `results_status` for a count, an empty result or suggestions.
++Pass any visible empty state as part of the results view. Give every
++result a stable ID. Supply `first_result` with the first enabled result
++so ArrowDown can move there. That action moves focus. Selection and
++navigation stay in the caller's update messages.
++
++Pointer, Space and Enter activate the launcher. Tab moves to the
++launcher in normal focus order. Opening moves focus to the query field.
++Enter submits the query after composition. A focused result uses its
++normal activation message. Clear returns to the editor. Back, Escape
++and an outside click dismiss Search and restore the opener. The
++application can supply a fallback when that opener is removed.
++
++For motion, keep one `SearchOverlayMotion` for the view. On every
++`Application::animation_frame`, pass `options.motion_target()` to
++`motion.advance`. Return its `AnimationUpdate`. Pass the same geometry
++and state to `Theme::search_overlay_with_motion`. Opening keeps the same
++live editor. Closing immediately returns focus to the opener. The
++remaining shell paints while the motion settles. Reduce Motion, a
++missing clock and an unfit anchor use the settled view.
++
++In Material Gallery, choose 動作, then 搜尋浮層. Try both styles, dark
++colors, RTL, 200% text and the Chinese document list. At 599 and 600 dp,
++try a selection and type while the layout changes.
++
++[Material 3 Search](https://m3.material.io/components/search/overview) ·
++[Headless preflight](https://github.com/faberline/surface/tree/8500ce31b12126e0268b3da1552f1e857f90435d/docs/evidence/md3/search-adaptive/preflight)
++
+ ## App bars
+ 
+ Build a top app bar with `Theme::app_bar`, `AppBarOptions` and
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -287,9 +287,9 @@
+       "spec": "https://m3.material.io/components/search/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": null,
+-      "web_evidence": null,
+-      "implemented": "Search bar with leading glyph, controlled input and clear button"
++      "desktop_evidence": "Headless macOS Metal verifies both palettes, narrow RTL at 200% text, independent focus and caret ink, focus restore and fixed-clock opening and closing. Page.screenshot, CLI and MCP agree. https://github.com/faberline/surface/tree/8500ce31b12126e0268b3da1552f1e857f90435d/docs/evidence/md3/search-adaptive/preflight",
++      "web_evidence": "Headless Chrome WebGPU preflight verifies both styles and presentations, real 599 to 600 dp reflow with live browser editor state, trusted keyboard and pointer paths, projected accessibility, and resolved forced colors. https://github.com/faberline/surface/tree/8500ce31b12126e0268b3da1552f1e857f90435d/docs/evidence/md3/search-adaptive/preflight",
++      "implemented": "Inline search bar and controlled expanded Search. Contained and Divided styles support adaptive Docked and Full-screen layouts, an accessible localized hint and results status, stable result actions, and retained motion with a Reduce Motion endpoint. Physical input methods, spoken screen-reader output and full variant audit remain open."
+     },
+     {
+       "id": "sliders",

@@ -1,0 +1,13 @@
+case material ...
+browser: Chrome/158.0.8127.37
+  [M248] docked Contained and Divided styles draw real light scrim, gap and divider
+  [M249] 320 dp Dark RTL 200% Full-screen Contained and Divided preserve the 48 dp input/navigation controls
+  [M250] real wheel, native selection and synthetic preedit survive the 599→600 dp breakpoint
+  [M251] Chrome AX, trusted Tab, real disabled pointer, result ID and scrim dismissal
+  [M252] ArrowDown jumps to first enabled result only, and Canvas glyph and textarea caret center
+  [M253] RTL actual glyphs, pointer selection, composition, hint and Clear; unchanged LTR
+  [M254] four Search style/presentation combinations use real Chrome system colors
+  [M255] real Search entry and exit move through pixels; Reduce Motion snaps to both endpoints
+case material ... ok (8 steps, 1172 checks, 27.5s)
+
+e2e result: 1 passed; 0 failed; 1172 checks; artifacts in <artifacts>
