@@ -1,0 +1,201 @@
+{
+  "schema": "surface.test.chips.native.v1",
+  "binaries": {
+    "gallery": "95c35670d8ac4c4998a327018122bc66036b6bb0cd26f6e079980fa740b38685",
+    "cli": "96eed3a62912052cfa93adcf743e9f6f5fc1a8ced92195a7ddb60d84960ad17b"
+  },
+  "rendering": "headless",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "viewport": [
+        960,
+        800
+      ],
+      "rtl": false,
+      "text_scale": 1,
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "split": {
+        "body": {
+          "height": 48.0,
+          "width": 64.0,
+          "x": 22.0,
+          "y": 410.0
+        },
+        "trailing": {
+          "height": 48.0,
+          "width": 48.0,
+          "x": 86.0,
+          "y": 410.0
+        },
+        "face": {
+          "height": 32.0,
+          "width": 98.0,
+          "x": 22.0,
+          "y": 418.0
+        }
+      },
+      "menu_trigger": "chip-demo-filter-type-menu",
+      "focus_after_delete": "chip-demo-mei",
+      "png": {
+        "name": "wide-light-chips.png",
+        "sha256": "7c80d7dab40a3cf2efaa63282251012c08a732c213ecabc0973dd18e6829d8a1",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0,
+        "ink": {
+          "chip-demo-chen-label": {
+            "bounds": {
+              "height": 20.0,
+              "width": 28.0,
+              "x": 58.0,
+              "y": 424.0
+            },
+            "ink_bounds": [
+              59,
+              429,
+              26,
+              13
+            ],
+            "rgba": [
+              30,
+              25,
+              43,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 68
+          }
+        },
+        "face_pixels": {
+          "chip-demo-news-face": {
+            "point": [
+              25,
+              322
+            ],
+            "rgba": [
+              232,
+              222,
+              248,
+              255
+            ]
+          },
+          "chip-demo-assist-elevated-face": {
+            "point": [
+              111,
+              210
+            ],
+            "rgba": [
+              248,
+              242,
+              250,
+              255
+            ]
+          },
+          "chip-demo-images-face": {
+            "point": [
+              111,
+              322
+            ],
+            "rgba": [
+              248,
+              242,
+              250,
+              255
+            ]
+          }
+        }
+      }
+    },
+    {
+      "viewport": [
+        320,
+        760
+      ],
+      "rtl": true,
+      "text_scale": 2,
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "split": {
+        "body": {
+          "height": 68.0,
+          "width": 92.0,
+          "x": 206.0,
+          "y": 670.0
+        },
+        "trailing": {
+          "height": 68.0,
+          "width": 48.0,
+          "x": 158.0,
+          "y": 670.0
+        },
+        "face": {
+          "height": 52.0,
+          "width": 126.0,
+          "x": 172.0,
+          "y": 678.0
+        }
+      },
+      "menu_trigger": "chip-demo-filter-type",
+      "focus_after_delete": "chip-demo-mei",
+      "png": {
+        "name": "compact-dark-rtl-200.png",
+        "sha256": "5720284a3c43bb3e4a454a0c24b12a5446646aa563cdb260f4a459d254caca2f",
+        "format": "png",
+        "width": 320,
+        "height": 760,
+        "scale": 1.0,
+        "ink": {
+          "chip-demo-lin-label": {
+            "bounds": {
+              "height": 80.0,
+              "width": 192.0,
+              "x": 70.0,
+              "y": 644.0
+            },
+            "ink_bounds": [
+              95,
+              652,
+              166,
+              66
+            ],
+            "rgba": [
+              202,
+              196,
+              207,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 2107
+          }
+        },
+        "face_pixels": {
+          "chip-demo-news-face": {
+            "point": [
+              195,
+              340
+            ],
+            "rgba": [
+              74,
+              68,
+              88,
+              255
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

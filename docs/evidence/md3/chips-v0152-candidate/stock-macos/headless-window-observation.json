@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4114,
+      "pids": [
+        39413,
+        53374
+      ]
+    },
+    "native_gallery": {
+      "samples": 15,
+      "pids": [
+        54106
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4074,
+      "pids": [
+        39413
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 40,
+      "pids": [
+        53374
+      ],
+      "detached_samples": 34
+    },
+    "native": {
+      "samples": 15,
+      "pids": [
+        54106
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 39413,
+      "ppid": 39391,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=53026",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-chips-stock-observer.6d5si1tA/run/tmp/.tmpzPpzwd",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-chips-stock-observer.6d5si1tA/run/tmp/.tmpzPpzwd"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 53374,
+      "ppid": 53360,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=54670",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-chips-stock-observer.6d5si1tA/run/tmp/.tmpMx6iSU",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-chips-stock-observer.6d5si1tA/run/tmp/.tmpMx6iSU"
+    },
+    {
+      "role": "native",
+      "pid": 54106,
+      "ppid": 39391,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
