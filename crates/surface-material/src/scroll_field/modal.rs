@@ -9,7 +9,7 @@ use crate::{
     typography, Elevation, Theme,
 };
 
-use super::{at, fixed, scale, FOCUS_OUTSET, TARGET};
+use super::{at, fixed, scale, shared_surface_edge, FOCUS_OUTSET, TARGET};
 
 const VIEWPORT_MARGIN: f32 = 16.;
 const MAX_WIDTH: f32 = 560.;
@@ -239,19 +239,22 @@ impl Theme {
             ),
         ]);
 
+        let panel_style = at(
+            fixed(bounds.width, bounds.height)
+                .padding(PANEL_PADDING)
+                .align(Align::Center)
+                .corners(shape::EXTRA_LARGE)
+                .background(self.colors.surface_container_high),
+            bounds.x,
+            bounds.y,
+        );
+        let panel_style =
+            shared_surface_edge(panel_style, self.colors.surface, self.colors.outline);
         let panel = Node::new(Role::Dialog, options.label)
             .id(format!("{}-dialog", options.id))
             .tab_index(-1)
             .focus_color(Color::TRANSPARENT)
-            .styled(at(
-                fixed(bounds.width, bounds.height)
-                    .padding(PANEL_PADDING)
-                    .align(Align::Center)
-                    .corners(shape::EXTRA_LARGE)
-                    .background(self.colors.surface_container_high),
-                bounds.x,
-                bounds.y,
-            ))
+            .styled(panel_style)
             .box_shadows(self.elevation(Elevation::Level3));
         let mut panel = View::new(panel).children([body, actions]);
         if let Some(target) = options.initial_focus {

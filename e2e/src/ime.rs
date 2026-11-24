@@ -10,10 +10,54 @@ use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
     "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10", "I11", "I12", "I13", "I14", "I15",
-    "I16", "I17", "I18", "I19",
+    "I16", "I17", "I18", "I19", "I20",
 ];
 
 const STATE: &str = "window.showcase.editing_state()";
+
+// Reliable I11 event order. Keep the real cancel redraw pending until Chrome
+// has applied the trusted selection and delivered its ordinary DOM events.
+const HOLD_CANCEL_REDRAW: &str = r#"(() => {
+    const original = window.requestAnimationFrame;
+    const request = original.bind(window);
+    let holding = false;
+    let trustedSelectAll = false;
+    let trustedRight = false;
+    let frames = 0;
+    const pending = [];
+    const keydown = event => {
+        if (!holding || event.target.id !== "surface-text-input") return;
+        if (event.key === "ArrowRight") trustedRight = event.isTrusted;
+        if (event.key.toLowerCase() === "a" && (event.metaKey || event.ctrlKey)) {
+            trustedSelectAll = event.isTrusted;
+        }
+    };
+    const controlled = callback => request(time => {
+        if (holding) pending.push(callback);
+        else { ++frames; callback(time); }
+    });
+    window.requestAnimationFrame = controlled;
+    window.cancelRedrawTest = {
+        hold() {
+            holding = true;
+            trustedSelectAll = trustedRight = false;
+            window.requestAnimationFrame = controlled;
+            window.addEventListener("keydown", keydown, true);
+        },
+        release() {
+            holding = false;
+            window.requestAnimationFrame = original;
+            window.removeEventListener("keydown", keydown, true);
+            for (const callback of pending.splice(0)) request(callback);
+        },
+        snapshot() {
+            const editor = document.getElementById("surface-text-input");
+            return {browser:[editor.selectionStart,editor.selectionEnd],
+                value:editor.value,direction:editor.selectionDirection,
+                runtime:window.showcase.editing_state(),trustedSelectAll,trustedRight,frames};
+        }
+    };
+})()"#;
 
 async fn wait_value(tab: &Tab, value: &str) -> Result<()> {
     tab.wait_for(&format!("{STATE}[0] === {}", js(value))).await
@@ -36,6 +80,11 @@ async fn click_at(tab: &Tab, canvas: [f64; 4], bounds: &[f64]) -> Result<()> {
 pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     let (_server, url) = env.serve("showcase")?;
     let tab = chrome.page(1000, 900, 2.0).await?;
+    tab.cdp(
+        "Page.addScriptToEvaluateOnNewDocument",
+        json!({"source": HOLD_CANCEL_REDRAW}),
+    )
+    .await?;
     tab.goto(&url).await?;
 
     step("I1", "Ready; click name → textarea focused");
@@ -138,6 +187,7 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     step("I10", "compose ㄅㄆ then cancel → value kept");
     compose(&tab, "ㄅㄆ").await?;
     composing(&tab, true).await?;
+    tab.eval("window.cancelRedrawTest.hold()").await?;
     tab.ime_compose("", 0, 0).await?;
     composing(&tab, false).await?;
     wait_value(&tab, "台文").await?;
@@ -147,6 +197,121 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
         "select all, commit text with ZWJ emoji and combining mark",
     );
     let mixed = "中👨‍👩‍👧‍👦e\u{301}";
+    tab.shortcut("A").await?;
+    let before = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+    tab.viewport(1001, 900).await?;
+    tab.eval("window.cancelRedrawTest.release()").await?;
+    tab.wait_for("JSON.parse(window.showcase.export_dom()).layout?.viewport?.width === 1001")
+        .await?;
+    tab.settle().await?;
+    let after = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+    tab.insert_text(mixed).await?;
+    let replacement = tab.eval(STATE).await?;
+    env.write_json(
+        "browser-ime-cancel-redraw.json",
+        &json!({"before":before,"after":after,"redraw_width":1001,"replacement":replacement}),
+    )?;
+    check_eq!(
+        before["trustedSelectAll"],
+        true,
+        "actual browser Select All is trusted"
+    );
+    check_eq!(
+        before["browser"],
+        json!([0, 2]),
+        "Chrome selected the entire pre-cancel value"
+    );
+    check_eq!(
+        after["browser"],
+        before["browser"],
+        "redraw preserves Chrome's new selection after cancel"
+    );
+    check_eq!(
+        json!([after["runtime"][2], after["runtime"][3]]),
+        json!(["0", "6"]),
+        "runtime retains the complete selection of two CJK characters"
+    );
+    wait_value(&tab, mixed).await?;
+    tab.viewport(1000, 900).await?;
+    tab.wait_for("JSON.parse(window.showcase.export_dom()).layout?.viewport?.width === 1000")
+        .await?;
+    tab.settle().await?;
+
+    tab.shortcut("A").await?;
+    tab.insert_text("台文").await?;
+    wait_value(&tab, "台文").await?;
+    tab.press("Shift+ArrowLeft").await?;
+    tab.wait_for(
+        "(() => {
+          const e=document.querySelector('#surface-text-input'), s=window.showcase.editing_state();
+          return e.selectionStart===1 && e.selectionEnd===2 && e.selectionDirection==='backward'
+            && s[2]==='6' && s[3]==='3';
+        })()",
+    )
+    .await?;
+    compose(&tab, "ㄅㄆ").await?;
+    composing(&tab, true).await?;
+    tab.eval("window.cancelRedrawTest.hold()").await?;
+    tab.ime_compose("", 0, 0).await?;
+    composing(&tab, false).await?;
+    let canceled = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+    tab.press("ArrowRight").await?;
+    let moved = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+    tab.insert_text("X").await?;
+    let unpainted = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+    tab.eval("window.cancelRedrawTest.release()").await?;
+    tab.settle().await?;
+    let repainted = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+    env.write_json(
+        "browser-ime-cancel-selected-redraw.json",
+        &json!({"canceled":canceled,"moved":moved,"unpainted":unpainted,"repainted":repainted}),
+    )?;
+    check_eq!(
+        canceled["value"],
+        "台文",
+        "selected cancel restores the native editor before paint"
+    );
+    check_eq!(
+        canceled["direction"],
+        "backward",
+        "selected cancel keeps the browser selection direction"
+    );
+    check_eq!(
+        canceled["browser"],
+        json!([1, 2]),
+        "selected cancel restores the exact native range"
+    );
+    check_eq!(
+        json!([canceled["runtime"][2], canceled["runtime"][3]]),
+        json!(["6", "3"]),
+        "selected cancel retains the same directed Runtime byte range"
+    );
+    check_eq!(
+        moved["trustedRight"],
+        true,
+        "actual browser Right key is trusted"
+    );
+    check_eq!(
+        moved["browser"],
+        json!([2, 2]),
+        "trusted Right collapses at the end of restored text"
+    );
+    check_eq!(
+        unpainted["frames"],
+        canceled["frames"],
+        "Right and insertion run before any held repaint"
+    );
+    check_eq!(
+        unpainted["runtime"][0],
+        "台文X",
+        "first post-cancel insertion preserves the original text"
+    );
+    check_eq!(
+        repainted["runtime"][0],
+        "台文X",
+        "redraw preserves the accepted insertion"
+    );
+
     tab.shortcut("A").await?;
     tab.insert_text(mixed).await?;
     wait_value(&tab, mixed).await?;
@@ -252,7 +417,74 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
         evidence["committed"],
         list.len()
     );
+
+    step(
+        "I20",
+        "authored line endings keep directed browser and Rust selections",
+    );
+    env.write_json(
+        "browser-ime-line-endings.json",
+        &authored_line_endings(&tab).await?,
+    )?;
+    check!(
+        tab.errors().is_empty(),
+        "line ending checks produced page errors"
+    );
     Ok(())
+}
+
+async fn authored_line_endings(tab: &Tab) -> Result<serde_json::Value> {
+    const AUTHORED: &str = "ab\r\n你🦀\rZ";
+    const PROJECTED: &str = "ab\n你🦀\nZ";
+    const AREA: &str = "document.getElementById('surface-text-input')";
+
+    tab.eval(&format!(
+        "window.showcase.write_from_timer({})",
+        js(AUTHORED)
+    ))
+    .await?;
+    wait_value(tab, AUTHORED).await?;
+    tab.wait_for(&format!(
+        "document.activeElement === {AREA} && {AREA}.value === {}",
+        js(PROJECTED)
+    ))
+    .await?;
+
+    let mut checks = Vec::new();
+    // Browser positions count UTF-16 units. Runtime positions count UTF-8
+    // bytes in the original app value, including both bytes of CRLF.
+    let cases = [
+        (2, 2, "ArrowLeft", [1, 1], [1, 1]),
+        (3, 4, "Shift+ArrowLeft", [2, 3], [4, 2]),
+        (4, 7, "ArrowRight", [6, 6], [11, 11]),
+    ];
+    for (start, raw_start, key, browser, runtime) in cases {
+        tab.eval(&format!("{AREA}.setSelectionRange({start}, {start})"))
+            .await?;
+        tab.wait_for(&format!(
+            "{STATE}[2] === '{raw_start}' && {STATE}[3] === '{raw_start}'"
+        ))
+        .await?;
+        tab.press(key).await?;
+        let [begin, end] = browser;
+        let [anchor, cursor] = runtime;
+        tab.wait_for(&format!(
+            "{AREA}.selectionStart === {begin} && {AREA}.selectionEnd === {end} &&
+             {STATE}[2] === '{anchor}' && {STATE}[3] === '{cursor}'"
+        ))
+        .await?;
+        let direction = tab.eval_str(&format!("{AREA}.selectionDirection")).await?;
+        if anchor != cursor {
+            check_eq!(direction.as_str(), "backward", "DOM selection direction");
+        }
+        check_eq!(
+            tab.eval_str(&format!("{STATE}[0]")).await?,
+            AUTHORED,
+            "keyboard selection leaves the app's line endings intact"
+        );
+        checks.push(json!({"key":key,"browser":browser,"runtime":runtime,"direction":direction}));
+    }
+    Ok(json!({"authored":AUTHORED,"browser_value":PROJECTED,"steps":checks}))
 }
 
 pub fn find_node<'a>(export: &'a serde_json::Value, id: &str) -> Result<&'a serde_json::Value> {

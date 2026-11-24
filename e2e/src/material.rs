@@ -82,6 +82,8 @@ mod material_time_scroll;
 mod material_toolbar;
 #[path = "material_tooltip.rs"]
 mod material_tooltip;
+#[path = "material_web_contrast.rs"]
+mod material_web_contrast;
 
 use anyhow::Result;
 use serde_json::{json, Value};
@@ -110,7 +112,7 @@ pub const STEPS: &[&str] = &[
     "M203", "M204", "M205", "M206", "M207", "M208", "M209", "M210", "M211", "M212", "M213", "M214",
     "M215", "M216", "M217", "M218", "M219", "M220", "M221", "M222", "M223", "M224", "M225", "M226",
     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
-    "M239", "M240",
+    "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -223,7 +225,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_scroll_loop_fields::run(env, chrome, &url).await?;
     material_scroll_pair_fields::run(env, chrome, &url).await?;
     material_scroll_popup_fields::run(env, chrome, &url).await?;
-    material_scroll_modal_fields::run(env, chrome, &url).await
+    material_scroll_modal_fields::run(env, chrome, &url).await?;
+    material_web_contrast::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

@@ -1,12 +1,14 @@
 //! The DOM hosts IME/clipboard input only. Rust owns the value and painted UI.
 use crate::key_route;
 use std::{
+    borrow::Cow,
     cell::{Cell, RefCell},
     rc::Rc,
     sync::Arc,
 };
 use surface_app::{
-    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Modifiers, Runtime,
+    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, InputSnapshot, Modifiers,
+    Runtime,
 };
 use wasm_bindgen::{closure::Closure, prelude::wasm_bindgen, JsCast};
 use web_sys::{EventTarget, HtmlTextAreaElement, PointerEvent};
@@ -34,8 +36,51 @@ pub(crate) struct WebInput<A: Application> {
     window: Arc<Window>,
     composing: Rc<Cell<bool>>,
     switching: Rc<Cell<bool>>,
-    field: RefCell<Option<String>>,
+    press: Rc<RefCell<crate::press_guard::PressGuard>>,
+    mirror: Rc<RefCell<InputMirror>>,
     listeners: Vec<Listener>,
+}
+
+#[derive(Default)]
+struct InputMirror {
+    field: Option<String>,
+    state: Option<EditorState>,
+}
+
+impl InputMirror {
+    fn owns(&self, snapshot: &InputSnapshot) -> bool {
+        self.field.as_deref() == Some(snapshot.id.as_str())
+    }
+
+    fn runtime_unchanged(&self, snapshot: &InputSnapshot) -> bool {
+        self.owns(snapshot)
+            && self
+                .state
+                .as_ref()
+                .is_some_and(|last| last.matches(snapshot))
+    }
+}
+
+struct EditorState {
+    value: String,
+    anchor: usize,
+    cursor: usize,
+}
+
+impl EditorState {
+    fn from_snapshot(snapshot: &InputSnapshot) -> Self {
+        Self {
+            value: snapshot.value.clone(),
+            anchor: snapshot.selection.anchor,
+            cursor: snapshot.selection.cursor,
+        }
+    }
+
+    fn matches(&self, snapshot: &InputSnapshot) -> bool {
+        self.value == snapshot.value
+            && self.anchor == snapshot.selection.anchor
+            && self.cursor == snapshot.selection.cursor
+    }
 }
 fn dispatch<A: Application>(runtime: &Rc<RefCell<Runtime<A>>>, window: &Window, event: Event) {
     if let Err(error) = runtime.borrow_mut().dispatch(event) {
@@ -53,53 +98,122 @@ fn dispatch_ime<A: Application>(
         dispatch(runtime, window, Event::ImeFor { id, event });
     }
 }
-fn host_selection(area: &HtmlTextAreaElement) -> (usize, usize) {
-    let value = area.value();
-    let start = utf16_to_utf8(
-        &value,
-        area.selection_start().ok().flatten().unwrap_or(0) as usize,
-    );
-    let end = utf16_to_utf8(
-        &value,
-        area.selection_end().ok().flatten().unwrap_or(0) as usize,
-    );
+// HTML exposes both lone CR and CRLF as LF in a textarea's API value.
+fn textarea_value(raw: &str) -> Cow<'_, str> {
+    if raw.contains('\r') {
+        Cow::Owned(raw.replace("\r\n", "\n").replace('\r', "\n"))
+    } else {
+        Cow::Borrowed(raw)
+    }
+}
+
+fn host_units_to_raw_bytes(raw: &str, projected: &str, units: usize) -> usize {
+    let mut byte = utf16_to_utf8(projected, units);
+    for (cr, _) in raw.match_indices("\r\n") {
+        if cr >= byte {
+            break;
+        }
+        byte += 1;
+    }
+    byte
+}
+
+fn raw_bytes_to_host_units(raw: &str, byte: usize) -> usize {
+    let removed = raw
+        .match_indices("\r\n")
+        .take_while(|(cr, _)| cr + 2 <= byte)
+        .count();
+    utf8_to_utf16(raw, byte) - removed
+}
+
+fn host_selection_units(area: &HtmlTextAreaElement) -> (usize, usize) {
+    let start = area.selection_start().ok().flatten().unwrap_or(0) as usize;
+    let end = area.selection_end().ok().flatten().unwrap_or(0) as usize;
     if area.selection_direction().ok().flatten().as_deref() == Some("backward") {
         (end, start)
     } else {
         (start, end)
     }
 }
-fn sync_value<A: Application>(area: &HtmlTextAreaElement, runtime: &Rc<RefCell<Runtime<A>>>) {
+
+fn runtime_selection(
+    area: &HtmlTextAreaElement,
+    raw: &str,
+    (anchor, cursor): (usize, usize),
+) -> Option<(usize, usize)> {
+    let value = area.value();
+    if textarea_value(raw).as_ref() != value {
+        return None;
+    }
+    Some((
+        host_units_to_raw_bytes(raw, &value, anchor),
+        host_units_to_raw_bytes(raw, &value, cursor),
+    ))
+}
+
+fn forward_edit_selection<A: Application>(
+    area: &HtmlTextAreaElement,
+    runtime: &Rc<RefCell<Runtime<A>>>,
+    window: &Window,
+    units: (usize, usize),
+) {
     let Some(snapshot) = runtime.borrow().input_snapshot() else {
         return;
     };
-    if snapshot.composing {
+    if let Some((anchor, cursor)) = runtime_selection(area, &snapshot.value, units) {
+        dispatch(runtime, window, Event::Select { anchor, cursor });
+    }
+}
+fn sync_value<A: Application>(
+    area: &HtmlTextAreaElement,
+    runtime: &Rc<RefCell<Runtime<A>>>,
+    mirror: &RefCell<InputMirror>,
+) {
+    let Some(snapshot) = runtime.borrow().input_snapshot() else {
+        return;
+    };
+    if snapshot.composing || !mirror.borrow().owns(&snapshot) {
         return;
     }
-    if area.value() != snapshot.value {
-        area.set_value(&snapshot.value);
+    write_host_input(area, &snapshot, mirror, true);
+}
+
+fn write_host_input(
+    area: &HtmlTextAreaElement,
+    snapshot: &InputSnapshot,
+    mirror: &RefCell<InputMirror>,
+    force: bool,
+) {
+    let projected = textarea_value(&snapshot.value);
+    if area.value() != projected.as_ref() {
+        area.set_value(&projected);
+    } else if !force && mirror.borrow().runtime_unchanged(snapshot) {
+        // The browser may already have moved the selection on keydown. A
+        // layout-only redraw must let select/keyup deliver that movement.
+        return;
     }
-    let start = utf8_to_utf16(
+    let backward = snapshot.selection.anchor > snapshot.selection.cursor;
+    let start = raw_bytes_to_host_units(
         &snapshot.value,
         snapshot.selection.anchor.min(snapshot.selection.cursor),
     ) as u32;
-    let end = utf8_to_utf16(
+    let end = raw_bytes_to_host_units(
         &snapshot.value,
         snapshot.selection.anchor.max(snapshot.selection.cursor),
     ) as u32;
     if area.selection_start().ok().flatten() != Some(start)
         || area.selection_end().ok().flatten() != Some(end)
+        || (start != end
+            && (area.selection_direction().ok().flatten().as_deref() == Some("backward"))
+                != backward)
     {
         let _ = area.set_selection_range_with_direction(
             start,
             end,
-            if snapshot.selection.anchor > snapshot.selection.cursor {
-                "backward"
-            } else {
-                "forward"
-            },
+            if backward { "backward" } else { "forward" },
         );
     }
+    mirror.borrow_mut().state = Some(EditorState::from_snapshot(snapshot));
 }
 impl<A: Application> WebInput<A> {
     pub fn new(
@@ -122,6 +236,7 @@ impl<A: Application> WebInput<A> {
         let composing = Rc::new(Cell::new(false));
         let switching = Rc::new(Cell::new(false));
         let press = Rc::new(RefCell::new(crate::press_guard::PressGuard::default()));
+        let mirror = Rc::new(RefCell::new(InputMirror::default()));
         let text = Rc::new(RefCell::new(String::new()));
         let base = Rc::new(Cell::new(0usize));
         let owner = Rc::new(RefCell::new(None::<String>));
@@ -132,7 +247,8 @@ impl<A: Application> WebInput<A> {
             window: window.clone(),
             composing: composing.clone(),
             switching: switching.clone(),
-            field: RefCell::new(None),
+            press: press.clone(),
+            mirror: mirror.clone(),
             listeners: Vec::new(),
         };
         let target: EventTarget = textarea.clone().unchecked_into();
@@ -143,6 +259,7 @@ impl<A: Application> WebInput<A> {
             let owner = owner.clone();
             let ignore_input = ignore_input.clone();
             let press = press.clone();
+            let mirror = mirror.clone();
             bridge.listen_with_capture(
                 canvas.unchecked_into(),
                 "pointerdown",
@@ -164,6 +281,9 @@ impl<A: Application> WebInput<A> {
                             return;
                         }
                     }
+                    // A canvas press gives Surface authority over its caret,
+                    // even when it places the caret at the previous offset.
+                    mirror.borrow_mut().state = None;
                     if composing.replace(false) {
                         // Browser focus defaults can commit before winit delivers
                         // the Rust pointer event. Cancel before that default runs.
@@ -180,6 +300,7 @@ impl<A: Application> WebInput<A> {
             let area = textarea.clone();
             let composing = composing.clone();
             let ignore_input = ignore_input.clone();
+            let mirror = mirror.clone();
             bridge.listen(target.clone(), "beforeinput", move |event| {
                 if composing.get() {
                     return;
@@ -201,8 +322,7 @@ impl<A: Application> WebInput<A> {
                 if let Some(key) = key {
                     event.prevent_default();
                     event.stop_propagation();
-                    let (anchor, cursor) = host_selection(&area);
-                    dispatch(&runtime, &window, Event::Select { anchor, cursor });
+                    forward_edit_selection(&area, &runtime, &window, host_selection_units(&area));
                     dispatch(
                         &runtime,
                         &window,
@@ -212,7 +332,7 @@ impl<A: Application> WebInput<A> {
                             by_word: false,
                         },
                     );
-                    sync_value(&area, &runtime);
+                    sync_value(&area, &runtime, &mirror);
                 }
             })?;
         }
@@ -224,18 +344,13 @@ impl<A: Application> WebInput<A> {
             let base = base.clone();
             let owner = owner.clone();
             let ignore_input = ignore_input.clone();
+            let mirror = mirror.clone();
             bridge.listen(target.clone(), "compositionstart", move |event| {
                 event.stop_propagation();
-                let (a, c) = host_selection(&area);
-                dispatch(
-                    &runtime,
-                    &window,
-                    Event::Select {
-                        anchor: a,
-                        cursor: c,
-                    },
-                );
-                base.set(utf8_to_utf16(&area.value(), a.min(c)));
+                mirror.borrow_mut().state = None;
+                let units = host_selection_units(&area);
+                forward_edit_selection(&area, &runtime, &window, units);
+                base.set(units.0.min(units.1));
                 composing.set(true);
                 *owner.borrow_mut() = runtime.borrow().input_snapshot().map(|s| s.id);
                 ignore_input.set(false);
@@ -277,6 +392,7 @@ impl<A: Application> WebInput<A> {
             let base = base.clone();
             let owner = owner.clone();
             let ignore_input = ignore_input.clone();
+            let mirror = mirror.clone();
             bridge.listen(target.clone(), "input", move |event| {
                 event.stop_propagation();
                 if ignore_input.replace(false) {
@@ -285,13 +401,16 @@ impl<A: Application> WebInput<A> {
                 }
                 if composing.get() {
                     let value = text.borrow().clone();
-                    let a = utf16_to_utf8(
+                    let projected = textarea_value(&value);
+                    let a = host_units_to_raw_bytes(
                         &value,
+                        &projected,
                         (area.selection_start().ok().flatten().unwrap_or(0) as usize)
                             .saturating_sub(base.get()),
                     );
-                    let c = utf16_to_utf8(
+                    let c = host_units_to_raw_bytes(
                         &value,
+                        &projected,
                         (area.selection_end().ok().flatten().unwrap_or(0) as usize)
                             .saturating_sub(base.get()),
                     );
@@ -305,12 +424,26 @@ impl<A: Application> WebInput<A> {
                         },
                     );
                 } else {
-                    let (anchor, cursor) = host_selection(&area);
+                    let value = area.value();
+                    // A real edit continues to submit the textarea API value.
+                    let (anchor, cursor) = host_selection_units(&area);
+                    let anchor = utf16_to_utf8(&value, anchor);
+                    let cursor = utf16_to_utf8(&value, cursor);
+                    if let Some(snapshot) = runtime.borrow().input_snapshot() {
+                        let mut mirror = mirror.borrow_mut();
+                        if mirror.owns(&snapshot) {
+                            mirror.state = Some(EditorState {
+                                value: value.clone(),
+                                anchor,
+                                cursor,
+                            });
+                        }
+                    }
                     dispatch(
                         &runtime,
                         &window,
                         Event::InputValue {
-                            value: area.value(),
+                            value,
                             anchor,
                             cursor,
                         },
@@ -325,12 +458,14 @@ impl<A: Application> WebInput<A> {
             let text = text.clone();
             let owner = owner.clone();
             let ignore_input = ignore_input.clone();
+            let area = textarea.clone();
+            let mirror = mirror.clone();
             bridge.listen(target.clone(), "compositionend", move |event| {
                 event.stop_propagation();
                 let Some(event) = event.dyn_ref::<web_sys::CompositionEvent>() else {
                     return;
                 };
-                composing.set(false);
+                let was_composing = composing.replace(false);
                 text.borrow_mut().clear();
                 let value = event.data().unwrap_or_default();
                 let id = owner.borrow_mut().take();
@@ -339,16 +474,35 @@ impl<A: Application> WebInput<A> {
                     window.request_redraw();
                     return;
                 }
+                let commit = !value.is_empty();
                 dispatch_ime(
                     &runtime,
                     &window,
-                    id,
-                    if value.is_empty() {
-                        ImeEvent::Cancel
-                    } else {
+                    id.clone(),
+                    if commit {
                         ImeEvent::Commit(value)
+                    } else {
+                        ImeEvent::Cancel
                     },
                 );
+                let snapshot = runtime.borrow().input_snapshot();
+                if let Some(snapshot) = snapshot.filter(|snapshot| {
+                    !snapshot.composing
+                        && id.as_deref() == Some(snapshot.id.as_str())
+                        && mirror.borrow().owns(snapshot)
+                }) {
+                    if !commit && was_composing {
+                        // Cancel restores the authoritative value and its
+                        // saved range. The browser may have removed the
+                        // selected text with the temporary composition.
+                        // Finish synchronization before the next native edit.
+                        write_host_input(&area, &snapshot, &mirror, true);
+                    } else if commit && textarea_value(&snapshot.value).as_ref() == area.value() {
+                        // The next select may arrive before the first frame
+                        // that acknowledges this browser commit.
+                        mirror.borrow_mut().state = Some(EditorState::from_snapshot(&snapshot));
+                    }
+                }
             })?;
         }
         for name in ["select", "keyup"] {
@@ -357,9 +511,11 @@ impl<A: Application> WebInput<A> {
             let area = textarea.clone();
             let composing = composing.clone();
             let press = press.clone();
+            let switching = switching.clone();
+            let mirror = mirror.clone();
             bridge.listen(target.clone(), name, move |event| {
                 event.stop_propagation();
-                if composing.get() {
+                if composing.get() || switching.get() {
                     return;
                 }
                 // Safari resets the textarea selection to 0,0 when it takes focus
@@ -367,8 +523,37 @@ impl<A: Application> WebInput<A> {
                 if name == "select" && !press.borrow().forwards_select() {
                     return;
                 }
-                let (anchor, cursor) = host_selection(&area);
-                dispatch(&runtime, &window, Event::Select { anchor, cursor });
+                let Some(snapshot) = runtime.borrow().input_snapshot() else {
+                    return;
+                };
+                if snapshot.composing {
+                    return;
+                }
+                let Some((anchor, cursor)) =
+                    runtime_selection(&area, &snapshot.value, host_selection_units(&area))
+                else {
+                    return;
+                };
+                let state = EditorState {
+                    value: snapshot.value.clone(),
+                    anchor,
+                    cursor,
+                };
+                let already_current = state.matches(&snapshot);
+                {
+                    let mut mirror = mirror.borrow_mut();
+                    if !mirror.owns(&snapshot)
+                        || (!already_current && !mirror.runtime_unchanged(&snapshot))
+                    {
+                        // An asynchronous select can arrive after Surface has
+                        // already authored a newer selection or changed fields.
+                        return;
+                    }
+                    mirror.state = Some(state);
+                }
+                if !already_current {
+                    dispatch(&runtime, &window, Event::Select { anchor, cursor });
+                }
             })?;
         }
         {
@@ -376,6 +561,7 @@ impl<A: Application> WebInput<A> {
             let window = window.clone();
             let composing = composing.clone();
             let area = textarea.clone();
+            let mirror = mirror.clone();
             bridge.listen(target.clone(), "keydown", move |event| {
                 event.stop_propagation();
                 let Some(key) = event.dyn_ref::<web_sys::KeyboardEvent>() else {
@@ -408,7 +594,7 @@ impl<A: Application> WebInput<A> {
                     dispatch(&runtime, &window, action);
                 }
                 if step.sync {
-                    sync_value(&area, &runtime);
+                    sync_value(&area, &runtime, &mirror);
                 }
             })?;
         }
@@ -496,7 +682,7 @@ impl<A: Application> WebInput<A> {
     pub fn sync(&self) {
         let snapshot = self.runtime.borrow().input_snapshot();
         let field = snapshot.as_ref().map(|s| s.id.clone());
-        if *self.field.borrow() != field {
+        if self.mirror.borrow().field != field {
             self.switching.set(true);
             if field.is_some() && self.focused() {
                 // End the old browser composition before reusing this host.
@@ -505,7 +691,7 @@ impl<A: Application> WebInput<A> {
                 let _ = self.textarea.blur();
             }
             self.composing.set(false);
-            *self.field.borrow_mut() = field;
+            *self.mirror.borrow_mut() = InputMirror { field, state: None };
             self.switching.set(false);
         }
         let Some(snapshot) = snapshot else {
@@ -532,35 +718,27 @@ impl<A: Application> WebInput<A> {
                     caret.height,
                 ));
         }
-        if !self.composing.get() && !snapshot.composing {
-            if self.textarea.value() != snapshot.value {
-                self.textarea.set_value(&snapshot.value);
-            }
-            let start = utf8_to_utf16(
-                &snapshot.value,
-                snapshot.selection.anchor.min(snapshot.selection.cursor),
-            ) as u32;
-            let end = utf8_to_utf16(
-                &snapshot.value,
-                snapshot.selection.anchor.max(snapshot.selection.cursor),
-            ) as u32;
-            if self.textarea.selection_start().ok().flatten() != Some(start)
-                || self.textarea.selection_end().ok().flatten() != Some(end)
-            {
-                let _ = self.textarea.set_selection_range_with_direction(
-                    start,
-                    end,
-                    if snapshot.selection.anchor > snapshot.selection.cursor {
-                        "backward"
-                    } else {
-                        "forward"
-                    },
-                );
-            }
+        let needs_focus = !self.focused();
+        let mirror_value = !self.composing.get() && !snapshot.composing;
+        if mirror_value {
+            let pressing = !self.press.borrow().forwards_select();
+            write_host_input(
+                &self.textarea,
+                &snapshot,
+                &self.mirror,
+                needs_focus || pressing,
+            );
+        } else {
+            self.mirror.borrow_mut().state = None;
         }
-        if !self.focused() {
+        if needs_focus {
             self.switching.set(true);
             let _ = self.textarea.focus();
+            if mirror_value {
+                // The browser can reset its selection when focus returns from
+                // a canvas press. Restore the Surface caret before yielding.
+                write_host_input(&self.textarea, &snapshot, &self.mirror, true);
+            }
             self.switching.set(false);
         }
     }
@@ -577,5 +755,51 @@ impl<A: Application> Drop for WebInput<A> {
                 );
         }
         self.textarea.remove();
+    }
+}
+
+#[cfg(test)]
+mod newline_selection_tests {
+    use super::{host_units_to_raw_bytes, raw_bytes_to_host_units, textarea_value};
+
+    const RAW: &str = "A😃B\r\n中\rZ\r\n💡";
+
+    #[test]
+    fn first_line_arrow_left_still_targets_the_raw_value() {
+        let value = textarea_value(RAW);
+        assert_eq!(value, "A😃B\n中\nZ\n💡");
+        let end_of_first_line = raw_bytes_to_host_units(RAW, "A😃B".len());
+        assert_eq!(end_of_first_line, 4);
+        assert_eq!(
+            host_units_to_raw_bytes(RAW, &value, end_of_first_line - 1),
+            "A😃".len()
+        );
+        assert_eq!(
+            host_units_to_raw_bytes(RAW, &value, end_of_first_line + 1),
+            "A😃B\r\n".len()
+        );
+    }
+
+    #[test]
+    fn maps_both_sides_of_normalized_breaks_and_surrogates() {
+        let value = textarea_value(RAW);
+        for (host_units, raw_bytes) in [
+            (0, 0),
+            (1, 1),
+            (3, 5),
+            (4, 6),
+            (5, 8),
+            (6, 11),
+            (7, 12),
+            (8, 13),
+            (9, 15),
+            (11, 19),
+        ] {
+            assert_eq!(host_units_to_raw_bytes(RAW, &value, host_units), raw_bytes);
+            assert_eq!(raw_bytes_to_host_units(RAW, raw_bytes), host_units);
+        }
+        assert_eq!(host_units_to_raw_bytes(RAW, &value, 2), 1);
+        assert_eq!(host_units_to_raw_bytes(RAW, &value, 10), 15);
+        assert_eq!(raw_bytes_to_host_units(RAW, 7), 4);
     }
 }

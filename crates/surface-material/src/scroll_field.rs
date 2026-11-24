@@ -615,8 +615,8 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
         // The anonymous clip crops the glyphs. The named interaction owner
         // and markers remain outside that clip so a page wheel can reach its
         // surrounding scroller.
-        self.passive(self.id("face"), self.face_style(face))
-            .children([paint])
+        let face = shared_surface_edge(self.face_style(face), colors.surface, colors.outline);
+        self.passive(self.id("face"), face).children([paint])
     }
 
     fn compact_width(&self) -> (f32, f32) {
@@ -875,6 +875,19 @@ fn at(style: Style, x: f32, y: f32) -> Style {
         top: Length::Px(y),
         ..Default::default()
     })
+}
+
+// The same opaque underlay also makes a same-RGB translucent fill
+// indistinguishable, for example the disabled wheel's surface tint.
+fn shared_surface_edge(style: Style, surrounding: Color, outline: Color) -> Style {
+    let Color(red, green, blue, _) = style.background;
+    let same_surface =
+        style.background == surrounding || surrounding == Color::rgb(red, green, blue);
+    if same_surface && style.border_width == 0. && outline.3 > 0 {
+        style.border(1., outline)
+    } else {
+        style
+    }
 }
 
 fn alpha(Color(r, g, b, _): Color, opacity: u8) -> Color {

@@ -307,8 +307,7 @@ impl BadgeDemo {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub(crate) fn inspect(&self, text_scale: f32, dark: bool) -> serde_json::Value {
-        let theme = if dark { Theme::dark() } else { Theme::light() };
+    pub(crate) fn inspect(&self, text_scale: f32, theme: &Theme) -> serde_json::Value {
         serde_json::json!({
             "kind": self.mode.key(),
             "count": self.count,

@@ -1,5 +1,10 @@
 //! Material color roles, generated from a seed with the HCT tonal-spot scheme.
-use material_colors::{color::Argb, theme::ThemeBuilder};
+use material_colors::{
+    color::Argb,
+    dynamic_color::{DynamicScheme, Variant},
+    scheme::Scheme,
+    theme::ThemeBuilder,
+};
 use surface::Color;
 
 #[derive(Clone, Copy, Debug)]
@@ -56,18 +61,78 @@ pub struct ColorScheme {
 }
 impl ColorScheme {
     pub fn from_seed(seed: Color, dark: bool) -> Self {
-        let theme = ThemeBuilder::with_source(Argb {
-            alpha: 255,
-            red: seed.0,
-            green: seed.1,
-            blue: seed.2,
-        })
-        .build();
-        let scheme = if dark {
+        let theme = ThemeBuilder::with_source(seed_argb(seed)).build();
+        Self::from_material_scheme(if dark {
             theme.schemes.dark
         } else {
             theme.schemes.light
-        };
+        })
+    }
+
+    pub(super) fn high_contrast(seed: Color, dark: bool) -> Self {
+        Self::from_material_scheme(
+            DynamicScheme::by_variant(seed_argb(seed), &Variant::TonalSpot, dark, Some(1.)).into(),
+        )
+    }
+
+    pub(super) fn forced_colors(canvas: (Color, Color), button: (Color, Color)) -> Self {
+        let (surface, ink) = canvas;
+        let (button_face, button_text) = button;
+        Self {
+            primary: ink,
+            on_primary: surface,
+            primary_container: button_face,
+            on_primary_container: button_text,
+            inverse_primary: surface,
+            primary_fixed: button_face,
+            primary_fixed_dim: button_face,
+            on_primary_fixed: button_text,
+            on_primary_fixed_variant: button_text,
+            secondary: ink,
+            on_secondary: surface,
+            secondary_container: button_face,
+            on_secondary_container: button_text,
+            secondary_fixed: button_face,
+            secondary_fixed_dim: button_face,
+            on_secondary_fixed: button_text,
+            on_secondary_fixed_variant: button_text,
+            tertiary: ink,
+            on_tertiary: surface,
+            tertiary_container: button_face,
+            on_tertiary_container: button_text,
+            tertiary_fixed: button_face,
+            tertiary_fixed_dim: button_face,
+            on_tertiary_fixed: button_text,
+            on_tertiary_fixed_variant: button_text,
+            error: ink,
+            on_error: surface,
+            error_container: surface,
+            on_error_container: ink,
+            surface_dim: surface,
+            surface,
+            surface_tint: ink,
+            surface_bright: surface,
+            surface_container_lowest: surface,
+            surface_container_low: surface,
+            surface_container: surface,
+            surface_container_high: surface,
+            surface_container_highest: surface,
+            on_surface: ink,
+            on_surface_variant: ink,
+            outline: ink,
+            outline_variant: ink,
+            inverse_surface: ink,
+            inverse_on_surface: surface,
+            surface_variant: surface,
+            background: surface,
+            on_background: ink,
+            // A transparent shadow does not substitute for a visible edge.
+            shadow: Color::TRANSPARENT,
+            scrim: ink,
+        }
+    }
+
+    fn from_material_scheme(scheme: Scheme) -> Self {
         let color = |c: Argb| Color(c.red, c.green, c.blue, c.alpha);
         Self {
             primary: color(scheme.primary),
@@ -120,6 +185,15 @@ impl ColorScheme {
             shadow: color(scheme.shadow),
             scrim: color(scheme.scrim),
         }
+    }
+}
+
+fn seed_argb(seed: Color) -> Argb {
+    Argb {
+        alpha: 255,
+        red: seed.0,
+        green: seed.1,
+        blue: seed.2,
     }
 }
 

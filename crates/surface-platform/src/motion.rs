@@ -1,4 +1,4 @@
-//! Host clock and reduced-motion preference for runtime motion.
+//! Host clock and display preference handling.
 //!
 //! The runtime never reads a clock. The host sets it before each render and
 //! keeps asking for frames while `Runtime::needs_frame` is true.
@@ -59,10 +59,38 @@ pub(crate) fn update_preference<A: surface_app::Application>(
 }
 
 #[cfg(target_os = "macos")]
-pub(crate) use macos::{system_reduced_motion, ReducedMotionWatch as MacReducedMotionWatch};
+pub(crate) use macos::{refresh_display_options, DisplayOptionsWatch as MacDisplayOptionsWatch};
+
+#[cfg(any(target_os = "macos", all(test, not(target_arch = "wasm32"))))]
+fn apply_macos_display_options<A: surface_app::Application>(
+    runtime: &mut surface_app::Runtime<A>,
+    force_reduce_motion: bool,
+    system_reduce_motion: bool,
+    system_increase_contrast: bool,
+) -> (bool, Option<surface_app::AppError>) {
+    use surface_app::DisplayContrast;
+
+    let motion_changed = update_preference(runtime, force_reduce_motion, system_reduce_motion);
+    let contrast = if system_increase_contrast {
+        DisplayContrast::Increased
+    } else {
+        DisplayContrast::Normal
+    };
+    let previous = runtime.display_contrast();
+    match runtime.set_display_contrast(contrast) {
+        Ok(contrast_changed) => (motion_changed || contrast_changed, None),
+        // Preserve the redraw from motion. If a later reconciliation failed
+        // after installing contrast, the installed appearance needs a frame.
+        Err(error) => (
+            motion_changed || runtime.display_contrast() != previous,
+            Some(error),
+        ),
+    }
+}
 
 #[cfg(target_os = "macos")]
 mod macos {
+    use super::{apply_macos_display_options, reduced_motion_from_env};
     use std::ptr::NonNull;
 
     use block2::RcBlock;
@@ -71,18 +99,30 @@ mod macos {
     use objc2_foundation::{NSNotification, NSNotificationCenter, NSObjectProtocol};
 
     /// Read on the host event-loop thread.
-    pub(crate) fn system_reduced_motion() -> bool {
-        NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceMotion()
+    pub(crate) fn refresh_display_options<A: surface_app::Application>(
+        runtime: &mut surface_app::Runtime<A>,
+    ) -> bool {
+        let workspace = NSWorkspace::sharedWorkspace();
+        let (redraw, contrast_error) = apply_macos_display_options(
+            runtime,
+            reduced_motion_from_env(),
+            workspace.accessibilityDisplayShouldReduceMotion(),
+            workspace.accessibilityDisplayShouldIncreaseContrast(),
+        );
+        if let Some(error) = contrast_error {
+            eprintln!("Surface macOS display contrast: {error}");
+        }
+        redraw
     }
 
-    /// The workspace notification does not contain the current value. The
-    /// callback only wakes the event loop, which reads the latest value there.
-    pub(crate) struct ReducedMotionWatch {
+    /// The workspace notification carries no preference values. The callback
+    /// signals the event loop, which reads both current preferences there.
+    pub(crate) struct DisplayOptionsWatch {
         center: Retained<NSNotificationCenter>,
         observer: Retained<ProtocolObject<dyn NSObjectProtocol>>,
     }
 
-    impl ReducedMotionWatch {
+    impl DisplayOptionsWatch {
         pub(crate) fn new(notify: impl Fn() + Send + Sync + 'static) -> Self {
             Self::observe(NSWorkspace::sharedWorkspace().notificationCenter(), notify)
         }
@@ -108,7 +148,7 @@ mod macos {
         }
     }
 
-    impl Drop for ReducedMotionWatch {
+    impl Drop for DisplayOptionsWatch {
         fn drop(&mut self) {
             // SAFETY: This is the token returned by this center. Keep it alive
             // until the registration has been removed.
@@ -129,7 +169,7 @@ mod macos {
             let center = NSNotificationCenter::new();
             let calls = Arc::new(AtomicUsize::new(0));
             let notified = calls.clone();
-            let watcher = ReducedMotionWatch::observe(center.clone(), move || {
+            let watcher = DisplayOptionsWatch::observe(center.clone(), move || {
                 notified.fetch_add(1, Ordering::SeqCst);
             });
             // SAFETY: Name is the same framework constant used to register,
@@ -156,9 +196,9 @@ mod macos {
 
 #[cfg(all(test, not(target_arch = "wasm32")))]
 mod preference_tests {
-    use super::update_preference;
+    use super::{apply_macos_display_options, update_preference};
     use surface::{Node, Role};
-    use surface_app::{Application, Runtime, View};
+    use surface_app::{Application, DisplayContrast, Runtime, View};
 
     struct App;
     impl Application for App {
@@ -230,6 +270,71 @@ mod preference_tests {
         assert!(!update_preference(&mut runtime, true, true));
         assert!(!update_preference(&mut runtime, true, false));
         assert!(runtime.reduced_motion());
+    }
+
+    #[derive(Default)]
+    struct Appearance {
+        contrast: DisplayContrast,
+        reject_increased: bool,
+    }
+
+    impl Application for Appearance {
+        type Message = ();
+
+        fn update(&mut self, (): ()) {}
+
+        fn display_contrast_changed(&mut self, contrast: DisplayContrast) -> bool {
+            self.contrast = contrast;
+            true
+        }
+
+        fn view(&self) -> View<()> {
+            let root = View::new(Node::new(Role::Window, "test"));
+            if self.reject_increased && self.contrast == DisplayContrast::Increased {
+                let duplicate = || View::new(Node::new(Role::Group, "").id("duplicate"));
+                return root.children([duplicate(), duplicate()]);
+            }
+            root
+        }
+    }
+
+    #[test]
+    fn mac_display_options_apply_both_preferences_and_coalesce_redraw() {
+        let mut runtime = Runtime::new(Appearance::default()).unwrap();
+        let (redraw, error) = apply_macos_display_options(&mut runtime, false, true, true);
+        assert!(redraw);
+        assert!(error.is_none());
+        assert!(runtime.reduced_motion());
+        assert_eq!(runtime.display_contrast(), DisplayContrast::Increased);
+
+        let (redraw, error) = apply_macos_display_options(&mut runtime, false, true, true);
+        assert!(!redraw);
+        assert!(error.is_none());
+
+        let (redraw, error) = apply_macos_display_options(&mut runtime, true, false, false);
+        assert!(redraw);
+        assert!(error.is_none());
+        assert!(runtime.reduced_motion());
+        assert_eq!(runtime.display_contrast(), DisplayContrast::Normal);
+    }
+
+    #[test]
+    fn mac_display_options_keep_motion_changes_when_contrast_is_rejected() {
+        let mut runtime = Runtime::new(Appearance {
+            reject_increased: true,
+            ..Appearance::default()
+        })
+        .unwrap();
+        let (redraw, error) = apply_macos_display_options(&mut runtime, false, true, true);
+        assert!(redraw);
+        assert!(error.is_some());
+        assert!(runtime.reduced_motion());
+        assert_eq!(runtime.display_contrast(), DisplayContrast::Normal);
+        assert_eq!(runtime.app().contrast, DisplayContrast::Normal);
+
+        let (redraw, error) = apply_macos_display_options(&mut runtime, false, true, true);
+        assert!(!redraw);
+        assert!(error.is_some());
     }
 }
 

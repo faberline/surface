@@ -47,6 +47,7 @@ pub use microdom::{
 pub use motion::{Easing, Transition};
 pub use paint::{
     DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp, TextDecoration,
+    TextSelectionColors, TextSelectionPaint, TextSelectionRegion,
 };
 pub use raster::{RasterImage, RasterPaint};
 pub use scroll_extent::scroll_extent;

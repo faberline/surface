@@ -29,6 +29,8 @@ mod trace_file;
 mod wake;
 #[cfg(target_arch = "wasm32")]
 mod web_accessibility;
+#[cfg(any(target_arch = "wasm32", test))]
+mod web_contrast;
 #[cfg(target_arch = "wasm32")]
 mod web_input;
 #[cfg(any(target_arch = "wasm32", test))]
@@ -178,7 +180,7 @@ unsafe impl Sync for SendProxy {}
 enum UserEvent {
     Wake,
     #[cfg(target_os = "macos")]
-    MacReducedMotion,
+    MacDisplayOptionsChanged,
     #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
     AccessKit(accesskit_winit::Event),
     #[cfg(feature = "devtools")]
@@ -197,6 +199,8 @@ enum UserEvent {
     Ready(Result<Box<Gpu>, HostError>),
     #[cfg(target_arch = "wasm32")]
     VerifyWebFocus,
+    #[cfg(target_arch = "wasm32")]
+    WebDisplayContrast,
     #[cfg(target_arch = "wasm32")]
     WebAccessibility(web_accessibility::Action),
     #[cfg(target_arch = "wasm32")]
@@ -247,8 +251,10 @@ struct Host<A: Application> {
     web_pointer_capture: Option<web_pointer_capture::WebPointerCapture>,
     #[cfg(target_arch = "wasm32")]
     reduced_motion: Option<motion::ReducedMotionWatch>,
+    #[cfg(target_arch = "wasm32")]
+    web_display_contrast: Option<web_contrast::DisplayContrastWatch>,
     #[cfg(target_os = "macos")]
-    _mac_reduced_motion: motion::MacReducedMotionWatch,
+    _mac_display_options: motion::MacDisplayOptionsWatch,
     #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
     accessibility_adapter: Option<accesskit_winit::Adapter>,
     #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
@@ -261,6 +267,22 @@ struct Host<A: Application> {
     ime: ime_session::ImeSession,
 }
 impl<A: Application> Host<A> {
+    #[cfg(target_arch = "wasm32")]
+    fn refresh_web_display_contrast(&mut self) {
+        if self.closing {
+            return;
+        }
+        let Some(watch) = &mut self.web_display_contrast else {
+            return;
+        };
+        let rebuilt = watch.refresh(&mut self.runtime.borrow_mut());
+        if rebuilt {
+            if let Some(window) = &self.window {
+                window.request_redraw();
+            }
+        }
+    }
+
     /// Handles the held web key press with the modifiers seen so far.
     #[cfg(target_arch = "wasm32")]
     fn deliver_held_key(
@@ -953,8 +975,23 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         }
         #[cfg(target_arch = "wasm32")]
         {
+            use winit::platform::web::WindowExtWebSys;
+
             self.reduced_motion =
                 motion::ReducedMotionWatch::new(self.runtime.clone(), window.clone());
+            if let Some(canvas) = window.canvas() {
+                let proxy = self.proxy.clone();
+                match web_contrast::DisplayContrastWatch::new(canvas, move || {
+                    let _ = proxy.send_event(UserEvent::WebDisplayContrast);
+                }) {
+                    Ok(watch) => self.web_display_contrast = watch,
+                    Err(error) => web_sys::console::warn_2(
+                        &"Surface could not observe Web display contrast:".into(),
+                        &error,
+                    ),
+                }
+            }
+            self.refresh_web_display_contrast();
         }
         #[cfg(not(target_arch = "wasm32"))]
         match pollster::block_on(Gpu::new(window)) {
@@ -980,13 +1017,12 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
             UserEvent::Wake => self.wake_app(event_loop),
+            #[cfg(target_arch = "wasm32")]
+            UserEvent::WebDisplayContrast => self.refresh_web_display_contrast(),
             #[cfg(target_os = "macos")]
-            UserEvent::MacReducedMotion => {
-                let changed = motion::update_preference(
-                    &mut self.runtime.borrow_mut(),
-                    motion::reduced_motion_from_env(),
-                    motion::system_reduced_motion(),
-                );
+            UserEvent::MacDisplayOptionsChanged => {
+                let changed = !self.closing
+                    && motion::refresh_display_options(&mut self.runtime.borrow_mut());
                 if changed {
                     if let Some(window) = &self.window {
                         window.request_redraw();
@@ -1279,16 +1315,13 @@ pub fn run_with_wake<A: Application>(
         runtime.borrow_mut().set_reduced_motion(true);
     }
     #[cfg(target_os = "macos")]
-    let mac_reduced_motion = {
-        motion::update_preference(
-            &mut runtime.borrow_mut(),
-            motion::reduced_motion_from_env(),
-            motion::system_reduced_motion(),
-        );
+    let mac_display_options = {
         let proxy = event_loop.create_proxy();
-        motion::MacReducedMotionWatch::new(move || {
-            let _ = proxy.send_event(UserEvent::MacReducedMotion);
-        })
+        let watch = motion::MacDisplayOptionsWatch::new(move || {
+            let _ = proxy.send_event(UserEvent::MacDisplayOptionsChanged);
+        });
+        motion::refresh_display_options(&mut runtime.borrow_mut());
+        watch
     };
     let host = Host {
         runtime,
@@ -1324,8 +1357,10 @@ pub fn run_with_wake<A: Application>(
         web_pointer_capture: None,
         #[cfg(target_arch = "wasm32")]
         reduced_motion: None,
+        #[cfg(target_arch = "wasm32")]
+        web_display_contrast: None,
         #[cfg(target_os = "macos")]
-        _mac_reduced_motion: mac_reduced_motion,
+        _mac_display_options: mac_display_options,
         #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
         accessibility_adapter: None,
         #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]

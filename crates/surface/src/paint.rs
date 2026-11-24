@@ -1,5 +1,8 @@
 //! Ordered, serializable drawing commands shared by every GPU backend.
 mod press_ripple;
+mod text_selection;
+
+pub use text_selection::{TextSelectionColors, TextSelectionPaint, TextSelectionRegion};
 
 use crate::shadow::has_area;
 use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, PathFill, Rect, Role, TextStyle};
@@ -163,6 +166,8 @@ impl Outline {
 pub enum ExtendedPaintOp {
     Legacy(PaintOp),
     FillPath(crate::PathFill),
+    /// The two-color paint for one editable text selection.
+    TextSelection(TextSelectionPaint),
     /// A live resource. Use a screenshot to export its rendered pixels.
     /// Serializing an extended list that contains this operation returns an error.
     #[serde(skip)]
@@ -173,6 +178,14 @@ trait CompileOp: From<PaintOp> {
     const PRESS_RIPPLE: bool = false;
 
     fn push_fill(path: crate::PathFill, push: impl FnMut(Self));
+
+    fn with_text_selection(
+        run: PaintOp,
+        _colors: TextSelectionColors,
+        _selected: Vec<Rect>,
+    ) -> Self {
+        run.into()
+    }
 
     fn push_raster(
         _image: &crate::RasterImage,
@@ -201,6 +214,10 @@ impl CompileOp for ExtendedPaintOp {
 
     fn push_fill(path: crate::PathFill, mut push: impl FnMut(Self)) {
         push(Self::FillPath(path));
+    }
+
+    fn with_text_selection(run: PaintOp, colors: TextSelectionColors, selected: Vec<Rect>) -> Self {
+        Self::TextSelection(TextSelectionPaint::new(run, colors, selected))
     }
 
     fn push_raster(
@@ -357,7 +374,7 @@ impl DisplayList {
     ) -> Self {
         Self {
             viewport: computed.viewport,
-            ops: compile_into(dom, computed, focused, decorations, interaction, None),
+            ops: compile_into(dom, computed, focused, decorations, interaction, None, None),
         }
     }
     /// The list `compile_with_interaction` returns, plus the node that
@@ -381,6 +398,7 @@ impl DisplayList {
                 decorations,
                 interaction,
                 Some(&mut owners),
+                None,
             ),
         };
         (list, owners)
@@ -444,7 +462,7 @@ impl ExtendedDisplayList {
     ) -> Self {
         Self::new(
             computed.viewport,
-            compile_into(dom, computed, focused, decorations, interaction, None),
+            compile_into(dom, computed, focused, decorations, interaction, None, None),
         )
     }
 
@@ -463,6 +481,56 @@ impl ExtendedDisplayList {
             decorations,
             interaction,
             Some(&mut owners),
+            None,
+        );
+        (Self::new(computed.viewport, ops), owners)
+    }
+
+    /// Compile a frame with paired background and foreground colors for
+    /// editable selection, without allocating an attribution list.
+    /// The backend must support [ExtendedPaintOp::TextSelection].
+    pub fn compile_with_selection_colors(
+        dom: &MicroDom,
+        computed: &ComputedDom,
+        focused: Option<NodeId>,
+        decorations: &BTreeMap<NodeId, TextDecoration>,
+        interaction: InteractionState,
+        colors: TextSelectionColors,
+    ) -> Self {
+        Self::new(
+            computed.viewport,
+            compile_into(
+                dom,
+                computed,
+                focused,
+                decorations,
+                interaction,
+                None,
+                Some(colors),
+            ),
+        )
+    }
+
+    /// Compile attributed paint with a paired background and foreground for
+    /// editable selection. The backend must support [ExtendedPaintOp::TextSelection].
+    /// Ordinary compile methods keep their original selection paint.
+    pub fn compile_attributed_with_selection_colors(
+        dom: &MicroDom,
+        computed: &ComputedDom,
+        focused: Option<NodeId>,
+        decorations: &BTreeMap<NodeId, TextDecoration>,
+        interaction: InteractionState,
+        colors: TextSelectionColors,
+    ) -> (Self, Vec<NodeId>) {
+        let mut owners = Vec::new();
+        let ops = compile_into(
+            dom,
+            computed,
+            focused,
+            decorations,
+            interaction,
+            Some(&mut owners),
+            Some(colors),
         );
         (Self::new(computed.viewport, ops), owners)
     }
@@ -481,6 +549,7 @@ fn compile_into<Op: CompileOp>(
     decorations: &BTreeMap<NodeId, TextDecoration>,
     interaction: InteractionState,
     owners: Option<&mut Vec<NodeId>>,
+    selection_colors: Option<TextSelectionColors>,
 ) -> Vec<Op> {
     let mut ops = Ops {
         ops: Vec::new(),
@@ -628,7 +697,9 @@ fn compile_into<Op: CompileOp>(
             let rect = g.bounds.inset(s.padding);
             let clip = g.clip.intersect(rect);
             let decoration = decorations.get(id);
-            if let Some(d) = decoration {
+            let editable = n.role() == Role::TextInput;
+            let selection_colors = selection_colors.filter(|_| editable);
+            if let (None, Some(d)) = (selection_colors, decoration) {
                 for r in &d.selection {
                     ops.push(
                         *id,
@@ -641,9 +712,8 @@ fn compile_into<Op: CompileOp>(
                     );
                 }
             }
-            let editable = n.role() == Role::TextInput;
             let text_style = s.text_style();
-            if !text_style.is_legacy() {
+            let run = if !text_style.is_legacy() {
                 let (scroll, multiline) = if editable {
                     (
                         decoration.map(|d| d.scroll).unwrap_or_default(),
@@ -652,55 +722,80 @@ fn compile_into<Op: CompileOp>(
                 } else {
                     ((0., 0.), true)
                 };
-                ops.push(
-                    *id,
-                    PaintOp::StyledText {
-                        rect,
-                        clip,
-                        text: text.to_owned(),
-                        style: text_style,
-                        color: s.foreground,
-                        scroll,
-                        multiline,
-                        editable,
-                    },
-                );
+                PaintOp::StyledText {
+                    rect,
+                    clip,
+                    text: text.to_owned(),
+                    style: text_style,
+                    color: s.foreground,
+                    scroll,
+                    multiline,
+                    editable,
+                }
             } else if editable {
-                ops.push(
-                    *id,
-                    PaintOp::EditableText {
-                        rect,
-                        clip,
-                        text: text.to_owned(),
-                        font_size: s.font_size,
-                        color: s.foreground,
-                        scroll: decoration.map(|d| d.scroll).unwrap_or_default(),
-                        multiline: decoration.is_some_and(|d| d.multiline),
-                    },
-                );
+                PaintOp::EditableText {
+                    rect,
+                    clip,
+                    text: text.to_owned(),
+                    font_size: s.font_size,
+                    color: s.foreground,
+                    scroll: decoration.map(|d| d.scroll).unwrap_or_default(),
+                    multiline: decoration.is_some_and(|d| d.multiline),
+                }
             } else {
-                ops.push(
-                    *id,
-                    PaintOp::Text {
-                        rect,
-                        clip,
-                        text: text.to_owned(),
-                        font_size: s.font_size,
-                        color: s.foreground,
-                    },
-                );
-            }
+                PaintOp::Text {
+                    rect,
+                    clip,
+                    text: text.to_owned(),
+                    font_size: s.font_size,
+                    color: s.foreground,
+                }
+            };
+            let run = match (selection_colors, decoration) {
+                (Some(colors), Some(decoration)) => {
+                    let selected = text_selection::visible_selection(clip, &decoration.selection);
+                    if selected.is_empty() {
+                        run.into()
+                    } else {
+                        Op::with_text_selection(run, colors, selected)
+                    }
+                }
+                _ => run.into(),
+            };
+            ops.push_owned(*id, run);
             if let Some(d) = decoration {
                 for r in &d.underline {
-                    ops.push(
-                        *id,
-                        PaintOp::Quad {
-                            rect: *r,
+                    let mut paint = |rect, color| {
+                        ops.push(
+                            *id,
+                            PaintOp::Quad {
+                                rect,
+                                clip,
+                                radius: 0.,
+                                color,
+                            },
+                        );
+                    };
+                    if selection_colors.is_some_and(|colors| {
+                        text_selection::split_selected_underline(
+                            *r,
                             clip,
-                            radius: 0.,
-                            color: s.foreground,
-                        },
-                    );
+                            &d.selection,
+                            |part, selected| {
+                                paint(
+                                    part,
+                                    if selected {
+                                        colors.foreground
+                                    } else {
+                                        s.foreground
+                                    },
+                                );
+                            },
+                        )
+                    }) {
+                        continue;
+                    }
+                    paint(*r, s.foreground);
                 }
                 if let Some(caret) = d.caret {
                     ops.push(
