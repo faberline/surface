@@ -1,0 +1,41 @@
+2026-11-24T16:20:32.4118995Z ##[group]Operating System
+2026-11-24T16:20:32.4119769Z Ubuntu
+2026-11-24T16:20:35.1838100Z [command]/usr/bin/git log -1 --format=%H
+2026-11-24T16:20:35.1864087Z 22f28f685b0813eeed66caa3ed5d38a30fbcb5cd
+2026-11-24T16:22:38.4128553Z ##[group]Run xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e
+2026-11-24T16:27:56.1087411Z case smoke ... ok (19 steps, 34 checks, 3.9s)
+2026-11-24T16:27:56.3390813Z   [I1] Ready; click name → textarea focused
+2026-11-24T16:27:56.3706714Z   [I2] record composition and input events
+2026-11-24T16:27:56.3738556Z   [I3] compose ㄓㄨㄥ → preedit, composing, empty value
+2026-11-24T16:27:56.4239689Z   [I4] compose 中文 → preedit; screenshot
+2026-11-24T16:27:56.9711404Z   [I5] DOM export during preedit
+2026-11-24T16:27:56.9871236Z   [I6] textarea position matches input_caret()
+2026-11-24T16:27:56.9881381Z   [I7] commit 中文
+2026-11-24T16:27:56.9908036Z   [I8] setSelectionRange(0,1) → bytes 0..3
+2026-11-24T16:27:57.0197564Z   [I9] compose and commit 台 → 台文
+2026-11-24T16:27:57.0368103Z   [I10] compose ㄅㄆ then cancel → value kept
+2026-11-24T16:27:57.0475421Z   [I11] select all, commit text with ZWJ emoji and combining mark
+2026-11-24T16:27:57.5577845Z   [I12] Backspace deletes one grapheme at a time
+2026-11-24T16:27:57.5676934Z   [I13] undo and redo
+2026-11-24T16:27:57.5823868Z   [I14] select all, commit mixed scripts
+2026-11-24T16:27:57.5977816Z   [I15] compose ㄅ then click increment → composition cancelled
+2026-11-24T16:27:57.6845668Z   [I16] click name again, select all, commit; screenshot
+2026-11-24T16:27:58.2276436Z   [I17] final DOM export
+2026-11-24T16:27:58.2415860Z   [I18] events include composition and input
+2026-11-24T16:27:58.2431237Z   [I19] no page errors; evidence JSON
+2026-11-24T16:27:58.2442596Z   [I20] authored line endings keep directed browser and Rust selections
+2026-11-24T16:27:58.4430766Z case ime ... ok (20 steps, 77 checks, 2.3s)
+2026-11-24T16:48:26.2817734Z   [M241] the first ready browser state accepts Forced over More and keeps all three exact system pairs
+2026-11-24T16:48:28.0456120Z   [M242] live browser system pairs recolor actual popup Canvas paint and then restore Normal
+2026-11-24T16:48:35.9422701Z   [M243] live contrast preserves focused invalid popup drafts and active synthetic preedit
+2026-11-24T16:48:44.2371052Z   [M244] the popup edge remains visible when its forced fill and the surrounding Canvas match
+2026-11-24T16:48:50.7425029Z   [M245] the resting wheel has its own forced edge, clipped neighbor ink and a real disabled state
+2026-11-24T16:48:56.8597924Z   [M246] the actual partial text selection uses paired browser paint at 1.25 DPR and restores Normal
+2026-11-24T16:49:11.7407482Z   [M247] the actual preedit underline switches ink inside its forced-color selection
+2026-11-24T16:49:26.8778214Z case material ... ok (246 steps, 15842 checks, 1288.4s)
+2026-11-24T16:49:31.4168731Z case bridge-native ... ok (23 steps, 92 checks, 4.5s)
+2026-11-24T16:49:34.1206944Z case bridge-native-compact ... ok (24 steps, 93 checks, 2.7s)
+2026-11-24T16:49:38.7922145Z case bridge-web ... ok (24 steps, 94 checks, 4.7s)
+2026-11-24T16:49:43.2737493Z case devtools-native ... ok (17 steps, 192 checks, 4.5s)
+2026-11-24T16:49:44.5843863Z case devtools-headless ... ok (3 steps, 76 checks, 1.3s)
+2026-11-24T16:49:44.7768643Z e2e result: 8 passed; 0 failed; 16500 checks;

@@ -1,18 +1,28 @@
 # Surface v0.1.42 Scroll Field display contrast
 
-## Cancellation regression
+## Current candidate after the cancellation repair
 
-The current draft is on hold. A trusted Select All after a canceled composition can lose its selection during a real redraw. The controlled replay passed on v0.1.41 and failed on this draft. [Reproduction and traces](web-cancel-regression/README.md) · [Repair preflight](web-cancel-fix-preflight/README.md)
+[PR #217](https://github.com/faberline/surface/pull/217) points to `86bf5eb86a5d070245db039b37977198ba1a417e`, tree `93b47517d26662b1e9aa5502f730349723fb0978`. The [549-file source manifest](candidate-cancel-fixed-source.sha256) has SHA-256 `c99ed8ff89b0cee66a84732598ac2ba652802c2e52c9122c3c5bb27f250ccd4b`. The fix preserves the authored text and selection immediately when a browser composition is canceled.
 
-## Corrected candidate
+- Two stock offscreen Mac replays produced eight identical PNGs and identical reports. Page.screenshot, CLI and MCP agreed. All 28 visible-window counts were zero. Eleven separately run Metal tests passed. [Native Gallery](native-cancel-fixed/README.md) · [Metal receipts](gpu-cancel-fixed/README.md)
+- Stock Mac Chrome passed five suites and 16,123 checks. Both I11 regressions and the Material contrast pixel checks passed. [Mac stock receipt](web-cancel-fixed/README.md)
+- Both exact Linux workflows passed build-and-behavior and eight stock suites. Each ran 16,500 checks, including 77 IME checks. Both checkout trees match the exact candidate. [Hosted receipts](hosted-cancel-fixed/README.md)
 
-Draft PR #217 now points to `ab8615c8495d99a652f4fac38d4db37f08c82c7f`. The candidate keeps the browser caret at the new position during a forced-color redraw. It accepts selection after composition and preserves positions in authored CRLF and CR text.
+The local full-workspace gate was still running when these results were archived. Live OS preference-change events, native input methods and screen-reader speech need separate evidence.
+
+## Earlier cancellation regression
+
+This issue held the earlier draft. A trusted Select All after a canceled composition can lose its selection during a real redraw. The controlled replay passed on v0.1.41 and failed on this draft. [Reproduction and traces](web-cancel-regression/README.md) · [Repair preflight](web-cancel-fix-preflight/README.md)
+
+## Superseded caret and line-ending candidate
+
+The earlier draft pointed to `ab8615c8495d99a652f4fac38d4db37f08c82c7f`. The candidate keeps the browser caret at the new position during a forced-color redraw. It accepts selection after composition and preserves positions in authored CRLF and CR text.
 
 The focused headless Chrome runs passed 20 Showcase input steps and seven Material contrast steps. The isolated keyboard stress replay passed 100 of 100 attempts.
 
 Eleven Metal checks and two independent native offscreen replays passed on this commit. The three screenshot transports agree on every capture. The eight PNGs match between replays. All 28 window checks reported zero.
 
-All five stock Mac headless cases passed 16,103 checks. Material passed 246 steps and 15,842 checks. Both Linux CI runs passed eight cases and 16,480 checks each. Both runs used the same candidate tree. The full local workspace check is running.
+All five stock Mac headless cases passed 16,103 checks. Material passed 246 steps and 15,842 checks. Both Linux CI runs passed eight cases and 16,480 checks each. Both runs used the same candidate tree. These runs use the superseded source.
 
 [Correction proof](web-correction-preflight/README.md) · [Corrected native replay](native-corrected/README.md) · [Full Mac headless tests](web/README.md) · [Linux CI replays](hosted/README.md) · [Candidate PR](https://github.com/faberline/surface/pull/217)
 

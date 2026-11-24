@@ -1,0 +1,948 @@
+{
+  "event": "pull_request",
+  "run": 45435977006,
+  "attempt": 1,
+  "url": "https://github.com/faberline/surface/actions/runs/45435977006",
+  "jobs": {
+    "build-and-behavior": {
+      "id": 138593770597,
+      "url": "https://github.com/faberline/surface/actions/runs/45435977006/job/138593770597"
+    },
+    "browser-e2e": {
+      "id": 138593771394,
+      "url": "https://github.com/faberline/surface/actions/runs/45435977006/job/138593771394"
+    }
+  },
+  "head": "86bf5eb86a5d070245db039b37977198ba1a417e",
+  "checkout_commit": "22f28f685b0813eeed66caa3ed5d38a30fbcb5cd",
+  "checkout_tree": "93b47517d26662b1e9aa5502f730349723fb0978",
+  "cases": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 246,
+      "checks": 15842
+    },
+    "bridge-native": {
+      "steps": 23,
+      "checks": 92
+    },
+    "bridge-native-compact": {
+      "steps": 24,
+      "checks": 93
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-native": {
+      "steps": 17,
+      "checks": 192
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 16500,
+  "artifact": {
+    "id": 14942469625,
+    "name": "surface-e2e-artifacts",
+    "digest": "sha256:1c20212784cdda2aaa78f59c263f203453e3a3c473a43b3f928000789798554c"
+  },
+  "contrast": {
+    "browser": "Chrome/158.0.8127.88",
+    "adapter": {
+      "vendor": "google",
+      "architecture": "swiftshader",
+      "isFallbackAdapter": true
+    },
+    "forced_system_pairs": {
+      "canvas": {
+        "background": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "foreground": [
+          0,
+          0,
+          0,
+          255
+        ]
+      },
+      "button": {
+        "background": [
+          255,
+          255,
+          255,
+          255
+        ],
+        "foreground": [
+          0,
+          0,
+          0,
+          255
+        ]
+      },
+      "highlight": {
+        "background": [
+          5,
+          0,
+          73,
+          204
+        ],
+        "foreground": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    "foreground_evidence": "browser",
+    "selection_seam_pixels": 12876,
+    "browser_arrows": {
+      "native_arrow_redraw": {
+        "before": {
+          "browser": [
+            3,
+            3
+          ],
+          "runtime": [
+            3,
+            3
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "after_key_down": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            3,
+            3
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "after_forced_redraw": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            3,
+            3
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "after_key_up": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            4,
+            4
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "restored_normal": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            4,
+            4
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "keydown_event": {
+          "key": "ArrowRight",
+          "trusted": true,
+          "prevented": false
+        },
+        "scoped_select_delay": false,
+        "intercepted_select_events": 0,
+        "normal_canvas_sample": [
+          20,
+          18,
+          24
+        ],
+        "forced_canvas_sample": [
+          255,
+          255,
+          255
+        ],
+        "css_canvas": [
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      "delayed_select_redraw": {
+        "before": {
+          "browser": [
+            3,
+            3
+          ],
+          "runtime": [
+            3,
+            3
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "after_key_down": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            3,
+            3
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "after_forced_redraw": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            3,
+            3
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "after_key_up": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            4,
+            4
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "restored_normal": {
+          "browser": [
+            4,
+            4
+          ],
+          "runtime": [
+            4,
+            4
+          ],
+          "direction": "none",
+          "value": "1688",
+          "composing": false,
+          "focused": true
+        },
+        "keydown_event": {
+          "key": "ArrowRight",
+          "trusted": true,
+          "prevented": false
+        },
+        "scoped_select_delay": true,
+        "intercepted_select_events": 0,
+        "normal_canvas_sample": [
+          20,
+          18,
+          24
+        ],
+        "forced_canvas_sample": [
+          255,
+          255,
+          255
+        ],
+        "css_canvas": [
+          255,
+          255,
+          255,
+          255
+        ]
+      },
+      "backward_range": {
+        "browser": [
+          3,
+          4
+        ],
+        "runtime": [
+          4,
+          3
+        ],
+        "direction": "backward",
+        "value": "1688",
+        "composing": false,
+        "focused": true
+      }
+    },
+    "preedit_underline": {
+      "source": "CDP synthetic composition; Chrome-resolved CSS colors",
+      "device_pixel_ratio": 2.0,
+      "physical_size": [
+        640,
+        800
+      ],
+      "face": [
+        18.0,
+        62.0,
+        284.0,
+        104.0
+      ],
+      "expected_ink": {
+        "canvas_text": [
+          0,
+          0,
+          0
+        ],
+        "highlight_text": [
+          255,
+          255,
+          255
+        ]
+      },
+      "system_colors": {
+        "scheme": "light dark",
+        "pairs": {
+          "canvas": {
+            "background": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "foreground": [
+              0,
+              0,
+              0,
+              255
+            ]
+          },
+          "button": {
+            "background": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "foreground": [
+              0,
+              0,
+              0,
+              255
+            ]
+          },
+          "highlight": {
+            "background": [
+              5,
+              0,
+              73,
+              204
+            ],
+            "foreground": [
+              255,
+              255,
+              255,
+              255
+            ]
+          }
+        },
+        "raw": {
+          "canvas": {
+            "background": "rgb(255, 255, 255)",
+            "foreground": "rgb(0, 0, 0)"
+          },
+          "button": {
+            "background": "rgb(255, 255, 255)",
+            "foreground": "rgb(0, 0, 0)"
+          },
+          "highlight": {
+            "background": "rgba(5, 0, 73, 0.8)",
+            "foreground": "rgb(255, 255, 255)"
+          }
+        }
+      },
+      "stroke_row": 281,
+      "selection_witness_row": 172,
+      "physical_spans": [
+        [
+          87,
+          130
+        ],
+        [
+          136,
+          228
+        ],
+        [
+          234,
+          276
+        ]
+      ],
+      "clear_outline_pixels": [
+        43,
+        92,
+        42
+      ],
+      "ordinary_ink_partial": [
+        43,
+        0,
+        42
+      ],
+      "selected_ink_middle": 92,
+      "highlighted_columns": 92,
+      "normal_pixel_mismatches": 0,
+      "preedit_clear": {
+        "runtime": {
+          "value": "1680",
+          "display_value": "1688",
+          "selection_anchor": 0,
+          "selection_cursor": 4,
+          "composing": true,
+          "preedit_range": {
+            "start": 0,
+            "end": 4
+          }
+        },
+        "textarea_selection": [
+          4,
+          4
+        ]
+      },
+      "preedit_partial": {
+        "runtime": {
+          "value": "1680",
+          "display_value": "1688",
+          "selection_anchor": 0,
+          "selection_cursor": 4,
+          "composing": true,
+          "preedit_range": {
+            "start": 0,
+            "end": 4
+          }
+        },
+        "textarea_selection": [
+          1,
+          3
+        ]
+      }
+    },
+    "independent_png_pixel_verification": true,
+    "popup_border": {
+      "exterior": [
+        255,
+        255,
+        255
+      ],
+      "edge": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255
+        ]
+      ],
+      "interior": [
+        255,
+        255,
+        255
+      ],
+      "expected_fill": [
+        255,
+        255,
+        255
+      ],
+      "expected_ink": [
+        0,
+        0,
+        0
+      ],
+      "border_present": true
+    },
+    "wheel_border": {
+      "exterior": [
+        255,
+        255,
+        255
+      ],
+      "edge": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255
+        ]
+      ],
+      "interior": [
+        255,
+        255,
+        255
+      ],
+      "expected_fill": [
+        255,
+        255,
+        255
+      ],
+      "expected_ink": [
+        0,
+        0,
+        0
+      ],
+      "border_present": true
+    },
+    "pngs": {
+      "popup-normal": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 50961,
+        "sha256": "382376b74b56bc779aa36e21d375244a0c3bfa01036fb737d9ef660e85318107"
+      },
+      "popup-forced": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 43232,
+        "sha256": "6bc37b587c3a9eda0846bca7897504033df1a80e9adf3b21a6280ca92fbf5d13"
+      },
+      "popup-restored": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 50961,
+        "sha256": "382376b74b56bc779aa36e21d375244a0c3bfa01036fb737d9ef660e85318107"
+      },
+      "popup-boundary": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 43232,
+        "sha256": "6bc37b587c3a9eda0846bca7897504033df1a80e9adf3b21a6280ca92fbf5d13"
+      },
+      "popup-synthetic-preedit": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 44173,
+        "sha256": "3a26a22daf0a92dcc871b4c910a9f51947f1f5ab463f8eecf324ddd12748dff4"
+      },
+      "wheel-resting": {
+        "physical_size": [
+          1920,
+          1640
+        ],
+        "bytes": 57334,
+        "sha256": "56227d0b054dc931aa21cfdab2cf3a9c04ccb45089e5c64323f0afedee1c1dd2"
+      },
+      "wheel-focused": {
+        "physical_size": [
+          1920,
+          1640
+        ],
+        "bytes": 58048,
+        "sha256": "dc9ac41f955cfe40a04e1cff64ef0de7848280cc84e3c16fabef0052d3725451"
+      },
+      "wheel-disabled": {
+        "physical_size": [
+          1920,
+          1640
+        ],
+        "bytes": 54129,
+        "sha256": "645555a1ddfb50afa15a6fe884602be3e8d88eb38dfa518bb55cce1d636a6fba"
+      },
+      "selection-browser-forced-preedit": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 25638,
+        "sha256": "9e8619f2cfdc80e0cad2b4d3ebac121a82bdedd82d69fdfcbba1ffdbb22dc65c"
+      },
+      "selection-browser-native-arrow-forced": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 26764,
+        "sha256": "571a5c72c2c91b0377f3e18cd04a1a1b6684b440925192c65f8477143e776ecd"
+      },
+      "selection-browser-delayed-select-arrow-forced": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 26764,
+        "sha256": "571a5c72c2c91b0377f3e18cd04a1a1b6684b440925192c65f8477143e776ecd"
+      },
+      "selection-browser-normal-clear": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 31688,
+        "sha256": "eae6ff8a3c85d6ba72c4cfbe31152dc4ec49ab2c9bf18dd90bff3c8fe3ff75eb"
+      },
+      "selection-browser-normal-partial": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 31869,
+        "sha256": "83a12de50b001e76a6735744e8198b0160c097b6741f28f888e5d3de391426db"
+      },
+      "selection-browser-forced-partial": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 27284,
+        "sha256": "18de0f6da557d9708bcbb92656a4309475b323e6a84e5477ae54c6df4a9b6cee"
+      },
+      "selection-browser-forced-clear": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 26762,
+        "sha256": "2efba1657c0c7ea92ced793276bd5636f8d4a0908958af6e46a483104f9a5289"
+      },
+      "selection-browser-forced-all": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 27188,
+        "sha256": "70421885edef9e25a105a3224d7e765ee10d3aab75c4eb54d0adcba4b1338de3"
+      },
+      "selection-browser-forced-prefix": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 26832,
+        "sha256": "939e8a7dcb89f8e9b7b766112affbe11f0bad273c41cf3df63cc1783a116b94d"
+      },
+      "selection-browser-forced-suffix": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 27171,
+        "sha256": "b7b60953e3537f628322a8b1b630578e6053b734046432bf3ad11311b336be03"
+      },
+      "selection-browser-normal-restored": {
+        "physical_size": [
+          400,
+          500
+        ],
+        "bytes": 31869,
+        "sha256": "83a12de50b001e76a6735744e8198b0160c097b6741f28f888e5d3de391426db"
+      },
+      "preedit-underline-plain-clear": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 44623,
+        "sha256": "1044ed282c4491bfca0dd2b2bc29114685d82cb8737b5ce58d52a7248c6ca2ee"
+      },
+      "preedit-underline-plain-all": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 45209,
+        "sha256": "67c58aa2db04150de17089f44d877ddd1e9f52ff6c98ecb33a5928b4482eed23"
+      },
+      "preedit-underline-plain-prefix": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 44677,
+        "sha256": "867b9ebed695bd6f4f810fcd22c7f214e35714e487aa9655afd9f895eee17558"
+      },
+      "preedit-underline-plain-suffix": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 45183,
+        "sha256": "719c38f788f1cfda228eef7cd9cbf810d2fdabac334fb5e237e07488d7b7be8f"
+      },
+      "preedit-underline-plain-partial": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 45364,
+        "sha256": "5748a53c3def0c82a8f16e5bd926ba8d13cf687ad0a1b3f3bee452ff394a1597"
+      },
+      "preedit-underline-preedit-clear": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 44644,
+        "sha256": "42406cdc133c2211f0724cdd5656b2815fc9a07c08785e0036c82b217dcbc0b4"
+      },
+      "preedit-underline-preedit-normal-before": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 52771,
+        "sha256": "42cca6a33ba26a46f324eaa15c06ba733dd5699e9bb242596b22e6d755c93c9b"
+      },
+      "preedit-underline-preedit-partial": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 45401,
+        "sha256": "cea48a0bcc7798912c68745ab32886ce13fe4fdcd6c51d59f1553e3d37b0ee44"
+      },
+      "preedit-underline-preedit-normal-restored": {
+        "physical_size": [
+          640,
+          800
+        ],
+        "bytes": 52771,
+        "sha256": "42cca6a33ba26a46f324eaa15c06ba733dd5699e9bb242596b22e6d755c93c9b"
+      }
+    }
+  },
+  "ime_line_endings": {
+    "authored": "ab\r\n你🦀\rZ",
+    "browser_value": "ab\n你🦀\nZ",
+    "steps": [
+      {
+        "key": "ArrowLeft",
+        "browser": [
+          1,
+          1
+        ],
+        "runtime": [
+          1,
+          1
+        ],
+        "direction": "forward"
+      },
+      {
+        "key": "Shift+ArrowLeft",
+        "browser": [
+          2,
+          3
+        ],
+        "runtime": [
+          4,
+          2
+        ],
+        "direction": "backward"
+      },
+      {
+        "key": "ArrowRight",
+        "browser": [
+          6,
+          6
+        ],
+        "runtime": [
+          11,
+          11
+        ],
+        "direction": "forward"
+      }
+    ]
+  },
+  "ime_cancellation": {
+    "select_all_survives_redraw": {
+      "before": {
+        "browser": [
+          0,
+          2
+        ],
+        "value": "台文",
+        "direction": "forward",
+        "runtime": [
+          "台文",
+          "台文",
+          "0",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": true,
+        "trustedRight": false,
+        "frames": 6
+      },
+      "after": {
+        "browser": [
+          0,
+          2
+        ],
+        "value": "台文",
+        "direction": "forward",
+        "runtime": [
+          "台文",
+          "台文",
+          "0",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": true,
+        "trustedRight": false,
+        "frames": 7
+      },
+      "redraw_width": 1001,
+      "replacement": [
+        "中👨‍👩‍👧‍👦é",
+        "中👨‍👩‍👧‍👦é",
+        "31",
+        "31",
+        "false"
+      ]
+    },
+    "backward_range_and_next_edit": {
+      "canceled": {
+        "browser": [
+          1,
+          2
+        ],
+        "value": "台文",
+        "direction": "backward",
+        "runtime": [
+          "台文",
+          "台文",
+          "6",
+          "3",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": false,
+        "frames": 7
+      },
+      "moved": {
+        "browser": [
+          2,
+          2
+        ],
+        "value": "台文",
+        "direction": "forward",
+        "runtime": [
+          "台文",
+          "台文",
+          "6",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 7
+      },
+      "unpainted": {
+        "browser": [
+          3,
+          3
+        ],
+        "value": "台文X",
+        "direction": "forward",
+        "runtime": [
+          "台文X",
+          "台文X",
+          "7",
+          "7",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 7
+      },
+      "repainted": {
+        "browser": [
+          3,
+          3
+        ],
+        "value": "台文X",
+        "direction": "forward",
+        "runtime": [
+          "台文X",
+          "台文X",
+          "7",
+          "7",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 8
+      }
+    }
+  },
+  "preserved_stock_pngs": [
+    "material-web-contrast-popup-normal.png",
+    "material-web-contrast-popup-forced.png",
+    "material-web-contrast-popup-restored.png",
+    "material-web-contrast-preedit-underline-preedit-partial.png",
+    "material-web-contrast-selection-browser-native-arrow-forced.png",
+    "material-web-contrast-selection-browser-delayed-select-arrow-forced.png"
+  ]
+}
