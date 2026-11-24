@@ -1,0 +1,1202 @@
+    Checking serde_core v1.0.229
+    Checking zmij v1.0.23
+    Checking memchr v2.8.3
+    Checking itoa v1.0.18
+    Checking slotmap v1.1.1
+    Checking arrayvec v0.7.8
+    Checking grid v0.15.0
+    Checking taffy v0.7.7
+    Checking serde v1.0.229
+    Checking serde_json v1.0.154
+    Checking thiserror v2.0.21
+    Checking surface v0.1.43 (<source>/crates/surface)
+    Checking jet-bridge-protocol v0.1.0 (https://github.com/faberline/jet-bridge?rev=a21f93425f8f27dfc7ab2bea0c34fdebcc71335f#a21f9342)
+    Checking surface-devtools-protocol v0.1.43 (<source>/crates/surface-devtools-protocol)
+    Checking unicode-segmentation v1.13.3
+    Checking surface-app v0.1.43 (<source>/crates/surface-app)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.15s
+   Compiling jet-bridge-protocol v0.1.0 (https://github.com/faberline/jet-bridge?rev=a21f93425f8f27dfc7ab2bea0c34fdebcc71335f#a21f9342)
+   Compiling surface v0.1.43 (<source>/crates/surface)
+   Compiling surface-app v0.1.43 (<source>/crates/surface-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 28s
+     Running unittests src/lib.rs (<cargo-target>/debug/deps/surface-10e2bd26a65eb99c)
+
+running 1 test
+test snapshot::tests::snapshot_captures_semantic_surface_tree ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/absolute_overlay_fit.rs (<cargo-target>/debug/deps/absolute_overlay_fit-3b71a12d38b63b1e)
+
+running 9 tests
+test fits_the_selected_physical_edge_and_top_without_moving_the_owner ... ok
+test missing_and_later_owner_references_are_hidden_and_flow_nodes_ignore_the_opt_in ... ok
+test an_owner_in_a_separate_branch_or_fixed_layer_cannot_bring_a_decoration_into_view ... ok
+test clips_to_the_intersection_of_nested_clips_and_viewport_on_every_resize ... ok
+test an_anchor_can_precede_the_lane_that_contains_its_absolute_decoration ... ok
+test all_paint_follows_the_owners_visibility_including_shadows_and_fixed_descendants ... ok
+test an_absolute_overlay_is_not_measured_as_scrollable_content ... ok
+test the_layout_option_stays_off_the_dom_wire ... ok
+test uses_the_owner_on_each_axis_where_the_measured_overlay_fits ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adjustable.rs (<cargo-target>/debug/deps/adjustable-48c9fc242daf9c8a)
+
+running 2 tests
+test missing_is_distinct_from_an_accepted_minimum ... ok
+test opt_in_leaves_existing_nodes_and_role_wire_values_untouched ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/dialog_semantics.rs (<cargo-target>/debug/deps/dialog_semantics-d545967f78f1d8ed)
+
+running 1 test
+test dialog_accessibility_metadata_is_opt_in_and_keeps_the_base_role ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/fill_contour.rs (<cargo-target>/debug/deps/fill_contour-960ae5db408b55f7)
+
+running 6 tests
+test constructors_and_decoders_validate_and_bound_the_contour ... ok
+test only_authored_fills_require_dom_version_four ... ok
+test fill_keeps_input_geometry_and_its_place_in_the_attributed_paint_order ... ok
+test transparent_and_fully_clipped_fills_do_not_publish_a_paint_op ... ok
+test legacy_fills_use_disjoint_coverage_and_the_even_odd_rule ... ok
+test legacy_sampling_stays_bounded_for_a_large_diagonal ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focus_color.rs (<cargo-target>/debug/deps/focus_color-16c01893b70dbe5d)
+
+running 4 tests
+test custom_outline_is_an_inside_stroke_and_keeps_the_ancestor_clip ... ok
+test transparent_foreground_keeps_legacy_focus_ops_but_transparent_override_hides_them ... ok
+test focus_color_changes_only_the_outline_for_square_and_shaped_controls ... ok
+test absent_or_invalid_outline_width_keeps_legacy_focus_paint_and_json ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/it/main.rs (<cargo-target>/debug/deps/it-ed66005a45601c32)
+
+running 37 tests
+test motion::cubic_bezier_matches_reference_values ... ok
+test builders::default_props_leave_every_field_unset ... ok
+test builders::props_builders_set_what_the_getters_read ... ok
+test builders::component_renders_its_props_through_its_render_fn ... ok
+test motion::easing_and_transition_validity ... ok
+test shape::corner_radii_falls_back_to_legacy_radius ... ok
+test motion::easing_endpoints_and_clamp ... ok
+test shape::corner_validity ... ok
+test shape::corners_constructors_place_radii_on_the_named_corners ... ok
+test motion::style_json_omits_transition_and_round_trips ... ok
+test motion::layout_rejects_invalid_transition ... ok
+test microdom::fixed_layers_escape_scroll_clips_and_paint_above_flow_content ... ok
+test microdom::scroll_offsets_and_ancestor_clips_control_hit_testing ... ok
+test shape::custom_state_layer_uses_parent_press_focus_and_hover ... ok
+test shape::children_keep_rectangular_parent_clip ... ok
+test shape::layout_rejects_invalid_corners ... ok
+test microdom::invalid_input_returns_errors_and_display_list_is_canonical ... ok
+test microdom::layout_reuses_measurements_and_updates_changed_leaf ... ok
+test shape::focus_ring_keeps_legacy_quads_and_follows_corners ... ok
+test shape::resolve_clamps_each_corner_to_half_the_short_side ... ok
+test shape::state_layer_follows_corners ... ok
+test shape::uniform_detection ... ok
+test shape::style_json_omits_corners_by_default_and_round_trips_full ... ok
+test shape::paint_uses_quad_for_uniform_and_shape_for_asymmetric_corners ... ok
+test microdom::arena_preserves_links_and_semantic_indexes_and_rejects_duplicate_ids ... ok
+test snapshot::snapshot_serializes_stable_structural_tree ... ok
+test snapshot_json::pinned_json_decodes_to_surface_snapshot ... ok
+test style_json::default_style_json_is_the_legacy_document ... ok
+test style_json::legacy_styled_json_keeps_the_legacy_keys ... ok
+test snapshot_json::surface_snapshot_encodes_to_pinned_json ... ok
+test typography::default_measure_text_scales_legacy_height_by_line_height ... ok
+test typography::default_text_layout_styled_scales_lines ... ok
+test typography::text_style_defaults_and_line_height ... ok
+test typography::style_json_omits_default_text_fields_and_round_trips ... ok
+test typography::paint_keeps_legacy_text_ops_and_emits_styled_text_otherwise ... ok
+test typography::layout_rejects_invalid_text_style ... ok
+test typography::layout_measures_with_the_node_text_style ... ok
+
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/measured_group.rs (<cargo-target>/debug/deps/measured_group-6c46edc9af17c79d)
+
+running 4 tests
+test measured_group_has_clone_identity_and_preserves_the_wire_shape ... ok
+test measured_group_allocates_as_one_item_and_clips_its_placed_children ... ok
+test invalid_group_measurement_placement_or_child_shape_returns_a_layout_error ... ok
+test retained_layout_reads_new_child_properties_and_can_switch_to_flow ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/microdom_contract.rs (<cargo-target>/debug/deps/microdom_contract-ecd5b9285dc4c816)
+
+running 16 tests
+test from_snapshot_rejects_empty ... ok
+test from_snapshot_rejects_bad_version ... ok
+test errors_are_typed ... ok
+test from_snapshot_rejects_wrong_parent ... ok
+test from_snapshot_rejects_duplicate_ids ... ok
+test from_snapshot_rejects_bad_link_index ... ok
+test menu_popup_uses_the_existing_expanded_and_disclosure_wire_fields ... ok
+test selectors_are_deterministic ... ok
+test traversal_keeps_insertion_order_and_parents ... ok
+test grid_metadata_round_trips_without_changing_base_roles ... ok
+test snapshot_has_golden_bytes ... ok
+test grid_multiselection_is_opt_in_and_keeps_the_existing_snapshot_version ... ok
+test from_snapshot_round_trips ... ok
+test snapshots_are_byte_stable_across_independent_builds ... ok
+test web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values ... ok
+test web_listbox_round_trip_preserves_checked_radios_and_legacy_json ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/microdom_layout.rs (<cargo-target>/debug/deps/microdom_layout-81efe98b2b3b1f39)
+
+running 10 tests
+test invalid_viewport_and_style_return_errors ... ok
+test clipped_descendant_is_not_hit ... ok
+test containers_do_not_steal_input ... ok
+test scroll_offset_moves_hit_target ... ok
+test topmost_overlapping_layer_wins_hit_test ... ok
+test changed_since_lists_only_the_changed_subtree ... ok
+test disabled_and_zero_size_nodes_are_not_hit ... ok
+test shrinking_column_body_reserves_measured_footer_and_keeps_scroll_extent ... ok
+test bounds_and_clips_are_deterministic ... ok
+test changed_since_reports_new_nodes ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/microdom_paint.rs (<cargo-target>/debug/deps/microdom_paint-cffb0b8025f89a95)
+
+running 11 tests
+test nested_clips_are_carried_on_every_op ... ok
+test damage_is_empty_for_identical_lists ... ok
+test no_gpu_or_browser_types_in_output ... ok
+test damage_is_the_viewport_when_the_viewport_changes ... ok
+test paint_op_accessors_return_rect_and_clip ... ok
+test interaction_corners_follow_press_focus_and_hover_without_moving_the_face ... ok
+test damage_covers_removed_and_added_ops ... ok
+test ops_follow_paint_order ... ok
+test identical_trees_give_byte_stable_output ... ok
+test damage_is_bounded_to_the_changed_node ... ok
+test text_is_a_reference_not_glyphs ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/modal_layers.rs (<cargo-target>/debug/deps/modal_layers-9ac02183fdbcef66)
+
+running 3 tests
+test empty_or_invalid_layers_keep_legacy_order ... ok
+test nested_and_sibling_modals_use_the_supplied_stack_order ... ok
+test owned_fixed_popups_paint_after_their_panel_and_all_background_layers ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/opacity_group.rs (<cargo-target>/debug/deps/opacity_group-134a36d8bb2bd4e1)
+
+running 1 test
+test opacity_markers_round_trip_without_changing_legacy_paint ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/paint_attribution.rs (<cargo-target>/debug/deps/paint_attribution-9dbe4dfce56e8c94)
+
+running 4 tests
+test text_field_decorations_belong_to_the_field ... ok
+test compile_and_compile_with_text_still_match ... ok
+test owner_list_matches_ops_for_every_control_state ... ok
+test attributed_list_equals_compile_with_interaction ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.00s
+
+     Running tests/press_ripple.rs (<cargo-target>/debug/deps/press_ripple-a73dc91cbba45356)
+
+running 5 tests
+test wave_starts_at_physical_origin_and_resolves_current_asymmetric_corners ... ok
+test checkpoint_paints_over_media_below_copy_and_flushes_when_media_is_clipped ... ok
+test held_wave_replaces_press_and_released_wave_keeps_hover_or_focus ... ok
+test live_opt_in_preserves_exact_dom_and_legacy_paint ... ok
+test invalid_checkpoints_keep_feedback_at_the_owner ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/raster.rs (<cargo-target>/debug/deps/raster-28deccb6bcbcd040)
+
+running 4 tests
+test raw_pixels_validate_dimensions_and_clones_share_the_original_allocation ... ok
+test centered_cover_crops_either_axis_without_rescaling_after_clipping ... ok
+test fully_clipped_images_emit_no_operation ... ok
+test raster_is_attributed_between_background_and_border_and_omitted_from_existing_wire ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scroll_extent.rs (<cargo-target>/debug/deps/scroll_extent-790e2d82a3989209)
+
+running 6 tests
+test extent_of_an_empty_node_is_its_own_size ... ok
+test extent_counts_a_clip_child_without_an_id ... ok
+test extent_adds_padding_at_the_end ... ok
+test extent_skips_fixed_children ... ok
+test extent_follows_the_row_count ... ok
+test extent_ignores_the_offset ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/shadow.rs (<cargo-target>/debug/deps/shadow-ac91447889f5fa13)
+
+running 9 tests
+test an_offscreen_caster_can_leave_a_visible_shadow_inside_the_ancestor_clip ... ok
+test omitted_and_invalid_shadow_values_leave_legacy_paint_intact ... ok
+test a_state_shadow_changes_damage_without_changing_geometry ... ok
+test soft_shadow_is_bounded_and_reaches_the_requested_opacity ... ok
+test node_shadow_round_trips_without_changing_style_or_legacy_node_json ... ok
+test interaction_overrides_round_trip_and_absent_overrides_keep_legacy_json ... ok
+test the_higher_shadow_darkens_the_dark_backdrop_after_rgba8_rounding ... ok
+test shadow_does_not_change_layout_or_hits_and_paints_before_face_and_focus ... ok
+test interaction_shadows_follow_actual_state_in_both_paint_lists ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/text_alignment.rs (<cargo-target>/debug/deps/text_alignment-e9142ddce5d869f9)
+
+running 2 tests
+test text_alignment_node_wire_is_optional_and_text_inputs_keep_their_default ... ok
+test extended_alignment_keeps_static_run_clip_and_owner_and_leaves_editable_selection ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/text_selection_paint.rs (<cargo-target>/debug/deps/text_selection_paint-2fc1eceb8d4c700d)
+
+running 2 tests
+test overlapping_forced_selection_uses_highlight_text_for_each_clipped_preedit_underline_region ... ok
+test paired_selection_preserves_one_editable_run_and_disjoint_fractional_pixel_regions ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running unittests src/lib.rs (<cargo-target>/debug/deps/surface_app-444cebead5c1410d)
+
+running 2 tests
+test motion::tests::a_target_change_makes_a_full_pass_again ... ok
+test motion::tests::a_still_tree_with_a_transition_skips_the_full_pass ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_activation.rs (<cargo-target>/debug/deps/accessibility_activation-f4f8f1b399500c5d)
+
+running 6 tests
+test activation_requires_opt_in_enabled_press_role_and_a_message ... ok
+test queued_updates_before_or_during_clone_do_not_run_the_old_press ... ok
+test clipping_retires_a_target_even_when_the_control_returns ... ok
+test clone_cannot_press_while_close_or_scroll_is_pending ... ok
+test activation_preserves_ime_and_does_not_interrupt_a_pointer_press ... ok
+test old_activation_cannot_cross_runtimes_replacements_or_modals ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_description.rs (<cargo-target>/debug/deps/accessibility_description-e4485216b9c60a58)
+
+running 5 tests
+test a_clipped_text_parent_with_a_visible_child_is_not_a_validation_target ... ok
+test devtools_exposes_grid_state_and_text_reference_through_the_existing_methods ... ok
+test only_a_mounted_clipped_validation_error_in_scope_can_describe_an_invalid_editor ... ok
+test description_requires_a_current_visible_tooltip_in_scope ... ok
+test date_field_describes_itself_with_current_static_text ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_focus.rs (<cargo-target>/debug/deps/accessibility_focus-6ec60fa01fde99dc)
+
+running 9 tests
+test focus_does_not_activate_and_ordinary_frames_keep_identity ... ok
+test rapid_projected_keys_follow_current_focus_before_the_next_frame ... ok
+test clipping_and_render_failure_retire_a_target_without_a_view_rebuild ... ok
+test focus_preserves_the_replacement_range_across_empty_preedit ... ok
+test a_focus_request_cannot_interrupt_an_active_pointer_press ... ok
+test custom_projected_keys_need_no_fallback_and_reject_stale_targets ... ok
+test projected_keys_do_not_apply_after_pending_view_replacement_or_modal_change ... ok
+test queue_is_applied_before_focus_and_invalid_view_never_reuses_old_targets ... ok
+test modal_projection_and_replacement_retire_previous_targets ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_scroll.rs (<cargo-target>/debug/deps/accessibility_scroll-a4528e3fce655976)
+
+running 3 tests
+test nested_reveal_keeps_focus_and_publishes_manual_offsets ... ok
+test reveal_respects_pointer_and_pending_composition ... ok
+test replaced_views_and_external_modal_ancestors_do_not_consume_reveal ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/accessibility_scroll_pages.rs (<cargo-target>/debug/deps/accessibility_scroll_pages-1d7355f6f4e89ec6)
+
+running 6 tests
+test opted_in_viewport_requires_a_stable_id ... ok
+test ordinary_reflows_preserve_live_targets_and_loss_of_visibility_retires_them ... ok
+test viewport_actions_require_opt_in_and_do_not_interrupt_native_input ... ok
+test relative_pages_use_the_visible_size_and_leave_the_other_axis_and_parent_alone ... ok
+test rebuilt_and_modal_views_reject_delayed_pages ... ok
+test vertical_pages_pause_and_resume_sticky_following ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/activation_repeat.rs (<cargo-target>/debug/deps/activation_repeat-b2b8d9e458685cdd)
+
+running 3 tests
+test explicit_handlers_win_and_other_keys_and_controls_pass ... ok
+test normal_key_route_keeps_one_press_per_hold_and_leaves_legacy_and_arrows_alone ... ok
+test projected_route_consumes_repeated_activation_with_a_current_target ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adaptive_view.rs (<cargo-target>/debug/deps/adaptive_view-10dcc0ebcdd3149a)
+
+running 3 tests
+test failed_resize_rebuild_is_retried_at_the_same_size ... ok
+test invalid_dimensions_do_not_change_app_state ... ok
+test resize_rebuilds_the_view_only_when_the_app_needs_it_and_keeps_input ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/adjustable.rs (<cargo-target>/debug/deps/adjustable-4ea54ef60c1a3516)
+
+running 8 tests
+test projected_keyboard_action_uses_the_rendered_focus_target ... ok
+test adjusts_discrete_values_without_focusing_then_rejects_old_tree_tokens ... ok
+test directional_adjustment_without_current_value_uses_existing_first_step ... ok
+test a_callback_that_hides_the_target_cannot_dispatch_the_old_adjustment ... ok
+test native_or_projected_arrow_steps_keep_the_same_control_focused ... ok
+test semantic_up_key_adjusts_the_focused_opted_in_control ... ok
+test directional_adjustment_wraps_both_ways_and_preserves_absolute_validation ... ok
+test composition_modal_scope_disabled_and_held_pointer_block_adjustments ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/animation_frame.rs (<cargo-target>/debug/deps/animation_frame-8d21bd15cb93d13c)
+
+running 3 tests
+test standard_spring_can_settle_from_a_released_gesture ... ok
+test failed_animation_rebuild_retries_and_reduce_motion_stops_redraws ... ok
+test an_animation_frame_during_a_held_click_preserves_the_pause_action ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/bridge.rs (<cargo-target>/debug/deps/bridge-c5d00224c8732eec)
+
+running 3 tests
+test wire_actions_update_controlled_state_and_export_the_new_tree ... ok
+test modal_scope_blocks_background_actions_and_escape_restores_the_opener ... ok
+test rejected_requests_preserve_focus_composition_and_state ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/close.rs (<cargo-target>/debug/deps/close-6e2a1863d69b0e79)
+
+running 7 tests
+test the_app_state_is_dropped_when_the_runtime_ends ... ok
+test a_close_command_made_inside_the_hook_is_consumed_by_the_request ... ok
+test a_close_command_from_wake_or_dispatch_is_seen_by_the_host ... ok
+test without_a_hook_the_default_allows_the_close ... ok
+test a_close_request_calls_the_hook_exactly_once_before_exit ... ok
+test the_app_close_command_ends_the_loop_after_a_veto ... ok
+test a_cancelled_close_keeps_the_window_and_later_events_still_run ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/context_menu.rs (<cargo-target>/debug/deps/context_menu-9e310e478490fba0)
+
+running 10 tests
+test a_left_press_posts_only_the_primary_message ... ok
+test a_secondary_press_on_a_menu_item_does_nothing ... ok
+test a_handler_on_a_parent_runs_when_a_child_is_hit ... ok
+test escape_closes_the_menu ... ok
+test the_app_opens_a_menu_at_the_point_and_an_outside_press_closes_it ... ok
+test no_handler_on_the_node_or_any_ancestor_does_nothing ... ok
+test secondary_press_posts_the_handler_message_with_the_exact_point ... ok
+test a_left_click_outside_closes_the_menu ... ok
+test a_secondary_press_changes_no_pointer_state ... ok
+test the_trace_records_a_secondary_down_input ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/controls.rs (<cargo-target>/debug/deps/controls-06e5fbdc77b8d4b2)
+
+running 7 tests
+test invalid_numeric_contract_is_rejected_before_it_reaches_layout ... ok
+test arrows_enter_a_focused_group_container_without_activating_a_tab ... ok
+test deferred_pointer_focus_moves_only_when_the_button_activates ... ok
+test slider_drag_keeps_capture_across_rebuilds_and_clamps_outside_release ... ok
+test groups_have_one_tab_stop_skip_disabled_and_separate_focus_from_selection ... ok
+test nested_modals_trap_focus_block_background_and_restore_each_opener ... ok
+test outside_click_dismisses_without_activating_the_control_under_it ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/cursor.rs (<cargo-target>/debug/deps/cursor-046e89e8b4780612)
+
+running 10 tests
+test default_style_is_default ... ok
+test no_layout_yet_gives_default ... ok
+test focusable_without_a_cursor_and_empty_space_give_default ... ok
+test disabled_node_is_not_a_candidate ... ok
+test enabled_node_gives_its_explicit_cursor ... ok
+test last_painted_of_two_overlapping_nodes_wins ... ok
+test non_focusable_handle_with_an_explicit_cursor_counts ... ok
+test nodes_outside_the_modal_scope_give_default ... ok
+test cursor_at_does_not_change_state ... ok
+test explicit_cursors_change_no_output ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/devtools.rs (<cargo-target>/debug/deps/devtools-e509ca79610a49a7)
+
+running 18 tests
+test action_set_value_snaps_to_the_step ... ok
+test capabilities_advertises_native_capture_only_when_the_host_installs_it ... ok
+test action_fill_sets_the_value_and_focus_without_pressing ... ok
+test action_activate_runs_the_press_binding_and_focuses ... ok
+test action_key_edits_the_focused_field ... ok
+test capabilities_lists_the_executor_methods ... ok
+test capabilities_rejects_another_version_and_unknown_methods ... ok
+test dom_query_rejects_an_unknown_role_and_bad_params ... ok
+test action_enter_routes_to_single_line_key_handler_after_composition ... ok
+test dom_query_matches_stable_id_role_and_name ... ok
+test action_key_rejects_no_focus_read_only_and_unknown_keys ... ok
+test dom_snapshot_rejects_another_version_without_side_effects ... ok
+test action_activate_rejects_missing_disabled_and_bad_params ... ok
+test action_set_value_rejects_a_non_slider_and_bad_params ... ok
+test action_fill_rejects_read_only_wrong_role_and_composition ... ok
+test dom_snapshot_returns_the_dom_export ... ok
+test parity::bridge_adapter_output_is_byte_identical_to_origin_main ... ok
+test disabled_and_out_of_modal_targets_keep_focus_and_state ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/display_contrast.rs (<cargo-target>/debug/deps/display_contrast-e9f5a57c0f45340f)
+
+running 5 tests
+test the_default_hook_records_the_preference_without_rebuilding ... ok
+test installed_contrast_survives_a_failed_drag_cancel_rebuild ... ok
+test failed_preference_view_validation_rolls_back_and_accepts_a_retry ... ok
+test forced_selection_repaints_without_rebuilding_or_resetting_preedit ... ok
+test color_changes_deduplicate_exact_pairs_and_keep_the_open_modal_draft ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/editing.rs (<cargo-target>/debug/deps/editing-906bfc99bfda0f79)
+
+running 10 tests
+test browser_offsets_and_field_policies_do_not_split_unicode ... ok
+test cleared_native_preedit_preserves_a_commit_range_but_does_not_lock_normal_keys ... ok
+test editor_deletes_graphemes_replaces_selection_and_undoes_composition ... ok
+test browser_rejected_value_does_not_create_a_change_or_break_controlled_state ... ok
+test late_ime_commits_do_not_follow_focus_to_another_control ... ok
+test cancelled_composition_preserves_selected_text_and_blur_clears_it ... ok
+test composition_is_visible_but_does_not_change_app_state_until_one_commit ... ok
+test centered_single_line_uses_one_origin_for_paint_and_caret_without_shrinking_the_target ... ok
+test right_aligned_editor_shares_paint_pointer_and_composition_geometry ... ok
+test placeholder_only_paints_and_yields_to_both_native_composition_routes ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/features.rs (<cargo-target>/debug/deps/features-bcae3d991b18e7ca)
+
+running 2 tests
+test layout_uses_the_target_style_and_line_height_while_blending ... ok
+test blended_copy_keeps_corners_and_text_style ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focus_navigation.rs (<cargo-target>/debug/deps/focus_navigation-46256e9758aa8441)
+
+running 10 tests
+test extended_navigation_preserves_shift_on_page_keys ... ok
+test key_navigation_applies_once_and_does_not_activate_the_destination ... ok
+test projected_key_navigation_consumes_activation_fallback ... ok
+test headless_arrow_uses_the_same_opted_in_editor_route ... ok
+test navigation_cannot_focus_a_disabled_target_or_cross_the_new_modal_scope ... ok
+test editor_arrow_moves_to_result_without_consuming_editing_and_ime_keys ... ok
+test semantic_enter_uses_opted_in_key_navigation ... ok
+test key_navigation_preserves_key_handler_priority_and_disallows_cross_scope_focus ... ok
+test navigation_mounts_and_reveals_the_target_without_pressing_it ... ok
+test modal_entry_uses_an_enabled_descendant_and_falls_back ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focus_removal.rs (<cargo-target>/debug/deps/focus_removal-ce0af1bafeb0c9e6)
+
+running 4 tests
+test a_new_modal_takes_focus_and_restores_the_previous_control_when_it_returns ... ok
+test fallback_requires_lost_focus_and_an_available_destination ... ok
+test removed_or_disabled_action_transfers_focus_without_pressing_destination ... ok
+test fallback_stays_inside_modal_and_preserves_its_opener ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focus_scroll.rs (<cargo-target>/debug/deps/focus_scroll-7cba9888ad7d724a)
+
+running 4 tests
+test resizing_keeps_the_same_focused_control_in_view ... ok
+test a_fixed_modal_does_not_scroll_its_background_ancestors ... ok
+test nested_scrollers_reveal_inner_then_outer_and_do_not_fight_manual_scroll ... ok
+test tab_reaches_clipped_controls_and_reverse_tab_reveals_the_first ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/focus_shortcuts.rs (<cargo-target>/debug/deps/focus_shortcuts-9fed16ccb3f20961)
+
+running 4 tests
+test rejects_out_of_scope_sources_and_disabled_or_out_of_subtree_targets ... ok
+test rejects_a_measured_zero_size_target ... ok
+test local_handler_wins_and_composition_keeps_its_replacement ... ok
+test shift_letters_focus_and_reveal_without_pressing_targets ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/frame_input.rs (<cargo-target>/debug/deps/frame_input-888139daca65412c)
+
+running 5 tests
+test escape_rebuilds_transient_ui_without_focus_after_modal_precedence ... ok
+test a_suppressed_touch_can_still_finish_a_drag ... ok
+test long_press_consumes_only_the_current_touch_tap ... ok
+test passive_pointer_motion_requests_a_frame_only_for_observers ... ok
+test touch_cancellation_is_reported_once_and_retires_the_pending_press ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/frame_press_detail.rs (<cargo-target>/debug/deps/frame_press_detail-f891d232eef6f5e8)
+
+running 5 tests
+test mouse_origin_survives_coalesced_moves_and_release_outside_is_cancelled_once ... ok
+test fast_tap_reports_its_release_and_a_second_press_gets_a_new_origin ... ok
+test touch_cancel_and_disabling_a_held_mouse_target_keep_the_original_origin ... ok
+test observed_hover_stays_inside_the_active_modal_scope ... ok
+test leaving_and_reentering_observation_discards_a_pending_terminal ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/horizontal_drag.rs (<cargo-target>/debug/deps/horizontal_drag-55bf966129b954cb)
+
+running 5 tests
+test a_tap_selects_once_and_a_vertical_gesture_cannot_become_a_press ... ok
+test tab_cancels_a_live_drag_before_moving_focus_inside_the_modal ... ok
+test an_early_resize_cancels_capture_and_requires_new_layout_for_another_drag ... ok
+test first_escape_cancels_the_swipe_second_escape_closes_the_modal ... ok
+test measured_bounds_survive_motion_release_and_cancellation ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/horizontal_scroll.rs (<cargo-target>/debug/deps/horizontal_scroll-1f7a96076aa5b189)
+
+running 7 tests
+test a_clipped_wrapper_does_not_take_y_from_the_scrollable_parent ... ok
+test a_diagonal_event_saves_both_axes_before_one_view_rebuild ... ok
+test unmarked_routing_stays_unchanged_and_modal_scope_blocks_the_background ... ok
+test a_burst_retains_each_inputs_time_across_the_next_render ... ok
+test vertical_input_can_reach_a_real_child_or_an_explicit_same_view_hook ... ok
+test masked_view_observes_physical_x_with_clock_and_focus ... ok
+test stock_and_finite_managed_x_offsets_are_bounded ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/interaction_corner_motion.rs (<cargo-target>/debug/deps/interaction_corner_motion-59e288819ec5993a)
+
+running 4 tests
+test leaving_hover_reverses_from_its_last_pose_and_reduce_motion_finishes_it ... ok
+test hover_press_and_selection_share_the_presented_outline_without_moving_the_target ... ok
+test legacy_and_no_clock_paint_at_the_immediate_endpoint_and_snapshot_wire_is_unchanged ... ok
+test modal_scope_and_disabled_rows_discard_running_corner_motion ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/keys.rs (<cargo-target>/debug/deps/keys-48eab804180290a2)
+
+running 8 tests
+test default_mappings_are_submit_for_enter_and_newline_for_shift_enter ... ok
+test a_handler_on_an_unfocused_field_is_not_called ... ok
+test a_passed_key_runs_no_message ... ok
+test shift_enter_passes_to_the_field_and_inserts_a_newline ... ok
+test enter_during_a_composition_never_calls_the_handler ... ok
+test with_no_handler_key_passes_and_the_field_behaves_as_before ... ok
+test an_open_menu_consumes_up_down_enter_and_escape_without_changing_the_field ... ok
+test enter_reaches_the_handler_and_a_consumed_enter_inserts_no_newline ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/modal_focus_fallback.rs (<cargo-target>/debug/deps/modal_focus_fallback-94b49db794f333b0)
+
+running 3 tests
+test a_present_opener_has_priority_over_any_fallback ... ok
+test the_fallback_stays_in_the_containing_scope_when_the_command_is_unavailable ... ok
+test opt_in_keeps_the_command_when_it_moves_inline_and_legacy_still_clears_focus ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/modal_layers.rs (<cargo-target>/debug/deps/modal_layers-e6751e748375ad37)
+
+running 5 tests
+test legacy_scope_search_passes_over_a_higher_background_hit ... ok
+test visual_overlay_raises_its_whole_subtree_without_exposing_a_modal_or_press ... ok
+test normal_rebuild_preserves_pointer_but_failed_rebuild_cancels_it ... ok
+test nested_layer_wins_over_outer_fixed_layers_and_cancels_cross_scope_press ... ok
+test painted_and_clipped_popup_regions_are_inside_the_modal ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/modal_retirement.rs (<cargo-target>/debug/deps/modal_retirement-1710839ae6993c06)
+
+running 4 tests
+test opacity_ranges_cover_panel_and_fixed_children_without_dimmed_scrims_or_nested_groups ... ok
+test a_raster_in_a_separate_modal_slice_cannot_defer_the_owners_wave_or_focus_past_opacity ... ok
+test nested_retirement_keeps_the_paint_slot_and_gives_input_to_the_lower_scope ... ok
+test reversing_a_retained_panel_reenters_its_scope_without_reusing_a_press ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/modal_tab_dismiss.rs (<cargo-target>/debug/deps/modal_tab_dismiss-e48dff586591f87c)
+
+running 7 tests
+test dismissing_tab_enters_a_roving_group_after_skipping_its_collapsed_selection ... ok
+test a_default_modal_traps_tab_and_an_ignored_dismiss_stays_focused ... ok
+test dismissing_tabs_from_the_position_of_a_programmatic_only_opener ... ok
+test a_projected_tab_dismisses_the_menu_and_resumes_from_its_opener ... ok
+test a_nested_close_traverses_the_containing_scope_without_dismissing_it ... ok
+test semantic_tab_in_both_directions_returns_the_next_control ... ok
+test dismissing_tab_skips_previously_measured_zero_extent ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/motion.rs (<cargo-target>/debug/deps/motion-e26b2db7cabf07be)
+
+running 24 tests
+test c4_constant_full_radius_follows_a_resize_without_a_run ... ok
+test c5_radius_to_equal_explicit_corners_starts_no_run ... ok
+test c10_color_run_keeps_a_legacy_radius_unresolved ... ok
+test c1_uniform_corners_interpolate_linearly ... ok
+test a_transition_added_with_the_first_change_does_not_animate_without_other_transitions ... ok
+test c11_reduced_motion_settles_the_corner_target ... ok
+test c6_top_to_bottom_passes_through_a_uniform_shape ... ok
+test a_transition_added_with_the_first_change_animates_when_another_node_has_one ... ok
+test c8_reduced_motion_jumps_corners_to_the_target ... ok
+test first_appearance_does_not_animate ... ok
+test c2_full_radius_interpolates_toward_the_resolved_value ... ok
+test c9_retargeting_a_corner_run_starts_from_the_shown_corners ... ok
+test interrupted_transition_retargets_from_the_presented_value ... ok
+test c7_export_dom_keeps_the_target_corners_mid_run ... ok
+test linear_transition_interpolates_with_the_host_clock ... ok
+test export_dom_reports_target_styles_mid_transition ... ok
+test modal_opening_mid_transition_keeps_animating ... ok
+test m2_a_stable_id_that_looks_like_a_child_path_keeps_its_own_track ... ok
+test without_clock_changes_apply_immediately_and_need_no_frame ... ok
+test reduced_motion_applies_targets_immediately ... ok
+test time_never_moves_backwards ... ok
+test view_is_not_called_by_time_or_render ... ok
+test c3_overshooting_easing_stays_finite_and_in_range ... ok
+test zero_duration_and_missing_transition_apply_immediately ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/paint_export.rs (<cargo-target>/debug/deps/paint_export-7a14374af65e59b9)
+
+running 6 tests
+test export_before_the_first_frame_is_an_error ... ok
+test owner_ids_match_dom_export ... ok
+test export_json_is_pinned ... ok
+test export_after_a_state_change_is_an_error_until_the_next_render ... ok
+test caret_and_text_belong_to_the_focused_field ... ok
+test export_round_trips ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/point_drag.rs (<cargo-target>/debug/deps/point_drag-c4d3807473413fb6)
+
+running 9 tests
+test tap_delivers_coordinates_without_child_press_and_preserves_semantic_activation ... ok
+test release_only_claims_once_and_under_slop_release_requires_the_same_visible_owner ... ok
+test host_loss_clears_an_unclaimed_point_without_retiring_an_axis_drag ... ok
+test rejected_callback_and_suppressed_touch_cannot_invoke_stock_actions ... ok
+test exact_diagonal_claims_both_coordinates_and_keeps_bounds_across_rebuild ... ok
+test scope_loss_or_resize_cancels_matching_preview_once ... ok
+test replacing_the_session_cannot_deliver_a_stale_terminal ... ok
+test host_loss_and_invalid_release_cancel_without_second_terminal ... ok
+test measured_point_release_reads_the_latest_render_even_after_an_unrendered_rebuild ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/press_ripple.rs (<cargo-target>/debug/deps/press_ripple-e858f59372fd5a94)
+
+running 6 tests
+test a_drag_claim_cancels_the_stock_wave_and_its_activation ... ok
+test reduced_motion_and_no_clock_keep_the_steady_feedback_without_rearming ... ok
+test a_coalesced_touch_release_still_paints_and_does_not_leak_to_an_app_observer ... ok
+test held_press_starts_transparent_grows_to_cover_and_fades_after_release ... ok
+test scroll_translates_the_local_wave_and_full_clip_retires_the_sequence ... ok
+test rejected_release_scope_replacement_and_geometry_changes_clear_the_wave ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pressed_frame.rs (<cargo-target>/debug/deps/pressed_frame-4e8ab7f4f811a3a3)
+
+running 3 tests
+test a_cancel_before_the_frame_never_reports_a_pending_press ... ok
+test frames_observe_pending_mouse_and_touch_presses_through_a_rebuild ... ok
+test a_lost_or_replaced_target_cannot_replay_an_old_press ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/protected_composition_press.rs (<cargo-target>/debug/deps/protected_composition_press-883ff753b3a453eb)
+
+running 4 tests
+test escape_clears_the_pending_range_before_dismissing_a_modal ... ok
+test current_hit_geometry_limits_protection_to_the_opted_in_target ... ok
+test primary_and_secondary_before_redraw_leave_protected_preedit_intact ... ok
+test prepaint_presses_keep_legacy_cancellation_without_an_eligible_guard ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/roving_all_arrows.rs (<cargo-target>/debug/deps/roving_all_arrows-ba779fae048eb184)
+
+running 4 tests
+test existing_vertical_roving_still_enters_at_checked_and_ignores_horizontal_keys ... ok
+test deferred_fallback_defers_to_tab_and_blur_before_the_next_layout ... ok
+test projected_arrow_reveals_a_clipped_action_and_focus_survives_rebuilds ... ok
+test all_arrows_follow_authored_order_in_ltr_and_rtl_without_activating ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/roving_first.rs (<cargo-target>/debug/deps/roving_first-61706f79cd2bd922)
+
+running 3 tests
+test ordinary_roving_still_enters_at_the_checked_member ... ok
+test first_enabled_entry_works_both_ways_and_keeps_the_current_group_tab_stop ... ok
+test projected_arrows_reveal_a_clipped_member_and_rebuild_retains_focus ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/roving_retained.rs (<cargo-target>/debug/deps/roving_retained-84f0e2ee62e6c7cd)
+
+running 4 tests
+test same_order_rebuild_and_reordering_hidden_focus_preserve_manual_scroll ... ok
+test disabling_the_focused_row_and_removing_its_peer_uses_the_first_enabled_member ... ok
+test reordering_reveals_the_same_previously_visible_member_only_when_opted_in ... ok
+test current_group_fallback_survives_simultaneous_removal_and_prefers_selection ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/scroll_control.rs (<cargo-target>/debug/deps/scroll_control-213fd7dab6456220)
+
+running 22 tests
+test api_unknown_id ... ok
+test clamp_large_offset ... ok
+test api_horizontal_offset_clamps_to_the_content ... ok
+test clamp_without_stick_after_the_user_scrolled ... ok
+test clamp_negative_and_nonfinite ... ok
+test api_metrics ... ok
+test clamp_after_content_shrinks ... ok
+test api_top_bottom_offset ... ok
+test api_queue_from_update ... ok
+test focus_reveal_off_bottom_stops_following ... ok
+test no_stick_flag_no_follow ... ok
+test offset_survives_rebuild ... ok
+test stick_without_id_errors ... ok
+test render_is_idempotent ... ok
+test stick_starts_stuck_with_content_that_fits ... ok
+test user_scroll_tiny_scroll_up_is_still_bottom ... ok
+test queued_child_position_ignores_bad_keys_and_nonfinite_offsets ... ok
+test queued_child_position_uses_the_rebuilt_layout_in_the_same_frame ... ok
+test stick_follows_growth ... ok
+test nested_scrollers_independent ... ok
+test user_scroll_up_stops_following ... ok
+test user_scroll_to_bottom_resumes ... ok
+
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/shortcuts.rs (<cargo-target>/debug/deps/shortcuts-d5ddade35e7ca7c1)
+
+running 14 tests
+test a_new_press_has_repeat_false ... ok
+test an_app_with_no_shortcuts_override_matches_nothing ... ok
+test a_consumed_on_key_wins_over_the_shortcut ... ok
+test ctrl_k_and_shift_case_match_but_extra_modifiers_do_not ... ok
+test a_plain_key_in_a_text_field_is_never_a_shortcut ... ok
+test cmd_k_fires_on_a_button_on_a_field_and_on_nothing ... ok
+test field_edit_chords_belong_to_the_field ... ok
+test no_shortcut_fires_during_a_composition_and_one_fires_after_commit ... ok
+test a_shortcut_reaches_update_once_and_the_view_rebuilds ... ok
+test a_passing_on_key_falls_through_to_the_shortcut ... ok
+test a_repeated_chord_is_consumed_without_a_message ... ok
+test on_key_sees_the_repeat_flag ... ok
+test unbound_keys_send_nothing ... ok
+test a_plain_entry_fires_with_nothing_focused_and_on_a_button ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/snapshot.rs (<cargo-target>/debug/deps/snapshot-9b16124ffebc5474)
+
+running 1 test
+test export_tracks_live_state_and_never_labels_old_geometry_as_current ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/trace.rs (<cargo-target>/debug/deps/trace-b56000d0605d5862)
+
+running 10 tests
+test errors_are_recorded ... ok
+test describe_defaults_to_none ... ok
+test ring_wraps_at_capacity_and_keeps_order ... ok
+test sources::key_value_and_dismiss_bindings_are_sources ... ok
+test jsonl_export_is_pinned ... ok
+test backwards_clock_never_exports_negative_durations ... ok
+test no_recorder_yields_no_records ... ok
+test message_records_carry_ordinal_describe_and_source ... ok
+test click_yields_ordered_records_in_one_frame ... ok
+test non_finite_clock_never_exports_null_times ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/trace_alloc.rs (<cargo-target>/debug/deps/trace_alloc-28ab827acb3add1c)
+
+running 2 tests
+test hooks_add_no_allocations ... ok
+test attached_recorder_adds_no_allocations_per_cycle ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/typography.rs (<cargo-target>/debug/deps/typography-c8e9d32b6a314054)
+
+running 1 test
+test caret_height_follows_styled_line_height ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/vertical_drag.rs (<cargo-target>/debug/deps/vertical_drag-79428d3ef0542b41)
+
+running 4 tests
+test scrolling_content_beside_the_handle_does_not_dispatch_a_drag ... ok
+test a_wrong_axis_gesture_cannot_press_the_handle_but_a_tap_can ... ok
+test resize_or_replacement_cannot_deliver_a_stale_release ... ok
+test dominant_axis_stays_claimed_and_uses_the_original_bounds_and_vertical_velocity ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/vertical_scroll.rs (<cargo-target>/debug/deps/vertical_scroll-0ca99e5f09ecff1a)
+
+running 8 tests
+test partial_consumption_moves_the_body_and_keeps_focus_through_the_message ... ok
+test nested_scroll_reports_both_boundaries_and_does_not_pass_leftovers_up ... ok
+test a_wheel_burst_between_frames_keeps_each_sample_and_current_offsets ... ok
+test a_pending_app_update_can_replace_the_route_before_replay ... ok
+test a_moved_or_newly_out_of_scope_owner_never_retargets_queued_wheel_samples ... ok
+test hook_ignores_nonvertical_invalid_and_out_of_scope_events ... ok
+test no_hook_declining_hook_and_disabled_hook_leave_normal_scrolling_intact ... ok
+test consumption_is_limited_to_the_finite_delta_and_its_direction ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/vertical_scroll_focus.rs (<cargo-target>/debug/deps/vertical_scroll_focus-765f9c9897a6ba85)
+
+running 1 test
+test a_scroll_hook_sees_current_focus_even_outside_the_scroll_view ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/wake.rs (<cargo-target>/debug/deps/wake-bc37a0c7fa70a498)
+
+running 4 tests
+test a_posted_message_waits_for_flush_and_wake_applies_it ... ok
+test a_call_made_during_update_is_queued_not_reentered ... ok
+test wake_runs_the_app_hook_and_rebuilds ... ok
+test outside_write_changes_the_dom_export ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests surface
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests surface_app
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling syn v3.0.9
+    Checking bitflags v2.13.2
+   Compiling libc v0.2.191
+   Compiling cfg_aliases v0.2.2
+    Checking cfg-if v1.0.5
+    Checking objc2-encode v4.1.0
+    Checking foldhash v0.2.0
+    Checking hashbrown v0.17.1
+    Checking core-foundation-sys v0.8.7
+    Checking core-foundation v0.9.4
+    Checking bitflags v1.3.2
+    Checking foreign-types-shared v0.3.1
+   Compiling rustversion v1.0.23
+   Compiling thiserror-impl v2.0.21
+   Compiling foreign-types-macros v0.2.4
+    Checking log v0.4.35
+    Checking arrayvec v0.7.8
+    Checking foreign-types v0.5.0
+    Checking thiserror v2.0.21
+   Compiling bytemuck_derive v1.12.1
+    Checking core-graphics-types v0.1.3
+    Checking smallvec v1.16.4
+    Checking equivalent v1.0.3
+   Compiling crossbeam-utils v0.8.23
+   Compiling objc-sys v0.3.5
+    Checking bytemuck v1.25.2
+    Checking indexmap v2.14.2
+   Compiling syn v2.0.119
+   Compiling libm v0.2.16
+    Checking once_cell v1.21.4
+   Compiling heck v0.5.0
+   Compiling objc2 v0.6.5
+   Compiling parking_lot_core v0.9.12
+   Compiling paste v1.0.15
+   Compiling crossbeam-epoch v0.9.21
+   Compiling strum_macros v0.26.4
+   Compiling serde_derive v1.0.229
+   Compiling naga v24.0.0
+    Checking malloc_buf v0.0.6
+    Checking bit-vec v0.8.0
+   Compiling crossbeam-deque v0.8.8
+    Checking rustc-hash v1.1.0
+   Compiling autocfg v1.5.1
+    Checking scopeguard v1.2.0
+    Checking raw-window-handle v0.6.2
+    Checking termcolor v1.4.1
+    Checking unicode-width v0.1.14
+    Checking codespan-reporting v0.11.1
+    Checking serde v1.0.229
+    Checking lock_api v0.4.14
+   Compiling num-traits v0.2.19
+    Checking bit-set v0.8.0
+    Checking objc v0.2.7
+    Checking strum v0.26.3
+    Checking objc2 v0.5.3
+    Checking font-types v0.7.3
+   Compiling wgpu-hal v24.0.4
+    Checking block v0.1.6
+    Checking unicode-xid v0.2.6
+    Checking hexf-parse v0.2.1
+   Compiling rayon-core v1.13.0
+    Checking metal v0.31.0
+    Checking read-fonts v0.22.7
+    Checking parking_lot v0.12.5
+    Checking block2 v0.5.1
+    Checking wgpu-types v24.0.0
+    Checking libloading v0.8.9
+   Compiling wgpu-core v24.0.5
+   Compiling litrs v1.0.1
+    Checking profiling v1.0.18
+    Checking simd-adler32 v0.3.10
+    Checking dispatch v0.2.0
+    Checking skrifa v0.22.3
+    Checking objc2-foundation v0.2.2
+    Checking taffy v0.7.7
+   Compiling document-features v0.2.12
+    Checking objc2-core-foundation v0.3.2
+   Compiling wgpu v24.0.5
+    Checking memmap2 v0.9.12
+   Compiling zerocopy v0.8.63
+   Compiling crc32fast v1.5.4
+    Checking either v1.19.0
+    Checking adler2 v2.0.1
+    Checking ttf-parser v0.20.0
+    Checking yazi v0.1.6
+    Checking uuid v1.29.3
+    Checking ttf-parser v0.21.1
+    Checking unicode-ccc v0.2.0
+    Checking zeno v0.2.3
+    Checking unicode-bidi-mirroring v0.2.0
+    Checking tinyvec v1.13.3
+    Checking unicode-script v0.5.9
+    Checking unicode-properties v0.1.5
+    Checking fontdb v0.16.2
+    Checking rustybuzz v0.14.1
+    Checking swash v0.1.19
+    Checking accesskit v0.25.2
+    Checking rayon v1.12.0
+    Checking euclid v0.22.14
+    Checking surface v0.1.43 (<source>/crates/surface)
+    Checking objc2-app-kit v0.2.2
+    Checking block2 v0.6.2
+   Compiling ahash v0.8.12
+   Compiling winit v0.30.13
+    Checking tracing-core v0.1.36
+    Checking static_assertions v1.1.0
+    Checking pin-project-lite v0.2.17
+    Checking self_cell v1.3.0
+    Checking unicode-linebreak v0.1.5
+    Checking svg_fmt v0.4.5
+    Checking sys-locale v0.3.2
+    Checking rangemap v1.8.0
+    Checking unicode-bidi v0.3.18
+    Checking etagere v0.2.15
+    Checking cosmic-text v0.12.1
+    Checking tracing v0.1.44
+    Checking objc2-foundation v0.3.2
+    Checking accesskit_consumer v0.39.2
+    Checking miniz_oxide v0.9.1
+    Checking objc2-core-graphics v0.3.2
+    Checking jet-bridge-protocol v0.1.0 (https://github.com/faberline/jet-bridge?rev=a21f93425f8f27dfc7ab2bea0c34fdebcc71335f#a21f9342)
+    Checking surface-devtools-protocol v0.1.43 (<source>/crates/surface-devtools-protocol)
+    Checking core-graphics v0.23.2
+    Checking smol_str v0.2.2
+    Checking rustc-hash v2.1.3
+    Checking dpi v0.1.2
+    Checking lru v0.12.5
+    Checking cursor-icon v1.2.0
+   Compiling getrandom v0.3.4
+    Checking glyphon v0.8.0
+    Checking surface-app v0.1.43 (<source>/crates/surface-app)
+    Checking objc2-app-kit v0.3.2
+    Checking flate2 v1.1.10
+    Checking accesskit_macos v0.27.2 (<source>/third-party/accesskit-macos)
+    Checking miniz_oxide v0.8.9
+    Checking fdeflate v0.3.7
+    Checking accesskit_winit v0.34.2 (<source>/third-party/accesskit-winit)
+    Checking material-colors v0.4.2
+    Checking png v0.18.1
+    Checking arboard v3.7.0
+    Checking surface-wgpu v0.1.43 (<source>/crates/surface-wgpu)
+    Checking base64 v0.22.1
+    Checking pollster v0.4.0
+    Checking surface-material v0.1.43 (<source>/crates/surface-material)
+    Checking surface-platform v0.1.43 (<source>/crates/surface-platform)
+    Checking surface-material-gallery v0.1.43 (<source>/examples/material-gallery)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 36.38s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling wasm-bindgen-shared v0.2.129
+   Compiling serde_core v1.0.229
+   Compiling syn v3.0.9
+    Checking cfg-if v1.0.5
+   Compiling rustversion v1.0.23
+   Compiling version_check v0.9.5
+    Checking once_cell v1.21.4
+   Compiling bumpalo v3.20.3
+   Compiling wasm-bindgen-macro-support v0.2.129
+   Compiling wasm-bindgen v0.2.129
+    Checking pin-project-lite v0.2.17
+   Compiling slotmap v1.1.1
+    Checking futures-task v0.3.34
+    Checking slab v0.4.12
+    Checking futures-core v0.3.34
+    Checking futures-util v0.3.34
+   Compiling bytemuck_derive v1.12.1
+   Compiling crossbeam-utils v0.8.23
+    Checking bytemuck v1.25.2
+   Compiling wasm-bindgen-macro v0.2.129
+   Compiling libm v0.2.16
+   Compiling serde v1.0.229
+   Compiling cfg_aliases v0.2.2
+   Compiling crossbeam-epoch v0.9.21
+    Checking js-sys v0.3.106
+   Compiling serde_derive v1.0.229
+    Checking bitflags v2.13.2
+   Compiling autocfg v1.5.1
+    Checking smallvec v1.16.4
+   Compiling crossbeam-deque v0.8.8
+    Checking arrayvec v0.7.8
+   Compiling zmij v1.0.23
+   Compiling num-traits v0.2.19
+    Checking font-types v0.7.3
+   Compiling serde_json v1.0.154
+    Checking log v0.4.35
+   Compiling thiserror v2.0.21
+   Compiling rayon-core v1.13.0
+   Compiling parking_lot_core v0.9.12
+    Checking web-sys v0.3.106
+    Checking read-fonts v0.22.7
+   Compiling thiserror-impl v2.0.21
+    Checking scopeguard v1.2.0
+    Checking unicode-segmentation v1.13.3
+    Checking itoa v1.0.18
+    Checking memchr v2.8.3
+    Checking grid v0.15.0
+    Checking taffy v0.7.7
+    Checking lock_api v0.4.14
+    Checking skrifa v0.22.3
+    Checking wasm-bindgen-futures v0.4.79
+   Compiling wgpu v24.0.5
+    Checking either v1.19.0
+    Checking unicode-bidi-mirroring v0.2.0
+    Checking tinyvec v1.13.3
+    Checking zeno v0.2.3
+    Checking ttf-parser v0.20.0
+    Checking unicode-script v0.5.9
+   Compiling zerocopy v0.8.63
+    Checking unicode-ccc v0.2.0
+    Checking ttf-parser v0.21.1
+   Compiling litrs v1.0.1
+    Checking unicode-properties v0.1.5
+    Checking yazi v0.1.6
+    Checking memmap2 v0.9.12
+    Checking raw-window-handle v0.6.2
+    Checking fontdb v0.16.2
+    Checking rustybuzz v0.14.1
+    Checking swash v0.1.19
+   Compiling document-features v0.2.12
+    Checking rayon v1.12.0
+    Checking wgpu-types v24.0.0
+    Checking parking_lot v0.12.5
+    Checking euclid v0.22.14
+    Checking surface v0.1.43 (<source>/crates/surface)
+   Compiling ahash v0.8.12
+   Compiling syn v2.0.119
+    Checking unicode-bidi v0.3.18
+    Checking profiling v1.0.18
+    Checking self_cell v1.3.0
+    Checking sys-locale v0.3.2
+    Checking rustc-hash v1.1.0
+    Checking svg_fmt v0.4.5
+    Checking static_assertions v1.1.0
+    Checking rangemap v1.8.0
+    Checking unicode-linebreak v0.1.5
+    Checking cosmic-text v0.12.1
+   Compiling pin-project-internal v1.1.13
+    Checking etagere v0.2.15
+    Checking jet-bridge-protocol v0.1.0 (https://github.com/faberline/jet-bridge?rev=a21f93425f8f27dfc7ab2bea0c34fdebcc71335f#a21f9342)
+    Checking surface-devtools-protocol v0.1.43 (<source>/crates/surface-devtools-protocol)
+   Compiling winit v0.30.13
+    Checking hashbrown v0.17.1
+    Checking lru v0.12.5
+    Checking equivalent v1.0.3
+    Checking tracing-core v0.1.36
+    Checking rustc-hash v2.1.3
+    Checking glyphon v0.8.0
+    Checking tracing v0.1.44
+    Checking indexmap v2.14.2
+    Checking surface-app v0.1.43 (<source>/crates/surface-app)
+    Checking pin-project v1.1.13
+    Checking web-time v1.1.0
+    Checking cursor-icon v1.2.0
+    Checking smol_str v0.2.2
+    Checking dpi v0.1.2
+    Checking material-colors v0.4.2
+    Checking surface-wgpu v0.1.43 (<source>/crates/surface-wgpu)
+    Checking surface-material v0.1.43 (<source>/crates/surface-material)
+    Checking surface-platform v0.1.43 (<source>/crates/surface-platform)
+warning: function `should_exit` is never used
+  --> crates/surface-platform/src/close.rs:37:15
+   |
+37 | pub(crate) fn should_exit<A: Application>(runtime: &mut Runtime<A>, closing: &mut bool) -> bool {
+   |               ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `surface-platform` (lib) generated 1 warning
+    Checking console_error_panic_hook v0.1.7
+    Checking surface-material-gallery v0.1.43 (<source>/examples/material-gallery)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 40.70s
+provenance: 23 of 27 Core files unchanged, 4 listed as modified, 3 font files match (14 self-test cases passed)
