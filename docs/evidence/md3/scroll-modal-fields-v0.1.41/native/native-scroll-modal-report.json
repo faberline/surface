@@ -1,0 +1,794 @@
+{
+  "source_manifest_sha256": "8a854c31d3b0580cc5aaa809dd10d6955613e5f6bfdd20fe6cc6a859065f5e11",
+  "gallery_sha256": "e1653e8c6687a6e329cd91bd2e7be486171b91a7b51c3c71db3c497a6a11196a",
+  "cli_sha256": "f91193b80443ea3d182df648b8addb07f2faf766cbd77fc51b594a7a46e8248c",
+  "motion": "native headless Reduce Motion",
+  "input": "semantic DevTools Action.key, Action.activate, Action.fill",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "limits": [
+    "no native pointer events or real OS input",
+    "no real IME or VoiceOver",
+    "no caller callback count in native DOM",
+    "no projected browser accessibility tree"
+  ],
+  "profiles": {
+    "light": {
+      "initial": {
+        "quantity": {
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1200.0,
+          "value_text": "1200"
+        },
+        "unit": {
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 1.0,
+          "value_text": "毫升"
+        }
+      },
+      "geometry": {
+        "dialog": {
+          "height": 440.0,
+          "width": 560.0,
+          "x": 200.0,
+          "y": 190.0
+        },
+        "body": {
+          "height": 368.0,
+          "width": 536.0,
+          "x": 212.0,
+          "y": 202.0
+        },
+        "footer": {
+          "scroll-modal-demo-cancel": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 644.0,
+            "y": 570.0
+          },
+          "scroll-modal-demo-save": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 700.0,
+            "y": 570.0
+          }
+        }
+      },
+      "opener_tab_path": [
+        "scroll-modal-demo-back",
+        "scroll-modal-demo-theme",
+        "scroll-modal-demo-rtl",
+        "scroll-modal-demo-large-text",
+        "scroll-modal-demo-opener"
+      ],
+      "tab_wrap": {
+        "started_at": "scroll-modal-demo-quantity-adjustable",
+        "tab": [
+          "scroll-modal-demo-quantity-use-input",
+          "scroll-modal-demo-unit-adjustable",
+          "scroll-modal-demo-unit-use-input",
+          "scroll-modal-demo-cancel",
+          "scroll-modal-demo-save",
+          "scroll-modal-demo-quantity-adjustable"
+        ],
+        "shift_tab": [
+          "scroll-modal-demo-save",
+          "scroll-modal-demo-cancel",
+          "scroll-modal-demo-unit-use-input",
+          "scroll-modal-demo-unit-adjustable",
+          "scroll-modal-demo-quantity-use-input",
+          "scroll-modal-demo-quantity-adjustable"
+        ]
+      },
+      "background_activation": {
+        "rejection": "outside_modal",
+        "count_label": "外部 1 次",
+        "focus": "scroll-modal-demo-quantity-adjustable"
+      },
+      "working_child_confirmations": {
+        "quantity": {
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1204.0,
+          "value_text": "1204"
+        },
+        "unit": {
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 2.0,
+          "value_text": "公升"
+        }
+      },
+      "accepted_after_cancel": "已儲存 1200 毫升",
+      "cancel": {
+        "tab_path": [
+          "scroll-modal-demo-unit-use-input",
+          "scroll-modal-demo-cancel"
+        ],
+        "restored_focus": "scroll-modal-demo-opener"
+      },
+      "accepted_after_save": "已儲存 1206 液量盎司",
+      "reopened": {
+        "quantity": {
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1206.0,
+          "value_text": "1206"
+        },
+        "unit": {
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 3.0,
+          "value_text": "液量盎司"
+        }
+      },
+      "working_before_escape": {
+        "quantity": {
+          "max": 1800.0,
+          "min": -1800.0,
+          "step": 2.0,
+          "value": 1208.0,
+          "value_text": "1208"
+        },
+        "unit": {
+          "max": 3.0,
+          "min": 1.0,
+          "step": 1.0,
+          "value": 3.0,
+          "value_text": "液量盎司"
+        }
+      },
+      "escape_focus": "scroll-modal-demo-opener",
+      "back_focus": "scroll-modal-demo-show",
+      "unit_reveal_tab_path": [
+        "scroll-modal-demo-quantity-use-input",
+        "scroll-modal-demo-unit-adjustable"
+      ],
+      "captures": [
+        {
+          "name": "scroll-modal-light-open.png",
+          "sha256": "9fbbe35e1b2b4a2973191eb940f58d13c84a78fa5c19684028d5d09799d3f2a0",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-quantity-adjustable",
+          "ink": {
+            "scroll-modal-demo-quantity-center": {
+              "ink_px": 1431,
+              "bounds_px": [
+                272,
+                379,
+                118,
+                44
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 210.0,
+              "width": 228.0,
+              "x": 217.0,
+              "y": 292.0
+            },
+            "xy": [
+              218,
+              397
+            ],
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ]
+          },
+          "scrim": {
+            "layer": {
+              "height": 820.0,
+              "width": 960.0,
+              "x": 0.0,
+              "y": 0.0
+            },
+            "token": [
+              0,
+              0,
+              0,
+              82
+            ],
+            "pixels": [
+              {
+                "xy": [
+                  1,
+                  1
+                ],
+                "closed": [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                "modal": [
+                  172,
+                  168,
+                  173,
+                  255
+                ]
+              },
+              {
+                "xy": [
+                  958,
+                  1
+                ],
+                "closed": [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                "modal": [
+                  172,
+                  168,
+                  173,
+                  255
+                ]
+              },
+              {
+                "xy": [
+                  1,
+                  818
+                ],
+                "closed": [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                "modal": [
+                  172,
+                  168,
+                  173,
+                  255
+                ]
+              },
+              {
+                "xy": [
+                  958,
+                  818
+                ],
+                "closed": [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                "modal": [
+                  172,
+                  168,
+                  173,
+                  255
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "scroll-modal-light-unit-focus.png",
+          "sha256": "0c8bb2f80516f43d899feb2889ef530fa97f2541b26e63c4db2fc8ef66452a64",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-unit-adjustable",
+          "ink": {
+            "scroll-modal-demo-unit-center": {
+              "ink_px": 1533,
+              "bounds_px": [
+                307,
+                428,
+                108,
+                53
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 210.0,
+              "width": 289.0,
+              "x": 217.0,
+              "y": 346.0
+            },
+            "xy": [
+              218,
+              451
+            ],
+            "rgba": [
+              98,
+              91,
+              113,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-modal-light-saved.png",
+          "sha256": "888eb3472eb3cde2716a73045c17970e4ccef97be39f6f8a11eddf90a4df4243",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-opener",
+          "ink": {
+            "scroll-modal-demo-saved": {
+              "ink_px": 304,
+              "bounds_px": [
+                14,
+                81,
+                131,
+                13
+              ],
+              "rgba": [
+                73,
+                69,
+                78,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "rtl": {
+      "geometry": {
+        "dialog": {
+          "height": 440.0,
+          "width": 560.0,
+          "x": 200.0,
+          "y": 190.0
+        },
+        "body": {
+          "height": 368.0,
+          "width": 536.0,
+          "x": 212.0,
+          "y": 202.0
+        },
+        "footer": {
+          "scroll-modal-demo-cancel": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 268.0,
+            "y": 570.0
+          },
+          "scroll-modal-demo-save": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 212.0,
+            "y": 570.0
+          }
+        }
+      },
+      "rtl_order": {
+        "quantity": {
+          "height": 272.0,
+          "width": 284.0,
+          "x": 459.0,
+          "y": 259.0
+        },
+        "unit": {
+          "height": 272.0,
+          "width": 345.0,
+          "x": 398.0,
+          "y": 547.0
+        }
+      },
+      "valid_peer_after_failed_save": {
+        "name": "數量",
+        "raw": "１２０６",
+        "error": null,
+        "target": "scroll-modal-demo-quantity-editor"
+      },
+      "remaining_error": {
+        "name": "單位",
+        "raw": "無",
+        "error": "找不到單位",
+        "target": "scroll-modal-demo-unit-editor"
+      },
+      "cancel": {
+        "tab_path": [
+          "scroll-modal-demo-quantity-use-scroll",
+          "scroll-modal-demo-unit-editor",
+          "scroll-modal-demo-unit-use-scroll",
+          "scroll-modal-demo-cancel"
+        ],
+        "restored_focus": "scroll-modal-demo-opener"
+      },
+      "accepted_after_cancel": "已儲存 1200 毫升",
+      "back_focus": "scroll-modal-demo-show",
+      "captures": [
+        {
+          "name": "scroll-modal-rtl-quantity-error.png",
+          "sha256": "9f8b76baf801ec167d03fb9d65948a9e63a2793367cc68cac5af017160103592",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-quantity-editor",
+          "ink": {
+            "scroll-modal-demo-quantity-error": {
+              "ink_px": 40,
+              "bounds_px": [
+                460,
+                494,
+                58,
+                10
+              ],
+              "rgba": [
+                255,
+                180,
+                171,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 210.0,
+              "width": 228.0,
+              "x": 515.0,
+              "y": 268.0
+            },
+            "xy": [
+              516,
+              373
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-modal-rtl-errors.png",
+          "sha256": "e65bfcb25284e885d6d2433bfd63b0cdff3d8f9a41f5983ab57b2f791b4a68d9",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-unit-editor",
+          "ink": {
+            "scroll-modal-demo-unit-error": {
+              "ink_px": 72,
+              "bounds_px": [
+                400,
+                551,
+                57,
+                12
+              ],
+              "rgba": [
+                255,
+                180,
+                171,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 210.0,
+              "width": 289.0,
+              "x": 454.0,
+              "y": 326.0
+            },
+            "xy": [
+              455,
+              431
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-modal-rtl-valid-peer.png",
+          "sha256": "0fad0e04eaf283df6ea4a195cdbdcc42f26f3e5603cbacc2ec30f62e00dd380d",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-quantity-editor",
+          "ink": {
+            "scroll-modal-demo-quantity-editor": {
+              "ink_px": 1752,
+              "bounds_px": [
+                520,
+                317,
+                218,
+                112
+              ],
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 210.0,
+              "width": 228.0,
+              "x": 515.0,
+              "y": 268.0
+            },
+            "xy": [
+              516,
+              373
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "geometry": {
+        "dialog": {
+          "height": 368.0,
+          "width": 288.0,
+          "x": 16.0,
+          "y": 16.0
+        },
+        "body": {
+          "height": 296.0,
+          "width": 264.0,
+          "x": 28.0,
+          "y": 28.0
+        },
+        "footer": {
+          "scroll-modal-demo-cancel": {
+            "height": 48.0,
+            "width": 72.0,
+            "x": 108.0,
+            "y": 324.0
+          },
+          "scroll-modal-demo-save": {
+            "height": 48.0,
+            "width": 72.0,
+            "x": 28.0,
+            "y": 324.0
+          }
+        }
+      },
+      "tab_wrap": {
+        "started_at": "scroll-modal-demo-quantity-editor",
+        "tab": [
+          "scroll-modal-demo-unit-editor",
+          "scroll-modal-demo-cancel",
+          "scroll-modal-demo-save",
+          "scroll-modal-demo-quantity-editor"
+        ],
+        "shift_tab": [
+          "scroll-modal-demo-save",
+          "scroll-modal-demo-cancel",
+          "scroll-modal-demo-unit-editor",
+          "scroll-modal-demo-quantity-editor"
+        ]
+      },
+      "quantity_editor": {
+        "height": 104.0,
+        "width": 244.0,
+        "x": 38.0,
+        "y": 33.0
+      },
+      "unit_editor": {
+        "height": 88.0,
+        "width": 244.0,
+        "x": 38.0,
+        "y": 231.0
+      },
+      "unit_tab_path": [
+        "scroll-modal-demo-unit-editor"
+      ],
+      "body_scroll": [
+        133.0,
+        145.0
+      ],
+      "accepted_after_save": "已儲存 1300 公升",
+      "cancel": {
+        "tab_path": [
+          "scroll-modal-demo-unit-editor",
+          "scroll-modal-demo-cancel"
+        ],
+        "restored_focus": "scroll-modal-demo-opener"
+      },
+      "back_focus": "scroll-modal-demo-show",
+      "captures": [
+        {
+          "name": "scroll-modal-compact-quantity.png",
+          "sha256": "b80204b493c6fea7cf5021d22ca30e52dcd20fa8a86ae0e7313a20cebfad5df7",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-quantity-editor",
+          "ink": {
+            "scroll-modal-demo-quantity-editor": {
+              "ink_px": 2096,
+              "bounds_px": [
+                38,
+                33,
+                244,
+                104
+              ],
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 114.0,
+              "width": 254.0,
+              "x": 33.0,
+              "y": 28.0
+            },
+            "xy": [
+              34,
+              85
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-modal-compact-unit.png",
+          "sha256": "98003c143420ad68041eb48af9f8bb121f732448fd90ecf5cdb0a89e8dd98cc5",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "focus": "scroll-modal-demo-unit-editor",
+          "ink": {
+            "scroll-modal-demo-unit-editor": {
+              "ink_px": 1392,
+              "bounds_px": [
+                38,
+                231,
+                244,
+                88
+              ],
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ],
+              "rgb_tolerance": 32
+            }
+          },
+          "focus_ring": {
+            "bounds": {
+              "height": 98.0,
+              "width": 254.0,
+              "x": 33.0,
+              "y": 226.0
+            },
+            "xy": [
+              34,
+              275
+            ],
+            "rgba": [
+              203,
+              194,
+              219,
+              255
+            ]
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        400
+      ]
+    }
+  }
+}
