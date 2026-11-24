@@ -179,7 +179,9 @@ does not change application state.
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
-| `dialog_with` | Basic dialog with optional icon, headline, supporting text, actions; container `surface_container_high`, scrim from `colors.scrim`; no full-screen variant, shadow or motion yet |
+| `dialog_with` | Static Basic dialog with optional icon, headline, supporting text and actions |
+| `basic_dialog` / `basic_dialog_with_motion` | Measured Basic or alert dialog with a scrolling body, fixed actions, focus management and optional fade |
+| `full_screen_dialog` / `full_screen_dialog_with_motion` | Full viewport dialog with a fixed Close and Save header, scrolling body and optional transform from a floating action button |
 | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
 | `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
 | `divider` | One-pixel semantic separator |
@@ -1412,6 +1414,49 @@ selection actions and scroll the content with each scroll setting.
 [Material 3 App Bars](https://m3.material.io/components/app-bars/overview) ·
 [MDC 1.14.0 app bars](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/TopAppBar.md) ·
 [Pinned Compose layout and scroll](https://android.googlesource.com/platform/frameworks/support/+/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt)
+
+## Dialogs
+
+Use `Theme::basic_dialog` for a short choice or message. Give
+`BasicDialogOptions` a stable `id`, an accessible `label`, the viewport
+size and the desired focus and dismissal policy. Supply one confirmation
+and an optional cancel action in `BasicDialogContent`. Use `extra` for
+content in the scrolling body. The heading and actions stay in place.
+The layout measures action captions at the current text scale. It stacks
+the actions when they do not fit side by side and preserves their key order.
+
+Set `alert` for an urgent message. Use `ModalDismissal::ActionOnly` when
+the user must acknowledge it. Choose the initial focus for the actual
+task. The framework restores focus to the opener or the configured fallback.
+
+Use `Theme::full_screen_dialog` for a task on a compact display. It keeps
+Close, the heading and the commit action above the scrolling body. Pass
+the same dialog and editor IDs if the app chooses a Basic dialog at a
+wider window size. Keep the draft and its save or discard policy in the
+app. Close and commit wait for active text composition to finish.
+
+For a Basic or alert fade, keep a `BasicDialogMotion` for each dialog.
+Call `advance` from `Application::animation_frame` and return its
+`AnimationUpdate`. Build
+the dialog with `Theme::basic_dialog_with_motion`. Keep its view at the
+same layer position while it exits. The exit keeps paint until it settles.
+Focus, input and accessibility return to the previous scope at closing.
+
+For a Full-screen dialog opened from a floating action button, keep a
+`FullScreenDialogMotion`. Read the visible button bounds with
+`FullScreenDialogAnchor::measured` while the source is laid out. Pass the
+button's visual corner radius and fill. Retain the valid anchor for the
+transition and update it when the viewport moves. Call `advance` from
+`Application::animation_frame` with the open state, anchor and viewport. Pass those inputs
+to `Theme::full_screen_dialog_with_motion` through
+`FullScreenDialogTransition`. The panel grows from the button and scales
+the body within the changing rounded edge. A missing anchor uses the
+settled dialog. Both motion controllers honor Reduce Motion.
+
+Open **對話框** in the Gallery's **浮層** tab for the Basic, alert and
+adaptive editor examples. Open the separate **全螢幕轉場** scene
+to test the measured launcher. The same examples run in the
+[headless native Gallery](devtools-protocol.md#headless-native-gallery).
 
 ## Bottom sheets
 

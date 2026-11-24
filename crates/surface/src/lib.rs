@@ -45,9 +45,12 @@ pub use microdom::{
     OverlayHorizontalEdge, RangeValue, Role,
 };
 pub use motion::{Easing, Transition};
+#[doc(hidden)]
+pub use paint::PaintGroupEffect;
 pub use paint::{
-    DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp, TextDecoration,
-    TextSelectionColors, TextSelectionPaint, TextSelectionRegion,
+    AlignedTextPaint, DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp,
+    PaintTransform, TextAlignment, TextDecoration, TextSelectionColors, TextSelectionPaint,
+    TextSelectionRegion,
 };
 pub use raster::{RasterImage, RasterPaint};
 pub use scroll_extent::scroll_extent;

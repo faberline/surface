@@ -146,7 +146,17 @@ impl Tree {
                 self.allocate()
             };
             if modal == Some(id) {
+                if source.node.is_alert_dialog() {
+                    node.set_role(Role::AlertDialog);
+                }
                 node.set_modal();
+            }
+            if let Some(heading) = frame
+                .dialog_heading_target(id)
+                .and_then(|target| ids.get(&target))
+            {
+                node.set_labelled_by([*heading]);
+                node.clear_label();
             }
             if let Some(bounds) = bounds {
                 node.set_bounds(bounds);
@@ -572,6 +582,126 @@ mod tests {
             .iter()
             .find_map(|(id, node)| (node.label() == Some(name)).then_some((*id, node)))
             .unwrap()
+    }
+
+    #[test]
+    fn visible_alert_heading_and_description_reach_accesskit_and_rebuild_safely() {
+        #[derive(Clone, Copy, PartialEq, Eq)]
+        enum Mode {
+            Ordinary,
+            Visible,
+            Clipped,
+            Removed,
+            Modeless,
+        }
+
+        struct Dialog(Mode);
+
+        impl Application for Dialog {
+            type Message = Mode;
+
+            fn update(&mut self, mode: Mode) {
+                self.0 = mode;
+            }
+
+            fn view(&self) -> View<Mode> {
+                let box_at = |height| Style::column().height(Length::Px(height));
+                let heading = || {
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Heading, "Published heading")
+                            .id("heading")
+                            .text("Published heading")
+                            .styled(box_at(22.)),
+                    )
+                };
+                let description = View::new(
+                    SurfaceNode::new(SurfaceRole::Text, "")
+                        .id("message")
+                        .text("This action removes the draft.")
+                        .styled(box_at(22.)),
+                );
+                let title_view = match self.0 {
+                    Mode::Visible => Some(heading()),
+                    Mode::Clipped => Some(
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Group, "")
+                                .id("clip")
+                                .styled(box_at(24.).clip(true)),
+                        )
+                        .children([
+                            View::new(SurfaceNode::new(SurfaceRole::Group, "").styled(box_at(50.))),
+                            heading(),
+                        ]),
+                    ),
+                    _ => None,
+                };
+                let mut authored = SurfaceNode::new(SurfaceRole::Dialog, "Fallback name")
+                    .id("dialog")
+                    .styled(box_at(120.))
+                    .described_by_text("message");
+                if self.0 != Mode::Ordinary {
+                    authored = authored
+                        .alert_dialog()
+                        .dialog_labelled_by_heading("heading");
+                }
+                let dialog =
+                    View::new(authored).children(title_view.into_iter().chain([description]));
+                let (dialog, earlier_heading) = if self.0 == Mode::Modeless {
+                    (dialog, Some(heading()))
+                } else {
+                    (dialog.modal(Mode::Ordinary), None)
+                };
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Application"))
+                    .children(earlier_heading.into_iter().chain([dialog]))
+            }
+        }
+
+        let mut runtime = Runtime::new(Dialog(Mode::Ordinary)).unwrap();
+        let mut tree = Tree::default();
+        let ordinary = update(&mut runtime, &mut tree);
+        let (_, dialog) = named(&ordinary, "Fallback name");
+        assert_eq!(dialog.role(), Role::Dialog);
+        assert!(dialog.is_modal());
+        assert!(dialog.labelled_by().is_empty());
+
+        runtime.apply(Mode::Visible).unwrap();
+        let alert = update(&mut runtime, &mut tree);
+        let (heading, _) = named(&alert, "Published heading");
+        let (message, _) = named(&alert, "This action removes the draft.");
+        let (_, dialog) = alert
+            .nodes
+            .iter()
+            .find(|(_, node)| node.role() == Role::AlertDialog)
+            .unwrap();
+        assert!(dialog.is_modal());
+        assert_eq!(dialog.labelled_by(), &[heading]);
+        assert!(dialog.label().is_none());
+        assert_eq!(dialog.described_by(), &[message]);
+        assert_eq!(dialog.description(), Some("This action removes the draft."));
+
+        for mode in [Mode::Clipped, Mode::Removed, Mode::Modeless] {
+            runtime.apply(mode).unwrap();
+            if mode == Mode::Clipped {
+                runtime.render(320., 240., &mut Metrics).unwrap();
+                let heading = runtime.dom().by_id("heading").unwrap();
+                let frame = runtime.accessibility_frame().unwrap();
+                let layout = frame.node(heading).unwrap().layout;
+                assert_eq!(layout.bounds.intersect(layout.clip).height, 0.);
+            }
+            let next = update(&mut runtime, &mut tree);
+            let (_, dialog) = named(&next, "Fallback name");
+            let modal = mode != Mode::Modeless;
+            assert_eq!(dialog.is_modal(), modal);
+            assert_eq!(
+                dialog.role(),
+                if modal {
+                    Role::AlertDialog
+                } else {
+                    Role::Dialog
+                }
+            );
+            assert!(dialog.labelled_by().is_empty());
+        }
     }
 
     #[test]

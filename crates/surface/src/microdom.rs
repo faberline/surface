@@ -1,5 +1,7 @@
 //! An indexed semantic tree. No browser DOM objects or renderer handles live here.
-use crate::{AdjustableValue, BoxShadow, Color, Corners, Direction, Style, TextScaling};
+use crate::{
+    AdjustableValue, BoxShadow, Color, Corners, Direction, Style, TextAlignment, TextScaling,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -150,6 +152,10 @@ pub struct Node {
     current_date: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     described_by_text: Option<String>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    alert_dialog: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    dialog_heading: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     expanded: Option<bool>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -168,6 +174,8 @@ pub struct Node {
     reverse_row: bool,
     #[serde(default, skip_serializing_if = "TextScaling::is_default")]
     text_scaling: TextScaling,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    text_alignment: Option<TextAlignment>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     focus_color: Option<Color>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -239,6 +247,8 @@ impl Node {
             grid_multiselectable: false,
             current_date: false,
             described_by_text: None,
+            alert_dialog: false,
+            dialog_heading: None,
             expanded: None,
             disclosure: false,
             horizontal_slide: 0.,
@@ -248,6 +258,7 @@ impl Node {
             shrink_to_fit_height: false,
             reverse_row: false,
             text_scaling: TextScaling::default(),
+            text_alignment: None,
             focus_color: None,
             focus_outline_width: None,
             state_layer_alphas: None,
@@ -416,6 +427,19 @@ impl Node {
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
         self
+    }
+
+    /// Align each visual line of static text inside its existing paint bounds.
+    /// This affects extended paint only. Text inputs keep their own alignment.
+    pub fn text_alignment(mut self, alignment: TextAlignment) -> Self {
+        if self.role != Role::TextInput {
+            self.text_alignment = Some(alignment);
+        }
+        self
+    }
+
+    pub(crate) fn read_only_text_alignment(&self) -> Option<TextAlignment> {
+        self.text_alignment.filter(|_| self.role != Role::TextInput)
     }
 
     pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
@@ -639,6 +663,27 @@ impl Node {
     }
     pub fn description_text_target(&self) -> Option<&str> {
         self.described_by_text.as_deref()
+    }
+    /// Ask accessibility hosts to expose this dialog as an alert while it is
+    /// modal. The base role, keyboard behavior, and dismissal policy stay
+    /// with the caller.
+    pub fn alert_dialog(mut self) -> Self {
+        self.alert_dialog = self.role == Role::Dialog;
+        self
+    }
+    pub fn is_alert_dialog(&self) -> bool {
+        self.alert_dialog && self.role == Role::Dialog
+    }
+    /// Label a dialog with a visible descendant heading's stable ID. The
+    /// authored name remains the fallback if the heading cannot be resolved.
+    pub fn dialog_labelled_by_heading(mut self, target: impl Into<String>) -> Self {
+        self.dialog_heading = (self.role == Role::Dialog).then(|| target.into());
+        self
+    }
+    pub fn dialog_heading_target(&self) -> Option<&str> {
+        self.dialog_heading
+            .as_deref()
+            .filter(|_| self.role == Role::Dialog)
     }
     /// Set the open or closed state of a button that controls a disclosure.
     pub fn disclosure_expanded(mut self, value: bool) -> Self {
@@ -1134,6 +1179,19 @@ impl MicroDom {
         paint_order: &mut Vec<NodeId>,
         layers: &[(Option<NodeId>, NodeId)],
     ) {
+        self.apply_modal_layers_with_panel_ranges(paint_order, layers, |_, _| {});
+    }
+
+    /// Reorder the layers and report each valid panel's slice in the
+    /// resulting paint order. Its backdrop and separate layers are outside
+    /// the slice. A valid panel includes its flow and fixed descendants.
+    #[doc(hidden)]
+    pub fn apply_modal_layers_with_panel_ranges(
+        &self,
+        paint_order: &mut Vec<NodeId>,
+        layers: &[(Option<NodeId>, NodeId)],
+        mut panel_range: impl FnMut(NodeId, std::ops::Range<usize>),
+    ) {
         if layers.is_empty() {
             return;
         }
@@ -1212,9 +1270,13 @@ impl MicroDom {
         });
         for layer in ordered {
             paint_order.extend(layer.backdrop);
+            let start = paint_order.len();
             paint_order.extend(layer.panel);
             paint_order.extend(layer.flow);
             paint_order.extend(layer.fixed);
+            if let Some(panel) = layer.panel {
+                panel_range(panel, start..paint_order.len());
+            }
         }
     }
 }

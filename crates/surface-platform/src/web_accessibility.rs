@@ -42,13 +42,14 @@ struct Target {
 }
 
 #[derive(Default, PartialEq, Eq)]
-struct Descriptions {
+struct TextRelations {
+    headings: BTreeMap<NodeId, NodeId>,
     references: BTreeMap<NodeId, NodeId>,
     text_targets: BTreeSet<NodeId>,
     clipped_text: BTreeMap<NodeId, String>,
 }
 
-impl Descriptions {
+impl TextRelations {
     fn target_id(&self, id: NodeId) -> String {
         let kind = if self.text_targets.contains(&id) {
             "text"
@@ -61,12 +62,16 @@ impl Descriptions {
     fn described_by(&self, source: NodeId) -> Option<String> {
         self.references.get(&source).map(|id| self.target_id(*id))
     }
+
+    fn heading_id(id: NodeId) -> String {
+        format!("surface-accessibility-heading-{}", id.index())
+    }
 }
 
 struct Published {
     generation: AccessibilityFrameId,
     visible: BTreeSet<NodeId>,
-    descriptions: Descriptions,
+    text_relations: TextRelations,
     editor: Option<NodeId>,
     tree: Element,
 }
@@ -203,23 +208,26 @@ impl WebAccessibility {
             .is_some_and(|old| old.generation == generation);
         let mut visible = BTreeSet::new();
         collect_visible(frame, frame.root(), &mut visible);
-        let mut descriptions = Descriptions::default();
+        let mut text_relations = TextRelations::default();
         for source in &visible {
+            if let Some(heading) = frame.dialog_heading_target(*source) {
+                text_relations.headings.insert(*source, heading);
+            }
             if let Some(target) = frame
                 .description_target(*source)
                 .filter(|id| visible.contains(id))
             {
-                descriptions.references.insert(*source, target);
+                text_relations.references.insert(*source, target);
                 if frame
                     .node(target)
                     .is_some_and(|node| node.node.role() == Role::Text)
                 {
-                    descriptions.text_targets.insert(target);
+                    text_relations.text_targets.insert(target);
                 }
             } else if let Some((target, text)) = frame.clipped_validation_text(*source) {
-                descriptions.references.insert(*source, target);
-                descriptions.text_targets.insert(target);
-                descriptions.clipped_text.insert(target, text.to_owned());
+                text_relations.references.insert(*source, target);
+                text_relations.text_targets.insert(target);
+                text_relations.clipped_text.insert(target, text.to_owned());
             }
         }
         let statuses = visible
@@ -239,7 +247,7 @@ impl WebAccessibility {
         if self.published.as_ref().is_none_or(|old| {
             old.generation != generation
                 || old.visible != visible
-                || old.descriptions != descriptions
+                || old.text_relations != text_relations
                 || old.editor != editor
         }) {
             let mut targets = BTreeMap::new();
@@ -249,14 +257,14 @@ impl WebAccessibility {
                 frame.root(),
                 &visible,
                 editor,
-                &descriptions,
+                &text_relations,
                 &mut targets,
             )?;
             // A referenced hidden element still supplies its description.
             // Keep it separate from the focusable and readable projection.
-            for (id, text) in &descriptions.clipped_text {
+            for (id, text) in &text_relations.clipped_text {
                 let hidden = self.document.create_element("span")?;
-                hidden.set_id(&descriptions.target_id(*id));
+                hidden.set_id(&text_relations.target_id(*id));
                 hidden.set_attribute("hidden", "")?;
                 hidden.set_text_content(Some(text));
                 tree.append_child(&hidden)?;
@@ -276,7 +284,7 @@ impl WebAccessibility {
             }
             *self.targets.borrow_mut() = targets;
             if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
-                if let Some(id) = editor.and_then(|id| descriptions.described_by(id)) {
+                if let Some(id) = editor.and_then(|id| text_relations.described_by(id)) {
                     textbox.set_attribute("aria-describedby", &id)?;
                 } else {
                     textbox.remove_attribute("aria-describedby")?;
@@ -293,7 +301,7 @@ impl WebAccessibility {
             self.published = Some(Published {
                 generation,
                 visible,
-                descriptions,
+                text_relations,
                 editor,
                 tree,
             });
@@ -365,7 +373,7 @@ fn project<M>(
     id: NodeId,
     visible: &BTreeSet<NodeId>,
     editor: Option<NodeId>,
-    descriptions: &Descriptions,
+    text_relations: &TextRelations,
     targets: &mut BTreeMap<usize, Target>,
 ) -> Result<Element, JsValue> {
     let source = frame.node(id).expect("visible nodes belong to the frame");
@@ -387,10 +395,18 @@ fn project<M>(
     if let Some(stable_id) = source.node.stable_id() {
         element.set_attribute("data-surface-id", stable_id)?;
     }
-    if source.node.role() == Role::Tooltip || descriptions.text_targets.contains(&id) {
-        element.set_id(&descriptions.target_id(id));
+    if source.node.role() == Role::Tooltip || text_relations.text_targets.contains(&id) {
+        element.set_id(&text_relations.target_id(id));
+    } else if source.node.role() == Role::Heading
+        && text_relations.headings.values().any(|target| *target == id)
+    {
+        element.set_id(&TextRelations::heading_id(id));
     }
-    let authored_description = descriptions.described_by(id);
+    if let Some(heading) = text_relations.headings.get(&id) {
+        element.set_attribute("aria-labelledby", &TextRelations::heading_id(*heading))?;
+        element.remove_attribute("aria-label")?;
+    }
+    let authored_description = text_relations.described_by(id);
     let description = if let Some(text) = source.node.web_adjustable_description_text() {
         // The referenced text stays hidden as a standalone item. Project it
         // first so the selected value precedes any authored hint.
@@ -437,7 +453,7 @@ fn project<M>(
             child,
             visible,
             editor,
-            descriptions,
+            text_relations,
             targets,
         )?;
         element.append_child(&child_element)?;

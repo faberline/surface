@@ -7,7 +7,7 @@ pub use text_selection::{TextSelectionColors, TextSelectionPaint, TextSelectionR
 use crate::shadow::has_area;
 use crate::{Color, ComputedDom, Corners, MicroDom, NodeId, PathFill, Rect, Role, TextStyle};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, ops::Range};
 #[derive(Clone, Debug, Default)]
 pub struct TextDecoration {
     pub selection: Vec<Rect>,
@@ -160,24 +160,122 @@ impl Outline {
         }
     }
 }
+/// Physical horizontal alignment of each visual line in a static text run.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TextAlignment {
+    Left,
+    Center,
+    Right,
+}
+
+/// Static text with an explicit alignment. The original run retains its
+/// bounds, clip, wrapping and style.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct AlignedTextPaint {
+    run: PaintOp,
+    alignment: TextAlignment,
+}
+
+impl AlignedTextPaint {
+    pub fn run(&self) -> &PaintOp {
+        &self.run
+    }
+
+    pub fn alignment(&self) -> TextAlignment {
+        self.alignment
+    }
+}
+
+/// Map an isolated paint group from a source rectangle to a destination.
+///
+/// All geometry uses logical pixels, in the same coordinates as the display
+/// list. The source crops the original group paint. The destination is masked
+/// to the independent rounded `clip`. The radius is capped at half the clip's
+/// shorter side. Opacity applies once to the whole transformed group.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct PaintTransform {
+    pub source: Rect,
+    pub destination: Rect,
+    pub clip: Rect,
+    pub radius: f32,
+    pub opacity: f32,
+}
+
+impl PaintTransform {
+    /// All rectangles must have finite edges and positive area. Opacity must
+    /// be in `0..=1` and radius must be finite and nonnegative.
+    pub fn is_valid(self) -> bool {
+        let valid_rect = |rect: Rect| {
+            let far_x = rect.x + rect.width;
+            let far_y = rect.y + rect.height;
+            rect.x.is_finite()
+                && rect.y.is_finite()
+                && far_x.is_finite()
+                && far_y.is_finite()
+                && far_x > rect.x
+                && far_y > rect.y
+        };
+        valid_rect(self.source)
+            && valid_rect(self.destination)
+            && valid_rect(self.clip)
+            && self.radius.is_finite()
+            && self.radius >= 0.
+            && (0. ..=1.).contains(&self.opacity)
+    }
+}
+
+/// The effect applied to one isolated range in the final paint order.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[doc(hidden)]
+pub enum PaintGroupEffect {
+    Opacity(f32),
+    Transform(PaintTransform),
+}
+
+impl PaintGroupEffect {
+    fn is_valid(self) -> bool {
+        match self {
+            Self::Opacity(opacity) => (0. ..=1.).contains(&opacity),
+            Self::Transform(transform) => transform.is_valid(),
+        }
+    }
+}
+
 /// Ordered drawing commands that retain vector fills and live raster images.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum ExtendedPaintOp {
     Legacy(PaintOp),
     FillPath(crate::PathFill),
+    AlignedText(AlignedTextPaint),
     /// The two-color paint for one editable text selection.
     TextSelection(TextSelectionPaint),
     /// A live resource. Use a screenshot to export its rendered pixels.
     /// Serializing an extended list that contains this operation returns an error.
     #[serde(skip)]
     Raster(crate::RasterPaint),
+    /// Start an isolated group. Its complete paint is composited once with
+    /// an opacity between zero and one. End it with `EndOpacityGroup`.
+    /// Group ranges cannot nest.
+    BeginOpacityGroup {
+        opacity: f32,
+    },
+    EndOpacityGroup,
+    /// Start a transformed isolated group. End it with `EndOpacityGroup`.
+    /// Group ranges cannot nest.
+    BeginTransformGroup {
+        transform: PaintTransform,
+    },
 }
 
 trait CompileOp: From<PaintOp> {
     const PRESS_RIPPLE: bool = false;
 
     fn push_fill(path: crate::PathFill, push: impl FnMut(Self));
+
+    fn with_aligned_text(run: PaintOp, _alignment: TextAlignment) -> Self {
+        run.into()
+    }
 
     fn with_text_selection(
         run: PaintOp,
@@ -194,6 +292,14 @@ trait CompileOp: From<PaintOp> {
         _corners: Corners,
         _push: impl FnMut(Self),
     ) {
+    }
+
+    fn begin_paint_group(_effect: PaintGroupEffect) -> Option<Self> {
+        None
+    }
+
+    fn end_paint_group() -> Option<Self> {
+        None
     }
 }
 
@@ -216,6 +322,10 @@ impl CompileOp for ExtendedPaintOp {
         push(Self::FillPath(path));
     }
 
+    fn with_aligned_text(run: PaintOp, alignment: TextAlignment) -> Self {
+        Self::AlignedText(AlignedTextPaint { run, alignment })
+    }
+
     fn with_text_selection(run: PaintOp, colors: TextSelectionColors, selected: Vec<Rect>) -> Self {
         Self::TextSelection(TextSelectionPaint::new(run, colors, selected))
     }
@@ -230,6 +340,17 @@ impl CompileOp for ExtendedPaintOp {
         if let Some(paint) = crate::RasterPaint::new(image.clone(), rect, clip, corners) {
             push(Self::Raster(paint));
         }
+    }
+
+    fn begin_paint_group(effect: PaintGroupEffect) -> Option<Self> {
+        Some(match effect {
+            PaintGroupEffect::Opacity(opacity) => Self::BeginOpacityGroup { opacity },
+            PaintGroupEffect::Transform(transform) => Self::BeginTransformGroup { transform },
+        })
+    }
+
+    fn end_paint_group() -> Option<Self> {
+        Some(Self::EndOpacityGroup)
     }
 }
 
@@ -374,7 +495,15 @@ impl DisplayList {
     ) -> Self {
         Self {
             viewport: computed.viewport,
-            ops: compile_into(dom, computed, focused, decorations, interaction, None, None),
+            ops: compile_into(
+                dom,
+                computed,
+                focused,
+                decorations,
+                interaction,
+                None,
+                CompileOptions::default(),
+            ),
         }
     }
     /// The list `compile_with_interaction` returns, plus the node that
@@ -398,7 +527,7 @@ impl DisplayList {
                 decorations,
                 interaction,
                 Some(&mut owners),
-                None,
+                CompileOptions::default(),
             ),
         };
         (list, owners)
@@ -462,7 +591,15 @@ impl ExtendedDisplayList {
     ) -> Self {
         Self::new(
             computed.viewport,
-            compile_into(dom, computed, focused, decorations, interaction, None, None),
+            compile_into(
+                dom,
+                computed,
+                focused,
+                decorations,
+                interaction,
+                None,
+                CompileOptions::default(),
+            ),
         )
     }
 
@@ -481,7 +618,7 @@ impl ExtendedDisplayList {
             decorations,
             interaction,
             Some(&mut owners),
-            None,
+            CompileOptions::default(),
         );
         (Self::new(computed.viewport, ops), owners)
     }
@@ -506,7 +643,10 @@ impl ExtendedDisplayList {
                 decorations,
                 interaction,
                 None,
-                Some(colors),
+                CompileOptions {
+                    selection_colors: Some(colors),
+                    ..CompileOptions::default()
+                },
             ),
         )
     }
@@ -530,14 +670,91 @@ impl ExtendedDisplayList {
             decorations,
             interaction,
             Some(&mut owners),
-            Some(colors),
+            CompileOptions {
+                selection_colors: Some(colors),
+                ..CompileOptions::default()
+            },
         );
         (Self::new(computed.viewport, ops), owners)
+    }
+
+    /// Compile isolated opacity over nonempty, disjoint ranges of nodes in
+    /// the final paint order. The ranges must be in order. Invalid ranges
+    /// leave the entire frame ungrouped.
+    #[doc(hidden)]
+    pub fn compile_with_opacity_groups(
+        dom: &MicroDom,
+        computed: &ComputedDom,
+        focused: Option<NodeId>,
+        decorations: &BTreeMap<NodeId, TextDecoration>,
+        interaction: InteractionState,
+        selection_colors: Option<TextSelectionColors>,
+        groups: &[(Range<usize>, f32)],
+    ) -> Self {
+        let groups: Vec<_> = groups
+            .iter()
+            .map(|(range, opacity)| (range.clone(), PaintGroupEffect::Opacity(*opacity)))
+            .collect();
+        Self::compile_with_paint_groups(
+            dom,
+            computed,
+            focused,
+            decorations,
+            interaction,
+            selection_colors,
+            &groups,
+        )
+    }
+
+    /// Compile isolated effects over disjoint, ordered ranges of painted
+    /// nodes. A range must be nonempty and lie inside the final paint order.
+    /// Invalid inputs leave the entire frame ungrouped.
+    #[doc(hidden)]
+    pub fn compile_with_paint_groups(
+        dom: &MicroDom,
+        computed: &ComputedDom,
+        focused: Option<NodeId>,
+        decorations: &BTreeMap<NodeId, TextDecoration>,
+        interaction: InteractionState,
+        selection_colors: Option<TextSelectionColors>,
+        groups: &[(Range<usize>, PaintGroupEffect)],
+    ) -> Self {
+        let mut previous_end = 0;
+        let valid = groups.iter().all(|(range, effect)| {
+            let valid = range.start >= previous_end
+                && range.start < range.end
+                && range.end <= computed.paint_order.len()
+                && effect.is_valid();
+            previous_end = range.end;
+            valid
+        });
+        let paint_groups = if valid { groups } else { &[] };
+        Self::new(
+            computed.viewport,
+            compile_into(
+                dom,
+                computed,
+                focused,
+                decorations,
+                interaction,
+                None,
+                CompileOptions {
+                    selection_colors,
+                    paint_groups,
+                },
+            ),
+        )
     }
 
     pub fn into_ops(self) -> Vec<ExtendedPaintOp> {
         self.ops
     }
+}
+
+#[derive(Default)]
+struct CompileOptions<'a> {
+    selection_colors: Option<TextSelectionColors>,
+    paint_groups: &'a [(Range<usize>, PaintGroupEffect)],
 }
 
 /// The one compile loop. `owners`, when present, gets the owner of each
@@ -549,14 +766,30 @@ fn compile_into<Op: CompileOp>(
     decorations: &BTreeMap<NodeId, TextDecoration>,
     interaction: InteractionState,
     owners: Option<&mut Vec<NodeId>>,
-    selection_colors: Option<TextSelectionColors>,
+    options: CompileOptions<'_>,
 ) -> Vec<Op> {
     let mut ops = Ops {
         ops: Vec::new(),
         owners,
     };
     let mut deferred: Option<(NodeId, FeedbackPaint)> = None;
+    let mut pending_groups = options.paint_groups.iter();
+    let mut next_group = pending_groups.next();
+    let mut active_group: Option<(usize, NodeId)> = None;
     for (index, id) in computed.paint_order.iter().enumerate() {
+        if let Some((_, panel)) = active_group.filter(|(end, _)| *end == index) {
+            if let Some(op) = Op::end_paint_group() {
+                ops.push_owned(panel, op);
+            }
+            active_group = None;
+        }
+        if let Some((range, effect)) = next_group.filter(|(range, _)| range.start == index) {
+            if let Some(op) = Op::begin_paint_group(*effect) {
+                ops.push_owned(*id, op);
+            }
+            active_group = Some((range.end, *id));
+            next_group = pending_groups.next();
+        }
         let n = dom.get(*id).expect("computed node belongs to DOM");
         let g = &computed.nodes[id.index()];
         let s = n.style();
@@ -683,7 +916,13 @@ fn compile_into<Op: CompileOp>(
                 focus,
             };
             let checkpoint = after.filter(|_| deferred.is_none()).and_then(|name| {
-                raster_checkpoint(dom, *id, name, &computed.paint_order[index + 1..])
+                // Deferred feedback belongs in its owner's isolated range.
+                // Do not move it across a later begin or end marker.
+                let limit = active_group
+                    .map(|(end, _)| end)
+                    .or_else(|| next_group.map(|(range, _)| range.start))
+                    .unwrap_or(computed.paint_order.len());
+                raster_checkpoint(dom, *id, name, &computed.paint_order[index + 1..limit])
             });
             if let Some(checkpoint) = checkpoint {
                 deferred = Some((checkpoint, feedback));
@@ -703,7 +942,7 @@ fn compile_into<Op: CompileOp>(
             let clip = g.clip.intersect(rect);
             let decoration = decorations.get(id);
             let editable = n.role() == Role::TextInput;
-            let selection_colors = selection_colors.filter(|_| editable);
+            let selection_colors = options.selection_colors.filter(|_| editable);
             if let (None, Some(d)) = (selection_colors, decoration) {
                 for r in &d.selection {
                     ops.push(
@@ -761,8 +1000,9 @@ fn compile_into<Op: CompileOp>(
                     color: s.foreground,
                 }
             };
-            let run = match (selection_colors, decoration) {
-                (Some(colors), Some(decoration)) => {
+            let run = match (n.read_only_text_alignment(), selection_colors, decoration) {
+                (Some(alignment), _, _) => Op::with_aligned_text(run, alignment),
+                (None, Some(colors), Some(decoration)) => {
                     let selected = text_selection::visible_selection(clip, &decoration.selection);
                     if selected.is_empty() {
                         run.into()
@@ -819,6 +1059,11 @@ fn compile_into<Op: CompileOp>(
                     );
                 }
             }
+        }
+    }
+    if let Some((_, panel)) = active_group {
+        if let Some(op) = Op::end_paint_group() {
+            ops.push_owned(panel, op);
         }
     }
     ops.ops

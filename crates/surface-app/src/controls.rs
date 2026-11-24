@@ -1,4 +1,4 @@
-use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalLayer, Runtime};
+use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalDismissal, Runtime};
 use std::{collections::BTreeSet, rc::Rc};
 use surface::{ComputedDom, Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
 
@@ -53,6 +53,11 @@ pub(crate) struct FocusScope {
     id: String,
     restore: Option<String>,
     fallback: Option<String>,
+}
+
+pub(crate) enum ModalDismissInput {
+    Escape,
+    Outside,
 }
 
 pub(crate) enum TabDismissal {
@@ -342,13 +347,16 @@ impl<A: Application> Runtime<A> {
         );
         self.modal_layers
             .extend(self.bindings.iter().filter_map(|(&panel, binding)| {
-                if !binding.accepts_interaction() {
+                let layer = binding.modal_layer?;
+                if !layer.is_retiring()
+                    && (!binding.accepts_interaction() || binding.dismiss.is_none())
+                {
                     return None;
                 }
-                binding.dismiss.as_ref()?;
-                let backdrop = match binding.modal_layer? {
-                    ModalLayer::BackdropParent => self.dom.get(panel).ok()?.parent(),
-                    ModalLayer::Panel => None,
+                let backdrop = if layer.has_backdrop() {
+                    self.dom.get(panel).ok()?.parent()
+                } else {
+                    None
                 };
                 Some((backdrop, panel))
             }));
@@ -496,13 +504,25 @@ impl<A: Application> Runtime<A> {
                 })
         })
     }
-    pub(crate) fn dismiss_scope(&mut self) -> Result<bool, AppError> {
+    pub(crate) fn scopes_block_application_shortcuts(&self) -> bool {
+        self.scopes.iter().any(|scope| {
+            self.dom
+                .by_id(&scope.id)
+                .and_then(|id| self.bindings.get(&id))
+                .is_some_and(|binding| binding.block_application_shortcuts)
+        })
+    }
+
+    pub(crate) fn dismiss_scope(&mut self, input: ModalDismissInput) -> Result<bool, AppError> {
         let message = self
-            .scopes
-            .last()
-            .and_then(|s| self.dom.by_id(&s.id))
+            .active_scope_root()
             .and_then(|id| self.bindings.get(&id))
-            .and_then(|b| b.dismiss.clone());
+            .filter(|binding| match binding.modal_dismissal {
+                ModalDismissal::EscapeOrOutside => true,
+                ModalDismissal::Escape => matches!(input, ModalDismissInput::Escape),
+                ModalDismissal::ActionOnly => false,
+            })
+            .and_then(|binding| binding.dismiss.clone());
         self.message(message).map(|_| true)
     }
     /// Deliver the top scope's opt-in dismiss message. Consume the key if
