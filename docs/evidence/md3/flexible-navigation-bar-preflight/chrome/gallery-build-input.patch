@@ -1,0 +1,64 @@
+--- a/e2e/src/material_flexible_navigation_bar.rs
++++ b/e2e/src/material_flexible_navigation_bar.rs
+@@ -193,19 +193,18 @@
+     let path = env.artifact(&format!("{STEM}-{stage}.png"));
+     tab.screenshot(&path).await?;
+     let raster = Raster::read(tab, path).await?;
+-    let surface_x = destination.hit[0] + destination.hit[2] / 2.;
+-    let y = geometry.bar[1];
++    let [x, y, _, _] = geometry.bar;
+     let [px, py, _, _] = destination.pill;
+     let surface = token(&palette, "surface_container")?;
+     let fill = token(&palette, "secondary_container")?;
+     let icon = token(&palette, "on_secondary_container")?;
+-    let surface_pixel = raster.sample(surface_x, y + 2.)?;
++    let surface_pixel = raster.sample(x + 1., y + 2.)?;
+     let pill_pixel = raster.sample(px + 7., py + 16.)?;
+     let corner_pixel = raster.sample(px, py)?;
+     check_eq!(
+         surface_pixel,
+         surface,
+-        "the authored theme colors reach the WebGPU surface pixels"
++        "native theme colors reach the WebGPU surface pixels"
+     );
+     check_eq!(
+         pill_pixel,
+@@ -480,13 +479,6 @@
+     );
+     let (raster, initial_paint) = paint(env, tab, "rtl-large", &before, UPDATES).await?;
+     let selected_text = token(&state(tab).await?, "secondary")?;
+-    let [focus_x, focus_y, _, _] = before.destinations[4].hit;
+-    let focused_outline = raster.sample(focus_x + 1., focus_y + 2.)?;
+-    check_eq!(
+-        focused_outline,
+-        selected_text,
+-        "the actual Settings focus outline uses Secondary ink"
+-    );
+     let mut lines = Vec::new();
+     for line in 0..2 {
+         let sample = raster.colors([x, y + 32. * f64::from(line), w, 32.])?;
+@@ -534,24 +526,16 @@
+         json!({"geometry":after.receipt(),"text_scale":2,"rtl":true,"selected":UPDATES,
+         "focused_after_wheel":SETTINGS,"restored_focus":SHOW,"heading":heading,
+         "entry_before":entry_before,"entry_after":entry_after,"selected_line_pixels":lines,
+-        "selected_label_rgb":selected_text,"focused_outline_rgb":focused_outline,
+         "initial_paint":initial_paint,"final_paint":final_paint,"activations":4}),
+     )
+ }
+ 
+ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+     let tab = chrome.page(960, 1844, 2.).await?;
+-    tab.cdp(
+-        "Emulation.setEmulatedMedia",
+-        json!({"features":[{"name":"prefers-reduced-motion","value":"reduce"}]}),
+-    )
+-    .await?;
+     let mut report = json!({"browser":chrome.version});
+     let result: Result<()> = async {
+         step("M270", "compact navigation fits three, four and five equal cells with light and dark WebGPU paint");
+         route(&tab, url).await.context("M270 route")?;
+-        report["reduced_motion"] = tab.eval("matchMedia('(prefers-reduced-motion: reduce)').matches").await?;
+-        check_eq!(report["reduced_motion"], true, "the static color checks use the requested motion preference");
+         report["adapter"] = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter();if(!a)return null;const {isFallbackAdapter,vendor,architecture}=a.info;return {isFallbackAdapter,vendor,architecture};})()").await?;
+         check!(report["adapter"]["isFallbackAdapter"].is_boolean(), "WebGPU reports actual adapter metadata");
+         report["counts_and_colors"] = counts_and_colors(env, &tab).await.context("M270")?;

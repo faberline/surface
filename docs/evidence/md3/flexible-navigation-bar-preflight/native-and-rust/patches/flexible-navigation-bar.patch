@@ -1,0 +1,648 @@
+--- a/crates/surface-material/src/components.rs
++++ b/crates/surface-material/src/components.rs
+@@ -185,7 +185,7 @@
+ 
+ const NAVIGATION_INDICATOR_HEIGHT: f32 = 32.;
+ 
+-fn navigation_indicator(theme: &Theme, width: f32, selected: bool) -> Style {
++pub(crate) fn navigation_indicator(theme: &Theme, width: f32, selected: bool) -> Style {
+     Style::row()
+         .align(Align::Center)
+         .justify(Align::Center)
+--- /dev/null
++++ b/crates/surface-material/src/flexible_navigation_bar.rs
+@@ -0,0 +1,160 @@
++//! Compact Material 3 Expressive navigation with vertical destinations.
++
++use surface::{Align, Color, Length, Node, Role, Style, TextAlignment};
++use surface_app::{CursorStyle, View};
++
++use crate::{
++    adaptive::WindowWidthSizeClass, components::navigation_indicator, shape::LayoutDirection,
++    typography, vector_icon::VectorIconSize, Elevation, NavigationRailItem, Theme,
++};
++
++const MIN_HEIGHT: f32 = 64.;
++const INDICATOR_WIDTH: f32 = 56.;
++const VERTICAL_PADDING: f32 = 6.;
++const LABEL_GAP: f32 = 4.;
++const LABEL_INSET: f32 = 4.;
++const DISABLED_ALPHA: u8 = 97;
++
++/// The stable identity and compact layout of a flexible navigation bar.
++pub struct FlexibleNavigationBarOptions<'a> {
++    pub id: &'a str,
++    /// The localized accessible name for the navigation landmark.
++    pub name: &'a str,
++    /// The exact width reserved for the bar, in logical pixels.
++    pub available_width: f32,
++    pub direction: LayoutDirection,
++}
++
++impl Theme {
++    /// Build a compact Expressive bar with vertical icon and label stacks.
++    ///
++    /// Supply three to five destinations in reading order and update the
++    /// current page when a destination sends its message. Tab visits each
++    /// enabled destination. A press sends its message without changing the
++    /// caller's state directly. The visible label wraps and grows with text.
++    /// The caller positions the bar within the viewport.
++    ///
++    /// Returns `None` outside compact width or when the width cannot contain
++    /// one 56 dp indicator per destination. Use a different layout in those
++    /// cases.
++    pub fn flexible_navigation_bar<'a, M: 'a>(
++        &self,
++        options: FlexibleNavigationBarOptions<'_>,
++        items: impl IntoIterator<Item = NavigationRailItem<'a, M>>,
++    ) -> Option<View<M>> {
++        let width = options.available_width;
++        if WindowWidthSizeClass::from_dp(width) != Some(WindowWidthSizeClass::Compact) {
++            return None;
++        }
++        let items: Vec<_> = items.into_iter().take(6).collect();
++        if !(3..=5).contains(&items.len()) || width < INDICATOR_WIDTH * items.len() as f32 {
++            return None;
++        }
++
++        let mut style = Style::row()
++            .width(Length::Px(width))
++            .align(Align::Stretch)
++            .background(self.colors.surface_container);
++        style.min_height = MIN_HEIGHT;
++        let bar = Node::new(Role::Navigation, options.name)
++            .id(options.id)
++            .styled(style)
++            .box_shadows(self.elevation(Elevation::Level2));
++        let bar = match options.direction {
++            LayoutDirection::LeftToRight => bar,
++            LayoutDirection::RightToLeft => bar.reverse_row(),
++        };
++        let fraction = 1. / items.len() as f32;
++        let label_width = width * fraction - 2. * LABEL_INSET;
++        Some(
++            View::new(bar).children(
++                items
++                    .into_iter()
++                    .map(|item| self.flexible_navigation_destination(item, fraction, label_width)),
++            ),
++        )
++    }
++
++    fn flexible_navigation_destination<M>(
++        &self,
++        item: NavigationRailItem<'_, M>,
++        width_fraction: f32,
++        label_width: f32,
++    ) -> View<M> {
++        let state = item.state;
++        let inactive = self.colors.on_surface_variant;
++        let (icon_ink, label_ink) = if state.disabled {
++            let Color(red, green, blue, _) = inactive;
++            let disabled = Color(red, green, blue, DISABLED_ALPHA);
++            (disabled, disabled)
++        } else if state.selected {
++            (self.colors.on_secondary_container, self.colors.secondary)
++        } else {
++            (inactive, inactive)
++        };
++        let caption = if state.selected {
++            typography::LABEL_MEDIUM_EMPHASIZED
++        } else {
++            typography::LABEL_MEDIUM
++        };
++        let indicator = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-indicator", item.id))
++                .styled(
++                    navigation_indicator(self, INDICATOR_WIDTH, state.selected)
++                        .state_layer(self.colors.on_secondary_container),
++                )
++                .state_layer_alphas(20, 26, 26),
++        )
++        .children([item.icon.view(VectorIconSize::Dp24, icon_ink)])
++        .without_interaction(None);
++        let label = View::new(
++            Node::new(Role::Text, "")
++                .id(format!("{}-label", item.id))
++                .text(item.label)
++                .text_alignment(TextAlignment::Center)
++                .styled(
++                    Style::column()
++                        .width(Length::Px(label_width))
++                        .with_text_style(caption)
++                        .foreground(label_ink),
++                ),
++        )
++        .without_interaction(None);
++        let destination = View::new(
++            Node::new(Role::Button, item.name())
++                .id(item.id)
++                .selected(state.selected)
++                .current_page(state.selected)
++                .disabled(state.disabled)
++                .focus_color(self.colors.secondary)
++                .focus_outline_width(3.)
++                .styled(
++                    Style::column()
++                        .align(Align::Center)
++                        .width(Length::Percent(width_fraction)),
++                ),
++        )
++        .children([
++            spacer(VERTICAL_PADDING),
++            indicator,
++            spacer(LABEL_GAP),
++            label,
++            spacer(VERTICAL_PADDING),
++        ]);
++        if state.disabled {
++            destination
++        } else {
++            destination
++                .on_press(item.message)
++                .suppress_repeated_activation()
++                .accessible_activation()
++                .cursor(CursorStyle::Pointer)
++        }
++    }
++}
++
++fn spacer<M>(height: f32) -> View<M> {
++    View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(height))))
++        .without_interaction(None)
++}
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -33,6 +33,7 @@
+ mod fab_menu_layout;
+ mod fab_menu_motion;
+ mod fab_motion;
++mod flexible_navigation_bar;
+ mod full_screen_dialog;
+ mod list;
+ mod loading_indicator;
+@@ -136,6 +137,7 @@
+ };
+ pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
+ pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
++pub use flexible_navigation_bar::FlexibleNavigationBarOptions;
+ pub use full_screen_dialog::{
+     full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
+     FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,
+--- /dev/null
++++ b/crates/surface-material/tests/flexible_navigation_bar.rs
+@@ -0,0 +1,453 @@
++use surface::{
++    Color, ExtendedDisplayList, ExtendedPaintOp, Node, NodeId, PaintOp, Rect, Role, TextAlignment,
++    TextMeasurer,
++};
++use surface_app::{Application, Event, Key, KeyPress, Modifiers, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection, typography, ChoiceState, Elevation, FlexibleNavigationBarOptions,
++    NavigationRailItem, Theme, VectorIcon,
++};
++use surface_wgpu::TextSystem;
++
++const BAR: &str = "flex-nav";
++const ITEMS: [&str; 6] = ["home", "explore", "saved", "alerts", "settings", "extra"];
++const LONG_LABEL: &str = "收藏項目與閱讀清單";
++
++struct Page {
++    dark: bool,
++    direction: LayoutDirection,
++    width: f32,
++    count: usize,
++    enlarged: bool,
++    long_label: bool,
++    selected: usize,
++    accept: bool,
++    received: Vec<usize>,
++    icon: VectorIcon,
++}
++
++impl Default for Page {
++    fn default() -> Self {
++        Self {
++            dark: false,
++            direction: LayoutDirection::LeftToRight,
++            width: 320.,
++            count: 5,
++            enlarged: false,
++            long_label: false,
++            selected: 0,
++            accept: true,
++            received: Vec::new(),
++            icon: VectorIcon::new([[2., 2.], [22., 2.], [22., 22.], [2., 22.]]).unwrap(),
++        }
++    }
++}
++
++impl Page {
++    fn bar(&self) -> Option<View<usize>> {
++        let theme = if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let items = ITEMS[..self.count]
++            .iter()
++            .enumerate()
++            .map(|(index, id)| NavigationRailItem {
++                id,
++                label: if index == 2 && self.long_label {
++                    LONG_LABEL
++                } else {
++                    ["首頁", "探索", "收藏", "通知", "設定", "更多"][index]
++                },
++                accessible_name: if index == 0 { "主要頁面" } else { "" },
++                icon: &self.icon,
++                state: ChoiceState {
++                    selected: self.selected == index,
++                    disabled: index == 1,
++                },
++                message: index,
++            });
++        theme.flexible_navigation_bar(
++            FlexibleNavigationBarOptions {
++                id: BAR,
++                name: "主要導覽",
++                available_width: self.width,
++                direction: self.direction,
++            },
++            items,
++        )
++    }
++}
++
++impl Application for Page {
++    type Message = usize;
++
++    fn update(&mut self, index: usize) {
++        self.received.push(index);
++        if self.accept {
++            self.selected = index;
++        }
++    }
++
++    fn view(&self) -> View<usize> {
++        View::new(Node::new(Role::Window, "Test")).children(self.bar())
++    }
++
++    fn text_scale(&self) -> f32 {
++        if self.enlarged {
++            2.
++        } else {
++            1.
++        }
++    }
++}
++
++struct Fonts;
++
++impl TextMeasurer for Fonts {
++    fn measure(&mut self, text: &str, size: f32, width: Option<f32>) -> (f32, f32) {
++        let natural = text.chars().count() as f32 * size;
++        let width = width.unwrap_or(natural).min(natural);
++        let lines = (natural / width.max(1.)).ceil().max(1.);
++        (width, lines * size * 1.5)
++    }
++}
++
++fn draw(runtime: &mut Runtime<Page>) -> ExtendedDisplayList {
++    runtime.render_extended(320., 260., &mut Fonts).unwrap()
++}
++
++fn id(runtime: &Runtime<Page>, key: &str) -> NodeId {
++    runtime.dom().by_id(key).unwrap()
++}
++
++fn node<'a>(runtime: &'a Runtime<Page>, key: &str) -> &'a Node {
++    runtime.dom().get(id(runtime, key)).unwrap()
++}
++
++fn rect(runtime: &Runtime<Page>, key: &str) -> Rect {
++    runtime.computed().unwrap().nodes[id(runtime, key).index()].bounds
++}
++
++fn ink_at(list: &ExtendedDisplayList, bounds: Rect, expected: Color, radius: f32) -> bool {
++    list.ops().iter().any(|entry| {
++        matches!(
++            entry,
++            ExtendedPaintOp::Legacy(PaintOp::Quad { rect, color, radius: r, .. })
++                if *rect == bounds && *color == expected && *r == radius
++        )
++    })
++}
++
++#[test]
++fn accepts_only_compact_width_and_three_to_five_complete_cells() {
++    for (count, width, valid) in [
++        (2, 320., false),
++        (3, 167., false),
++        (3, 168., true),
++        (4, 320., true),
++        (5, 279., false),
++        (5, 280., true),
++        (5, 599., true),
++        (5, 600., false),
++        (6, 320., false),
++        (3, f32::NAN, false),
++        (3, f32::INFINITY, false),
++        (3, 0., false),
++    ] {
++        assert_eq!(
++            Page {
++                count,
++                width,
++                ..Page::default()
++            }
++            .bar()
++            .is_some(),
++            valid,
++            "{count} at {width}"
++        );
++    }
++}
++
++#[test]
++fn compact_three_four_five_destinations_have_equal_hit_cells() {
++    for count in [3, 4, 5] {
++        for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++            let mut runtime = Runtime::new(Page {
++                count,
++                direction,
++                ..Page::default()
++            })
++            .unwrap();
++            draw(&mut runtime);
++            assert_eq!(rect(&runtime, BAR), Rect::new(0., 0., 320., 64.));
++            let mut cells = ITEMS[..count]
++                .iter()
++                .map(|key| rect(&runtime, key))
++                .collect::<Vec<_>>();
++            if direction == LayoutDirection::RightToLeft {
++                cells.reverse();
++            }
++            assert_eq!(cells[0].x, 0.);
++            assert_eq!(cells.last().unwrap().x + cells.last().unwrap().width, 320.);
++            assert!(cells.iter().all(|cell| {
++                cell.y == 0. && cell.height == 64. && (cell.width - 320. / count as f32).abs() < 1.
++            }));
++            assert!(cells
++                .windows(2)
++                .all(|pair| pair[0].x + pair[0].width == pair[1].x));
++        }
++    }
++}
++
++#[test]
++fn pill_icons_and_text_use_expressive_geometry_and_palette_in_both_themes() {
++    for dark in [false, true] {
++        let theme = if dark { Theme::dark() } else { Theme::light() };
++        let mut runtime = Runtime::new(Page {
++            dark,
++            ..Page::default()
++        })
++        .unwrap();
++        let paint = draw(&mut runtime);
++        let bar = node(&runtime, BAR);
++        assert_eq!(bar.style().background, theme.colors.surface_container);
++        assert_eq!(bar.box_shadow_layers(), theme.elevation(Elevation::Level2));
++        assert!(ink_at(
++            &paint,
++            rect(&runtime, BAR),
++            theme.colors.surface_container,
++            0.
++        ));
++        for key in ["home", "explore", "saved"] {
++            let hit = rect(&runtime, key);
++            let indicator = format!("{key}-indicator");
++            let pill = rect(&runtime, &indicator);
++            let caption = format!("{key}-label");
++            let label = rect(&runtime, &caption);
++            assert_eq!((pill.width, pill.height), (56., 32.));
++            assert_eq!(pill.y - hit.y, 6.);
++            assert_eq!(pill.x + pill.width / 2., hit.x + hit.width / 2.);
++            assert_eq!(label.y - (pill.y + pill.height), 4.);
++            assert_eq!((hit.y + hit.height) - (label.y + label.height), 6.);
++            assert_eq!(label.x + label.width / 2., hit.x + hit.width / 2.);
++            let artwork = runtime
++                .dom()
++                .children(id(&runtime, &indicator))
++                .next()
++                .unwrap();
++            let icon = runtime.computed().unwrap().nodes[artwork.index()].bounds;
++            assert_eq!(icon, Rect::new(pill.x + 16., pill.y + 4., 24., 24.));
++
++            let selected = key == "home";
++            let indicator_color = if selected {
++                theme.colors.secondary_container
++            } else {
++                Color::TRANSPARENT
++            };
++            assert_eq!(
++                node(&runtime, &indicator).style().background,
++                indicator_color
++            );
++            assert_eq!(
++                ink_at(&paint, pill, theme.colors.secondary_container, 16.),
++                selected
++            );
++            let Color(r, g, b, _) = theme.colors.on_surface_variant;
++            let (icon_ink, text_ink, text_style) = match key {
++                "home" => (
++                    theme.colors.on_secondary_container,
++                    theme.colors.secondary,
++                    typography::LABEL_MEDIUM_EMPHASIZED,
++                ),
++                "explore" => (
++                    Color(r, g, b, 97),
++                    Color(r, g, b, 97),
++                    typography::LABEL_MEDIUM,
++                ),
++                _ => (
++                    theme.colors.on_surface_variant,
++                    theme.colors.on_surface_variant,
++                    typography::LABEL_MEDIUM,
++                ),
++            };
++            assert!(paint.ops().iter().any(|op| matches!(op, ExtendedPaintOp::FillPath(path)
++                if path.color() == icon_ink && path.rect() == Rect::new(icon.x + 2., icon.y + 2., 20., 20.))));
++            assert!(paint
++                .ops()
++                .iter()
++                .any(|op| matches!(op, ExtendedPaintOp::AlignedText(text)
++                if text.alignment() == TextAlignment::Center
++                    && matches!(text.run(), PaintOp::StyledText { rect, color, style, .. }
++                        if *rect == label && *color == text_ink && *style == text_style))));
++        }
++    }
++}
++
++#[test]
++fn full_rtl_labels_wrap_at_two_hundred_percent_without_moving_the_icon_stack() {
++    let mut runtime = Runtime::new(Page {
++        dark: true,
++        direction: LayoutDirection::RightToLeft,
++        enlarged: true,
++        long_label: true,
++        selected: 2,
++        ..Page::default()
++    })
++    .unwrap();
++    let draw = runtime
++        .render_extended(320., 260., &mut TextSystem::default())
++        .unwrap();
++    let bar = rect(&runtime, BAR);
++    assert!(bar.height > 64.);
++    let destination = rect(&runtime, "saved");
++    let label = rect(&runtime, "saved-label");
++    assert!(label.height >= 64.);
++    assert_eq!(bar.intersect(label), label);
++    assert_eq!(destination.intersect(label), label);
++    assert_eq!(
++        destination.y + destination.height - (label.y + label.height),
++        6.
++    );
++    assert!(draw
++        .ops()
++        .iter()
++        .any(|op| matches!(op, ExtendedPaintOp::AlignedText(aligned)
++        if matches!(aligned.run(), PaintOp::StyledText { text, style, clip, .. }
++            if text == LONG_LABEL && style.font_size == 24. && style.line_height == Some(32.)
++                && clip.intersect(label) == label))));
++    for key in ITEMS[..5].iter() {
++        let hit = rect(&runtime, key);
++        let pill = rect(&runtime, &format!("{key}-indicator"));
++        assert_eq!((hit.width, hit.height), (64., bar.height));
++        assert_eq!((pill.width, pill.height, pill.y - hit.y), (56., 32., 6.));
++    }
++}
++
++#[test]
++fn pointer_uses_the_full_target_and_keeps_state_ink_within_the_pill() {
++    let mut runtime = Runtime::new(Page::default()).unwrap();
++    draw(&mut runtime);
++    let row = rect(&runtime, "saved");
++    let pill = rect(&runtime, "saved-indicator");
++    let (x, y) = (row.x + 2., row.y + row.height - 2.);
++    assert!(!pill.contains(x, y));
++    let Color(r, g, b, _) = Theme::light().colors.on_secondary_container;
++    runtime.dispatch(Event::PointerMove { x, y }).unwrap();
++    let hover = draw(&mut runtime);
++    assert!(ink_at(&hover, pill, Color(r, g, b, 20), 16.));
++    assert!(!ink_at(&hover, row, Color(r, g, b, 20), 0.));
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    assert_eq!(runtime.focused(), Some("saved"));
++    assert!(runtime.app().received.is_empty());
++    let press = draw(&mut runtime);
++    assert!(ink_at(&press, pill, Color(r, g, b, 26), 16.));
++    assert!(!ink_at(&press, row, Color(r, g, b, 26), 0.));
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().received, [2]);
++    assert_eq!(node(&runtime, "saved").is_current_page(), Some(true));
++    let focus = draw(&mut runtime);
++    assert!(ink_at(&focus, pill, Color(r, g, b, 26), 16.));
++    assert_eq!(rect(&runtime, "saved"), row);
++}
++
++#[test]
++fn each_enabled_button_tabs_in_reading_order_and_only_caller_changes_the_page() {
++    for accept in [false, true] {
++        let mut runtime = Runtime::new(Page {
++            direction: LayoutDirection::RightToLeft,
++            enlarged: true,
++            long_label: true,
++            accept,
++            ..Page::default()
++        })
++        .unwrap();
++        draw(&mut runtime);
++        for target in ["home", "saved", "alerts", "settings"] {
++            assert!(runtime
++                .dispatch(Event::FocusNext { reverse: false })
++                .unwrap());
++            assert_eq!(runtime.focused(), Some(target));
++            assert_eq!(runtime.app().selected, 0);
++            assert!(runtime.app().received.is_empty());
++        }
++        runtime
++            .dispatch(Event::FocusNext { reverse: true })
++            .unwrap();
++        assert_eq!(runtime.focused(), Some("alerts"));
++        let paint = draw(&mut runtime);
++        let ink = Theme::light().colors.secondary;
++        assert!(paint.ops().iter().any(|op| matches!(
++            op, ExtendedPaintOp::Legacy(PaintOp::Stroke { rect: focus, color, width, .. })
++                if *focus == rect(&runtime, "alerts") && *color == ink && *width == 3.
++        )));
++        for control in [Key::Enter, Key::Space] {
++            let focus = runtime
++                .accessibility_frame()
++                .unwrap()
++                .focus_target(id(&runtime, "alerts"))
++                .unwrap();
++            let key = KeyPress::new(control, Modifiers::default());
++            assert!(runtime
++                .accessibility_key(&focus, &key, Event::Activate)
++                .unwrap());
++            draw(&mut runtime);
++            let current = runtime
++                .accessibility_frame()
++                .unwrap()
++                .focus_target(id(&runtime, "alerts"))
++                .unwrap();
++            let before_repeat = runtime.app().received.len();
++            assert!(runtime
++                .accessibility_key(&current, &key.with_repeat(true), Event::Activate)
++                .unwrap());
++            assert_eq!(runtime.app().received.len(), before_repeat);
++        }
++        assert_eq!(runtime.app().received, [3, 3]);
++        assert_eq!(runtime.app().selected, if accept { 3 } else { 0 });
++        assert_eq!(node(&runtime, "alerts").is_current_page(), Some(accept));
++        assert_eq!(node(&runtime, "home").is_current_page(), Some(!accept));
++        assert_eq!(runtime.focused(), Some("alerts"));
++    }
++}
++
++#[test]
++fn accessible_buttons_exclude_decoration_and_block_disabled_activation() {
++    let mut runtime = Runtime::new(Page {
++        long_label: true,
++        ..Page::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let bar = id(&runtime, BAR);
++    assert_eq!(frame.node(bar).unwrap().node.name(), "主要導覽");
++    assert_eq!(frame.node(bar).unwrap().node.role(), Role::Navigation);
++    assert_eq!(
++        frame.children(bar).collect::<Vec<_>>(),
++        ITEMS[..5]
++            .iter()
++            .map(|key| id(&runtime, key))
++            .collect::<Vec<_>>()
++    );
++    for key in &ITEMS[..5] {
++        let target = id(&runtime, key);
++        assert!(frame.children(target).next().is_none());
++        assert_eq!(frame.node(target).unwrap().node.role(), Role::Button);
++        let enabled = *key != "explore";
++        assert_eq!(frame.focus_target(target).is_some(), enabled);
++        assert_eq!(frame.activation_target(target).is_some(), enabled);
++    }
++    assert_eq!(node(&runtime, "home").name(), "主要頁面");
++    assert_eq!(node(&runtime, "saved").name(), LONG_LABEL);
++    let disabled = rect(&runtime, "explore");
++    let (x, y) = (
++        disabled.x + disabled.width / 2.,
++        disabled.y + disabled.height / 2.,
++    );
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert!(runtime.activate("explore").is_err());
++    assert!(runtime.app().received.is_empty());
++}

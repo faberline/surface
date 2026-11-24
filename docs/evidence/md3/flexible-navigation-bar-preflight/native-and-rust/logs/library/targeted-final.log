@@ -1,0 +1,43 @@
+   Compiling surface-material v0.1.46 ($SOURCE/crates/surface-material)
+    Finished `test` profile [unoptimized] target(s) in 1.74s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/flexible_navigation_bar.rs ($CARGO_TARGET_DIR/debug/deps/flexible_navigation_bar-72a1a1e0ad500863)
+
+running 7 tests
+test accepts_only_compact_width_and_three_to_five_complete_cells ... ok
+test accessible_buttons_exclude_decoration_and_block_disabled_activation ... ok
+test compact_three_four_five_destinations_have_equal_hit_cells ... ok
+test each_enabled_button_tabs_in_reading_order_and_only_caller_changes_the_page ... ok
+test full_rtl_labels_wrap_at_two_hundred_percent_without_moving_the_icon_stack ... ok
+test pill_icons_and_text_use_expressive_geometry_and_palette_in_both_themes ... ok
+test pointer_uses_the_full_target_and_keeps_state_ink_within_the_pill ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/navigation_badge.rs ($CARGO_TARGET_DIR/debug/deps/navigation_badge-4ecbad7a9a266ac9)
+
+running 6 tests
+test badge_ink_never_widens_the_destination_hit_area ... ok
+test clearance_fits_the_measured_badge_inside_the_navigation_destination ... ok
+test default_text_size_matches_the_existing_vector_destination_geometry ... ok
+test large_text_reserves_constant_headroom_for_the_icon_and_hit_area ... ok
+test reading_order_selected_tab_entry_and_disabled_skip_survive_mirroring_and_badges ... ok
+test the_badge_preserves_item_geometry_and_stays_clear_of_neighbor_art_at_320_dp ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.13s
+
+     Running tests/navigation_bar.rs ($CARGO_TARGET_DIR/debug/deps/navigation_bar-8f202219f1685b5d)
+
+running 8 tests
+test arrow_keys_move_focus ... ok
+test bar_and_items_are_80_high ... ok
+test colors_use_tokens_in_both_themes ... ok
+test compact_vector_destinations_follow_physical_arrows_in_rtl ... ok
+test indicator_is_64_by_32_and_only_when_selected ... ok
+test press_sends_the_message ... ok
+test roles_and_state ... ok
+test selection_changes_the_output ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

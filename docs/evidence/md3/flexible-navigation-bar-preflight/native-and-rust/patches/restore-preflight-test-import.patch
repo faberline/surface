@@ -1,0 +1,10 @@
+--- a/crates/surface-material/tests/flexible_navigation_bar.rs
++++ b/crates/surface-material/tests/flexible_navigation_bar.rs
+@@ -1,6 +1,6 @@
+ use surface::{
+     Color, ExtendedDisplayList, ExtendedPaintOp, Node, NodeId, PaintOp, Rect, Role, TextAlignment,
+-    TextMeasurer,
++    TextMeasurer, TextStyle,
+ };
+ use surface_app::{Application, Event, Key, KeyPress, Modifiers, Runtime, View};
+ use surface_material::{

@@ -1,0 +1,191 @@
+--- a/examples/material-gallery/src/flexible_navigation_bar_demo.rs
++++ b/examples/material-gallery/src/flexible_navigation_bar_demo.rs
+@@ -130,35 +130,57 @@
+     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+         use FlexibleNavigationBarDemoEvent::*;
+         let event = Message::FlexibleNavigationBarDemo;
+-        let controls = control_row(vec![
++        let selected_label = LABELS[self.selected];
++        let header = Node::new(Role::Group, "")
++            .id("navigation-bar-demo-header")
++            .styled(
++                Style::row()
++                    .width(Length::Percent(1.))
++                    .align(Align::Center)
++                    .padding(16.)
++                    .gap(12.),
++            );
++        let header = if self.rtl {
++            header.reverse_row()
++        } else {
++            header
++        };
++        let header = View::new(header).children([
+             theme
+                 .tonal_button(BACK, "返回", event(Back))
+                 .restore_focus_on_removal(SHOW)
+                 .accessible_activation(),
++            View::new(
++                Node::new(Role::Heading, selected_label)
++                    .id("navigation-bar-demo-page-title")
++                    .text(selected_label)
++                    .shrink_to_fit_width()
++                    .styled(
++                        Style::default()
++                            .with_text_style(typography::TITLE_MEDIUM)
++                            .foreground(theme.on_background),
++                    ),
++            ),
++        ]);
++        let toggle = |id, label, selected, message| {
+             theme
+-                .switch(
+-                    "navigation-bar-demo-theme",
+-                    "深色",
+-                    choice(dark),
+-                    Message::Theme,
+-                )
+-                .accessible_activation(),
+-            theme
+-                .switch(
+-                    "navigation-bar-demo-rtl",
+-                    "右起",
+-                    choice(self.rtl),
+-                    event(ToggleDirection),
+-                )
+-                .accessible_activation(),
+-            theme
+-                .switch(
+-                    "navigation-bar-demo-large-text",
+-                    "大字",
+-                    choice(self.large_text),
+-                    event(ToggleLargeText),
+-                )
+-                .accessible_activation(),
++                .segmented_button(id, label, choice(selected), message)
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            toggle("navigation-bar-demo-theme", "深色", dark, Message::Theme),
++            toggle(
++                "navigation-bar-demo-rtl",
++                "右起",
++                self.rtl,
++                event(ToggleDirection),
++            ),
++            toggle(
++                "navigation-bar-demo-large-text",
++                "大字",
++                self.large_text,
++                event(ToggleLargeText),
++            ),
+         ]);
+         let counts = control_row(
+             [
+@@ -168,33 +190,19 @@
+             ]
+             .into_iter()
+             .map(|(id, label, count)| {
+-                theme
+-                    .segmented_button(
+-                        id,
+-                        label,
+-                        choice(count == self.count),
+-                        event(SetCount(count)),
+-                    )
+-                    .accessible_activation()
++                toggle(id, label, count == self.count, event(SetCount(count)))
+             })
+             .collect(),
+         );
+-        let selected_label = LABELS[self.selected];
+-        let page = View::new(
+-            Node::new(Role::Group, "")
+-                .id(PAGE)
+-                .styled(Style::column().gap(12.)),
+-        )
+-        .children(
+-            std::iter::once(heading(
+-                theme,
+-                "navigation-bar-demo-page-title",
+-                selected_label,
+-            ))
+-            .chain(CONTENT[self.selected].into_iter().enumerate().map(
++        let page =
++            View::new(
++                Node::new(Role::Group, "")
++                    .id(PAGE)
++                    .styled(Style::column().gap(12.)),
++            )
++            .children(CONTENT[self.selected].into_iter().enumerate().map(
+                 |(index, label)| theme.text(&format!("navigation-bar-demo-entry-{index}"), label),
+-            )),
+-        );
++            ));
+         let scroll = View::new(
+             Node::new(Role::Group, "頁面內容").id(SCROLL).styled(
+                 Style::column()
+@@ -207,12 +215,7 @@
+             ),
+         )
+         .accessibility_scroll_pages()
+-        .children([
+-            heading(theme, "navigation-bar-demo-title", "彈性導覽列"),
+-            controls,
+-            counts,
+-            page,
+-        ]);
++        .children([controls, counts, page]);
+         let bar = theme.flexible_navigation_bar(
+             FlexibleNavigationBarOptions {
+                 id: BAR,
+@@ -244,7 +247,7 @@
+                     .background(theme.background),
+             ),
+         )
+-        .children(std::iter::once(scroll).chain(bar));
++        .children([header, scroll].into_iter().chain(bar));
+         View::new(
+             Node::new(Role::Window, "Material gallery")
+                 .id("navigation-bar-demo")
+@@ -290,20 +293,6 @@
+         selected,
+         disabled: false,
+     }
+-}
+-
+-fn heading(theme: &Theme, id: &str, label: &str) -> View<Message> {
+-    View::new(
+-        Node::new(Role::Heading, label)
+-            .id(id)
+-            .text(label)
+-            .shrink_to_fit_width()
+-            .styled(
+-                Style::default()
+-                    .with_text_style(typography::TITLE_LARGE)
+-                    .foreground(theme.on_background),
+-            ),
+-    )
+ }
+ 
+ fn icon(index: usize, selected: bool) -> &'static VectorIcon {
+@@ -425,6 +414,11 @@
+         render(&mut runtime, 320., 400.);
+ 
+         let bar = bounds(&runtime, BAR);
++        let header = bounds(&runtime, "navigation-bar-demo-header");
++        for id in [BACK, "navigation-bar-demo-page-title"] {
++            let control = bounds(&runtime, id);
++            assert_eq!(header.intersect(control), control);
++        }
+         assert_eq!(bar.width, 320.);
+         assert_eq!(bar.y + bar.height, 400.);
+         assert!(bar.height > 80.);
+@@ -450,6 +444,7 @@
+             .unwrap();
+         render(&mut runtime, 320., 400.);
+         assert!(bounds(&runtime, PAGE).y < page_before.y);
++        assert_eq!(bounds(&runtime, "navigation-bar-demo-header"), header);
+         assert_eq!(bounds(&runtime, BAR), bar);
+     }
+ }
