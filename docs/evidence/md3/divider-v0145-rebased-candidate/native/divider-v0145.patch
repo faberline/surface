@@ -1,0 +1,993 @@
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.44"
++version = "0.1.45"
+ dependencies = [
+  "anyhow",
+  "brotli",
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.44"
++version = "0.1.45"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+--- /dev/null
++++ b/crates/surface-material/src/divider.rs
+@@ -0,0 +1,99 @@
++use surface::{Insets, Length, Node, Role, Style};
++use surface_app::View;
++
++use crate::{shape::LayoutDirection, DividerKind, Theme};
++
++const INSET: f32 = 16.;
++
++/// The thickness of a decorative divider in logical pixels.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum DividerWeight {
++    /// A 1 dp line to group related content.
++    Regular,
++    /// An 8 dp line to mark a break between major sections.
++    Heavy,
++}
++
++/// Position a decorative divider in its parent.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum DividerLayout {
++    /// Draw a horizontal line across the width available to the divider.
++    Horizontal {
++        kind: DividerKind,
++        direction: LayoutDirection,
++    },
++    /// Draw a vertical line across the parent's available height.
++    Vertical,
++}
++
++impl Theme {
++    /// Draw a Material divider that does not take focus or appear in the
++    /// accessibility tree. Group related content with headings or other
++    /// semantics when the visual separation matters to the reader.
++    pub fn decorative_divider<M>(&self, id: &str, layout: DividerLayout) -> View<M> {
++        self.decorative_divider_with_weight(id, layout, DividerWeight::Regular)
++    }
++
++    /// Draw a decorative Material divider with the selected thickness.
++    /// The weight controls height for a horizontal line and width for a
++    /// vertical line. Insets and the outline-variant color are shared.
++    pub fn decorative_divider_with_weight<M>(
++        &self,
++        id: &str,
++        layout: DividerLayout,
++        weight: DividerWeight,
++    ) -> View<M> {
++        let thickness = match weight {
++            DividerWeight::Regular => 1.,
++            DividerWeight::Heavy => 8.,
++        };
++        let line = |style: Style| {
++            View::new(
++                Node::new(Role::Separator, "")
++                    .id(id)
++                    .styled(style.background(self.colors.outline_variant)),
++            )
++        };
++        match layout {
++            DividerLayout::Vertical => line(
++                Style::column()
++                    .width(Length::Px(thickness))
++                    .height(Length::Percent(1.)),
++            ),
++            DividerLayout::Horizontal { kind, direction } => {
++                let row = Style::column()
++                    .width(Length::Percent(1.))
++                    .height(Length::Px(thickness));
++                match kind {
++                    DividerKind::Full => line(row),
++                    DividerKind::Inset | DividerKind::MiddleInset => {
++                        let end = if kind == DividerKind::MiddleInset {
++                            INSET
++                        } else {
++                            0.
++                        };
++                        let (left, right) = match direction {
++                            LayoutDirection::LeftToRight => (INSET, end),
++                            LayoutDirection::RightToLeft => (end, INSET),
++                        };
++                        let ink = Style::column()
++                            .height(Length::Px(thickness))
++                            .absolute(Insets {
++                                left: Length::Px(left),
++                                right: Length::Px(right),
++                                top: Length::Px(0.),
++                                ..Insets::default()
++                            });
++                        View::new(
++                            Node::new(Role::Group, "")
++                                .id(format!("{id}-container"))
++                                .styled(row.clip(true)),
++                        )
++                        .children([line(ink)])
++                    }
++                }
++            }
++        }
++        .without_interaction(None)
++    }
++}
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -21,6 +21,7 @@
+ mod date_picker_state;
+ mod date_range_picker;
+ mod date_range_picker_state;
++mod divider;
+ mod docked_date_picker;
+ mod docked_date_picker_state;
+ mod elevation;
+@@ -106,6 +107,7 @@
+     DateRangeMode, DateRangePairError, DateRangePickerState, DateRangePosition,
+     DateRangeValidation,
+ };
++pub use divider::{DividerLayout, DividerWeight};
+ pub use docked_date_picker::{DockedDatePickerLabels, DockedDatePickerOptions};
+ pub use docked_date_picker_state::{
+     place_docked_date_picker, DockedDatePickerEvent, DockedDatePickerMode, DockedDatePickerState,
+--- /dev/null
++++ b/crates/surface-material/tests/material_divider.rs
+@@ -0,0 +1,177 @@
++use surface::{Length, Node, PaintOp, Rect, Role, Style};
++use surface_app::{Application, Event, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection::{self, LeftToRight, RightToLeft},
++    ButtonKind, DividerKind, DividerLayout, DividerWeight, Theme,
++};
++use surface_wgpu::TextSystem;
++
++struct DividerApp {
++    theme: Theme,
++    direction: LayoutDirection,
++    weight: Option<DividerWeight>,
++    scale: f32,
++    clicks: usize,
++}
++
++impl Application for DividerApp {
++    type Message = ();
++
++    fn update(&mut self, _: ()) {
++        self.clicks += 1;
++    }
++
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++
++    fn view(&self) -> View<()> {
++        let divider = |id, layout| match self.weight {
++            Some(weight) => self
++                .theme
++                .decorative_divider_with_weight(id, layout, weight),
++            None => self.theme.decorative_divider(id, layout),
++        };
++        let horizontal = |id, kind| {
++            divider(
++                id,
++                DividerLayout::Horizontal {
++                    kind,
++                    direction: self.direction,
++                },
++            )
++        };
++        let button = |id| {
++            self.theme
++                .button_with(id, id, ButtonKind::Text, false, ())
++                .accessible_activation()
++        };
++        View::new(Node::new(Role::Window, "Dividers").styled(Style::column().gap(4.))).children([
++            button("first"),
++            horizontal("full", DividerKind::Full),
++            horizontal("inset", DividerKind::Inset),
++            horizontal("middle", DividerKind::MiddleInset),
++            View::new(Node::new(Role::Group, "").styled(Style::row().height(Length::Px(24.))))
++                .children([
++                    divider("vertical", DividerLayout::Vertical),
++                    self.theme.vertical_divider("legacy-vertical"),
++                ]),
++            self.theme.divider("legacy"),
++            self.theme
++                .divider_with("legacy-inset", DividerKind::MiddleInset),
++            button("last"),
++        ])
++    }
++}
++
++fn bounds(app: &Runtime<DividerApp>, id: &str) -> Rect {
++    app.computed().unwrap().nodes[app.dom().by_id(id).unwrap().index()].bounds
++}
++
++#[test]
++fn both_weights_keep_material_geometry_color_and_legacy_thickness() {
++    let mut fonts = TextSystem::default();
++    for (weight, thickness) in [
++        (None, 1.),
++        (Some(DividerWeight::Regular), 1.),
++        (Some(DividerWeight::Heavy), 8.),
++    ] {
++        for (theme, direction, start, scale) in [
++            (Theme::light(), LeftToRight, 16., 1.),
++            (Theme::dark(), RightToLeft, 0., 2.),
++        ] {
++            let mut app = Runtime::new(DividerApp {
++                theme,
++                direction,
++                weight,
++                scale,
++                clicks: 0,
++            })
++            .unwrap();
++            let display = app.render(320., 240., &mut fonts).unwrap();
++            for (id, expected) in [
++                ("full", (0., 320., thickness)),
++                ("inset", (start, 304., thickness)),
++                ("middle", (16., 288., thickness)),
++                ("vertical", (0., thickness, 24.)),
++            ] {
++                let rect = bounds(&app, id);
++                assert_eq!(
++                    (rect.x, rect.width, rect.height),
++                    expected,
++                    "{id} {weight:?}"
++                );
++                assert!(
++                    display.ops.iter().any(|op| matches!(op,
++                        PaintOp::Quad { rect: painted, clip, color, .. }
++                            if *painted == rect && rect.intersect(*clip) == rect
++                                && *color == theme.colors.outline_variant
++                    )),
++                    "{id} {weight:?}"
++                );
++            }
++            let legacy = bounds(&app, "legacy");
++            let legacy_inset = bounds(&app, "legacy-inset");
++            let legacy_vertical = bounds(&app, "legacy-vertical");
++            assert_eq!((legacy.width, legacy.height), (320., 1.));
++            assert_eq!(
++                (legacy_inset.x, legacy_inset.width, legacy_inset.height),
++                (16., 288., 1.)
++            );
++            assert_eq!((legacy_vertical.width, legacy_vertical.height), (1., 24.));
++        }
++    }
++}
++
++#[test]
++fn small_containers_clip_the_insets_and_keep_dividers_out_of_input_and_ax() {
++    let mut fonts = TextSystem::default();
++    for weight in [None, Some(DividerWeight::Heavy)] {
++        let mut app = Runtime::new(DividerApp {
++            theme: Theme::dark(),
++            direction: RightToLeft,
++            weight,
++            scale: 2.,
++            clicks: 0,
++        })
++        .unwrap();
++        app.render(10., 240., &mut fonts).unwrap();
++        for id in ["inset", "middle"] {
++            let node = app.dom().by_id(id).unwrap();
++            let layout = &app.computed().unwrap().nodes[node.index()];
++            assert_eq!(layout.bounds.width, 0.);
++            assert_eq!(layout.bounds.intersect(layout.clip).width, 0.);
++        }
++        app.render(320., 240., &mut fonts).unwrap();
++        let frame = app.accessibility_frame().unwrap();
++        for name in [
++            "full",
++            "inset",
++            "inset-container",
++            "middle",
++            "middle-container",
++            "vertical",
++        ] {
++            let id = app.dom().by_id(name).unwrap();
++            assert!(frame.node(id).is_none(), "{name} {weight:?}");
++            assert!(frame.focus_target(id).is_none());
++            assert!(frame.activation_target(id).is_none());
++        }
++        for name in ["legacy", "legacy-inset", "legacy-vertical"] {
++            assert!(
++                frame.node(app.dom().by_id(name).unwrap()).is_some(),
++                "{name}"
++            );
++        }
++        app.dispatch(Event::FocusNext { reverse: false }).unwrap();
++        assert_eq!(app.focused(), Some("first"));
++        app.dispatch(Event::FocusNext { reverse: false }).unwrap();
++        assert_eq!(app.focused(), Some("last"));
++
++        let rect = bounds(&app, "full");
++        let (x, y) = (rect.x + rect.width * 0.5, rect.y + rect.height * 0.5);
++        app.dispatch(Event::PointerDown { x, y }).unwrap();
++        app.dispatch(Event::PointerUp { x, y }).unwrap();
++        assert_eq!(app.app().clicks, 0);
++    }
++}
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -241,9 +241,10 @@
+       "spec": "https://m3.material.io/components/divider/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Horizontal semantic divider"
++      "desktop_evidence": "Two native headless Metal replays verify all four Regular layouts, 320 dp dark RTL at 200% text, 1 dp paint, focus return, and identical PNGs from Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/f68cf8c02cf501ef0fc9624b1b10c8f6baf662ee/docs/evidence/md3/divider-after-dialog-current",
++      "web_evidence": "Chrome WebGPU M264 and M265 verify Regular divider color, one-dp thickness, RTL inset, keyboard focus and omission of decorative lines from the accessibility tree. https://github.com/faberline/surface/tree/f68cf8c02cf501ef0fc9624b1b10c8f6baf662ee/docs/evidence/md3/divider-after-dialog-current M266 exercises Heavy in both themes and all four layouts, then checks return to Regular.",
++      "implemented": "Decorative full-width, leading-inset, middle-inset and vertical dividers. Regular uses 1 dp. Heavy uses 8 dp. Both use outline variant. Single insets mirror in right-to-left layouts and tiny parents clip safely. The semantic separator builders remain compatible. List and sheet integration and system contrast qualification remain open.",
++      "unit_evidence": "Material Runtime tests cover both weights, tiny-parent clipping, palette, RTL geometry, pointer and focus exclusion, the shared accessibility frame, and existing semantic separators."
+     },
+     {
+       "id": "lists",
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -185,7 +185,8 @@
+ | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
+ | `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
+ | `divider` | One-pixel semantic separator |
+-| `divider_with` / `vertical_divider` | Full, inset and middle-inset horizontal dividers and a vertical divider; 1 dp, `outline_variant`; no list or sheet integration yet |
++| `decorative_divider` / `decorative_divider_with_weight` | Full, leading-inset, middle-inset and vertical Material lines. Regular is 1 dp. Heavy is 8 dp. Both use `outline_variant`. |
++| `divider_with` / `vertical_divider` | Earlier named semantic separators. |
+ | `card` / `outlined_card` | Filled and outlined containers |
+ | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
+ | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
+@@ -1414,6 +1415,25 @@
+ [Material 3 App Bars](https://m3.material.io/components/app-bars/overview) ·
+ [MDC 1.14.0 app bars](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/TopAppBar.md) ·
+ [Pinned Compose layout and scroll](https://android.googlesource.com/platform/frameworks/support/+/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt)
++
++## Dividers
++
++Use `Theme::decorative_divider` to separate adjacent content with a 1 dp
++line. For an 8 dp line, pass `DividerWeight::Heavy` to
++`Theme::decorative_divider_with_weight`. Both weights draw with
++`outline_variant` and support the same `DividerLayout` values.
++[Google Material layout specs](https://m3.material.io/components/divider/specs) · [Google Material Heavy style](https://github.com/material-components/material-components-android/blob/6061a69915d04f11230dbf6f417bc27d9c3056ad/docs/components/Divider.md#adding-heavy-divider)
++
++For horizontal lines, `Full` spans the parent. `Inset` leaves 16 dp at
++the leading edge and follows the layout direction. `MiddleInset` leaves
++16 dp at both edges. Give a vertical divider a row with a defined height.
++Use headings to label content groups. Decorative lines stay out of the
++focus order and accessibility tree. The existing semantic separator
++builders remain available for callers that need a separator role.
++
++Open **分隔線** in the Gallery's **色彩** tab. Toggle **粗線** to compare both
++weights in the same layout. The scene supports light and dark colors,
++right-to-left layout and 200% text.
+ 
+ ## Dialogs
+ 
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -22,6 +22,8 @@
+ mod material_date_range_picker;
+ #[path = "material_dialog.rs"]
+ mod material_dialog;
++#[path = "material_divider.rs"]
++mod material_divider;
+ #[path = "material_docked_date_picker.rs"]
+ mod material_docked_date_picker;
+ #[path = "material_drawer.rs"]
+@@ -120,7 +122,7 @@
+     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
+     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
+     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
+-    "M263",
++    "M263", "M264", "M265", "M266",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -236,7 +238,8 @@
+     material_scroll_modal_fields::run(env, chrome, &url).await?;
+     material_web_contrast::run(env, chrome, &url).await?;
+     material_search_overlay::run(env, chrome, &url).await?;
+-    material_dialog::run(env, chrome, &url).await
++    material_dialog::run(env, chrome, &url).await?;
++    material_divider::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+--- /dev/null
++++ b/e2e/src/material_divider.rs
+@@ -0,0 +1,215 @@
++//! Decorative divider paint and keyboard traversal on headless Chrome WebGPU.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_tree, bounds, contains, focus_projected, focused, projected, resize, Raster,
++};
++use super::until;
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "divider-demo-show";
++const BACK: &str = "divider-demo-back";
++const THEME: &str = "divider-demo-theme";
++const RTL: &str = "divider-demo-rtl";
++const LARGE_TEXT: &str = "divider-demo-large-text";
++const WEIGHT: &str = "divider-demo-weight";
++
++type Rect = [f64; 4];
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.viewport(960, 1004).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 960).await?;
++    activate(tab, "section-3").await?;
++    until(tab, "s.section === 3").await?;
++    activate(tab, SHOW).await?;
++    focused(tab, BACK).await
++}
++
++fn ink(
++    raster: &Raster,
++    rect: Rect,
++    vertical: bool,
++    thickness: u32,
++    expected: [u8; 3],
++) -> Result<Value> {
++    let [x, y, width, height] = rect;
++    for offset in 0..thickness {
++        let depth = f64::from(offset) + 0.5;
++        let points = if vertical {
++            [
++                [x + depth, y + 1.],
++                [x + depth, y + height / 2.],
++                [x + depth, y + height - 1.],
++            ]
++        } else {
++            [
++                [x + 1., y + depth],
++                [x + width / 2., y + depth],
++                [x + width - 1., y + depth],
++            ]
++        };
++        for [x, y] in points {
++            check_eq!(raster.sample(x, y)?, expected, "PNG uses outline variant");
++        }
++    }
++    let adjacent = if vertical {
++        [
++            [x - 0.5, y + height / 2.],
++            [x + width + 0.5, y + height / 2.],
++        ]
++    } else {
++        [
++            [x + width / 2., y - 0.5],
++            [x + width / 2., y + height + 0.5],
++        ]
++    };
++    for [x, y] in adjacent {
++        check!(
++            raster.sample(x, y)? != expected,
++            "line has no extra ink outside its measured thickness"
++        );
++    }
++    Ok(json!({"bounds":rect,"rgb":expected}))
++}
++
++async fn profile(env: &Env, tab: &Tab, compact: bool, heavy: bool) -> Result<Value> {
++    let width = if compact { 320 } else { 960 };
++    let height = 800;
++    let thickness = if heavy { 8 } else { 1 };
++    resize(tab, width, height).await?;
++    focus_projected(tab, BACK).await?;
++    for control in [THEME, RTL, LARGE_TEXT, WEIGHT] {
++        tab.press("Tab").await?;
++        focused(tab, control).await?;
++    }
++    focus_projected(tab, BACK).await?;
++    let full = bounds(tab, "divider-demo-full").await?;
++    let inset = bounds(tab, "divider-demo-inset").await?;
++    let middle = bounds(tab, "divider-demo-middle").await?;
++    let vertical = bounds(tab, "divider-demo-vertical").await?;
++    let exposed = ax_tree(tab).await?;
++    for label in ["全寬", "單側內縮", "兩側內縮", "垂直"] {
++        ax(&exposed, "heading", label)?;
++    }
++    check!(
++        !exposed
++            .iter()
++            .any(|node| node["ignored"] == false && node["role"]["value"] == "separator"),
++        "Chrome does not announce decorative lines"
++    );
++    for id in [
++        "divider-demo-full",
++        "divider-demo-inset",
++        "divider-demo-middle",
++        "divider-demo-vertical",
++    ] {
++        check_eq!(
++            tab.eval(&format!("{} === null", projected(id))).await?,
++            true,
++            "the DOM accessibility proxy omits {id}"
++        );
++    }
++    for rect in [full, inset, middle, vertical] {
++        check!(
++            contains([0., 0., f64::from(width), f64::from(height)], rect),
++            "{rect:?} lies within the viewport"
++        );
++    }
++    check_eq!(
++        [full[3], inset[3], middle[3], vertical[2], vertical[3]],
++        [
++            f64::from(thickness),
++            f64::from(thickness),
++            f64::from(thickness),
++            f64::from(thickness),
++            64.
++        ],
++        "all divider layouts use the selected thickness"
++    );
++    check_eq!(
++        [
++            inset[0] - full[0],
++            full[2] - inset[2],
++            middle[0] - full[0],
++            full[2] - middle[2]
++        ],
++        [if compact { 0. } else { 16. }, 16., 16., 32.],
++        "only the single leading inset mirrors"
++    );
++
++    let name = match (compact, heavy) {
++        (true, true) => "compact-dark-rtl-200-heavy",
++        (true, false) => "compact-dark-rtl-200",
++        (false, true) => "wide-light-ltr-heavy",
++        (false, false) => "wide-light-ltr",
++    };
++    let path = env.artifact(&format!("material-divider-{name}.png"));
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    let palette = if compact {
++        [73, 69, 78]
++    } else {
++        [202, 196, 207]
++    };
++    Ok(json!({
++        "profile":name,"viewport":[width,height],"accessible_groups":true,"decorative_focus":false,
++        "thickness_dp":thickness,
++        "full":ink(&raster,full,false,thickness,palette)?,"inset":ink(&raster,inset,false,thickness,palette)?,
++        "middle":ink(&raster,middle,false,thickness,palette)?,"vertical":ink(&raster,vertical,true,thickness,palette)?,
++    }))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1004, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step("M264", "wide light dividers paint the named layouts without adding focus or AX stops");
++        route(&tab, url).await.context("M264")?;
++        report["adapter"] = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter();if(!a)return null;const {isFallbackAdapter,vendor,architecture}=a.info;return {isFallbackAdapter,vendor,architecture};})()").await?;
++        check!(
++            report["adapter"]["isFallbackAdapter"].is_boolean(),
++            "WebGPU adapter reports fallback status: {}",
++            report["adapter"]
++        );
++        report["wide"] = profile(env, &tab, false, false).await.context("M264")?;
++        step("M265", "320 dp dark RTL and 200 percent text keep the four regular divider layouts visible");
++        for control in [THEME, RTL, LARGE_TEXT] {
++            activate(&tab, control).await?;
++        }
++        until(&tab, "s.dark").await?;
++        report["compact"] = profile(env, &tab, true, false).await.context("M265")?;
++        step("M266", "Heavy dividers paint eight dp in every layout before and after reflow");
++        activate(&tab, WEIGHT).await?;
++        report["compact_heavy"] = profile(env, &tab, true, true).await.context("M266")?;
++        resize(&tab, 960, 800).await?;
++        for control in [THEME, RTL, LARGE_TEXT] {
++            activate(&tab, control).await?;
++        }
++        until(&tab, "!s.dark").await?;
++        report["wide_heavy"] = profile(env, &tab, false, true).await.context("M266")?;
++        activate(&tab, WEIGHT).await?;
++        check_eq!(bounds(&tab, "divider-demo-full").await?[3], 1., "returns to regular thickness");
++        resize(&tab, 960, 960).await?;
++        activate(&tab, BACK).await?;
++        focused(&tab, SHOW).await?;
++        report["focus_restored"] = json!(true);
++        check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["state_at_failure"] = super::state(&tab).await.unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-divider-failure.png"))
++            .await;
++    }
++    env.write_json("browser-material-divider.json", &report)?;
++    result
++}
+--- /dev/null
++++ b/examples/material-gallery/src/divider_demo.rs
+@@ -0,0 +1,179 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, DividerKind, DividerLayout,
++    DividerWeight, Theme,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 3;
++const SHOW: &str = "divider-demo-show";
++const BACK: &str = "divider-demo-back";
++
++#[derive(Clone)]
++pub enum DividerDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleWeight,
++}
++
++#[derive(Default)]
++pub(crate) struct DividerDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    heavy: bool,
++}
++
++impl DividerDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn update(&mut self, event: DividerDemoEvent) {
++        use DividerDemoEvent::{Back, Show, ToggleDirection, ToggleLargeText, ToggleWeight};
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleWeight => self.heavy = !self.heavy,
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "分隔線",
++                ButtonKind::Outlined,
++                false,
++                Message::DividerDemo(DividerDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use DividerDemoEvent::{Back, ToggleDirection, ToggleLargeText, ToggleWeight};
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let weight = if self.heavy {
++            DividerWeight::Heavy
++        } else {
++            DividerWeight::Regular
++        };
++        let horizontal = |id, kind| {
++            theme.decorative_divider_with_weight(
++                id,
++                DividerLayout::Horizontal { kind, direction },
++                weight,
++            )
++        };
++        let sample = |id: &str, label: &str, divider| {
++            View::new(Node::new(Role::Group, "").styled(Style::column().gap(4.))).children([
++                View::new(
++                    Node::new(Role::Heading, label).id(id).text(label).styled(
++                        Style::column()
++                            .with_text_style(typography::TITLE_MEDIUM)
++                            .foreground(theme.on_background),
++                    ),
++                ),
++                divider,
++            ])
++        };
++        let vertical = View::new(
++            Node::new(Role::Group, "").styled(
++                Style::row()
++                    .align(Align::Center)
++                    .gap(16.)
++                    .height(Length::Px(64.))
++                    .width(Length::Percent(1.)),
++            ),
++        )
++        .children([
++            theme.text("divider-demo-items", "項目"),
++            theme.decorative_divider_with_weight(
++                "divider-demo-vertical",
++                DividerLayout::Vertical,
++                weight,
++            ),
++            theme.text("divider-demo-notes", "備註"),
++        ]);
++        let toggle = |id, label, selected, event| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    Message::DividerDemo(event),
++                )
++                .accessible_activation()
++        };
++        theme.page([
++            theme.heading("divider-demo-title", "分隔線"),
++            control_row(vec![
++                theme
++                    .tonal_button(BACK, "返回", Message::DividerDemo(Back))
++                    .restore_focus_on_removal(SHOW)
++                    .accessible_activation(),
++                theme
++                    .switch(
++                        "divider-demo-theme",
++                        "深色",
++                        ChoiceState {
++                            selected: dark,
++                            disabled: false,
++                        },
++                        Message::Theme,
++                    )
++                    .accessible_activation(),
++                toggle("divider-demo-rtl", "右起", self.rtl, ToggleDirection),
++                toggle(
++                    "divider-demo-large-text",
++                    "大字",
++                    self.large_text,
++                    ToggleLargeText,
++                ),
++                toggle("divider-demo-weight", "粗線", self.heavy, ToggleWeight),
++            ]),
++            sample(
++                "divider-demo-full-label",
++                "全寬",
++                horizontal("divider-demo-full", DividerKind::Full),
++            ),
++            sample(
++                "divider-demo-inset-label",
++                "單側內縮",
++                horizontal("divider-demo-inset", DividerKind::Inset),
++            ),
++            sample(
++                "divider-demo-middle-label",
++                "兩側內縮",
++                horizontal("divider-demo-middle", DividerKind::MiddleInset),
++            ),
++            sample("divider-demo-vertical-label", "垂直", vertical),
++        ])
++    }
++}
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -7,6 +7,7 @@
+ mod date_picker_demo;
+ mod date_range_picker_demo;
+ mod dialog_demo;
++mod divider_demo;
+ mod docked_date_picker_demo;
+ mod extended_fab_demo;
+ mod fab_demo;
+@@ -46,6 +47,7 @@
+ use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
+ use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
+ use dialog_demo::{DialogDemo, DialogDemoEvent};
++use divider_demo::{DividerDemo, DividerDemoEvent};
+ use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
+ use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
+ use fab_demo::{FabDemo, FabEvent};
+@@ -109,6 +111,7 @@
+     modal_wide_rail_demo: ModalWideRailDemo,
+     snackbar_demo: SnackbarDemo,
+     badge_demo: BadgeDemo,
++    divider_demo: DividerDemo,
+     drawer_demo: DrawerDemo,
+     progress_demo: ProgressDemo,
+     loading_demo: LoadingDemo,
+@@ -171,6 +174,7 @@
+             modal_wide_rail_demo: ModalWideRailDemo::default(),
+             snackbar_demo: SnackbarDemo::default(),
+             badge_demo: BadgeDemo::default(),
++            divider_demo: DividerDemo::default(),
+             drawer_demo: DrawerDemo::default(),
+             progress_demo: ProgressDemo::default(),
+             loading_demo: LoadingDemo::default(),
+@@ -264,6 +268,7 @@
+     ModalWideRail(ModalWideRailEvent),
+     Snackbar(SnackbarEvent),
+     Badge(BadgeEvent),
++    DividerDemo(DividerDemoEvent),
+     Drawer(usize),
+     DrawerDemo(DrawerDemoEvent),
+     Progress(ProgressEvent),
+@@ -427,6 +432,9 @@
+         }
+         if self.tooltip_demo.visible() {
+             return self.tooltip_demo.text_scale();
++        }
++        if self.divider_demo.visible() {
++            return self.divider_demo.text_scale();
+         }
+         if self.rail_large_text
+             || self.snackbar_demo.large_text()
+@@ -751,6 +759,9 @@
+                 if i != toolbar_demo::SECTION {
+                     self.toolbar_demo.leave();
+                 }
++                if i != divider_demo::SECTION {
++                    self.divider_demo.leave();
++                }
+                 if i != tooltip_demo::SECTION {
+                     self.tooltip_demo.leave();
+                 }
+@@ -761,6 +772,7 @@
+             Message::ModalWideRail(event) => self.modal_wide_rail_demo.update(event),
+             Message::Snackbar(event) => self.snackbar_demo.update(event),
+             Message::Badge(event) => self.badge_demo.update(event),
++            Message::DividerDemo(event) => self.divider_demo.update(event),
+             Message::Drawer(i) => self.drawer = i,
+             Message::DrawerDemo(event) => self.drawer_demo.update(event),
+             Message::Progress(event) => self.progress_demo.update(event),
+@@ -938,6 +950,9 @@
+         }
+         if self.tooltip_demo.visible() {
+             return self.tooltip_demo.view(&t, self.dark);
++        }
++        if self.divider_demo.visible() {
++            return self.divider_demo.view(&t, self.dark);
+         }
+         let mut children = vec![
+             t.heading("gallery-title", "Material gallery"),
+@@ -1435,6 +1450,7 @@
+             _ => {
+                 children.push(CardDemo::show_button(&t));
+                 children.push(self.badge_demo.card(&t));
++                children.push(DividerDemo::show_button(&t));
+                 let swatch = |id: &str, text: &str, background: Color, foreground: Color| {
+                     View::new(
+                         Node::new(Role::Group, text).id(id).styled(
