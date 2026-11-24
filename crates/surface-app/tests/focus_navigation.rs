@@ -1,6 +1,6 @@
 use surface::{Length, Node, Role, Style, TextMeasurer};
 use surface_app::{
-    Application, EditKey, Event, FocusNavigation, Key, KeyPress, Modifiers, Runtime, View,
+    Application, EditKey, Event, FocusNavigation, ImeEvent, Key, KeyPress, Modifiers, Runtime, View,
 };
 
 #[derive(Clone, Copy, Default)]
@@ -27,6 +27,7 @@ struct App {
     year_step: bool,
     key_step: bool,
     key_first: bool,
+    editor_arrow_binding: Option<bool>,
     preferred_modal_focus: Option<&'static str>,
 }
 
@@ -49,7 +50,20 @@ impl Application for App {
             target: "next".into(),
             message: Message::Mount,
         };
-        let start = if self.key_step {
+        let start = if let Some(opted_in) = self.editor_arrow_binding {
+            let editor = View::new(
+                Node::new(Role::TextInput, "Search")
+                    .id("start")
+                    .styled(Style::default().height(Length::Px(24.))),
+            )
+            .on_input(|_| Message::Press);
+            let arrow = move |press: &KeyPress| (press.key == Key::ArrowDown).then(navigation);
+            if opted_in {
+                editor.on_text_input_arrow_navigation(arrow)
+            } else {
+                editor.on_key_focus_navigation(arrow)
+            }
+        } else if self.key_step {
             let key_first = self.key_first;
             button("start")
                 .on_key(move |press| {
@@ -164,6 +178,77 @@ fn key_runtime(destination: Destination, key_first: bool) -> Runtime<App> {
 
 fn enter() -> KeyPress {
     KeyPress::new(Key::Enter, Modifiers::default())
+}
+
+fn editor_runtime(destination: Destination, opted_in: bool) -> Runtime<App> {
+    let mut runtime = Runtime::new(App {
+        destination,
+        editor_arrow_binding: Some(opted_in),
+        ..App::default()
+    })
+    .unwrap();
+    render(&mut runtime);
+    runtime
+        .dispatch(Event::FocusNext { reverse: false })
+        .unwrap();
+    assert_eq!(runtime.focused(), Some("start"));
+    runtime
+}
+
+#[test]
+fn editor_arrow_moves_to_result_without_consuming_editing_and_ime_keys() {
+    let down = KeyPress::new(Key::ArrowDown, Modifiers::default());
+    let shifted = KeyPress::new(
+        Key::ArrowDown,
+        Modifiers {
+            shift: true,
+            ..Modifiers::default()
+        },
+    );
+    let mut legacy = editor_runtime(Destination::Enabled, false);
+    assert!(!legacy.key(&down).unwrap());
+    assert!(!legacy.app().mounted);
+    let mut runtime = editor_runtime(Destination::Enabled, true);
+    assert!(!runtime.key(&shifted).unwrap());
+    assert!(runtime.key(&down.clone().with_repeat(true)).unwrap());
+    assert!(!runtime.app().mounted);
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄅ".into(),
+            selection: Some((3, 3)),
+        }))
+        .unwrap();
+    assert!(!runtime.key(&down).unwrap());
+    assert!(runtime.editor("start").unwrap().is_composing());
+    assert_eq!(runtime.focused(), Some("start"));
+    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+    assert!(runtime.key(&down).unwrap());
+    assert_eq!(runtime.focused(), Some("next"));
+    assert_eq!(runtime.app().presses, 0);
+    render(&mut runtime);
+    assert!(runtime.scroll_metrics("body").unwrap().offset.1 > 0.);
+}
+
+#[cfg(feature = "devtools")]
+#[test]
+fn headless_arrow_uses_the_same_opted_in_editor_route() {
+    use serde_json::json;
+    use surface_devtools_protocol::{Request, VERSION};
+
+    let mut runtime = editor_runtime(Destination::Enabled, true);
+    let reply = runtime.execute_devtools(Request {
+        v: VERSION,
+        id: 1,
+        method: "Action.key".into(),
+        params: json!({"key": "down"}),
+    });
+    assert!(reply.ok, "{:?}", reply.error);
+    assert_eq!(
+        reply.result.unwrap(),
+        json!({"changed": true, "focused": "next"})
+    );
+    assert_eq!(runtime.app().presses, 0);
 }
 
 #[test]

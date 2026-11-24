@@ -693,8 +693,13 @@ fn compile_into<Op: CompileOp>(
         } else if let Some(focus) = focus {
             focus.push(*id, &mut ops);
         }
-        if let Some(text) = n.text_value() {
-            let rect = g.bounds.inset(s.padding);
+        let placeholder = n.text_input_placeholder();
+        let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
+        if let Some((text, text_color)) = text_run {
+            let rect = g
+                .bounds
+                .inset(s.padding)
+                .inset_horizontal(n.presented_text_input_horizontal_inset);
             let clip = g.clip.intersect(rect);
             let decoration = decorations.get(id);
             let editable = n.role() == Role::TextInput;
@@ -713,12 +718,17 @@ fn compile_into<Op: CompileOp>(
                 }
             }
             let text_style = s.text_style();
+            let (scroll_x, scroll_y) = decoration.map(|d| d.scroll).unwrap_or_default();
+            let scroll = if placeholder.is_some() {
+                // A cleared field can retain scroll from its previous value.
+                // Keep negative insets used for single-line alignment.
+                (scroll_x.min(0.), scroll_y.min(0.))
+            } else {
+                (scroll_x, scroll_y)
+            };
             let run = if !text_style.is_legacy() {
                 let (scroll, multiline) = if editable {
-                    (
-                        decoration.map(|d| d.scroll).unwrap_or_default(),
-                        decoration.is_some_and(|d| d.multiline),
-                    )
+                    (scroll, decoration.is_some_and(|d| d.multiline))
                 } else {
                     ((0., 0.), true)
                 };
@@ -727,7 +737,7 @@ fn compile_into<Op: CompileOp>(
                     clip,
                     text: text.to_owned(),
                     style: text_style,
-                    color: s.foreground,
+                    color: text_color,
                     scroll,
                     multiline,
                     editable,
@@ -738,8 +748,8 @@ fn compile_into<Op: CompileOp>(
                     clip,
                     text: text.to_owned(),
                     font_size: s.font_size,
-                    color: s.foreground,
-                    scroll: decoration.map(|d| d.scroll).unwrap_or_default(),
+                    color: text_color,
+                    scroll,
                     multiline: decoration.is_some_and(|d| d.multiline),
                 }
             } else {

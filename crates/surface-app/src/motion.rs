@@ -518,6 +518,7 @@ const STANDARD_FAST_SPATIAL: (f32, f32) = (1400., 0.9);
 pub enum ToggleSpring {
     StandardDefaultSpatial,
     StandardFastSpatial,
+    StandardSlowSpatial,
     StandardDefaultEffects,
 }
 
@@ -526,6 +527,7 @@ impl ToggleSpring {
         match self {
             Self::StandardDefaultSpatial => (700., 0.9),
             Self::StandardFastSpatial => STANDARD_FAST_SPATIAL,
+            Self::StandardSlowSpatial => (300., 0.9),
             Self::StandardDefaultEffects => (1600., 1.),
         }
     }
@@ -592,7 +594,7 @@ impl SpatialMotion {
 }
 
 /// Sample an app-controlled transition from its current position and velocity.
-/// Use the same preset for this track throughout its lifetime.
+/// A new target uses the supplied preset and the current position and velocity.
 #[derive(Default)]
 pub struct ToggleMotion(BinarySpring);
 

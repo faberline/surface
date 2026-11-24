@@ -414,6 +414,24 @@ impl<A: Application> Runtime<A> {
                         return Ok(json!({"changed":true,"focused":self.focused}));
                     }
                 }
+                let text_input_arrow = match key {
+                    Key::Up => Some(crate::Key::ArrowUp),
+                    Key::Down => Some(crate::Key::ArrowDown),
+                    _ => None,
+                };
+                if let Some(arrow) = text_input_arrow.filter(|_| {
+                    input.is_some()
+                        && !extend
+                        && !by_word
+                        && self
+                            .focused_node()
+                            .and_then(|id| self.bindings.get(&id))
+                            .is_some_and(|binding| binding.key_focus_from_editor)
+                }) {
+                    if self.key(&KeyPress::new(arrow, Modifiers::default()))? {
+                        return Ok(json!({"changed":true,"focused":self.focused}));
+                    }
+                }
                 let event = match key {
                     Key::Tab => Event::FocusNext { reverse: extend },
                     Key::Escape => Event::Cancel,

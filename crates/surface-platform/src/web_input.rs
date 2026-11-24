@@ -226,6 +226,7 @@ impl<A: Application> WebInput<A> {
             .dyn_into::<HtmlTextAreaElement>()?;
         textarea.set_id("surface-text-input");
         textarea.set_tab_index(-1);
+        textarea.set_hidden(true);
         textarea.set_spellcheck(false);
         textarea.set_attribute("autocomplete", "off")?;
         textarea.set_attribute("autocapitalize", "off")?;
@@ -302,13 +303,22 @@ impl<A: Application> WebInput<A> {
             let ignore_input = ignore_input.clone();
             let mirror = mirror.clone();
             bridge.listen(target.clone(), "beforeinput", move |event| {
-                if composing.get() {
-                    return;
-                }
                 let Some(input) = event.dyn_ref::<web_sys::InputEvent>() else {
                     return;
                 };
-                if input.is_composing() {
+                if composing.get() || input.is_composing() {
+                    // The hidden textarea is multiline even for a single-line
+                    // Surface editor. An Enter that did not confirm the IME
+                    // must not replace its active preedit with a line break.
+                    if input.input_type() == "insertLineBreak"
+                        && runtime
+                            .borrow()
+                            .input_snapshot()
+                            .is_some_and(|snapshot| !snapshot.multiline)
+                    {
+                        event.prevent_default();
+                        event.stop_propagation();
+                    }
                     return;
                 }
                 // Cancellation need not send a final input event. Do not
@@ -704,6 +714,11 @@ impl<A: Application> WebInput<A> {
                 self.switching.set(false);
             }
             self.composing.set(false);
+            if !self.textarea.hidden() {
+                // The retired editor has no semantic counterpart while
+                // Surface focus belongs to a different kind of control.
+                self.textarea.set_hidden(true);
+            }
             return;
         };
         self.textarea.set_read_only(snapshot.read_only);
@@ -730,6 +745,9 @@ impl<A: Application> WebInput<A> {
             );
         } else {
             self.mirror.borrow_mut().state = None;
+        }
+        if self.textarea.hidden() {
+            self.textarea.set_hidden(false);
         }
         if needs_focus {
             self.switching.set(true);

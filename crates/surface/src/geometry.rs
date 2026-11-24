@@ -33,6 +33,12 @@ impl Rect {
             (self.y + self.height).min(rhs.y + rhs.height).max(y) - y,
         )
     }
+    /// Inset both horizontal edges equally. Clamp to half the width.
+    pub fn inset_horizontal(self, value: f32) -> Self {
+        let inset = value.max(0.).min(self.width.max(0.) / 2.);
+        Self::new(self.x + inset, self.y, self.width - 2. * inset, self.height)
+    }
+
     pub fn inset(self, value: f32) -> Self {
         Self::new(
             self.x + value,

@@ -39,6 +39,9 @@ mod scroll_choice_catalog;
 mod scroll_choice_field_state;
 mod scroll_field;
 mod scroll_field_state;
+mod search_layout;
+mod search_motion;
+mod search_overlay;
 pub mod shape;
 mod side_sheet;
 mod snackbar;
@@ -153,6 +156,9 @@ pub use scroll_field_state::{
     ScrollFieldDrag, ScrollFieldError, ScrollFieldEvent, ScrollFieldMode, ScrollFieldRange,
     ScrollFieldState, ScrollFieldStep,
 };
+pub use search_layout::SearchStyle;
+pub use search_motion::{SearchOverlayMotion, SearchOverlayMotionTarget};
+pub use search_overlay::{SearchOverlayContent, SearchOverlayOptions};
 pub use side_sheet::{
     SideSheetContent, SideSheetEdge, SideSheetMotion, SideSheetOptions, SideSheetPresentation,
     SideSheetStyle,
