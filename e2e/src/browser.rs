@@ -322,7 +322,7 @@ impl Tab {
         Ok(())
     }
 
-    async fn key_down(&self, key: &keys::Key) -> Result<()> {
+    pub(crate) async fn key_down(&self, key: &keys::Key) -> Result<()> {
         let bit = keys::modifier_bit(&key.key);
         self.modifiers.set(self.modifiers.get() | bit);
         let modifiers = self.modifiers.get();
@@ -353,7 +353,7 @@ impl Tab {
         Ok(())
     }
 
-    async fn key_up(&self, key: &keys::Key) -> Result<()> {
+    pub(crate) async fn key_up(&self, key: &keys::Key) -> Result<()> {
         let bit = keys::modifier_bit(&key.key);
         self.modifiers.set(self.modifiers.get() & !bit);
         self.cdp(

@@ -383,6 +383,190 @@ async fn select(tab: &Tab, [start, end]: [usize; 2]) -> Result<Value> {
     editing(tab).await
 }
 
+async fn cursor_snapshot(tab: &Tab) -> Result<Value> {
+    tab.eval(&format!(
+        r#"(() => {{
+            const textarea={TEXTAREA};
+            const by_id=JSON.parse(window.gallery.export_dom()).text_inputs[{}];
+            return {{browser:[textarea.selectionStart, textarea.selectionEnd],
+                     runtime:[by_id.selection_anchor, by_id.selection_cursor],
+                     direction:textarea.selectionStart === textarea.selectionEnd ? "none" : textarea.selectionDirection,
+                     value:by_id.value, composing:by_id.composing,
+                     focused:document.activeElement === textarea}};
+        }})()"#,
+        js(EDITOR)
+    ))
+    .await
+}
+
+async fn native_arrow_through_redraw(
+    env: &Env,
+    tab: &Tab,
+    normal_image: &CanvasPng,
+    delay_select: bool,
+) -> Result<Value> {
+    let phase = if delay_select {
+        "delayed-select-arrow"
+    } else {
+        "native-arrow"
+    };
+    select(tab, [TEXT_END - 1; 2]).await?;
+    let before = cursor_snapshot(tab).await?;
+    let normal = normal_image.sample(3., 397.)?;
+    let arrow = crate::keys::key("ArrowRight")?;
+    tab.eval(&format!(
+        r#"(() => {{
+            const editor = {TEXTAREA};
+            const probe = {{keydown:null, intercepted:0}};
+            probe.capture = event => {{
+                if (event.target === editor) {{
+                    probe.intercepted++;
+                    event.stopImmediatePropagation();
+                }}
+            }};
+            window.__surfaceArrowWitness = probe;
+            editor.addEventListener('keydown', event => {{
+                probe.keydown = {{key:event.key, trusted:event.isTrusted,
+                                 prevented:event.defaultPrevented}};
+            }}, {{once:true}});
+            if ({delay_select}) document.addEventListener('select', probe.capture, true);
+        }})()"#
+    ))
+    .await?;
+    let held = async {
+        tab.key_down(&arrow).await?;
+        // Snapshot before settling. The ordinary pass allows Chrome to have
+        // already delivered its select event. The separate controlled pass
+        // gates only select on this textarea until just before trusted keyup.
+        let down = cursor_snapshot(tab).await?;
+        media(tab, true, false).await?;
+        let appearance = contrast(tab, "forced").await?;
+        let css = palette(tab, &appearance).await?;
+        let image = capture(env, tab, Lane::Browser, &format!("{phase}-forced")).await?;
+        let forced = image.sample(3., 397.)?;
+        let after_draw = cursor_snapshot(tab).await?;
+        Ok::<_, anyhow::Error>((down, css, forced, after_draw))
+    }
+    .await;
+    let witness = tab
+        .eval(
+            r#"(() => {
+                const probe = window.__surfaceArrowWitness;
+                document.removeEventListener('select', probe.capture, true);
+                delete window.__surfaceArrowWitness;
+                return {keydown:probe.keydown, intercepted:probe.intercepted};
+            })()"#,
+        )
+        .await;
+    let released = tab.key_up(&arrow).await;
+    let (down, css, forced, after_draw) = held?;
+    let witness = witness?;
+    released?;
+    tab.settle().await?;
+    let after_up = cursor_snapshot(tab).await?;
+    media(tab, false, false).await?;
+    contrast(tab, "normal").await?;
+    let restored = cursor_snapshot(tab).await?;
+    let record = json!({
+        "before":before, "after_key_down":down, "after_forced_redraw":after_draw,
+        "after_key_up":after_up, "restored_normal":restored,
+        "keydown_event":witness["keydown"], "scoped_select_delay":delay_select,
+        "intercepted_select_events":witness["intercepted"],
+        "normal_canvas_sample":normal, "forced_canvas_sample":forced,
+        "css_canvas":css["pairs"]["canvas"]["background"],
+    });
+    env.write_json(
+        &format!("material-web-contrast-selection-browser-{phase}.json"),
+        &record,
+    )?;
+
+    let near_end = json!([TEXT_END - 1, TEXT_END - 1]);
+    let end = json!([TEXT_END, TEXT_END]);
+    check_eq!(
+        before["browser"],
+        near_end,
+        "trusted fixture sets the browser cursor"
+    );
+    check_eq!(
+        before["runtime"],
+        near_end,
+        "trusted fixture sets the Runtime cursor"
+    );
+    check_eq!(
+        witness["keydown"],
+        json!({"key":"ArrowRight","trusted":true,"prevented":false}),
+        "ArrowRight reaches the browser's own selection handling"
+    );
+    check!(
+        normal != forced
+            && css["pairs"]["canvas"]["background"]
+                == json!([forced[0], forced[1], forced[2], 255]),
+        "a real WebGPU redraw paints the measured Canvas color while ArrowRight is held"
+    );
+    for snapshot in [&down, &after_draw, &after_up] {
+        check!(
+            snapshot["value"] == RAW
+                && snapshot["composing"] == false
+                && snapshot["focused"] == true,
+            "the native arrow leaves the same focused editor and draft"
+        );
+        check_eq!(
+            snapshot["browser"],
+            end,
+            format!("{phase}: the browser arrow selection never rolls back")
+        );
+        check!(
+            snapshot["runtime"] == near_end || snapshot["runtime"] == end,
+            "Runtime may observe the browser selection before keyup, but cannot move it elsewhere"
+        );
+    }
+    if delay_select {
+        check_eq!(
+            down["runtime"],
+            near_end,
+            "the controlled ordering delays Runtime selection on keydown"
+        );
+        check_eq!(
+            after_draw["runtime"],
+            near_end,
+            "the controlled redraw precedes selection ownership transfer"
+        );
+    }
+    check_eq!(
+        after_up["runtime"],
+        end,
+        "keyup leaves the exact browser selection in Runtime"
+    );
+    check_eq!(
+        restored,
+        after_up,
+        "restoring the palette preserves the native cursor"
+    );
+    Ok(record)
+}
+
+async fn backward_selection(tab: &Tab) -> Result<Value> {
+    tab.press("Shift+ArrowLeft").await?;
+    tab.settle().await?;
+    let selection = cursor_snapshot(tab).await?;
+    check_eq!(
+        selection["browser"],
+        json!([TEXT_END - 1, TEXT_END]),
+        "a trusted reverse arrow selects the last digit"
+    );
+    check_eq!(
+        selection["runtime"],
+        json!([TEXT_END, TEXT_END - 1]),
+        "Runtime keeps the backward anchor and cursor"
+    );
+    check_eq!(
+        selection["direction"],
+        "backward",
+        "the mounted textarea still carries backward selection"
+    );
+    Ok(selection)
+}
+
 async fn forced(tab: &Tab, lane: Lane) -> Result<(Palette, Value)> {
     media(tab, true, false).await?;
     let accepted = contrast(tab, "forced").await?;
@@ -498,6 +682,17 @@ async fn lane(env: &Env, tab: &Tab, url: &str, lane: Lane) -> Result<(Value, boo
     let clip = Clip::editor(normal_face);
     select(tab, [TEXT_END, TEXT_END]).await?;
     let clear_normal = capture(env, tab, lane, "normal-clear").await?;
+    let (native_arrow_redraw, delayed_select_redraw, backward_range) = if lane == Lane::Browser {
+        let native = native_arrow_through_redraw(env, tab, &clear_normal, false).await;
+        let delayed = native_arrow_through_redraw(env, tab, &clear_normal, true).await;
+        (
+            Some(native?),
+            Some(delayed?),
+            Some(backward_selection(tab).await?),
+        )
+    } else {
+        (None, None, None)
+    };
     let selected = select(tab, MIDDLE).await?;
     let normal = capture(env, tab, lane, "normal-partial").await?;
     let (colors, witness) = forced(tab, lane).await?;
@@ -567,7 +762,9 @@ async fn lane(env: &Env, tab: &Tab, url: &str, lane: Lane) -> Result<(Value, boo
         json!({"palette_source":lane.source(),"palette":witness,"device_pixel_ratio":DPR,
         "physical_size":partial.dimensions(),"raw":RAW,"selected_range":MIDDLE,"selected_text":"68",
         "editing":selected,"paint":paint,"normal_restoration":normal_proof,
-        "selected_foreground_distinguished":distinguishable,"preedit":preedit,"errors":errors}),
+        "selected_foreground_distinguished":distinguishable,"preedit":preedit,
+        "native_arrow_redraw":native_arrow_redraw,"delayed_select_redraw":delayed_select_redraw,
+        "backward_range":backward_range,"errors":errors}),
         distinguishable,
     ))
 }

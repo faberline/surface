@@ -10,7 +10,7 @@ use crate::{check, check_eq, Env};
 
 pub const STEPS: &[&str] = &[
     "I1", "I2", "I3", "I4", "I5", "I6", "I7", "I8", "I9", "I10", "I11", "I12", "I13", "I14", "I15",
-    "I16", "I17", "I18", "I19",
+    "I16", "I17", "I18", "I19", "I20",
 ];
 
 const STATE: &str = "window.showcase.editing_state()";
@@ -252,7 +252,74 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
         evidence["committed"],
         list.len()
     );
+
+    step(
+        "I20",
+        "authored line endings keep directed browser and Rust selections",
+    );
+    env.write_json(
+        "browser-ime-line-endings.json",
+        &authored_line_endings(&tab).await?,
+    )?;
+    check!(
+        tab.errors().is_empty(),
+        "line ending checks produced page errors"
+    );
     Ok(())
+}
+
+async fn authored_line_endings(tab: &Tab) -> Result<serde_json::Value> {
+    const AUTHORED: &str = "ab\r\n你🦀\rZ";
+    const PROJECTED: &str = "ab\n你🦀\nZ";
+    const AREA: &str = "document.getElementById('surface-text-input')";
+
+    tab.eval(&format!(
+        "window.showcase.write_from_timer({})",
+        js(AUTHORED)
+    ))
+    .await?;
+    wait_value(tab, AUTHORED).await?;
+    tab.wait_for(&format!(
+        "document.activeElement === {AREA} && {AREA}.value === {}",
+        js(PROJECTED)
+    ))
+    .await?;
+
+    let mut checks = Vec::new();
+    // Browser positions count UTF-16 units. Runtime positions count UTF-8
+    // bytes in the original app value, including both bytes of CRLF.
+    let cases = [
+        (2, 2, "ArrowLeft", [1, 1], [1, 1]),
+        (3, 4, "Shift+ArrowLeft", [2, 3], [4, 2]),
+        (4, 7, "ArrowRight", [6, 6], [11, 11]),
+    ];
+    for (start, raw_start, key, browser, runtime) in cases {
+        tab.eval(&format!("{AREA}.setSelectionRange({start}, {start})"))
+            .await?;
+        tab.wait_for(&format!(
+            "{STATE}[2] === '{raw_start}' && {STATE}[3] === '{raw_start}'"
+        ))
+        .await?;
+        tab.press(key).await?;
+        let [begin, end] = browser;
+        let [anchor, cursor] = runtime;
+        tab.wait_for(&format!(
+            "{AREA}.selectionStart === {begin} && {AREA}.selectionEnd === {end} &&
+             {STATE}[2] === '{anchor}' && {STATE}[3] === '{cursor}'"
+        ))
+        .await?;
+        let direction = tab.eval_str(&format!("{AREA}.selectionDirection")).await?;
+        if anchor != cursor {
+            check_eq!(direction.as_str(), "backward", "DOM selection direction");
+        }
+        check_eq!(
+            tab.eval_str(&format!("{STATE}[0]")).await?,
+            AUTHORED,
+            "keyboard selection leaves the app's line endings intact"
+        );
+        checks.push(json!({"key":key,"browser":browser,"runtime":runtime,"direction":direction}));
+    }
+    Ok(json!({"authored":AUTHORED,"browser_value":PROJECTED,"steps":checks}))
 }
 
 pub fn find_node<'a>(export: &'a serde_json::Value, id: &str) -> Result<&'a serde_json::Value> {

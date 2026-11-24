@@ -328,7 +328,30 @@ async fn journey(env: &Env, tab: &Tab, url: &str) -> Result<Value> {
 pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<Value> {
     let tab = chrome.page(960, 864, SCALE).await?;
     tab.cdp("Page.enable", json!({})).await?;
-    journey(env, &tab, url)
-        .await
-        .context("forced-color synthetic preedit underline")
+    let result = journey(env, &tab, url).await;
+    if let Err(error) = &result {
+        let editor = tab
+            .eval(
+                r#"(() => {
+                    const t = document.getElementById("surface-text-input");
+                    return t ? {active:document.activeElement === t, value:t.value,
+                        offsets:[t.selectionStart,t.selectionEnd], direction:t.selectionDirection} : null;
+                })()"#,
+            )
+            .await
+            .ok();
+        let _ = env.write_json(
+            "material-web-contrast-preedit-underline-failure.json",
+            &json!({
+                "error":format!("{error:#}"), "editor":editor,
+                "state":tab.eval_json("window.gallery.inspect()").await.ok(),
+                "dom":tab.eval_json("window.gallery.export_dom()").await.ok(),
+                "errors":tab.errors(),
+            }),
+        );
+        let _ = tab
+            .screenshot(&env.artifact("material-web-contrast-preedit-underline-failure.png"))
+            .await;
+    }
+    result.context("forced-color synthetic preedit underline")
 }
