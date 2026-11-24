@@ -1,0 +1,857 @@
+--- a/crates/surface-wgpu/src/lib.rs
++++ b/crates/surface-wgpu/src/lib.rs
+@@ -1,4 +1,5 @@
+ //! One ordered wgpu renderer for native GPU surfaces and browser WebGPU.
++mod opacity;
+ mod path;
+ mod raster;
+ mod text;
+@@ -38,6 +39,10 @@
+     Render(#[from] RenderError),
+     #[error("this renderer does not support an operation in the extended display list")]
+     UnsupportedOperation,
++    #[error("invalid opacity group: {0}")]
++    InvalidOpacityGroup(&'static str),
++    #[error("fractional opacity groups are not supported on target format {0:?}")]
++    OpacityTargetFormat(wgpu::TextureFormat),
+     #[error("raster image of {width}x{height} exceeds the device's {max} pixel side limit")]
+     RasterTooLarge { width: u32, height: u32, max: u32 },
+ }
+@@ -146,11 +151,14 @@
+ 
+ enum RenderOp<'a> {
+     Paint(&'a PaintOp, Option<TextAlignment>),
++    BeginOpacityGroup(f32),
++    EndOpacityGroup,
+     Fill(&'a PathFill),
+     Raster(&'a RasterPaint),
+     TextSelection(&'a TextSelectionPaint),
+ }
+ 
++#[derive(Clone, Copy)]
+ enum Draw {
+     Quad { start: u32, scissor: [u32; 4] },
+     Text { index: usize, scissor: [u32; 4] },
+@@ -249,6 +257,7 @@
+     pipeline: wgpu::RenderPipeline,
+     path_pipeline: Option<path::Pipeline>,
+     raster_pipeline: Option<raster::Pipeline>,
++    opacity_compositor: Option<opacity::Compositor>,
+     atlas: TextAtlas,
+     viewport: Viewport,
+     cache: SwashCache,
+@@ -344,6 +353,7 @@
+             pipeline,
+             path_pipeline: None,
+             raster_pipeline: None,
++            opacity_compositor: None,
+             atlas,
+             viewport,
+             cache: SwashCache::new(),
+@@ -486,7 +496,7 @@
+         )
+     }
+ 
+-    /// Paint an ordered display list including vector fills and raster images.
++    /// Paint an ordered display list including vector fills, raster images, and opacity groups.
+     pub fn render_extended(
+         &mut self,
+         list: &ExtendedDisplayList,
+@@ -495,6 +505,14 @@
+         height: u32,
+         scale: f32,
+     ) -> Result<(), ExtendedRenderError> {
++        opacity::validate(list.ops())?;
++        if !opacity::supports_format(self.format)
++            && list.ops().iter().any(|op| {
++                matches!(op, ExtendedPaintOp::BeginOpacityGroup { opacity } if *opacity > 0. && *opacity < 1.)
++            })
++        {
++            return Err(ExtendedRenderError::OpacityTargetFormat(self.format));
++        }
+         let max = self.device.limits().max_texture_dimension_2d;
+         self.render_ops(
+             list.ops().iter().map(|op| match op {
+@@ -513,6 +531,10 @@
+                     Ok(RenderOp::Paint(text.run(), Some(text.alignment())))
+                 }
+                 ExtendedPaintOp::FillPath(fill) => Ok(RenderOp::Fill(fill)),
++                ExtendedPaintOp::BeginOpacityGroup { opacity } => {
++                    Ok(RenderOp::BeginOpacityGroup(*opacity))
++                }
++                ExtendedPaintOp::EndOpacityGroup => Ok(RenderOp::EndOpacityGroup),
+                 ExtendedPaintOp::Raster(paint) => {
+                     let width = paint.image().width();
+                     let height = paint.image().height();
+@@ -562,8 +584,19 @@
+         let mut paths = path::Frame::default();
+         let mut rasters = raster::Frame::default();
+         let mut next_text_renderer = 0;
++        let mut active_group = opacity::ActiveGroup::Direct;
++        let mut groups = Vec::new();
+         for op in ops {
+             let (op, alignment) = match op? {
++                RenderOp::BeginOpacityGroup(value) => {
++                    active_group = opacity::ActiveGroup::begin(value, draws.len());
++                    continue;
++                }
++                RenderOp::EndOpacityGroup => {
++                    active_group.end(draws.len(), &mut groups);
++                    continue;
++                }
++                _ if matches!(active_group, opacity::ActiveGroup::Hidden) => continue,
+                 RenderOp::Paint(op, alignment) => (op, alignment),
+                 RenderOp::TextSelection(selection) => {
+                     let regions = selection.pixel_regions(scale, (width, height));
+@@ -725,14 +758,45 @@
+             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                 label: Some("Surface frame"),
+             });
+-        {
++        let compositor = if groups.is_empty() {
++            None
++        } else {
++            let max = self.device.limits().max_texture_dimension_2d;
++            if width > max || height > max {
++                return Err(RenderError::Dimensions.into());
++            }
++            Some(
++                self.opacity_compositor
++                    .get_or_insert_with(|| opacity::Compositor::new(&self.device, self.format))
++                    .prepare(&self.device, self.format, width, height, &groups),
++            )
++        };
++        for stage in opacity::passes(&groups, draws.len()) {
++            let (view, load, range, composite) = match stage {
++                opacity::Pass::Target { draws, composite } => (
++                    target,
++                    if composite.is_some() {
++                        wgpu::LoadOp::Load
++                    } else {
++                        wgpu::LoadOp::Clear(wgpu::Color::BLACK)
++                    },
++                    draws,
++                    composite,
++                ),
++                opacity::Pass::Intermediate { draws } => (
++                    compositor.as_ref().expect("group surface prepared").view(),
++                    wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
++                    draws,
++                    None,
++                ),
++            };
+             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                 label: Some("Surface paint"),
+                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+-                    view: target,
++                    view,
+                     resolve_target: None,
+                     ops: wgpu::Operations {
+-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
++                        load,
+                         store: wgpu::StoreOp::Store,
+                     },
+                 })],
+@@ -740,7 +804,13 @@
+                 timestamp_writes: None,
+                 occlusion_query_set: None,
+             });
+-            for draw in draws {
++            if let Some(index) = composite {
++                compositor
++                    .as_ref()
++                    .expect("group surface prepared")
++                    .composite(&mut pass, index);
++            }
++            for &draw in &draws[range] {
+                 match draw {
+                     Draw::Quad {
+                         start,
+--- /dev/null
++++ b/crates/surface-wgpu/src/opacity.rs
+@@ -0,0 +1,266 @@
++use std::ops::Range;
++
++use surface::ExtendedPaintOp;
++use wgpu::util::DeviceExt;
++
++use crate::ExtendedRenderError;
++
++// The intermediate is in the same space and format as the target. It needs
++// enough alpha precision to store the coverage from the ordinary draw lanes.
++pub(super) fn supports_format(format: wgpu::TextureFormat) -> bool {
++    use wgpu::TextureFormat::*;
++    matches!(
++        format,
++        Rgba8Unorm | Rgba8UnormSrgb | Bgra8Unorm | Bgra8UnormSrgb | Rgba16Float
++    )
++}
++
++pub(super) fn validate(ops: &[ExtendedPaintOp]) -> Result<(), ExtendedRenderError> {
++    let mut open = false;
++    for op in ops {
++        match op {
++            ExtendedPaintOp::BeginOpacityGroup { opacity } => {
++                if open {
++                    return Err(ExtendedRenderError::InvalidOpacityGroup(
++                        "groups cannot nest",
++                    ));
++                }
++                if !(0. ..=1.).contains(opacity) {
++                    return Err(ExtendedRenderError::InvalidOpacityGroup(
++                        "opacity must be finite and between zero and one",
++                    ));
++                }
++                open = true;
++            }
++            ExtendedPaintOp::EndOpacityGroup => {
++                if !open {
++                    return Err(ExtendedRenderError::InvalidOpacityGroup(
++                        "end without a start",
++                    ));
++                }
++                open = false;
++            }
++            _ => {}
++        }
++    }
++    if open {
++        return Err(ExtendedRenderError::InvalidOpacityGroup(
++            "start without an end",
++        ));
++    }
++    Ok(())
++}
++
++pub(super) enum ActiveGroup {
++    Direct,
++    Hidden,
++    Intermediate { start: usize, opacity: f32 },
++}
++
++impl ActiveGroup {
++    pub(super) fn begin(opacity: f32, start: usize) -> Self {
++        if opacity == 0. {
++            Self::Hidden
++        } else if opacity == 1. {
++            Self::Direct
++        } else {
++            Self::Intermediate { start, opacity }
++        }
++    }
++
++    pub(super) fn end(&mut self, end: usize, groups: &mut Vec<DrawGroup>) {
++        if let Self::Intermediate { start, opacity } = std::mem::replace(self, Self::Direct) {
++            if start < end {
++                groups.push(DrawGroup {
++                    draws: start..end,
++                    opacity,
++                });
++            }
++        }
++    }
++}
++
++pub(super) struct DrawGroup {
++    draws: Range<usize>,
++    opacity: f32,
++}
++
++pub(super) enum Pass {
++    Target {
++        draws: Range<usize>,
++        composite: Option<usize>,
++    },
++    Intermediate {
++        draws: Range<usize>,
++    },
++}
++
++pub(super) fn passes(groups: &[DrawGroup], draws: usize) -> impl Iterator<Item = Pass> + '_ {
++    (0..=groups.len()).flat_map(move |index| {
++        let previous = index.checked_sub(1);
++        let start = previous.map_or(0, |prev| groups[prev].draws.end);
++        let next = groups.get(index);
++        let target = Pass::Target {
++            draws: start..next.map_or(draws, |group| group.draws.start),
++            composite: previous,
++        };
++        std::iter::once(target).chain(next.map(|group| Pass::Intermediate {
++            draws: group.draws.clone(),
++        }))
++    })
++}
++
++struct Surface {
++    width: u32,
++    height: u32,
++    view: wgpu::TextureView,
++    binding: wgpu::BindGroup,
++}
++
++pub(super) struct Compositor {
++    layout: wgpu::BindGroupLayout,
++    pipeline: wgpu::RenderPipeline,
++    surface: Option<Surface>,
++}
++
++impl Compositor {
++    pub(super) fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
++        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
++            label: Some("Surface opacity texture layout"),
++            entries: &[wgpu::BindGroupLayoutEntry {
++                binding: 0,
++                visibility: wgpu::ShaderStages::FRAGMENT,
++                ty: wgpu::BindingType::Texture {
++                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
++                    view_dimension: wgpu::TextureViewDimension::D2,
++                    multisampled: false,
++                },
++                count: None,
++            }],
++        });
++        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
++            label: Some("Surface opacity pipeline layout"),
++            bind_group_layouts: &[&layout],
++            push_constant_ranges: &[],
++        });
++        let shader = device.create_shader_module(wgpu::include_wgsl!("opacity.wgsl"));
++        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
++            label: Some("Surface opacity composite"),
++            layout: Some(&pipeline_layout),
++            vertex: wgpu::VertexState {
++                module: &shader,
++                entry_point: Some("vs_main"),
++                buffers: &[wgpu::VertexBufferLayout {
++                    array_stride: size_of::<f32>() as u64,
++                    step_mode: wgpu::VertexStepMode::Instance,
++                    attributes: &wgpu::vertex_attr_array![0 => Float32],
++                }],
++                compilation_options: Default::default(),
++            },
++            fragment: Some(wgpu::FragmentState {
++                module: &shader,
++                entry_point: Some("fs_main"),
++                targets: &[Some(wgpu::ColorTargetState {
++                    format,
++                    blend: Some(wgpu::BlendState::PREMULTIPLIED_ALPHA_BLENDING),
++                    write_mask: wgpu::ColorWrites::ALL,
++                })],
++                compilation_options: Default::default(),
++            }),
++            primitive: wgpu::PrimitiveState::default(),
++            depth_stencil: None,
++            multisample: wgpu::MultisampleState::default(),
++            multiview: None,
++            cache: None,
++        });
++        Self {
++            layout,
++            pipeline,
++            surface: None,
++        }
++    }
++
++    pub(super) fn prepare(
++        &mut self,
++        device: &wgpu::Device,
++        format: wgpu::TextureFormat,
++        width: u32,
++        height: u32,
++        groups: &[DrawGroup],
++    ) -> Prepared<'_> {
++        if self
++            .surface
++            .as_ref()
++            .is_none_or(|s| (s.width, s.height) != (width, height))
++        {
++            let image = device.create_texture(&wgpu::TextureDescriptor {
++                label: Some("Surface opacity intermediate"),
++                size: wgpu::Extent3d {
++                    width,
++                    height,
++                    depth_or_array_layers: 1,
++                },
++                mip_level_count: 1,
++                sample_count: 1,
++                dimension: wgpu::TextureDimension::D2,
++                format,
++                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
++                    | wgpu::TextureUsages::TEXTURE_BINDING,
++                view_formats: &[],
++            });
++            let view = image.create_view(&wgpu::TextureViewDescriptor::default());
++            let binding = device.create_bind_group(&wgpu::BindGroupDescriptor {
++                label: Some("Surface opacity intermediate binding"),
++                layout: &self.layout,
++                entries: &[wgpu::BindGroupEntry {
++                    binding: 0,
++                    resource: wgpu::BindingResource::TextureView(&view),
++                }],
++            });
++            self.surface = Some(Surface {
++                width,
++                height,
++                view,
++                binding,
++            });
++        }
++        let values: Vec<_> = groups.iter().map(|group| group.opacity).collect();
++        let opacities = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
++            label: Some("Surface opacity instances"),
++            contents: bytemuck::cast_slice(&values),
++            usage: wgpu::BufferUsages::VERTEX,
++        });
++        Prepared {
++            surface: self
++                .surface
++                .as_ref()
++                .expect("intermediate surface prepared"),
++            pipeline: &self.pipeline,
++            opacities,
++        }
++    }
++}
++
++pub(super) struct Prepared<'a> {
++    surface: &'a Surface,
++    pipeline: &'a wgpu::RenderPipeline,
++    opacities: wgpu::Buffer,
++}
++
++impl Prepared<'_> {
++    pub(super) fn view(&self) -> &wgpu::TextureView {
++        &self.surface.view
++    }
++
++    pub(super) fn composite(&self, pass: &mut wgpu::RenderPass<'_>, group: usize) {
++        let start = (group * size_of::<f32>()) as u64;
++        pass.set_scissor_rect(0, 0, self.surface.width, self.surface.height);
++        pass.set_pipeline(self.pipeline);
++        pass.set_vertex_buffer(
++            0,
++            self.opacities.slice(start..start + size_of::<f32>() as u64),
++        );
++        pass.set_bind_group(0, &self.surface.binding, &[]);
++        pass.draw(0..3, 0..1);
++    }
++}
+--- /dev/null
++++ b/crates/surface-wgpu/src/opacity.wgsl
+@@ -0,0 +1,22 @@
++struct VertexOutput {
++    @builtin(position) position: vec4<f32>,
++    @location(0) @interpolate(flat) opacity: f32,
++};
++
++@group(0) @binding(0) var group_image: texture_2d<f32>;
++
++@vertex fn vs_main(
++    @location(0) opacity: f32,
++    @builtin(vertex_index) index: u32,
++) -> VertexOutput {
++    let positions = array<vec2<f32>, 3>(
++        vec2(-1.0, -1.0), vec2(3.0, -1.0), vec2(-1.0, 3.0),
++    );
++    return VertexOutput(vec4(positions[index], 0.0, 1.0), opacity);
++}
++
++@fragment fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
++    // Rendering onto transparent black already premultiplied the group's
++    // colors. Sample the identical device pixel and scale every channel once.
++    return textureLoad(group_image, vec2<i32>(vertex.position.xy), 0) * vertex.opacity;
++}
+--- a/crates/surface-wgpu/tests/it.rs
++++ b/crates/surface-wgpu/tests/it.rs
+@@ -5,6 +5,8 @@
+ mod list_ripple;
+ #[path = "it/loading_indicator.rs"]
+ mod loading_indicator;
++#[path = "it/opacity_group.rs"]
++mod opacity_group;
+ #[path = "it/text_alignment.rs"]
+ mod text_alignment;
+ 
+--- /dev/null
++++ b/crates/surface-wgpu/tests/it/opacity_group.rs
+@@ -0,0 +1,311 @@
++use surface::{
++    Color, Corners, ExtendedDisplayList, ExtendedPaintOp, Insets, InteractionState, LayoutEngine,
++    Length, MicroDom, Node, PaintOp, PathFill, RasterImage, RasterPaint, Rect, Role, Style,
++    TextAlignment,
++};
++use surface_wgpu::{Capture, ExtendedRenderError, Renderer};
++
++const WIDTH: u32 = 160;
++const HEIGHT: u32 = 128;
++const VIEWPORT: Rect = Rect {
++    x: 0.,
++    y: 0.,
++    width: WIDTH as f32,
++    height: HEIGHT as f32,
++};
++const BASE: Color = Color::rgb(28, 74, 93);
++const PANEL: Color = Color::rgb(228, 104, 32);
++const CHILD: Color = Color::rgb(43, 194, 158);
++const SECOND: Color = Color::rgb(94, 218, 27);
++
++fn quad(rect: Rect, color: Color) -> ExtendedPaintOp {
++    PaintOp::Quad {
++        rect,
++        clip: VIEWPORT,
++        radius: 0.,
++        color,
++    }
++    .into()
++}
++
++fn aligned_label(renderer: &mut Renderer) -> ExtendedPaintOp {
++    let mut dom = MicroDom::new(Node::new(Role::Window, ""));
++    let clip = dom
++        .append(
++            dom.root(),
++            Node::new(Role::Group, "").styled(
++                Style::column()
++                    .width(Length::Px(58.))
++                    .height(Length::Px(23.))
++                    .clip(true)
++                    .absolute(Insets {
++                        left: Length::Px(18.),
++                        top: Length::Px(87.),
++                        ..Insets::default()
++                    }),
++            ),
++        )
++        .unwrap();
++    dom.append(
++        clip,
++        Node::new(Role::Heading, "")
++            .text("Title\nNext")
++            .text_alignment(TextAlignment::Right)
++            .styled(
++                Style::column()
++                    .width(Length::Px(62.))
++                    .height(Length::Px(40.))
++                    .font_size(15.)
++                    .line_height(20.)
++                    .foreground(Color::rgb(8, 16, 25)),
++            ),
++    )
++    .unwrap();
++    let layout = LayoutEngine::default()
++        .compute(&dom, VIEWPORT.width, VIEWPORT.height, &mut renderer.text)
++        .unwrap();
++    let mut ops = ExtendedDisplayList::compile_with_interaction(
++        &dom,
++        &layout,
++        None,
++        &Default::default(),
++        InteractionState::default(),
++    )
++    .into_ops();
++    assert_eq!(ops.len(), 1);
++    let labeled = ops.pop().unwrap();
++    assert!(matches!(&labeled, ExtendedPaintOp::AlignedText(text)
++        if text.alignment() == TextAlignment::Right
++        && text.run().clip() == Rect::new(18., 87., 58., 23.)));
++    labeled
++}
++
++fn fixture(renderer: &mut Renderer) -> Vec<Vec<ExtendedPaintOp>> {
++    let raster = RasterImage::new(1, 1, [237, 45, 35, 157].to_vec()).unwrap();
++    let path = PathFill::new(
++        [[36., 60.], [84., 60.], [84., 86.], [54., 82.]],
++        Color(35, 62, 240, 197),
++        Rect::new(45., 65., 30., 15.),
++    )
++    .unwrap();
++    vec![
++        vec![quad(VIEWPORT, BASE)],
++        vec![
++            quad(Rect::new(8., 8., 80., 110.), PANEL),
++            quad(Rect::new(24., 24., 36., 30.), CHILD),
++            ExtendedPaintOp::Raster(
++                RasterPaint::new(
++                    raster,
++                    Rect::new(62., 32., 38., 21.),
++                    Rect::new(66., 35., 22., 16.),
++                    Corners::all(4.),
++                )
++                .unwrap(),
++            ),
++            ExtendedPaintOp::FillPath(path),
++            aligned_label(renderer),
++            // A fractional leaf over an otherwise transparent area.
++            quad(Rect::new(89., 85., 14., 17.), Color(18, 201, 234, 122)),
++        ],
++        vec![
++            // These two groups are adjacent. Most pixels are disjoint, so
++            // a stale intermediate would be visible on the second composite.
++            // This first square overlaps to make their order observable.
++            quad(Rect::new(36., 31., 18., 13.), SECOND),
++            quad(Rect::new(106., 63., 46., 49.), SECOND),
++            quad(Rect::new(120., 78., 29., 24.), Color(120, 33, 199, 180)),
++        ],
++        vec![quad(
++            Rect::new(20., 19., 11., 40.),
++            Color::rgb(204, 224, 137),
++        )],
++    ]
++}
++
++fn display_list(parts: &[Vec<ExtendedPaintOp>], opacity: Option<f32>) -> ExtendedDisplayList {
++    let mut ops = parts[0].clone();
++    for group in &parts[1..3] {
++        if let Some(opacity) = opacity {
++            ops.push(ExtendedPaintOp::BeginOpacityGroup { opacity });
++        }
++        ops.extend_from_slice(group);
++        if opacity.is_some() {
++            ops.push(ExtendedPaintOp::EndOpacityGroup);
++        }
++    }
++    ops.extend_from_slice(&parts[3]);
++    ExtendedDisplayList::new(VIEWPORT, ops)
++}
++
++fn pixel(capture: &Capture, x: u32, y: u32) -> [u8; 4] {
++    let start = ((y * capture.width + x) * 4) as usize;
++    capture.rgba[start..start + 4].try_into().unwrap()
++}
++
++fn midpoint(base: u8, full: u8, srgb: bool) -> u8 {
++    let decode = |n| {
++        let v = f64::from(n) / 255.;
++        if !srgb {
++            v
++        } else if v <= 0.04045 {
++            v / 12.92
++        } else {
++            ((v + 0.055) / 1.055).powf(2.4)
++        }
++    };
++    let linear = (decode(base) + decode(full)) / 2.;
++    let encoded = if !srgb {
++        linear
++    } else if linear <= 0.0031308 {
++        12.92 * linear
++    } else {
++        1.055 * linear.powf(1. / 2.4) - 0.055
++    };
++    (encoded * 255.).round() as u8
++}
++
++fn save(capture: &Capture) {
++    if let Ok(path) = std::env::var("SURFACE_GPU_EVIDENCE") {
++        let path = std::path::Path::new(&path).with_file_name("gpu-opacity-group.png");
++        let mut encoder = png::Encoder::new(
++            std::fs::File::create(path).unwrap(),
++            capture.width,
++            capture.height,
++        );
++        encoder.set_color(png::ColorType::Rgba);
++        encoder.set_depth(png::BitDepth::Eight);
++        encoder
++            .write_header()
++            .unwrap()
++            .write_image_data(&capture.rgba)
++            .unwrap();
++    }
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_opacity_groups_composite_once_and_preserve_draw_lanes() {
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None)
++            .await
++            .expect("native GPU adapter is required");
++        eprintln!("GPU opacity evidence: {:?}", adapter.get_info());
++        for format in [
++            wgpu::TextureFormat::Rgba8Unorm,
++            wgpu::TextureFormat::Bgra8UnormSrgb,
++        ] {
++            let mut renderer = Renderer::new(&adapter, format).await.unwrap();
++            let parts = fixture(&mut renderer);
++            let base = ExtendedDisplayList::new(
++                VIEWPORT,
++                parts[0].iter().chain(&parts[3]).cloned().collect(),
++            );
++            for scale in [1, 2] {
++                let mut capture = |list: &ExtendedDisplayList| {
++                    renderer
++                        .capture_extended(list, WIDTH * scale, HEIGHT * scale, scale as f32)
++                        .unwrap()
++                };
++                let backdrop = capture(&base);
++                let opaque = capture(&display_list(&parts, None));
++                let half = capture(&display_list(&parts, Some(0.5)));
++                assert_eq!(capture(&display_list(&parts, Some(0.))).rgba, backdrop.rgba);
++                assert_eq!(capture(&display_list(&parts, Some(1.))).rgba, opaque.rgba);
++                assert_eq!(capture(&display_list(&parts, Some(0.5))).rgba, half.rgba);
++
++                let opaque_at = |x, y| pixel(&opaque, x * scale, y * scale);
++                let base_at = |x, y| pixel(&backdrop, x * scale, y * scale);
++                let half_at = |x, y| pixel(&half, x * scale, y * scale);
++                assert_eq!(opaque_at(34, 34), [CHILD.0, CHILD.1, CHILD.2, 255]);
++                assert_eq!(opaque_at(40, 34), [SECOND.0, SECOND.1, SECOND.2, 255]);
++                assert_eq!(opaque_at(65, 43), opaque_at(67, 55));
++                assert_ne!(opaque_at(72, 43), opaque_at(65, 43), "raster lane");
++                assert_eq!(opaque_at(78, 67), opaque_at(78, 59));
++                assert_ne!(opaque_at(65, 71), opaque_at(78, 67), "path lane");
++                assert_ne!(opaque_at(94, 92), base_at(94, 92));
++                assert_eq!(
++                    half_at(25, 35),
++                    base_at(25, 35),
++                    "last quad is above the group"
++                );
++                assert!(
++                    (87 * scale..110 * scale).any(|y| {
++                        (18 * scale..76 * scale).any(|x| pixel(&opaque, x, y)[0] < 180)
++                    }),
++                    "aligned text ink inside clip"
++                );
++                assert!(
++                    (87 * scale..113 * scale).all(|y| {
++                        (76 * scale..82 * scale).all(|x| pixel(&opaque, x, y)[0] == PANEL.0)
++                    }),
++                    "aligned text does not paint past clip"
++                );
++
++                // Direct reference paint determines the isolated foreground.
++                // With two real partial ranges, this detects stale intermediate
++                // pixels as well as accidental attenuation of each leaf.
++                for y in 0..half.height {
++                    for x in 0..half.width {
++                        let destination = pixel(&backdrop, x, y);
++                        let source = pixel(&opaque, x, y);
++                        let actual = pixel(&half, x, y);
++                        let overlap = (36 * scale..54 * scale).contains(&x)
++                            && (31 * scale..44 * scale).contains(&y);
++                        for channel in 0..3 {
++                            let below = if overlap {
++                                midpoint(
++                                    destination[channel],
++                                    [CHILD.0, CHILD.1, CHILD.2][channel],
++                                    format.is_srgb(),
++                                )
++                            } else {
++                                destination[channel]
++                            };
++                            let expected = midpoint(below, source[channel], format.is_srgb());
++                            assert!(actual[channel].abs_diff(expected) <= 2,
++                                "{format:?} {scale}x pixel ({x},{y}) channel {channel}: {actual:?}, expected {expected}");
++                        }
++                        assert_eq!(actual[3], 255);
++                    }
++                }
++                if format.is_srgb() && scale == 2 {
++                    save(&half);
++                }
++            }
++        }
++    });
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_opacity_groups_reject_invalid_ranges() {
++    use ExtendedPaintOp::{BeginOpacityGroup as Begin, EndOpacityGroup as End};
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None).await.unwrap();
++        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
++            .await
++            .unwrap();
++        for ops in [
++            vec![End],
++            vec![Begin { opacity: 0.5 }],
++            vec![Begin { opacity: 0. }, Begin { opacity: 1. }, End, End],
++            vec![Begin { opacity: -0.001 }, End],
++            vec![Begin { opacity: 1.001 }, End],
++            vec![Begin { opacity: f32::NAN }, End],
++            vec![
++                Begin {
++                    opacity: f32::INFINITY,
++                },
++                End,
++            ],
++        ] {
++            let list = ExtendedDisplayList::new(VIEWPORT, ops);
++            assert!(matches!(
++                renderer.capture_extended(&list, WIDTH, HEIGHT, 1.),
++                Err(ExtendedRenderError::InvalidOpacityGroup(_))
++            ));
++        }
++    });
++}
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -199,6 +199,13 @@
+     /// Serializing an extended list that contains this operation returns an error.
+     #[serde(skip)]
+     Raster(crate::RasterPaint),
++    /// Start an isolated group. Its complete paint is composited once with
++    /// an opacity between zero and one. End it with `EndOpacityGroup`.
++    /// Group ranges cannot nest.
++    BeginOpacityGroup {
++        opacity: f32,
++    },
++    EndOpacityGroup,
+ }
+ 
+ trait CompileOp: From<PaintOp> {
+--- /dev/null
++++ b/crates/surface/tests/opacity_group.rs
+@@ -0,0 +1,50 @@
++use serde_json::json;
++use surface::{Color, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, Rect};
++
++#[test]
++fn opacity_markers_round_trip_without_changing_legacy_paint() {
++    let viewport = Rect::new(0., 0., 32., 32.);
++    let paint = PaintOp::Quad {
++        rect: Rect::new(2., 3., 7., 8.),
++        clip: viewport,
++        radius: 1.,
++        color: Color::rgb(10, 20, 90),
++    };
++    let legacy = DisplayList {
++        viewport,
++        ops: vec![paint.clone()],
++    };
++    let plain = ExtendedDisplayList::new(viewport, vec![paint.clone().into()]);
++    let old_wire = json!({ "viewport": viewport, "ops": [{ "Legacy": paint }] });
++    assert_eq!(serde_json::to_value(&plain).unwrap(), old_wire);
++    assert_eq!(
++        serde_json::from_value::<ExtendedDisplayList>(old_wire).unwrap(),
++        plain
++    );
++    assert_eq!(
++        serde_json::to_value(&legacy).unwrap(),
++        json!({
++            "viewport": viewport, "ops": [paint]
++        })
++    );
++
++    let grouped = ExtendedDisplayList::new(
++        viewport,
++        vec![
++            ExtendedPaintOp::BeginOpacityGroup { opacity: 0.375 },
++            paint.clone().into(),
++            ExtendedPaintOp::EndOpacityGroup,
++            paint.into(),
++        ],
++    );
++    let wire = serde_json::to_value(&grouped).unwrap();
++    assert_eq!(
++        wire["ops"][0],
++        json!({"BeginOpacityGroup": {"opacity": 0.375}})
++    );
++    assert_eq!(wire["ops"][2], json!("EndOpacityGroup"));
++    assert_eq!(wire["ops"][1], wire["ops"][3]);
++    let decoded = serde_json::from_value::<ExtendedDisplayList>(wire).unwrap();
++    assert_eq!(decoded.viewport(), viewport);
++    assert_eq!(decoded.into_ops(), grouped.into_ops());
++}
