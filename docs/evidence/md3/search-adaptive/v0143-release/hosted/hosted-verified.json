@@ -1,0 +1,5019 @@
+{
+  "release": "v0.1.43",
+  "pr": 218,
+  "branch": "codex/md3-search-adaptive",
+  "head": "fc233e9a592d886f56dbc1397234edeaded2331b",
+  "tree": "35f17666034d0f39367dc3b139e06a927fca0455",
+  "base": "eacb33d06269a0b0a75c3c13f4de82de05f19031",
+  "host": "GitHub Linux with an Xvfb virtual display and Chrome WebGPU SwiftShader",
+  "runs": {
+    "push": {
+      "event": "push",
+      "run": 45452793148,
+      "attempt": 1,
+      "url": "https://github.com/faberline/surface/actions/runs/45452793148",
+      "jobs": {
+        "build-and-behavior": {
+          "id": 138654120847,
+          "url": "https://github.com/faberline/surface/actions/runs/45452793148/job/138654120847"
+        },
+        "browser-e2e": {
+          "id": 138654121291,
+          "url": "https://github.com/faberline/surface/actions/runs/45452793148/job/138654121291"
+        }
+      },
+      "head": "fc233e9a592d886f56dbc1397234edeaded2331b",
+      "checkout_commit": "fc233e9a592d886f56dbc1397234edeaded2331b",
+      "checkout_tree": "35f17666034d0f39367dc3b139e06a927fca0455",
+      "cases": {
+        "smoke": {
+          "steps": 19,
+          "checks": 34
+        },
+        "ime": {
+          "steps": 20,
+          "checks": 77
+        },
+        "material": {
+          "steps": 254,
+          "checks": 17014
+        },
+        "bridge-native": {
+          "steps": 23,
+          "checks": 92
+        },
+        "bridge-native-compact": {
+          "steps": 24,
+          "checks": 93
+        },
+        "bridge-web": {
+          "steps": 24,
+          "checks": 94
+        },
+        "devtools-native": {
+          "steps": 17,
+          "checks": 192
+        },
+        "devtools-headless": {
+          "steps": 3,
+          "checks": 76
+        }
+      },
+      "total_checks": 17672,
+      "artifact": {
+        "id": 14951546208,
+        "name": "surface-e2e-artifacts",
+        "digest": "sha256:94700fde817d98c8f847609ba7aaa90d11794489c7ab261fcf42abe93e366789"
+      },
+      "contrast": {
+        "browser": "Chrome/158.0.8127.88",
+        "adapter": {
+          "vendor": "google",
+          "architecture": "swiftshader",
+          "isFallbackAdapter": true
+        },
+        "forced_system_pairs": {
+          "canvas": {
+            "background": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "foreground": [
+              0,
+              0,
+              0,
+              255
+            ]
+          },
+          "button": {
+            "background": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "foreground": [
+              0,
+              0,
+              0,
+              255
+            ]
+          },
+          "highlight": {
+            "background": [
+              5,
+              0,
+              73,
+              204
+            ],
+            "foreground": [
+              255,
+              255,
+              255,
+              255
+            ]
+          }
+        },
+        "foreground_evidence": "browser",
+        "selection_seam_pixels": 12876,
+        "browser_arrows": {
+          "native_arrow_redraw": {
+            "before": {
+              "browser": [
+                3,
+                3
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_down": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_forced_redraw": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_up": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "restored_normal": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "keydown_event": {
+              "key": "ArrowRight",
+              "trusted": true,
+              "prevented": false
+            },
+            "scoped_select_delay": false,
+            "intercepted_select_events": 0,
+            "normal_canvas_sample": [
+              20,
+              18,
+              24
+            ],
+            "forced_canvas_sample": [
+              255,
+              255,
+              255
+            ],
+            "css_canvas": [
+              255,
+              255,
+              255,
+              255
+            ]
+          },
+          "delayed_select_redraw": {
+            "before": {
+              "browser": [
+                3,
+                3
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_down": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_forced_redraw": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_up": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "restored_normal": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "keydown_event": {
+              "key": "ArrowRight",
+              "trusted": true,
+              "prevented": false
+            },
+            "scoped_select_delay": true,
+            "intercepted_select_events": 0,
+            "normal_canvas_sample": [
+              20,
+              18,
+              24
+            ],
+            "forced_canvas_sample": [
+              255,
+              255,
+              255
+            ],
+            "css_canvas": [
+              255,
+              255,
+              255,
+              255
+            ]
+          },
+          "backward_range": {
+            "browser": [
+              3,
+              4
+            ],
+            "runtime": [
+              4,
+              3
+            ],
+            "direction": "backward",
+            "value": "1688",
+            "composing": false,
+            "focused": true
+          }
+        },
+        "preedit_underline": {
+          "source": "CDP synthetic composition; Chrome-resolved CSS colors",
+          "device_pixel_ratio": 2.0,
+          "physical_size": [
+            640,
+            800
+          ],
+          "face": [
+            18.0,
+            62.0,
+            284.0,
+            104.0
+          ],
+          "expected_ink": {
+            "canvas_text": [
+              0,
+              0,
+              0
+            ],
+            "highlight_text": [
+              255,
+              255,
+              255
+            ]
+          },
+          "system_colors": {
+            "scheme": "light dark",
+            "pairs": {
+              "canvas": {
+                "background": [
+                  255,
+                  255,
+                  255,
+                  255
+                ],
+                "foreground": [
+                  0,
+                  0,
+                  0,
+                  255
+                ]
+              },
+              "button": {
+                "background": [
+                  255,
+                  255,
+                  255,
+                  255
+                ],
+                "foreground": [
+                  0,
+                  0,
+                  0,
+                  255
+                ]
+              },
+              "highlight": {
+                "background": [
+                  5,
+                  0,
+                  73,
+                  204
+                ],
+                "foreground": [
+                  255,
+                  255,
+                  255,
+                  255
+                ]
+              }
+            },
+            "raw": {
+              "canvas": {
+                "background": "rgb(255, 255, 255)",
+                "foreground": "rgb(0, 0, 0)"
+              },
+              "button": {
+                "background": "rgb(255, 255, 255)",
+                "foreground": "rgb(0, 0, 0)"
+              },
+              "highlight": {
+                "background": "rgba(5, 0, 73, 0.8)",
+                "foreground": "rgb(255, 255, 255)"
+              }
+            }
+          },
+          "stroke_row": 281,
+          "selection_witness_row": 172,
+          "physical_spans": [
+            [
+              87,
+              130
+            ],
+            [
+              136,
+              228
+            ],
+            [
+              234,
+              276
+            ]
+          ],
+          "clear_outline_pixels": [
+            43,
+            92,
+            42
+          ],
+          "ordinary_ink_partial": [
+            43,
+            0,
+            42
+          ],
+          "selected_ink_middle": 92,
+          "highlighted_columns": 92,
+          "normal_pixel_mismatches": 0,
+          "preedit_clear": {
+            "runtime": {
+              "value": "1680",
+              "display_value": "1688",
+              "selection_anchor": 0,
+              "selection_cursor": 4,
+              "composing": true,
+              "preedit_range": {
+                "start": 0,
+                "end": 4
+              }
+            },
+            "textarea_selection": [
+              4,
+              4
+            ]
+          },
+          "preedit_partial": {
+            "runtime": {
+              "value": "1680",
+              "display_value": "1688",
+              "selection_anchor": 0,
+              "selection_cursor": 4,
+              "composing": true,
+              "preedit_range": {
+                "start": 0,
+                "end": 4
+              }
+            },
+            "textarea_selection": [
+              1,
+              3
+            ]
+          }
+        },
+        "independent_png_pixel_verification": true,
+        "popup_border": {
+          "exterior": [
+            255,
+            255,
+            255
+          ],
+          "edge": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              255,
+              255,
+              255
+            ],
+            [
+              255,
+              255,
+              255
+            ]
+          ],
+          "interior": [
+            255,
+            255,
+            255
+          ],
+          "expected_fill": [
+            255,
+            255,
+            255
+          ],
+          "expected_ink": [
+            0,
+            0,
+            0
+          ],
+          "border_present": true
+        },
+        "wheel_border": {
+          "exterior": [
+            255,
+            255,
+            255
+          ],
+          "edge": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              255,
+              255,
+              255
+            ],
+            [
+              255,
+              255,
+              255
+            ]
+          ],
+          "interior": [
+            255,
+            255,
+            255
+          ],
+          "expected_fill": [
+            255,
+            255,
+            255
+          ],
+          "expected_ink": [
+            0,
+            0,
+            0
+          ],
+          "border_present": true
+        },
+        "pngs": {
+          "popup-normal": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 50961,
+            "sha256": "382376b74b56bc779aa36e21d375244a0c3bfa01036fb737d9ef660e85318107"
+          },
+          "popup-forced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 43232,
+            "sha256": "6bc37b587c3a9eda0846bca7897504033df1a80e9adf3b21a6280ca92fbf5d13"
+          },
+          "popup-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 50961,
+            "sha256": "382376b74b56bc779aa36e21d375244a0c3bfa01036fb737d9ef660e85318107"
+          },
+          "popup-boundary": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 43232,
+            "sha256": "6bc37b587c3a9eda0846bca7897504033df1a80e9adf3b21a6280ca92fbf5d13"
+          },
+          "popup-synthetic-preedit": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44173,
+            "sha256": "3a26a22daf0a92dcc871b4c910a9f51947f1f5ab463f8eecf324ddd12748dff4"
+          },
+          "wheel-resting": {
+            "physical_size": [
+              1920,
+              1640
+            ],
+            "bytes": 57334,
+            "sha256": "56227d0b054dc931aa21cfdab2cf3a9c04ccb45089e5c64323f0afedee1c1dd2"
+          },
+          "wheel-focused": {
+            "physical_size": [
+              1920,
+              1640
+            ],
+            "bytes": 58048,
+            "sha256": "dc9ac41f955cfe40a04e1cff64ef0de7848280cc84e3c16fabef0052d3725451"
+          },
+          "wheel-disabled": {
+            "physical_size": [
+              1920,
+              1640
+            ],
+            "bytes": 54129,
+            "sha256": "645555a1ddfb50afa15a6fe884602be3e8d88eb38dfa518bb55cce1d636a6fba"
+          },
+          "selection-browser-forced-preedit": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 25638,
+            "sha256": "9e8619f2cfdc80e0cad2b4d3ebac121a82bdedd82d69fdfcbba1ffdbb22dc65c"
+          },
+          "selection-browser-native-arrow-forced": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26764,
+            "sha256": "571a5c72c2c91b0377f3e18cd04a1a1b6684b440925192c65f8477143e776ecd"
+          },
+          "selection-browser-delayed-select-arrow-forced": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26764,
+            "sha256": "571a5c72c2c91b0377f3e18cd04a1a1b6684b440925192c65f8477143e776ecd"
+          },
+          "selection-browser-normal-clear": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 31688,
+            "sha256": "eae6ff8a3c85d6ba72c4cfbe31152dc4ec49ab2c9bf18dd90bff3c8fe3ff75eb"
+          },
+          "selection-browser-normal-partial": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 31869,
+            "sha256": "83a12de50b001e76a6735744e8198b0160c097b6741f28f888e5d3de391426db"
+          },
+          "selection-browser-forced-partial": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 27284,
+            "sha256": "18de0f6da557d9708bcbb92656a4309475b323e6a84e5477ae54c6df4a9b6cee"
+          },
+          "selection-browser-forced-clear": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26762,
+            "sha256": "2efba1657c0c7ea92ced793276bd5636f8d4a0908958af6e46a483104f9a5289"
+          },
+          "selection-browser-forced-all": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 27188,
+            "sha256": "70421885edef9e25a105a3224d7e765ee10d3aab75c4eb54d0adcba4b1338de3"
+          },
+          "selection-browser-forced-prefix": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26832,
+            "sha256": "939e8a7dcb89f8e9b7b766112affbe11f0bad273c41cf3df63cc1783a116b94d"
+          },
+          "selection-browser-forced-suffix": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 27171,
+            "sha256": "b7b60953e3537f628322a8b1b630578e6053b734046432bf3ad11311b336be03"
+          },
+          "selection-browser-normal-restored": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 31869,
+            "sha256": "83a12de50b001e76a6735744e8198b0160c097b6741f28f888e5d3de391426db"
+          },
+          "preedit-underline-plain-clear": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44623,
+            "sha256": "1044ed282c4491bfca0dd2b2bc29114685d82cb8737b5ce58d52a7248c6ca2ee"
+          },
+          "preedit-underline-plain-all": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45209,
+            "sha256": "67c58aa2db04150de17089f44d877ddd1e9f52ff6c98ecb33a5928b4482eed23"
+          },
+          "preedit-underline-plain-prefix": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44677,
+            "sha256": "867b9ebed695bd6f4f810fcd22c7f214e35714e487aa9655afd9f895eee17558"
+          },
+          "preedit-underline-plain-suffix": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45183,
+            "sha256": "719c38f788f1cfda228eef7cd9cbf810d2fdabac334fb5e237e07488d7b7be8f"
+          },
+          "preedit-underline-plain-partial": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45364,
+            "sha256": "5748a53c3def0c82a8f16e5bd926ba8d13cf687ad0a1b3f3bee452ff394a1597"
+          },
+          "preedit-underline-preedit-clear": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44644,
+            "sha256": "42406cdc133c2211f0724cdd5656b2815fc9a07c08785e0036c82b217dcbc0b4"
+          },
+          "preedit-underline-preedit-normal-before": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52771,
+            "sha256": "42cca6a33ba26a46f324eaa15c06ba733dd5699e9bb242596b22e6d755c93c9b"
+          },
+          "preedit-underline-preedit-partial": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45401,
+            "sha256": "cea48a0bcc7798912c68745ab32886ce13fe4fdcd6c51d59f1553e3d37b0ee44"
+          },
+          "preedit-underline-preedit-normal-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52771,
+            "sha256": "42cca6a33ba26a46f324eaa15c06ba733dd5699e9bb242596b22e6d755c93c9b"
+          }
+        }
+      },
+      "search": {
+        "browser": "Chrome/158.0.8127.88",
+        "adapter": {
+          "vendor": "google",
+          "architecture": "swiftshader",
+          "isFallbackAdapter": true
+        },
+        "documents": "search-doc-review",
+        "adaptive": {
+          "docked": [
+            40.0,
+            172.0,
+            520.0,
+            440.0
+          ],
+          "scroll_before": 55.0,
+          "scroll_after": 55.0,
+          "selection": {
+            "same": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2,
+            "direction": "backward"
+          },
+          "runtime": {
+            "value": "設計",
+            "display_value": "設計",
+            "selection_anchor": 6,
+            "selection_cursor": 3,
+            "composing": false,
+            "preedit_range": null
+          },
+          "preedit": {
+            "value": "設計",
+            "display_value": "設ㄐㄧ",
+            "selection_anchor": 6,
+            "selection_cursor": 3,
+            "composing": true,
+            "preedit_range": {
+              "start": 3,
+              "end": 9
+            }
+          },
+          "browser_preedit": {
+            "same": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3,
+            "direction": "forward"
+          },
+          "png": [
+            1200,
+            1440
+          ],
+          "web_trace": [
+            {
+              "type": "compositionstart",
+              "data": "計",
+              "value": "設計",
+              "start": 1,
+              "end": 2
+            },
+            {
+              "type": "compositionupdate",
+              "data": "ㄐㄧ",
+              "value": "設計",
+              "start": 1,
+              "end": 2
+            },
+            {
+              "type": "beforeinput",
+              "data": "ㄐㄧ",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設計",
+              "start": 1,
+              "end": 2
+            },
+            {
+              "type": "input",
+              "data": "ㄐㄧ",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "keydown",
+              "key": "Enter",
+              "isComposing": true,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "beforeinput",
+              "data": null,
+              "kind": "insertLineBreak",
+              "isComposing": false,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "compositionupdate",
+              "data": "定",
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "beforeinput",
+              "data": "定",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "input",
+              "data": "定",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設定",
+              "start": 2,
+              "end": 2
+            },
+            {
+              "type": "compositionend",
+              "data": "定",
+              "value": "設定",
+              "start": 2,
+              "end": 2
+            },
+            {
+              "type": "keydown",
+              "key": "Enter",
+              "isComposing": false,
+              "value": "設定",
+              "start": 2,
+              "end": 2
+            }
+          ]
+        },
+        "caret_clearance": {
+          "rtl_contained": {
+            "input": [
+              16.0,
+              16.0,
+              236.0,
+              48.0
+            ],
+            "caret": [
+              246.0,
+              16.0,
+              320.0,
+              48.0
+            ],
+            "scan_y": 40.0,
+            "ring": [
+              251.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "gap": [
+              248.5,
+              [
+                43,
+                41,
+                47
+              ]
+            ],
+            "caret_ink": [
+              246.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "background": [
+              43,
+              41,
+              47
+            ]
+          },
+          "rtl_divided": {
+            "input": [
+              4.0,
+              12.0,
+              260.0,
+              48.0
+            ],
+            "caret": [
+              258.0,
+              12.0,
+              320.0,
+              48.0
+            ],
+            "scan_y": 36.0,
+            "ring": [
+              263.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "gap": [
+              260.5,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "caret_ink": [
+              258.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "background": [
+              29,
+              27,
+              32
+            ]
+          },
+          "ltr_contained": {
+            "input": [
+              96.0,
+              176.0,
+              536.0,
+              48.0
+            ],
+            "caret": [
+              100.0,
+              188.0,
+              320.0,
+              24.0
+            ],
+            "scan_y": 200.0,
+            "ring": [
+              96.75,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "gap": [
+              99.0,
+              [
+                236,
+                230,
+                238
+              ]
+            ],
+            "caret_ink": [
+              100.25,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "background": [
+              236,
+              230,
+              238
+            ]
+          },
+          "ltr_divided": {
+            "input": [
+              84.0,
+              176.0,
+              560.0,
+              48.0
+            ],
+            "caret": [
+              88.0,
+              188.0,
+              320.0,
+              24.0
+            ],
+            "scan_y": 200.0,
+            "ring": [
+              84.75,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "gap": [
+              87.0,
+              [
+                236,
+                230,
+                238
+              ]
+            ],
+            "caret_ink": [
+              88.25,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "background": [
+              236,
+              230,
+              238
+            ]
+          }
+        },
+        "forced": {
+          "profiles": [
+            {
+              "profile": "docked-light-contained",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                96.0,
+                176.0,
+                536.0,
+                48.0
+              ],
+              "dialog": [
+                40.0,
+                172.0,
+                596.0,
+                440.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                100.0,
+                192.0,
+                63.0,
+                16.0
+              ],
+              "hint_pixels": 765,
+              "result_ink_pixels": 693,
+              "typed": [
+                101.0,
+                192.0,
+                16.0,
+                16.0
+              ],
+              "outside": [
+                173,
+                173,
+                173
+              ],
+              "detail": {
+                "gap": [
+                  173,
+                  173,
+                  173
+                ]
+              },
+              "normal_color": [
+                236,
+                230,
+                238
+              ],
+              "modal_preserved": true,
+              "png": [
+                1920,
+                1600
+              ]
+            },
+            {
+              "profile": "docked-light-divided",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                84.0,
+                176.0,
+                560.0,
+                48.0
+              ],
+              "dialog": [
+                28.0,
+                172.0,
+                620.0,
+                440.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                88.0,
+                192.0,
+                63.0,
+                16.0
+              ],
+              "hint_pixels": 765,
+              "result_ink_pixels": 693,
+              "typed": [
+                89.0,
+                192.0,
+                16.0,
+                16.0
+              ],
+              "outside": [
+                173,
+                173,
+                173
+              ],
+              "detail": {
+                "bounds": [
+                  28.0,
+                  228.0,
+                  620.0,
+                  1.0
+                ],
+                "divider": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "normal_color": [
+                236,
+                230,
+                238
+              ],
+              "modal_preserved": true,
+              "png": [
+                1920,
+                1600
+              ]
+            },
+            {
+              "profile": "full-rtl-dark-contained",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                16.0,
+                16.0,
+                236.0,
+                48.0
+              ],
+              "dialog": [
+                0.0,
+                0.0,
+                320.0,
+                400.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                119.5,
+                32.0,
+                127.5,
+                16.0
+              ],
+              "hint_pixels": 2447,
+              "result_ink_pixels": 3793,
+              "typed": [
+                183.5,
+                32.0,
+                63.5,
+                16.0
+              ],
+              "outside": [
+                255,
+                255,
+                255
+              ],
+              "detail": {
+                "gap": [
+                  255,
+                  255,
+                  255
+                ]
+              },
+              "normal_color": [
+                43,
+                41,
+                47
+              ],
+              "modal_preserved": true,
+              "png": [
+                640,
+                800
+              ]
+            },
+            {
+              "profile": "full-rtl-dark-divided",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                4.0,
+                12.0,
+                260.0,
+                48.0
+              ],
+              "dialog": [
+                0.0,
+                0.0,
+                320.0,
+                400.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                131.5,
+                28.0,
+                127.5,
+                16.0
+              ],
+              "hint_pixels": 2447,
+              "result_ink_pixels": 3793,
+              "typed": [
+                195.5,
+                28.0,
+                63.5,
+                16.0
+              ],
+              "outside": [
+                255,
+                255,
+                255
+              ],
+              "detail": {
+                "bounds": [
+                  0.0,
+                  72.0,
+                  320.0,
+                  1.0
+                ],
+                "divider": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "normal_color": [
+                29,
+                27,
+                32
+              ],
+              "modal_preserved": true,
+              "png": [
+                640,
+                800
+              ]
+            }
+          ],
+          "real_cdp_forced_colors": true,
+          "fit": {
+            "short": [
+              0.0,
+              0.0,
+              600.0,
+              280.0
+            ],
+            "docked": [
+              40.0,
+              172.0,
+              520.0,
+              440.0
+            ],
+            "draft": {
+              "value": "設",
+              "display_value": "設",
+              "selection_anchor": 3,
+              "selection_cursor": 3,
+              "composing": false,
+              "preedit_range": null
+            }
+          }
+        },
+        "motion": {
+          "manual_performance_time": true,
+          "profiles": [
+            {
+              "presentation": "docked-contained",
+              "initial": [
+                52.0,
+                172.0,
+                572.0,
+                56.0
+              ],
+              "halfway": [
+                46.0,
+                172.0,
+                584.0,
+                262.0
+              ],
+              "final": [
+                40.0,
+                172.0,
+                596.0,
+                440.0
+              ],
+              "entry": {
+                "moving": true,
+                "progress": 0.5361850261688232
+              },
+              "exit": {
+                "moving": true,
+                "progress": 0.2650817632675171
+              },
+              "leaving": [
+                49.0,
+                172.0,
+                578.0,
+                158.0
+              ],
+              "corner": {
+                "rest": [
+                  253,
+                  247,
+                  255
+                ],
+                "entering": [
+                  209,
+                  204,
+                  211
+                ],
+                "expanded": [
+                  172,
+                  168,
+                  173
+                ],
+                "exiting": [
+                  231,
+                  226,
+                  233
+                ]
+              },
+              "exit_dimensions": [
+                1920,
+                1600
+              ],
+              "reduced_exact_endpoints": true,
+              "editor_lifecycle": {
+                "rest": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": null,
+                  "focused": false
+                },
+                "open": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                },
+                "exit": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": "搜尋文件",
+                  "focused": false
+                },
+                "reopened": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                }
+              },
+              "unfocused_persistent_web_textarea_ax": null
+            },
+            {
+              "presentation": "fullscreen-divided",
+              "initial": [
+                28.0,
+                228.0,
+                264.0,
+                56.0
+              ],
+              "halfway": [
+                19.0,
+                155.0,
+                282.0,
+                166.0
+              ],
+              "final": [
+                0.0,
+                0.0,
+                320.0,
+                400.0
+              ],
+              "entry": {
+                "moving": true,
+                "progress": 0.3197437822818756
+              },
+              "exit": {
+                "moving": true,
+                "progress": 0.4638149440288544
+              },
+              "leaving": [
+                15.0,
+                122.0,
+                290.0,
+                216.0
+              ],
+              "corner": {
+                "rest": [
+                  253,
+                  247,
+                  255
+                ],
+                "entering": [
+                  253,
+                  247,
+                  255
+                ],
+                "expanded": [
+                  248,
+                  242,
+                  250
+                ],
+                "exiting": [
+                  253,
+                  247,
+                  255
+                ]
+              },
+              "exit_dimensions": [
+                640,
+                800
+              ],
+              "reduced_exact_endpoints": true,
+              "editor_lifecycle": {
+                "rest": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": null,
+                  "focused": false
+                },
+                "open": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                },
+                "exit": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": "搜尋文件",
+                  "focused": false
+                },
+                "reopened": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                }
+              },
+              "unfocused_persistent_web_textarea_ax": null
+            }
+          ]
+        },
+        "pngs": {
+          "docked-rest": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 44164,
+            "sha256": "d0964367d614edc80356fd3af154437af270c7024e89fcf005cb423b93f24f62",
+            "rgba_sha256": "415e29ce1d10ca0884712f5cc7d56bc7f2c0c14f615bd03770ec2e628218ddbf"
+          },
+          "compact-rest": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44257,
+            "sha256": "1685fd216ba154a0df236f38013062e605149e7b6569b51cfffc30e2f16c0d9d",
+            "rgba_sha256": "9c586e744c8b1be7e38b4769924315e7abb83279f71fba09a9f4285b62d2f265"
+          },
+          "empty-chrome-ax": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 52381,
+            "sha256": "17a574d5da4c0cd25dc29be5a74268dd7b88d0fa09112e203a28c9585fbed602",
+            "rgba_sha256": "cada894dcb48185be7b6eed7a69c0e20a29ea69b7f6c9cb9dbbe0b30b77f7aba"
+          },
+          "live-centered-editor": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 49907,
+            "sha256": "2325c224699ad07002cb1da41d99bba5fe6f79cca679e2053dccd5147a1927c5",
+            "rgba_sha256": "d6b57bda9c59cf2b752043463547b6f56312bf1b52ac3b2ef4a3bc6f3ee11e4b"
+          },
+          "ltr-start-reference": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 49907,
+            "sha256": "2325c224699ad07002cb1da41d99bba5fe6f79cca679e2053dccd5147a1927c5",
+            "rgba_sha256": "d6b57bda9c59cf2b752043463547b6f56312bf1b52ac3b2ef4a3bc6f3ee11e4b"
+          },
+          "resize-pending-composition": {
+            "physical_size": [
+              1200,
+              1440
+            ],
+            "bytes": 73815,
+            "sha256": "7b8905fa88f7c91bf37cb6839911f4e9251f11948d808560846511f186859948",
+            "rgba_sha256": "59a50c7b8fdbc6b6f8c23cd9fef445e46c8042f45657a58a9d5e3380802f6399"
+          },
+          "docked-light-contained": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "compact-dark-rtl-contained": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "caret-ltr-contained": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "caret-rtl-contained": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "docked-light-contained-normal": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "full-rtl-dark-contained-normal": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "docked-light-contained-forced": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 87829,
+            "sha256": "1956e2cee085f48727d95d582218f890f289731a8c536ea123213c345656e3f6",
+            "rgba_sha256": "3958095e64038bfa9d859a9d7f2f1b90b6801363057d50366207327c771006de"
+          },
+          "full-rtl-dark-contained-forced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52223,
+            "sha256": "5772a33ffbe7e3ff32b8b1782b8f27e073c8eeb8ac2fd8916f0c11085c8b9147",
+            "rgba_sha256": "92a19536e24f74275b2acbd28d59504ac4c1331b3c688b776dbd92d7d4ae9e4a"
+          },
+          "docked-light-contained-forced-typed": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 74769,
+            "sha256": "a10d618aee0995882efc0cc0b11c6e2efb3382809fde181c7db9e8d937898098",
+            "rgba_sha256": "dc790d2f0cd49c237449655dea2a752fafdbd4827e27763aefe516fb165adfae"
+          },
+          "full-rtl-dark-contained-forced-typed": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 50078,
+            "sha256": "34f64de35202e83ebd85d57d813467f65b29f7bbd8d70ae72c1efd5218edd213",
+            "rgba_sha256": "986d74cd8c12635cb11ddf6808016d761ae804ecdd643dc730c2e717f9dc34b1"
+          },
+          "docked-light-contained-normal-restored": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "full-rtl-dark-contained-normal-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "docked-light-divided": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "compact-dark-rtl-divided": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "caret-ltr-divided": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "caret-rtl-divided": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "docked-light-divided-normal": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "full-rtl-dark-divided-normal": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "docked-light-divided-forced": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 84098,
+            "sha256": "80e5a18d7bc2a14ef65c13af902c545e5f0b2d03e8ee15ad7215643fb5225752",
+            "rgba_sha256": "2425f9ae6cee09ac1f9db116ee2c06cddd572d0e7d0e0e2fe87db45946d3ee78"
+          },
+          "full-rtl-dark-divided-forced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 49742,
+            "sha256": "0d85515b2f478382a764cf53be3ec03c38cd96a7b46af25922dad08b280a3fd1",
+            "rgba_sha256": "f55f2d2941142fedc322e12a70f3117b01d5745145d0b09cadc73722e14f56d9"
+          },
+          "docked-light-divided-forced-typed": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 71028,
+            "sha256": "dabfb04f4c522f2459a1f364b2121e0e8196f2a808727e6278fa0d9b074c718d",
+            "rgba_sha256": "ed874fc1ab2411587543f4088ac99d111b4533e7410cc7b3f243ff6038ce19a5"
+          },
+          "full-rtl-dark-divided-forced-typed": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 47540,
+            "sha256": "ffef1f73ed9654d24a3f343a13df2c64e659bcd322c1ad84107f34e78c2e1c96",
+            "rgba_sha256": "b34d24c91f12f1843fc442fe4ef759e1e12e665d84d6e7509127f0d8e80959f7"
+          },
+          "docked-light-divided-normal-restored": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "full-rtl-dark-divided-normal-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "rtl-empty-hint": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "rtl-empty-preedit": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52594,
+            "sha256": "0b7c8a7b05c015c1ceac1e48d6017435437636eb45cbb2d8fb9a0b86be3474de",
+            "rgba_sha256": "789277df80cd4356b9eebbbd930741d258871547c6f5229273f038c64e54d7ef"
+          },
+          "rtl-typed-query": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 55867,
+            "sha256": "3627a29beec5779e750dceaaca1840eb37ecf3b0da6bb4987ca8a47c30c3f49c",
+            "rgba_sha256": "1b7bf174bed8f65bd8772013b0ca14cfda91d8ea26d1d0cbb4d497d4e99ead7b"
+          },
+          "rtl-pointer-selection": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 56147,
+            "sha256": "d18341f01a23e9bafb6e3a4f40ee924700c7674f5c9861c9abd3b1c8c7c87c6b",
+            "rgba_sha256": "1efecd739c03e4866d95d5e3334d1cd16251bcace5b81f7800ed9c3fe31ae557"
+          },
+          "rtl-selected-preedit": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 53542,
+            "sha256": "3d59d1cd2e49e7492fd29b2f2fd0e523aa0d180f6bd4a2269d76c132ae18989d",
+            "rgba_sha256": "f58a9dd5077e9feaa5f9419b5bbaa5d7a5a18bf6d7825639442b59bf9765f32a"
+          },
+          "rtl-clear-restores-hint": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "motion-docked-contained-rest": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 44164,
+            "sha256": "d0964367d614edc80356fd3af154437af270c7024e89fcf005cb423b93f24f62",
+            "rgba_sha256": "415e29ce1d10ca0884712f5cc7d56bc7f2c0c14f615bd03770ec2e628218ddbf"
+          },
+          "motion-fullscreen-divided-rest": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 32152,
+            "sha256": "1e9a97c90f29683f894d7e1bfc30961174225ecf8553692a08ded19eb49f44f4",
+            "rgba_sha256": "dcfbc3be5a50da02300bd44913e28d2f390ee1730f4098514e0df2606b2322bd"
+          },
+          "motion-docked-contained-entering": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 72413,
+            "sha256": "c5c396d659c268fd5d21838a0be9a859721fcf86f848195b32eee3d5f362fae0",
+            "rgba_sha256": "cc4a79576b59ee1ada73f503ea2afb68bd5e1607b0d35a8d1de715afb07d3a9d"
+          },
+          "motion-fullscreen-divided-entering": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 32776,
+            "sha256": "06c66e63e52198ee663c95dd642ecdcd789ef154ed778f0d9da2c9cd5e809385",
+            "rgba_sha256": "e7d9407f2e4bcf5dfd8217b76c7445cd44ddc0721ee3c86e33b96dfbcd9ca9d3"
+          },
+          "motion-docked-contained-expanded": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "motion-fullscreen-divided-expanded": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45964,
+            "sha256": "d4487eaf7fe096b5e0526272dc23bf296fbce0c97037deedac8d64d1832e1145",
+            "rgba_sha256": "552073cedbd166c0dceef90a65fe7664783f8d828ce2617122df6e160e5411c9"
+          },
+          "motion-docked-contained-exiting": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 37845,
+            "sha256": "8379b4dab6a9f6ba9e6d3a055b02c9ccd3fb3cdd08dd1b399996bfb2368817b9",
+            "rgba_sha256": "90a71b2704ae43060301a30dd9ab8cd17e7eb288016c81d24b3a83406cb2ae29"
+          },
+          "motion-fullscreen-divided-exiting": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 13607,
+            "sha256": "14d62acb4d073fe90113a0f80464463fcf34bd11445988e002a52dfda853f9df",
+            "rgba_sha256": "8d87e93df9b3d82477fe0b530582a63d05b76894a0bd29976217d7b4f79df26e"
+          },
+          "motion-docked-contained-reduced": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "motion-fullscreen-divided-reduced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45964,
+            "sha256": "d4487eaf7fe096b5e0526272dc23bf296fbce0c97037deedac8d64d1832e1145",
+            "rgba_sha256": "552073cedbd166c0dceef90a65fe7664783f8d828ce2617122df6e160e5411c9"
+          }
+        }
+      },
+      "page_errors": {
+        "showcase": {
+          "browser-smoke.json": 0,
+          "browser-ime.json": 0
+        },
+        "material": {
+          "browser-material-app-bar.json": 0,
+          "browser-material-bottom-sheet.json": 0,
+          "browser-material-button-group.json": 0,
+          "browser-material-card.json": 0,
+          "browser-material-carousel.json": 0,
+          "browser-material-date-picker-gestures.json": 0,
+          "browser-material-date-picker.json": 0,
+          "browser-material-date-range-picker.json": 0,
+          "browser-material-docked-date-picker.json": 0,
+          "browser-material-extended-fab.json": 0,
+          "browser-material-fab-menu.json": 0,
+          "browser-material-fab.json": 0,
+          "browser-material-list-actions.json": 0,
+          "browser-material-list-corners.json": 0,
+          "browser-material-list-expansion.json": 0,
+          "browser-material-list-media.json": 0,
+          "browser-material-list-reorder.json": 0,
+          "browser-material-list-ripple.json": 0,
+          "browser-material-lists-multi.json": 0,
+          "browser-material-lists.json": 0,
+          "browser-material-loading.json": 0,
+          "browser-material-progress.json": 0,
+          "browser-material-scroll-choice-fields.json": 0,
+          "browser-material-scroll-fields.json": 0,
+          "browser-material-scroll-loop-fields.json": 0,
+          "browser-material-scroll-modal-fields.json": 0,
+          "browser-material-scroll-pair-fields.json": 0,
+          "browser-material-scroll-popup-fields.json": 0,
+          "browser-material-search-overlay.json": 0,
+          "browser-material-side-sheet.json": 0,
+          "browser-material-split-button.json": 0,
+          "browser-material-time-baseline.json": 0,
+          "browser-material-time-dial-motion.json": 0,
+          "browser-material-time-dial.json": 0,
+          "browser-material-time-input.json": 0,
+          "browser-material-time-scroll.json": 0,
+          "browser-material-toolbar.json": 0,
+          "browser-material-tooltip.json": 0,
+          "browser-material-web-contrast-selection-browser.json": 0,
+          "browser-material-web-contrast.json": 0,
+          "browser-material.json": 0
+        }
+      },
+      "ime_line_endings": {
+        "authored": "ab\r\n你🦀\rZ",
+        "browser_value": "ab\n你🦀\nZ",
+        "steps": [
+          {
+            "key": "ArrowLeft",
+            "browser": [
+              1,
+              1
+            ],
+            "runtime": [
+              1,
+              1
+            ],
+            "direction": "forward"
+          },
+          {
+            "key": "Shift+ArrowLeft",
+            "browser": [
+              2,
+              3
+            ],
+            "runtime": [
+              4,
+              2
+            ],
+            "direction": "backward"
+          },
+          {
+            "key": "ArrowRight",
+            "browser": [
+              6,
+              6
+            ],
+            "runtime": [
+              11,
+              11
+            ],
+            "direction": "forward"
+          }
+        ]
+      },
+      "ime_cancellation": {
+        "select_all_survives_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 6
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_range_and_next_edit": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "preserved_stock_pngs": [
+        "material-web-contrast-popup-normal.png",
+        "material-web-contrast-popup-forced.png",
+        "material-web-contrast-popup-restored.png",
+        "material-web-contrast-preedit-underline-preedit-partial.png",
+        "material-web-contrast-selection-browser-native-arrow-forced.png",
+        "material-web-contrast-selection-browser-delayed-select-arrow-forced.png"
+      ]
+    },
+    "pull_request": {
+      "event": "pull_request",
+      "run": 45452814888,
+      "attempt": 1,
+      "url": "https://github.com/faberline/surface/actions/runs/45452814888",
+      "jobs": {
+        "browser-e2e": {
+          "id": 138654193599,
+          "url": "https://github.com/faberline/surface/actions/runs/45452814888/job/138654193599"
+        },
+        "build-and-behavior": {
+          "id": 138654194363,
+          "url": "https://github.com/faberline/surface/actions/runs/45452814888/job/138654194363"
+        }
+      },
+      "head": "fc233e9a592d886f56dbc1397234edeaded2331b",
+      "checkout_commit": "cbd608a2178ac5d1e66e80ceda52eea1552bddd2",
+      "checkout_tree": "35f17666034d0f39367dc3b139e06a927fca0455",
+      "cases": {
+        "smoke": {
+          "steps": 19,
+          "checks": 34
+        },
+        "ime": {
+          "steps": 20,
+          "checks": 77
+        },
+        "material": {
+          "steps": 254,
+          "checks": 17014
+        },
+        "bridge-native": {
+          "steps": 23,
+          "checks": 92
+        },
+        "bridge-native-compact": {
+          "steps": 24,
+          "checks": 93
+        },
+        "bridge-web": {
+          "steps": 24,
+          "checks": 94
+        },
+        "devtools-native": {
+          "steps": 17,
+          "checks": 192
+        },
+        "devtools-headless": {
+          "steps": 3,
+          "checks": 76
+        }
+      },
+      "total_checks": 17672,
+      "artifact": {
+        "id": 14951477471,
+        "name": "surface-e2e-artifacts",
+        "digest": "sha256:14c5e105e0fe978ad8c2442890e0bdef9995aedfacbe24fb497cf33604479e61"
+      },
+      "contrast": {
+        "browser": "Chrome/158.0.8127.88",
+        "adapter": {
+          "vendor": "google",
+          "architecture": "swiftshader",
+          "isFallbackAdapter": true
+        },
+        "forced_system_pairs": {
+          "canvas": {
+            "background": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "foreground": [
+              0,
+              0,
+              0,
+              255
+            ]
+          },
+          "button": {
+            "background": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "foreground": [
+              0,
+              0,
+              0,
+              255
+            ]
+          },
+          "highlight": {
+            "background": [
+              5,
+              0,
+              73,
+              204
+            ],
+            "foreground": [
+              255,
+              255,
+              255,
+              255
+            ]
+          }
+        },
+        "foreground_evidence": "browser",
+        "selection_seam_pixels": 12876,
+        "browser_arrows": {
+          "native_arrow_redraw": {
+            "before": {
+              "browser": [
+                3,
+                3
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_down": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_forced_redraw": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_up": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "restored_normal": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "keydown_event": {
+              "key": "ArrowRight",
+              "trusted": true,
+              "prevented": false
+            },
+            "scoped_select_delay": false,
+            "intercepted_select_events": 0,
+            "normal_canvas_sample": [
+              20,
+              18,
+              24
+            ],
+            "forced_canvas_sample": [
+              255,
+              255,
+              255
+            ],
+            "css_canvas": [
+              255,
+              255,
+              255,
+              255
+            ]
+          },
+          "delayed_select_redraw": {
+            "before": {
+              "browser": [
+                3,
+                3
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_down": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_forced_redraw": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                3,
+                3
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "after_key_up": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "restored_normal": {
+              "browser": [
+                4,
+                4
+              ],
+              "runtime": [
+                4,
+                4
+              ],
+              "direction": "none",
+              "value": "1688",
+              "composing": false,
+              "focused": true
+            },
+            "keydown_event": {
+              "key": "ArrowRight",
+              "trusted": true,
+              "prevented": false
+            },
+            "scoped_select_delay": true,
+            "intercepted_select_events": 0,
+            "normal_canvas_sample": [
+              20,
+              18,
+              24
+            ],
+            "forced_canvas_sample": [
+              255,
+              255,
+              255
+            ],
+            "css_canvas": [
+              255,
+              255,
+              255,
+              255
+            ]
+          },
+          "backward_range": {
+            "browser": [
+              3,
+              4
+            ],
+            "runtime": [
+              4,
+              3
+            ],
+            "direction": "backward",
+            "value": "1688",
+            "composing": false,
+            "focused": true
+          }
+        },
+        "preedit_underline": {
+          "source": "CDP synthetic composition; Chrome-resolved CSS colors",
+          "device_pixel_ratio": 2.0,
+          "physical_size": [
+            640,
+            800
+          ],
+          "face": [
+            18.0,
+            62.0,
+            284.0,
+            104.0
+          ],
+          "expected_ink": {
+            "canvas_text": [
+              0,
+              0,
+              0
+            ],
+            "highlight_text": [
+              255,
+              255,
+              255
+            ]
+          },
+          "system_colors": {
+            "scheme": "light dark",
+            "pairs": {
+              "canvas": {
+                "background": [
+                  255,
+                  255,
+                  255,
+                  255
+                ],
+                "foreground": [
+                  0,
+                  0,
+                  0,
+                  255
+                ]
+              },
+              "button": {
+                "background": [
+                  255,
+                  255,
+                  255,
+                  255
+                ],
+                "foreground": [
+                  0,
+                  0,
+                  0,
+                  255
+                ]
+              },
+              "highlight": {
+                "background": [
+                  5,
+                  0,
+                  73,
+                  204
+                ],
+                "foreground": [
+                  255,
+                  255,
+                  255,
+                  255
+                ]
+              }
+            },
+            "raw": {
+              "canvas": {
+                "background": "rgb(255, 255, 255)",
+                "foreground": "rgb(0, 0, 0)"
+              },
+              "button": {
+                "background": "rgb(255, 255, 255)",
+                "foreground": "rgb(0, 0, 0)"
+              },
+              "highlight": {
+                "background": "rgba(5, 0, 73, 0.8)",
+                "foreground": "rgb(255, 255, 255)"
+              }
+            }
+          },
+          "stroke_row": 281,
+          "selection_witness_row": 172,
+          "physical_spans": [
+            [
+              87,
+              130
+            ],
+            [
+              136,
+              228
+            ],
+            [
+              234,
+              276
+            ]
+          ],
+          "clear_outline_pixels": [
+            43,
+            92,
+            42
+          ],
+          "ordinary_ink_partial": [
+            43,
+            0,
+            42
+          ],
+          "selected_ink_middle": 92,
+          "highlighted_columns": 92,
+          "normal_pixel_mismatches": 0,
+          "preedit_clear": {
+            "runtime": {
+              "value": "1680",
+              "display_value": "1688",
+              "selection_anchor": 0,
+              "selection_cursor": 4,
+              "composing": true,
+              "preedit_range": {
+                "start": 0,
+                "end": 4
+              }
+            },
+            "textarea_selection": [
+              4,
+              4
+            ]
+          },
+          "preedit_partial": {
+            "runtime": {
+              "value": "1680",
+              "display_value": "1688",
+              "selection_anchor": 0,
+              "selection_cursor": 4,
+              "composing": true,
+              "preedit_range": {
+                "start": 0,
+                "end": 4
+              }
+            },
+            "textarea_selection": [
+              1,
+              3
+            ]
+          }
+        },
+        "independent_png_pixel_verification": true,
+        "popup_border": {
+          "exterior": [
+            255,
+            255,
+            255
+          ],
+          "edge": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              255,
+              255,
+              255
+            ],
+            [
+              255,
+              255,
+              255
+            ]
+          ],
+          "interior": [
+            255,
+            255,
+            255
+          ],
+          "expected_fill": [
+            255,
+            255,
+            255
+          ],
+          "expected_ink": [
+            0,
+            0,
+            0
+          ],
+          "border_present": true
+        },
+        "wheel_border": {
+          "exterior": [
+            255,
+            255,
+            255
+          ],
+          "edge": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              255,
+              255,
+              255
+            ],
+            [
+              255,
+              255,
+              255
+            ]
+          ],
+          "interior": [
+            255,
+            255,
+            255
+          ],
+          "expected_fill": [
+            255,
+            255,
+            255
+          ],
+          "expected_ink": [
+            0,
+            0,
+            0
+          ],
+          "border_present": true
+        },
+        "pngs": {
+          "popup-normal": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 50961,
+            "sha256": "382376b74b56bc779aa36e21d375244a0c3bfa01036fb737d9ef660e85318107"
+          },
+          "popup-forced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 43232,
+            "sha256": "6bc37b587c3a9eda0846bca7897504033df1a80e9adf3b21a6280ca92fbf5d13"
+          },
+          "popup-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 50961,
+            "sha256": "382376b74b56bc779aa36e21d375244a0c3bfa01036fb737d9ef660e85318107"
+          },
+          "popup-boundary": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 43232,
+            "sha256": "6bc37b587c3a9eda0846bca7897504033df1a80e9adf3b21a6280ca92fbf5d13"
+          },
+          "popup-synthetic-preedit": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44173,
+            "sha256": "3a26a22daf0a92dcc871b4c910a9f51947f1f5ab463f8eecf324ddd12748dff4"
+          },
+          "wheel-resting": {
+            "physical_size": [
+              1920,
+              1640
+            ],
+            "bytes": 57334,
+            "sha256": "56227d0b054dc931aa21cfdab2cf3a9c04ccb45089e5c64323f0afedee1c1dd2"
+          },
+          "wheel-focused": {
+            "physical_size": [
+              1920,
+              1640
+            ],
+            "bytes": 58048,
+            "sha256": "dc9ac41f955cfe40a04e1cff64ef0de7848280cc84e3c16fabef0052d3725451"
+          },
+          "wheel-disabled": {
+            "physical_size": [
+              1920,
+              1640
+            ],
+            "bytes": 54129,
+            "sha256": "645555a1ddfb50afa15a6fe884602be3e8d88eb38dfa518bb55cce1d636a6fba"
+          },
+          "selection-browser-forced-preedit": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 25638,
+            "sha256": "9e8619f2cfdc80e0cad2b4d3ebac121a82bdedd82d69fdfcbba1ffdbb22dc65c"
+          },
+          "selection-browser-native-arrow-forced": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26764,
+            "sha256": "571a5c72c2c91b0377f3e18cd04a1a1b6684b440925192c65f8477143e776ecd"
+          },
+          "selection-browser-delayed-select-arrow-forced": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26764,
+            "sha256": "571a5c72c2c91b0377f3e18cd04a1a1b6684b440925192c65f8477143e776ecd"
+          },
+          "selection-browser-normal-clear": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 31688,
+            "sha256": "eae6ff8a3c85d6ba72c4cfbe31152dc4ec49ab2c9bf18dd90bff3c8fe3ff75eb"
+          },
+          "selection-browser-normal-partial": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 31869,
+            "sha256": "83a12de50b001e76a6735744e8198b0160c097b6741f28f888e5d3de391426db"
+          },
+          "selection-browser-forced-partial": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 27284,
+            "sha256": "18de0f6da557d9708bcbb92656a4309475b323e6a84e5477ae54c6df4a9b6cee"
+          },
+          "selection-browser-forced-clear": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26762,
+            "sha256": "2efba1657c0c7ea92ced793276bd5636f8d4a0908958af6e46a483104f9a5289"
+          },
+          "selection-browser-forced-all": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 27188,
+            "sha256": "70421885edef9e25a105a3224d7e765ee10d3aab75c4eb54d0adcba4b1338de3"
+          },
+          "selection-browser-forced-prefix": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 26832,
+            "sha256": "939e8a7dcb89f8e9b7b766112affbe11f0bad273c41cf3df63cc1783a116b94d"
+          },
+          "selection-browser-forced-suffix": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 27171,
+            "sha256": "b7b60953e3537f628322a8b1b630578e6053b734046432bf3ad11311b336be03"
+          },
+          "selection-browser-normal-restored": {
+            "physical_size": [
+              400,
+              500
+            ],
+            "bytes": 31869,
+            "sha256": "83a12de50b001e76a6735744e8198b0160c097b6741f28f888e5d3de391426db"
+          },
+          "preedit-underline-plain-clear": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44623,
+            "sha256": "1044ed282c4491bfca0dd2b2bc29114685d82cb8737b5ce58d52a7248c6ca2ee"
+          },
+          "preedit-underline-plain-all": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45209,
+            "sha256": "67c58aa2db04150de17089f44d877ddd1e9f52ff6c98ecb33a5928b4482eed23"
+          },
+          "preedit-underline-plain-prefix": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44677,
+            "sha256": "867b9ebed695bd6f4f810fcd22c7f214e35714e487aa9655afd9f895eee17558"
+          },
+          "preedit-underline-plain-suffix": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45183,
+            "sha256": "719c38f788f1cfda228eef7cd9cbf810d2fdabac334fb5e237e07488d7b7be8f"
+          },
+          "preedit-underline-plain-partial": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45364,
+            "sha256": "5748a53c3def0c82a8f16e5bd926ba8d13cf687ad0a1b3f3bee452ff394a1597"
+          },
+          "preedit-underline-preedit-clear": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44644,
+            "sha256": "42406cdc133c2211f0724cdd5656b2815fc9a07c08785e0036c82b217dcbc0b4"
+          },
+          "preedit-underline-preedit-normal-before": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52771,
+            "sha256": "42cca6a33ba26a46f324eaa15c06ba733dd5699e9bb242596b22e6d755c93c9b"
+          },
+          "preedit-underline-preedit-partial": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45401,
+            "sha256": "cea48a0bcc7798912c68745ab32886ce13fe4fdcd6c51d59f1553e3d37b0ee44"
+          },
+          "preedit-underline-preedit-normal-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52771,
+            "sha256": "42cca6a33ba26a46f324eaa15c06ba733dd5699e9bb242596b22e6d755c93c9b"
+          }
+        }
+      },
+      "search": {
+        "browser": "Chrome/158.0.8127.88",
+        "adapter": {
+          "vendor": "google",
+          "architecture": "swiftshader",
+          "isFallbackAdapter": true
+        },
+        "documents": "search-doc-review",
+        "adaptive": {
+          "docked": [
+            40.0,
+            172.0,
+            520.0,
+            440.0
+          ],
+          "scroll_before": 55.0,
+          "scroll_after": 55.0,
+          "selection": {
+            "same": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2,
+            "direction": "backward"
+          },
+          "runtime": {
+            "value": "設計",
+            "display_value": "設計",
+            "selection_anchor": 6,
+            "selection_cursor": 3,
+            "composing": false,
+            "preedit_range": null
+          },
+          "preedit": {
+            "value": "設計",
+            "display_value": "設ㄐㄧ",
+            "selection_anchor": 6,
+            "selection_cursor": 3,
+            "composing": true,
+            "preedit_range": {
+              "start": 3,
+              "end": 9
+            }
+          },
+          "browser_preedit": {
+            "same": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3,
+            "direction": "forward"
+          },
+          "png": [
+            1200,
+            1440
+          ],
+          "web_trace": [
+            {
+              "type": "compositionstart",
+              "data": "計",
+              "value": "設計",
+              "start": 1,
+              "end": 2
+            },
+            {
+              "type": "compositionupdate",
+              "data": "ㄐㄧ",
+              "value": "設計",
+              "start": 1,
+              "end": 2
+            },
+            {
+              "type": "beforeinput",
+              "data": "ㄐㄧ",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設計",
+              "start": 1,
+              "end": 2
+            },
+            {
+              "type": "input",
+              "data": "ㄐㄧ",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "keydown",
+              "key": "Enter",
+              "isComposing": true,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "beforeinput",
+              "data": null,
+              "kind": "insertLineBreak",
+              "isComposing": false,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "compositionupdate",
+              "data": "定",
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "beforeinput",
+              "data": "定",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設ㄐㄧ",
+              "start": 1,
+              "end": 3
+            },
+            {
+              "type": "input",
+              "data": "定",
+              "kind": "insertCompositionText",
+              "isComposing": true,
+              "value": "設定",
+              "start": 2,
+              "end": 2
+            },
+            {
+              "type": "compositionend",
+              "data": "定",
+              "value": "設定",
+              "start": 2,
+              "end": 2
+            },
+            {
+              "type": "keydown",
+              "key": "Enter",
+              "isComposing": false,
+              "value": "設定",
+              "start": 2,
+              "end": 2
+            }
+          ]
+        },
+        "caret_clearance": {
+          "rtl_contained": {
+            "input": [
+              16.0,
+              16.0,
+              236.0,
+              48.0
+            ],
+            "caret": [
+              246.0,
+              16.0,
+              320.0,
+              48.0
+            ],
+            "scan_y": 40.0,
+            "ring": [
+              251.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "gap": [
+              248.5,
+              [
+                43,
+                41,
+                47
+              ]
+            ],
+            "caret_ink": [
+              246.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "background": [
+              43,
+              41,
+              47
+            ]
+          },
+          "rtl_divided": {
+            "input": [
+              4.0,
+              12.0,
+              260.0,
+              48.0
+            ],
+            "caret": [
+              258.0,
+              12.0,
+              320.0,
+              48.0
+            ],
+            "scan_y": 36.0,
+            "ring": [
+              263.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "gap": [
+              260.5,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "caret_ink": [
+              258.25,
+              [
+                230,
+                224,
+                233
+              ]
+            ],
+            "background": [
+              29,
+              27,
+              32
+            ]
+          },
+          "ltr_contained": {
+            "input": [
+              96.0,
+              176.0,
+              536.0,
+              48.0
+            ],
+            "caret": [
+              100.0,
+              188.0,
+              320.0,
+              24.0
+            ],
+            "scan_y": 200.0,
+            "ring": [
+              96.75,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "gap": [
+              99.0,
+              [
+                236,
+                230,
+                238
+              ]
+            ],
+            "caret_ink": [
+              100.25,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "background": [
+              236,
+              230,
+              238
+            ]
+          },
+          "ltr_divided": {
+            "input": [
+              84.0,
+              176.0,
+              560.0,
+              48.0
+            ],
+            "caret": [
+              88.0,
+              188.0,
+              320.0,
+              24.0
+            ],
+            "scan_y": 200.0,
+            "ring": [
+              84.75,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "gap": [
+              87.0,
+              [
+                236,
+                230,
+                238
+              ]
+            ],
+            "caret_ink": [
+              88.25,
+              [
+                29,
+                27,
+                32
+              ]
+            ],
+            "background": [
+              236,
+              230,
+              238
+            ]
+          }
+        },
+        "forced": {
+          "profiles": [
+            {
+              "profile": "docked-light-contained",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                96.0,
+                176.0,
+                536.0,
+                48.0
+              ],
+              "dialog": [
+                40.0,
+                172.0,
+                596.0,
+                440.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                100.0,
+                192.0,
+                63.0,
+                16.0
+              ],
+              "hint_pixels": 765,
+              "result_ink_pixels": 693,
+              "typed": [
+                101.0,
+                192.0,
+                16.0,
+                16.0
+              ],
+              "outside": [
+                173,
+                173,
+                173
+              ],
+              "detail": {
+                "gap": [
+                  173,
+                  173,
+                  173
+                ]
+              },
+              "normal_color": [
+                236,
+                230,
+                238
+              ],
+              "modal_preserved": true,
+              "png": [
+                1920,
+                1600
+              ]
+            },
+            {
+              "profile": "docked-light-divided",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                84.0,
+                176.0,
+                560.0,
+                48.0
+              ],
+              "dialog": [
+                28.0,
+                172.0,
+                620.0,
+                440.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                88.0,
+                192.0,
+                63.0,
+                16.0
+              ],
+              "hint_pixels": 765,
+              "result_ink_pixels": 693,
+              "typed": [
+                89.0,
+                192.0,
+                16.0,
+                16.0
+              ],
+              "outside": [
+                173,
+                173,
+                173
+              ],
+              "detail": {
+                "bounds": [
+                  28.0,
+                  228.0,
+                  620.0,
+                  1.0
+                ],
+                "divider": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "normal_color": [
+                236,
+                230,
+                238
+              ],
+              "modal_preserved": true,
+              "png": [
+                1920,
+                1600
+              ]
+            },
+            {
+              "profile": "full-rtl-dark-contained",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                16.0,
+                16.0,
+                236.0,
+                48.0
+              ],
+              "dialog": [
+                0.0,
+                0.0,
+                320.0,
+                400.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                119.5,
+                32.0,
+                127.5,
+                16.0
+              ],
+              "hint_pixels": 2447,
+              "result_ink_pixels": 3793,
+              "typed": [
+                183.5,
+                32.0,
+                63.5,
+                16.0
+              ],
+              "outside": [
+                255,
+                255,
+                255
+              ],
+              "detail": {
+                "gap": [
+                  255,
+                  255,
+                  255
+                ]
+              },
+              "normal_color": [
+                43,
+                41,
+                47
+              ],
+              "modal_preserved": true,
+              "png": [
+                640,
+                800
+              ]
+            },
+            {
+              "profile": "full-rtl-dark-divided",
+              "browser_palette": {
+                "scheme": "light dark",
+                "pairs": {
+                  "canvas": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "button": {
+                    "background": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "foreground": [
+                      0,
+                      0,
+                      0,
+                      255
+                    ]
+                  },
+                  "highlight": {
+                    "background": [
+                      5,
+                      0,
+                      73,
+                      204
+                    ],
+                    "foreground": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  }
+                },
+                "raw": {
+                  "canvas": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "button": {
+                    "background": "rgb(255, 255, 255)",
+                    "foreground": "rgb(0, 0, 0)"
+                  },
+                  "highlight": {
+                    "background": "rgba(5, 0, 73, 0.8)",
+                    "foreground": "rgb(255, 255, 255)"
+                  }
+                }
+              },
+              "input": [
+                4.0,
+                12.0,
+                260.0,
+                48.0
+              ],
+              "dialog": [
+                0.0,
+                0.0,
+                320.0,
+                400.0
+              ],
+              "fill": [
+                255,
+                255,
+                255
+              ],
+              "ring": [
+                [
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "corner": [
+                255,
+                255,
+                255
+              ],
+              "hint": [
+                131.5,
+                28.0,
+                127.5,
+                16.0
+              ],
+              "hint_pixels": 2447,
+              "result_ink_pixels": 3793,
+              "typed": [
+                195.5,
+                28.0,
+                63.5,
+                16.0
+              ],
+              "outside": [
+                255,
+                255,
+                255
+              ],
+              "detail": {
+                "bounds": [
+                  0.0,
+                  72.0,
+                  320.0,
+                  1.0
+                ],
+                "divider": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              "normal_color": [
+                29,
+                27,
+                32
+              ],
+              "modal_preserved": true,
+              "png": [
+                640,
+                800
+              ]
+            }
+          ],
+          "real_cdp_forced_colors": true,
+          "fit": {
+            "short": [
+              0.0,
+              0.0,
+              600.0,
+              280.0
+            ],
+            "docked": [
+              40.0,
+              172.0,
+              520.0,
+              440.0
+            ],
+            "draft": {
+              "value": "設",
+              "display_value": "設",
+              "selection_anchor": 3,
+              "selection_cursor": 3,
+              "composing": false,
+              "preedit_range": null
+            }
+          }
+        },
+        "motion": {
+          "manual_performance_time": true,
+          "profiles": [
+            {
+              "presentation": "docked-contained",
+              "initial": [
+                52.0,
+                172.0,
+                572.0,
+                56.0
+              ],
+              "halfway": [
+                46.0,
+                172.0,
+                584.0,
+                262.0
+              ],
+              "final": [
+                40.0,
+                172.0,
+                596.0,
+                440.0
+              ],
+              "entry": {
+                "moving": true,
+                "progress": 0.5361850261688232
+              },
+              "exit": {
+                "moving": true,
+                "progress": 0.2650817632675171
+              },
+              "leaving": [
+                49.0,
+                172.0,
+                578.0,
+                158.0
+              ],
+              "corner": {
+                "rest": [
+                  253,
+                  247,
+                  255
+                ],
+                "entering": [
+                  209,
+                  204,
+                  211
+                ],
+                "expanded": [
+                  172,
+                  168,
+                  173
+                ],
+                "exiting": [
+                  231,
+                  226,
+                  233
+                ]
+              },
+              "exit_dimensions": [
+                1920,
+                1600
+              ],
+              "reduced_exact_endpoints": true,
+              "editor_lifecycle": {
+                "rest": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": null,
+                  "focused": false
+                },
+                "open": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                },
+                "exit": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": "搜尋文件",
+                  "focused": false
+                },
+                "reopened": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                }
+              },
+              "unfocused_persistent_web_textarea_ax": null
+            },
+            {
+              "presentation": "fullscreen-divided",
+              "initial": [
+                28.0,
+                228.0,
+                264.0,
+                56.0
+              ],
+              "halfway": [
+                19.0,
+                155.0,
+                282.0,
+                166.0
+              ],
+              "final": [
+                0.0,
+                0.0,
+                320.0,
+                400.0
+              ],
+              "entry": {
+                "moving": true,
+                "progress": 0.3197437822818756
+              },
+              "exit": {
+                "moving": true,
+                "progress": 0.4638149440288544
+              },
+              "leaving": [
+                15.0,
+                122.0,
+                290.0,
+                216.0
+              ],
+              "corner": {
+                "rest": [
+                  253,
+                  247,
+                  255
+                ],
+                "entering": [
+                  253,
+                  247,
+                  255
+                ],
+                "expanded": [
+                  248,
+                  242,
+                  250
+                ],
+                "exiting": [
+                  253,
+                  247,
+                  255
+                ]
+              },
+              "exit_dimensions": [
+                640,
+                800
+              ],
+              "reduced_exact_endpoints": true,
+              "editor_lifecycle": {
+                "rest": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": null,
+                  "focused": false
+                },
+                "open": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                },
+                "exit": {
+                  "same": true,
+                  "hidden": true,
+                  "rects": 0,
+                  "label": "搜尋文件",
+                  "focused": false
+                },
+                "reopened": {
+                  "same": true,
+                  "hidden": false,
+                  "rects": 1,
+                  "label": "搜尋文件",
+                  "focused": true
+                }
+              },
+              "unfocused_persistent_web_textarea_ax": null
+            }
+          ]
+        },
+        "pngs": {
+          "docked-rest": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 44164,
+            "sha256": "d0964367d614edc80356fd3af154437af270c7024e89fcf005cb423b93f24f62",
+            "rgba_sha256": "415e29ce1d10ca0884712f5cc7d56bc7f2c0c14f615bd03770ec2e628218ddbf"
+          },
+          "compact-rest": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 44257,
+            "sha256": "1685fd216ba154a0df236f38013062e605149e7b6569b51cfffc30e2f16c0d9d",
+            "rgba_sha256": "9c586e744c8b1be7e38b4769924315e7abb83279f71fba09a9f4285b62d2f265"
+          },
+          "empty-chrome-ax": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 52381,
+            "sha256": "17a574d5da4c0cd25dc29be5a74268dd7b88d0fa09112e203a28c9585fbed602",
+            "rgba_sha256": "cada894dcb48185be7b6eed7a69c0e20a29ea69b7f6c9cb9dbbe0b30b77f7aba"
+          },
+          "live-centered-editor": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 49907,
+            "sha256": "2325c224699ad07002cb1da41d99bba5fe6f79cca679e2053dccd5147a1927c5",
+            "rgba_sha256": "d6b57bda9c59cf2b752043463547b6f56312bf1b52ac3b2ef4a3bc6f3ee11e4b"
+          },
+          "ltr-start-reference": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 49907,
+            "sha256": "2325c224699ad07002cb1da41d99bba5fe6f79cca679e2053dccd5147a1927c5",
+            "rgba_sha256": "d6b57bda9c59cf2b752043463547b6f56312bf1b52ac3b2ef4a3bc6f3ee11e4b"
+          },
+          "resize-pending-composition": {
+            "physical_size": [
+              1200,
+              1440
+            ],
+            "bytes": 73815,
+            "sha256": "7b8905fa88f7c91bf37cb6839911f4e9251f11948d808560846511f186859948",
+            "rgba_sha256": "59a50c7b8fdbc6b6f8c23cd9fef445e46c8042f45657a58a9d5e3380802f6399"
+          },
+          "docked-light-contained": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "compact-dark-rtl-contained": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "caret-ltr-contained": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "caret-rtl-contained": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "docked-light-contained-normal": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "full-rtl-dark-contained-normal": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "docked-light-contained-forced": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 87829,
+            "sha256": "1956e2cee085f48727d95d582218f890f289731a8c536ea123213c345656e3f6",
+            "rgba_sha256": "3958095e64038bfa9d859a9d7f2f1b90b6801363057d50366207327c771006de"
+          },
+          "full-rtl-dark-contained-forced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52223,
+            "sha256": "5772a33ffbe7e3ff32b8b1782b8f27e073c8eeb8ac2fd8916f0c11085c8b9147",
+            "rgba_sha256": "92a19536e24f74275b2acbd28d59504ac4c1331b3c688b776dbd92d7d4ae9e4a"
+          },
+          "docked-light-contained-forced-typed": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 74769,
+            "sha256": "a10d618aee0995882efc0cc0b11c6e2efb3382809fde181c7db9e8d937898098",
+            "rgba_sha256": "dc790d2f0cd49c237449655dea2a752fafdbd4827e27763aefe516fb165adfae"
+          },
+          "full-rtl-dark-contained-forced-typed": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 50078,
+            "sha256": "34f64de35202e83ebd85d57d813467f65b29f7bbd8d70ae72c1efd5218edd213",
+            "rgba_sha256": "986d74cd8c12635cb11ddf6808016d761ae804ecdd643dc730c2e717f9dc34b1"
+          },
+          "docked-light-contained-normal-restored": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "full-rtl-dark-contained-normal-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "docked-light-divided": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "compact-dark-rtl-divided": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "caret-ltr-divided": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "caret-rtl-divided": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "docked-light-divided-normal": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "full-rtl-dark-divided-normal": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "docked-light-divided-forced": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 84098,
+            "sha256": "80e5a18d7bc2a14ef65c13af902c545e5f0b2d03e8ee15ad7215643fb5225752",
+            "rgba_sha256": "2425f9ae6cee09ac1f9db116ee2c06cddd572d0e7d0e0e2fe87db45946d3ee78"
+          },
+          "full-rtl-dark-divided-forced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 49742,
+            "sha256": "0d85515b2f478382a764cf53be3ec03c38cd96a7b46af25922dad08b280a3fd1",
+            "rgba_sha256": "f55f2d2941142fedc322e12a70f3117b01d5745145d0b09cadc73722e14f56d9"
+          },
+          "docked-light-divided-forced-typed": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 71028,
+            "sha256": "dabfb04f4c522f2459a1f364b2121e0e8196f2a808727e6278fa0d9b074c718d",
+            "rgba_sha256": "ed874fc1ab2411587543f4088ac99d111b4533e7410cc7b3f243ff6038ce19a5"
+          },
+          "full-rtl-dark-divided-forced-typed": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 47540,
+            "sha256": "ffef1f73ed9654d24a3f343a13df2c64e659bcd322c1ad84107f34e78c2e1c96",
+            "rgba_sha256": "b34d24c91f12f1843fc442fe4ef759e1e12e665d84d6e7509127f0d8e80959f7"
+          },
+          "docked-light-divided-normal-restored": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93111,
+            "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+            "rgba_sha256": "a789d6066b2e1e578cb3d7b6ed1bb53678d1986c37f72d33c1bb712f0b24f6ea"
+          },
+          "full-rtl-dark-divided-normal-restored": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 54052,
+            "sha256": "473c5f2904e3c68516917ee3aa928b04f825e6a9c024765ca25f7c42b29d4907",
+            "rgba_sha256": "d42a93f02481934356b858b3fea05ca6babe1230414011a9b0d4a74a2d383d38"
+          },
+          "rtl-empty-hint": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "rtl-empty-preedit": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 52594,
+            "sha256": "0b7c8a7b05c015c1ceac1e48d6017435437636eb45cbb2d8fb9a0b86be3474de",
+            "rgba_sha256": "789277df80cd4356b9eebbbd930741d258871547c6f5229273f038c64e54d7ef"
+          },
+          "rtl-typed-query": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 55867,
+            "sha256": "3627a29beec5779e750dceaaca1840eb37ecf3b0da6bb4987ca8a47c30c3f49c",
+            "rgba_sha256": "1b7bf174bed8f65bd8772013b0ca14cfda91d8ea26d1d0cbb4d497d4e99ead7b"
+          },
+          "rtl-pointer-selection": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 56147,
+            "sha256": "d18341f01a23e9bafb6e3a4f40ee924700c7674f5c9861c9abd3b1c8c7c87c6b",
+            "rgba_sha256": "1efecd739c03e4866d95d5e3334d1cd16251bcace5b81f7800ed9c3fe31ae557"
+          },
+          "rtl-selected-preedit": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 53542,
+            "sha256": "3d59d1cd2e49e7492fd29b2f2fd0e523aa0d180f6bd4a2269d76c132ae18989d",
+            "rgba_sha256": "f58a9dd5077e9feaa5f9419b5bbaa5d7a5a18bf6d7825639442b59bf9765f32a"
+          },
+          "rtl-clear-restores-hint": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 58451,
+            "sha256": "bbeb2cedd32dfc1551563d8605642b5bdb6a1d6313f756f63c0dcf724ef42fe4",
+            "rgba_sha256": "8068c279e2150bd5fb1decaac8e10039615bb419d9a91d6bd0e273d3817b8895"
+          },
+          "motion-docked-contained-rest": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 44164,
+            "sha256": "d0964367d614edc80356fd3af154437af270c7024e89fcf005cb423b93f24f62",
+            "rgba_sha256": "415e29ce1d10ca0884712f5cc7d56bc7f2c0c14f615bd03770ec2e628218ddbf"
+          },
+          "motion-fullscreen-divided-rest": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 32152,
+            "sha256": "1e9a97c90f29683f894d7e1bfc30961174225ecf8553692a08ded19eb49f44f4",
+            "rgba_sha256": "dcfbc3be5a50da02300bd44913e28d2f390ee1730f4098514e0df2606b2322bd"
+          },
+          "motion-docked-contained-entering": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 72413,
+            "sha256": "c5c396d659c268fd5d21838a0be9a859721fcf86f848195b32eee3d5f362fae0",
+            "rgba_sha256": "cc4a79576b59ee1ada73f503ea2afb68bd5e1607b0d35a8d1de715afb07d3a9d"
+          },
+          "motion-fullscreen-divided-entering": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 32776,
+            "sha256": "06c66e63e52198ee663c95dd642ecdcd789ef154ed778f0d9da2c9cd5e809385",
+            "rgba_sha256": "e7d9407f2e4bcf5dfd8217b76c7445cd44ddc0721ee3c86e33b96dfbcd9ca9d3"
+          },
+          "motion-docked-contained-expanded": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "motion-fullscreen-divided-expanded": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45964,
+            "sha256": "d4487eaf7fe096b5e0526272dc23bf296fbce0c97037deedac8d64d1832e1145",
+            "rgba_sha256": "552073cedbd166c0dceef90a65fe7664783f8d828ce2617122df6e160e5411c9"
+          },
+          "motion-docked-contained-exiting": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 37845,
+            "sha256": "8379b4dab6a9f6ba9e6d3a055b02c9ccd3fb3cdd08dd1b399996bfb2368817b9",
+            "rgba_sha256": "90a71b2704ae43060301a30dd9ab8cd17e7eb288016c81d24b3a83406cb2ae29"
+          },
+          "motion-fullscreen-divided-exiting": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 13607,
+            "sha256": "14d62acb4d073fe90113a0f80464463fcf34bd11445988e002a52dfda853f9df",
+            "rgba_sha256": "8d87e93df9b3d82477fe0b530582a63d05b76894a0bd29976217d7b4f79df26e"
+          },
+          "motion-docked-contained-reduced": {
+            "physical_size": [
+              1920,
+              1600
+            ],
+            "bytes": 93827,
+            "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+            "rgba_sha256": "00eb883d7e60a9545ddffe892dc1b332fd569f1b8acc35e33f4c415640740b5f"
+          },
+          "motion-fullscreen-divided-reduced": {
+            "physical_size": [
+              640,
+              800
+            ],
+            "bytes": 45964,
+            "sha256": "d4487eaf7fe096b5e0526272dc23bf296fbce0c97037deedac8d64d1832e1145",
+            "rgba_sha256": "552073cedbd166c0dceef90a65fe7664783f8d828ce2617122df6e160e5411c9"
+          }
+        }
+      },
+      "page_errors": {
+        "showcase": {
+          "browser-smoke.json": 0,
+          "browser-ime.json": 0
+        },
+        "material": {
+          "browser-material-app-bar.json": 0,
+          "browser-material-bottom-sheet.json": 0,
+          "browser-material-button-group.json": 0,
+          "browser-material-card.json": 0,
+          "browser-material-carousel.json": 0,
+          "browser-material-date-picker-gestures.json": 0,
+          "browser-material-date-picker.json": 0,
+          "browser-material-date-range-picker.json": 0,
+          "browser-material-docked-date-picker.json": 0,
+          "browser-material-extended-fab.json": 0,
+          "browser-material-fab-menu.json": 0,
+          "browser-material-fab.json": 0,
+          "browser-material-list-actions.json": 0,
+          "browser-material-list-corners.json": 0,
+          "browser-material-list-expansion.json": 0,
+          "browser-material-list-media.json": 0,
+          "browser-material-list-reorder.json": 0,
+          "browser-material-list-ripple.json": 0,
+          "browser-material-lists-multi.json": 0,
+          "browser-material-lists.json": 0,
+          "browser-material-loading.json": 0,
+          "browser-material-progress.json": 0,
+          "browser-material-scroll-choice-fields.json": 0,
+          "browser-material-scroll-fields.json": 0,
+          "browser-material-scroll-loop-fields.json": 0,
+          "browser-material-scroll-modal-fields.json": 0,
+          "browser-material-scroll-pair-fields.json": 0,
+          "browser-material-scroll-popup-fields.json": 0,
+          "browser-material-search-overlay.json": 0,
+          "browser-material-side-sheet.json": 0,
+          "browser-material-split-button.json": 0,
+          "browser-material-time-baseline.json": 0,
+          "browser-material-time-dial-motion.json": 0,
+          "browser-material-time-dial.json": 0,
+          "browser-material-time-input.json": 0,
+          "browser-material-time-scroll.json": 0,
+          "browser-material-toolbar.json": 0,
+          "browser-material-tooltip.json": 0,
+          "browser-material-web-contrast-selection-browser.json": 0,
+          "browser-material-web-contrast.json": 0,
+          "browser-material.json": 0
+        }
+      },
+      "ime_line_endings": {
+        "authored": "ab\r\n你🦀\rZ",
+        "browser_value": "ab\n你🦀\nZ",
+        "steps": [
+          {
+            "key": "ArrowLeft",
+            "browser": [
+              1,
+              1
+            ],
+            "runtime": [
+              1,
+              1
+            ],
+            "direction": "forward"
+          },
+          {
+            "key": "Shift+ArrowLeft",
+            "browser": [
+              2,
+              3
+            ],
+            "runtime": [
+              4,
+              2
+            ],
+            "direction": "backward"
+          },
+          {
+            "key": "ArrowRight",
+            "browser": [
+              6,
+              6
+            ],
+            "runtime": [
+              11,
+              11
+            ],
+            "direction": "forward"
+          }
+        ]
+      },
+      "ime_cancellation": {
+        "select_all_survives_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_range_and_next_edit": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "preserved_stock_pngs": [
+        "material-web-contrast-popup-normal.png",
+        "material-web-contrast-popup-forced.png",
+        "material-web-contrast-popup-restored.png",
+        "material-web-contrast-preedit-underline-preedit-partial.png",
+        "material-web-contrast-selection-browser-native-arrow-forced.png",
+        "material-web-contrast-selection-browser-delayed-select-arrow-forced.png"
+      ]
+    }
+  }
+}

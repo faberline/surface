@@ -1,0 +1,16 @@
+{
+  "checkout_commit": "fc233e9a592d886f56dbc1397234edeaded2331b",
+  "steps": [
+    "cargo xtask provenance",
+    "cargo fmt --all --check",
+    "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "cargo test --locked --workspace --all-features",
+    "cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+    "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+    "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract"
+  ],
+  "test_summaries": 168,
+  "workspace_test_cases_passed": 1235,
+  "workspace_test_cases_ignored": 12,
+  "reported_job_status": "success"
+}

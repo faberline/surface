@@ -1,0 +1,49 @@
+2026-11-24T17:49:32.0679353Z ##[group]Operating System
+2026-11-24T17:49:32.0679732Z Ubuntu
+2026-11-24T17:49:34.6071351Z [command]/usr/bin/git log -1 --format=%H
+2026-11-24T17:49:34.6093589Z fc233e9a592d886f56dbc1397234edeaded2331b
+2026-11-24T17:51:01.7925989Z ##[group]Run xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e
+2026-11-24T17:54:24.9453912Z case smoke ... ok (19 steps, 34 checks, 3.2s)
+2026-11-24T17:54:25.1332595Z   [I1] Ready; click name → textarea focused
+2026-11-24T17:54:25.1660327Z   [I2] record composition and input events
+2026-11-24T17:54:25.1701596Z   [I3] compose ㄓㄨㄥ → preedit, composing, empty value
+2026-11-24T17:54:25.1911532Z   [I4] compose 中文 → preedit; screenshot
+2026-11-24T17:54:25.4514331Z   [I5] DOM export during preedit
+2026-11-24T17:54:25.4609699Z   [I6] textarea position matches input_caret()
+2026-11-24T17:54:25.4615898Z   [I7] commit 中文
+2026-11-24T17:54:25.4634405Z   [I8] setSelectionRange(0,1) → bytes 0..3
+2026-11-24T17:54:25.4904193Z   [I9] compose and commit 台 → 台文
+2026-11-24T17:54:25.5061895Z   [I10] compose ㄅㄆ then cancel → value kept
+2026-11-24T17:54:25.5119231Z   [I11] select all, commit text with ZWJ emoji and combining mark
+2026-11-24T17:54:25.9361171Z   [I12] Backspace deletes one grapheme at a time
+2026-11-24T17:54:25.9483403Z   [I13] undo and redo
+2026-11-24T17:54:25.9536076Z   [I14] select all, commit mixed scripts
+2026-11-24T17:54:25.9570689Z   [I15] compose ㄅ then click increment → composition cancelled
+2026-11-24T17:54:26.1831098Z   [I16] click name again, select all, commit; screenshot
+2026-11-24T17:54:26.5103223Z   [I17] final DOM export
+2026-11-24T17:54:26.5200211Z   [I18] events include composition and input
+2026-11-24T17:54:26.5217544Z   [I19] no page errors; evidence JSON
+2026-11-24T17:54:26.5227350Z   [I20] authored line endings keep directed browser and Rust selections
+2026-11-24T17:54:26.6423715Z case ime ... ok (20 steps, 77 checks, 1.7s)
+2026-11-24T18:08:23.1674276Z   [M241] the first ready browser state accepts Forced over More and keeps all three exact system pairs
+2026-11-24T18:08:24.7839978Z   [M242] live browser system pairs recolor actual popup Canvas paint and then restore Normal
+2026-11-24T18:08:30.3384553Z   [M243] live contrast preserves focused invalid popup drafts and active synthetic preedit
+2026-11-24T18:08:36.5775924Z   [M244] the popup edge remains visible when its forced fill and the surrounding Canvas match
+2026-11-24T18:08:41.0541355Z   [M245] the resting wheel has its own forced edge, clipped neighbor ink and a real disabled state
+2026-11-24T18:08:44.9411384Z   [M246] the actual partial text selection uses paired browser paint at 1.25 DPR and restores Normal
+2026-11-24T18:08:54.7583787Z   [M247] the actual preedit underline switches ink inside its forced-color selection
+2026-11-24T18:09:05.4720892Z   [M248] docked Contained and Divided styles draw real light scrim, gap and divider
+2026-11-24T18:09:12.0414145Z   [M249] 320 dp Dark RTL 200% Full-screen Contained and Divided preserve the 48 dp input/navigation controls
+2026-11-24T18:09:18.7231753Z   [M250] real wheel, native selection and synthetic preedit survive the 599→600 dp breakpoint
+2026-11-24T18:09:24.5513069Z   [M251] Chrome AX, trusted Tab, real disabled pointer, result ID and scrim dismissal
+2026-11-24T18:09:34.1517345Z   [M252] ArrowDown jumps to first enabled result only, and Canvas glyph and textarea caret center
+2026-11-24T18:09:40.7712676Z   [M253] RTL actual glyphs, pointer selection, composition and separated focus and caret
+2026-11-24T18:09:56.4318144Z   [M254] four Search style/presentation combinations use real Chrome system colors
+2026-11-24T18:10:23.4987846Z   [M255] real Search entry and exit move through pixels; Reduce Motion snaps to both endpoints
+2026-11-24T18:10:42.1571629Z case material ... ok (254 steps, 17014 checks, 975.5s)
+2026-11-24T18:10:45.7208388Z case bridge-native ... ok (23 steps, 92 checks, 3.6s)
+2026-11-24T18:10:47.6429203Z case bridge-native-compact ... ok (24 steps, 93 checks, 1.9s)
+2026-11-24T18:10:50.8436238Z case bridge-web ... ok (24 steps, 94 checks, 3.2s)
+2026-11-24T18:10:53.7281820Z case devtools-native ... ok (17 steps, 192 checks, 2.9s)
+2026-11-24T18:10:54.5759455Z case devtools-headless ... ok (3 steps, 76 checks, 0.8s)
+2026-11-24T18:10:54.7214213Z e2e result: 8 passed; 0 failed; 17672 checks;
