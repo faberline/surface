@@ -165,7 +165,8 @@ does not change application state.
 | `plain_tooltip` / `rich_tooltip` | Anchored descriptive text or a rich popup with optional title, caret and action |
 | `navigation_rail` | Classic 80 dp rail with a 56 × 32 dp indicator, controlled selection, arrow focus and named destinations. The vector item builder supports 24 dp icons and scaled labels. |
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
-| `navigation_bar` / `navigation_bar_item` | Three to five destinations; selected and disabled item; 64x32 active indicator; arrows move focus; light and dark; text-glyph icons, no badge, ripple or hide-on-scroll |
+| `navigation_bar` / `navigation_bar_item` | Baseline 80 dp bar with a 64 × 32 dp active indicator and arrow-key focus. Destination builders also support vector icons and badges. |
+| `flexible_navigation_bar` | Compact Expressive bar with three to five equal destinations, Tab focus and labels that grow with text |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
 | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
 | `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
@@ -263,6 +264,36 @@ The variant and size references are the [Material 3 badge catalog](https://m3.ma
 and the [AndroidX badge tokens](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/tokens/BadgeTokens.kt).
 The [pinned AndroidX placement](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Badge.kt#104)
 sets the overlap with the top and trailing edges.
+
+## Flexible navigation bar
+
+Use `Theme::flexible_navigation_bar` for the compact Expressive layout.
+Pass the exact available width, stable ID, localized landmark name and
+direction in `FlexibleNavigationBarOptions`. Supply three to five
+`NavigationRailItem` values with a stable ID, label, vector icon and
+selection message. You can supply a separate accessible name when the
+visible label needs more context.
+
+The bar starts at 64 dp. It uses the Surface Container color and Level 2
+elevation. Icons are 24 dp. The selected indicator is 56 × 32 dp. Each
+label uses Label Medium and wraps within its equal-width destination. The
+bar grows when the labels wrap. The selected label also requests a heavier
+weight from the host's fonts.
+
+Place the bar at the bottom of the layout. Give the page above it its own
+scroll area so text scaling can grow the bar. The builder returns `None`
+at widths of 600 dp or more, when a destination would be narrower than
+56 dp, or when the count falls outside the supported range. Use another
+navigation layout in those cases.
+
+Tab moves through enabled destinations in reading order. Enter, Space
+and pointer input send the destination's message. The application updates
+the selection and page. The chosen destination exposes the current page.
+
+Open **彈性導覽列** in the Gallery's **色彩** tab. Try three, four and five
+destinations with large text and right-to-left layout.
+[Material 3 Navigation Bar specifications](https://m3.material.io/components/navigation-bar/specs) ·
+[Accessibility](https://m3.material.io/components/navigation-bar/accessibility)
 
 ## Navigation drawers
 

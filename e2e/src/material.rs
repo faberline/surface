@@ -36,6 +36,8 @@ mod material_extended_fab;
 mod material_fab;
 #[path = "material_fab_menu.rs"]
 mod material_fab_menu;
+#[path = "material_flexible_navigation_bar.rs"]
+mod material_flexible_navigation_bar;
 #[path = "material_list_actions.rs"]
 mod material_list_actions;
 #[path = "material_list_corners.rs"]
@@ -124,7 +126,7 @@ pub const STEPS: &[&str] = &[
     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
-    "M263", "M264", "M265", "M266", "M267", "M268", "M269",
+    "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -242,7 +244,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_search_overlay::run(env, chrome, &url).await?;
     material_dialog::run(env, chrome, &url).await?;
     material_divider::run(env, chrome, &url).await?;
-    material_command_menu::run(env, chrome, &url).await
+    material_command_menu::run(env, chrome, &url).await?;
+    material_flexible_navigation_bar::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

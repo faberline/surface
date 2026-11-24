@@ -185,7 +185,7 @@ fn navigation_inks(theme: &Theme, state: ChoiceState) -> (Color, Color) {
 
 const NAVIGATION_INDICATOR_HEIGHT: f32 = 32.;
 
-fn navigation_indicator(theme: &Theme, width: f32, selected: bool) -> Style {
+pub(crate) fn navigation_indicator(theme: &Theme, width: f32, selected: bool) -> Style {
     Style::row()
         .align(Align::Center)
         .justify(Align::Center)
