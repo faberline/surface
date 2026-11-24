@@ -113,6 +113,9 @@ impl DialogDemo {
         let next = Rect::new(0., 0., width, height);
         let changed = self.viewport != next;
         self.viewport = next;
+        if changed {
+            self.fab_anchor = None;
+        }
         self.visible && changed
     }
 
@@ -162,10 +165,10 @@ impl DialogDemo {
             return AnimationUpdate::default();
         }
         let previous_anchor = self.fab_anchor;
-        if frame
+        let current_layout = frame
             .layout
-            .is_some_and(|layout| layout.viewport == self.viewport)
-        {
+            .is_some_and(|layout| layout.viewport == self.viewport);
+        if current_layout {
             self.fab_anchor = FullScreenDialogAnchor::measured(
                 frame,
                 FAB_OPEN,
@@ -180,6 +183,9 @@ impl DialogDemo {
         let mut update = self
             .full_motion
             .advance(frame, editor_open, anchor, self.viewport);
+        // Animation sees the previous layout. After a rebuild, schedule the
+        // measurement even when the motion is idle or reduced.
+        update.request_next |= is_full && !current_layout;
         if self.retiring_editor.is_some() && (!is_full || !self.full_motion.should_mount(false)) {
             self.retiring_editor = None;
             update.rebuild = true;
@@ -217,7 +223,10 @@ impl DialogDemo {
                 self.transform_preview = matches!(event, ShowTransform);
             }
             Back => self.leave(),
-            ToggleDirection => self.rtl = !self.rtl,
+            ToggleDirection => {
+                self.rtl = !self.rtl;
+                self.fab_anchor = None;
+            }
             ToggleLargeText => self.large_text = !self.large_text,
             OpenBasic => {
                 self.reset_full_motion();
@@ -874,6 +883,42 @@ mod tests {
         }
         draw(&mut runtime, viewport);
         runtime
+    }
+
+    #[test]
+    fn resting_fab_remeasures_after_resize_without_an_input_event() {
+        let wide = (960., 1800.);
+        let compact = (320., 400.);
+        for reduced in [false, true] {
+            let mut runtime = transform_route(wide, true);
+            runtime.set_reduced_motion(reduced);
+            assert_eq!(
+                runtime.app().dialog_demo.fab_anchor.unwrap().bounds,
+                Rect::new(24., 1720., 56., 56.)
+            );
+
+            timed_frame(&mut runtime, compact, 100.);
+            let fab = rect(&runtime, FAB_OPEN);
+            assert_eq!(fab, Rect::new(24., 320., 56., 56.));
+            assert!(runtime.needs_frame(), "the new layout needs a measurement");
+            assert!(runtime.app().dialog_demo.fab_anchor.is_none());
+
+            timed_frame(&mut runtime, compact, 116.);
+            assert_eq!(runtime.app().dialog_demo.fab_anchor.unwrap().bounds, fab);
+            assert!(!runtime.needs_frame(), "the measured preview can stay idle");
+
+            runtime.activate("dialog-demo-rtl").unwrap();
+            timed_frame(&mut runtime, compact, 132.);
+            assert!(runtime.needs_frame());
+            assert!(runtime.app().dialog_demo.fab_anchor.is_none());
+            timed_frame(&mut runtime, compact, 148.);
+            assert_eq!(
+                runtime.app().dialog_demo.fab_anchor.unwrap().bounds,
+                Rect::new(240., 320., 56., 56.)
+            );
+            timed_frame(&mut runtime, compact, 800.);
+            assert!(!runtime.needs_frame());
+        }
     }
 
     #[test]
