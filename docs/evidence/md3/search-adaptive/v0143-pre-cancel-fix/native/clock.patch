@@ -1,0 +1,57 @@
+--- a/crates/surface-platform/src/headless.rs
++++ b/crates/surface-platform/src/headless.rs
+@@ -1,5 +1,4 @@
+ use crate::{devtools::DevtoolsServer, screenshot, HostError};
+-use std::time::Instant;
+ use surface_app::{Application, Runtime};
+ use surface_devtools_protocol::{ErrorCode, Reply, PAGE_SCREENSHOT, VERSION};
+ use surface_wgpu::{Capture, Renderer};
+@@ -26,14 +25,13 @@
+     let mut renderer =
+         pollster::block_on(Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm))?;
+ 
+-    runtime.set_reduced_motion(true);
+     runtime.set_host_methods(&[PAGE_SCREENSHOT]);
+-    let start = Instant::now();
+-    let draw = |runtime: &mut Runtime<A>, renderer: &mut Renderer| {
+-        runtime.set_time(start.elapsed().as_secs_f64() * 1_000.);
++    let mut clock = 0.;
++    let draw = |runtime: &mut Runtime<A>, renderer: &mut Renderer, clock| {
++        runtime.set_time(clock);
+         runtime.render_extended(width as f32, height as f32, &mut renderer.text)
+     };
+-    draw(&mut runtime, &mut renderer)?;
++    draw(&mut runtime, &mut renderer, clock)?;
+ 
+     let (_server, requests) = DevtoolsServer::start_queued(path, runtime.app().title())?;
+     for (request, reply) in requests {
+@@ -46,7 +44,19 @@
+             ));
+             continue;
+         }
+-        let frame = match draw(&mut runtime, &mut renderer) {
++        // Scratch-only, authenticated replay control. The stock host keeps Reduce Motion.
++        if request.method == "Test.setClock" {
++            let next = request.params.get("now_ms").and_then(serde_json::Value::as_f64);
++            let response = if let Some(next) = next.filter(|time| time.is_finite() && *time >= clock) {
++                clock = next;
++                Reply::ok(id, serde_json::json!({"now_ms": clock}))
++            } else {
++                Reply::error(id, ErrorCode::InvalidParams, "expected a finite nondecreasing clock")
++            };
++            reply.send(response);
++            continue;
++        }
++        let frame = match draw(&mut runtime, &mut renderer, clock) {
+             Ok(frame) => frame,
+             Err(error) => {
+                 reply.send(Reply::error(id, ErrorCode::RenderFailed, error.to_string()));
+@@ -66,7 +76,7 @@
+         let mutating = request.method.starts_with("Action.");
+         let response = runtime.execute_devtools(request);
+         if mutating && response.ok {
+-            if let Err(error) = draw(&mut runtime, &mut renderer) {
++            if let Err(error) = draw(&mut runtime, &mut renderer, clock) {
+                 reply.send(Reply::error(
+                     id,
+                     ErrorCode::RenderFailed,
