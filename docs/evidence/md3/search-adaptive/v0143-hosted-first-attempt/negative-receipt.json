@@ -1,0 +1,855 @@
+{
+  "head": "2a63788e80bba537a271f5ace2514f5a9db53756",
+  "tree": "433cd5d4937d66154a323931932a17d70a863f7d",
+  "base": "eacb33d06269a0b0a75c3c13f4de82de05f19031",
+  "runs": {
+    "pull_request": {
+      "run": 45447002788,
+      "url": "https://github.com/faberline/surface/actions/runs/45447002788",
+      "build_job": 138633408522,
+      "browser_job": 138633409256,
+      "build": {
+        "checkout_commit": "e8c6138e836d5c23a55692d2aae9f7931c68f260",
+        "steps": [
+          "cargo xtask provenance",
+          "cargo fmt --all --check",
+          "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "cargo test --locked --workspace --all-features",
+          "cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract"
+        ],
+        "test_summaries": 168,
+        "workspace_test_cases_passed": 1235,
+        "workspace_test_cases_ignored": 12
+      },
+      "checkout_commit": "e8c6138e836d5c23a55692d2aae9f7931c68f260",
+      "checkout_tree": "433cd5d4937d66154a323931932a17d70a863f7d",
+      "head": "2a63788e80bba537a271f5ace2514f5a9db53756",
+      "attempt": 1,
+      "artifact": {
+        "digest": "sha256:5bdb1bdadb4aacb75f11a0f589c58cd5599a238ca568740b387b2a6e7a29e95b",
+        "expired": false,
+        "id": 14949016291,
+        "name": "surface-e2e-artifacts",
+        "size_in_bytes": 50504683,
+        "workflow_run": {
+          "head_branch": "codex/md3-search-adaptive",
+          "head_repository_id": 1444489189,
+          "head_sha": "2a63788e80bba537a271f5ace2514f5a9db53756",
+          "id": 45447002788,
+          "repository_id": 1444489189
+        }
+      },
+      "raw_archive_sha256_verified": true,
+      "adapter_observed": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "isFallbackAdapter": true
+      },
+      "search_input_and_canvas_before_assertion": {
+        "profiles": [
+          {
+            "style": "contained",
+            "dimensions": [
+              1920,
+              1600
+            ],
+            "anchor": [
+              28.0,
+              172.0,
+              620.0,
+              56.0
+            ],
+            "dialog": [
+              40.0,
+              172.0,
+              596.0,
+              440.0
+            ],
+            "bar": [
+              40.0,
+              172.0,
+              596.0,
+              56.0
+            ],
+            "results": [
+              44.0,
+              234.0,
+              588.0,
+              374.0
+            ],
+            "input": [
+              96.0,
+              176.0,
+              536.0,
+              48.0
+            ],
+            "back": [
+              44.0,
+              176.0,
+              48.0,
+              48.0
+            ],
+            "outside_before": [
+              253,
+              247,
+              255
+            ],
+            "outside_after": [
+              172,
+              168,
+              173
+            ],
+            "detail": {
+              "pill_pixel": [
+                236,
+                230,
+                238
+              ],
+              "gap_pixel": [
+                172,
+                168,
+                173
+              ]
+            }
+          },
+          {
+            "style": "divided",
+            "dimensions": [
+              1920,
+              1600
+            ],
+            "anchor": [
+              28.0,
+              172.0,
+              620.0,
+              56.0
+            ],
+            "dialog": [
+              28.0,
+              172.0,
+              620.0,
+              440.0
+            ],
+            "bar": [
+              28.0,
+              172.0,
+              620.0,
+              56.0
+            ],
+            "results": [
+              28.0,
+              229.0,
+              620.0,
+              367.0
+            ],
+            "input": [
+              84.0,
+              176.0,
+              560.0,
+              48.0
+            ],
+            "back": [
+              32.0,
+              176.0,
+              48.0,
+              48.0
+            ],
+            "outside_before": [
+              253,
+              247,
+              255
+            ],
+            "outside_after": [
+              172,
+              168,
+              173
+            ],
+            "detail": {
+              "divider": [
+                28.0,
+                228.0,
+                620.0,
+                1.0
+              ],
+              "pixel": [
+                202,
+                196,
+                207
+              ],
+              "above_pixel": [
+                236,
+                230,
+                238
+              ]
+            }
+          }
+        ],
+        "errors": []
+      },
+      "failure": "actual non-fallback WebGPU adapter: expected false, got Bool(true)",
+      "material_last_step_reached": "M248",
+      "remaining_search_steps_not_run": [
+        "M249",
+        "M250",
+        "M251",
+        "M252",
+        "M253",
+        "M254",
+        "M255"
+      ],
+      "cases_passed": 7,
+      "cases_failed": 1,
+      "run_checks": 16577,
+      "ime_checks_passed": 77,
+      "ime_cancel_receipts": {
+        "select_all_survives_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 6
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_range_and_next_edit": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "ime_line_endings": {
+        "authored": "ab\r\n你🦀\rZ",
+        "browser_value": "ab\n你🦀\nZ",
+        "steps": [
+          {
+            "key": "ArrowLeft",
+            "browser": [
+              1,
+              1
+            ],
+            "runtime": [
+              1,
+              1
+            ],
+            "direction": "forward"
+          },
+          {
+            "key": "Shift+ArrowLeft",
+            "browser": [
+              2,
+              3
+            ],
+            "runtime": [
+              4,
+              2
+            ],
+            "direction": "backward"
+          },
+          {
+            "key": "ArrowRight",
+            "browser": [
+              6,
+              6
+            ],
+            "runtime": [
+              11,
+              11
+            ],
+            "direction": "forward"
+          }
+        ]
+      },
+      "m247_verified_independent_pixels": true,
+      "pngs": {
+        "material-search-overlay-failure.png": {
+          "sha256": "2b7f162cb8c19adf230c25f745d66f71fcf2bac9fca523009cd712a41509ec86",
+          "physical_size": [
+            1920,
+            1688
+          ]
+        },
+        "material-web-contrast-search-docked-rest.png": {
+          "sha256": "d0964367d614edc80356fd3af154437af270c7024e89fcf005cb423b93f24f62",
+          "physical_size": [
+            1920,
+            1600
+          ]
+        },
+        "material-web-contrast-search-docked-light-contained.png": {
+          "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+          "physical_size": [
+            1920,
+            1600
+          ]
+        },
+        "material-web-contrast-search-docked-light-divided.png": {
+          "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+          "physical_size": [
+            1920,
+            1600
+          ]
+        },
+        "material-web-contrast-preedit-underline-plain-clear.png": {
+          "sha256": "1044ed282c4491bfca0dd2b2bc29114685d82cb8737b5ce58d52a7248c6ca2ee",
+          "physical_size": [
+            640,
+            800
+          ]
+        },
+        "material-web-contrast-preedit-underline-plain-partial.png": {
+          "sha256": "5748a53c3def0c82a8f16e5bd926ba8d13cf687ad0a1b3f3bee452ff394a1597",
+          "physical_size": [
+            640,
+            800
+          ]
+        },
+        "material-web-contrast-preedit-underline-preedit-clear.png": {
+          "sha256": "42406cdc133c2211f0724cdd5656b2815fc9a07c08785e0036c82b217dcbc0b4",
+          "physical_size": [
+            640,
+            800
+          ]
+        },
+        "material-web-contrast-preedit-underline-preedit-partial.png": {
+          "sha256": "cea48a0bcc7798912c68745ab32886ce13fe4fdcd6c51d59f1553e3d37b0ee44",
+          "physical_size": [
+            640,
+            800
+          ]
+        }
+      }
+    },
+    "push": {
+      "run": 45446974715,
+      "url": "https://github.com/faberline/surface/actions/runs/45446974715",
+      "build_job": 138633304991,
+      "browser_job": 138633304581,
+      "build": {
+        "checkout_commit": "2a63788e80bba537a271f5ace2514f5a9db53756",
+        "steps": [
+          "cargo xtask provenance",
+          "cargo fmt --all --check",
+          "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "cargo test --locked --workspace --all-features",
+          "cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+          "cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract"
+        ],
+        "test_summaries": 168,
+        "workspace_test_cases_passed": 1235,
+        "workspace_test_cases_ignored": 12
+      },
+      "checkout_commit": "2a63788e80bba537a271f5ace2514f5a9db53756",
+      "checkout_tree": "433cd5d4937d66154a323931932a17d70a863f7d",
+      "head": "2a63788e80bba537a271f5ace2514f5a9db53756",
+      "attempt": 1,
+      "artifact": {
+        "digest": "sha256:004e69cf3ca646fe38ba7a8bdfc926ba7f90f1378801b74bfe4bcbff064f3c21",
+        "expired": false,
+        "id": 14948598537,
+        "name": "surface-e2e-artifacts",
+        "size_in_bytes": 50503249,
+        "workflow_run": {
+          "head_branch": "codex/md3-search-adaptive",
+          "head_repository_id": 1444489189,
+          "head_sha": "2a63788e80bba537a271f5ace2514f5a9db53756",
+          "id": 45446974715,
+          "repository_id": 1444489189
+        }
+      },
+      "raw_archive_sha256_verified": true,
+      "adapter_observed": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "isFallbackAdapter": true
+      },
+      "search_input_and_canvas_before_assertion": {
+        "profiles": [
+          {
+            "style": "contained",
+            "dimensions": [
+              1920,
+              1600
+            ],
+            "anchor": [
+              28.0,
+              172.0,
+              620.0,
+              56.0
+            ],
+            "dialog": [
+              40.0,
+              172.0,
+              596.0,
+              440.0
+            ],
+            "bar": [
+              40.0,
+              172.0,
+              596.0,
+              56.0
+            ],
+            "results": [
+              44.0,
+              234.0,
+              588.0,
+              374.0
+            ],
+            "input": [
+              96.0,
+              176.0,
+              536.0,
+              48.0
+            ],
+            "back": [
+              44.0,
+              176.0,
+              48.0,
+              48.0
+            ],
+            "outside_before": [
+              253,
+              247,
+              255
+            ],
+            "outside_after": [
+              172,
+              168,
+              173
+            ],
+            "detail": {
+              "pill_pixel": [
+                236,
+                230,
+                238
+              ],
+              "gap_pixel": [
+                172,
+                168,
+                173
+              ]
+            }
+          },
+          {
+            "style": "divided",
+            "dimensions": [
+              1920,
+              1600
+            ],
+            "anchor": [
+              28.0,
+              172.0,
+              620.0,
+              56.0
+            ],
+            "dialog": [
+              28.0,
+              172.0,
+              620.0,
+              440.0
+            ],
+            "bar": [
+              28.0,
+              172.0,
+              620.0,
+              56.0
+            ],
+            "results": [
+              28.0,
+              229.0,
+              620.0,
+              367.0
+            ],
+            "input": [
+              84.0,
+              176.0,
+              560.0,
+              48.0
+            ],
+            "back": [
+              32.0,
+              176.0,
+              48.0,
+              48.0
+            ],
+            "outside_before": [
+              253,
+              247,
+              255
+            ],
+            "outside_after": [
+              172,
+              168,
+              173
+            ],
+            "detail": {
+              "divider": [
+                28.0,
+                228.0,
+                620.0,
+                1.0
+              ],
+              "pixel": [
+                202,
+                196,
+                207
+              ],
+              "above_pixel": [
+                236,
+                230,
+                238
+              ]
+            }
+          }
+        ],
+        "errors": []
+      },
+      "failure": "actual non-fallback WebGPU adapter: expected false, got Bool(true)",
+      "material_last_step_reached": "M248",
+      "remaining_search_steps_not_run": [
+        "M249",
+        "M250",
+        "M251",
+        "M252",
+        "M253",
+        "M254",
+        "M255"
+      ],
+      "cases_passed": 7,
+      "cases_failed": 1,
+      "run_checks": 16577,
+      "ime_checks_passed": 77,
+      "ime_cancel_receipts": {
+        "select_all_survives_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 6
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_range_and_next_edit": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "forward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "forward",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "ime_line_endings": {
+        "authored": "ab\r\n你🦀\rZ",
+        "browser_value": "ab\n你🦀\nZ",
+        "steps": [
+          {
+            "key": "ArrowLeft",
+            "browser": [
+              1,
+              1
+            ],
+            "runtime": [
+              1,
+              1
+            ],
+            "direction": "forward"
+          },
+          {
+            "key": "Shift+ArrowLeft",
+            "browser": [
+              2,
+              3
+            ],
+            "runtime": [
+              4,
+              2
+            ],
+            "direction": "backward"
+          },
+          {
+            "key": "ArrowRight",
+            "browser": [
+              6,
+              6
+            ],
+            "runtime": [
+              11,
+              11
+            ],
+            "direction": "forward"
+          }
+        ]
+      },
+      "m247_verified_independent_pixels": true,
+      "pngs": {
+        "material-search-overlay-failure.png": {
+          "sha256": "2b7f162cb8c19adf230c25f745d66f71fcf2bac9fca523009cd712a41509ec86",
+          "physical_size": [
+            1920,
+            1688
+          ]
+        },
+        "material-web-contrast-search-docked-rest.png": {
+          "sha256": "d0964367d614edc80356fd3af154437af270c7024e89fcf005cb423b93f24f62",
+          "physical_size": [
+            1920,
+            1600
+          ]
+        },
+        "material-web-contrast-search-docked-light-contained.png": {
+          "sha256": "627ba78cbece5a9a5e0867941b33c4dfc2955af21850bdbd39a3866a565e1ae7",
+          "physical_size": [
+            1920,
+            1600
+          ]
+        },
+        "material-web-contrast-search-docked-light-divided.png": {
+          "sha256": "f58974fd6ea99ae119059edc1402cf359e95b0024c5e543f16318bac75875cf3",
+          "physical_size": [
+            1920,
+            1600
+          ]
+        },
+        "material-web-contrast-preedit-underline-plain-clear.png": {
+          "sha256": "1044ed282c4491bfca0dd2b2bc29114685d82cb8737b5ce58d52a7248c6ca2ee",
+          "physical_size": [
+            640,
+            800
+          ]
+        },
+        "material-web-contrast-preedit-underline-plain-partial.png": {
+          "sha256": "5748a53c3def0c82a8f16e5bd926ba8d13cf687ad0a1b3f3bee452ff394a1597",
+          "physical_size": [
+            640,
+            800
+          ]
+        },
+        "material-web-contrast-preedit-underline-preedit-clear.png": {
+          "sha256": "42406cdc133c2211f0724cdd5656b2815fc9a07c08785e0036c82b217dcbc0b4",
+          "physical_size": [
+            640,
+            800
+          ]
+        },
+        "material-web-contrast-preedit-underline-preedit-partial.png": {
+          "sha256": "cea48a0bcc7798912c68745ab32886ce13fe4fdcd6c51d59f1553e3d37b0ee44",
+          "physical_size": [
+            640,
+            800
+          ]
+        }
+      }
+    }
+  }
+}
