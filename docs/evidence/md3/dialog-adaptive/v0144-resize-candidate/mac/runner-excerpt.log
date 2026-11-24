@@ -1,0 +1,23 @@
+case smoke ... ok (19 steps, 34 checks, 1.9s)
+case ime ... ok (20 steps, 77 checks, 0.8s)
+  [M111] real floating entry and exit stagger in opposite orders, reverse mid-flight, and snap under Reduce Motion
+  [M112] the calendar uses a real date grid with distinct focus, today and selection
+  [M113] the modal can browse years and outside dismissal restores the opener
+  [M114] input validates on Enter and blur, and IME composition holds the first Enter
+  [M115] 320 dp dark RTL at 200 percent text keeps date targets and the mode switch reachable
+  [M116] docked field and icon have separate Tab stops and typed dates commit on Enter or blur
+  [M117] the first Enter belongs to IME composition and a later Enter commits once
+  [M118] docked calendar exposes a date grid and commits one keyboard choice
+  [M119] month and bounded year lists browse by keyboard without committing a date
+  [M256] Basic exposes a named modal and traps Tab, Escape and scrim return focus
+  [M257] trusted wheel scrolls a short Basic under its pinned heading and complete action targets
+  [M258] named Alert requires acknowledgement and blocks outside input and Escape
+  [M259] 599 to 600 dp keeps the named editor, draft and backward selection across presentations
+  [M260] dirty Close and Escape ask first, Continue restores exact prior focus, and explicit Save or Discard acts once
+  [M261] 320 dp dark RTL 200% aligns both title lines and wheels the entire discard description without moving actions
+  [M262] real Basic and nested Discard opacity frames, immediate modal handback, reversal and Reduce Motion
+  [M263] actual measured FAB container expands, retires, reverses, reduces motion and keeps the adaptive draft
+case material ... ok (262 steps, 17848 checks, 418.1s)
+case bridge-web ... ok (24 steps, 94 checks, 4.4s)
+case devtools-headless ... ok (3 steps, 76 checks, 1.7s)
+e2e result: 5 passed; 0 failed; 18129 checks; artifacts in <artifacts>
