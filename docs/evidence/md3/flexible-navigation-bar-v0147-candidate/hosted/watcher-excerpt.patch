@@ -1,0 +1,11 @@
+--- a/verify-hosted-navigation.py
++++ b/verify-hosted-navigation.py
+@@ -218,7 +218,7 @@
+             lines.append(INVOCATION)
+         elif "Operating System" in row or row == "Ubuntu" or SWIFTSHADER in row:
+             lines.append(row)
+-        elif re.match(r"^\s*\[[MI]\d+\]|^case \S+ \.\.\. |^e2e result:", row):
++        elif re.match(r"^\s*\[[MI]\d+\]|^case \S+ \.\.\.(?: |$)|^e2e result:", row):
+             lines.append(row.split(" artifacts in ", 1)[0])
+     return "\n".join(lines) + "\n"
+ 

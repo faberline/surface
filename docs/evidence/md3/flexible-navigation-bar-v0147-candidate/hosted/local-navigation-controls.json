@@ -1,0 +1,72 @@
+{
+  "scope": "Actual focused Navigation Bar results and prior stock schema inputs. No new browser execution.",
+  "focused": {
+    "checks": 458,
+    "report_sha256": "4a663cd7489976a25d3f33dee8cd4fadbe1130c2e5ad8b239ec203ad5182f297",
+    "window_observation": {
+      "chrome_process_samples": 376,
+      "native_gallery_process_samples": null,
+      "visible_windows": 0,
+      "remaining_owned_processes": 0,
+      "sha256": "9d60c0447592ebf04a2e2a01e458f4e9e8fe81caec5c81cc4370662cd635f457"
+    }
+  },
+  "earlier_stock_only": {
+    "macos": {
+      "log_sha256": "f7aba86a6711a5b5c2840f03b856feb46e229fcbbd5a2424d0243ec972139e34",
+      "suites": [
+        "smoke",
+        "ime",
+        "material",
+        "bridge-web",
+        "devtools-headless"
+      ],
+      "material_steps": 262,
+      "browser": "Chrome/158.0.8127.37",
+      "adapter": {
+        "vendor": "apple",
+        "architecture": "metal-3",
+        "isFallbackAdapter": false
+      },
+      "window_observation": {
+        "chrome_process_samples": 138352,
+        "native_gallery_process_samples": 15,
+        "visible_windows": 0,
+        "remaining_owned_processes": 0,
+        "sha256": "128c13ef388a2b394a35bc340920f5b8f87f7c86c9acae29c01bcc0fbdaf8cb4"
+      }
+    },
+    "linux": {
+      "log_sha256": "2c35edcae9c5f00eb1d490b2c1830a409451ad95510ea9c0e4f0a10fbd5eb36a",
+      "suites": [
+        "smoke",
+        "ime",
+        "material",
+        "bridge-native",
+        "bridge-native-compact",
+        "bridge-web",
+        "devtools-native",
+        "devtools-headless"
+      ],
+      "material_steps": 262,
+      "browser": "Chrome/158.0.8127.88",
+      "adapter": {
+        "vendor": "google",
+        "architecture": "swiftshader",
+        "isFallbackAdapter": true
+      }
+    }
+  },
+  "rejected_controls": {
+    "focused_input_as_stock": "wrong passing suite sequence for macos: [('material', '4', '458')]",
+    "missing_step": "missing, extra or out-of-order Material step",
+    "invalid_summary": "the passing suite totals do not match the runner summary",
+    "other_run_metadata": "the browser or adapter differs from the expected runtime metadata",
+    "visible_window": "focused window observer reports a failure, a window or a leftover process",
+    "string_fallback_flag": "invalid observed WebGPU adapter fields",
+    "overlapping_label": "the pill or label lost its specified geometry or clipped its own cell",
+    "activation_count": "wrong keyboard or pointer activation, or a title escaped the fixed header",
+    "identical_scroll_pngs": "wheel screenshots did not show changing content",
+    "wrong_theme_png": "decoded bar, pill or rounded corner pixels disagree with the report"
+  }
+}
