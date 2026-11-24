@@ -1,0 +1,15 @@
+   Compiling surface v0.1.39 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface)
+   Compiling surface-app v0.1.39 (/Users/chrischeng/.codex/worktrees/surface-md3-progress/surface/crates/surface-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 33s
+     Running tests/adjustable.rs (/tmp/cargo-target/surface-surface-md3-progress/debug/deps/adjustable-c464ebb0eb44d6c3)
+
+running 7 tests
+test a_callback_that_hides_the_target_cannot_dispatch_the_old_adjustment ... ok
+test adjusts_discrete_values_without_focusing_then_rejects_old_tree_tokens ... ok
+test composition_modal_scope_disabled_and_held_pointer_block_adjustments ... ok
+test directional_adjustment_without_current_value_uses_existing_first_step ... ok
+test directional_adjustment_wraps_both_ways_and_preserves_absolute_validation ... ok
+test native_or_projected_arrow_steps_keep_the_same_control_focused ... ok
+test projected_keyboard_action_uses_the_rendered_focus_target ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
