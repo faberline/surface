@@ -1,0 +1,34 @@
+{
+  "inputs": {
+    "release": "0.1.42",
+    "overlay_sha256": "08517367a5674b7e85825f4f56fa1f80c186f7095b1b220a0ecae6a85260f6a4",
+    "pinned_files": {
+      "stock-source.sha256": "163ec8673284b3af9c30af57c548b78730f8a5b1912cec164f79b374a5026a57",
+      "probe-source.sha256": "60af76552e9f9132f68899f66606df33f9b3e1adae6a5e35f6510f9098a6c2a1",
+      "stock-bin/surface-material-gallery": "9f15cc99609bc037d54ccd4e32acf41d3d7d4426ffafda2859243ebe3683d146",
+      "probe-bin/surface-material-gallery": "adc816ebc00dfcb6fa8f17a42fb3183b19aac8dcf4b0751f785a7d36bd43074c",
+      "stock-bin/surface-devtools": "ea29378ecd94a83f45e4e88af347c4242f7cbb88182315439ac30e8b51a718cc"
+    }
+  },
+  "input_receipt_sha256": "5d94379894e7eae27eb10e6ef5afcbc2a67ac4dd58560fa07d53e3f7caf37ece",
+  "independent_replays": 2,
+  "scripts": {
+    "gallery_transport.py": "9530cfce6f25e32138a0602d8a36b1b747f82f35f5df856c65f709afc719a8d0",
+    "native-proof.py": "fc955aff14fe78db351d774da298b2514cc9a953e3fbcc4adb4d8712e506911c",
+    "native_runtime.py": "7f519cc6a6214b1530b8703e8d0ecc2acffdd3f6403588a38566089fe39419f0",
+    "render_helpers.py": "cc852005670915e2f33e0002143ebd78810fe641fb0373d45d0cf8331a02f21d",
+    "verify-contrast.py": "960d59d15924195379816fbe3f677ebabf2697e4714db96b5a88b4b05cd70620",
+    "window_check.py": "fd0f0b651544fddabaa26e0df5995620fb427b43d001f85c70daa9773a713262"
+  },
+  "byte_identical_outputs": {
+    "dark-increased.png": "3cc933508893798a0c74e9de7dcf9bb3f2ee2f751a0594eb598970e268841486",
+    "dark-normal.png": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+    "dark-restored.png": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+    "light-increased.png": "8c6f3a2ab5b5d589fb61e145c0776db203328f022d52e0d0a25cb5bf958cffb1",
+    "light-normal.png": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+    "light-restored.png": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+    "native-contrast-report.json": "905ef3ae2cade1e48184f7ba912882c69ef888ce31d53e5941ca88b84a855642",
+    "stock-dark-normal.png": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+    "stock-light-normal.png": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947"
+  }
+}

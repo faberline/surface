@@ -1,0 +1,349 @@
+{
+  "schema": "surface.test.macos-offscreen-contrast-release.v1",
+  "stock_gallery_sha256": "9f15cc99609bc037d54ccd4e32acf41d3d7d4426ffafda2859243ebe3683d146",
+  "probe_gallery_sha256": "adc816ebc00dfcb6fa8f17a42fb3183b19aac8dcf4b0751f785a7d36bd43074c",
+  "cli_sha256": "ea29378ecd94a83f45e4e88af347c4242f7cbb88182315439ac30e8b51a718cc",
+  "headless_viewport": [
+    320,
+    400
+  ],
+  "png_transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "probe": [
+    {
+      "theme": "light",
+      "macos_startup": {
+        "accepted_mode": "normal",
+        "schema": "surface.test.macos-display-contrast-startup.v1",
+        "system_increased": false
+      },
+      "draft": {
+        "focus": "scroll-popup-demo-quantity-editor",
+        "text_input": {
+          "composing": false,
+          "display_value": "1203",
+          "preedit_range": null,
+          "selection_anchor": 4,
+          "selection_cursor": 4,
+          "value": "1203"
+        },
+        "error": "請輸入偶數",
+        "saved": "已選 1200 毫升"
+      },
+      "captures": [
+        {
+          "name": "light-normal.png",
+          "sha256": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        },
+        {
+          "name": "light-increased.png",
+          "sha256": "8c6f3a2ab5b5d589fb61e145c0776db203328f022d52e0d0a25cb5bf958cffb1",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        },
+        {
+          "name": "light-restored.png",
+          "sha256": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        }
+      ],
+      "changed_regions": {
+        "scroll-popup-demo-dialog": {
+          "bounds": {
+            "height": 328.0,
+            "width": 304.0,
+            "x": 8.0,
+            "y": 8.0
+          },
+          "changed_pixels": 69235
+        },
+        "scroll-popup-demo-quantity-editor": {
+          "bounds": {
+            "height": 104.0,
+            "width": 284.0,
+            "x": 18.0,
+            "y": 62.0
+          },
+          "changed_pixels": 3041
+        },
+        "scroll-popup-demo-quantity-focus": {
+          "bounds": {
+            "height": 114.0,
+            "width": 294.0,
+            "x": 13.0,
+            "y": 57.0
+          },
+          "changed_pixels": 7021
+        }
+      },
+      "focus_ink": {
+        "normal": {
+          "bounds": {
+            "height": 114.0,
+            "width": 294.0,
+            "x": 13.0,
+            "y": 57.0
+          },
+          "sample_xy": [
+            14,
+            114
+          ],
+          "rgba": [
+            98,
+            91,
+            113,
+            255
+          ]
+        },
+        "increased": {
+          "bounds": {
+            "height": 114.0,
+            "width": 294.0,
+            "x": 13.0,
+            "y": 57.0
+          },
+          "sample_xy": [
+            14,
+            114
+          ],
+          "rgba": [
+            47,
+            41,
+            60,
+            255
+          ]
+        }
+      },
+      "window_observations": [
+        {
+          "stage": "startup",
+          "visible_windows": 0
+        },
+        {
+          "stage": "normal capture",
+          "visible_windows": 0
+        },
+        {
+          "stage": "increased capture",
+          "visible_windows": 0
+        },
+        {
+          "stage": "restored capture",
+          "visible_windows": 0
+        },
+        {
+          "stage": "complete",
+          "visible_windows": 0
+        }
+      ]
+    },
+    {
+      "theme": "dark",
+      "macos_startup": {
+        "accepted_mode": "normal",
+        "schema": "surface.test.macos-display-contrast-startup.v1",
+        "system_increased": false
+      },
+      "draft": {
+        "focus": "scroll-popup-demo-quantity-editor",
+        "text_input": {
+          "composing": false,
+          "display_value": "1203",
+          "preedit_range": null,
+          "selection_anchor": 4,
+          "selection_cursor": 4,
+          "value": "1203"
+        },
+        "error": "請輸入偶數",
+        "saved": "已選 1200 毫升"
+      },
+      "captures": [
+        {
+          "name": "dark-normal.png",
+          "sha256": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        },
+        {
+          "name": "dark-increased.png",
+          "sha256": "3cc933508893798a0c74e9de7dcf9bb3f2ee2f751a0594eb598970e268841486",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        },
+        {
+          "name": "dark-restored.png",
+          "sha256": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        }
+      ],
+      "changed_regions": {
+        "scroll-popup-demo-dialog": {
+          "bounds": {
+            "height": 328.0,
+            "width": 304.0,
+            "x": 8.0,
+            "y": 8.0
+          },
+          "changed_pixels": 99540
+        },
+        "scroll-popup-demo-quantity-editor": {
+          "bounds": {
+            "height": 104.0,
+            "width": 284.0,
+            "x": 18.0,
+            "y": 62.0
+          },
+          "changed_pixels": 29536
+        },
+        "scroll-popup-demo-quantity-focus": {
+          "bounds": {
+            "height": 114.0,
+            "width": 294.0,
+            "x": 13.0,
+            "y": 57.0
+          },
+          "changed_pixels": 33516
+        }
+      },
+      "focus_ink": {
+        "normal": {
+          "bounds": {
+            "height": 114.0,
+            "width": 294.0,
+            "x": 13.0,
+            "y": 57.0
+          },
+          "sample_xy": [
+            14,
+            114
+          ],
+          "rgba": [
+            203,
+            194,
+            219,
+            255
+          ]
+        },
+        "increased": {
+          "bounds": {
+            "height": 114.0,
+            "width": 294.0,
+            "x": 13.0,
+            "y": 57.0
+          },
+          "sample_xy": [
+            14,
+            114
+          ],
+          "rgba": [
+            245,
+            237,
+            255,
+            255
+          ]
+        }
+      },
+      "window_observations": [
+        {
+          "stage": "startup",
+          "visible_windows": 0
+        },
+        {
+          "stage": "normal capture",
+          "visible_windows": 0
+        },
+        {
+          "stage": "increased capture",
+          "visible_windows": 0
+        },
+        {
+          "stage": "restored capture",
+          "visible_windows": 0
+        },
+        {
+          "stage": "complete",
+          "visible_windows": 0
+        }
+      ]
+    }
+  ],
+  "stock": [
+    {
+      "theme": "light",
+      "draft": {
+        "focus": "scroll-popup-demo-quantity-editor",
+        "text_input": {
+          "composing": false,
+          "display_value": "1203",
+          "preedit_range": null,
+          "selection_anchor": 4,
+          "selection_cursor": 4,
+          "value": "1203"
+        },
+        "error": "請輸入偶數",
+        "saved": "已選 1200 毫升"
+      },
+      "capture": {
+        "name": "stock-light-normal.png",
+        "sha256": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+        "format": "png",
+        "width": 320,
+        "height": 400,
+        "scale": 1.0
+      },
+      "visible_windows": [
+        0,
+        0
+      ],
+      "test_method": "unknown_method"
+    },
+    {
+      "theme": "dark",
+      "draft": {
+        "focus": "scroll-popup-demo-quantity-editor",
+        "text_input": {
+          "composing": false,
+          "display_value": "1203",
+          "preedit_range": null,
+          "selection_anchor": 4,
+          "selection_cursor": 4,
+          "value": "1203"
+        },
+        "error": "請輸入偶數",
+        "saved": "已選 1200 毫升"
+      },
+      "capture": {
+        "name": "stock-dark-normal.png",
+        "sha256": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+        "format": "png",
+        "width": 320,
+        "height": 400,
+        "scale": 1.0
+      },
+      "visible_windows": [
+        0,
+        0
+      ],
+      "test_method": "unknown_method"
+    }
+  ]
+}

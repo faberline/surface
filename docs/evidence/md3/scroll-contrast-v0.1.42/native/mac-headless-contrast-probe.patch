@@ -1,0 +1,134 @@
+--- a/crates/surface-platform/src/headless.rs
++++ b/crates/surface-platform/src/headless.rs
+@@ -4,6 +4,56 @@
+ use surface_devtools_protocol::{ErrorCode, Reply, PAGE_SCREENSHOT, VERSION};
+ use surface_wgpu::{Capture, Renderer};
+ 
++#[cfg(target_os = "macos")]
++use surface_app::DisplayContrast;
++
++#[cfg(target_os = "macos")]
++const TEST_SET_DISPLAY_CONTRAST: &str = "Test.setDisplayContrast";
++
++#[cfg(target_os = "macos")]
++fn contrast_mode(contrast: DisplayContrast) -> &'static str {
++    match contrast {
++        DisplayContrast::Normal => "normal",
++        DisplayContrast::Increased => "increased",
++        DisplayContrast::Forced(_) => "forced",
++        _ => "unknown",
++    }
++}
++
++#[cfg(target_os = "macos")]
++fn set_test_display_contrast<A: Application>(
++    runtime: &mut Runtime<A>,
++    id: u64,
++    params: &serde_json::Value,
++) -> Reply {
++    let contrast = match params.get("mode").and_then(serde_json::Value::as_str) {
++        Some("normal") => DisplayContrast::Normal,
++        Some("increased") => DisplayContrast::Increased,
++        _ => {
++            return Reply::error(
++                id,
++                ErrorCode::InvalidParams,
++                "mode must be normal or increased",
++            )
++        }
++    };
++    match runtime.set_display_contrast(contrast) {
++        Ok(redraw) => Reply::ok(
++            id,
++            serde_json::json!({
++                "schema": "surface.test.set-display-contrast.v1",
++                "mode": contrast_mode(runtime.display_contrast()),
++                "redraw": redraw,
++            }),
++        ),
++        Err(error) => Reply::error(
++            id,
++            ErrorCode::ActionFailed,
++            format!("display contrast: {error}"),
++        ),
++    }
++}
++
+ /// Serve a native runtime through DevTools at a fixed logical viewport.
+ ///
+ /// Requires `SURFACE_DEVTOOLS_SESSION` to name a new private session file.
+@@ -18,6 +68,22 @@
+     let path = DevtoolsServer::session_path()
+         .ok_or_else(|| HostError::new("headless runtime requires SURFACE_DEVTOOLS_SESSION"))?;
+     Capture::check_size(width, height)?;
++    #[cfg(target_os = "macos")]
++    {
++        let _marker = objc2::MainThreadMarker::new().ok_or_else(|| {
++            HostError::new("the macOS display contrast probe requires the main thread")
++        })?;
++        let (_, increase_contrast) =
++            crate::motion::refresh_display_options_with_sample(&mut runtime);
++        eprintln!(
++            "{}",
++            serde_json::json!({
++                "schema": "surface.test.macos-display-contrast-startup.v1",
++                "system_increased": increase_contrast,
++                "accepted_mode": contrast_mode(runtime.display_contrast()),
++            })
++        );
++    }
+     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+         backends: wgpu::Backends::PRIMARY,
+         ..Default::default()
+@@ -46,6 +112,13 @@
+             ));
+             continue;
+         }
++        // Scratch-only method; the server has already authenticated the
++        // request. Leave the public capability list and transports unchanged.
++        #[cfg(target_os = "macos")]
++        if request.method == TEST_SET_DISPLAY_CONTRAST {
++            reply.send(set_test_display_contrast(&mut runtime, id, &request.params));
++            continue;
++        }
+         let frame = match draw(&mut runtime, &mut renderer) {
+             Ok(frame) => frame,
+             Err(error) => {
+--- a/crates/surface-platform/src/motion.rs
++++ b/crates/surface-platform/src/motion.rs
+@@ -58,6 +58,8 @@
+     true
+ }
+ 
++#[cfg(all(target_os = "macos", feature = "devtools"))]
++pub(crate) use macos::refresh_display_options_with_sample;
+ #[cfg(target_os = "macos")]
+ pub(crate) use macos::{refresh_display_options, DisplayOptionsWatch as MacDisplayOptionsWatch};
+ 
+@@ -102,17 +104,24 @@
+     pub(crate) fn refresh_display_options<A: surface_app::Application>(
+         runtime: &mut surface_app::Runtime<A>,
+     ) -> bool {
++        refresh_display_options_with_sample(runtime).0
++    }
++
++    pub(crate) fn refresh_display_options_with_sample<A: surface_app::Application>(
++        runtime: &mut surface_app::Runtime<A>,
++    ) -> (bool, bool) {
+         let workspace = NSWorkspace::sharedWorkspace();
++        let increase_contrast = workspace.accessibilityDisplayShouldIncreaseContrast();
+         let (redraw, contrast_error) = apply_macos_display_options(
+             runtime,
+             reduced_motion_from_env(),
+             workspace.accessibilityDisplayShouldReduceMotion(),
+-            workspace.accessibilityDisplayShouldIncreaseContrast(),
++            increase_contrast,
+         );
+         if let Some(error) = contrast_error {
+             eprintln!("Surface macOS display contrast: {error}");
+         }
+-        redraw
++        (redraw, increase_contrast)
+     }
+ 
+     /// The workspace notification carries no preference values. The callback
