@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 3873,
+      "pids": [
+        24750,
+        39532
+      ]
+    },
+    "native_gallery": {
+      "samples": 9,
+      "pids": [
+        40034
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 3828,
+      "pids": [
+        24750
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 45,
+      "pids": [
+        39532
+      ],
+      "detached_samples": 38
+    },
+    "native": {
+      "samples": 9,
+      "pids": [
+        40034
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 24750,
+      "ppid": 24748,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=61515",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-headless-default-observer.4WzPbp6X/run-exact/tmp/.tmpgF3AMO",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-headless-default-observer.4WzPbp6X/run-exact/tmp/.tmpgF3AMO"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 39532,
+      "ppid": 39527,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=63257",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-headless-default-observer.4WzPbp6X/run-exact/tmp/.tmpPVXIct",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-headless-default-observer.4WzPbp6X/run-exact/tmp/.tmpPVXIct"
+    },
+    {
+      "role": "native",
+      "pid": 40034,
+      "ppid": 24748,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}

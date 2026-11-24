@@ -1,0 +1,464 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "suite_arguments": [],
+  "cases": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 268,
+      "checks": 18392
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 18673,
+  "page_errors": 0,
+  "menu": {
+    "mode": "final Menu footer required",
+    "platform": "macos",
+    "case_scope": "stock",
+    "menu_steps": [
+      "M267",
+      "M268",
+      "M269"
+    ],
+    "material_steps": 268,
+    "material_checks": 18392,
+    "page_errors": 0,
+    "report_sha256": "c07f72297b4b126a1bc4f2fd1d5483830282bc4488e0d372366261fa71d57f21",
+    "runner_log_sha256": "9c19079bc07337703e5838c36bb8fbbd99bda3ac6f2444fd3a2b56773947ffed",
+    "browser": "Chrome/158.0.8127.37",
+    "adapter": {
+      "isFallbackAdapter": false,
+      "vendor": "apple",
+      "architecture": "metal-3"
+    },
+    "window_observation": {
+      "chrome_process_samples": 3873,
+      "native_process_samples": 9,
+      "visible_windows": 0,
+      "remaining_observed_processes": 0,
+      "receipt_sha256": "a6ed25b58d7370713ae03a83735290c9eb79d79e6a0dfab9585684e81708a6dd"
+    },
+    "wide_canvas_samples": {
+      "center": [
+        242,
+        236,
+        244
+      ],
+      "corner": [
+        236,
+        231,
+        238
+      ]
+    },
+    "footer": {
+      "scroller": [
+        28.0,
+        28.0,
+        264.0,
+        368.0
+      ],
+      "status_before": [
+        28.0,
+        412.0,
+        264.0,
+        96.0
+      ],
+      "status_after": [
+        28.0,
+        300.0,
+        264.0,
+        96.0
+      ],
+      "clearance_dp": 8.0,
+      "scroll_dp": 112.0,
+      "status_backdrop_rgb": [
+        20,
+        18,
+        24
+      ],
+      "contrasting_status_pixels": 10572
+    },
+    "pngs": {
+      "wide": {
+        "size": [
+          1920,
+          1688
+        ],
+        "sha256": "bb92246b1e06df4c8270e661e328e0d7b07b4ed16ae06e8877b276955c16b7a7"
+      },
+      "compact": {
+        "size": [
+          640,
+          1048
+        ],
+        "sha256": "ee5682a2ac7f17e0002edae3f19346152d332f11df95a28be1cfddc0985e2175"
+      },
+      "compact-footer": {
+        "size": [
+          640,
+          1048
+        ],
+        "sha256": "05a64c5c9d3135b0e92230f5a0cc1ec807fdbfa195951ce781c6ff74f1657d94"
+      }
+    }
+  },
+  "divider": {
+    "browser": "Chrome/158.0.8127.37",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "isFallbackAdapter": false
+    },
+    "steps": [
+      "M264",
+      "M265",
+      "M266"
+    ],
+    "page_errors": 0,
+    "focus_restored": true,
+    "profiles": {
+      "wide": {
+        "file": "material-divider-wide-light-ltr.png",
+        "sha256": "28000c129caa006afc86ed1146dbb2a215f8eba1c521edd5858d3545b83ba1e7",
+        "lines": {
+          "full": {
+            "bounds_dp": [
+              28.0,
+              200.0,
+              904.0,
+              1.0
+            ],
+            "solid_pixels_checked": 3608,
+            "physical_thickness_px": 2
+          },
+          "inset": {
+            "bounds_dp": [
+              44.0,
+              253.0,
+              888.0,
+              1.0
+            ],
+            "solid_pixels_checked": 3544,
+            "physical_thickness_px": 2
+          },
+          "middle": {
+            "bounds_dp": [
+              44.0,
+              306.0,
+              872.0,
+              1.0
+            ],
+            "solid_pixels_checked": 3480,
+            "physical_thickness_px": 2
+          },
+          "vertical": {
+            "bounds_dp": [
+              76.0,
+              359.0,
+              1.0,
+              64.0
+            ],
+            "solid_pixels_checked": 248,
+            "physical_thickness_px": 2
+          }
+        }
+      },
+      "compact": {
+        "file": "material-divider-compact-dark-rtl-200.png",
+        "sha256": "75b22a821586ff220620085aca6aa80ec1aafe0894f53517f59cf13f6c084bb9",
+        "lines": {
+          "full": {
+            "bounds_dp": [
+              28.0,
+              336.0,
+              264.0,
+              1.0
+            ],
+            "solid_pixels_checked": 1048,
+            "physical_thickness_px": 2
+          },
+          "inset": {
+            "bounds_dp": [
+              28.0,
+              413.0,
+              248.0,
+              1.0
+            ],
+            "solid_pixels_checked": 984,
+            "physical_thickness_px": 2
+          },
+          "middle": {
+            "bounds_dp": [
+              44.0,
+              490.0,
+              232.0,
+              1.0
+            ],
+            "solid_pixels_checked": 920,
+            "physical_thickness_px": 2
+          },
+          "vertical": {
+            "bounds_dp": [
+              108.0,
+              567.0,
+              1.0,
+              64.0
+            ],
+            "solid_pixels_checked": 248,
+            "physical_thickness_px": 2
+          }
+        }
+      },
+      "wide_heavy": {
+        "file": "material-divider-wide-light-ltr-heavy.png",
+        "sha256": "de9c9334945c3aa9411f156c6706139903904c80d6a22bf4eb17d0ae5dc80814",
+        "lines": {
+          "full": {
+            "bounds_dp": [
+              28.0,
+              200.0,
+              904.0,
+              8.0
+            ],
+            "solid_pixels_checked": 28864,
+            "physical_thickness_px": 16
+          },
+          "inset": {
+            "bounds_dp": [
+              44.0,
+              260.0,
+              888.0,
+              8.0
+            ],
+            "solid_pixels_checked": 28352,
+            "physical_thickness_px": 16
+          },
+          "middle": {
+            "bounds_dp": [
+              44.0,
+              320.0,
+              872.0,
+              8.0
+            ],
+            "solid_pixels_checked": 27840,
+            "physical_thickness_px": 16
+          },
+          "vertical": {
+            "bounds_dp": [
+              76.0,
+              380.0,
+              8.0,
+              64.0
+            ],
+            "solid_pixels_checked": 1984,
+            "physical_thickness_px": 16
+          }
+        }
+      },
+      "compact_heavy": {
+        "file": "material-divider-compact-dark-rtl-200-heavy.png",
+        "sha256": "d4b74aefb314848050320e509f01ac4cad19b62ee3f807e85997e3bb56ac0058",
+        "lines": {
+          "full": {
+            "bounds_dp": [
+              28.0,
+              336.0,
+              264.0,
+              8.0
+            ],
+            "solid_pixels_checked": 8384,
+            "physical_thickness_px": 16
+          },
+          "inset": {
+            "bounds_dp": [
+              28.0,
+              420.0,
+              248.0,
+              8.0
+            ],
+            "solid_pixels_checked": 7872,
+            "physical_thickness_px": 16
+          },
+          "middle": {
+            "bounds_dp": [
+              44.0,
+              504.0,
+              232.0,
+              8.0
+            ],
+            "solid_pixels_checked": 7360,
+            "physical_thickness_px": 16
+          },
+          "vertical": {
+            "bounds_dp": [
+              108.0,
+              588.0,
+              8.0,
+              64.0
+            ],
+            "solid_pixels_checked": 1984,
+            "physical_thickness_px": 16
+          }
+        }
+      }
+    }
+  },
+  "ime_cancellation": {
+    "select_all_after_cancel_redraw": {
+      "before": {
+        "browser": [
+          0,
+          2
+        ],
+        "value": "台文",
+        "direction": "none",
+        "runtime": [
+          "台文",
+          "台文",
+          "0",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": true,
+        "trustedRight": false,
+        "frames": 7
+      },
+      "after": {
+        "browser": [
+          0,
+          2
+        ],
+        "value": "台文",
+        "direction": "none",
+        "runtime": [
+          "台文",
+          "台文",
+          "0",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": true,
+        "trustedRight": false,
+        "frames": 8
+      },
+      "redraw_width": 1001,
+      "replacement": [
+        "中👨‍👩‍👧‍👦é",
+        "中👨‍👩‍👧‍👦é",
+        "31",
+        "31",
+        "false"
+      ]
+    },
+    "backward_cancel_before_redraw": {
+      "canceled": {
+        "browser": [
+          1,
+          2
+        ],
+        "value": "台文",
+        "direction": "backward",
+        "runtime": [
+          "台文",
+          "台文",
+          "6",
+          "3",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": false,
+        "frames": 8
+      },
+      "moved": {
+        "browser": [
+          2,
+          2
+        ],
+        "value": "台文",
+        "direction": "none",
+        "runtime": [
+          "台文",
+          "台文",
+          "6",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 8
+      },
+      "unpainted": {
+        "browser": [
+          3,
+          3
+        ],
+        "value": "台文X",
+        "direction": "none",
+        "runtime": [
+          "台文X",
+          "台文X",
+          "7",
+          "7",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 8
+      },
+      "repainted": {
+        "browser": [
+          3,
+          3
+        ],
+        "value": "台文X",
+        "direction": "none",
+        "runtime": [
+          "台文X",
+          "台文X",
+          "7",
+          "7",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 9
+      }
+    }
+  },
+  "headless_transport_pngs": {
+    "bridge-web.png": {
+      "size": [
+        756,
+        469
+      ],
+      "sha256": "fe083f9371717ce631436af4a581b2fccc0654d3352a7d94f83a326eec047fdc"
+    },
+    "devtools-headless-screenshot.png": {
+      "size": [
+        720,
+        640
+      ],
+      "sha256": "21f5950edf4757f5bc836638407ea620b371961d4de8de61073feebfbd9d2ff5"
+    }
+  },
+  "guard_and_window_checks": "passed"
+}
