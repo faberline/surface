@@ -2,8 +2,10 @@
 
 mod choice;
 mod pair;
+mod popup;
 pub use choice::{scroll_choice_field_layout, ScrollChoiceFieldOptions};
 pub use pair::{scroll_field_pair_layout, ScrollFieldPairLayout, ScrollFieldPairOptions};
+pub use popup::{scroll_field_popup_layout, ScrollFieldPopupLayout, ScrollFieldPopupOptions};
 
 use std::rc::Rc;
 

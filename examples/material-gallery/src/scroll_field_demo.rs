@@ -25,6 +25,7 @@ const SCENE: ScrollFieldScene = ScrollFieldScene {
     saved: "scroll-field-demo-saved",
     title: "捲動欄位",
     scroller_label: "數值範例",
+    scroll_padding: 0.,
 };
 const SIZES: [(ScrollFieldSize, &str, &str); 3] = [
     (ScrollFieldSize::Small, "scroll-field-demo-small", "小"),
@@ -417,6 +418,7 @@ pub(crate) struct ScrollFieldScene {
     pub saved: &'static str,
     pub title: &'static str,
     pub scroller_label: &'static str,
+    pub scroll_padding: f32,
 }
 
 impl ScrollFieldScene {
@@ -465,7 +467,11 @@ impl ScrollFieldScene {
                 .id(self.scroll)
                 .styled(Style {
                     min_height: 120.,
-                    ..Style::column().height(Length::Px(0.)).grow(1.).clip(true)
+                    ..Style::column()
+                        .height(Length::Px(0.))
+                        .grow(1.)
+                        .padding(self.scroll_padding)
+                        .clip(true)
                 }),
         )
         .accessibility_scroll_pages()

@@ -25,6 +25,7 @@ const SCENE: ScrollFieldScene = ScrollFieldScene {
     saved: "scroll-choice-demo-saved",
     title: "文字捲動欄位",
     scroller_label: "地點範例",
+    scroll_padding: 0.,
 };
 
 fn scene(looping: bool) -> ScrollFieldScene {
