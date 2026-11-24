@@ -1,0 +1,520 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "semantics": {
+    "scope": {
+      "list_role": "list",
+      "label": "書籤動作",
+      "list_multi": null,
+      "row_role": "listitem",
+      "row_action": null,
+      "row_tab": null,
+      "row_selected": null,
+      "siblings": [
+        "list-action-a",
+        "list-action-a-pin",
+        "list-action-a-more"
+      ],
+      "options": 0
+    },
+    "a_pin": {
+      "dom": {
+        "role": "button",
+        "name": "固定山",
+        "pressed": "true",
+        "checked": null,
+        "selected": null,
+        "disabled": null,
+        "target": "press",
+        "tabindex": "-1",
+        "row": "list-action-a-item",
+        "parent_button": null,
+        "nested_actions": 0
+      },
+      "description": null,
+      "chrome_pressed": "true"
+    },
+    "b_pin": {
+      "dom": {
+        "role": "button",
+        "name": "固定海",
+        "pressed": "false",
+        "checked": null,
+        "selected": null,
+        "disabled": null,
+        "target": "press",
+        "tabindex": "-1",
+        "row": "list-action-b-item",
+        "parent_button": null,
+        "nested_actions": 0
+      },
+      "description": null,
+      "chrome_pressed": "false"
+    },
+    "long_primary": {
+      "dom": {
+        "role": "button",
+        "name": "長文字會在窄畫面自動換行",
+        "pressed": null,
+        "checked": null,
+        "selected": null,
+        "disabled": null,
+        "target": "press",
+        "tabindex": "-1",
+        "row": "list-action-c-item",
+        "parent_button": null,
+        "nested_actions": 0
+      },
+      "description": "放大文字後仍可完整閱讀",
+      "chrome_pressed": null
+    }
+  },
+  "geometry": [
+    {
+      "variant": "segmented",
+      "gap": 2.0,
+      "a": [
+        [
+          12.0,
+          164.0,
+          818.0,
+          56.0
+        ],
+        [
+          832.0,
+          164.0,
+          48.0,
+          56.0
+        ],
+        [
+          884.0,
+          164.0,
+          48.0,
+          56.0
+        ]
+      ],
+      "b": [
+        [
+          12.0,
+          222.0,
+          818.0,
+          56.0
+        ],
+        [
+          832.0,
+          222.0,
+          48.0,
+          56.0
+        ],
+        [
+          884.0,
+          222.0,
+          48.0,
+          56.0
+        ]
+      ],
+      "c": [
+        [
+          12.0,
+          280.0,
+          766.0,
+          88.0
+        ],
+        [
+          780.0,
+          280.0,
+          48.0,
+          88.0
+        ],
+        [
+          832.0,
+          280.0,
+          48.0,
+          88.0
+        ],
+        [
+          884.0,
+          280.0,
+          48.0,
+          88.0
+        ]
+      ],
+      "checked_ink_pixels": 335,
+      "unchecked_ink_pixels": 335,
+      "gap_pixels": 48
+    },
+    {
+      "variant": "standard",
+      "gap": 0.0,
+      "a": [
+        [
+          12.0,
+          164.0,
+          818.0,
+          56.0
+        ],
+        [
+          832.0,
+          164.0,
+          48.0,
+          56.0
+        ],
+        [
+          884.0,
+          164.0,
+          48.0,
+          56.0
+        ]
+      ],
+      "b": [
+        [
+          12.0,
+          220.0,
+          818.0,
+          56.0
+        ],
+        [
+          832.0,
+          220.0,
+          48.0,
+          56.0
+        ],
+        [
+          884.0,
+          220.0,
+          48.0,
+          56.0
+        ]
+      ],
+      "c": [
+        [
+          12.0,
+          276.0,
+          766.0,
+          88.0
+        ],
+        [
+          780.0,
+          276.0,
+          48.0,
+          88.0
+        ],
+        [
+          832.0,
+          276.0,
+          48.0,
+          88.0
+        ],
+        [
+          884.0,
+          276.0,
+          48.0,
+          88.0
+        ]
+      ],
+      "checked_ink_pixels": 335,
+      "unchecked_ink_pixels": 335,
+      "gap_pixels": null
+    },
+    {
+      "variant": "baseline",
+      "gap": 0.0,
+      "a": [
+        [
+          12.0,
+          164.0,
+          806.0,
+          56.0
+        ],
+        [
+          824.0,
+          164.0,
+          48.0,
+          56.0
+        ],
+        [
+          876.0,
+          164.0,
+          48.0,
+          56.0
+        ]
+      ],
+      "b": [
+        [
+          12.0,
+          220.0,
+          806.0,
+          56.0
+        ],
+        [
+          824.0,
+          220.0,
+          48.0,
+          56.0
+        ],
+        [
+          876.0,
+          220.0,
+          48.0,
+          56.0
+        ]
+      ],
+      "c": [
+        [
+          12.0,
+          276.0,
+          754.0,
+          88.0
+        ],
+        [
+          772.0,
+          276.0,
+          48.0,
+          88.0
+        ],
+        [
+          824.0,
+          276.0,
+          48.0,
+          88.0
+        ],
+        [
+          876.0,
+          276.0,
+          48.0,
+          88.0
+        ]
+      ],
+      "checked_ink_pixels": 550,
+      "unchecked_ink_pixels": 550,
+      "gap_pixels": null
+    }
+  ],
+  "keyboard": {
+    "first": "list-action-a",
+    "reverse_entry": "list-action-a",
+    "last_initial": [
+      884.0,
+      486.0,
+      48.0,
+      56.0
+    ],
+    "last_revealed": [
+      884.0,
+      428.0,
+      48.0,
+      56.0
+    ],
+    "enter": "list-action-a-pin",
+    "space": "list-action-b-pin",
+    "activations": 2
+  },
+  "pointer": {
+    "accepted": [
+      "list-action-a",
+      "list-action-a-pin",
+      "list-action-a-more",
+      "list-action-b-pin"
+    ],
+    "actual_count": 4,
+    "crossed_release_inert": true,
+    "disabled_and_gap_inert": true,
+    "touch_cancel_inert": true,
+    "events": [
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerup",
+        "type": "mouse"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "touch"
+      },
+      {
+        "kind": "pointercancel",
+        "type": "touch"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "touch"
+      },
+      {
+        "kind": "pointerup",
+        "type": "touch"
+      },
+      {
+        "kind": "pointerdown",
+        "type": "touch"
+      },
+      {
+        "kind": "pointerup",
+        "type": "touch"
+      }
+    ]
+  },
+  "compact": {
+    "row": [
+      12.0,
+      394.0,
+      296.0,
+      300.0
+    ],
+    "targets": [
+      [
+        22.0,
+        404.0,
+        276.0,
+        228.0
+      ],
+      [
+        126.0,
+        636.0,
+        48.0,
+        48.0
+      ],
+      [
+        74.0,
+        636.0,
+        48.0,
+        48.0
+      ],
+      [
+        22.0,
+        636.0,
+        48.0,
+        48.0
+      ]
+    ],
+    "headline": [
+      38.0,
+      446.0,
+      212.0,
+      96.0
+    ],
+    "support": [
+      38.0,
+      542.0,
+      212.0,
+      80.0
+    ],
+    "chrome_primary": {
+      "dom": {
+        "role": "button",
+        "name": "長文字會在窄畫面自動換行",
+        "pressed": null,
+        "checked": null,
+        "selected": null,
+        "disabled": null,
+        "target": "press",
+        "tabindex": "-1",
+        "row": "list-action-c-item",
+        "parent_button": null,
+        "nested_actions": 0
+      },
+      "description": "放大文字後仍可完整閱讀",
+      "chrome_pressed": null
+    },
+    "rtl_arrow_action": "list-action-c-archive",
+    "revealed_targets": [
+      [
+        22.0,
+        352.0,
+        276.0,
+        228.0
+      ],
+      [
+        126.0,
+        584.0,
+        48.0,
+        48.0
+      ],
+      [
+        74.0,
+        584.0,
+        48.0,
+        48.0
+      ],
+      [
+        22.0,
+        584.0,
+        48.0,
+        48.0
+      ]
+    ]
+  },
+  "resize_focus": {
+    "id": "list-action-c-more",
+    "wide": [
+      28.0,
+      332.0,
+      48.0,
+      140.0
+    ],
+    "narrow": [
+      22.0,
+      584.0,
+      48.0,
+      48.0
+    ],
+    "short": [
+      22.0,
+      180.0,
+      48.0,
+      48.0
+    ],
+    "checked_no_new_activation": true,
+    "reordered_entry": "list-action-f",
+    "after_removal": "list-action-e"
+  },
+  "errors": []
+}

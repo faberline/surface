@@ -1,0 +1,838 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "basic": {
+    "ax": {
+      "role": "dialog",
+      "name": "行程通知",
+      "heading": {
+        "id": "dialog-demo-basic-heading",
+        "text": "行程通知"
+      },
+      "modal": true
+    },
+    "panel": [
+      280.0,
+      92.0,
+      400.0,
+      536.0
+    ],
+    "tab_cycle": [
+      "confirm",
+      "cancel",
+      "confirm",
+      "cancel"
+    ],
+    "escape_return": true,
+    "scrim_return": true
+  },
+  "adapter": {
+    "isFallbackAdapter": true,
+    "vendor": "google",
+    "architecture": "swiftshader"
+  },
+  "short": {
+    "viewport": [
+      320,
+      400
+    ],
+    "dark": true,
+    "text_scale": 2,
+    "panel": [
+      20.0,
+      24.0,
+      280.0,
+      352.0
+    ],
+    "heading": [
+      44.0,
+      48.0,
+      232.0,
+      64.0
+    ],
+    "body": [
+      44.0,
+      128.0,
+      232.0,
+      96.0
+    ],
+    "actions": [
+      [
+        140.0,
+        304.0,
+        136.0,
+        48.0
+      ],
+      [
+        140.0,
+        248.0,
+        136.0,
+        48.0
+      ]
+    ],
+    "last_content_before": [
+      44.0,
+      960.0,
+      232.0,
+      80.0
+    ],
+    "last_content_after": [
+      44.0,
+      144.0,
+      232.0,
+      80.0
+    ],
+    "pinned": true
+  },
+  "alert": {
+    "ax": {
+      "role": "alertdialog",
+      "name": "連線中斷",
+      "heading": {
+        "id": "dialog-demo-alert-heading",
+        "text": "連線中斷"
+      },
+      "modal": true
+    },
+    "description": "目前無法同步行程。請確認網路連線後再試。",
+    "panel": [
+      280.0,
+      252.0,
+      400.0,
+      216.0
+    ],
+    "escape_blocked": true,
+    "click_through_blocked": true,
+    "acknowledgements": 1
+  },
+  "breakpoint": {
+    "viewport_widths": [
+      599,
+      600,
+      599
+    ],
+    "full_screen": [
+      0.0,
+      0.0,
+      599.0,
+      500.0
+    ],
+    "basic": [
+      100.0,
+      40.0,
+      400.0,
+      420.0
+    ],
+    "full_screen_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-title",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "basic_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-heading",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "same_editor": true,
+    "tab_cycle": [
+      "editor",
+      "close",
+      "save",
+      "editor",
+      "save"
+    ]
+  },
+  "transaction": {
+    "ax": {
+      "role": "dialog",
+      "name": "捨棄變更？",
+      "heading": {
+        "id": "dialog-demo-discard-heading",
+        "text": "捨棄變更？"
+      },
+      "modal": true
+    },
+    "initial": "週末行程",
+    "continued": "秋日散步",
+    "saved": "秋日散步",
+    "discarded": "待捨棄",
+    "saves": 1,
+    "discards": 1,
+    "clean_escape_return": true,
+    "close_continue_focus": "dialog-demo-edit-close",
+    "escape_continue_focus": "dialog-demo-editor",
+    "escape_continue_selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "route_focus_restored": true
+  },
+  "rtl_short": {
+    "viewport": [
+      0.0,
+      0.0,
+      320.0,
+      400.0
+    ],
+    "text_scale": 2,
+    "rtl": true,
+    "title": {
+      "bounds": [
+        92.0,
+        4.0,
+        160.0,
+        112.0
+      ],
+      "pitch": 56.0,
+      "rgb": [
+        230,
+        224,
+        233
+      ],
+      "line_ink_pixels_x": [
+        [
+          59,
+          315
+        ],
+        [
+          235,
+          315
+        ]
+      ]
+    },
+    "discard": {
+      "description": "未儲存的行程變更會遺失。",
+      "panel": [
+        20.0,
+        24.0,
+        280.0,
+        352.0
+      ],
+      "heading": [
+        44.0,
+        48.0,
+        232.0,
+        128.0
+      ],
+      "body": [
+        44.0,
+        192.0,
+        232.0,
+        32.0
+      ],
+      "actions": [
+        [
+          44.0,
+          304.0,
+          136.0,
+          48.0
+        ],
+        [
+          44.0,
+          248.0,
+          136.0,
+          48.0
+        ]
+      ],
+      "support_bounds_before": [
+        44.0,
+        192.0,
+        232.0,
+        80.0
+      ],
+      "support_bounds_after": [
+        44.0,
+        144.0,
+        232.0,
+        80.0
+      ],
+      "support_bounds_unclipped": [
+        44.0,
+        228.0,
+        232.0,
+        80.0
+      ],
+      "unclipped_body": [
+        44.0,
+        228.0,
+        232.0,
+        80.0
+      ],
+      "support_rgb": [
+        202,
+        196,
+        207
+      ],
+      "support_pitch": 40.0,
+      "last_line_ink_before": 0,
+      "last_line_ink_after": 2741,
+      "unclipped_ink": 2741,
+      "same_ink_mask": true,
+      "focus_during_wheel": "dialog-demo-discard-cancel",
+      "continue_focus": "dialog-demo-editor"
+    }
+  },
+  "motion": {
+    "manual_performance_time": true,
+    "basic": {
+      "panel": [
+        280.0,
+        92.0,
+        400.0,
+        536.0
+      ],
+      "sample_points": [
+        [
+          940.0,
+          690.0
+        ],
+        [
+          294.0,
+          360.0
+        ]
+      ],
+      "entry_40ms": 0.4750690460205078,
+      "exit_40ms": 0.5249309539794922,
+      "pixels": {
+        "rest": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ],
+        "enter_zero": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ],
+        "entering": [
+          [
+            17,
+            15,
+            20
+          ],
+          [
+            29,
+            27,
+            33
+          ]
+        ],
+        "opaque": [
+          [
+            14,
+            12,
+            16
+          ],
+          [
+            43,
+            41,
+            47
+          ]
+        ],
+        "exit_start": [
+          [
+            14,
+            12,
+            16
+          ],
+          [
+            43,
+            41,
+            47
+          ]
+        ],
+        "exiting": [
+          [
+            17,
+            15,
+            20
+          ],
+          [
+            31,
+            29,
+            34
+          ]
+        ],
+        "reversed": [
+          [
+            17,
+            15,
+            20
+          ],
+          [
+            31,
+            29,
+            34
+          ]
+        ],
+        "closed": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ]
+      },
+      "enter_scope": "dialog-demo-basic-confirm",
+      "exit_scope": "dialog-demo-basic-open",
+      "exit_ax_absent": true,
+      "trusted_pass_through_reopened": true
+    },
+    "nested": {
+      "sample_point": [
+        312.0,
+        390.0
+      ],
+      "retained_panel": [
+        20.0,
+        92.0,
+        280.0,
+        216.0
+      ],
+      "entry_40ms": 0.4750690460205078,
+      "exit_40ms": 0.5249309539794922,
+      "scrim": {
+        "initial": [
+          20,
+          18,
+          24
+        ],
+        "entering": [
+          17,
+          15,
+          20
+        ],
+        "covered": [
+          14,
+          12,
+          16
+        ],
+        "exit_start": [
+          14,
+          12,
+          16
+        ],
+        "exiting": [
+          17,
+          15,
+          20
+        ],
+        "closed": [
+          20,
+          18,
+          24
+        ]
+      },
+      "upper_ax_absent_during_exit": true,
+      "live_lower_editor": "dialog-demo-editor",
+      "draft_after_trusted_input": "秋日散步！"
+    },
+    "reduced": {
+      "clock_ms": 0,
+      "open": [
+        [
+          14,
+          12,
+          16
+        ],
+        [
+          43,
+          41,
+          47
+        ]
+      ],
+      "closed": [
+        [
+          20,
+          18,
+          24
+        ],
+        [
+          20,
+          18,
+          24
+        ]
+      ],
+      "exact_endpoints": true
+    }
+  },
+  "full_screen_transform": {
+    "normal": {
+      "anchor": [
+        24.0,
+        320.0,
+        56.0,
+        56.0
+      ],
+      "start": {
+        "anchor": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "container": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "preview": true,
+        "progress": 0.0,
+        "retiring": false
+      },
+      "entry": {
+        "anchor": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "container": {
+          "height": 227.9384002685547,
+          "width": 187.9527282714844,
+          "x": 12.004297256469728,
+          "y": 160.0572967529297
+        },
+        "preview": true,
+        "progress": 0.4998209476470947,
+        "retiring": false
+      },
+      "exit": {
+        "anchor": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "container": {
+          "height": 228.0615997314453,
+          "width": 188.0472717285156,
+          "x": 11.995702743530272,
+          "y": 159.9427032470703
+        },
+        "preview": true,
+        "progress": 0.5001790523529053,
+        "retiring": true
+      },
+      "reversal": {
+        "anchor": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "container": {
+          "height": 228.0615997314453,
+          "width": 188.0472717285156,
+          "x": 11.995702743530272,
+          "y": 159.9427032470703
+        },
+        "preview": true,
+        "progress": 0.5001790523529053,
+        "retiring": false
+      },
+      "entry_pixels": {
+        "points": [
+          [
+            124.77593421936037,
+            310.4966409301758
+          ],
+          [
+            12.254297256469728,
+            160.3072967529297
+          ],
+          [
+            316.0,
+            310.4966409301758
+          ]
+        ],
+        "rest": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ],
+        "frame": [
+          [
+            33,
+            27,
+            45
+          ],
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ]
+      },
+      "exit_pixels": {
+        "points": [
+          [
+            124.82406578063963,
+            310.46335906982426
+          ],
+          [
+            12.245702743530272,
+            160.1927032470703
+          ],
+          [
+            316.0,
+            310.46335906982426
+          ]
+        ],
+        "rest": [
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ],
+        "frame": [
+          [
+            32,
+            27,
+            44
+          ],
+          [
+            20,
+            18,
+            24
+          ],
+          [
+            20,
+            18,
+            24
+          ]
+        ]
+      },
+      "origin_point": [
+        36.0,
+        348.0
+      ],
+      "origin_pixel": [
+        77,
+        61,
+        117
+      ],
+      "field_probe": [
+        32.0,
+        156.32
+      ],
+      "field_color": [
+        54,
+        52,
+        58
+      ],
+      "paint_retired_after_focus_return": true,
+      "trusted_reverse": true,
+      "legacy_launchers_absent": true
+    },
+    "reduced": {
+      "clock_ms": 0,
+      "field_probe": [
+        32.0,
+        156.32
+      ],
+      "field_color": [
+        54,
+        52,
+        58
+      ],
+      "exact_endpoints": true,
+      "resting_anchor_available": true
+    },
+    "adaptive": {
+      "widths": [
+        599,
+        600,
+        599
+      ],
+      "starting": {
+        "anchor": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 420.0
+        },
+        "container": {
+          "height": 277.9205017089844,
+          "width": 327.40277099609375,
+          "x": 12.004297256469728,
+          "y": 210.0751953125
+        },
+        "preview": true,
+        "progress": 0.4998209476470947,
+        "retiring": false
+      },
+      "basic_bounds": [
+        100.0,
+        40.0,
+        400.0,
+        420.0
+      ],
+      "selection": {
+        "same": true,
+        "value": "秋日散步",
+        "range": [
+          3,
+          4
+        ],
+        "direction": "backward",
+        "runtime": {
+          "value": "秋日散步",
+          "display_value": "秋日散步",
+          "selection_anchor": 12,
+          "selection_cursor": 9,
+          "composing": false,
+          "preedit_range": null
+        }
+      },
+      "preedit": {
+        "same": true,
+        "value": "秋日散ㄅ",
+        "range": [
+          3,
+          4
+        ],
+        "direction": "forward",
+        "runtime": {
+          "value": "秋日散步",
+          "display_value": "秋日散ㄅ",
+          "selection_anchor": 12,
+          "selection_cursor": 9,
+          "composing": true,
+          "preedit_range": {
+            "start": 9,
+            "end": 12
+          }
+        }
+      },
+      "same_textarea": true,
+      "draft": "秋日散步",
+      "saved": "週末行程"
+    },
+    "short_clearance": {
+      "viewport": [
+        320,
+        240
+      ],
+      "text_scale": 2,
+      "clip_gap": 8,
+      "scroller": [
+        28.0,
+        28.0,
+        264.0,
+        124.0
+      ],
+      "fab": [
+        24.0,
+        160.0,
+        56.0,
+        56.0
+      ],
+      "saved_before": [
+        28.0,
+        252.0,
+        264.0,
+        48.0
+      ],
+      "saved_after": [
+        28.0,
+        104.0,
+        264.0,
+        48.0
+      ],
+      "saved_rgb": [
+        230,
+        224,
+        233
+      ],
+      "saved_solid_ink": 6861,
+      "physical_fab_opens": true
+    },
+    "manual_performance_time": true
+  },
+  "errors": []
+}

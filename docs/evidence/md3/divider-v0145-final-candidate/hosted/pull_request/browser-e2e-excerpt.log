@@ -1,0 +1,299 @@
+2026-11-24T20:17:41.4213982Z ##[group]Operating System
+2026-11-24T20:17:41.4214616Z Ubuntu
+2026-11-24T20:17:43.5224358Z [command]/usr/bin/git log -1 --format=%H
+2026-11-24T20:17:43.5249101Z 72dd5a4624b1128eddd453a9a1f3a77046e4a803
+2026-11-24T20:19:42.6103609Z ##[group]Run xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e
+2026-11-24T20:24:50.3775788Z case smoke ... ok (19 steps, 34 checks, 3.3s)
+2026-11-24T20:24:50.6033331Z   [I1] Ready; click name → textarea focused
+2026-11-24T20:24:50.6462841Z   [I2] record composition and input events
+2026-11-24T20:24:50.6493122Z   [I3] compose ㄓㄨㄥ → preedit, composing, empty value
+2026-11-24T20:24:50.6899764Z   [I4] compose 中文 → preedit; screenshot
+2026-11-24T20:24:51.2005872Z   [I5] DOM export during preedit
+2026-11-24T20:24:51.2151188Z   [I6] textarea position matches input_caret()
+2026-11-24T20:24:51.2159438Z   [I7] commit 中文
+2026-11-24T20:24:51.2270275Z   [I8] setSelectionRange(0,1) → bytes 0..3
+2026-11-24T20:24:51.2493530Z   [I9] compose and commit 台 → 台文
+2026-11-24T20:24:51.2625551Z   [I10] compose ㄅㄆ then cancel → value kept
+2026-11-24T20:24:51.2704030Z   [I11] select all, commit text with ZWJ emoji and combining mark
+2026-11-24T20:24:51.9463385Z   [I12] Backspace deletes one grapheme at a time
+2026-11-24T20:24:51.9502897Z   [I13] undo and redo
+2026-11-24T20:24:51.9652642Z   [I14] select all, commit mixed scripts
+2026-11-24T20:24:51.9699588Z   [I15] compose ㄅ then click increment → composition cancelled
+2026-11-24T20:24:52.1411132Z   [I16] click name again, select all, commit; screenshot
+2026-11-24T20:24:52.8035003Z   [I17] final DOM export
+2026-11-24T20:24:52.8224366Z   [I18] events include composition and input
+2026-11-24T20:24:52.8239539Z   [I19] no page errors; evidence JSON
+2026-11-24T20:24:52.8253407Z   [I20] authored line endings keep directed browser and Rust selections
+2026-11-24T20:24:53.0914223Z case ime ... ok (20 steps, 77 checks, 2.7s)
+2026-11-24T20:24:53.4113057Z   [M1] Ready
+2026-11-24T20:24:53.8436077Z   [M2] radio arrows
+2026-11-24T20:24:53.8943160Z   [M3] segment manual focus, Space selects
+2026-11-24T20:24:54.4997098Z   [M4] check and switch
+2026-11-24T20:24:55.1375956Z   [M5] slider pointer and keys
+2026-11-24T20:24:55.5023506Z   [M6] light screenshot, theme → dark, dark screenshot
+2026-11-24T20:24:57.2045241Z   [M7] section 1
+2026-11-24T20:24:57.2473102Z   [M8] button updates on release
+2026-11-24T20:24:57.4694113Z   [M9] disabled action does nothing
+2026-11-24T20:24:57.8426868Z   [M10] filter chip on; input chip removed; screenshot
+2026-11-24T20:24:59.0993685Z   [M11] section 2, open dialog, textarea focused
+2026-11-24T20:24:59.3293485Z   [M12] insert draft; saved name unchanged
+2026-11-24T20:24:59.3573187Z   [M13] Escape closes dialog and restores focus
+2026-11-24T20:24:59.3724223Z   [M14] outside click dismisses without activating the tab
+2026-11-24T20:25:00.1283251Z   [M15] Tab through dialog with DOM host checks
+2026-11-24T20:25:00.6938616Z   [M16] three Tab / Shift+Tab cycles
+2026-11-24T20:25:01.8935340Z   [M17] dialog screenshot and DOM export
+2026-11-24T20:25:02.9276815Z   [M18] save the dialog
+2026-11-24T20:25:02.9419745Z   [M19] menu focus, arrows and Escape
+2026-11-24T20:25:03.1683488Z   [M20] 480×760 dialog fits; mobile screenshot
+2026-11-24T20:25:03.9759678Z   [M21] canvas corner click dismisses; section stays 2
+2026-11-24T20:25:03.9912761Z   [M22] no page errors; evidence JSON
+2026-11-24T20:25:04.0183348Z   [M24] inline rail reflows, keeps one selection, and hands focus to the compact bar
+2026-11-24T20:25:08.6786756Z   [M25] standalone modal follows mouse and touch swipes and releases at the right anchor
+2026-11-24T20:25:18.6823530Z   [M26] modal rail scrolls at 320×240 with 200% text and supports retained layout
+2026-11-24T20:25:25.6637711Z   [M27] Chrome keeps a named modal during drag and restores focus with Reduce Motion
+2026-11-24T20:25:29.6333653Z   [M28] Snackbar keeps trigger focus and expires a short message
+2026-11-24T20:25:31.6803220Z   [M29] Queued actions advance once on Enter and pointer release
+2026-11-24T20:25:33.5372639Z   [M30] Dark RTL Snackbar wraps large CJK text in a 320 dp viewport
+2026-11-24T20:25:36.1917896Z   [M31] Snackbar exposes passive status and separate named controls
+2026-11-24T20:25:36.7275045Z   [M32] Badge paints both sizes without changing the anchor geometry
+2026-11-24T20:25:38.2894484Z   [M33] Badge updates the accessible count without adding a hit or tab target
+2026-11-24T20:25:39.7854907Z   [M34] Badge mirrors and keeps CJK glyphs clear at 320 dp and 200% text
+2026-11-24T20:25:41.2202820Z   [M35] Navigation and clipped anchors preserve selection and paint scope
+2026-11-24T20:25:43.2876428Z   [M36] permanent and dismissible drawers share space and preserve routing
+2026-11-24T20:25:45.0377726Z   [M37] modal drawer isolates its destinations and restores focus
+2026-11-24T20:25:48.9233525Z   [M38] 320 dp RTL at 200% keeps shared controls visible and reveals wrapped destinations
+2026-11-24T20:25:50.5184526Z   [M39] trusted mouse and touch drag the logical edge, panel, and scrim
+2026-11-24T20:25:58.1481616Z   [M40] open drawer reflows on resize and Reduce Motion retires the closing layer
+2026-11-24T20:25:59.8259888Z   [M41] known progress exposes a read-only range and paints a gap, stop, arc, and waves
+2026-11-24T20:26:04.0041151Z   [M42] switching to unknown progress removes stale ranges on all four indicators
+2026-11-24T20:26:04.7455258Z   [M43] browser frames animate all unknown indicators and Reduce Motion freezes them
+2026-11-24T20:26:13.7749454Z   [M44] dark RTL at 320 dp with 200% text adapts further at 260 dp
+2026-11-24T20:26:16.4207713Z   [M45] standard overlay keeps body bounds and outside actions
+2026-11-24T20:26:32.6023237Z   [M46] standard coplanar shares space on both logical edges
+2026-11-24T20:26:49.0746041Z   [M47] modal isolates background and restores focus on Escape, scrim and Close
+2026-11-24T20:27:13.1063364Z   [M48] 320 dp uses modal fallback, wraps 200% Chinese, and preserves state on resize
+2026-11-24T20:27:16.2309444Z   [M49] WebGPU frames follow trusted mouse and touch; Reduce Motion snaps
+2026-11-24T20:27:28.9948937Z   [M50] standard bottom sheet peeks and expands while the page stays live
+2026-11-24T20:27:34.3863218Z   [M51] modal bottom sheet shields outside actions and restores opener focus
+2026-11-24T20:27:37.0559819Z   [M52] modal keyboard scope omits the page and the disabled control
+2026-11-24T20:27:42.9476288Z   [M53] 320 dp dark mode wraps 200% text and clips the real scrolled content
+2026-11-24T20:27:45.9543301Z   [M54] trusted vertical touch and mouse drag, rollback, collapse, and dismissal
+2026-11-24T20:27:54.7967586Z   [M55] Reduce Motion reaches all anchors while the animation clock is frozen
+2026-11-24T20:27:56.2553468Z   [M56] all top app bar variants use the intended dimensions and surface colors
+2026-11-24T20:27:59.1696370Z   [M57] center title stays centered with asymmetric actions, including RTL and keyboard
+2026-11-24T20:28:01.4062274Z   [M58] pinned and enter-always bars forward exactly the unused wheel delta
+2026-11-24T20:28:06.2973346Z   [M59] exit-until-collapsed drains content before expanding and forwards the remainder
+2026-11-24T20:28:08.4703345Z   [M60] search owns focus, accepts actual text and a result, and restores its entry
+2026-11-24T20:28:10.7733978Z   [M61] 320 dp dark RTL app bars fit controls and paint text at 200%
+2026-11-24T20:28:14.0195239Z   [M62] context actions replace the app bar and return focus to the selected row
+2026-11-24T20:28:16.0463317Z   [M63] docked and floating toolbar layouts paint both Material palettes
+2026-11-24T20:28:22.5394311Z   [M64] arrow navigation mirrors horizontal RTL and skips the disabled action
+2026-11-24T20:28:28.4294348Z   [M65] overflow restores focus and optional FAB has its own target and collapsed state
+2026-11-24T20:28:31.4819267Z   [M66] real wheel travels 40 dp before hiding or collapsing; focus keeps actions visible
+2026-11-24T20:28:37.1646625Z   [M67] 320 dp dark RTL keeps 200% controls and toolbar actions inside the viewport
+2026-11-24T20:28:39.4891754Z   [M68] 320 dp horizontal toolbar and FAB fit inside the margins at 200% RTL
+2026-11-24T20:28:41.0416648Z   [M69] passive tooltip waits 500 ms, describes its owner, and dismisses without stealing focus
+2026-11-24T20:28:43.5268246Z   [M70] rich tooltip has a nonmodal action, returns focus, and leaves outside actions live
+2026-11-24T20:28:44.8250628Z   [M71] dark 320 dp RTL tooltips flip at the top, clamp at both edges, and wrap text at 200%
+2026-11-24T20:28:47.6614801Z   [M72] trusted touch tap, long press, cancellation, and moved contact have distinct actions
+2026-11-24T20:28:51.4785536Z   [M73] six carousel layouts paint visible cards and constrain them to the track
+2026-11-24T20:28:55.8960276Z   [M74] wheel moves cards continuously, snaps only fitted variants, and clamps
+2026-11-24T20:29:02.4128697Z   [M75] keyboard moves card focus; explicit Enter and Show All select once
+2026-11-24T20:29:05.0563272Z   [M76] trusted mouse and touch drag without card activation; canceled touch rolls back
+2026-11-24T20:29:08.9913879Z   [M77] 320 dp dark RTL stays readable at 200% and honors Reduce Motion
+2026-11-24T20:29:11.7660438Z   [M78] elevated, filled and outlined cards paint their Material surfaces in both themes
+2026-11-24T20:29:17.6413107Z   [M79] whole card activates once through pointer and keyboard and exposes its toggle to Chrome
+2026-11-24T20:29:22.0402698Z   [M80] a passive card keeps its own role and nested actions activate independently
+2026-11-24T20:29:23.6225947Z   [M81] captured mouse and touch move the passive card, cancel safely and match the keyboard action
+2026-11-24T20:29:32.7161417Z   [M82] dark RTL cards at 320 dp keep 200% text and separate action targets reachable
+2026-11-24T20:29:36.0612867Z   [M83] all five sizes keep full hit targets and both themes paint the group states
+2026-11-24T20:29:39.9716555Z   [M84] trusted hold reallocates adjacent width and cancellation restores the group, including Reduce Motion
+2026-11-24T20:29:42.7523294Z   [M85] connected buttons have a smaller join, a pressed contour, and mirrored end shapes
+2026-11-24T20:29:45.6044640Z   [M86] Tab enters the first enabled button, arrows skip disabled, and Enter or Space updates selection
+2026-11-24T20:29:49.2879760Z   [M87] 320 dp dark RTL keeps 200% button names and touch targets accessible on a single row
+2026-11-24T20:29:52.2947894Z   [M88] compact trailing commands overflow, activate once, and restore the menu trigger focus
+2026-11-24T20:29:56.1093733Z   [M89] five split sizes preserve two full targets and four appearances paint in both themes
+2026-11-24T20:30:05.2589785Z   [M90] the primary action stays independent and Chrome exposes a menu disclosure
+2026-11-24T20:30:06.5943416Z   [M91] keyboard menu navigation skips disabled items and exits to the correct tab stop
+2026-11-24T20:30:08.9614631Z   [M92] RTL mirrors the painted 180 degree chevron turn and Reduce Motion reaches both endpoints
+2026-11-24T20:30:13.5103204Z   [M93] disabled halves stay independent and compact XL text and popup fit at 320 dp dark RTL
+2026-11-24T20:30:19.1845476Z   [M94] Button Groups keep the shared menu hint and leave the row on Tab in either direction
+2026-11-24T20:30:21.7848320Z   [M95] three Extended FAB sizes and six Material palettes paint their contours in both themes
+2026-11-24T20:30:44.1624874Z   [M96] real pointer and touch, keyboard and accessibility share one action with Material states
+2026-11-24T20:30:48.8876502Z   [M97] real wheel moves the body, morphing reverses smoothly, and Reduce Motion keeps one anchored action
+2026-11-24T20:30:55.6211366Z   [M98] the 320 dp dark RTL Extended FAB mirrors its icon and paints all six 200% glyphs inside the rounded face
+2026-11-24T20:30:58.8317176Z   [M99] text-only stays legible, and disabled or exiting actions yield focus and block activation
+2026-11-24T20:31:07.1671245Z   [M100] three square FAB sizes retain legacy sizing and paint six expressive palettes in both themes
+2026-11-24T20:31:26.3179429Z   [M101] trusted off-center hold paints a clipped radial ripple and Reduce Motion paints a static press
+2026-11-24T20:31:35.0982044Z   [M102] one named button accepts trusted keyboard and short touch activation, then becomes inert when disabled
+2026-11-24T20:31:39.0257687Z   [M103] shared tooltip responds to delayed hover, keyboard focus, and trusted long touch without activating the FAB
+2026-11-24T20:31:44.1693614Z   [M104] compact dark RTL at 200 percent anchors the icon and focus ring through a real notes scroll
+2026-11-24T20:31:47.3033673Z   [M105] focus returns to the caller while the hidden FAB exits, then the restored action becomes operable again
+2026-11-24T20:31:52.8298174Z   [M106] Web keeps one stationary menu button, flips the baseline menu, and paints the surface in light and dark
+2026-11-24T20:31:57.6367933Z   [M107] Web arrows skip disabled items and dismissal restores or advances focus across keyboard and outside input
+2026-11-24T20:32:04.1602599Z   [M108] Floating FAB preserves its top trailing anchor, uses exact tokens, and paints three palettes in both themes
+2026-11-24T20:32:17.4323740Z   [M109] Floating mode keeps the stable close first, follows authored Button order, and consumes outside touch
+2026-11-24T20:32:22.4833875Z   [M110] both 320 dp dark RTL menus keep a long 200 percent label, scrolling, and the focused target inside the viewport
+2026-11-24T20:32:29.8294488Z   [M111] real floating entry and exit stagger in opposite orders, reverse mid-flight, and snap under Reduce Motion
+2026-11-24T20:32:38.2768473Z   [M112] the calendar uses a real date grid with distinct focus, today and selection
+2026-11-24T20:32:40.2648470Z   [M113] the modal can browse years and outside dismissal restores the opener
+2026-11-24T20:32:42.1937729Z   [M114] input validates on Enter and blur, and IME composition holds the first Enter
+2026-11-24T20:32:44.5206903Z   [M115] 320 dp dark RTL at 200 percent text keeps date targets and the mode switch reachable
+2026-11-24T20:32:47.2667628Z   [M116] docked field and icon have separate Tab stops and typed dates commit on Enter or blur
+2026-11-24T20:32:50.6123554Z   [M117] the first Enter belongs to IME composition and a later Enter commits once
+2026-11-24T20:32:52.3723340Z   [M118] docked calendar exposes a date grid and commits one keyboard choice
+2026-11-24T20:32:55.0849363Z   [M119] month and bounded year lists browse by keyboard without committing a date
+2026-11-24T20:32:58.1507847Z   [M120] the dark popup flips above and outside mouse or touch dismisses without click-through
+2026-11-24T20:33:01.6833323Z   [M121] 320 dp dark RTL at 200 percent retains touch targets and date focus
+2026-11-24T20:33:03.8235469Z   [M122] cross-month range bands and endpoints paint inside named multi-select grids
+2026-11-24T20:33:06.8059024Z   [M123] keyboard navigation crosses months and years without editing the saved range
+2026-11-24T20:33:09.6301989Z   [M124] partial, same-day and full calendar ranges commit only through Save
+2026-11-24T20:33:14.0264867Z   [M125] separate date fields expose their own format hints and validation errors
+2026-11-24T20:33:16.8343924Z   [M126] IME Enter completes text without saving and explicit Save commits once
+2026-11-24T20:33:18.7609435Z   [M127] 320 dp dark RTL at 200 percent scrolls both axes and caps mounted months
+2026-11-24T20:33:22.5653329Z   [M128] trusted calendar swipe previews one passive page and restores or turns on release
+2026-11-24T20:33:26.8118303Z   [M129] 320 dp RTL contacts pan first and a new edge contact pages
+2026-11-24T20:33:29.7004076Z   [M130] Reduce Motion turns on release with no preview while retaining the saved date
+2026-11-24T20:33:32.2318336Z   [M131] Shift+M and Shift+Y focus docked selectors and Enter or Space opens the list
+2026-11-24T20:33:35.3514624Z   [M132] docked shortcuts stay scoped to Calendar focus and remain reachable in compact RTL
+2026-11-24T20:33:38.6418251Z   [M133] the docked textarea and live IME keep shifted letters and Enter in the editor
+2026-11-24T20:33:41.5566475Z   [M134] inline Hour and Minute edit independently and AM/PM maps midnight and noon
+2026-11-24T20:33:43.9733158Z   [M135] modal 24-hour input accepts localized Japanese digits and rejects invalid or incomplete times
+2026-11-24T20:33:47.3150414Z   [M136] independent errors and focus stay with their named editors inside the modal
+2026-11-24T20:33:49.7844019Z   [M137] only explicit Save commits; IME Enter and all three dismissal paths preserve the saved time
+2026-11-24T20:33:53.3984109Z   [M138] short dark RTL at 200% keeps fields, help, period and actions reachable
+2026-11-24T20:33:56.4782713Z   [M139] portrait face previews a held diagonal and chooses only on release
+2026-11-24T20:33:57.9499270Z   [M140] landscape 24-hour dark RTL touch reads the inner ring and every minute
+2026-11-24T20:34:02.3367171Z   [M141] projected keyboard permits each minute and the selected value is named
+2026-11-24T20:34:04.8101061Z   [M142] unexpected browser capture loss restores the draft and a fresh drag still works
+2026-11-24T20:34:06.6113318Z   [M143] Input and Dial share invalid drafts and Enter during composition only accepts text
+2026-11-24T20:34:10.5944821Z   [M144] short dark RTL at 200% uses the editor and can explicitly return to the full dial
+2026-11-24T20:34:14.1442630Z   [M145] trusted selector Enter focuses the first value without choosing it
+2026-11-24T20:34:18.5274286Z   [M146] the hand takes the short arc through wrap and reverses from its current pose
+2026-11-24T20:34:25.4553567Z   [M147] a held hand snaps to input and capture loss retires motion and the draft preview
+2026-11-24T20:34:27.4451827Z   [M148] compact fallback and Reduce Motion remove stale hand animation at frozen time
+2026-11-24T20:34:33.2300854Z   [M149] two inline wheels settle independently and the surrounding page still scrolls
+2026-11-24T20:34:36.6037819Z   [M150] trusted pointer preview, capture loss, swipe and adjacent tap choose only on acceptance
+2026-11-24T20:34:39.8705381Z   [M151] projected spinbuttons keep keyboard scope, bounds and a distinct missing value
+2026-11-24T20:34:43.5765813Z   [M152] dark RTL at 200% keeps both localized wheels and preserves the draft in compact Input
+2026-11-24T20:34:46.9858592Z   [M153] IME Enter stays in Input, and explicit Save resolves queued wheel input once
+2026-11-24T20:34:50.4150879Z   [M154] Cancel, Escape and a real scrim click discard the draft and restore the opener
+2026-11-24T20:34:53.1434385Z   [M155] Baseline Input measures its editors and period targets and paints the active field
+2026-11-24T20:34:57.0215333Z   [M156] both Baseline Dial arrangements retain exact face and selector dimensions in both formats
+2026-11-24T20:35:01.4421479Z   [M157] a held pointer, both 24-hour rings and an exact minute share the Baseline clock
+2026-11-24T20:35:05.8076538Z   [M158] Baseline Dial and Input share a draft, preedit survives a mode press, and Save commits once
+2026-11-24T20:35:10.2253850Z   [M159] the dark 320 dp RTL Baseline editor retains the 200 percent draft and full actions
+2026-11-24T20:35:16.0361700Z   [M160] Baseline Input discards three ways and commits only on explicit Save
+2026-11-24T20:35:20.3271221Z   [M161] the three list styles keep exact row heights, gaps, and resting corner tokens
+2026-11-24T20:35:24.0082549Z   [M162] passive and command rows expose different accessible targets and command activation is momentary
+2026-11-24T20:35:27.3916236Z   [M163] the named listbox wraps, skips disabled rows, and reveals focus before manual selection
+2026-11-24T20:35:31.6245203Z   [M164] trusted touch and pointer use the row target, with inert gaps and disabled rows
+2026-11-24T20:35:36.6878651Z   [M165] the neighboring selection changes shape and color over time or snaps with Reduce Motion
+2026-11-24T20:35:44.4101309Z   [M166] dark RTL at 200 percent wraps long labels and keeps their full rows reachable at 320 dp
+2026-11-24T20:35:46.1223815Z   [M167] one named listbox exposes multiple selected options and keeps single selection intact
+2026-11-24T20:35:50.6209277Z   [M168] keyboard wraps and skips disabled rows, and held Space and Enter toggle once each
+2026-11-24T20:35:57.4090783Z   [M169] the checkbox and row text share one touch target, with disabled input inert
+2026-11-24T20:36:01.2678446Z   [M170] all three list styles reserve stable checkbox geometry and paint both states
+2026-11-24T20:36:05.3998013Z   [M171] dark RTL at 200 percent keeps full names, mirrored checkbox paint and short keyboard access
+2026-11-24T20:36:09.6564482Z   [M172] one named list exposes sibling buttons with independent disabled and toggle states
+2026-11-24T20:36:11.1761224Z   [M173] all three styles preserve 48 dp wide supplementary targets and the segmented gap
+2026-11-24T20:36:14.2603326Z   [M174] four arrows follow authored order, skip disabled actions and wrap through clipped rows
+2026-11-24T20:36:18.3976624Z   [M175] trusted pointer and touch activate one sibling with canceled, crossed and disabled input inert
+2026-11-24T20:36:22.6419519Z   [M176] dark RTL at 200 percent moves supplementary actions below the complete long primary label
+2026-11-24T20:36:25.6716195Z   [M177] the same supplementary action stays focused across reflow and short resize
+2026-11-24T20:36:30.3834458Z   [M178] a closed named disclosure stays in ordinary list flow and exposes no child controls
+2026-11-24T20:36:33.8204591Z   [M179] the branch and following row move together and reverse without a jump
+2026-11-24T20:36:40.4553360Z   [M180] external collapse restores the header and suppresses all child actions before paint ends
+2026-11-24T20:36:44.8733059Z   [M181] Reduce Motion snaps the endpoints and 320 dp RTL wraps text without hiding controls
+2026-11-24T20:36:49.6297999Z   [M182] keyboard, mouse and touch use separate move buttons and honor a fixed barrier
+2026-11-24T20:36:54.3717642Z   [M183] mouse drag previews unequal-height rows with Material lift and destination paint
+2026-11-24T20:36:59.0040143Z   [M184] mouse and touch release use the rendered edge-scroll layout without another move
+2026-11-24T20:37:19.9365745Z   [M185] Escape, trusted capture loss, touch cancel and an external revision clear held paint
+2026-11-24T20:37:23.7500309Z   [M186] at 320 dp RTL with 200 percent text each keyboard, mouse and touch target stays reachable
+2026-11-24T20:37:27.0874336Z   [M187] real photo and poster paint at the preferred wide and portrait sizes in a passive list
+2026-11-24T20:37:29.3595857Z   [M188] actual GPU pixels prove center crop, orientation, alpha, corner masks and list clipping
+2026-11-24T20:37:32.8477729Z   [M189] keyboard and a click on the poster open one named detail each and return focus
+2026-11-24T20:37:37.0929773Z   [M190] media, checkbox and keyboard share one independent action per enabled row
+2026-11-24T20:37:42.3323413Z   [M191] 320 dp dark RTL at 200 percent keeps a full media label, mirrored checkbox and one hit target
+2026-11-24T20:37:46.4346634Z   [M192] locked-time hover takes a real intermediate arc and can reverse without jumping
+2026-11-24T20:37:56.2881691Z   [M193] mouse and touch use the rectangular target and the pressed-to-selected arc continues
+2026-11-24T20:38:17.2950596Z   [M194] keyboard focus follows the animated row contour and Reduce Motion snaps the same target
+2026-11-24T20:38:27.2049891Z   [M195] Standard media focus animates at 320 dp dark RTL without moving artwork and text
+2026-11-24T20:38:31.9863619Z   [M196] the bounded pointer ripple grows from the real off-center down point and fades once
+2026-11-24T20:38:44.6508582Z   [M197] a coalesced trusted tap paints from its own origin and canceled contacts retire
+2026-11-24T20:38:53.7656154Z   [M198] a real touch tints the poster below its text, check and focus outline
+2026-11-24T20:39:02.1457607Z   [M199] 320 dp dark RTL retains a physical right-side origin and clips the expanded wave
+2026-11-24T20:39:07.5729231Z   [M200] Reduce Motion changes a held Baseline wave into one static press immediately
+2026-11-24T20:39:12.8687000Z   [M201] two real 48 dp variants paint their tokens; the named indeterminate progress stays outside Tab
+2026-11-24T20:39:14.8100013Z   [M202] seven measured GPU silhouettes morph along the spring and wrap without focus or announcement churn
+2026-11-24T20:39:35.5973625Z   [M203] 24 and 48 dp fit 320 dp dark RTL at 200% text and the 240 dp frame stays bounded
+2026-11-24T20:39:46.0037852Z   [M204] Reduce Motion and Stop leave no animation frames; restart and re-entry reset the pose
+2026-11-24T20:40:00.3306062Z   [M205] Small, Medium and Large paint the scroll colors and keep focused geometry explicit
+2026-11-24T20:40:07.4744355Z   [M206] trusted mouse and touch tap the 48 dp cropped zones and wheel remains page scrolling
+2026-11-24T20:40:14.9409205Z   [M207] trusted keys move one adjustable value; the direct editor rejects off-step and out-of-range input
+2026-11-24T20:40:22.3136504Z   [M208] CDP-simulated composition consumes the first Enter and only a second Enter commits
+2026-11-24T20:40:26.3983736Z   [M209] trusted swipe previews without changing the value, cancels cleanly and springs after acceptance
+2026-11-24T20:40:36.8288227Z   [M210] dark RTL at 320 dp and 200% text uses the real editor when the measured scroll field cannot fit
+2026-11-24T20:40:45.3013345Z   [M211] finite text choices show the cropped Material face and one localized Chrome spinbutton
+2026-11-24T20:40:48.0483396Z   [M212] one typed character suggests a unique place and only explicit Enter accepts it
+2026-11-24T20:40:52.1296495Z   [M213] ambiguous and unresolved input keep the current ID until an exact disambiguating alias is confirmed
+2026-11-24T20:40:57.9114985Z   [M214] reorder and relabel preserve the committed ID and publish its updated position and name
+2026-11-24T20:41:03.1964533Z   [M215] real cropped mouse and touch targets pick stable IDs, and cancellation or catalog change rejects a held release
+2026-11-24T20:41:12.7983776Z   [M216] dark RTL at 320 dp and 200 percent keeps the editor, raw draft and IME composition through resize
+2026-11-24T20:41:20.0606147Z   [M217] ArrowUp and ArrowDown wrap the real numeric bounds using continuous signed motion
+2026-11-24T20:41:27.6683600Z   [M218] a real mouse drag crosses two numeric seams, commits once and a canceled touch rolls back
+2026-11-24T20:41:35.6443755Z   [M219] 48 dp targets outside the face wrap both ways and wheel input scrolls the page
+2026-11-24T20:41:41.0774774Z   [M220] both neighbors of a two-item list paint the same name but travel in the chosen direction
+2026-11-24T20:41:50.4927284Z   [M221] catalog changes retire the held route without changing the accepted choice or losing the typed draft
+2026-11-24T20:41:57.7354799Z   [M222] explicit input stays bounded and dark RTL 200 percent fallback preserves live composition through resize
+2026-11-24T20:42:09.1419924Z   [M223] one passive volume group holds two distinct labeled and bounded controls
+2026-11-24T20:42:09.9834936Z   [M224] quantity and unit keyboard steps, validation, and direct commits stay independent
+2026-11-24T20:42:17.1434598Z   [M225] 960 dp mirrors the visual fields in RTL and retains the authored keyboard order
+2026-11-24T20:42:22.3983840Z   [M226] each disabled field and its mode button are skipped while the other field still changes
+2026-11-24T20:42:28.5143455Z   [M227] 320 dp dark RTL stacks both 200 percent editors and preserves active composition through resize
+2026-11-24T20:42:36.0410582Z   [M228] Tab reveals both fields inside the short scroller and Back restores the Gallery launcher
+2026-11-24T20:42:42.4123809Z   [M229] keyboard opens the named nonmodal popup below its anchor and enters the quantity field
+2026-11-24T20:42:47.0229263Z   [M230] pointer opening keeps the anchor focused, then Tab enters and an outside action stays live
+2026-11-24T20:42:53.8053604Z   [M231] independent field commits survive Close while both pending invalid drafts are discarded
+2026-11-24T20:43:09.7299804Z   [M232] Escape gives active composition and an editor draft priority before dismissing the dialog
+2026-11-24T20:43:18.7137351Z   [M233] bottom anchoring flips above, RTL aligns, and anchor removal closes without stealing outside focus
+2026-11-24T20:43:33.0554625Z   [M234] dark RTL at 200 percent scrolls distinct editors, shields covered controls, and leaves the outside action reachable
+2026-11-24T20:43:41.2733546Z   [M235] the named modal owns browser and Runtime focus and wraps every authored Tab stop
+2026-11-24T20:43:51.8973409Z   [M236] explicit Save writes both locally accepted or still unsubmitted editor values once
+2026-11-24T20:44:08.9903893Z   [M237] failed Save reports both named errors, preserves a repaired peer, and never partially writes
+2026-11-24T20:44:22.8530128Z   [M238] Cancel, clean Escape and a real scrim click discard the transaction and restore the opener
+2026-11-24T20:44:42.0784292Z   [M239] preedit blocks pointer and projected Save, and only explicit Save writes the settled pair
+2026-11-24T20:44:52.3723883Z   [M240] dark RTL at 200 percent keeps both actions and whole focused rings visible at 320 dp
+2026-11-24T20:44:59.7823513Z   [M241] the first ready browser state accepts Forced over More and keeps all three exact system pairs
+2026-11-24T20:45:01.4970311Z   [M242] live browser system pairs recolor actual popup Canvas paint and then restore Normal
+2026-11-24T20:45:09.2000097Z   [M243] live contrast preserves focused invalid popup drafts and active synthetic preedit
+2026-11-24T20:45:17.3252761Z   [M244] the popup edge remains visible when its forced fill and the surrounding Canvas match
+2026-11-24T20:45:23.8353293Z   [M245] the resting wheel has its own forced edge, clipped neighbor ink and a real disabled state
+2026-11-24T20:45:29.1903467Z   [M246] the actual partial text selection uses paired browser paint at 1.25 DPR and restores Normal
+2026-11-24T20:45:44.2923759Z   [M247] the actual preedit underline switches ink inside its forced-color selection
+2026-11-24T20:45:59.1944708Z   [M248] docked Contained and Divided styles draw real light scrim, gap and divider
+2026-11-24T20:46:07.8755374Z   [M249] 320 dp Dark RTL 200% Full-screen Contained and Divided preserve the 48 dp input/navigation controls
+2026-11-24T20:46:16.4684067Z   [M250] real wheel, native selection and synthetic preedit survive the 599→600 dp breakpoint
+2026-11-24T20:46:24.7063550Z   [M251] Chrome AX, trusted Tab, real disabled pointer, result ID and scrim dismissal
+2026-11-24T20:46:38.0113408Z   [M252] ArrowDown jumps to first enabled result only, and Canvas glyph and textarea caret center
+2026-11-24T20:46:47.1309435Z   [M253] RTL actual glyphs, pointer selection, composition and separated focus and caret
+2026-11-24T20:47:08.0115081Z   [M254] four Search style/presentation combinations use real Chrome system colors
+2026-11-24T20:47:45.1621616Z   [M255] real Search entry and exit move through pixels; Reduce Motion snaps to both endpoints
+2026-11-24T20:48:11.6246114Z   [M256] Basic exposes a named modal and traps Tab, Escape and scrim return focus
+2026-11-24T20:48:21.6170100Z   [M257] trusted wheel scrolls a short Basic under its pinned heading and complete action targets
+2026-11-24T20:48:27.0607782Z   [M258] named Alert requires acknowledgement and blocks outside input and Escape
+2026-11-24T20:48:34.4233727Z   [M259] 599 to 600 dp keeps the named editor, draft and backward selection across presentations
+2026-11-24T20:48:39.2922863Z   [M260] dirty Close and Escape ask first, Continue restores exact prior focus, and explicit Save or Discard acts once
+2026-11-24T20:48:47.0443425Z   [M261] 320 dp dark RTL 200% aligns both title lines and wheels the entire discard description without moving actions
+2026-11-24T20:48:54.9607040Z   [M262] real Basic and nested Discard opacity frames, immediate modal handback, reversal and Reduce Motion
+2026-11-24T20:49:52.0143786Z   [M263] actual measured FAB container expands, retires, reverses, reduces motion and keeps the adaptive draft
+2026-11-24T20:50:29.5671467Z   [M264] wide light dividers paint the named layouts without adding focus or AX stops
+2026-11-24T20:50:33.2123845Z   [M265] 320 dp dark RTL and 200 percent text keep the four regular divider layouts visible
+2026-11-24T20:50:36.0913344Z   [M266] Heavy dividers paint eight dp in every layout before and after reflow
+2026-11-24T20:50:41.7093529Z case material ... ok (265 steps, 18264 checks, 1548.6s)
+2026-11-24T20:50:46.2922410Z case bridge-native ... ok (23 steps, 92 checks, 4.6s)
+2026-11-24T20:50:48.9521599Z case bridge-native-compact ... ok (24 steps, 93 checks, 2.7s)
+2026-11-24T20:50:53.6467641Z case bridge-web ... ok (24 steps, 94 checks, 4.7s)
+2026-11-24T20:50:58.0528035Z case devtools-native ... ok (17 steps, 192 checks, 4.4s)
+2026-11-24T20:50:59.4458641Z case devtools-headless ... ok (3 steps, 76 checks, 1.4s)
+2026-11-24T20:50:59.5414031Z e2e result: 8 passed; 0 failed; 18922 checks;

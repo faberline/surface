@@ -1,0 +1,283 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "variants": {
+    "small": [
+      0.0,
+      0.0,
+      960.0,
+      64.0
+    ],
+    "medium": [
+      0.0,
+      0.0,
+      960.0,
+      136.0
+    ],
+    "medium_title_only": [
+      0.0,
+      0.0,
+      960.0,
+      112.0
+    ],
+    "large": [
+      0.0,
+      0.0,
+      960.0,
+      152.0
+    ],
+    "large_title_only": [
+      0.0,
+      0.0,
+      960.0,
+      120.0
+    ],
+    "light": [
+      253,
+      247,
+      255
+    ],
+    "dark": [
+      20,
+      18,
+      24
+    ]
+  },
+  "centered": [
+    {
+      "rtl": false,
+      "title": [
+        425.0,
+        18.0,
+        110.0,
+        28.0
+      ],
+      "leading": [
+        4.0,
+        8.0,
+        96.0,
+        48.0
+      ],
+      "actions": [
+        860.0,
+        8.0,
+        96.0,
+        48.0
+      ],
+      "ink": [
+        427.0,
+        533.0
+      ]
+    },
+    {
+      "rtl": true,
+      "title": [
+        425.0,
+        18.0,
+        110.0,
+        28.0
+      ],
+      "leading": [
+        860.0,
+        8.0,
+        96.0,
+        48.0
+      ],
+      "actions": [
+        4.0,
+        8.0,
+        96.0,
+        48.0
+      ],
+      "ink": [
+        427.0,
+        533.0
+      ]
+    }
+  ],
+  "scroll": {
+    "normal": [
+      253,
+      247,
+      255
+    ],
+    "raised": [
+      242,
+      236,
+      244
+    ],
+    "pinned": {
+      "body_offset": 80.0,
+      "row_relative_y": -42.0,
+      "collapse": 0.0
+    },
+    "enter_always": [
+      {
+        "body_offset": 84.0,
+        "row_relative_y": -46.0,
+        "collapse": 1.0
+      },
+      {
+        "body_offset": 84.0,
+        "row_relative_y": -46.0,
+        "collapse": 0.7272727489471436
+      }
+    ],
+    "exit_until_collapsed": [
+      {
+        "body_offset": 54.0,
+        "row_relative_y": -16.0,
+        "collapse": 1.0
+      },
+      {
+        "body_offset": 0.0,
+        "row_relative_y": 38.0,
+        "collapse": 0.7045454382896423
+      }
+    ]
+  },
+  "search": {
+    "entry": [
+      56.0,
+      4.0,
+      800.0,
+      56.0
+    ],
+    "query": "設計",
+    "after_selection": {
+      "actions": 1,
+      "behavior": "pinned",
+      "body_offset": 0.0,
+      "collapse": 0.0,
+      "contextual": false,
+      "kind": "search",
+      "query": "設計",
+      "rtl": false,
+      "scrolled": false,
+      "scrolled_surface": [
+        242,
+        236,
+        244,
+        255
+      ],
+      "search_open": false,
+      "search_selections": 1,
+      "selected": "設計紀錄",
+      "subtitle": true,
+      "surface": [
+        253,
+        247,
+        255,
+        255
+      ],
+      "text_scale": 1.0
+    }
+  },
+  "compact": {
+    "variants": [
+      {
+        "kind": "small",
+        "bar": [
+          0.0,
+          0.0,
+          320.0,
+          120.0
+        ],
+        "title": [
+          132.0,
+          4.0,
+          132.0,
+          112.0
+        ],
+        "subtitle": null,
+        "ink": [
+          134.0,
+          261.0
+        ]
+      },
+      {
+        "kind": "center",
+        "bar": [
+          0.0,
+          0.0,
+          320.0,
+          176.0
+        ],
+        "title": [
+          116.0,
+          4.0,
+          88.0,
+          168.0
+        ],
+        "subtitle": null,
+        "ink": [
+          119.0,
+          201.0
+        ]
+      },
+      {
+        "kind": "medium",
+        "bar": [
+          0.0,
+          0.0,
+          320.0,
+          188.0
+        ],
+        "title": [
+          24.0,
+          64.0,
+          280.0,
+          72.0
+        ],
+        "subtitle": [
+          108.0,
+          136.0,
+          196.0,
+          40.0
+        ],
+        "ink": [
+          27.0,
+          300.0
+        ]
+      },
+      {
+        "kind": "large",
+        "bar": [
+          0.0,
+          0.0,
+          320.0,
+          300.0
+        ],
+        "title": [
+          16.0,
+          64.0,
+          288.0,
+          176.0
+        ],
+        "subtitle": [
+          80.0,
+          240.0,
+          224.0,
+          48.0
+        ],
+        "ink": [
+          20.0,
+          300.0
+        ]
+      }
+    ],
+    "search_view": [
+      0.0,
+      0.0,
+      320.0,
+      580.0
+    ]
+  },
+  "contextual": {
+    "callbacks": [
+      "app-bar-demo-context-close",
+      "app-bar-demo-context-action"
+    ],
+    "focus": "app-bar-demo-context"
+  },
+  "errors": []
+}
