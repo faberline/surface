@@ -7,6 +7,7 @@ mod carousel_demo;
 mod date_picker_demo;
 mod date_range_picker_demo;
 mod dialog_demo;
+mod divider_demo;
 mod docked_date_picker_demo;
 mod extended_fab_demo;
 mod fab_demo;
@@ -46,6 +47,7 @@ use carousel_demo::{CarouselDemo, CarouselEvent};
 use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
 use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
 use dialog_demo::{DialogDemo, DialogDemoEvent};
+use divider_demo::{DividerDemo, DividerDemoEvent};
 use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
@@ -109,6 +111,7 @@ pub struct Gallery {
     modal_wide_rail_demo: ModalWideRailDemo,
     snackbar_demo: SnackbarDemo,
     badge_demo: BadgeDemo,
+    divider_demo: DividerDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -171,6 +174,7 @@ impl Default for Gallery {
             modal_wide_rail_demo: ModalWideRailDemo::default(),
             snackbar_demo: SnackbarDemo::default(),
             badge_demo: BadgeDemo::default(),
+            divider_demo: DividerDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -264,6 +268,7 @@ pub enum Message {
     ModalWideRail(ModalWideRailEvent),
     Snackbar(SnackbarEvent),
     Badge(BadgeEvent),
+    DividerDemo(DividerDemoEvent),
     Drawer(usize),
     DrawerDemo(DrawerDemoEvent),
     Progress(ProgressEvent),
@@ -427,6 +432,9 @@ impl Application for Gallery {
         }
         if self.tooltip_demo.visible() {
             return self.tooltip_demo.text_scale();
+        }
+        if self.divider_demo.visible() {
+            return self.divider_demo.text_scale();
         }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
@@ -751,6 +759,9 @@ impl Application for Gallery {
                 if i != toolbar_demo::SECTION {
                     self.toolbar_demo.leave();
                 }
+                if i != divider_demo::SECTION {
+                    self.divider_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -761,6 +772,7 @@ impl Application for Gallery {
             Message::ModalWideRail(event) => self.modal_wide_rail_demo.update(event),
             Message::Snackbar(event) => self.snackbar_demo.update(event),
             Message::Badge(event) => self.badge_demo.update(event),
+            Message::DividerDemo(event) => self.divider_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -938,6 +950,9 @@ impl Application for Gallery {
         }
         if self.tooltip_demo.visible() {
             return self.tooltip_demo.view(&t, self.dark);
+        }
+        if self.divider_demo.visible() {
+            return self.divider_demo.view(&t, self.dark);
         }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
@@ -1435,6 +1450,7 @@ impl Application for Gallery {
             _ => {
                 children.push(CardDemo::show_button(&t));
                 children.push(self.badge_demo.card(&t));
+                children.push(DividerDemo::show_button(&t));
                 let swatch = |id: &str, text: &str, background: Color, foreground: Color| {
                     View::new(
                         Node::new(Role::Group, text).id(id).styled(

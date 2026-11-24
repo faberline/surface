@@ -185,7 +185,8 @@ does not change application state.
 | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
 | `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
 | `divider` | One-pixel semantic separator |
-| `divider_with` / `vertical_divider` | Full, inset and middle-inset horizontal dividers and a vertical divider; 1 dp, `outline_variant`; no list or sheet integration yet |
+| `decorative_divider` / `decorative_divider_with_weight` | Full, leading-inset, middle-inset and vertical Material lines. Regular is 1 dp. Heavy is 8 dp. Both use `outline_variant`. |
+| `divider_with` / `vertical_divider` | Earlier named semantic separators. |
 | `card` / `outlined_card` | Filled and outlined containers |
 | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
 | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
@@ -1414,6 +1415,25 @@ selection actions and scroll the content with each scroll setting.
 [Material 3 App Bars](https://m3.material.io/components/app-bars/overview) ·
 [MDC 1.14.0 app bars](https://github.com/material-components/material-components-android/blob/66c334b7946dabf33adfe1a2b7cad6bcaa4ea3ad/docs/components/TopAppBar.md) ·
 [Pinned Compose layout and scroll](https://android.googlesource.com/platform/frameworks/support/+/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/AppBar.kt)
+
+## Dividers
+
+Use `Theme::decorative_divider` to separate adjacent content with a 1 dp
+line. For an 8 dp line, pass `DividerWeight::Heavy` to
+`Theme::decorative_divider_with_weight`. Both weights draw with
+`outline_variant` and support the same `DividerLayout` values.
+[Google Material layout specs](https://m3.material.io/components/divider/specs) · [Google Material Heavy style](https://github.com/material-components/material-components-android/blob/6061a69915d04f11230dbf6f417bc27d9c3056ad/docs/components/Divider.md#adding-heavy-divider)
+
+For horizontal lines, `Full` spans the parent. `Inset` leaves 16 dp at
+the leading edge and follows the layout direction. `MiddleInset` leaves
+16 dp at both edges. Give a vertical divider a row with a defined height.
+Use headings to label content groups. Decorative lines stay out of the
+focus order and accessibility tree. The existing semantic separator
+builders remain available for callers that need a separator role.
+
+Open **分隔線** in the Gallery's **色彩** tab. Toggle **粗線** to compare both
+weights in the same layout. The scene supports light and dark colors,
+right-to-left layout and 200% text.
 
 ## Dialogs
 

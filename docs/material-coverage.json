@@ -241,9 +241,10 @@
       "spec": "https://m3.material.io/components/divider/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Horizontal semantic divider"
+      "desktop_evidence": "Two native headless Metal replays verify all four Regular layouts, 320 dp dark RTL at 200% text, 1 dp paint, focus return, and identical PNGs from Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/f68cf8c02cf501ef0fc9624b1b10c8f6baf662ee/docs/evidence/md3/divider-after-dialog-current",
+      "web_evidence": "Chrome WebGPU M264 and M265 verify Regular divider color, one-dp thickness, RTL inset, keyboard focus and omission of decorative lines from the accessibility tree. https://github.com/faberline/surface/tree/f68cf8c02cf501ef0fc9624b1b10c8f6baf662ee/docs/evidence/md3/divider-after-dialog-current M266 exercises Heavy in both themes and all four layouts, then checks return to Regular.",
+      "implemented": "Decorative full-width, leading-inset, middle-inset and vertical dividers. Regular uses 1 dp. Heavy uses 8 dp. Both use outline variant. Single insets mirror in right-to-left layouts and tiny parents clip safely. The semantic separator builders remain compatible. List and sheet integration and system contrast qualification remain open.",
+      "unit_evidence": "Material Runtime tests cover both weights, tiny-parent clipping, palette, RTL geometry, pointer and focus exclusion, the shared accessibility frame, and existing semantic separators."
     },
     {
       "id": "lists",

@@ -21,6 +21,7 @@ mod date_picker;
 mod date_picker_state;
 mod date_range_picker;
 mod date_range_picker_state;
+mod divider;
 mod docked_date_picker;
 mod docked_date_picker_state;
 mod elevation;
@@ -106,6 +107,7 @@ pub use date_range_picker_state::{
     DateRangeMode, DateRangePairError, DateRangePickerState, DateRangePosition,
     DateRangeValidation,
 };
+pub use divider::{DividerLayout, DividerWeight};
 pub use docked_date_picker::{DockedDatePickerLabels, DockedDatePickerOptions};
 pub use docked_date_picker_state::{
     place_docked_date_picker, DockedDatePickerEvent, DockedDatePickerMode, DockedDatePickerState,
