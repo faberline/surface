@@ -1,0 +1,183 @@
+{
+  "adapter": {
+    "architecture": "metal-3",
+    "isFallbackAdapter": false,
+    "vendor": "apple"
+  },
+  "page_errors": 0,
+  "pngs": {
+    "material-radio-compact-dark-rtl-200.png": {
+      "decoded_rgb_sha256": "438d23eb52c2ac62b13f70988425eda310396ca225bcfa5c9582c087b5569356",
+      "sha256": "a7ecd187c860c9901acb3fb90a55ac4d8896adc41af064dce0614a8468c8a549",
+      "size": [
+        640,
+        1368
+      ]
+    },
+    "material-radio-wide-focused.png": {
+      "decoded_rgb_sha256": "f18d998653773a2df0102adf7937c5f23d4910c86c0e0258119bbdc5fc1ba067",
+      "sha256": "655ad2c4302b3329640e391bce724164eba51092ba4598171d2983fd7e407c8d",
+      "size": [
+        1920,
+        1688
+      ]
+    },
+    "material-radio-wide-held.png": {
+      "decoded_rgb_sha256": "eb2c83cfe6dd4b4265f0a0bef89b8c5062d6a36e7b9b76d22164f0203c619531",
+      "sha256": "82b105d39439d1b6895cec5715650488e4497b96b6227750800c6c15710743a7",
+      "size": [
+        1920,
+        1688
+      ]
+    },
+    "material-radio-wide-horizontal.png": {
+      "decoded_rgb_sha256": "02bae8132606ca47fc43fd631291382fa3cfbff061b3caac9f767af6773e3d58",
+      "sha256": "c4268077c47e92e52569257470f1e07323119cfb682bf5c835547519a2885f99",
+      "size": [
+        1920,
+        1688
+      ]
+    }
+  },
+  "radio": {
+    "compact": {
+      "arrows": [
+        [
+          "ArrowRight",
+          "radio-demo-weekly"
+        ],
+        [
+          "ArrowLeft",
+          "radio-demo-monthly"
+        ],
+        [
+          "ArrowUp",
+          "radio-demo-weekly"
+        ]
+      ],
+      "focus_restored": "radio-demo-show",
+      "label_height": 144.0,
+      "label_pixels": [
+        6305,
+        5320
+      ],
+      "viewport": [
+        320,
+        640
+      ]
+    },
+    "disabled": "radio-demo-locked",
+    "dot_dp": 10,
+    "empty_entry": {
+      "forward": "radio-demo-daily",
+      "reverse": "radio-demo-monthly"
+    },
+    "final_request_count": 11,
+    "focus_dp": 30,
+    "group": "通知頻率",
+    "keyboard_focused_chrome_ax": "radio-demo-weekly",
+    "names": [
+      "每天",
+      "即時通知",
+      "每週一通知",
+      "每月"
+    ],
+    "pointer": {
+      "disabled_requests": 8,
+      "gap_contact_canvas": [
+        76.0,
+        348.0
+      ],
+      "held_layer": [
+        238,
+        230,
+        244
+      ],
+      "hosts": {
+        "radio-demo-daily": "surface",
+        "radio-demo-monthly": "surface",
+        "radio-demo-weekly": "surface"
+      },
+      "outside_requests": 8,
+      "touch_cancel_requests": 8
+    },
+    "ring_dp": 20,
+    "role": "radio",
+    "state_layer_dp": 40,
+    "tab_order": [
+      "radio-demo-theme",
+      "radio-demo-rtl",
+      "radio-demo-large-text",
+      "radio-demo-layout",
+      "radio-demo-weekly",
+      "radio-demo-clear"
+    ],
+    "target_min_dp": 48,
+    "trusted_space_events": [
+      {
+        "repeat": true,
+        "trusted": true
+      },
+      {
+        "repeat": false,
+        "trusted": true
+      },
+      {
+        "repeat": true,
+        "trusted": true
+      }
+    ]
+  },
+  "reduced_motion": true,
+  "report_sha256": "08f8e575c39d98c60d99dc986e59b371267218d0e39be410b42fbfeb30913c76",
+  "runner": {
+    "browser": "Chrome/158.0.8127.37",
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 20012,
+        "steps": 284
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "material_steps": 284,
+    "profile": "stock-macos",
+    "radio_steps": [
+      "M282",
+      "M283",
+      "M284",
+      "M285"
+    ],
+    "sha256": "e46ab04ab26d2ee2cc370a1061a160014206a16ec7fcd8dcb7a55aa997e69cf2",
+    "total_checks": 20293
+  },
+  "source": {
+    "files": 607,
+    "manifest_sha256": "a031c8b5dc2700f69cb131182842722976d57726dd01c2e0a2d99e643e406544",
+    "radio_inputs": {
+      "crates/surface-app/src/controls.rs": "9562c86accc3c5ba695069dc269a58df7e7295f760c0c2212ad8d323e64ecae6",
+      "crates/surface-app/src/lib.rs": "8fe966161f5a1cf6084aadb488483587ae0163bcdb7c5d596d1b822f1042b6a8",
+      "crates/surface-material/src/radio.rs": "ba94da621a925b8ee70a3de8fc56f280c8012d9f55e1c9d2b0725e6a21f5ba39",
+      "e2e/src/material.rs": "0d6f9a57ca13bbc95bbcb60d504b196aa32201cd670aede60901984cd839cfdf",
+      "e2e/src/material_radio.rs": "fae83bb23126d186c48a3a54e352f539e6827554f7b07b7c1dd4a521aaee46e1",
+      "examples/material-gallery/src/radio_demo.rs": "270fb18f6147ea0909782827592efd8a7b564d72b75670d2d726aabf7f4c738b",
+      "examples/material-gallery/web/index.html": "cfe715b3c29ea45e3ee482578f99d40685052d9297c9168a7adae31e06b9ad15"
+    },
+    "source_bytes_checked": true
+  },
+  "version": 1
+}

@@ -1,0 +1,87 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "cases": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 284,
+      "checks": 20012
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 20293,
+  "page_errors": 0,
+  "headless_transport_pngs": {
+    "bridge-web.png": {
+      "size": [
+        756,
+        469
+      ],
+      "sha256": "fe083f9371717ce631436af4a581b2fccc0654d3352a7d94f83a326eec047fdc"
+    },
+    "devtools-headless-screenshot.png": {
+      "size": [
+        720,
+        640
+      ],
+      "sha256": "21f5950edf4757f5bc836638407ea620b371961d4de8de61073feebfbd9d2ff5"
+    }
+  },
+  "radio_pngs": {
+    "material-radio-wide-focused.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "655ad2c4302b3329640e391bce724164eba51092ba4598171d2983fd7e407c8d"
+    },
+    "material-radio-wide-held.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "82b105d39439d1b6895cec5715650488e4497b96b6227750800c6c15710743a7"
+    },
+    "material-radio-wide-horizontal.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "c4268077c47e92e52569257470f1e07323119cfb682bf5c835547519a2885f99"
+    },
+    "material-radio-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        1368
+      ],
+      "sha256": "a7ecd187c860c9901acb3fb90a55ac4d8896adc41af064dce0614a8468c8a549"
+    }
+  },
+  "radio_report_sha256": "08f8e575c39d98c60d99dc986e59b371267218d0e39be410b42fbfeb30913c76",
+  "guard_and_window_checks": "passed"
+}
