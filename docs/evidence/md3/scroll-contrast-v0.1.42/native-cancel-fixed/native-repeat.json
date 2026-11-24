@@ -1,0 +1,38 @@
+{
+  "inputs": {
+    "release": "0.1.42",
+    "candidate_head": "86bf5eb86a5d070245db039b37977198ba1a417e",
+    "candidate_tree": "93b47517d26662b1e9aa5502f730349723fb0978",
+    "original_stock_binary_manifest_sha256": "a8d443a01b4a6251684beb5c331a124cf4203cc0e4a6850f3802a369d065fb11",
+    "original_stock_postbuild_source_manifest_sha256": "c99ed8ff89b0cee66a84732598ac2ba652802c2e52c9122c3c5bb27f250ccd4b",
+    "overlay_sha256": "08517367a5674b7e85825f4f56fa1f80c186f7095b1b220a0ecae6a85260f6a4",
+    "pinned_files": {
+      "stock-source.sha256": "c99ed8ff89b0cee66a84732598ac2ba652802c2e52c9122c3c5bb27f250ccd4b",
+      "probe-source.sha256": "14ef51e588621f2702f1f86a8013a998b2d219a203d02c797d9e5ee368493367",
+      "stock-bin/surface-material-gallery": "2edb5153d81dfb87ac1bd865b3af9e07e7c86b88bc6cdd30c4bc24e6c0840956",
+      "probe-bin/surface-material-gallery": "dd0644248ae133938b664b00133f5ef5bdbbb1f8fd50c822c4f6250f4c3d7574",
+      "stock-bin/surface-devtools": "e043df8cfc045c347451d18747bdfac20510c41fd4c3e97ffbb2466068ea18c8"
+    }
+  },
+  "input_receipt_sha256": "b10c08f14c23c8a69737862f41aaec761b6b7fe4e553731b7c77cf3675fde44d",
+  "independent_replays": 2,
+  "scripts": {
+    "gallery_transport.py": "9530cfce6f25e32138a0602d8a36b1b747f82f35f5df856c65f709afc719a8d0",
+    "native-proof.py": "d39708d8e297523277276f2767ce432a576c44e42f5673017d814bed3b6da414",
+    "native_runtime.py": "7f519cc6a6214b1530b8703e8d0ecc2acffdd3f6403588a38566089fe39419f0",
+    "render_helpers.py": "cc852005670915e2f33e0002143ebd78810fe641fb0373d45d0cf8331a02f21d",
+    "verify-contrast.py": "960d59d15924195379816fbe3f677ebabf2697e4714db96b5a88b4b05cd70620",
+    "window_check.py": "fd0f0b651544fddabaa26e0df5995620fb427b43d001f85c70daa9773a713262"
+  },
+  "byte_identical_outputs": {
+    "dark-increased.png": "3cc933508893798a0c74e9de7dcf9bb3f2ee2f751a0594eb598970e268841486",
+    "dark-normal.png": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+    "dark-restored.png": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+    "light-increased.png": "8c6f3a2ab5b5d589fb61e145c0776db203328f022d52e0d0a25cb5bf958cffb1",
+    "light-normal.png": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+    "light-restored.png": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947",
+    "native-contrast-report.json": "1b09e7f8847303fc7822b6f6da08f1df6f0a1471dda954fa89689888982ddc95",
+    "stock-dark-normal.png": "b8f5b07af14151bfa6f7834f7bfc5be5d1b46d796e73c3fbcb24d34a2e098832",
+    "stock-light-normal.png": "48dad08822535ef9b67fa871d647a004c098176940d2e745ce8ae9ef74458947"
+  }
+}
