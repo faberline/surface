@@ -20,6 +20,7 @@ mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
 mod rail_icons;
+mod scroll_choice_demo;
 mod scroll_field_demo;
 mod side_sheet_demo;
 mod snackbar_demo;
@@ -52,6 +53,7 @@ use loading_indicator_demo::{LoadingDemo, LoadingEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
+use scroll_choice_demo::{ScrollChoiceDemo, ScrollChoiceDemoEvent};
 use scroll_field_demo::{ScrollFieldDemo, ScrollFieldDemoEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
@@ -109,6 +111,7 @@ pub struct Gallery {
     time_dial_demo: TimeDialDemo,
     time_scroll_demo: TimeScrollDemo,
     scroll_field_demo: ScrollFieldDemo,
+    scroll_choice_demo: ScrollChoiceDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
@@ -164,6 +167,7 @@ impl Default for Gallery {
             time_dial_demo: TimeDialDemo::default(),
             time_scroll_demo: TimeScrollDemo::default(),
             scroll_field_demo: ScrollFieldDemo::default(),
+            scroll_choice_demo: ScrollChoiceDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
@@ -205,6 +209,7 @@ pub enum Message {
     TimeDial(TimeDialDemoEvent),
     TimeScroll(TimeScrollDemoEvent),
     ScrollField(ScrollFieldDemoEvent),
+    ScrollChoice(ScrollChoiceDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
@@ -292,6 +297,9 @@ impl Application for Gallery {
         if self.scroll_field_demo.visible() {
             return self.scroll_field_demo.text_scale();
         }
+        if self.scroll_choice_demo.visible() {
+            return self.scroll_choice_demo.text_scale();
+        }
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
         }
@@ -348,6 +356,7 @@ impl Application for Gallery {
         let time_dial = self.time_dial_demo.viewport_changed(width, height);
         let time_scroll = self.time_scroll_demo.viewport_changed(width, height);
         let scroll_field = self.scroll_field_demo.viewport_changed(width, height);
+        let scroll_choice = self.scroll_choice_demo.viewport_changed(width, height);
         let list_actions = self.list_actions_demo.viewport_changed(width);
         let list_media = self.list_media_demo.viewport_changed(width, height);
         let list_reorder = self.list_reorder_demo.viewport_changed(width);
@@ -376,6 +385,7 @@ impl Application for Gallery {
             || time_dial
             || time_scroll
             || scroll_field
+            || scroll_choice
             || list_actions
             || list_media
             || list_reorder
@@ -481,6 +491,7 @@ impl Application for Gallery {
         let time_dial = self.time_dial_demo.frame(&frame);
         let time_scroll = self.time_scroll_demo.frame(&frame);
         let scroll_field = self.scroll_field_demo.frame(&frame);
+        let scroll_choice = self.scroll_choice_demo.frame(&frame);
         let list_expand = self.list_expand_demo.frame(&frame);
         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
         AnimationUpdate {
@@ -498,6 +509,7 @@ impl Application for Gallery {
                 || time_dial.rebuild
                 || time_scroll.rebuild
                 || scroll_field.rebuild
+                || scroll_choice.rebuild
                 || list_expand.rebuild
                 || list_reorder.rebuild,
             request_next: inline.request_next
@@ -512,6 +524,7 @@ impl Application for Gallery {
                 || time_dial.request_next
                 || time_scroll.request_next
                 || scroll_field.request_next
+                || scroll_choice.request_next
                 || list_expand.request_next
                 || list_reorder.request_next,
         }
@@ -574,6 +587,9 @@ impl Application for Gallery {
                 if i != scroll_field_demo::SECTION {
                     self.scroll_field_demo.leave();
                 }
+                if i != scroll_choice_demo::SECTION {
+                    self.scroll_choice_demo.leave();
+                }
                 if i != lists_demo::SECTION {
                     self.lists_demo.leave();
                     self.list_actions_demo.leave();
@@ -618,6 +634,7 @@ impl Application for Gallery {
             Message::TimeDial(event) => self.time_dial_demo.update(event),
             Message::TimeScroll(event) => self.time_scroll_demo.update(event),
             Message::ScrollField(event) => self.scroll_field_demo.update(event),
+            Message::ScrollChoice(event) => self.scroll_choice_demo.update(event),
             Message::Lists(event) => self.lists_demo.update(event),
             Message::ListActions(event) => self.list_actions_demo.update(event),
             Message::ListExpand(event) => self.list_expand_demo.update(event),
@@ -725,6 +742,9 @@ impl Application for Gallery {
         }
         if self.scroll_field_demo.visible() {
             return self.scroll_field_demo.view(&t, self.dark);
+        }
+        if self.scroll_choice_demo.visible() {
+            return self.scroll_choice_demo.view(&t, self.dark);
         }
         if self.lists_demo.visible() {
             return self.lists_demo.view(&t);
@@ -848,6 +868,7 @@ impl Application for Gallery {
                                 Message::Volume,
                             ),
                             ScrollFieldDemo::show_button(&t),
+                            ScrollChoiceDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1416,6 +1437,7 @@ mod web {
         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
         state["loading"] = s.loading_demo.inspect(&theme);
         state["scroll_field"] = s.scroll_field_demo.inspect(&runtime, &theme);
+        state["scroll_choice"] = s.scroll_choice_demo.inspect(&runtime, &theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

@@ -192,6 +192,8 @@ pub struct Node {
     range: Option<RangeValue>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     adjustable: Option<Box<AdjustableValue>>,
+    #[serde(skip)]
+    web_adjustable_value_description: bool,
     #[serde(default)]
     tab_index: Option<i32>,
     pub(crate) style: Style,
@@ -256,6 +258,7 @@ impl Node {
             mixed: false,
             range: None,
             adjustable: None,
+            web_adjustable_value_description: false,
             tab_index: None,
             style: Style::default(),
             parent: None,
@@ -685,6 +688,24 @@ impl Node {
         self.adjustable.as_deref().filter(|value| {
             self.role == Role::Group && self.accessibility_grid_role().is_none() && value.is_valid()
         })
+    }
+    /// Include the adjustable control's current human-readable value in its
+    /// Web description. Use this when the numeric value is only an ordinal.
+    /// Browsers can omit the authored value text from their accessibility tree.
+    pub fn web_adjustable_value_description(mut self) -> Self {
+        self.web_adjustable_value_description = true;
+        self
+    }
+    pub fn web_adjustable_description_text(&self) -> Option<&str> {
+        if !self.web_adjustable_value_description {
+            return None;
+        }
+        let value = self.accessibility_adjustable()?;
+        value.value?;
+        value
+            .value_text
+            .as_deref()
+            .filter(|text| !text.trim().is_empty())
     }
     pub fn tab_index(mut self, value: i32) -> Self {
         self.tab_index = Some(value);
