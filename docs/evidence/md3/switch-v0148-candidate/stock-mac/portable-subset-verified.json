@@ -1,0 +1,172 @@
+{
+  "observed_adapter": {
+    "architecture": "metal-3",
+    "isFallbackAdapter": false,
+    "vendor": "apple"
+  },
+  "page_errors": 0,
+  "report_sha256": "e88db6e4f87db8085458857c5115f7370a2ba46a97f8626adeaff42a28a24427",
+  "runner": {
+    "browser": "Chrome/158.0.8127.37",
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 19205,
+        "steps": 276
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "profile": "stock-macos",
+    "sha256": "9c613a50e7b7ea324a7fd38cd9c353b93048e54c532e12199c3d3469c8b3900b",
+    "switch_steps": [
+      "M274",
+      "M275",
+      "M276",
+      "M277"
+    ],
+    "total_checks": 19486
+  },
+  "screenshots": {
+    "material-switch-compact-dark-rtl-200.png": {
+      "decoded_rgb_sha256": "aedc052413ec92fec4ccb938f040dee5a256a43867622eb0525811b1d2bb3ea8",
+      "pixels": [
+        640,
+        1368
+      ],
+      "sha256": "c00dd520c428b15f7b99e5e57094e38c46fa8dd149b86fd4e4ee8e633fb69ad0"
+    },
+    "material-switch-held.png": {
+      "decoded_rgb_sha256": "13376f64216955b901d69439a90d4fed5200f3042336cf8a6073230ac2c5c8a1",
+      "pixels": [
+        1920,
+        1688
+      ],
+      "sha256": "ba37f92cc90d4bb1a6857f5897b346fe92fb1b168a447cd647b367e2725592ab"
+    },
+    "material-switch-hovered.png": {
+      "decoded_rgb_sha256": "559c30300f69c810f235d8e52dffcd5f0aff5a3bed67c6cd5c3716641fae70f9",
+      "pixels": [
+        1920,
+        1688
+      ],
+      "sha256": "933266af528110699af81cbb494b13973f27a6ff60b1e45c7ef3f959c7f7bff8"
+    },
+    "material-switch-wide-settled.png": {
+      "decoded_rgb_sha256": "50c4c348258bd8e892e2b306d3425fb5107b25842c4d29ee3893523a74e73f5a",
+      "pixels": [
+        1920,
+        1688
+      ],
+      "sha256": "0b1d97357ebc818724ed0fb4982a3ced70d4c758942f0cc5769dd6a48d16adf3"
+    }
+  },
+  "source": {
+    "files": 598,
+    "manifest_sha256": "a4ec5bc9d9c0da42fe004f6f7d6877f59edc08e5503ae15c3bbefb6c73f4d086",
+    "source_bytes_checked": true,
+    "switch_inputs": {
+      "crates/surface-material/src/switch.rs": "5768634b64685453e980d57a853900827b581668b4e4387afdd2c5838edd3a90",
+      "e2e/src/material_switch.rs": "34e0c3813c9ca0bb617feb831c1f403b9a974c66c190ed00a967c5be1e06fe9b",
+      "examples/material-gallery/src/switch_demo.rs": "47817c11f228068b79c0dc95f12cc2089cc92ab6e64db5828ac7bbbeab7ec106",
+      "examples/material-gallery/web/index.html": "cfe715b3c29ea45e3ee482578f99d40685052d9297c9168a7adae31e06b9ad15"
+    }
+  },
+  "switch": {
+    "after_click": [
+      true,
+      false,
+      false,
+      false,
+      true
+    ],
+    "after_label": [
+      true,
+      false,
+      true,
+      false,
+      true
+    ],
+    "after_space": [
+      true,
+      true,
+      false,
+      false,
+      true
+    ],
+    "ax_names": [
+      "通知",
+      "相機",
+      "行動網路同步",
+      "位置存取",
+      "自動備份"
+    ],
+    "compact_icon_ink_pixels": 136,
+    "compact_label_height": 144.0,
+    "disabled": [
+      "switch-demo-disabled-off",
+      "switch-demo-disabled-on"
+    ],
+    "effective_changes": 3,
+    "held_diameter": 28,
+    "initial": [
+      false,
+      true,
+      false,
+      false,
+      true
+    ],
+    "press_pixels": {
+      "held_center": [
+        73,
+        69,
+        78
+      ],
+      "held_edge": [
+        73,
+        69,
+        78
+      ],
+      "hover_center": [
+        76,
+        72,
+        81
+      ],
+      "hover_edge": [
+        213,
+        208,
+        216
+      ]
+    },
+    "resting_diameters": [
+      16,
+      24
+    ],
+    "rgba_source": "authored theme tokens",
+    "role": "switch",
+    "tab_order": [
+      "switch-demo-theme",
+      "switch-demo-rtl",
+      "switch-demo-large-text",
+      "switch-demo-plain",
+      "switch-demo-selected-icon",
+      "switch-demo-both-icons",
+      "switch-demo-back"
+    ],
+    "wide_icon_ink_pixels": 136
+  },
+  "version": 1
+}

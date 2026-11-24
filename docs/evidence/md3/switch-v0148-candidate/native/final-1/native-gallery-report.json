@@ -1,0 +1,407 @@
+{
+  "schema": "surface.test.switch.native.v1",
+  "binaries": {
+    "gallery": "7630f18e3de311a7988c1b741a3bd6e2dba34414aa11c3bc79eb967e20dbe443",
+    "cli": "39214183b7443da8ae3e202f2218d138b0a21660b4e9d96ae66e3a169b86b272"
+  },
+  "rendering": "headless",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "viewport": [
+        960,
+        800
+      ],
+      "rtl": false,
+      "text_scale": 1,
+      "checked": [
+        true,
+        false,
+        false,
+        false,
+        true
+      ],
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "switch-demo-plain": {
+          "target": {
+            "height": 48.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 136.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 431.0,
+            "y": 144.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 455.0,
+            "y": 148.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 390.0,
+            "x": 24.0,
+            "y": 148.0
+          }
+        },
+        "switch-demo-selected-icon": {
+          "target": {
+            "height": 48.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 192.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 431.0,
+            "y": 200.0
+          },
+          "handle": {
+            "height": 16.0,
+            "width": 16.0,
+            "x": 439.0,
+            "y": 208.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 390.0,
+            "x": 24.0,
+            "y": 204.0
+          }
+        },
+        "switch-demo-both-icons": {
+          "target": {
+            "height": 48.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 248.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 431.0,
+            "y": 256.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 435.0,
+            "y": 260.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 390.0,
+            "x": 24.0,
+            "y": 260.0
+          }
+        },
+        "switch-demo-disabled-off": {
+          "target": {
+            "height": 48.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 304.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 431.0,
+            "y": 312.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 435.0,
+            "y": 316.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 390.0,
+            "x": 24.0,
+            "y": 316.0
+          }
+        },
+        "switch-demo-disabled-on": {
+          "target": {
+            "height": 48.0,
+            "width": 464.0,
+            "x": 24.0,
+            "y": 360.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 431.0,
+            "y": 368.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 455.0,
+            "y": 372.0
+          },
+          "label": {
+            "height": 24.0,
+            "width": 390.0,
+            "x": 24.0,
+            "y": 372.0
+          }
+        }
+      },
+      "png": {
+        "name": "wide-light.png",
+        "sha256": "c4fb16301a99e95de0540546bb42e91d7053c3425ec6e01c73ed4fa9ff5e7946",
+        "format": "png",
+        "width": 960,
+        "height": 800,
+        "scale": 1.0,
+        "ink": {
+          "switch-demo-both-icons-label": {
+            "bounds": {
+              "height": 24.0,
+              "width": 390.0,
+              "x": 24.0,
+              "y": 260.0
+            },
+            "ink_bounds": [
+              25,
+              265,
+              238,
+              16
+            ],
+            "rgba": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 871
+          }
+        },
+        "handle_pixel": {
+          "point": [
+            467,
+            160
+          ],
+          "rgba": [
+            255,
+            255,
+            255,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "viewport": [
+        320,
+        640
+      ],
+      "rtl": true,
+      "text_scale": 2,
+      "checked": [
+        true,
+        false,
+        false,
+        false,
+        true
+      ],
+      "windows": [
+        0,
+        0,
+        0
+      ],
+      "geometry": {
+        "switch-demo-plain": {
+          "target": {
+            "height": 48.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 232.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 29.0,
+            "y": 240.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 33.0,
+            "y": 244.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 198.0,
+            "x": 98.0,
+            "y": 232.0
+          }
+        },
+        "switch-demo-selected-icon": {
+          "target": {
+            "height": 48.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 288.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 29.0,
+            "y": 296.0
+          },
+          "handle": {
+            "height": 16.0,
+            "width": 16.0,
+            "x": 57.0,
+            "y": 304.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 198.0,
+            "x": 98.0,
+            "y": 288.0
+          }
+        },
+        "switch-demo-both-icons": {
+          "target": {
+            "height": 144.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 344.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 29.0,
+            "y": 400.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 53.0,
+            "y": 404.0
+          },
+          "label": {
+            "height": 144.0,
+            "width": 198.0,
+            "x": 98.0,
+            "y": 344.0
+          }
+        },
+        "switch-demo-disabled-off": {
+          "target": {
+            "height": 48.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 496.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 29.0,
+            "y": 504.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 53.0,
+            "y": 508.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 198.0,
+            "x": 98.0,
+            "y": 496.0
+          }
+        },
+        "switch-demo-disabled-on": {
+          "target": {
+            "height": 48.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 552.0
+          },
+          "track": {
+            "height": 32.0,
+            "width": 52.0,
+            "x": 29.0,
+            "y": 560.0
+          },
+          "handle": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 33.0,
+            "y": 564.0
+          },
+          "label": {
+            "height": 48.0,
+            "width": 198.0,
+            "x": 98.0,
+            "y": 552.0
+          }
+        }
+      },
+      "png": {
+        "name": "compact-dark-rtl-200.png",
+        "sha256": "6d4c44e67033bf4c582a11a00405b1c274bb8ab8c2e4c0796717d5fcc491f3eb",
+        "format": "png",
+        "width": 320,
+        "height": 640,
+        "scale": 1.0,
+        "ink": {
+          "switch-demo-both-icons-label": {
+            "bounds": {
+              "height": 144.0,
+              "width": 198.0,
+              "x": 98.0,
+              "y": 344.0
+            },
+            "ink_bounds": [
+              106,
+              355,
+              189,
+              126
+            ],
+            "rgba": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 3934
+          }
+        },
+        "handle_pixel": {
+          "point": [
+            45,
+            256
+          ],
+          "rgba": [
+            54,
+            39,
+            93,
+            255
+          ]
+        }
+      }
+    }
+  ]
+}
