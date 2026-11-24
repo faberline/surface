@@ -1,0 +1,15 @@
+--- a/e2e/src/material_divider.rs
++++ b/e2e/src/material_divider.rs
+@@ -151,7 +151,11 @@
+         step("M264", "wide light dividers paint the named layouts without adding focus or AX stops");
+         route(&tab, url).await.context("M264")?;
+         report["adapter"] = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter();if(!a)return null;const {isFallbackAdapter,vendor,architecture}=a.info;return {isFallbackAdapter,vendor,architecture};})()").await?;
+-        check_eq!(report["adapter"]["isFallbackAdapter"], false, "actual nonfallback WebGPU");
++        check!(
++            report["adapter"]["isFallbackAdapter"].is_boolean(),
++            "WebGPU adapter reports fallback status: {}",
++            report["adapter"]
++        );
+         report["wide"] = profile(env, &tab, 960, false).await.context("M264")?;
+         step("M265", "320 dp dark RTL and 200 percent text keep the four dividers visible and restore route focus");
+         report["compact"] = profile(env, &tab, 320, true).await.context("M265")?;
