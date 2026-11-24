@@ -1,0 +1,847 @@
+--- a/crates/surface-material/src/basic_dialog.rs
++++ b/crates/surface-material/src/basic_dialog.rs
+@@ -7,6 +7,9 @@
+ use surface_app::{CursorStyle, ModalDismissal, View};
+ 
+ use crate::{shape, shape::LayoutDirection, typography, Elevation, Theme};
++
++mod motion;
++pub use motion::BasicDialogMotion;
+ 
+ const MIN_WIDTH: f32 = 280.;
+ const MAX_WIDTH: f32 = 560.;
+@@ -63,6 +66,34 @@
+         &self,
+         options: BasicDialogOptions<'_>,
+         content: BasicDialogContent<'_, M>,
++    ) -> Option<View<M>> {
++        self.build_basic_dialog(options, content, None)
++    }
++
++    /// Build the current live or retiring frame of a Basic dialog.
++    ///
++    /// Keep the same IDs and authored layer position until the exit ends.
++    /// While retiring, the content only contributes to paint. The caller
++    /// owns all dismissal and action messages. The fade is rendered via
++    /// `Runtime::render_extended`.
++    pub fn basic_dialog_with_motion<M>(
++        &self,
++        options: BasicDialogOptions<'_>,
++        content: BasicDialogContent<'_, M>,
++        open: bool,
++        motion: &BasicDialogMotion,
++    ) -> Option<View<M>> {
++        motion
++            .should_mount(open)
++            .then(|| self.build_basic_dialog(options, content, Some((open, motion))))
++            .flatten()
++    }
++
++    fn build_basic_dialog<M>(
++        &self,
++        options: BasicDialogOptions<'_>,
++        content: BasicDialogContent<'_, M>,
++        motion: Option<(bool, &BasicDialogMotion)>,
+     ) -> Option<View<M>> {
+         let (window_width, window_height) = options.window_size;
+         if [window_width, window_height, options.preferred_width]
+@@ -222,14 +253,27 @@
+             panel = panel.modal_focus_fallback(target);
+         }
+         let Color(red, green, blue, _) = self.colors.scrim;
++        let scrim = Color(red, green, blue, 82);
+         let mut backdrop = Style::column()
+             .fixed(Insets::all(0.))
+             .align(Align::Center)
+-            .justify(Align::Center)
+-            .background(Color(red, green, blue, 82));
++            .justify(Align::Center);
+         backdrop.z_index = 1000;
++        let backdrop_node = Node::new(Role::Group, "").id(id("layer"));
++        if let Some((open, motion)) = motion {
++            let panel = panel.paint_modal_panel_opacity(motion.panel_painter());
++            let backdrop = backdrop_node.styled(backdrop);
++            let layer = if open {
++                panel.modal_with_backdrop(backdrop, content.on_dismiss)
++            } else {
++                panel.retiring_modal_with_backdrop(backdrop)
++            };
++            return Some(
++                layer.paint_fill_contour(motion.scrim_painter(options.window_size, scrim)),
++            );
++        }
+         Some(panel.modal_with_backdrop(
+-            Node::new(Role::Group, "").id(id("layer")).styled(backdrop),
++            backdrop_node.styled(backdrop.background(scrim)),
+             content.on_dismiss,
+         ))
+     }
+--- /dev/null
++++ b/crates/surface-material/src/basic_dialog/motion.rs
+@@ -0,0 +1,116 @@
++use std::{cell::Cell, rc::Rc};
++
++use surface::{Color, FillContour};
++use surface_app::{AnimationFrame, AnimationUpdate, ToggleMotion, ToggleSpring};
++
++/// Retained paint motion for one caller-controlled Basic dialog.
++///
++/// Rebuild the view when the caller changes `open`. Call `advance` on
++/// every animation frame. The live focus scope follows `open` immediately.
++/// The extended display list can retain the exiting paint until it settles.
++#[derive(Default)]
++pub struct BasicDialogMotion {
++    spring: ToggleMotion,
++    opacity: Rc<Cell<f32>>,
++}
++
++impl BasicDialogMotion {
++    /// Start at either resting state. A closed track is the default.
++    pub fn new(open: bool) -> Self {
++        Self {
++            spring: ToggleMotion::new(open),
++            opacity: Rc::new(Cell::new(if open { 1. } else { 0. })),
++        }
++    }
++
++    /// Current presented opacity in the range zero through one.
++    pub fn opacity(&self) -> f32 {
++        self.opacity.get()
++    }
++
++    /// Whether to build live content or retain it solely for outgoing paint.
++    pub fn should_mount(&self, open: bool) -> bool {
++        open || self.opacity() > 0.
++    }
++
++    /// Advance without rebuilding for paint-only changes. Rebuild when a
++    /// retained exit ends so the caller can remove its inert content.
++    pub fn advance(&mut self, frame: &AnimationFrame<'_>, open: bool) -> AnimationUpdate {
++        let was_painted = self.opacity() > 0.;
++        // Do not show a late exit for an opening closed before it painted.
++        let snap = frame.reduced_motion || (!open && !was_painted);
++        let (opacity, request_next) = self.spring.sample(
++            open,
++            frame.now_ms,
++            snap,
++            ToggleSpring::StandardDefaultEffects,
++        );
++        self.opacity.set(opacity);
++        AnimationUpdate {
++            rebuild: !open && was_painted && opacity == 0.,
++            request_next,
++        }
++    }
++
++    pub(super) fn panel_painter(&self) -> impl Fn() -> f32 + 'static {
++        let opacity = self.opacity.clone();
++        move || opacity.get()
++    }
++
++    pub(super) fn scrim_painter(
++        &self,
++        (width, height): (f32, f32),
++        Color(red, green, blue, alpha): Color,
++    ) -> impl Fn() -> FillContour + 'static {
++        let opacity = self.opacity.clone();
++        move || {
++            let alpha = (opacity.get() * f32::from(alpha)).round() as u8;
++            FillContour::new(
++                [[0., 0.], [width, 0.], [width, height], [0., height]],
++                Color(red, green, blue, alpha),
++            )
++            .expect("a positive finite viewport is a valid scrim")
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use surface::{MicroDom, Node, Role};
++
++    #[test]
++    fn unopened_visual_state_never_retires_and_unclocked_frames_snap() {
++        let dom = MicroDom::new(Node::new(Role::Window, ""));
++        let frame = |now_ms, reduced_motion| AnimationFrame {
++            now_ms,
++            reduced_motion,
++            dom: &dom,
++            layout: None,
++        };
++        let mut motion = BasicDialogMotion::default();
++        assert!(!motion.should_mount(false));
++        assert!(motion.should_mount(true));
++        let first = motion.advance(&frame(Some(10.), false), true);
++        assert!(!first.rebuild && first.request_next);
++        assert_eq!(motion.opacity(), 0.);
++        assert_eq!(
++            motion.advance(&frame(Some(30.), false), false),
++            AnimationUpdate::default()
++        );
++        assert!(!motion.should_mount(false));
++
++        let open = motion.advance(&frame(None, false), true);
++        assert_eq!(open, AnimationUpdate::default());
++        assert_eq!(motion.opacity(), 1.);
++        let close = motion.advance(&frame(Some(f64::NAN), false), false);
++        assert!(close.rebuild && !close.request_next);
++        assert!(!motion.should_mount(false));
++
++        motion.advance(&frame(Some(40.), true), true);
++        assert_eq!(motion.opacity(), 1.);
++        let open_without_entry = BasicDialogMotion::new(true);
++        assert_eq!(open_without_entry.opacity(), 1.);
++        assert!(open_without_entry.should_mount(false));
++    }
++}
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -70,7 +70,7 @@
+ pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
+ pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
+ pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
+-pub use basic_dialog::{BasicDialogContent, BasicDialogOptions};
++pub use basic_dialog::{BasicDialogContent, BasicDialogMotion, BasicDialogOptions};
+ pub use bottom_sheet::{
+     BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
+     BottomSheetState,
+--- a/crates/surface-wgpu/tests/it.rs
++++ b/crates/surface-wgpu/tests/it.rs
+@@ -1,6 +1,8 @@
+ use surface::{Color, Corners, DisplayList, FontFamily, PaintOp, Rect, TextMeasurer, TextStyle};
+ use surface_wgpu::{Renderer, TextSystem};
+ 
++#[path = "it/basic_dialog_motion.rs"]
++mod basic_dialog_motion;
+ #[path = "it/list_ripple.rs"]
+ mod list_ripple;
+ #[path = "it/loading_indicator.rs"]
+--- /dev/null
++++ b/crates/surface-wgpu/tests/it/basic_dialog_motion.rs
+@@ -0,0 +1,226 @@
++use surface::{Color, ExtendedPaintOp, Length, Node, Rect, Role, Style};
++use surface_app::{
++    AnimationFrame, AnimationUpdate, Application, Event, ModalDismissal, Runtime, View,
++};
++use surface_material::{
++    shape::LayoutDirection, BasicDialogContent, BasicDialogMotion, BasicDialogOptions, ButtonKind,
++    Theme,
++};
++use surface_wgpu::{Capture, Renderer, TextSystem};
++
++const WIDTH: u32 = 560;
++const HEIGHT: u32 = 420;
++const CHILD: Color = Color::rgb(236, 123, 47);
++
++struct Basic {
++    theme: Theme,
++    motion: BasicDialogMotion,
++    open: bool,
++}
++
++impl Application for Basic {
++    type Message = bool;
++
++    fn update(&mut self, open: bool) {
++        self.open = open;
++    }
++
++    fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
++        self.motion.advance(&frame, self.open)
++    }
++
++    fn view(&self) -> View<bool> {
++        let dialog = self.theme.basic_dialog_with_motion(
++            BasicDialogOptions {
++                id: "basic",
++                label: "行程通知",
++                heading: Some("行程通知"),
++                supporting: Some("提醒時間"),
++                icon: None,
++                window_size: (WIDTH as f32, HEIGHT as f32),
++                preferred_width: 360.,
++                direction: LayoutDirection::RightToLeft,
++                dismissal: ModalDismissal::EscapeOrOutside,
++                alert: false,
++                initial_focus: Some("basic-confirm"),
++                restore_focus_to: Some("opener"),
++            },
++            BasicDialogContent {
++                extra: vec![View::new(
++                    Node::new(Role::Group, "").id("color-card").styled(
++                        Style::column()
++                            .width(Length::Px(94.))
++                            .height(Length::Px(38.))
++                            .background(CHILD),
++                    ),
++                )],
++                confirm: ("知道了", false),
++                cancel: None,
++                on_dismiss: false,
++            },
++            self.open,
++            &self.motion,
++        );
++        View::new(
++            Node::new(Role::Window, "").styled(
++                Style::column()
++                    .width(Length::Percent(1.))
++                    .height(Length::Percent(1.))
++                    .padding(16.)
++                    .background(self.theme.colors.surface),
++            ),
++        )
++        .children(
++            std::iter::once(self.theme.button_with(
++                "opener",
++                "行程",
++                ButtonKind::Text,
++                false,
++                true,
++            ))
++            .chain(dialog),
++        )
++    }
++}
++
++fn sample(capture: &Capture, x: u32, y: u32) -> [u8; 4] {
++    let start = ((y * capture.width + x) * 4) as usize;
++    capture.rgba[start..start + 4].try_into().unwrap()
++}
++
++fn blend(base: [u8; 4], ink: Color, opacity: f32) -> [u8; 4] {
++    let channel =
++        |under, over| (f32::from(under) * (1. - opacity) + f32::from(over) * opacity).round() as u8;
++    [
++        channel(base[0], ink.0),
++        channel(base[1], ink.1),
++        channel(base[2], ink.2),
++        255,
++    ]
++}
++
++fn near(actual: [u8; 4], reference: [u8; 4]) {
++    assert!(
++        actual
++            .into_iter()
++            .zip(reference)
++            .all(|(byte, expected)| byte.abs_diff(expected) <= 2),
++        "actual {actual:?}, expected {reference:?}"
++    );
++}
++
++fn center(runtime: &Runtime<Basic>, id: &str) -> (u32, u32) {
++    let node = runtime.dom().by_id(id).unwrap();
++    let Rect {
++        x,
++        y,
++        width,
++        height,
++    } = runtime.computed().unwrap().nodes[node.index()].bounds;
++    ((x + width * 0.5) as u32, (y + height * 0.5) as u32)
++}
++
++fn save(capture: &Capture, name: &str) {
++    let Ok(path) = std::env::var("SURFACE_GPU_EVIDENCE") else {
++        return;
++    };
++    let path = std::path::Path::new(&path).with_file_name(format!("gpu-basic-dialog-{name}.png"));
++    let mut encoder = png::Encoder::new(
++        std::fs::File::create(path).unwrap(),
++        capture.width,
++        capture.height,
++    );
++    encoder.set_color(png::ColorType::Rgba);
++    encoder.set_depth(png::BitDepth::Eight);
++    encoder
++        .write_header()
++        .unwrap()
++        .write_image_data(&capture.rgba)
++        .unwrap();
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_basic_dialog_motion_blends_scrim_and_isolated_panel() {
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None)
++            .await
++            .expect("native GPU adapter is required");
++        eprintln!("GPU Basic motion evidence: {:?}", adapter.get_info());
++        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
++            .await
++            .unwrap();
++        let mut text = TextSystem::default();
++        let theme = Theme::light();
++        let scheme = theme.colors;
++        let mut runtime = Runtime::new(Basic {
++            theme,
++            motion: BasicDialogMotion::default(),
++            open: false,
++        })
++        .unwrap();
++        let mut frame = |runtime: &mut Runtime<Basic>, now_ms| {
++            runtime.set_time(now_ms);
++            let display = runtime
++                .render_extended(WIDTH as f32, HEIGHT as f32, &mut text)
++                .unwrap();
++            let alpha = display.ops().iter().find_map(|op| match op {
++                ExtendedPaintOp::BeginOpacityGroup { opacity } => Some(*opacity),
++                _ => None,
++            });
++            (
++                renderer
++                    .capture_extended(&display, WIDTH, HEIGHT, 1.)
++                    .unwrap(),
++                alpha,
++            )
++        };
++        let (closed, _) = frame(&mut runtime, 0.);
++        runtime.activate("opener").unwrap();
++        let (first, start) = frame(&mut runtime, 60.);
++        assert_eq!(start, Some(0.));
++        assert_eq!(runtime.focused(), Some("basic-confirm"));
++        assert_eq!(first.rgba, closed.rgba);
++        let (opening, alpha) = frame(&mut runtime, 100.);
++        let entering = alpha.unwrap();
++        let (x, y) = center(&runtime, "color-card");
++        let outer = sample(&closed, 2, 2);
++        let verify_pixels = |capture: &Capture, progress: f32| {
++            let scrim = (82. * progress).round() / 255.;
++            let background = blend(outer, scheme.scrim, scrim);
++            near(sample(capture, 2, 2), background);
++            near(sample(capture, x, y), blend(background, CHILD, progress));
++        };
++        verify_pixels(&opening, entering);
++        save(&opening, "enter");
++        let (settled, alpha) = frame(&mut runtime, 500.);
++        assert_eq!(alpha, None);
++        verify_pixels(&settled, 1.);
++        save(&settled, "settled");
++
++        runtime.dispatch(Event::Cancel).unwrap();
++        assert_eq!(runtime.focused(), Some("opener"));
++        assert!(runtime.activate("basic-confirm").is_err());
++        frame(&mut runtime, 600.);
++        let (exiting, alpha) = frame(&mut runtime, 640.);
++        let leaving = alpha.unwrap();
++        assert!((0. ..1.).contains(&leaving));
++        verify_pixels(&exiting, leaving);
++        let retired = runtime.dom().by_id("basic").unwrap();
++        assert!(runtime
++            .accessibility_frame()
++            .unwrap()
++            .node(retired)
++            .is_none());
++        save(&exiting, "exit");
++
++        runtime.set_reduced_motion(true);
++        let (done, alpha) = frame(&mut runtime, 641.);
++        assert_eq!(alpha, None);
++        assert!(runtime.dom().by_id("basic").is_none());
++        assert!(!runtime.needs_frame());
++        near(sample(&done, x, y), outer);
++        near(sample(&done, 2, 2), outer);
++    });
++}
+--- a/examples/material-gallery/src/dialog_demo.rs
++++ b/examples/material-gallery/src/dialog_demo.rs
+@@ -1,8 +1,8 @@
+ use surface::{Align, Length, Node, Rect, Role, Style};
+-use surface_app::{CursorStyle, ModalDismissal, View};
++use surface_app::{AnimationFrame, AnimationUpdate, CursorStyle, ModalDismissal, View};
+ use surface_material::{
+     adaptive::WindowWidthSizeClass, full_screen_dialog_layout, shape, shape::LayoutDirection,
+-    typography, BasicDialogContent, BasicDialogOptions, ButtonKind, ChoiceState,
++    typography, BasicDialogContent, BasicDialogMotion, BasicDialogOptions, ButtonKind, ChoiceState,
+     FullScreenDialogOptions, Theme,
+ };
+ 
+@@ -53,6 +53,9 @@
+     rtl: bool,
+     large_text: bool,
+     active: Option<Active>,
++    basic_motion: BasicDialogMotion,
++    alert_motion: BasicDialogMotion,
++    discard_motion: BasicDialogMotion,
+     saved: String,
+     saves: usize,
+     discards: usize,
+@@ -67,6 +70,9 @@
+             rtl: false,
+             large_text: false,
+             active: None,
++            basic_motion: BasicDialogMotion::default(),
++            alert_motion: BasicDialogMotion::default(),
++            discard_motion: BasicDialogMotion::default(),
+             saved: INITIAL.into(),
+             saves: 0,
+             discards: 0,
+@@ -98,6 +104,35 @@
+     pub(crate) fn leave(&mut self) {
+         self.visible = false;
+         self.active = None;
++        self.basic_motion = BasicDialogMotion::default();
++        self.alert_motion = BasicDialogMotion::default();
++        self.discard_motion = BasicDialogMotion::default();
++    }
++
++    pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
++        if !self.visible {
++            return AnimationUpdate::default();
++        }
++        let basic = self
++            .basic_motion
++            .advance(frame, matches!(self.active, Some(Active::Basic)));
++        let alert = self
++            .alert_motion
++            .advance(frame, matches!(self.active, Some(Active::Alert)));
++        let discard = self.discard_motion.advance(
++            frame,
++            matches!(
++                self.active,
++                Some(Active::Edit {
++                    ask_discard: true,
++                    ..
++                })
++            ),
++        );
++        AnimationUpdate {
++            rebuild: basic.rebuild || alert.rebuild || discard.rebuild,
++            request_next: basic.request_next || alert.request_next || discard.request_next,
++        }
+     }
+ 
+     pub(crate) fn update(&mut self, event: DialogDemoEvent) {
+@@ -107,14 +142,25 @@
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+-            OpenBasic => self.active = Some(Active::Basic),
++            OpenBasic => {
++                self.alert_motion = BasicDialogMotion::default();
++                self.discard_motion = BasicDialogMotion::default();
++                self.active = Some(Active::Basic);
++            }
+             CloseBasic if matches!(self.active, Some(Active::Basic)) => self.active = None,
+-            OpenAlert => self.active = Some(Active::Alert),
++            OpenAlert => {
++                self.basic_motion = BasicDialogMotion::default();
++                self.discard_motion = BasicDialogMotion::default();
++                self.active = Some(Active::Alert);
++            }
+             Acknowledge if matches!(self.active, Some(Active::Alert)) => {
+                 self.alerts += 1;
+                 self.active = None;
+             }
+             OpenEdit => {
++                self.basic_motion = BasicDialogMotion::default();
++                self.alert_motion = BasicDialogMotion::default();
++                self.discard_motion = BasicDialogMotion::default();
+                 self.active = Some(Active::Edit {
+                     draft: self.saved.clone(),
+                     ask_discard: false,
+@@ -287,22 +333,26 @@
+             ]),
+             theme.text(SAVED, format!("已儲存：{}", self.saved)),
+         ];
+-        match &self.active {
+-            Some(Active::Basic) => page.extend(self.basic(theme)),
+-            Some(Active::Alert) => page.extend(self.alert(theme)),
+-            Some(Active::Edit { draft, ask_discard }) => {
+-                page.extend(self.editor(theme, draft));
+-                if *ask_discard {
+-                    page.extend(self.confirmation(theme));
+-                }
+-            }
+-            None => {}
+-        }
++        page.extend(self.basic(theme, matches!(self.active, Some(Active::Basic))));
++        page.extend(self.alert(theme, matches!(self.active, Some(Active::Alert))));
++        let mut ask_discard = false;
++        if let Some(Active::Edit {
++            draft,
++            ask_discard: ask,
++        }) = &self.active
++        {
++            page.extend(self.editor(theme, draft));
++            ask_discard = *ask;
++        }
++        page.extend(self.confirmation(theme, ask_discard));
+         theme.page(page)
+     }
+ 
+-    fn basic(&self, theme: &Theme) -> Option<View<Message>> {
++    fn basic(&self, theme: &Theme, open: bool) -> Option<View<Message>> {
+         use DialogDemoEvent::CloseBasic;
++        if !self.basic_motion.should_mount(open) {
++            return None;
++        }
+         let mut options = self.basic_options(BASIC, "行程通知");
+         options.restore_focus_to = Some(BASIC_OPEN);
+         options.initial_focus = Some("dialog-demo-basic-confirm");
+@@ -336,7 +386,7 @@
+         })
+         .into_iter()
+         .collect();
+-        theme.basic_dialog(
++        theme.basic_dialog_with_motion(
+             options,
+             BasicDialogContent {
+                 extra,
+@@ -344,17 +394,19 @@
+                 cancel: Some(("稍後再看", Message::DialogDemo(CloseBasic))),
+                 on_dismiss: Message::DialogDemo(CloseBasic),
+             },
++            open,
++            &self.basic_motion,
+         )
+     }
+ 
+-    fn alert(&self, theme: &Theme) -> Option<View<Message>> {
++    fn alert(&self, theme: &Theme, open: bool) -> Option<View<Message>> {
+         use DialogDemoEvent::Acknowledge;
+         let mut options = self.basic_options(ALERT, "連線中斷");
+         options.alert = true;
+         options.dismissal = ModalDismissal::ActionOnly;
+         options.supporting = Some("目前無法同步行程。請確認網路連線後再試。");
+         options.restore_focus_to = Some(ALERT_OPEN);
+-        theme.basic_dialog(
++        theme.basic_dialog_with_motion(
+             options,
+             BasicDialogContent {
+                 extra: Vec::new(),
+@@ -362,6 +414,8 @@
+                 cancel: None,
+                 on_dismiss: Message::DialogDemo(Acknowledge),
+             },
++            open,
++            &self.alert_motion,
+         )
+     }
+ 
+@@ -457,14 +511,14 @@
+         )
+     }
+ 
+-    fn confirmation(&self, theme: &Theme) -> Option<View<Message>> {
++    fn confirmation(&self, theme: &Theme, open: bool) -> Option<View<Message>> {
+         use DialogDemoEvent::{Discard, KeepEditing};
+         let mut options = self.basic_options(DISCARD, "捨棄變更？");
+         options.supporting = Some("未儲存的行程變更會遺失。");
+         options.dismissal = ModalDismissal::Escape;
+         options.initial_focus = Some("dialog-demo-discard-cancel");
+         options.restore_focus_to = Some(EDITOR);
+-        theme.basic_dialog(
++        theme.basic_dialog_with_motion(
+             options,
+             BasicDialogContent {
+                 extra: Vec::new(),
+@@ -472,6 +526,8 @@
+                 cancel: Some(("繼續編輯", Message::DialogDemo(KeepEditing))),
+                 on_dismiss: Message::DialogDemo(KeepEditing),
+             },
++            open,
++            &self.discard_motion,
+         )
+     }
+ 
+@@ -515,6 +571,11 @@
+             "visible": self.visible, "open": open, "presentation": presentation, "draft": draft,
+             "saved": self.saved, "saves": self.saves, "discards": self.discards, "alerts": self.alerts,
+             "rtl": self.rtl, "text_scale": self.text_scale(),
++            "opacity": {
++                "basic": self.basic_motion.opacity(),
++                "alert": self.alert_motion.opacity(),
++                "discard": self.discard_motion.opacity(),
++            },
+         })
+     }
+ }
+@@ -523,7 +584,7 @@
+ mod tests {
+     use super::*;
+     use crate::Gallery;
+-    use surface::TextMeasurer;
++    use surface::{ExtendedDisplayList, ExtendedPaintOp, TextMeasurer};
+     use surface_app::{Event, ImeEvent, Key, KeyPress, Modifiers, Runtime};
+ 
+     struct Fonts;
+@@ -587,6 +648,149 @@
+                 cursor,
+             })
+             .unwrap();
++    }
++
++    fn timed_frame(
++        runtime: &mut Runtime<Gallery>,
++        (width, height): (f32, f32),
++        now: f64,
++    ) -> ExtendedDisplayList {
++        runtime.set_time(now);
++        runtime.render_extended(width, height, &mut Fonts).unwrap()
++    }
++
++    fn opacity_group(frame: &ExtendedDisplayList) -> Option<f32> {
++        frame.ops().iter().find_map(|op| match op {
++            ExtendedPaintOp::BeginOpacityGroup { opacity } => Some(*opacity),
++            _ => None,
++        })
++    }
++
++    fn scrim_alpha(frame: &ExtendedDisplayList) -> Option<u8> {
++        frame.ops().iter().find_map(|op| match op {
++            ExtendedPaintOp::FillPath(path) if path.rect() == frame.viewport() => {
++                Some(path.color().3)
++            }
++            _ => None,
++        })
++    }
++
++    #[test]
++    fn basic_fade_keeps_live_focus_and_semantics_and_reverses_its_inert_exit() {
++        let viewport = (960., 800.);
++        let mut runtime = route(viewport, false);
++        runtime.activate(BASIC_OPEN).unwrap();
++        let start = timed_frame(&mut runtime, viewport, 100.);
++        assert_eq!(opacity_group(&start), Some(0.));
++        assert_eq!(scrim_alpha(&start), None);
++        active_panel(&runtime, BASIC);
++        assert_eq!(runtime.focused(), Some("dialog-demo-basic-confirm"));
++        assert!(runtime.needs_frame());
++        let geometry = rect(&runtime, BASIC);
++        let revision = runtime.accessibility_frame().unwrap().generation();
++        let halfway = timed_frame(&mut runtime, viewport, 140.);
++        let expected = 1. - 2.6_f32 * (-1.6_f32).exp();
++        let open_alpha = opacity_group(&halfway).unwrap();
++        assert!((open_alpha - expected).abs() < 0.001);
++        assert_eq!(
++            scrim_alpha(&halfway),
++            Some((82. * open_alpha).round() as u8)
++        );
++        assert_eq!(
++            runtime.accessibility_frame().unwrap().generation(),
++            revision
++        );
++        assert_eq!(rect(&runtime, BASIC), geometry);
++        let full = timed_frame(&mut runtime, viewport, 600.);
++        assert_eq!(opacity_group(&full), None);
++        assert_eq!(scrim_alpha(&full), Some(82));
++        assert!(!runtime.needs_frame());
++
++        click(&mut runtime, 2., 2.);
++        assert_eq!(runtime.focused(), Some(BASIC_OPEN));
++        timed_frame(&mut runtime, viewport, 660.);
++        let closing = timed_frame(&mut runtime, viewport, 700.);
++        let exit_alpha = opacity_group(&closing).unwrap();
++        assert!((exit_alpha + expected - 1.).abs() < 0.001);
++        assert_eq!(
++            scrim_alpha(&closing),
++            Some((82. * exit_alpha).round() as u8)
++        );
++        let retained = runtime.dom().by_id(BASIC).unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        assert!(frame.node(retained).is_none());
++        assert_eq!(frame.modal_root(), None);
++        assert!(runtime.activate("dialog-demo-basic-confirm").is_err());
++        assert_eq!(rect(&runtime, BASIC), geometry);
++
++        let opener = rect(&runtime, BASIC_OPEN);
++        click(
++            &mut runtime,
++            opener.x + opener.width / 2.,
++            opener.y + opener.height / 2.,
++        );
++        let reversed = timed_frame(&mut runtime, viewport, 700.);
++        assert_eq!(opacity_group(&reversed), Some(exit_alpha));
++        active_panel(&runtime, BASIC);
++        assert_eq!(runtime.focused(), Some("dialog-demo-basic-confirm"));
++        timed_frame(&mut runtime, viewport, 800.);
++        assert!(runtime.app().dialog_demo.basic_motion.opacity() > exit_alpha);
++        runtime.dispatch(Event::Cancel).unwrap();
++        timed_frame(&mut runtime, viewport, 830.);
++        let done = timed_frame(&mut runtime, viewport, 1350.);
++        assert!(!runtime.needs_frame());
++        assert!(runtime.dom().by_id(BASIC).is_none());
++        assert_eq!(opacity_group(&done), None);
++        assert_eq!(scrim_alpha(&done), None);
++        assert_eq!(runtime.focused(), Some(BASIC_OPEN));
++    }
++
++    #[test]
++    fn retiring_nested_discard_restores_focus_and_keeps_the_draft() {
++        let viewport = (320., 400.);
++        let mut runtime = route(viewport, true);
++        runtime.activate(EDIT_OPEN).unwrap();
++        timed_frame(&mut runtime, viewport, 20.);
++        set_input(&mut runtime, "秋日散步", 12, 12);
++        runtime.dispatch(Event::Cancel).unwrap();
++        assert_eq!(
++            opacity_group(&timed_frame(&mut runtime, viewport, 50.)),
++            Some(0.)
++        );
++        let partly_open = timed_frame(&mut runtime, viewport, 100.);
++        let opacity = opacity_group(&partly_open).unwrap();
++        assert!((0. ..1.).contains(&opacity));
++        active_panel(&runtime, DISCARD);
++        assert_eq!(runtime.focused(), Some("dialog-demo-discard-cancel"));
++        assert!(runtime.activate("dialog-demo-edit-action").is_err());
++
++        runtime.activate("dialog-demo-discard-cancel").unwrap();
++        let first_exit = timed_frame(&mut runtime, viewport, 100.);
++        assert_eq!(opacity_group(&first_exit), Some(opacity));
++        active_panel(&runtime, EDIT);
++        assert_eq!(runtime.focused(), Some(EDITOR));
++        assert_eq!(runtime.editor(EDITOR).unwrap().value(), "秋日散步");
++        assert!(runtime.activate("dialog-demo-discard-confirm").is_err());
++        let exiting = timed_frame(&mut runtime, viewport, 160.);
++        let exit_opacity = opacity_group(&exiting).unwrap();
++        assert!((0. ..opacity).contains(&exit_opacity));
++
++        runtime.dispatch(Event::Cancel).unwrap();
++        let reversed = timed_frame(&mut runtime, viewport, 160.);
++        assert_eq!(opacity_group(&reversed), Some(exit_opacity));
++        active_panel(&runtime, DISCARD);
++        runtime.set_reduced_motion(true);
++        let restored = timed_frame(&mut runtime, viewport, 180.);
++        assert_eq!(opacity_group(&restored), None);
++        assert_eq!(scrim_alpha(&restored), Some(82));
++        assert!(!runtime.needs_frame());
++        runtime.activate("dialog-demo-discard-cancel").unwrap();
++        timed_frame(&mut runtime, viewport, 181.);
++        assert!(runtime.dom().by_id(DISCARD).is_none());
++        assert_eq!(runtime.focused(), Some(EDITOR));
++        assert_eq!(runtime.editor(EDITOR).unwrap().value(), "秋日散步");
++        assert_eq!(runtime.app().dialog_demo.discards, 0);
++        assert_eq!(runtime.app().dialog_demo.saves, 0);
+     }
+ 
+     #[test]
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -610,6 +610,7 @@
+         let scroll_pair = self.scroll_pair_demo.frame(&frame);
+         let scroll_popup = self.scroll_popup_demo.frame(&frame);
+         let scroll_modal = self.scroll_modal_demo.frame(&frame);
++        let dialog = self.dialog_demo.frame(&frame);
+         let list_expand = self.list_expand_demo.frame(&frame);
+         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
+         AnimationUpdate {
+@@ -631,6 +632,7 @@
+                 || scroll_pair.rebuild
+                 || scroll_popup.rebuild
+                 || scroll_modal.rebuild
++                || dialog.rebuild
+                 || list_expand.rebuild
+                 || list_reorder.rebuild,
+             request_next: inline.request_next
+@@ -649,6 +651,7 @@
+                 || scroll_pair.request_next
+                 || scroll_popup.request_next
+                 || scroll_modal.request_next
++                || dialog.request_next
+                 || list_expand.request_next
+                 || list_reorder.request_next,
+         }

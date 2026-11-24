@@ -1,0 +1,313 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "basic": {
+    "ax": {
+      "role": "dialog",
+      "name": "行程通知",
+      "heading": {
+        "id": "dialog-demo-basic-heading",
+        "text": "行程通知"
+      },
+      "modal": true
+    },
+    "panel": [
+      280.0,
+      92.0,
+      400.0,
+      536.0
+    ],
+    "tab_cycle": [
+      "confirm",
+      "cancel",
+      "confirm",
+      "cancel"
+    ],
+    "escape_return": true,
+    "scrim_return": true
+  },
+  "adapter": {
+    "isFallbackAdapter": false,
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "short": {
+    "viewport": [
+      320,
+      400
+    ],
+    "dark": true,
+    "text_scale": 2,
+    "panel": [
+      20.0,
+      24.0,
+      280.0,
+      352.0
+    ],
+    "heading": [
+      44.0,
+      48.0,
+      232.0,
+      64.0
+    ],
+    "body": [
+      44.0,
+      128.0,
+      232.0,
+      96.0
+    ],
+    "actions": [
+      [
+        140.0,
+        304.0,
+        136.0,
+        48.0
+      ],
+      [
+        140.0,
+        248.0,
+        136.0,
+        48.0
+      ]
+    ],
+    "last_content_before": [
+      44.0,
+      960.0,
+      232.0,
+      80.0
+    ],
+    "last_content_after": [
+      44.0,
+      144.0,
+      232.0,
+      80.0
+    ],
+    "pinned": true
+  },
+  "alert": {
+    "ax": {
+      "role": "alertdialog",
+      "name": "連線中斷",
+      "heading": {
+        "id": "dialog-demo-alert-heading",
+        "text": "連線中斷"
+      },
+      "modal": true
+    },
+    "description": "目前無法同步行程。請確認網路連線後再試。",
+    "panel": [
+      280.0,
+      252.0,
+      400.0,
+      216.0
+    ],
+    "escape_blocked": true,
+    "click_through_blocked": true,
+    "acknowledgements": 1
+  },
+  "breakpoint": {
+    "viewport_widths": [
+      599,
+      600,
+      599
+    ],
+    "full_screen": [
+      0.0,
+      0.0,
+      599.0,
+      500.0
+    ],
+    "basic": [
+      100.0,
+      40.0,
+      400.0,
+      420.0
+    ],
+    "full_screen_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-title",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "basic_ax": {
+      "role": "dialog",
+      "name": "編輯行程",
+      "heading": {
+        "id": "dialog-demo-edit-heading",
+        "text": "編輯行程"
+      },
+      "modal": true
+    },
+    "selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "same_editor": true,
+    "tab_cycle": [
+      "editor",
+      "close",
+      "save",
+      "editor",
+      "save"
+    ]
+  },
+  "transaction": {
+    "ax": {
+      "role": "dialog",
+      "name": "捨棄變更？",
+      "heading": {
+        "id": "dialog-demo-discard-heading",
+        "text": "捨棄變更？"
+      },
+      "modal": true
+    },
+    "initial": "週末行程",
+    "continued": "秋日散步",
+    "saved": "秋日散步",
+    "discarded": "待捨棄",
+    "saves": 1,
+    "discards": 1,
+    "clean_escape_return": true,
+    "close_continue_focus": "dialog-demo-edit-close",
+    "escape_continue_focus": "dialog-demo-editor",
+    "escape_continue_selection": {
+      "same": true,
+      "value": "秋日散步",
+      "range": [
+        3,
+        4
+      ],
+      "direction": "backward",
+      "runtime": {
+        "value": "秋日散步",
+        "display_value": "秋日散步",
+        "selection_anchor": 12,
+        "selection_cursor": 9,
+        "composing": false,
+        "preedit_range": null
+      }
+    },
+    "route_focus_restored": true
+  },
+  "rtl_short": {
+    "viewport": [
+      0.0,
+      0.0,
+      320.0,
+      400.0
+    ],
+    "text_scale": 2,
+    "rtl": true,
+    "title": {
+      "bounds": [
+        92.0,
+        4.0,
+        160.0,
+        112.0
+      ],
+      "pitch": 56.0,
+      "rgb": [
+        230,
+        224,
+        233
+      ],
+      "line_ink_pixels_x": [
+        [
+          59,
+          315
+        ],
+        [
+          235,
+          315
+        ]
+      ]
+    },
+    "discard": {
+      "description": "未儲存的行程變更會遺失。",
+      "panel": [
+        20.0,
+        24.0,
+        280.0,
+        352.0
+      ],
+      "heading": [
+        44.0,
+        48.0,
+        232.0,
+        128.0
+      ],
+      "body": [
+        44.0,
+        192.0,
+        232.0,
+        32.0
+      ],
+      "actions": [
+        [
+          44.0,
+          304.0,
+          136.0,
+          48.0
+        ],
+        [
+          44.0,
+          248.0,
+          136.0,
+          48.0
+        ]
+      ],
+      "support_bounds_before": [
+        44.0,
+        192.0,
+        232.0,
+        80.0
+      ],
+      "support_bounds_after": [
+        44.0,
+        144.0,
+        232.0,
+        80.0
+      ],
+      "support_bounds_unclipped": [
+        44.0,
+        228.0,
+        232.0,
+        80.0
+      ],
+      "unclipped_body": [
+        44.0,
+        228.0,
+        232.0,
+        80.0
+      ],
+      "support_rgb": [
+        202,
+        196,
+        207
+      ],
+      "support_pitch": 40.0,
+      "last_line_ink_before": 0,
+      "last_line_ink_after": 2741,
+      "unclipped_ink": 2741,
+      "same_ink_mask": true,
+      "focus_during_wheel": "dialog-demo-discard-cancel",
+      "continue_focus": "dialog-demo-editor"
+    }
+  },
+  "errors": []
+}

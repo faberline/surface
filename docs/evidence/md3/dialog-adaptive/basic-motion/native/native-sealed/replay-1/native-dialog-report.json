@@ -1,0 +1,834 @@
+{
+  "schema": "surface.test.material-dialogs-native.v1",
+  "binaries": {
+    "gallery": "49995a796446f95a2cc2b46b90f17c785fc21b3a59bded7507bb0fff3c937bdf",
+    "cli": "d01e693e7fbfd4e84258041df49dc67b55e5468d6cedd7d16aafbaccae298a0a"
+  },
+  "transport": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "profile": "wide-light-ltr",
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 960,
+        "height": 800
+      },
+      "basic": {
+        "tab_steps": 4,
+        "geometry": {
+          "panel": {
+            "height": 536.0,
+            "width": 400.0,
+            "x": 280.0,
+            "y": 132.0
+          },
+          "body": {
+            "height": 368.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 204.0
+          },
+          "heading": {
+            "height": 32.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 156.0
+          },
+          "tail_bounds": {
+            "height": 20.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 552.0
+          },
+          "tail_clip": {
+            "height": 368.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 204.0
+          },
+          "tail_visible_height": 20.0,
+          "actions": {
+            "dialog-demo-basic-cancel": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 488.0,
+              "y": 596.0
+            },
+            "dialog-demo-basic-confirm": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 576.0,
+              "y": 596.0
+            }
+          }
+        },
+        "capture": {
+          "name": "wide-light-ltr-basic.png",
+          "sha256": "6d9f7b2f1f21ae408bb659e5bf567c5d1309a72c7f9a0e5b0e591aec22494773",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-basic-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 304.0,
+                "y": 156.0
+              },
+              "ink_bounds": [
+                305,
+                162,
+                93,
+                23
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 605
+            }
+          },
+          "surface": {
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ],
+            "points": [
+              [
+                288,
+                400
+              ],
+              [
+                672,
+                400
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-basic-cancel": {
+              "caption": "稍後再看",
+              "bounds": {
+                "height": 20.0,
+                "width": 56.0,
+                "x": 500.0,
+                "y": 610.0
+              },
+              "near_color_pixels": 121
+            },
+            "dialog-demo-basic-confirm": {
+              "caption": "我已閱讀",
+              "bounds": {
+                "height": 20.0,
+                "width": 56.0,
+                "x": 588.0,
+                "y": 610.0
+              },
+              "near_color_pixels": 101
+            }
+          }
+        }
+      },
+      "alert": {
+        "tab_steps": 1,
+        "panel": {
+          "height": 216.0,
+          "width": 400.0,
+          "x": 280.0,
+          "y": 292.0
+        },
+        "capture": {
+          "name": "wide-light-ltr-alert.png",
+          "sha256": "d1b774849eb9a132b6aee122f47c2979845ec70a8a97ba012a8e184885a16d90",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-alert-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 304.0,
+                "y": 316.0
+              },
+              "ink_bounds": [
+                305,
+                322,
+                94,
+                22
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 617
+            }
+          },
+          "surface": {
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ],
+            "points": [
+              [
+                288,
+                400
+              ],
+              [
+                672,
+                400
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-alert-confirm": {
+              "caption": "知道了",
+              "bounds": {
+                "height": 20.0,
+                "width": 42.0,
+                "x": 602.0,
+                "y": 422.0
+              },
+              "near_color_pixels": 75
+            }
+          }
+        },
+        "escape_keeps_open": true,
+        "stock_alert_metadata": true
+      },
+      "edit": {
+        "tab_steps": 1,
+        "geometry": {
+          "panel": {
+            "height": 420.0,
+            "width": 400.0,
+            "x": 280.0,
+            "y": 190.0
+          },
+          "body": {
+            "height": 252.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 262.0
+          },
+          "field": {
+            "height": 56.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 298.0
+          },
+          "actions": {
+            "dialog-demo-edit-cancel": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 544.0,
+              "y": 538.0
+            },
+            "dialog-demo-edit-confirm": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 604.0,
+              "y": 538.0
+            }
+          }
+        },
+        "capture": {
+          "name": "wide-light-ltr-edit.png",
+          "sha256": "2757cb3a16a8ea57f2613cd9f88c11a8b3ef78e42fb10aed4b81dd443baf7dfe",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-edit-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 304.0,
+                "y": 214.0
+              },
+              "ink_bounds": [
+                305,
+                220,
+                94,
+                23
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 609
+            }
+          },
+          "surface": {
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ],
+            "points": [
+              [
+                288,
+                400
+              ],
+              [
+                672,
+                400
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-edit-cancel": {
+              "caption": "關閉",
+              "bounds": {
+                "height": 20.0,
+                "width": 28.0,
+                "x": 556.0,
+                "y": 552.0
+              },
+              "near_color_pixels": 36
+            },
+            "dialog-demo-edit-confirm": {
+              "caption": "儲存",
+              "bounds": {
+                "height": 20.0,
+                "width": 28.0,
+                "x": 616.0,
+                "y": 552.0
+              },
+              "near_color_pixels": 68
+            }
+          }
+        }
+      },
+      "discard_confirmation": {
+        "geometry": {
+          "height": 216.0,
+          "width": 400.0,
+          "x": 280.0,
+          "y": 292.0
+        },
+        "capture": {
+          "name": "wide-light-ltr-discard.png",
+          "sha256": "f7b6ddef7a4d0039b6d0b667628d649348311088e9345a94f0c491f052d9eb03",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-discard-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 304.0,
+                "y": 316.0
+              },
+              "ink_bounds": [
+                305,
+                322,
+                112,
+                23
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 669
+            }
+          },
+          "surface": {
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ],
+            "points": [
+              [
+                288,
+                400
+              ],
+              [
+                672,
+                400
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-discard-cancel": {
+              "caption": "繼續編輯",
+              "bounds": {
+                "height": 20.0,
+                "width": 56.0,
+                "x": 500.0,
+                "y": 422.0
+              },
+              "near_color_pixels": 84
+            },
+            "dialog-demo-discard-confirm": {
+              "caption": "捨棄變更",
+              "bounds": {
+                "height": 20.0,
+                "width": 56.0,
+                "x": 588.0,
+                "y": 422.0
+              },
+              "near_color_pixels": 115
+            }
+          }
+        },
+        "underlying_save_blocked": true
+      },
+      "transaction": {
+        "draft_retained_on_continue": "秋日散步",
+        "saved_after_reopen": "秋日散步",
+        "discarded": "待捨棄",
+        "save_returns_focus": "dialog-demo-edit-open",
+        "discard_returns_focus": "dialog-demo-edit-open"
+      },
+      "visible_windows": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "profile": "compact-dark-rtl-200",
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 320,
+        "height": 400
+      },
+      "basic": {
+        "tab_steps": 1,
+        "geometry": {
+          "panel": {
+            "height": 352.0,
+            "width": 280.0,
+            "x": 20.0,
+            "y": 24.0
+          },
+          "body": {
+            "height": 96.0,
+            "width": 232.0,
+            "x": 44.0,
+            "y": 128.0
+          },
+          "heading": {
+            "height": 64.0,
+            "width": 232.0,
+            "x": 44.0,
+            "y": 48.0
+          },
+          "tail_bounds": {
+            "height": 80.0,
+            "width": 232.0,
+            "x": 44.0,
+            "y": 960.0
+          },
+          "tail_clip": {
+            "height": 96.0,
+            "width": 232.0,
+            "x": 44.0,
+            "y": 128.0
+          },
+          "tail_visible_height": 0.0,
+          "actions": {
+            "dialog-demo-basic-cancel": {
+              "height": 48.0,
+              "width": 136.0,
+              "x": 44.0,
+              "y": 304.0
+            },
+            "dialog-demo-basic-confirm": {
+              "height": 48.0,
+              "width": 136.0,
+              "x": 44.0,
+              "y": 248.0
+            }
+          }
+        },
+        "capture": {
+          "name": "compact-dark-rtl-200-basic.png",
+          "sha256": "401d64050a9044caec2e57d945bf1c90c6a3eb785b518e03dc950df22b556454",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-basic-heading": {
+              "bounds": {
+                "height": 64.0,
+                "width": 232.0,
+                "x": 44.0,
+                "y": 48.0
+              },
+              "ink_bounds": [
+                86,
+                61,
+                185,
+                45
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 2681
+            }
+          },
+          "surface": {
+            "rgba": [
+              43,
+              41,
+              47,
+              255
+            ],
+            "points": [
+              [
+                28,
+                200
+              ],
+              [
+                292,
+                200
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-basic-cancel": {
+              "caption": "稍後再看",
+              "bounds": {
+                "height": 40.0,
+                "width": 112.0,
+                "x": 56.0,
+                "y": 308.0
+              },
+              "near_color_pixels": 714
+            },
+            "dialog-demo-basic-confirm": {
+              "caption": "我已閱讀",
+              "bounds": {
+                "height": 40.0,
+                "width": 112.0,
+                "x": 56.0,
+                "y": 252.0
+              },
+              "near_color_pixels": 706
+            }
+          }
+        }
+      },
+      "alert": {
+        "tab_steps": 1,
+        "panel": {
+          "height": 320.0,
+          "width": 280.0,
+          "x": 20.0,
+          "y": 40.0
+        },
+        "capture": {
+          "name": "compact-dark-rtl-200-alert.png",
+          "sha256": "a09b6ef0a68350a5cc4993b452dc5ed7e77169905392bf498127f941a006359b",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-alert-heading": {
+              "bounds": {
+                "height": 64.0,
+                "width": 232.0,
+                "x": 44.0,
+                "y": 64.0
+              },
+              "ink_bounds": [
+                86,
+                77,
+                188,
+                44
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 2767
+            }
+          },
+          "surface": {
+            "rgba": [
+              43,
+              41,
+              47,
+              255
+            ],
+            "points": [
+              [
+                28,
+                200
+              ],
+              [
+                292,
+                200
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-alert-confirm": {
+              "caption": "知道了",
+              "bounds": {
+                "height": 40.0,
+                "width": 84.0,
+                "x": 56.0,
+                "y": 292.0
+              },
+              "near_color_pixels": 447
+            }
+          }
+        },
+        "escape_keeps_open": true,
+        "stock_alert_metadata": true
+      },
+      "edit": {
+        "tab_steps": 1,
+        "geometry": {
+          "panel": {
+            "height": 400.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "body": {
+            "height": 280.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 120.0
+          },
+          "field": {
+            "height": 72.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 200.0
+          },
+          "header": {
+            "height": 120.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 260.0,
+            "y": 36.0
+          },
+          "close_icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 272.0,
+            "y": 48.0
+          },
+          "actions": {
+            "dialog-demo-edit-action": {
+              "height": 48.0,
+              "width": 72.0,
+              "x": 12.0,
+              "y": 36.0
+            }
+          }
+        },
+        "capture": {
+          "name": "compact-dark-rtl-200-edit.png",
+          "sha256": "073d1459131d271eb33a561e5eb96aea819e2a9a135a42a58e1c4759d2a9c80b",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-edit-title": {
+              "bounds": {
+                "height": 112.0,
+                "width": 160.0,
+                "x": 92.0,
+                "y": 4.0
+              },
+              "ink_bounds": [
+                122,
+                14,
+                128,
+                97
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 2290
+            }
+          },
+          "surface": {
+            "rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "points": [
+              [
+                1,
+                1
+              ],
+              [
+                318,
+                398
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-edit-action": {
+              "caption": "儲存",
+              "bounds": {
+                "height": 40.0,
+                "width": 56.0,
+                "x": 20.0,
+                "y": 40.0
+              },
+              "near_color_pixels": 331
+            }
+          }
+        }
+      },
+      "discard_confirmation": {
+        "geometry": {
+          "height": 352.0,
+          "width": 280.0,
+          "x": 20.0,
+          "y": 24.0
+        },
+        "capture": {
+          "name": "compact-dark-rtl-200-discard.png",
+          "sha256": "ccc3cf46a60e94ab4f69f5bab77e99316a5f3c19c536026d487ad1947a9f2c56",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-discard-heading": {
+              "bounds": {
+                "height": 128.0,
+                "width": 232.0,
+                "x": 44.0,
+                "y": 48.0
+              },
+              "ink_bounds": [
+                135,
+                60,
+                138,
+                109
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 3122
+            }
+          },
+          "surface": {
+            "rgba": [
+              43,
+              41,
+              47,
+              255
+            ],
+            "points": [
+              [
+                28,
+                200
+              ],
+              [
+                292,
+                200
+              ]
+            ]
+          },
+          "actions": {
+            "dialog-demo-discard-cancel": {
+              "caption": "繼續編輯",
+              "bounds": {
+                "height": 40.0,
+                "width": 112.0,
+                "x": 56.0,
+                "y": 308.0
+              },
+              "near_color_pixels": 701
+            },
+            "dialog-demo-discard-confirm": {
+              "caption": "捨棄變更",
+              "bounds": {
+                "height": 40.0,
+                "width": 112.0,
+                "x": 56.0,
+                "y": 252.0
+              },
+              "near_color_pixels": 656
+            }
+          }
+        },
+        "underlying_save_blocked": true
+      },
+      "transaction": {
+        "draft_retained_on_continue": "秋日散步",
+        "saved_after_reopen": "秋日散步",
+        "discarded": "待捨棄",
+        "save_returns_focus": "dialog-demo-edit-open",
+        "discard_returns_focus": "dialog-demo-edit-open"
+      },
+      "visible_windows": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}
