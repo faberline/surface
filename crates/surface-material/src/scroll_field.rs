@@ -441,11 +441,12 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
         }
 
         let session = self.wheel.drag_session();
+        let looping = self.wheel.looping();
         let drag = self.emit.clone();
         let steps = self.emit.clone();
         let keys = self.emit.clone();
         let set = self.emit.clone();
-        field
+        let field = field
             .on_press((self.emit)(ScrollFieldEvent::Edit))
             .accessible_activation()
             .suppress_repeated_activation()
@@ -487,17 +488,19 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
                         {
                             return None;
                         }
-                        let target = if y < bounds.y + TARGET {
-                            value.checked_add(range.step())?
+                        let (step, target) = if y < bounds.y + TARGET {
+                            (ScrollFieldStep::Increase, value.checked_add(range.step()))
                         } else if y >= bounds.y + bounds.height - TARGET {
-                            value.checked_sub(range.step())?
+                            (ScrollFieldStep::Decrease, value.checked_sub(range.step()))
                         } else {
                             return Some(drag(ScrollFieldEvent::Edit));
                         };
-                        if !range.contains(target) {
-                            return None;
+                        if looping {
+                            return Some(drag(ScrollFieldEvent::Step(step)));
                         }
-                        ScrollFieldDrag::Tap { value: target }
+                        ScrollFieldDrag::Tap {
+                            value: target.filter(|value| range.contains(*value))?,
+                        }
                     }
                     PointDrag::Move { origin, position } | PointDrag::End { origin, position } => {
                         let delta_y = position.1 - origin.1;
@@ -518,7 +521,20 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
                     row_height: layout.row_height,
                 }))
             })
-            .cursor(CursorStyle::Pointer)
+            .cursor(CursorStyle::Pointer);
+        if looping {
+            let step = self.emit.clone();
+            field.on_accessible_step(move |increment| {
+                let direction = if increment {
+                    ScrollFieldStep::Increase
+                } else {
+                    ScrollFieldStep::Decrease
+                };
+                step(ScrollFieldEvent::Step(direction))
+            })
+        } else {
+            field
+        }
     }
 
     fn scroll_face(&self, layout: ScrollFieldLayout) -> View<M> {
@@ -527,18 +543,15 @@ impl<M: Clone + 'static> ScrollField<'_, '_, M> {
             FOCUS_OUTSET,
             OUTSIDE_TARGET,
         );
-        let range = self.wheel.range();
-        let minimum = i64::from(range.min());
-        let step = i64::from(range.step());
-        let preview = (i64::from(self.wheel.preview()) - minimum) / step;
         let offset = self.wheel.offset();
+        let preview = offset.round() as i64;
         let colors = self.theme.colors;
         let positions = (-2..=2).filter_map(|relative| {
             let index = preview + i64::from(relative);
-            let value = range.value_at(index)?;
+            let value = self.wheel.value_at(index)?;
             let label = match &self.copy {
                 FieldCopy::Numeric { .. } => self.wheel.format_value(value),
-                FieldCopy::Choice(copy) => copy.qualified(copy.state.get(index as usize)?),
+                FieldCopy::Choice(copy) => copy.qualified(copy.state.get(value as usize)?),
             };
             let (suffix, role, ink) = match relative {
                 0 => ("center", CENTER, colors.on_surface),

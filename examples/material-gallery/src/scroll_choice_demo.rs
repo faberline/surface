@@ -14,6 +14,7 @@ use crate::{
 
 pub(crate) const SECTION: usize = 0;
 const SHOW: &str = "scroll-choice-demo-show";
+const SHOW_LOOP: &str = "scroll-loop-choice-show";
 const BACK: &str = "scroll-choice-demo-back";
 const SCROLL: &str = "scroll-choice-demo-scroll";
 const FIELD: &str = "scroll-choice-demo-value";
@@ -26,7 +27,23 @@ const SCENE: ScrollFieldScene = ScrollFieldScene {
     scroller_label: "地點範例",
 };
 
-fn catalog(reverse: bool, relabeled: bool) -> [ScrollChoiceItem<'static>; 5] {
+fn scene(looping: bool) -> ScrollFieldScene {
+    if looping {
+        ScrollFieldScene {
+            show: SHOW_LOOP,
+            title: "循環文字欄位",
+            ..SCENE
+        }
+    } else {
+        SCENE
+    }
+}
+
+fn catalog(
+    reverse: bool,
+    relabeled: bool,
+    looping: bool,
+) -> impl Iterator<Item = ScrollChoiceItem<'static>> {
     let mut items = [
         ScrollChoiceItem {
             id: "banqiao",
@@ -63,6 +80,8 @@ fn catalog(reverse: bool, relabeled: bool) -> [ScrollChoiceItem<'static>; 5] {
         items.reverse();
     }
     items
+        .into_iter()
+        .filter(move |item| !looping || matches!(item.id, "banqiao" | "taipei-station"))
 }
 
 fn error_text(error: ScrollChoiceQueryError) -> String {
@@ -84,7 +103,7 @@ fn suggestion_text(label: &str) -> String {
 
 #[derive(Clone)]
 pub enum ScrollChoiceDemoEvent {
-    Show,
+    Show(bool),
     Back,
     Direction,
     LargeText,
@@ -113,6 +132,19 @@ pub(crate) struct ScrollChoiceDemo {
 
 impl Default for ScrollChoiceDemo {
     fn default() -> Self {
+        Self::new(false)
+    }
+}
+
+impl ScrollChoiceDemo {
+    fn new(looping: bool) -> Self {
+        let state = ScrollChoiceState::with_match_key(
+            catalog(false, false, looping),
+            "banqiao",
+            str::to_lowercase,
+        )
+        .expect("valid Gallery location catalog");
+        let state = if looping { state.with_looping() } else { state };
         Self {
             visible: false,
             viewport: (960., 760.),
@@ -122,21 +154,13 @@ impl Default for ScrollChoiceDemo {
             disabled: false,
             reverse: false,
             relabeled: false,
-            state: ScrollChoiceState::with_match_key(
-                catalog(false, false),
-                "banqiao",
-                str::to_lowercase,
-            )
-            .expect("valid Gallery location catalog"),
+            state,
             committed: "banqiao".to_owned(),
             commits: 0,
             reduced_motion: false,
             requests_frame: false,
         }
     }
-}
-
-impl ScrollChoiceDemo {
     pub(crate) fn visible(&self) -> bool {
         self.visible
     }
@@ -195,8 +219,9 @@ impl ScrollChoiceDemo {
     }
 
     fn replace_catalog(&mut self) {
+        let items = catalog(self.reverse, self.relabeled, self.state.looping());
         self.state
-            .replace_items(catalog(self.reverse, self.relabeled), &self.committed)
+            .replace_items(items, &self.committed)
             .expect("reordered catalog carries every original location ID");
         self.update_fit();
     }
@@ -214,7 +239,13 @@ impl ScrollChoiceDemo {
     pub(crate) fn update(&mut self, event: ScrollChoiceDemoEvent) {
         use ScrollChoiceDemoEvent::*;
         match event {
-            Show => {
+            Show(looping) => {
+                if looping != self.state.looping() {
+                    *self = Self {
+                        viewport: self.viewport,
+                        ..Self::new(looping)
+                    };
+                }
                 self.visible = true;
                 self.update_fit();
             }
@@ -254,14 +285,15 @@ impl ScrollChoiceDemo {
         }
     }
 
-    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
+    pub(crate) fn show_button(theme: &Theme, looping: bool) -> View<Message> {
+        let scene = scene(looping);
         theme
             .button_with(
-                SHOW,
-                SCENE.title,
+                scene.show,
+                scene.title,
                 ButtonKind::Outlined,
                 false,
-                Message::ScrollChoice(ScrollChoiceDemoEvent::Show),
+                Message::ScrollChoice(ScrollChoiceDemoEvent::Show(looping)),
             )
             .restore_focus_on_removal(BACK)
             .accessible_activation()
@@ -269,6 +301,7 @@ impl ScrollChoiceDemo {
 
     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
         use ScrollChoiceDemoEvent::*;
+        let scene = scene(self.state.looping());
         let choice = |selected| ChoiceState {
             selected,
             disabled: false,
@@ -281,7 +314,7 @@ impl ScrollChoiceDemo {
         let profile = control_row(vec![
             theme
                 .tonal_button(BACK, "返回", Message::ScrollChoice(Back))
-                .restore_focus_on_removal(SHOW)
+                .restore_focus_on_removal(scene.show)
                 .accessible_activation(),
             theme
                 .switch(
@@ -324,7 +357,7 @@ impl ScrollChoiceDemo {
             Message::ScrollChoice(Field(event))
         });
         let chosen = self.state.choice();
-        SCENE.view(
+        scene.view(
             theme,
             self.rtl,
             [profile, settings],
@@ -355,6 +388,7 @@ impl ScrollChoiceDemo {
             .map(|item| item.id);
         serde_json::json!({
             "visible": self.visible, "rtl": self.rtl, "text_scale": self.text_scale(),
+            "looping": self.state.looping(),
             "height": options.height, "face_height": layout.map(|layout| layout.face_height),
             "row_height": layout.map(|layout| layout.row_height), "fits": layout.is_some(),
             "disabled": self.disabled, "committed": self.committed, "preview": preview,

@@ -125,6 +125,21 @@ impl RasterSpace {
             .min(self.height as f32) as u32;
         (right > left && bottom > top).then(|| [left, top, right - left, bottom - top])
     }
+
+    fn text_bounds(self, [left, top, width, height]: [u32; 4], origin_y: f32) -> TextBounds {
+        let clip_top = top as f32;
+        let clip_bottom = (top + height) as f32;
+        // Glyphon compares a physical text origin plus unscaled line offsets
+        // to these bounds before clipping its physical glyphs. Expand the
+        // bounds in both spaces so visible runs survive that first check.
+        let run_edge = |edge| origin_y + (edge - origin_y) / self.scale;
+        TextBounds {
+            left: left as i32,
+            right: (left + width) as i32,
+            top: clip_top.min(run_edge(clip_top)).floor() as i32,
+            bottom: clip_bottom.max(run_edge(clip_bottom)).ceil() as i32,
+        }
+    }
 }
 
 enum RenderOp<'a> {
@@ -135,7 +150,7 @@ enum RenderOp<'a> {
 
 enum Draw {
     Quad { start: u32, clip: Rect },
-    Text(usize),
+    Text { index: usize, scissor: [u32; 4] },
     Fill { index: u32, clip: Rect },
     Raster { index: u32, clip: Rect },
 }
@@ -601,6 +616,10 @@ impl Renderer {
                     else {
                         continue;
                     };
+                    let Some(scissor) = space.scissor(*clip) else {
+                        continue;
+                    };
+                    let top = (rect.y - scroll.1) * scale;
                     let index = buffers.len();
                     buffers.push(self.text.buffer(
                         text,
@@ -625,14 +644,9 @@ impl Renderer {
                             [TextArea {
                                 buffer: &buffers[index],
                                 left: (rect.x - scroll.0) * scale,
-                                top: (rect.y - scroll.1) * scale,
+                                top,
                                 scale,
-                                bounds: TextBounds {
-                                    left: (clip.x * scale).floor() as i32,
-                                    top: (clip.y * scale).floor() as i32,
-                                    right: ((clip.x + clip.width) * scale).ceil() as i32,
-                                    bottom: ((clip.y + clip.height) * scale).ceil() as i32,
-                                },
+                                bounds: space.text_bounds(scissor, top),
                                 default_color: glyphon::Color::rgba(
                                     color.0, color.1, color.2, color.3,
                                 ),
@@ -641,7 +655,7 @@ impl Renderer {
                             &mut self.cache,
                         )
                         .map_err(RenderError::from)?;
-                    draws.push(Draw::Text(index));
+                    draws.push(Draw::Text { index, scissor });
                 }
             }
         }
@@ -716,8 +730,13 @@ impl Renderer {
                             buffers.draw(&mut pass, pipeline, index);
                         }
                     }
-                    Draw::Text(index) => {
-                        pass.set_scissor_rect(0, 0, width, height);
+                    Draw::Text {
+                        index,
+                        scissor: [left, top, width, height],
+                    } => {
+                        // Clip to the true physical bounds after Glyphon's
+                        // expanded run and glyph selection.
+                        pass.set_scissor_rect(left, top, width, height);
                         self.text_renderers[index]
                             .render(&self.atlas, &self.viewport, &mut pass)
                             .map_err(RenderError::from)?;

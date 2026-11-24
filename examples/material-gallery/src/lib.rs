@@ -867,8 +867,10 @@ impl Application for Gallery {
                                 false,
                                 Message::Volume,
                             ),
-                            ScrollFieldDemo::show_button(&t),
-                            ScrollChoiceDemo::show_button(&t),
+                            ScrollFieldDemo::show_button(&t, false),
+                            ScrollChoiceDemo::show_button(&t, false),
+                            ScrollFieldDemo::show_button(&t, true),
+                            ScrollChoiceDemo::show_button(&t, true),
                         ],
                     ),
                 );

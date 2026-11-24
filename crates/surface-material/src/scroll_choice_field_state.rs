@@ -1,4 +1,4 @@
-//! Retained selection and editable text for a finite Scroll Field catalog.
+//! Retained selection and editable text for an ordered Scroll Field catalog.
 
 use surface_app::{AnimationUpdate, PointDragSession};
 
@@ -29,7 +29,7 @@ pub enum ScrollChoiceEvent {
     },
 }
 
-/// Caller-owned retained state for a finite ordered list of text choices.
+/// Caller-owned retained state for an ordered list of text choices.
 pub struct ScrollChoiceState {
     catalog: ScrollChoiceCatalog,
     wheel: ScrollFieldState,
@@ -59,6 +59,16 @@ impl ScrollChoiceState {
     ) -> Result<Self, ScrollChoiceCatalogError> {
         ScrollChoiceCatalog::with_match_key(items, committed_id, match_key)
             .map(|catalog| Self::from_catalog(catalog, committed_id))
+    }
+
+    /// Continue the wheel from the last choice to the first and back.
+    pub fn with_looping(mut self) -> Self {
+        self.wheel = self.wheel.with_looping();
+        self
+    }
+
+    pub fn looping(&self) -> bool {
+        self.wheel.looping()
     }
 
     fn from_catalog(catalog: ScrollChoiceCatalog, committed_id: &str) -> Self {
@@ -102,7 +112,8 @@ impl ScrollChoiceState {
         self.wheel.preview() as usize
     }
 
-    /// Fractional row position from the first choice.
+    /// Fractional row position from the first choice. The looping wheel uses
+    /// a signed position while moving and returns to its canonical index at rest.
     pub fn offset(&self) -> f64 {
         self.wheel.offset()
     }
@@ -179,8 +190,10 @@ impl ScrollChoiceState {
         committed_id: &str,
     ) -> Result<(), ScrollChoiceCatalogError> {
         let editing = self.mode() == ScrollFieldMode::Input;
+        let looping = self.looping();
         self.catalog.replace_items(items, committed_id)?;
-        self.wheel = ordinal_wheel(&self.catalog, committed_id);
+        let wheel = ordinal_wheel(&self.catalog, committed_id);
+        self.wheel = if looping { wheel.with_looping() } else { wheel };
         if editing {
             self.wheel.apply(ScrollFieldEvent::Edit, true);
         }
@@ -601,5 +614,50 @@ mod tests {
         assert_eq!(state.apply(ScrollChoiceEvent::Cancel, true), None);
         assert_eq!(state.choice().id, "south");
         assert_eq!(state.preview_index(), 2);
+    }
+
+    #[test]
+    fn looping_choice_replacement_keeps_topology_ids_and_stale_capture_guards() {
+        let mut field = state().with_looping();
+        let capture = field.drag_session();
+        let moving = point(&capture, ScrollFieldDrag::Move { delta_y: 360. });
+        assert_eq!(field.apply(moving, false), None);
+        assert!(field.offset() > 8.);
+        assert_eq!(field.choice().id, "middle");
+        assert!(field.is_dragging());
+
+        field
+            .replace_items([CHOICES[0], CHOICES[1]], "middle")
+            .unwrap();
+        assert!(field.looping());
+        assert_eq!(field.count(), 2);
+        assert_eq!(field.choice().id, "middle");
+        assert_eq!(field.offset(), 1.);
+        assert!(!field.is_dragging());
+        let stale = point(&capture, ScrollFieldDrag::End { delta_y: 20. });
+        assert_eq!(field.apply(stale, true), None);
+        assert_eq!(
+            field
+                .apply(ScrollChoiceEvent::Step(ScrollFieldStep::Increase), true)
+                .as_deref(),
+            Some("north")
+        );
+        assert_eq!(
+            field
+                .apply(ScrollChoiceEvent::Step(ScrollFieldStep::Decrease), true)
+                .as_deref(),
+            Some("middle")
+        );
+        assert_eq!(field.offset(), 1.);
+
+        field.apply(ScrollChoiceEvent::Edit, false);
+        input(&mut field, "北");
+        assert_eq!(field.suggestion().unwrap().id, "north");
+        assert_eq!(
+            field.apply(ScrollChoiceEvent::Submit, false).as_deref(),
+            Some("north")
+        );
+        assert_eq!(field.offset(), 0.);
+        assert!(field.looping());
     }
 }
