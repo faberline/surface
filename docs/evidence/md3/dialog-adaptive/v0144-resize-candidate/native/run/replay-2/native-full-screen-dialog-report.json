@@ -1,0 +1,1552 @@
+{
+  "schema": "surface.test.full-screen-dialog-fab-native.v1",
+  "binaries": {
+    "gallery": "f98632f1cefd5895360600d47b5782670a6bf5f6d93da285928d15c647c64f55",
+    "cli": "b4eb51b7b572cc785f114f27972d77bb6a402d54acb4726c1bde3a190424d1b6"
+  },
+  "motion_mode": "stock headless Reduce Motion",
+  "transport": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "profile": "compact-dark-rtl-200",
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 320,
+        "height": 400
+      },
+      "options": [
+        "theme",
+        "rtl",
+        "large-text"
+      ],
+      "closed": {
+        "tab_focus_path": [
+          "dialog-demo-fab-open"
+        ],
+        "fab": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "clearance_targets": {
+          "scroller": {
+            "height": 284.0,
+            "width": 264.0,
+            "x": 28.0,
+            "y": 28.0
+          },
+          "targets": {
+            "dialog-demo-title": {
+              "height": 80.0,
+              "width": 264.0,
+              "x": 28.0,
+              "y": 28.0
+            },
+            "dialog-demo-back": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 128.0
+            },
+            "dialog-demo-theme": {
+              "height": 72.0,
+              "width": 152.0,
+              "x": 116.0,
+              "y": 116.0
+            },
+            "dialog-demo-rtl": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 196.0
+            },
+            "dialog-demo-large-text": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 116.0,
+              "y": 196.0
+            },
+            "dialog-demo-saved": {
+              "height": 48.0,
+              "width": 264.0,
+              "x": 28.0,
+              "y": 252.0
+            }
+          }
+        },
+        "capture": {
+          "name": "compact-dark-rtl-200-fab.png",
+          "sha256": "abb791f077941db02361ffb74a2ee7eb64c81595c06b206b3f7c5bb0b9d8391a",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-title": {
+              "bounds": {
+                "height": 80.0,
+                "width": 264.0,
+                "x": 28.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                31,
+                42,
+                186,
+                60
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 3741
+            },
+            "dialog-demo-saved": {
+              "bounds": {
+                "height": 48.0,
+                "width": 264.0,
+                "x": 28.0,
+                "y": 252.0
+              },
+              "ink_bounds": [
+                31,
+                263,
+                251,
+                30
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 1876
+            }
+          },
+          "fab_paint": {
+            "body_point": [
+              33,
+              348
+            ],
+            "rgba": [
+              77,
+              61,
+              117,
+              255
+            ],
+            "icon_ink_pixels": 129
+          }
+        }
+      },
+      "opened": {
+        "geometry": {
+          "presentation": "full-screen",
+          "panel": {
+            "height": 400.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "editor": {
+            "height": 72.0,
+            "width": 272.0,
+            "x": 24.0,
+            "y": 200.0
+          },
+          "body": {
+            "height": 280.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 120.0
+          },
+          "heading": {
+            "height": 112.0,
+            "width": 160.0,
+            "x": 92.0,
+            "y": 4.0
+          },
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 260.0,
+            "y": 36.0
+          },
+          "save": {
+            "height": 48.0,
+            "width": 72.0,
+            "x": 12.0,
+            "y": 36.0
+          },
+          "header": {
+            "height": 120.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "close_icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 272.0,
+            "y": 48.0
+          }
+        },
+        "focus": "dialog-demo-editor",
+        "background_activation_blocked": true,
+        "capture": {
+          "name": "compact-dark-rtl-200-edit.png",
+          "sha256": "073d1459131d271eb33a561e5eb96aea819e2a9a135a42a58e1c4759d2a9c80b",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-edit-title": {
+              "bounds": {
+                "height": 112.0,
+                "width": 160.0,
+                "x": 92.0,
+                "y": 4.0
+              },
+              "ink_bounds": [
+                122,
+                14,
+                128,
+                97
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 2290
+            }
+          },
+          "panel_paint": {
+            "points": [
+              [
+                1,
+                1
+              ],
+              [
+                318,
+                398
+              ]
+            ],
+            "rgba": [
+              20,
+              18,
+              24,
+              255
+            ]
+          }
+        }
+      },
+      "discard_prompt": {
+        "panel": {
+          "height": 352.0,
+          "width": 280.0,
+          "x": 20.0,
+          "y": 24.0
+        },
+        "focus": "dialog-demo-discard-cancel",
+        "cancel": {
+          "height": 48.0,
+          "width": 136.0,
+          "x": 44.0,
+          "y": 304.0
+        },
+        "confirm": {
+          "height": 48.0,
+          "width": 136.0,
+          "x": 44.0,
+          "y": 248.0
+        },
+        "underlying_save_blocked": true,
+        "underlying_edit_blocked": true,
+        "capture": {
+          "name": "compact-dark-rtl-200-discard.png",
+          "sha256": "ccc3cf46a60e94ab4f69f5bab77e99316a5f3c19c536026d487ad1947a9f2c56",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-discard-heading": {
+              "bounds": {
+                "height": 128.0,
+                "width": 232.0,
+                "x": 44.0,
+                "y": 48.0
+              },
+              "ink_bounds": [
+                135,
+                60,
+                138,
+                109
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 3122
+            }
+          },
+          "panel_paint": {
+            "points": [
+              [
+                28,
+                200
+              ],
+              [
+                292,
+                200
+              ]
+            ],
+            "rgba": [
+              43,
+              41,
+              47,
+              255
+            ]
+          }
+        }
+      },
+      "restored": {
+        "fab": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 24.0,
+          "y": 320.0
+        },
+        "focus": "dialog-demo-fab-open",
+        "discarded": "待捨棄",
+        "saved": "秋日散步",
+        "save_tab_focus_path": [
+          "dialog-demo-edit-close",
+          "dialog-demo-edit-action"
+        ],
+        "continue_from_escape_focus": "dialog-demo-editor",
+        "continue_from_close_focus": "dialog-demo-edit-close",
+        "clearance_targets": {
+          "scroller": {
+            "height": 284.0,
+            "width": 264.0,
+            "x": 28.0,
+            "y": 28.0
+          },
+          "targets": {
+            "dialog-demo-title": {
+              "height": 80.0,
+              "width": 264.0,
+              "x": 28.0,
+              "y": 28.0
+            },
+            "dialog-demo-back": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 128.0
+            },
+            "dialog-demo-theme": {
+              "height": 72.0,
+              "width": 152.0,
+              "x": 116.0,
+              "y": 116.0
+            },
+            "dialog-demo-rtl": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 196.0
+            },
+            "dialog-demo-large-text": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 116.0,
+              "y": 196.0
+            },
+            "dialog-demo-saved": {
+              "height": 48.0,
+              "width": 264.0,
+              "x": 28.0,
+              "y": 252.0
+            }
+          }
+        },
+        "capture": {
+          "name": "compact-dark-rtl-200-restored.png",
+          "sha256": "646f023dcae61b32756d3862e2cd6f9b13ed623190882b2a2698eca204c3c74c",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-title": {
+              "bounds": {
+                "height": 80.0,
+                "width": 264.0,
+                "x": 28.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                31,
+                42,
+                186,
+                60
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 3741
+            },
+            "dialog-demo-saved": {
+              "bounds": {
+                "height": 48.0,
+                "width": 264.0,
+                "x": 28.0,
+                "y": 252.0
+              },
+              "ink_bounds": [
+                31,
+                263,
+                251,
+                30
+              ],
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 1781
+            }
+          },
+          "fab_paint": {
+            "body_point": [
+              33,
+              348
+            ],
+            "rgba": [
+              77,
+              61,
+              117,
+              255
+            ],
+            "icon_ink_pixels": 129
+          }
+        }
+      },
+      "ordinary_route_unchanged": true,
+      "visible_windows": [
+        {
+          "stage": "startup",
+          "visible": 0
+        },
+        {
+          "stage": "fab",
+          "visible": 0
+        },
+        {
+          "stage": "open",
+          "visible": 0
+        },
+        {
+          "stage": "nested",
+          "visible": 0
+        },
+        {
+          "stage": "restored",
+          "visible": 0
+        },
+        {
+          "stage": "back",
+          "visible": 0
+        }
+      ]
+    },
+    {
+      "profile": "compact-light-ltr",
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 480,
+        "height": 640
+      },
+      "options": [],
+      "closed": {
+        "tab_focus_path": [
+          "dialog-demo-theme",
+          "dialog-demo-rtl",
+          "dialog-demo-large-text",
+          "dialog-demo-fab-open"
+        ],
+        "fab": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 400.0,
+          "y": 560.0
+        },
+        "clearance_targets": {
+          "scroller": {
+            "height": 524.0,
+            "width": 424.0,
+            "x": 28.0,
+            "y": 28.0
+          },
+          "targets": {
+            "dialog-demo-title": {
+              "height": 40.0,
+              "width": 424.0,
+              "x": 28.0,
+              "y": 28.0
+            },
+            "dialog-demo-back": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 80.0
+            },
+            "dialog-demo-theme": {
+              "height": 56.0,
+              "width": 120.0,
+              "x": 116.0,
+              "y": 76.0
+            },
+            "dialog-demo-rtl": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 244.0,
+              "y": 80.0
+            },
+            "dialog-demo-large-text": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 304.0,
+              "y": 80.0
+            },
+            "dialog-demo-saved": {
+              "height": 24.0,
+              "width": 424.0,
+              "x": 28.0,
+              "y": 140.0
+            }
+          }
+        },
+        "capture": {
+          "name": "compact-light-ltr-fab.png",
+          "sha256": "6881e2204bd782a728c7c48da6efc018f6a368955a8fe792c534fcf698875574",
+          "format": "png",
+          "width": 480,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-title": {
+              "bounds": {
+                "height": 40.0,
+                "width": 424.0,
+                "x": 28.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                30,
+                35,
+                93,
+                30
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 875
+            },
+            "dialog-demo-saved": {
+              "bounds": {
+                "height": 24.0,
+                "width": 424.0,
+                "x": 28.0,
+                "y": 140.0
+              },
+              "ink_bounds": [
+                30,
+                145,
+                125,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 417
+            }
+          },
+          "fab_paint": {
+            "body_point": [
+              409,
+              588
+            ],
+            "rgba": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "icon_ink_pixels": 22
+          }
+        }
+      },
+      "opened": {
+        "geometry": {
+          "presentation": "full-screen",
+          "panel": {
+            "height": 640.0,
+            "width": 480.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "editor": {
+            "height": 56.0,
+            "width": 432.0,
+            "x": 24.0,
+            "y": 116.0
+          },
+          "body": {
+            "height": 584.0,
+            "width": 480.0,
+            "x": 0.0,
+            "y": 56.0
+          },
+          "heading": {
+            "height": 28.0,
+            "width": 344.0,
+            "x": 68.0,
+            "y": 14.0
+          },
+          "close": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 12.0,
+            "y": 4.0
+          },
+          "save": {
+            "height": 48.0,
+            "width": 48.0,
+            "x": 420.0,
+            "y": 4.0
+          },
+          "header": {
+            "height": 56.0,
+            "width": 480.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "close_icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 24.0,
+            "y": 16.0
+          }
+        },
+        "focus": "dialog-demo-editor",
+        "background_activation_blocked": true,
+        "capture": {
+          "name": "compact-light-ltr-edit.png",
+          "sha256": "a500e9c933df4728098e76d5bacd649120a3b6dbff5ac752d28350c5b5c285a6",
+          "format": "png",
+          "width": 480,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-edit-title": {
+              "bounds": {
+                "height": 28.0,
+                "width": 344.0,
+                "x": 68.0,
+                "y": 14.0
+              },
+              "ink_bounds": [
+                69,
+                19,
+                86,
+                21
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 491
+            }
+          },
+          "panel_paint": {
+            "points": [
+              [
+                1,
+                1
+              ],
+              [
+                478,
+                638
+              ]
+            ],
+            "rgba": [
+              253,
+              247,
+              255,
+              255
+            ]
+          }
+        }
+      },
+      "discard_prompt": {
+        "panel": {
+          "height": 216.0,
+          "width": 400.0,
+          "x": 40.0,
+          "y": 212.0
+        },
+        "focus": "dialog-demo-discard-cancel",
+        "cancel": {
+          "height": 48.0,
+          "width": 80.0,
+          "x": 248.0,
+          "y": 328.0
+        },
+        "confirm": {
+          "height": 48.0,
+          "width": 80.0,
+          "x": 336.0,
+          "y": 328.0
+        },
+        "underlying_save_blocked": true,
+        "underlying_edit_blocked": true,
+        "capture": {
+          "name": "compact-light-ltr-discard.png",
+          "sha256": "ae28ff8f66ab169a7a09b83124a83f70bfbff5cf0bb789a0fd8f1c7bc5651dbe",
+          "format": "png",
+          "width": 480,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-discard-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 64.0,
+                "y": 236.0
+              },
+              "ink_bounds": [
+                65,
+                242,
+                112,
+                23
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 669
+            }
+          },
+          "panel_paint": {
+            "points": [
+              [
+                48,
+                320
+              ],
+              [
+                432,
+                320
+              ]
+            ],
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ]
+          }
+        }
+      },
+      "restored": {
+        "fab": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 400.0,
+          "y": 560.0
+        },
+        "focus": "dialog-demo-fab-open",
+        "discarded": "待捨棄",
+        "saved": "秋日散步",
+        "save_tab_focus_path": [
+          "dialog-demo-edit-close",
+          "dialog-demo-edit-action"
+        ],
+        "continue_from_escape_focus": "dialog-demo-editor",
+        "continue_from_close_focus": "dialog-demo-edit-close",
+        "clearance_targets": {
+          "scroller": {
+            "height": 524.0,
+            "width": 424.0,
+            "x": 28.0,
+            "y": 28.0
+          },
+          "targets": {
+            "dialog-demo-title": {
+              "height": 40.0,
+              "width": 424.0,
+              "x": 28.0,
+              "y": 28.0
+            },
+            "dialog-demo-back": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 80.0
+            },
+            "dialog-demo-theme": {
+              "height": 56.0,
+              "width": 120.0,
+              "x": 116.0,
+              "y": 76.0
+            },
+            "dialog-demo-rtl": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 244.0,
+              "y": 80.0
+            },
+            "dialog-demo-large-text": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 304.0,
+              "y": 80.0
+            },
+            "dialog-demo-saved": {
+              "height": 24.0,
+              "width": 424.0,
+              "x": 28.0,
+              "y": 140.0
+            }
+          }
+        },
+        "capture": {
+          "name": "compact-light-ltr-restored.png",
+          "sha256": "e31673e33afc3efead56c8e641eb94c16b68c560de9041d56cd09cbcb95f68f0",
+          "format": "png",
+          "width": 480,
+          "height": 640,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-title": {
+              "bounds": {
+                "height": 40.0,
+                "width": 424.0,
+                "x": 28.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                30,
+                35,
+                93,
+                30
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 875
+            },
+            "dialog-demo-saved": {
+              "bounds": {
+                "height": 24.0,
+                "width": 424.0,
+                "x": 28.0,
+                "y": 140.0
+              },
+              "ink_bounds": [
+                30,
+                145,
+                125,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 397
+            }
+          },
+          "fab_paint": {
+            "body_point": [
+              409,
+              588
+            ],
+            "rgba": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "icon_ink_pixels": 22
+          }
+        }
+      },
+      "ordinary_route_unchanged": true,
+      "visible_windows": [
+        {
+          "stage": "startup",
+          "visible": 0
+        },
+        {
+          "stage": "fab",
+          "visible": 0
+        },
+        {
+          "stage": "open",
+          "visible": 0
+        },
+        {
+          "stage": "nested",
+          "visible": 0
+        },
+        {
+          "stage": "restored",
+          "visible": 0
+        },
+        {
+          "stage": "back",
+          "visible": 0
+        }
+      ]
+    },
+    {
+      "profile": "wide-light-basic",
+      "viewport": {
+        "x": 0.0,
+        "y": 0.0,
+        "width": 960,
+        "height": 800
+      },
+      "options": [],
+      "closed": {
+        "tab_focus_path": [
+          "dialog-demo-theme",
+          "dialog-demo-rtl",
+          "dialog-demo-large-text",
+          "dialog-demo-fab-open"
+        ],
+        "fab": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 880.0,
+          "y": 720.0
+        },
+        "clearance_targets": {
+          "scroller": {
+            "height": 684.0,
+            "width": 904.0,
+            "x": 28.0,
+            "y": 28.0
+          },
+          "targets": {
+            "dialog-demo-title": {
+              "height": 40.0,
+              "width": 904.0,
+              "x": 28.0,
+              "y": 28.0
+            },
+            "dialog-demo-back": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 80.0
+            },
+            "dialog-demo-theme": {
+              "height": 56.0,
+              "width": 120.0,
+              "x": 116.0,
+              "y": 76.0
+            },
+            "dialog-demo-rtl": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 244.0,
+              "y": 80.0
+            },
+            "dialog-demo-large-text": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 304.0,
+              "y": 80.0
+            },
+            "dialog-demo-saved": {
+              "height": 24.0,
+              "width": 904.0,
+              "x": 28.0,
+              "y": 140.0
+            }
+          }
+        },
+        "capture": {
+          "name": "wide-light-basic-fab.png",
+          "sha256": "a159f7a013a3749195750cc6b09f426e556bd71d4c0e7f0f6ebf32897b8fd9d0",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-title": {
+              "bounds": {
+                "height": 40.0,
+                "width": 904.0,
+                "x": 28.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                30,
+                35,
+                93,
+                30
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 875
+            },
+            "dialog-demo-saved": {
+              "bounds": {
+                "height": 24.0,
+                "width": 904.0,
+                "x": 28.0,
+                "y": 140.0
+              },
+              "ink_bounds": [
+                30,
+                145,
+                125,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 417
+            }
+          },
+          "fab_paint": {
+            "body_point": [
+              889,
+              748
+            ],
+            "rgba": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "icon_ink_pixels": 22
+          }
+        }
+      },
+      "opened": {
+        "geometry": {
+          "presentation": "basic",
+          "panel": {
+            "height": 420.0,
+            "width": 400.0,
+            "x": 280.0,
+            "y": 190.0
+          },
+          "editor": {
+            "height": 56.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 298.0
+          },
+          "body": {
+            "height": 252.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 262.0
+          },
+          "heading": {
+            "height": 32.0,
+            "width": 352.0,
+            "x": 304.0,
+            "y": 214.0
+          },
+          "close": {
+            "height": 48.0,
+            "width": 52.0,
+            "x": 544.0,
+            "y": 538.0
+          },
+          "save": {
+            "height": 48.0,
+            "width": 52.0,
+            "x": 604.0,
+            "y": 538.0
+          }
+        },
+        "focus": "dialog-demo-editor",
+        "background_activation_blocked": true,
+        "capture": {
+          "name": "wide-light-basic-edit.png",
+          "sha256": "d4cfb648582c718d08c72e3c63693241491ada085c3e80faa7d985539876a12e",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-edit-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 304.0,
+                "y": 214.0
+              },
+              "ink_bounds": [
+                305,
+                220,
+                94,
+                23
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 609
+            }
+          },
+          "panel_paint": {
+            "points": [
+              [
+                288,
+                400
+              ],
+              [
+                672,
+                400
+              ]
+            ],
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ]
+          }
+        }
+      },
+      "discard_prompt": {
+        "panel": {
+          "height": 216.0,
+          "width": 400.0,
+          "x": 280.0,
+          "y": 292.0
+        },
+        "focus": "dialog-demo-discard-cancel",
+        "cancel": {
+          "height": 48.0,
+          "width": 80.0,
+          "x": 488.0,
+          "y": 408.0
+        },
+        "confirm": {
+          "height": 48.0,
+          "width": 80.0,
+          "x": 576.0,
+          "y": 408.0
+        },
+        "underlying_save_blocked": true,
+        "underlying_edit_blocked": true,
+        "capture": {
+          "name": "wide-light-basic-discard.png",
+          "sha256": "f6f44d3b1648e226462c31a94e7268d5215475c6d14f7683ab82d2ae52c3e7d5",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-discard-heading": {
+              "bounds": {
+                "height": 32.0,
+                "width": 352.0,
+                "x": 304.0,
+                "y": 316.0
+              },
+              "ink_bounds": [
+                305,
+                322,
+                112,
+                23
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 669
+            }
+          },
+          "panel_paint": {
+            "points": [
+              [
+                288,
+                400
+              ],
+              [
+                672,
+                400
+              ]
+            ],
+            "rgba": [
+              236,
+              230,
+              238,
+              255
+            ]
+          }
+        }
+      },
+      "restored": {
+        "fab": {
+          "height": 56.0,
+          "width": 56.0,
+          "x": 880.0,
+          "y": 720.0
+        },
+        "focus": "dialog-demo-fab-open",
+        "discarded": "待捨棄",
+        "saved": "秋日散步",
+        "save_tab_focus_path": [
+          "dialog-demo-edit-cancel",
+          "dialog-demo-edit-confirm"
+        ],
+        "continue_from_escape_focus": "dialog-demo-editor",
+        "continue_from_close_focus": "dialog-demo-edit-cancel",
+        "clearance_targets": {
+          "scroller": {
+            "height": 684.0,
+            "width": 904.0,
+            "x": 28.0,
+            "y": 28.0
+          },
+          "targets": {
+            "dialog-demo-title": {
+              "height": 40.0,
+              "width": 904.0,
+              "x": 28.0,
+              "y": 28.0
+            },
+            "dialog-demo-back": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 28.0,
+              "y": 80.0
+            },
+            "dialog-demo-theme": {
+              "height": 56.0,
+              "width": 120.0,
+              "x": 116.0,
+              "y": 76.0
+            },
+            "dialog-demo-rtl": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 244.0,
+              "y": 80.0
+            },
+            "dialog-demo-large-text": {
+              "height": 48.0,
+              "width": 52.0,
+              "x": 304.0,
+              "y": 80.0
+            },
+            "dialog-demo-saved": {
+              "height": 24.0,
+              "width": 904.0,
+              "x": 28.0,
+              "y": 140.0
+            }
+          }
+        },
+        "capture": {
+          "name": "wide-light-basic-restored.png",
+          "sha256": "bb06fe9ed77a2cc754b0ef0fba8d953d08f1fcdadd58a0f20fb76db506479a75",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0,
+          "ink": {
+            "dialog-demo-title": {
+              "bounds": {
+                "height": 40.0,
+                "width": 904.0,
+                "x": 28.0,
+                "y": 28.0
+              },
+              "ink_bounds": [
+                30,
+                35,
+                93,
+                30
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 875
+            },
+            "dialog-demo-saved": {
+              "bounds": {
+                "height": 24.0,
+                "width": 904.0,
+                "x": 28.0,
+                "y": 140.0
+              },
+              "ink_bounds": [
+                30,
+                145,
+                125,
+                16
+              ],
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "rgb_tolerance": 64,
+              "ink_pixels": 397
+            }
+          },
+          "fab_paint": {
+            "body_point": [
+              889,
+              748
+            ],
+            "rgba": [
+              233,
+              221,
+              255,
+              255
+            ],
+            "icon_ink_pixels": 22
+          }
+        }
+      },
+      "ordinary_route_unchanged": true,
+      "visible_windows": [
+        {
+          "stage": "startup",
+          "visible": 0
+        },
+        {
+          "stage": "fab",
+          "visible": 0
+        },
+        {
+          "stage": "open",
+          "visible": 0
+        },
+        {
+          "stage": "nested",
+          "visible": 0
+        },
+        {
+          "stage": "restored",
+          "visible": 0
+        },
+        {
+          "stage": "back",
+          "visible": 0
+        }
+      ]
+    }
+  ],
+  "short_viewport": {
+    "profile": "short-dark-rtl-200",
+    "viewport": {
+      "x": 0.0,
+      "y": 0.0,
+      "width": 320,
+      "height": 240
+    },
+    "scroller": {
+      "height": 124.0,
+      "width": 264.0,
+      "x": 28.0,
+      "y": 28.0
+    },
+    "fab": {
+      "height": 56.0,
+      "width": 56.0,
+      "x": 24.0,
+      "y": 160.0
+    },
+    "before_focus": "dialog-demo-back",
+    "before_lower_control": {
+      "height": 48.0,
+      "width": 80.0,
+      "x": 116.0,
+      "y": 172.0
+    },
+    "tab_scroll_path": [
+      "dialog-demo-theme",
+      "dialog-demo-rtl",
+      "dialog-demo-large-text"
+    ],
+    "after_lower_control": {
+      "height": 48.0,
+      "width": 80.0,
+      "x": 116.0,
+      "y": 104.0
+    },
+    "saved_y_before": 228.0,
+    "saved_y_after": 160.0,
+    "captures": [
+      {
+        "name": "short-dark-rtl-200-fab-after-tab.png",
+        "sha256": "e24ddbbe6505a373926669cef908820175d1e0419f4a465d20e111f04bd5b8c2",
+        "format": "png",
+        "width": 320,
+        "height": 240,
+        "scale": 1.0,
+        "fab_paint": {
+          "body_point": [
+            33,
+            188
+          ],
+          "rgba": [
+            77,
+            61,
+            117,
+            255
+          ],
+          "icon_ink_pixels": 129
+        }
+      },
+      {
+        "name": "short-dark-rtl-200-edit.png",
+        "sha256": "78c7bd3f055d360c2a21188271f90b237b95bd50be9439f62f035a17c66b3bfd",
+        "format": "png",
+        "width": 320,
+        "height": 240,
+        "scale": 1.0,
+        "ink": {
+          "dialog-demo-edit-title": {
+            "bounds": {
+              "height": 112.0,
+              "width": 160.0,
+              "x": 92.0,
+              "y": 4.0
+            },
+            "ink_bounds": [
+              122,
+              14,
+              128,
+              97
+            ],
+            "rgba": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "rgb_tolerance": 64,
+            "ink_pixels": 2290
+          }
+        },
+        "panel_paint": {
+          "points": [
+            [
+              1,
+              1
+            ],
+            [
+              318,
+              238
+            ]
+          ],
+          "rgba": [
+            20,
+            18,
+            24,
+            255
+          ]
+        }
+      }
+    ],
+    "visible_windows": [
+      {
+        "stage": "startup",
+        "visible": 0
+      },
+      {
+        "stage": "tab-reveal",
+        "visible": 0
+      },
+      {
+        "stage": "edit",
+        "visible": 0
+      },
+      {
+        "stage": "restored",
+        "visible": 0
+      }
+    ]
+  }
+}

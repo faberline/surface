@@ -1,0 +1,38 @@
+   Compiling surface-material-gallery v0.1.44 (<surface>/examples/material-gallery)
+    Finished `test` profile [unoptimized] target(s) in 5.08s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (<cargo-target>/debug/deps/surface_material_gallery-567b00f633e3de92)
+
+running 28 tests
+test date_picker_demo::tests::gallery_touch_swipe_cancels_or_browses_without_committing_the_draft ... ok
+test dialog_demo::tests::basic_fade_keeps_live_focus_and_semantics_and_reverses_its_inert_exit ... ok
+test dialog_demo::tests::basic_scrolls_under_pinned_actions_and_alert_requires_its_button ... ok
+test dialog_demo::tests::caller_retains_drafts_and_commits_or_discards_once ... ok
+test dialog_demo::tests::edit_breakpoint_preserves_the_active_editor_selection_and_preedit ... ok
+test dialog_demo::tests::measured_fab_starts_modal_and_reverses_transformed_exit ... ok
+test dialog_demo::tests::resizing_a_transform_keeps_editor_value_selection_and_composition ... ok
+test dialog_demo::tests::resting_fab_remeasures_after_resize_without_an_input_event ... ok
+test dialog_demo::tests::retiring_nested_discard_restores_focus_and_keeps_the_draft ... ok
+test dialog_demo::tests::short_fab_preview_scrolls_text_above_the_fixed_button ... ok
+test display_contrast_tests::ambiguous_forced_canvas_retains_the_authored_polarity ... ok
+test display_contrast_tests::forced_palette_uses_system_pairs_and_preserves_the_authored_theme ... ok
+test display_contrast_tests::increased_uses_the_authored_dark_variant ... ok
+test docked_date_picker_demo::tests::opening_after_resize_uses_the_new_field_position_on_the_first_frame ... ok
+test modal_wide_navigation_rail_demo::tests::gallery_modal_rail_animates_the_scrim_without_delaying_focus_restoration ... ok
+test modal_wide_navigation_rail_demo::tests::gallery_modal_rail_keeps_its_two_collapsed_layouts_across_resize ... ok
+test scroll_modal_demo::tests::a_short_view_hides_the_modal_and_preserves_the_pair_until_it_fits ... ok
+test scroll_modal_demo::tests::child_submits_update_only_working_values_and_cancel_discards_both ... ok
+test scroll_modal_demo::tests::closed_messages_cannot_save_and_outside_counter_only_moves_when_closed ... ok
+test scroll_modal_demo::tests::invalid_save_reports_both_then_preserves_the_valid_peers_edit ... ok
+test search_overlay_demo::tests::gallery_query_history_submit_and_results_are_controlled ... ok
+test search_overlay_demo::tests::gallery_route_has_all_style_layout_combinations ... ok
+test search_overlay_demo::tests::search_motion_interpolates_both_styles_and_both_presentations ... ok
+test search_overlay_demo::tests::search_motion_keeps_live_palette_and_editor_on_resize_and_respects_reduced_motion ... ok
+test search_overlay_demo::tests::search_motion_retains_settings_through_frames_and_reverses_without_stealing_input ... ok
+test time_dial_demo::tests::gallery_animates_arrow_selection_without_delaying_draft_or_focus ... ok
+test wide_navigation_rail_demo::tests::gallery_wide_rail_animates_reflow_and_settles_for_reduced_motion_and_compact_layout ... ok
+test wide_navigation_rail_demo::tests::gallery_wide_rail_reflows_and_retains_destination_focus_and_actions ... ok
+
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.49s
+
