@@ -25,6 +25,7 @@ mod scroll_field_demo;
 mod scroll_modal_demo;
 mod scroll_pair_demo;
 mod scroll_popup_demo;
+mod search_overlay_demo;
 mod side_sheet_demo;
 mod snackbar_demo;
 mod split_demo;
@@ -61,6 +62,7 @@ use scroll_field_demo::{ScrollFieldDemo, ScrollFieldDemoEvent};
 use scroll_modal_demo::{ScrollModalDemo, ScrollModalDemoEvent};
 use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
 use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
+use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use split_demo::{SplitDemo, SplitEvent};
@@ -122,6 +124,7 @@ pub struct Gallery {
     scroll_pair_demo: ScrollPairDemo,
     scroll_popup_demo: ScrollPopupDemo,
     scroll_modal_demo: ScrollModalDemo,
+    search_overlay_demo: SearchOverlayDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
@@ -182,6 +185,7 @@ impl Default for Gallery {
             scroll_pair_demo: ScrollPairDemo::default(),
             scroll_popup_demo: ScrollPopupDemo::default(),
             scroll_modal_demo: ScrollModalDemo::default(),
+            search_overlay_demo: SearchOverlayDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
@@ -274,6 +278,7 @@ pub enum Message {
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
     ScrollModal(ScrollModalDemoEvent),
+    SearchOverlay(SearchOverlayDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
@@ -382,6 +387,9 @@ impl Application for Gallery {
         if self.scroll_modal_demo.visible() {
             return self.scroll_modal_demo.text_scale();
         }
+        if self.search_overlay_demo.visible() {
+            return self.search_overlay_demo.text_scale();
+        }
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
         }
@@ -442,6 +450,7 @@ impl Application for Gallery {
         let scroll_pair = self.scroll_pair_demo.viewport_changed(width, height);
         let scroll_popup = self.scroll_popup_demo.viewport_changed(width, height);
         let scroll_modal = self.scroll_modal_demo.viewport_changed(width, height);
+        let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
         let list_actions = self.list_actions_demo.viewport_changed(width);
         let list_media = self.list_media_demo.viewport_changed(width, height);
         let list_reorder = self.list_reorder_demo.viewport_changed(width);
@@ -474,6 +483,7 @@ impl Application for Gallery {
             || scroll_pair
             || scroll_popup
             || scroll_modal
+            || search_overlay
             || list_actions
             || list_media
             || list_reorder
@@ -522,6 +532,9 @@ impl Application for Gallery {
         let scroll_popup = self.scroll_popup_demo.observe(&frame);
         update.animation.rebuild |= scroll_popup.rebuild;
         update.animation.request_next |= scroll_popup.request_next;
+        let search_overlay = self.search_overlay_demo.observe(&frame);
+        update.animation.rebuild |= search_overlay.rebuild;
+        update.animation.request_next |= search_overlay.request_next;
         let range = self.date_range_picker_demo.observe(&frame, input);
         update.animation.rebuild |= range.rebuild;
         update.animation.request_next |= range.request_next;
@@ -716,6 +729,9 @@ impl Application for Gallery {
                 if i != app_bar_demo::SECTION {
                     self.app_bar_demo.leave();
                 }
+                if i != search_overlay_demo::SECTION {
+                    self.search_overlay_demo.leave();
+                }
                 if i != toolbar_demo::SECTION {
                     self.toolbar_demo.leave();
                 }
@@ -766,6 +782,7 @@ impl Application for Gallery {
             Message::Card(event) => self.card_demo.update(event),
             Message::Carousel(event) => self.carousel_demo.update(event),
             Message::AppBar(event) => self.app_bar_demo.update(event),
+            Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
             Message::Toolbar(event) => self.toolbar_demo.update(event),
             Message::Tooltip(event) => self.tooltip_demo.update(event),
             Message::Nav(i) => self.nav = i,
@@ -893,6 +910,9 @@ impl Application for Gallery {
         if self.app_bar_demo.visible() {
             return self.app_bar_demo.view(&t, self.dark);
         }
+        if self.search_overlay_demo.visible() {
+            return self.search_overlay_demo.view(&t, self.dark);
+        }
         if self.toolbar_demo.visible() {
             return self.toolbar_demo.view(&t, self.dark);
         }
@@ -1004,6 +1024,7 @@ impl Application for Gallery {
             1 => {
                 children.push(t.row([
                     AppBarDemo::show_button(&t),
+                    SearchOverlayDemo::show_button(&t),
                     ToolbarDemo::show_button(&t),
                     CarouselDemo::show_button(&t),
                     ButtonGroupDemo::show_button(&t),
@@ -1610,6 +1631,7 @@ mod web {
         state["scroll_pair"] = s.scroll_pair_demo.inspect(&runtime);
         state["scroll_popup"] = s.scroll_popup_demo.inspect(&runtime);
         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
+        state["search_overlay"] = s.search_overlay_demo.inspect();
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

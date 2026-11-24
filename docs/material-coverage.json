@@ -287,9 +287,9 @@
       "spec": "https://m3.material.io/components/search/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Search bar with leading glyph, controlled input and clear button"
+      "desktop_evidence": "Headless macOS Metal verifies both palettes, narrow RTL at 200% text, independent focus and caret ink, focus restore and fixed-clock opening and closing. Page.screenshot, CLI and MCP agree. https://github.com/faberline/surface/tree/8500ce31b12126e0268b3da1552f1e857f90435d/docs/evidence/md3/search-adaptive/preflight",
+      "web_evidence": "Headless Chrome WebGPU preflight verifies both styles and presentations, real 599 to 600 dp reflow with live browser editor state, trusted keyboard and pointer paths, projected accessibility, and resolved forced colors. https://github.com/faberline/surface/tree/8500ce31b12126e0268b3da1552f1e857f90435d/docs/evidence/md3/search-adaptive/preflight",
+      "implemented": "Inline search bar and controlled expanded Search. Contained and Divided styles support adaptive Docked and Full-screen layouts, an accessible localized hint and results status, stable result actions, and retained motion with a Reduce Motion endpoint. Physical input methods, spoken screen-reader output and full variant audit remain open."
     },
     {
       "id": "sliders",

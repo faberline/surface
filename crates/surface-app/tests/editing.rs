@@ -1,4 +1,6 @@
-use surface::{Node, PaintOp, Role, Style, TextMeasurer};
+use surface::{
+    Color, DisplayList, ExtendedPaintOp, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer,
+};
 use surface_app::{
     utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Runtime, TextEditor,
     TextOptions, View,
@@ -81,6 +83,331 @@ impl TextMeasurer for Metrics {
     fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
         (text.chars().count() as f32 * size, size * 1.5)
     }
+}
+
+#[test]
+fn placeholder_only_paints_and_yields_to_both_native_composition_routes() {
+    const HINT: &str = "搜尋文件";
+    const HINT_COLOR: Color = Color::rgb(90, 78, 87);
+    const INK: Color = Color::rgb(14, 17, 23);
+
+    #[derive(Default)]
+    struct Editor {
+        value: String,
+        hint: bool,
+        multiline: bool,
+    }
+    impl Application for Editor {
+        type Message = String;
+        fn update(&mut self, value: String) {
+            self.value = value;
+        }
+        fn view(&self) -> View<String> {
+            let field = View::new(
+                Node::new(Role::TextInput, "Accessible search field")
+                    .id("field")
+                    .text(&self.value)
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(48.))
+                            .line_height(24.)
+                            .foreground(INK),
+                    ),
+            )
+            .center_single_line_text()
+            .text_options(TextOptions {
+                multiline: self.multiline,
+                ..TextOptions::default()
+            })
+            .on_input(|value| value);
+            let field = if self.hint {
+                field.text_input_placeholder(HINT, HINT_COLOR)
+            } else {
+                field
+            };
+            View::new(Node::new(Role::Group, "Root")).children([field])
+        }
+    }
+
+    fn run(list: &DisplayList) -> (&str, Color) {
+        list.ops
+            .iter()
+            .find_map(|op| match op {
+                PaintOp::StyledText {
+                    text,
+                    color,
+                    editable: true,
+                    ..
+                } => Some((text.as_str(), *color)),
+                _ => None,
+            })
+            .unwrap()
+    }
+    fn render(runtime: &mut Runtime<Editor>) -> DisplayList {
+        runtime.render(200., 84., &mut Metrics).unwrap()
+    }
+
+    let mut runtime = Runtime::new(Editor {
+        hint: true,
+        ..Editor::default()
+    })
+    .unwrap();
+    let mut legacy = Runtime::new(Editor::default()).unwrap();
+    for app in [&mut runtime, &mut legacy] {
+        app.activate("field").unwrap();
+    }
+    let paint = render(&mut runtime);
+    assert_eq!(run(&paint), (HINT, HINT_COLOR));
+    assert_eq!(run(&render(&mut legacy)), ("", INK));
+    assert_eq!(runtime.export_dom().unwrap(), legacy.export_dom().unwrap());
+    let field = runtime.dom().by_id("field").unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    assert_eq!(
+        frame.node(field).unwrap().node.name(),
+        "Accessible search field"
+    );
+    assert_eq!(frame.node(field).unwrap().node.text_value(), Some(""));
+    let caret = runtime.input_snapshot().unwrap().caret.unwrap();
+    assert_eq!(Some(caret), legacy.input_snapshot().unwrap().caret);
+    assert!(paint.ops.iter().any(
+        |op| matches!(op, PaintOp::Quad { rect, color, .. } if *rect == caret && *color == INK)
+    ));
+    let extended = runtime.render_extended(200., 84., &mut Metrics).unwrap();
+    assert!(extended.ops().iter().any(
+        |op| matches!(op, ExtendedPaintOp::Legacy(PaintOp::StyledText {
+        text, color, ..
+    }) if text == HINT && *color == HINT_COLOR)
+    ));
+
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    assert_eq!(run(&render(&mut runtime)).0, "");
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄕ".into(),
+            selection: None,
+        }))
+        .unwrap();
+    assert_eq!(run(&render(&mut runtime)), ("ㄕ", INK));
+    assert!(runtime.app().value.is_empty());
+    assert_eq!(runtime.snapshot().text_inputs["field"].display_value, "ㄕ");
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: String::new(),
+            selection: None,
+        }))
+        .unwrap();
+    assert!(!runtime.input_snapshot().unwrap().composing);
+    assert!(runtime.editor("field").unwrap().composition().is_some());
+    assert_eq!(run(&render(&mut runtime)), (HINT, HINT_COLOR));
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Commit("設".into())))
+        .unwrap();
+    assert_eq!(run(&render(&mut runtime)), ("設", INK));
+    assert_eq!(runtime.app().value, "設");
+    runtime
+        .dispatch(Event::InputValue {
+            value: String::new(),
+            anchor: 0,
+            cursor: 0,
+        })
+        .unwrap();
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+    assert_eq!(run(&render(&mut runtime)), (HINT, HINT_COLOR));
+    assert!(runtime.app().value.is_empty());
+
+    let mut multiline = Runtime::new(Editor {
+        value: "value\n".repeat(16),
+        hint: true,
+        multiline: true,
+    })
+    .unwrap();
+    multiline.activate("field").unwrap();
+    assert!(render(&mut multiline).ops.iter().any(|op| matches!(op,
+        PaintOp::StyledText { scroll, editable: true, .. } if scroll.1 > 0.)));
+    multiline.dispatch(Event::Blur).unwrap();
+    multiline.apply(String::new()).unwrap();
+    assert!(render(&mut multiline).ops.iter().any(|op| matches!(op,
+        PaintOp::StyledText { text, scroll, editable: true, .. } if text == HINT && *scroll == (0., 0.))));
+}
+
+#[test]
+fn centered_single_line_uses_one_origin_for_paint_and_caret_without_shrinking_the_target() {
+    struct Editor {
+        centered: bool,
+        multiline: bool,
+    }
+    impl Application for Editor {
+        type Message = ();
+        fn update(&mut self, _: ()) {}
+        fn view(&self) -> View<()> {
+            let field = View::new(
+                Node::new(Role::TextInput, "Query")
+                    .id("query")
+                    .text("ab")
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(48.))
+                            .font_size(16.)
+                            .line_height(24.),
+                    ),
+            )
+            .on_input(|_| ())
+            .text_options(TextOptions {
+                multiline: self.multiline,
+                ..TextOptions::default()
+            });
+            let field = if self.centered {
+                field.center_single_line_text()
+            } else {
+                field
+            };
+            View::new(Node::new(Role::Group, "Page")).children([field])
+        }
+    }
+
+    for (centered, multiline, inset) in [(false, false, 0.), (true, true, 0.), (true, false, 12.)] {
+        let mut runtime = Runtime::new(Editor {
+            centered,
+            multiline,
+        })
+        .unwrap();
+        runtime.render(220., 100., &mut Metrics).unwrap();
+        runtime
+            .dispatch(Event::PointerDown { x: 5., y: 1. })
+            .unwrap();
+        runtime.dispatch(Event::PointerUp { x: 5., y: 1. }).unwrap();
+        assert_eq!(runtime.focused(), Some("query"));
+        let paint = runtime.render(220., 100., &mut Metrics).unwrap();
+        let field = runtime.dom().by_id("query").unwrap();
+        let bounds = runtime.computed().unwrap().nodes[field.index()].bounds;
+        assert_eq!(bounds, Rect::new(0., 0., 220., 48.));
+        let caret = runtime.input_snapshot().unwrap().caret.unwrap();
+        assert_eq!((caret.y, caret.height), (inset, 24.));
+        assert!(paint.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
+            rect, scroll, editable: true, ..
+        } if *rect == bounds && rect.y - scroll.1 == caret.y)));
+    }
+}
+
+#[test]
+fn right_aligned_editor_shares_paint_pointer_and_composition_geometry() {
+    struct Editor(String);
+
+    impl Application for Editor {
+        type Message = String;
+
+        fn update(&mut self, value: String) {
+            self.0 = value;
+        }
+
+        fn view(&self) -> View<String> {
+            View::new(Node::new(Role::Group, "Page")).children([View::new(
+                Node::new(Role::TextInput, "搜尋文件")
+                    .id("query")
+                    .text(&self.0)
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(48.))
+                            .font_size(16.)
+                            .line_height(24.),
+                    ),
+            )
+            .center_single_line_text()
+            .right_align_single_line_text()
+            .inset_single_line_text_horizontally(4.)
+            .text_input_placeholder("搜尋文件", Color::rgb(90, 78, 87))
+            .on_input(|value| value)])
+        }
+    }
+
+    fn text_origin(list: &DisplayList, expected: &str) -> (f32, f32) {
+        list.ops
+            .iter()
+            .find_map(|op| match op {
+                PaintOp::StyledText {
+                    text,
+                    rect,
+                    scroll,
+                    editable: true,
+                    ..
+                } if text == expected => Some((rect.x - scroll.0, rect.y - scroll.1)),
+                _ => None,
+            })
+            .expect("expected editor paint run")
+    }
+
+    let mut runtime = Runtime::new(Editor(String::new())).unwrap();
+    runtime.activate("query").unwrap();
+    let empty = runtime.render(200., 80., &mut Metrics).unwrap();
+    assert_eq!(text_origin(&empty, "搜尋文件"), (130., 12.));
+    let input = runtime.input_snapshot().unwrap();
+    assert_eq!(input.value, "");
+    assert_eq!(input.caret.unwrap(), Rect::new(194., 12., 1., 24.));
+
+    runtime.dispatch(Event::Text("設計".into())).unwrap();
+    let query = runtime.render(200., 80., &mut Metrics).unwrap();
+    assert_eq!(text_origin(&query, "設計"), (162., 12.));
+    for event in [
+        Event::PointerDown { x: 164., y: 20. },
+        Event::PointerMove { x: 175., y: 20. },
+        Event::PointerUp { x: 175., y: 20. },
+    ] {
+        runtime.dispatch(event).unwrap();
+    }
+    let snapshot = runtime.input_snapshot().unwrap();
+    assert_eq!(
+        (snapshot.selection.anchor, snapshot.selection.cursor),
+        (0, 3)
+    );
+    let range = runtime.render(200., 80., &mut Metrics).unwrap();
+    assert!(range
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, .. }
+        if *rect == Rect::new(162., 12., 16., 24.))));
+
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄕ".into(),
+            selection: Some((3, 3)),
+        }))
+        .unwrap();
+    let preedit = runtime.render(224., 80., &mut Metrics).unwrap();
+    assert_eq!(text_origin(&preedit, "ㄕ計"), (186., 12.));
+    assert!(preedit
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, .. }
+        if *rect == Rect::new(186., 34., 16., 1.))));
+    let snapshot = runtime.input_snapshot().unwrap();
+    assert!(snapshot.composing);
+    assert_eq!(snapshot.value, "設計");
+    assert_eq!(snapshot.caret.unwrap().x, 202.);
+    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+
+    let long = "文".repeat(20);
+    runtime
+        .dispatch(Event::InputValue {
+            anchor: long.len(),
+            cursor: long.len(),
+            value: long.clone(),
+        })
+        .unwrap();
+    let overflow = runtime.render(200., 80., &mut Metrics).unwrap();
+    assert_eq!(text_origin(&overflow, &long), (-126., 12.));
+    assert!(overflow
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::StyledText { text, clip, .. }
+        if text == &long && *clip == Rect::new(4., 0., 192., 48.))));
+    assert_eq!(runtime.input_snapshot().unwrap().caret.unwrap().x, 194.);
+
+    runtime.dispatch(Event::Blur).unwrap();
+    runtime.apply(String::new()).unwrap();
+    let cleared = runtime.render(200., 80., &mut Metrics).unwrap();
+    assert_eq!(text_origin(&cleared, "搜尋文件"), (130., 12.));
 }
 
 #[test]

@@ -1,14 +1,12 @@
 //! CDP-emulated browser display contrast through real headless WebGPU and AX.
 
-#[path = "material_web_contrast_png.rs"]
-mod pixels;
+use super::material_web_contrast_png as pixels;
 #[path = "material_web_contrast_selection.rs"]
 mod selection;
 
 use anyhow::{Context, Result};
 use serde_json::{json, Value};
 
-use self::pixels::{intersection, CanvasPng, Rect, Rgb};
 use super::{
     click,
     material_time_input::{
@@ -20,6 +18,7 @@ use super::{
 use crate::browser::{js, Chrome, Tab};
 use crate::check::step;
 use crate::{check, check_eq, Env};
+use pixels::{intersection, CanvasPng, Rect, Rgb};
 
 const POPUP_SHOW: &str = "scroll-popup-demo-show";
 const POPUP: &str = "scroll-popup-demo-dialog";
@@ -92,7 +91,7 @@ const CSS_WITNESS: &str = r#"(() => {
     }
 })()"#;
 
-async fn media(tab: &Tab, forced: bool, more: bool) -> Result<()> {
+pub(super) async fn media(tab: &Tab, forced: bool, more: bool) -> Result<()> {
     let forced_value = if forced { "active" } else { "none" };
     let contrast_value = if more { "more" } else { "no-preference" };
     tab.cdp(
@@ -112,13 +111,13 @@ async fn media(tab: &Tab, forced: bool, more: bool) -> Result<()> {
     .await
 }
 
-async fn contrast(tab: &Tab, mode: &str) -> Result<Value> {
+pub(super) async fn contrast(tab: &Tab, mode: &str) -> Result<Value> {
     until(tab, &format!("s.display_contrast?.mode === {}", js(mode))).await?;
     tab.settle().await?;
     Ok(state(tab).await?["display_contrast"].take())
 }
 
-async fn palette(tab: &Tab, appearance: &Value) -> Result<Value> {
+pub(super) async fn palette(tab: &Tab, appearance: &Value) -> Result<Value> {
     let css = tab.eval(CSS_WITNESS).await?;
     let pairs = &css["pairs"];
     let theme = &appearance["theme"];

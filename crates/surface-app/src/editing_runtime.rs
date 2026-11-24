@@ -5,6 +5,15 @@ use surface::{
     TextScaling,
 };
 
+const CARET_REVEAL_WIDTH: f32 = 2.;
+
+fn right_alignment_space(content_width: f32, layout: &TextLayout) -> f32 {
+    let text_right = layout.clusters.iter().fold(0_f32, |right, cluster| {
+        right.max(cluster.bounds.x + cluster.bounds.width)
+    });
+    content_width - text_right - CARET_REVEAL_WIDTH
+}
+
 pub(crate) struct EditingGeometry {
     layout: TextLayout,
     origin: Rect,
@@ -272,24 +281,54 @@ impl<A: Application> Runtime<A> {
                 continue;
             };
             let node = display.get(id)?;
-            let options = &self.bindings[&id].text_options;
+            let binding = &self.bindings[&id];
+            let options = &binding.text_options;
             let g = &computed.nodes[id.index()];
-            let origin = g.bounds.inset(node.style().padding);
+            let content_inset = if options.multiline {
+                0.
+            } else {
+                binding.single_line_text_horizontal_inset
+            };
+            let mut origin = g
+                .bounds
+                .inset(node.style().padding)
+                .inset_horizontal(content_inset);
+            let content_width = origin.width;
             let text = editor.display_value();
+            let text_style = node.style().text_style();
             let layout = measurer.text_layout_styled(
                 &text,
-                &node.style().text_style(),
+                &text_style,
                 if options.multiline {
-                    Some(origin.width)
+                    Some(content_width)
                 } else {
                     None
                 },
             );
+            let vertical_inset = if binding.center_single_line_text && !options.multiline {
+                (origin.height - layout.line_height).max(0.) / 2.
+            } else {
+                0.
+            };
+            let right_aligned = binding.right_align_single_line_text && !options.multiline;
+            let horizontal_space =
+                right_aligned.then(|| right_alignment_space(content_width, &layout));
+            let horizontal_inset = horizontal_space.unwrap_or_default().max(0.);
+            origin.x += horizontal_inset;
+            origin.width -= horizontal_inset;
+            origin.y += vertical_inset;
+            origin.height -= vertical_inset;
             let mut scroll = self
                 .text_geometry
                 .get(key)
                 .map(|g| g.scroll)
                 .unwrap_or_default();
+            if horizontal_space.is_some_and(|space| space >= 0.) {
+                scroll.0 = 0.;
+            }
+            if vertical_inset > 0. {
+                scroll.1 = 0.;
+            }
             let selection = editor.display_selection();
             let focused = self.focused.as_ref() == Some(key);
             if focused {
@@ -297,8 +336,8 @@ impl<A: Application> Runtime<A> {
                     let caret = layout.caret(selection.cursor);
                     if caret.x < scroll.0 {
                         scroll.0 = caret.x;
-                    } else if caret.x + 2. > scroll.0 + origin.width {
-                        scroll.0 = caret.x + 2. - origin.width;
+                    } else if caret.x + CARET_REVEAL_WIDTH > scroll.0 + origin.width {
+                        scroll.0 = caret.x + CARET_REVEAL_WIDTH - origin.width;
                     }
                     if caret.y < scroll.1 {
                         scroll.1 = caret.y;
@@ -317,8 +356,20 @@ impl<A: Application> Runtime<A> {
                     r.height,
                 )
             };
+            let placeholder = binding
+                .text_input_placeholder
+                .as_ref()
+                .filter(|_| editor.value().is_empty() && !editor.is_composing());
+            let paint_scroll_x = if let (true, Some(hint)) = (right_aligned, placeholder) {
+                let hint_layout = measurer.text_layout_styled(&hint.0, &text_style, None);
+                -right_alignment_space(content_width, &hint_layout).max(0.)
+            } else {
+                scroll.0 - horizontal_inset
+            };
             let mut decoration = TextDecoration {
-                scroll,
+                // Paint starts at the original content box. Signed scroll
+                // places its run at the editor or placeholder origin.
+                scroll: (paint_scroll_x, scroll.1 - vertical_inset),
                 multiline: options.multiline,
                 ..Default::default()
             };
@@ -354,6 +405,12 @@ impl<A: Application> Runtime<A> {
                 },
             );
             decorations.insert(id, decoration);
+            if content_inset > 0. {
+                display.set_presented_text_input_horizontal_inset(id, content_inset)?;
+            }
+            if let Some(placeholder) = placeholder {
+                display.set_presented_text_input_placeholder(id, placeholder.clone())?;
+            }
         }
         Ok((display, decorations, computed))
     }

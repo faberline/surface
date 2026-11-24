@@ -60,9 +60,10 @@ use std::{
     cell::{Cell, RefCell},
     collections::{BTreeMap, VecDeque},
     rc::Rc,
+    sync::Arc,
 };
 use surface::{
-    ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
+    Color, ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
     LayoutError, MicroDom, Node, NodeId, Rect, Role, TextMeasurer,
 };
 
@@ -77,6 +78,10 @@ pub struct View<M> {
     suppress_repeated_activation: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
+    center_single_line_text: bool,
+    right_align_single_line_text: bool,
+    single_line_text_horizontal_inset: f32,
+    text_input_placeholder: Option<Arc<(String, Color)>>,
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
@@ -88,6 +93,7 @@ pub struct View<M> {
     key: Option<KeyHandler<M>>,
     focus_shortcuts: Vec<Shortcut<String>>,
     key_focus_navigation: Option<KeyFocusNavigationHandler<M>>,
+    key_focus_from_editor: bool,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
@@ -129,6 +135,10 @@ impl<M> View<M> {
             suppress_repeated_activation: false,
             input: None,
             text_options: TextOptions::default(),
+            center_single_line_text: false,
+            right_align_single_line_text: false,
+            single_line_text_horizontal_inset: 0.,
+            text_input_placeholder: None,
             value: None,
             accessible_step: None,
             roving: None,
@@ -140,6 +150,7 @@ impl<M> View<M> {
             key: None,
             focus_shortcuts: Vec::new(),
             key_focus_navigation: None,
+            key_focus_from_editor: false,
             focus_navigation: None,
             context: None,
             stick: false,
@@ -367,6 +378,37 @@ impl<M> View<M> {
         self.text_options = options;
         self
     }
+
+    /// Center a single-line editor's text and caret within its content box.
+    /// The focus outline, hit target and multiline layout stay the same.
+    pub fn center_single_line_text(mut self) -> Self {
+        self.center_single_line_text = true;
+        self
+    }
+
+    /// Align a single-line editor's text, placeholder, and caret to the right.
+    /// Long values scroll to keep the caret visible. The hit target and the
+    /// shaped order of the text use the same rules as other editors.
+    pub fn right_align_single_line_text(mut self) -> Self {
+        self.right_align_single_line_text = true;
+        self
+    }
+
+    /// Inset the content on both sides of a single-line editor. The focus
+    /// outline, hit target, and vertical placement keep their original bounds.
+    pub fn inset_single_line_text_horizontally(mut self, inset: f32) -> Self {
+        self.single_line_text_horizontal_inset = if inset.is_finite() { inset.max(0.) } else { 0. };
+        self
+    }
+
+    /// Paint a hint while this editor is empty and has no active IME
+    /// composition. The hint keeps the field's geometry, value and
+    /// accessible name. Use the node's name to label the actual text input.
+    pub fn text_input_placeholder(mut self, text: impl Into<String>, color: Color) -> Self {
+        let text = text.into();
+        self.text_input_placeholder = (!text.is_empty()).then(|| Arc::new((text, color)));
+        self
+    }
     /// Bind a slider value or an opted-in adjustable Group.
     pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
         self.value = Some(Rc::new(handler));
@@ -487,6 +529,20 @@ impl<M> View<M> {
         handler: impl Fn(&KeyPress) -> Option<FocusNavigation<M>> + 'static,
     ) -> Self {
         self.key_focus_navigation = Some(Rc::new(handler));
+        self.key_focus_from_editor = false;
+        self
+    }
+
+    /// Move focus from this text input on an unmodified Up or Down arrow.
+    /// The message may mount the target in the active scope. Other keys
+    /// keep their editing behavior, and an active composition keeps its
+    /// arrows. A focused `on_key` handler runs first.
+    pub fn on_text_input_arrow_navigation(
+        mut self,
+        handler: impl Fn(&KeyPress) -> Option<FocusNavigation<M>> + 'static,
+    ) -> Self {
+        self.key_focus_navigation = Some(Rc::new(handler));
+        self.key_focus_from_editor = true;
         self
     }
 
@@ -827,6 +883,10 @@ struct Binding<M> {
     suppress_repeated_activation: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
+    center_single_line_text: bool,
+    right_align_single_line_text: bool,
+    single_line_text_horizontal_inset: f32,
+    text_input_placeholder: Option<Arc<(String, Color)>>,
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
@@ -838,6 +898,7 @@ struct Binding<M> {
     key: Option<KeyHandler<M>>,
     focus_shortcuts: Vec<Shortcut<String>>,
     key_focus_navigation: Option<KeyFocusNavigationHandler<M>>,
+    key_focus_from_editor: bool,
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
@@ -1288,6 +1349,10 @@ impl<A: Application> Runtime<A> {
                     suppress_repeated_activation: view.suppress_repeated_activation,
                     input: view.input,
                     text_options: view.text_options,
+                    center_single_line_text: view.center_single_line_text,
+                    right_align_single_line_text: view.right_align_single_line_text,
+                    single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
+                    text_input_placeholder: view.text_input_placeholder,
                     value: view.value,
                     accessible_step: view.accessible_step,
                     roving: view.roving,
@@ -1299,6 +1364,7 @@ impl<A: Application> Runtime<A> {
                     key: view.key,
                     focus_shortcuts: view.focus_shortcuts,
                     key_focus_navigation: view.key_focus_navigation,
+                    key_focus_from_editor: view.key_focus_from_editor,
                     focus_navigation: view.focus_navigation,
                     context: view.context,
                     stick: view.stick,
@@ -1648,19 +1714,21 @@ impl<A: Application> Runtime<A> {
     }
 
     fn navigate_key_focus(&mut self, id: NodeId, press: &KeyPress) -> Result<bool, AppError> {
-        let Some(handler) = self
-            .bindings
-            .get(&id)
-            .and_then(|binding| binding.key_focus_navigation.as_ref())
-        else {
+        let Some(binding) = self.bindings.get(&id) else {
+            return Ok(false);
+        };
+        let Some(handler) = binding.key_focus_navigation.as_ref() else {
             return Ok(false);
         };
         if self.has_pending_composition()
             || !self.in_scope(id)
-            || !self
-                .dom
-                .get(id)
-                .is_ok_and(|node| node.is_focusable() && node.role() != Role::TextInput)
+            || !self.dom.get(id).is_ok_and(|node| {
+                node.is_focusable()
+                    && (node.role() == Role::TextInput) == binding.key_focus_from_editor
+            })
+            || (binding.key_focus_from_editor
+                && (!matches!(press.key, Key::ArrowUp | Key::ArrowDown)
+                    || !press.modifiers.is_empty()))
         {
             return Ok(false);
         }

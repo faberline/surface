@@ -180,6 +180,10 @@ pub struct Node {
     pub(crate) role: Role,
     pub(crate) name: String,
     pub(crate) text: Option<String>,
+    #[serde(skip)]
+    presented_text_input_placeholder: Option<Arc<(String, Color)>>,
+    #[serde(skip)]
+    pub(crate) presented_text_input_horizontal_inset: f32,
     pub(crate) disabled: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     invalid: bool,
@@ -251,6 +255,8 @@ impl Node {
             role,
             name: name.into(),
             text: None,
+            presented_text_input_placeholder: None,
+            presented_text_input_horizontal_inset: 0.,
             disabled: false,
             invalid: false,
             checked: None,
@@ -410,6 +416,13 @@ impl Node {
     pub fn text(mut self, text: impl Into<String>) -> Self {
         self.text = Some(text.into());
         self
+    }
+
+    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
+        self.presented_text_input_placeholder
+            .as_deref()
+            .filter(|_| self.text_value().is_none_or(str::is_empty))
+            .map(|(text, color)| (text.as_str(), *color))
     }
     /// Draw one closed fill relative to the node's origin after its paths.
     /// The ancestor clip applies. The fill adds no layout or input area and
@@ -945,6 +958,41 @@ impl MicroDom {
             .get_mut(id.index())
             .ok_or(DomError::InvalidNode(id.index()))?;
         node.fill_contour = Some(contour);
+        Ok(())
+    }
+
+    /// Supply the placeholder run on the display copy after layout. The
+    /// text value, semantic tree, and wire snapshot remain unchanged.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_placeholder(
+        &mut self,
+        id: NodeId,
+        placeholder: Arc<(String, Color)>,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::TextInput && !placeholder.0.is_empty() {
+            node.presented_text_input_placeholder = Some(placeholder);
+        }
+        Ok(())
+    }
+
+    /// Inset only the painted text box on the display copy after layout.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_horizontal_inset(
+        &mut self,
+        id: NodeId,
+        inset: f32,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::TextInput {
+            node.presented_text_input_horizontal_inset = inset;
+        }
         Ok(())
     }
 
