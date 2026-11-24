@@ -56,6 +56,7 @@ mod split_button;
 mod split_button_layout;
 mod split_button_motion;
 mod standard_navigation_drawer;
+mod switch;
 mod time_dial;
 mod time_dial_state;
 mod time_input;
@@ -191,6 +192,7 @@ pub use split_button_motion::SplitButtonMotion;
 pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
+pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
 pub use time_dial::{
     time_dial_baseline_layout, time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout,
     TimeDialOptions,

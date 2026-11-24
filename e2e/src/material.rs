@@ -80,6 +80,8 @@ mod material_side_sheet;
 mod material_snackbar;
 #[path = "material_split_button.rs"]
 mod material_split_button;
+#[path = "material_switch.rs"]
+mod material_switch;
 #[path = "material_time_baseline.rs"]
 mod material_time_baseline;
 #[path = "material_time_dial.rs"]
@@ -126,7 +128,8 @@ pub const STEPS: &[&str] = &[
     "M227", "M228", "M229", "M230", "M231", "M232", "M233", "M234", "M235", "M236", "M237", "M238",
     "M239", "M240", "M241", "M242", "M243", "M244", "M245", "M246", "M247", "M248", "M249", "M250",
     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
-    "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273",
+    "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
+    "M275", "M276", "M277",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -245,7 +248,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_dialog::run(env, chrome, &url).await?;
     material_divider::run(env, chrome, &url).await?;
     material_command_menu::run(env, chrome, &url).await?;
-    material_flexible_navigation_bar::run(env, chrome, &url).await
+    material_flexible_navigation_bar::run(env, chrome, &url).await?;
+    material_switch::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
