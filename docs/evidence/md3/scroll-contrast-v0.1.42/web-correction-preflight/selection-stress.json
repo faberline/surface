@@ -1,0 +1,173 @@
+{
+  "version": "Chrome/158.0.8127.37",
+  "mode": "isolated headless diagnostic against sealed stock Wasm",
+  "cases": [
+    {
+      "mode": "old stock key burst",
+      "passed": 50,
+      "failures": []
+    },
+    {
+      "mode": "wait after each trusted key",
+      "passed": 50,
+      "failures": []
+    }
+  ],
+  "redrawOrdering": [
+    {
+      "deferSyntheticSelect": false,
+      "before": {
+        "dom": [
+          3,
+          3
+        ],
+        "runtime": [
+          3,
+          3
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "downImmediate": {
+        "dom": [
+          4,
+          4
+        ],
+        "runtime": [
+          3,
+          3
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "afterRedraw": {
+        "dom": [
+          4,
+          4
+        ],
+        "runtime": [
+          3,
+          3
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "afterKeyup": {
+        "dom": [
+          4,
+          4
+        ],
+        "runtime": [
+          4,
+          4
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "events": [
+        {
+          "t": 6094.699999988079,
+          "kind": "keydown",
+          "dom": [
+            3,
+            3
+          ],
+          "key": "ArrowRight",
+          "trusted": true
+        },
+        {
+          "t": 6159.5,
+          "kind": "keyup",
+          "dom": [
+            4,
+            4
+          ],
+          "key": "ArrowRight",
+          "trusted": true
+        }
+      ]
+    },
+    {
+      "deferSyntheticSelect": true,
+      "before": {
+        "dom": [
+          3,
+          3
+        ],
+        "runtime": [
+          3,
+          3
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "downImmediate": {
+        "dom": [
+          4,
+          4
+        ],
+        "runtime": [
+          3,
+          3
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "afterRedraw": {
+        "dom": [
+          4,
+          4
+        ],
+        "runtime": [
+          3,
+          3
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "afterKeyup": {
+        "dom": [
+          4,
+          4
+        ],
+        "runtime": [
+          4,
+          4
+        ],
+        "composing": false,
+        "draft": "1688",
+        "focus": "surface-text-input"
+      },
+      "events": [
+        {
+          "t": 6267.9000000059605,
+          "kind": "keydown",
+          "dom": [
+            3,
+            3
+          ],
+          "key": "ArrowRight",
+          "trusted": true
+        },
+        {
+          "t": 6326.4000000059605,
+          "kind": "keyup",
+          "dom": [
+            4,
+            4
+          ],
+          "key": "ArrowRight",
+          "trusted": true
+        }
+      ]
+    }
+  ],
+  "pageErrors": []
+}

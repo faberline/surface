@@ -1,6 +1,16 @@
 # Surface v0.1.42 Scroll Field display contrast
 
-Candidate commit `f5b2e24d298c60a06d7b85635baf7a47657e31e2`. This is the pre-release verification record for PR #217.
+## Corrected candidate
+
+Draft PR #217 now points to `ab8615c8495d99a652f4fac38d4db37f08c82c7f`. The candidate keeps the browser caret at the new position during a forced-color redraw. It accepts selection after composition and preserves positions in authored CRLF and CR text.
+
+The focused headless Chrome runs passed 20 Showcase input steps and seven Material contrast steps. The isolated keyboard stress replay passed 100 of 100 attempts. Full stock, native, workspace, and hosted checks are running.
+
+[Correction proof](web-correction-preflight/README.md) · [Candidate PR](https://github.com/faberline/surface/pull/217)
+
+## Initial candidate
+
+Initial commit `f5b2e24d298c60a06d7b85635baf7a47657e31e2`. This section preserves the source and result of the first verification.
 
 Two exact native offscreen replays and 11 Metal tests passed. The stock and diagnostic captures use the same candidate source. The stock Chrome suite passed four cases and failed Material at M246. The full local workspace check was stopped after the browser confirmed the issue. This source is not ready to release.
 
