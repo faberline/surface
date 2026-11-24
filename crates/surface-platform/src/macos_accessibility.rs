@@ -157,16 +157,12 @@ impl Tree {
             if press.is_some() {
                 node.add_action(Action::Click);
             }
-            if let Some(range) = source
-                .node
-                .accessibility_adjustable()
-                .filter(|_| adjustment.is_some())
-            {
+            if adjustment.is_some() {
                 node.add_action(Action::SetValue);
-                if range.step_value(true).is_some() {
+                if frame.supports_adjustment_step(id, true) {
                     node.add_action(Action::Increment);
                 }
-                if range.step_value(false).is_some() {
+                if frame.supports_adjustment_step(id, false) {
                     node.add_action(Action::Decrement);
                 }
             }
@@ -1122,6 +1118,105 @@ mod tests {
             .action(&mut disabled, request(id, Action::Increment, None))
             .unwrap());
         assert_eq!(disabled.app().value, Some(6.));
+    }
+
+    #[test]
+    fn cyclic_adjustable_projects_and_routes_both_directions_at_bounds() {
+        #[derive(Clone, Copy)]
+        enum Message {
+            Set(f64),
+            Step(bool),
+        }
+
+        struct Stations {
+            ordinal: f64,
+            steps: Vec<bool>,
+        }
+
+        impl Application for Stations {
+            type Message = Message;
+
+            fn update(&mut self, message: Message) {
+                self.ordinal = match message {
+                    Message::Set(value) => value,
+                    Message::Step(increment) => {
+                        self.steps.push(increment);
+                        3. - self.ordinal
+                    }
+                };
+            }
+
+            fn view(&self) -> View<Message> {
+                let field = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Station")
+                        .id("station")
+                        .adjustable(surface::AdjustableValue {
+                            min: 1.,
+                            max: 2.,
+                            step: 1.,
+                            value: Some(self.ordinal),
+                            value_text: Some(
+                                if self.ordinal == 1. {
+                                    "北站"
+                                } else {
+                                    "南站"
+                                }
+                                .into(),
+                            ),
+                        })
+                        .styled(Style::row().width(Length::Px(120.)).height(Length::Px(48.))),
+                )
+                .on_value(Message::Set)
+                .on_accessible_step(Message::Step);
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Test")).children([field])
+            }
+        }
+
+        let mut runtime = Runtime::new(Stations {
+            ordinal: 2.,
+            steps: Vec::new(),
+        })
+        .unwrap();
+        let mut tree = Tree::default();
+        let request = |target_node, action, data| ActionRequest {
+            target_tree: TreeId::ROOT,
+            target_node,
+            action,
+            data,
+        };
+        for (at, name, action, expected) in [
+            (2., "南站", Action::Increment, 1.),
+            (1., "北站", Action::Decrement, 2.),
+        ] {
+            let rendered = update(&mut runtime, &mut tree);
+            let (id, station) = named(&rendered, "Station");
+            assert_eq!(station.role(), Role::SpinButton);
+            assert_eq!(station.min_numeric_value(), Some(1.));
+            assert_eq!(station.max_numeric_value(), Some(2.));
+            assert_eq!(station.numeric_value(), Some(at));
+            assert_eq!(station.value(), Some(name));
+            for action in [Action::Increment, Action::Decrement, Action::SetValue] {
+                assert!(station.supports_action(action));
+            }
+            assert!(tree
+                .action(&mut runtime, request(id, action, None))
+                .unwrap());
+            assert_eq!(runtime.app().ordinal, expected);
+            assert!(!tree
+                .action(&mut runtime, request(id, action, None))
+                .unwrap());
+        }
+        assert_eq!(runtime.app().steps, [true, false]);
+        assert_eq!(runtime.focused(), None);
+
+        let rendered = update(&mut runtime, &mut tree);
+        let (id, _) = named(&rendered, "Station");
+        let set = |value| request(id, Action::SetValue, Some(ActionData::NumericValue(value)));
+        assert!(!tree.action(&mut runtime, set(f64::NAN)).unwrap());
+        assert!(!tree.action(&mut runtime, set(90.)).unwrap());
+        assert!(tree.action(&mut runtime, set(-90.)).unwrap());
+        assert_eq!(runtime.app().ordinal, 1.);
+        assert_eq!(runtime.app().steps, [true, false]);
     }
 
     struct Calendar(bool);

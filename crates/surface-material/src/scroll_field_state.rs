@@ -1,10 +1,12 @@
-//! State for an inline, finite numeric Scroll Field.
+//! State for an inline numeric Scroll Field.
 
 use surface_app::{AnimationUpdate, PointDragSession};
 
 use crate::fab_motion::Spring;
 
 const ASCII_DIGITS: [char; 10] = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+// Keep the fractional position precise even for an unusually long drag.
+const MAX_DRAG_PHASE: f64 = (1_u64 << 40) as f64;
 
 /// A finite range with at least two reachable values and a positive step.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -125,6 +127,7 @@ enum Motion {
         row_height: f64,
     },
     Settling {
+        target: f64,
         spring: Spring,
         last_ms: Option<f64>,
     },
@@ -137,6 +140,7 @@ pub struct ScrollFieldState {
     digits: [char; 10],
     mode: ScrollFieldMode,
     scroll_fits: bool,
+    looping: bool,
     raw: String,
     error: Option<ScrollFieldError>,
     offset: f64,
@@ -152,12 +156,24 @@ impl ScrollFieldState {
             digits: ASCII_DIGITS,
             mode: ScrollFieldMode::Scroll,
             scroll_fits: true,
+            looping: false,
             raw: value.to_string(),
             error: None,
             offset: range.index(value) as f64,
             motion: Motion::Idle,
             session: PointDragSession::new(),
         })
+    }
+
+    /// Let the wheel continue through both ends of its authored range.
+    /// The authored bounds still apply to direct text and absolute values.
+    pub fn with_looping(mut self) -> Self {
+        self.looping = true;
+        self
+    }
+
+    pub fn looping(&self) -> bool {
+        self.looping
     }
 
     /// Select one distinct glyph per digit. ASCII and full-width digits
@@ -212,16 +228,25 @@ impl ScrollFieldState {
             .collect()
     }
 
-    /// Fractional row index from the minimum. Larger values have higher indices.
+    /// Fractional row index from the minimum. The looping wheel uses a signed
+    /// index while moving and returns to its canonical index at rest.
     pub fn offset(&self) -> f64 {
         self.offset
     }
 
     /// The value closest to the visible center.
     pub fn preview(&self) -> i32 {
-        self.range
-            .value_at(self.offset.round() as i64)
+        self.value_at(self.offset.round() as i64)
             .expect("offset stays within the range")
+    }
+
+    pub(crate) fn value_at(&self, index: i64) -> Option<i32> {
+        let index = if self.looping {
+            index.rem_euclid(self.period())
+        } else {
+            index
+        };
+        self.range.value_at(index)
     }
 
     pub fn is_dragging(&self) -> bool {
@@ -307,7 +332,7 @@ impl ScrollFieldState {
                 return self.accept(value, reduced_motion);
             }
             (ScrollFieldMode::Scroll, ScrollFieldEvent::Step(step)) => {
-                return self.accept(self.range.step_value(self.value, step), reduced_motion);
+                return self.step(step, reduced_motion);
             }
             (
                 ScrollFieldMode::Scroll,
@@ -328,6 +353,7 @@ impl ScrollFieldState {
     /// the pointer directly. An absent clock or Reduce Motion snaps to rest.
     pub fn advance(&mut self, now_ms: Option<f64>, reduced_motion: bool) -> AnimationUpdate {
         let Motion::Settling {
+            target,
             mut spring,
             last_ms,
         } = self.motion
@@ -335,7 +361,6 @@ impl ScrollFieldState {
             return AnimationUpdate::default();
         };
         let before = self.offset;
-        let target = self.rest_offset();
         if let Some(now) = now_ms.filter(|now| now.is_finite() && !reduced_motion) {
             let now = last_ms.map_or(now, |last| now.max(last));
             if let Some(last) = last_ms {
@@ -346,22 +371,45 @@ impl ScrollFieldState {
                     spring.advance(target, seconds, 800., 0.6);
                 }
             }
-            self.offset = self.range.clamp_offset(spring.position);
-            self.motion = if spring.resting_at(target) {
-                Motion::Idle
+            if spring.resting_at(target) {
+                self.finish_settle();
             } else {
-                Motion::Settling {
+                self.offset = if self.looping {
+                    spring.position
+                } else {
+                    self.range.clamp_offset(spring.position)
+                };
+                self.motion = Motion::Settling {
+                    target,
                     spring,
                     last_ms: Some(now),
-                }
-            };
+                };
+            }
         } else {
-            self.offset = target;
-            self.motion = Motion::Idle;
+            self.finish_settle();
         }
         AnimationUpdate {
             rebuild: self.offset != before,
             request_next: self.settling(),
+        }
+    }
+
+    fn step(&mut self, step: ScrollFieldStep, reduced_motion: bool) -> Option<i32> {
+        let direction = match step {
+            ScrollFieldStep::Increase => 1.,
+            ScrollFieldStep::Decrease => -1.,
+            ScrollFieldStep::First | ScrollFieldStep::Last => 0.,
+        };
+        if self.looping && direction != 0. {
+            let current = match self.motion {
+                Motion::Settling { target, .. } => target,
+                _ => self.nearest_phase(self.value),
+            };
+            let target = current + direction;
+            let value = self.value_at(target as i64).expect("looping row exists");
+            self.accept_at(value, target, reduced_motion)
+        } else {
+            self.accept(self.range.step_value(self.value, step), reduced_motion)
         }
     }
 
@@ -378,19 +426,25 @@ impl ScrollFieldState {
             }
             _ => None,
         };
+        let position = |delta_y| {
+            let (origin, row_height) = baseline?;
+            let offset = self.drag_offset(origin, row_height, delta_y)?;
+            Some((origin, row_height, offset))
+        };
         match sample {
             ScrollFieldDrag::Move { delta_y } => {
-                if let Some((origin, row_height)) = baseline.filter(|_| delta_y.is_finite()) {
-                    self.offset = self.drag_offset(origin, row_height, delta_y);
+                if let Some((origin, row_height, offset)) = position(delta_y) {
+                    self.offset = offset;
                     self.motion = Motion::Held { origin, row_height };
                 }
                 None
             }
             ScrollFieldDrag::End { delta_y } => {
-                if let Some((origin, row_height)) = baseline.filter(|_| delta_y.is_finite()) {
-                    self.offset = self.drag_offset(origin, row_height, delta_y);
+                if let Some((_, _, offset)) = position(delta_y) {
+                    self.offset = offset;
+                    let target = offset.round();
                     self.motion = Motion::Idle;
-                    self.accept(self.preview(), reduced_motion)
+                    self.accept_at(self.preview(), target, reduced_motion)
                 } else {
                     self.cancel_drag(reduced_motion);
                     None
@@ -406,25 +460,50 @@ impl ScrollFieldState {
         }
     }
 
-    fn drag_offset(&self, origin: f64, row_height: f64, delta_y: f32) -> f64 {
-        self.range
-            .clamp_offset(origin + f64::from(delta_y) / row_height)
+    fn drag_offset(&self, origin: f64, row_height: f64, delta_y: f32) -> Option<f64> {
+        if !delta_y.is_finite() {
+            return None;
+        }
+        let offset = origin + f64::from(delta_y) / row_height;
+        if self.looping {
+            (offset.abs() <= MAX_DRAG_PHASE).then_some(offset)
+        } else {
+            Some(self.range.clamp_offset(offset))
+        }
     }
 
     fn cancel_drag(&mut self, reduced_motion: bool) {
         self.session = PointDragSession::new();
         if self.is_dragging() {
-            self.settle_to_value(reduced_motion);
+            self.settle_to(self.nearest_phase(self.value), reduced_motion);
         }
     }
 
     fn accept(&mut self, value: i32, reduced_motion: bool) -> Option<i32> {
+        self.accept_at(value, self.nearest_phase(value), reduced_motion)
+    }
+
+    fn accept_at(&mut self, value: i32, target: f64, reduced_motion: bool) -> Option<i32> {
         let changed = value != self.value;
         self.value = value;
         self.restore_raw();
         self.session = PointDragSession::new();
-        self.settle_to_value(reduced_motion);
+        self.settle_to(target, reduced_motion);
         changed.then_some(value)
+    }
+
+    fn period(&self) -> i64 {
+        self.range.index(self.range.max) + 1
+    }
+
+    fn nearest_phase(&self, value: i32) -> f64 {
+        let index = self.range.index(value) as f64;
+        if self.looping {
+            let period = self.period() as f64;
+            index + ((self.offset - index) / period).round() * period
+        } else {
+            index
+        }
     }
 
     fn rest_offset(&self) -> f64 {
@@ -432,26 +511,38 @@ impl ScrollFieldState {
     }
 
     fn reset_motion(&mut self) {
-        self.offset = self.rest_offset();
-        self.motion = Motion::Idle;
+        self.finish_settle();
         self.session = PointDragSession::new();
     }
 
-    fn settle_to_value(&mut self, reduced_motion: bool) {
-        let target = self.rest_offset();
+    fn finish_settle(&mut self) {
+        self.offset = self.rest_offset();
+        self.motion = Motion::Idle;
+    }
+
+    fn settle_to(&mut self, target: f64, reduced_motion: bool) {
         if reduced_motion {
-            self.offset = target;
-            self.motion = Motion::Idle;
-        } else if !self.settling() {
-            self.motion = if self.offset == target {
-                Motion::Idle
-            } else {
-                Motion::Settling {
-                    spring: Spring::new(self.offset),
-                    last_ms: None,
-                }
-            };
+            self.finish_settle();
+            return;
         }
+        self.motion = match self.motion {
+            Motion::Settling {
+                spring, last_ms, ..
+            } => Motion::Settling {
+                target,
+                spring,
+                last_ms,
+            },
+            _ if self.offset != target => Motion::Settling {
+                target,
+                spring: Spring::new(self.offset),
+                last_ms: None,
+            },
+            _ => {
+                self.finish_settle();
+                return;
+            }
+        };
     }
 
     fn restore_raw(&mut self) {
@@ -784,5 +875,180 @@ mod tests {
             None
         );
         assert_eq!((field.value(), field.preview()), (90, 90));
+    }
+
+    #[test]
+    fn looping_steps_travel_in_order_and_rebase_at_rest() {
+        let mut field = ScrollFieldState::new(ScrollFieldRange::new(10, 40, 10).unwrap(), 40)
+            .unwrap()
+            .with_looping();
+        assert!(field.looping());
+        assert_eq!(field.value_at(4), Some(10));
+        assert_eq!(field.value_at(-1), Some(40));
+        assert_eq!(
+            field.apply(ScrollFieldEvent::Step(ScrollFieldStep::Increase), false),
+            Some(10)
+        );
+        assert_eq!(field.offset(), 3.);
+        assert!(field.advance(Some(1000.), false).request_next);
+        assert!(field.advance(Some(1050.), false).rebuild);
+        assert!((3.5..4.).contains(&field.offset()));
+        assert_eq!(field.preview(), 10);
+        assert!(!field.advance(Some(3050.), false).request_next);
+        assert_eq!(field.offset(), 0.);
+
+        assert_eq!(
+            field.apply(ScrollFieldEvent::Step(ScrollFieldStep::Decrease), false),
+            Some(40)
+        );
+        field.advance(Some(4000.), false);
+        field.advance(Some(4050.), false);
+        assert!((-1. ..-0.5).contains(&field.offset()));
+        assert_eq!(field.preview(), 40);
+        assert!(!field.advance(None, false).request_next);
+        assert_eq!(field.offset(), 3.);
+    }
+
+    #[test]
+    fn two_item_loop_keeps_both_step_directions_and_pending_targets() {
+        for (step, sign) in [
+            (ScrollFieldStep::Increase, 1.),
+            (ScrollFieldStep::Decrease, -1.),
+        ] {
+            let range = ScrollFieldRange::new(10, 20, 10).unwrap();
+            let mut field = ScrollFieldState::new(range, 10).unwrap().with_looping();
+            assert_eq!(field.value_at(-1), field.value_at(1));
+            assert_eq!(field.apply(ScrollFieldEvent::Step(step), false), Some(20));
+            assert_eq!(field.apply(ScrollFieldEvent::Step(step), false), Some(10));
+            field.advance(Some(500.), false);
+            field.advance(Some(550.), false);
+            assert!((1. ..2.).contains(&(field.offset() * sign)));
+            assert_eq!(
+                field.preview(),
+                20,
+                "the other item remains in the signed path"
+            );
+            assert!(field.advance(Some(555.), true).rebuild);
+            assert_eq!(
+                (field.value(), field.offset(), field.settling()),
+                (10, 0., false)
+            );
+        }
+    }
+
+    #[test]
+    fn looping_drag_uses_signed_phase_across_laps_and_accepts_only_release() {
+        let mut field = ScrollFieldState::new(ScrollFieldRange::new(10, 40, 10).unwrap(), 20)
+            .unwrap()
+            .with_looping();
+        let capture = field.drag_session();
+        let move_sample = drag(&capture, ScrollFieldDrag::Move { delta_y: 400. }, 48.);
+        assert_eq!(field.apply(move_sample, false), None);
+        assert_eq!(field.value(), 20);
+        assert_eq!(
+            field.preview(),
+            20,
+            "two laps do not change the center value"
+        );
+        assert!((9. ..10.).contains(&field.offset()));
+
+        let end = drag(&capture, ScrollFieldDrag::End { delta_y: 425. }, 200.);
+        assert_eq!(field.apply(end.clone(), false), Some(30));
+        assert_eq!(field.apply(end, false), None);
+        assert!(field.settling());
+        assert!((9. ..10.).contains(&field.offset()));
+        field.advance(Some(600.), false);
+        field.advance(Some(650.), false);
+        assert!((9. ..10.).contains(&field.offset()));
+        assert_eq!(field.preview(), 30);
+        assert!(!field.advance(None, false).request_next);
+        assert_eq!(field.offset(), 2.);
+
+        let capture = field.drag_session();
+        let release_only = drag(&capture, ScrollFieldDrag::End { delta_y: -211. }, 48.);
+        assert_eq!(field.apply(release_only, true), None);
+        assert_eq!((field.value(), field.offset()), (30, 2.));
+        let capture = field.drag_session();
+        let release_only = drag(&capture, ScrollFieldDrag::End { delta_y: -250. }, 48.);
+        assert_eq!(field.apply(release_only, true), Some(20));
+        assert_eq!((field.value(), field.offset()), (20, 1.));
+    }
+
+    #[test]
+    fn looping_cancel_returns_to_a_nearby_equivalent_phase_and_retires_capture() {
+        let mut field = ScrollFieldState::new(ScrollFieldRange::new(10, 40, 10).unwrap(), 30)
+            .unwrap()
+            .with_looping();
+        let capture = field.drag_session();
+        let preview = drag(&capture, ScrollFieldDrag::Move { delta_y: -450. }, 48.);
+        assert_eq!(field.apply(preview, false), None);
+        assert_eq!(field.offset(), -7.375);
+        assert_eq!(field.value(), 30);
+        assert_eq!(field.preview(), 20);
+        assert_eq!(
+            field.apply(drag(&capture, ScrollFieldDrag::Cancel, 48.), false),
+            None
+        );
+        field.advance(Some(250.), false);
+        field.advance(Some(300.), false);
+        assert!((-7. ..-6.).contains(&field.offset()));
+        assert_ne!(field.drag_session(), capture);
+        assert_eq!(
+            field.apply(
+                drag(&capture, ScrollFieldDrag::End { delta_y: 14. }, 48.),
+                true
+            ),
+            None
+        );
+        assert!(!field.advance(Some(310.), true).request_next);
+        assert_eq!((field.value(), field.offset()), (30, 2.));
+    }
+
+    #[test]
+    fn looping_rejects_imprecise_motion_and_preserves_authored_input_bounds() {
+        let range = ScrollFieldRange::new(i32::MIN, i32::MAX, 1).unwrap();
+        let mut extremes = ScrollFieldState::new(range, i32::MAX)
+            .unwrap()
+            .with_looping();
+        assert_eq!(extremes.value_at(i64::MIN), Some(i32::MIN));
+        assert_eq!(extremes.value_at(i64::MAX), Some(i32::MAX));
+        assert_eq!(
+            extremes.apply(ScrollFieldEvent::Step(ScrollFieldStep::Increase), true),
+            Some(i32::MIN)
+        );
+        assert_eq!(extremes.offset(), 0.);
+
+        let mut field = state().with_looping();
+        let capture = field.drag_session();
+        let invalid = drag(&capture, ScrollFieldDrag::Move { delta_y: f32::MAX }, 48.);
+        assert_eq!(field.apply(invalid, false), None);
+        assert!(!field.is_dragging());
+        assert_eq!(field.offset(), 2.);
+        field.apply(
+            drag(&capture, ScrollFieldDrag::Move { delta_y: 35. }, 48.),
+            false,
+        );
+        assert_eq!(
+            field.apply(
+                drag(&capture, ScrollFieldDrag::End { delta_y: -f32::MAX }, 48.),
+                true
+            ),
+            None
+        );
+        assert_eq!((field.value(), field.offset()), (30, 2.));
+        assert_eq!(field.apply(ScrollFieldEvent::SetValue(0), true), None);
+        field.apply(ScrollFieldEvent::Edit, false);
+        input(&mut field, "110");
+        assert_eq!(field.apply(ScrollFieldEvent::Submit, false), None);
+        assert_eq!(field.error(), Some(ScrollFieldError::OutOfRange));
+        field.apply(ScrollFieldEvent::Cancel, false);
+        assert_eq!(
+            field.apply(ScrollFieldEvent::Step(ScrollFieldStep::First), true),
+            Some(10)
+        );
+        assert_eq!(
+            field.apply(ScrollFieldEvent::Step(ScrollFieldStep::Last), true),
+            Some(100)
+        );
     }
 }

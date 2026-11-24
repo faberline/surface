@@ -686,6 +686,21 @@ In Material Gallery, choose 選取, then 文字捲動欄位. The two 台北 entr
 have different qualifiers. Type 桃 to suggest 桃園 and press Enter
 to select it. 倒序 and 改名 show how the field keeps the selected ID.
 
+### Looping
+
+Call `with_looping()` on a numeric or text-choice state to join the
+first and last rows. Up, Down, tap targets, swipes, and native
+Increment and Decrement can cross the join in either direction.
+A held drag can cross more than once. It changes the accepted value
+only when released. Cancel returns the wheel to its accepted value.
+`Home` and `End` select the first and last entries. Direct input and
+absolute accessibility actions still use the authored bounds.
+Catalog replacement keeps looping enabled and retires the old gesture.
+
+In Material Gallery, choose 選取, then 循環數字欄位 or 循環文字欄位.
+The text example uses two choices so both neighbors show the same
+label. The upper and lower targets still move in their own direction.
+
 [W3C Spinbutton pattern](https://www.w3.org/WAI/ARIA/apg/patterns/spinbutton/)
 
 [Material 3 Scroll Fields specs](https://m3.material.io/components/scroll-fields/specs) ·

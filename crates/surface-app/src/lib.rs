@@ -76,6 +76,7 @@ pub struct View<M> {
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     value: Option<Rc<dyn Fn(f64) -> M>>,
+    accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
     dismiss_on_tab: bool,
@@ -127,6 +128,7 @@ impl<M> View<M> {
             input: None,
             text_options: TextOptions::default(),
             value: None,
+            accessible_step: None,
             roving: None,
             dismiss: None,
             dismiss_on_tab: false,
@@ -366,6 +368,15 @@ impl<M> View<M> {
     /// Bind a slider value or an opted-in adjustable Group.
     pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
         self.value = Some(Rc::new(handler));
+        self
+    }
+    /// Handle native Increment (`true`) or Decrement (`false`) directly.
+    ///
+    /// Use this on an adjustable Group with [Self::on_value] to allow custom
+    /// steps at its bounds. A current numeric value is required. SetValue
+    /// still uses the authored numeric range and [Self::on_value].
+    pub fn on_accessible_step(mut self, handler: impl Fn(bool) -> M + 'static) -> Self {
+        self.accessible_step = Some(Rc::new(handler));
         self
     }
     pub fn roving(mut self, options: Roving) -> Self {
@@ -804,6 +815,7 @@ struct Binding<M> {
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
     value: Option<Rc<dyn Fn(f64) -> M>>,
+    accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
     dismiss_on_tab: bool,
@@ -1213,6 +1225,7 @@ impl<A: Application> Runtime<A> {
                     input: view.input,
                     text_options: view.text_options,
                     value: view.value,
+                    accessible_step: view.accessible_step,
                     roving: view.roving,
                     dismiss: view.dismiss,
                     dismiss_on_tab: view.dismiss_on_tab,

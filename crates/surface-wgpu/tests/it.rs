@@ -426,6 +426,79 @@ fn gpu_offscreen_paints_clips_rounding_text_and_order() {
 
 #[test]
 #[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
+fn gpu_offscreen_scaled_text_keeps_both_clipped_lines() {
+    pollster::block_on(async {
+        let instance = wgpu::Instance::new(&Default::default());
+        let adapter = Renderer::request(&instance, None)
+            .await
+            .expect("native GPU adapter is required");
+        eprintln!("GPU evidence: {:?}", adapter.get_info());
+        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
+            .await
+            .unwrap();
+        let viewport = Rect::new(0., 0., 160., 184.);
+        let crop = Rect::new(32., 64., 64., 64.);
+        let list = |clip| DisplayList {
+            viewport,
+            ops: vec![PaintOp::StyledText {
+                rect: Rect::new(28., 44., 104., 104.),
+                clip,
+                text: "台北\n車站".to_owned(),
+                style: TextStyle {
+                    line_height: Some(52.),
+                    ..TextStyle::new(45.)
+                },
+                color: Color::rgb(255, 255, 255),
+                scroll: (0., 8.),
+                multiline: true,
+                editable: true,
+            }],
+        };
+        let blank = [0, 0, 0, 255];
+        for scale in [0.5, 1., 2.] {
+            let width = (viewport.width * scale) as u32;
+            let height = (viewport.height * scale) as u32;
+            let x = (crop.x * scale) as usize..((crop.x + crop.width) * scale) as usize;
+            let y = (crop.y * scale) as usize..((crop.y + crop.height) * scale) as usize;
+            let midpoint = (y.start + y.end) / 2;
+            let full = renderer
+                .capture(&list(viewport), width, height, scale)
+                .unwrap();
+            let cropped = renderer.capture(&list(crop), width, height, scale).unwrap();
+            let mut reference_outside = [0; 2];
+            let mut inside = [0; 2];
+            for (index, (full, actual)) in full
+                .rgba
+                .chunks_exact(4)
+                .zip(cropped.rgba.chunks_exact(4))
+                .enumerate()
+            {
+                let (px, py) = (index % width as usize, index / width as usize);
+                let half = usize::from(py >= midpoint);
+                if x.contains(&px) && y.contains(&py) {
+                    inside[half] += usize::from(actual != blank);
+                } else {
+                    assert_eq!(actual, blank, "scale {scale}: text leaked at {px},{py}");
+                    if x.contains(&px) {
+                        reference_outside[half] += usize::from(full != blank);
+                    }
+                }
+            }
+            eprintln!("scale {scale}: visible ink {inside:?}, clipped ink {reference_outside:?}");
+            assert!(
+                reference_outside.into_iter().all(|ink| ink > 8),
+                "scale {scale}: test text crosses both crop edges"
+            );
+            assert!(
+                inside.into_iter().all(|ink| ink > 8),
+                "scale {scale}: both crossing lines leave visible ink"
+            );
+        }
+    });
+}
+
+#[test]
+#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
 fn gpu_offscreen_per_corner_shapes() {
     pollster::block_on(async {
         let instance = wgpu::Instance::new(&Default::default());

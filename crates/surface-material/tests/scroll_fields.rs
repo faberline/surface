@@ -199,6 +199,60 @@ fn current_accessible_adjustment_commits_once_and_retires_its_target() {
 }
 
 #[test]
+fn looping_control_wraps_touch_targets_and_accessibility_at_both_ends() {
+    let mut app = Form::new((2, 10), 10);
+    app.field = app.field.with_looping();
+    let mut runtime = Runtime::new(app).unwrap();
+    runtime.set_reduced_motion(true);
+    render(&mut runtime, 800.);
+
+    for (action, expected) in [
+        (AccessibilityAdjustment::Increment, 2),
+        (AccessibilityAdjustment::Decrement, 10),
+    ] {
+        let id = runtime.dom().by_id(FIELD).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let range = frame
+            .node(id)
+            .unwrap()
+            .node
+            .accessibility_adjustable()
+            .unwrap();
+        assert_eq!((range.min, range.max, range.step), (2., 10., 2.));
+        assert!(frame.supports_adjustment_step(id, true));
+        assert!(frame.supports_adjustment_step(id, false));
+        let target = frame.adjustment_target(id).unwrap();
+        assert_eq!(
+            runtime.accessibility_adjust(&target, action).unwrap(),
+            AccessibilityAdjustmentResult::Adjusted,
+        );
+        render(&mut runtime, 800.);
+        assert_eq!(runtime.app().field.value(), expected);
+    }
+
+    for (part, upper, expected) in [
+        ("quantity-above-target", true, 2),
+        ("quantity-below-target", false, 10),
+    ] {
+        let face = rect(&runtime, "quantity-face");
+        let target = rect(&runtime, part);
+        let x = target.x + target.width / 2.;
+        let y = if upper {
+            (face.y + target.y) / 2.
+        } else {
+            (face.y + face.height + target.y + target.height) / 2.
+        };
+        assert!(target.contains(x, y) && !face.contains(x, y));
+        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
+        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
+        render(&mut runtime, 800.);
+        assert_eq!(runtime.app().field.value(), expected);
+        assert_eq!(runtime.focused(), Some(FIELD));
+    }
+    assert_eq!(runtime.app().commits, [2, 10, 2, 10]);
+}
+
+#[test]
 fn compact_edit_keeps_focus_and_draft_when_space_returns() {
     let mut app = Form::new((-1800, 1800), 1200);
     app.scale = 2.;

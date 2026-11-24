@@ -12,6 +12,7 @@ use crate::Message;
 
 pub(crate) const SECTION: usize = 0;
 const SHOW: &str = "scroll-field-demo-show";
+const SHOW_LOOP: &str = "scroll-loop-numeric-show";
 const BACK: &str = "scroll-field-demo-back";
 const SCROLL: &str = "scroll-field-demo-scroll";
 const FIELD: &str = "scroll-field-demo-value";
@@ -33,7 +34,7 @@ const SIZES: [(ScrollFieldSize, &str, &str); 3] = [
 
 #[derive(Clone)]
 pub enum ScrollFieldDemoEvent {
-    Show,
+    Show(bool),
     Back,
     Direction,
     LargeText,
@@ -63,6 +64,13 @@ pub(crate) struct ScrollFieldDemo {
 
 impl Default for ScrollFieldDemo {
     fn default() -> Self {
+        Self::new(false)
+    }
+}
+
+impl ScrollFieldDemo {
+    fn new(looping: bool) -> Self {
+        let state = field_state(false, looping);
         Self {
             visible: false,
             width: 960.,
@@ -73,8 +81,8 @@ impl Default for ScrollFieldDemo {
             compact: false,
             disabled: false,
             wide_range: false,
-            state: field_state(false),
-            committed: 14,
+            committed: state.value(),
+            state,
             commits: 0,
             reduced_motion: false,
             requests_frame: false,
@@ -82,14 +90,33 @@ impl Default for ScrollFieldDemo {
     }
 }
 
-fn field_state(wide: bool) -> ScrollFieldState {
+fn field_state(wide: bool, looping: bool) -> ScrollFieldState {
     let (min, max, initial) = if wide {
         (-1800, 1800, 1200)
+    } else if looping {
+        (2, 10, 10)
     } else {
         (0, 30, 14)
     };
     let range = ScrollFieldRange::new(min, max, 2).expect("valid demo range");
-    ScrollFieldState::new(range, initial).expect("initial value in demo range")
+    let state = ScrollFieldState::new(range, initial).expect("initial value in demo range");
+    if looping {
+        state.with_looping()
+    } else {
+        state
+    }
+}
+
+fn scene(looping: bool) -> ScrollFieldScene {
+    if looping {
+        ScrollFieldScene {
+            show: SHOW_LOOP,
+            title: "循環數字欄位",
+            ..SCENE
+        }
+    } else {
+        SCENE
+    }
 }
 
 fn error_text(error: ScrollFieldError) -> String {
@@ -184,7 +211,14 @@ impl ScrollFieldDemo {
 
     pub(crate) fn update(&mut self, event: ScrollFieldDemoEvent) {
         match event {
-            ScrollFieldDemoEvent::Show => {
+            ScrollFieldDemoEvent::Show(looping) => {
+                if looping != self.state.looping() {
+                    *self = Self {
+                        width: self.width,
+                        height: self.height,
+                        ..Self::new(looping)
+                    };
+                }
                 self.visible = true;
                 self.update_fit();
             }
@@ -211,7 +245,7 @@ impl ScrollFieldDemo {
             }
             ScrollFieldDemoEvent::WideRange => {
                 self.wide_range = !self.wide_range;
-                self.state = field_state(self.wide_range);
+                self.state = field_state(self.wide_range, self.state.looping());
                 self.update_fit();
                 self.committed = self.state.value();
                 self.commits = 0;
@@ -227,20 +261,22 @@ impl ScrollFieldDemo {
         }
     }
 
-    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
+    pub(crate) fn show_button(theme: &Theme, looping: bool) -> View<Message> {
+        let scene = scene(looping);
         theme
             .button_with(
-                SHOW,
-                "捲動欄位",
+                scene.show,
+                scene.title,
                 ButtonKind::Outlined,
                 false,
-                Message::ScrollField(ScrollFieldDemoEvent::Show),
+                Message::ScrollField(ScrollFieldDemoEvent::Show(looping)),
             )
             .restore_focus_on_removal(BACK)
             .accessible_activation()
     }
 
     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+        let scene = scene(self.state.looping());
         let choice = |selected| ChoiceState {
             selected,
             disabled: false,
@@ -257,7 +293,7 @@ impl ScrollFieldDemo {
                     "返回",
                     Message::ScrollField(ScrollFieldDemoEvent::Back),
                 )
-                .restore_focus_on_removal(SHOW)
+                .restore_focus_on_removal(scene.show)
                 .accessible_activation(),
             theme
                 .switch(
@@ -316,7 +352,7 @@ impl ScrollFieldDemo {
         let field = theme.scroll_field(self.options(), &self.state, |event| {
             Message::ScrollField(ScrollFieldDemoEvent::Field(event))
         });
-        SCENE.view(
+        scene.view(
             theme,
             self.rtl,
             [profile, settings],
@@ -345,6 +381,7 @@ impl ScrollFieldDemo {
         };
         serde_json::json!({
             "visible": self.visible, "rtl": self.rtl, "text_scale": self.text_scale(),
+            "looping": self.state.looping(),
             "size": size, "height": self.field_height(), "disabled": self.disabled,
             "face_height": layout.map(|layout| layout.face_height),
             "row_height": layout.map(|layout| layout.row_height),

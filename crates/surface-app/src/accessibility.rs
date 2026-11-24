@@ -147,6 +147,26 @@ impl AccessibilityAdjustment {
     }
 }
 
+struct AdjustmentBinding<'a, M> {
+    range: &'a AdjustableValue,
+    on_value: &'a dyn Fn(f64) -> M,
+    on_step: Option<&'a dyn Fn(bool) -> M>,
+}
+
+impl<M> AdjustmentBinding<'_, M> {
+    fn supports_step(&self, increment: bool) -> bool {
+        self.on_step.is_some() || self.range.step_value(increment).is_some()
+    }
+
+    fn message(&self, action: AccessibilityAdjustment) -> Option<M> {
+        match (action, self.on_step) {
+            (AccessibilityAdjustment::Increment, Some(step)) => Some(step(true)),
+            (AccessibilityAdjustment::Decrement, Some(step)) => Some(step(false)),
+            _ => action.resolve(self.range).map(self.on_value),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccessibilityAdjustmentResult {
     /// The view received a changed value. Publish the new rendered frame.
@@ -446,10 +466,22 @@ impl<M> AccessibilityFrame<'_, M> {
         })
     }
 
-    fn adjustment_binding(&self, id: NodeId) -> Option<(&AdjustableValue, &dyn Fn(f64) -> M)> {
+    /// Whether this visible adjustable control offers the given step.
+    /// `increment` is true for Increment and false for Decrement.
+    pub fn supports_adjustment_step(&self, id: NodeId, increment: bool) -> bool {
+        self.adjustment_binding(id)
+            .is_some_and(|binding| binding.supports_step(increment))
+    }
+
+    fn adjustment_binding(&self, id: NodeId) -> Option<AdjustmentBinding<'_, M>> {
         let source = self.node(id).filter(focusable)?;
         let range = source.node.accessibility_adjustable()?;
-        Some((range, self.bindings.get(&id)?.value.as_deref()?))
+        let binding = self.bindings.get(&id)?;
+        Some(AdjustmentBinding {
+            range,
+            on_value: binding.value.as_deref()?,
+            on_step: range.value.and(binding.accessible_step.as_deref()),
+        })
     }
 
     fn press_binding(&self, id: NodeId) -> Option<(AccessibilityNode<'_>, &M)> {
@@ -824,10 +856,10 @@ impl<A: Application> Runtime<A> {
         if let Some(outcome) = self.adjustment_blocked(target)? {
             return Ok(outcome);
         }
-        let Some(message) = self.accessibility_frame().and_then(|frame| {
-            let (range, handler) = frame.adjustment_binding(target.id)?;
-            action.resolve(range).map(handler)
-        }) else {
+        let Some(message) = self
+            .accessibility_frame()
+            .and_then(|frame| frame.adjustment_binding(target.id)?.message(action))
+        else {
             return Ok(Outcome::Rejected);
         };
         // An app handler can enqueue changes behind this action.

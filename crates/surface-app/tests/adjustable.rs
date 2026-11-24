@@ -7,6 +7,7 @@ use surface_app::{
 #[derive(Clone)]
 enum Message {
     Set(f64),
+    Step(bool),
     Open,
     Close,
     Disabled,
@@ -18,6 +19,8 @@ enum Message {
 struct App {
     value: Option<f64>,
     writes: usize,
+    cyclic: bool,
+    steps: Vec<bool>,
     modal: bool,
     disabled: bool,
     hidden: bool,
@@ -34,6 +37,14 @@ impl Application for App {
                 self.value = Some(value);
                 self.writes += 1;
             }
+            Message::Step(increment) => {
+                self.steps.push(increment);
+                // Either direction changes the accepted value in this
+                // two-item ring. The recorded direction distinguishes them.
+                assert!(self.cyclic);
+                self.value = Some(1. - self.value.expect("step requires a value"));
+                self.writes += 1;
+            }
             Message::Open => self.modal = true,
             Message::Close => self.modal = false,
             Message::Disabled => self.disabled = true,
@@ -48,13 +59,14 @@ impl Application for App {
 
     fn view(&self) -> View<Message> {
         let queue = self.queue.clone().filter(|_| self.hide_on_write);
+        let step_queue = queue.clone();
         let adjust = View::new(
             Node::new(Role::Group, "分鐘")
                 .id("minute")
                 .disabled(self.disabled)
                 .adjustable(AdjustableValue {
                     min: 0.,
-                    max: 59.,
+                    max: if self.cyclic { 1. } else { 59. },
                     step: 1.,
                     value: self.value,
                     value_text: Some(
@@ -70,6 +82,16 @@ impl Application for App {
             }
             Message::Set(value)
         });
+        let adjust = if self.cyclic {
+            adjust.on_accessible_step(move |increment| {
+                if let Some(queue) = &step_queue {
+                    queue.post(Message::Hide);
+                }
+                Message::Step(increment)
+            })
+        } else {
+            adjust
+        };
         let adjust = if self.hidden {
             adjust.without_interaction(None)
         } else {
@@ -114,8 +136,13 @@ fn draw(runtime: &mut Runtime<App>) {
 }
 
 fn runtime(value: Option<f64>) -> Runtime<App> {
+    configured_runtime(value, false)
+}
+
+fn configured_runtime(value: Option<f64>, cyclic: bool) -> Runtime<App> {
     let mut runtime = Runtime::new(App {
         value,
+        cyclic,
         ..App::default()
     })
     .unwrap();
@@ -130,6 +157,12 @@ fn control(runtime: &Runtime<App>) -> surface_app::AccessibilityAdjustmentTarget
         .unwrap()
         .adjustment_target(id)
         .unwrap()
+}
+
+fn offered_steps(runtime: &Runtime<App>) -> [bool; 2] {
+    let id = runtime.dom().by_id("minute").unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    [true, false].map(|increment| frame.supports_adjustment_step(id, increment))
 }
 
 #[test]
@@ -152,6 +185,7 @@ fn adjusts_discrete_values_without_focusing_then_rejects_old_tree_tokens() {
     );
     draw(&mut runtime);
     let current = control(&runtime);
+    assert_eq!(offered_steps(&runtime), [true, false]);
     for rejected in [
         Action::SetValue(f64::NAN),
         Action::SetValue(f64::INFINITY),
@@ -179,6 +213,75 @@ fn adjusts_discrete_values_without_focusing_then_rejects_old_tree_tokens() {
         Outcome::Adjusted
     );
     assert_eq!(runtime.app().value, Some(59.));
+}
+
+#[test]
+fn directional_adjustment_wraps_both_ways_and_preserves_absolute_validation() {
+    let mut runtime = configured_runtime(Some(1.), true);
+    let first = control(&runtime);
+    assert_eq!(offered_steps(&runtime), [true, true]);
+    assert_eq!(
+        runtime
+            .accessibility_adjust(&first, Action::Increment)
+            .unwrap(),
+        Outcome::Adjusted,
+    );
+    assert_eq!(runtime.app().value, Some(0.));
+    assert_eq!(runtime.app().steps, [true]);
+    assert_eq!(runtime.focused(), None);
+
+    draw(&mut runtime);
+    assert_eq!(offered_steps(&runtime), [true, true]);
+    assert_eq!(
+        runtime
+            .accessibility_adjust(&first, Action::Decrement)
+            .unwrap(),
+        Outcome::Rejected,
+    );
+    let second = control(&runtime);
+    assert_eq!(
+        runtime
+            .accessibility_adjust(&second, Action::Decrement)
+            .unwrap(),
+        Outcome::Adjusted,
+    );
+    assert_eq!(runtime.app().value, Some(1.));
+    assert_eq!(runtime.app().steps, [true, false]);
+
+    draw(&mut runtime);
+    let current = control(&runtime);
+    for invalid in [f64::NAN, f64::NEG_INFINITY, 50.] {
+        assert_eq!(
+            runtime
+                .accessibility_adjust(&current, Action::SetValue(invalid))
+                .unwrap(),
+            Outcome::Rejected,
+        );
+    }
+    assert_eq!(
+        runtime
+            .accessibility_adjust(&current, Action::SetValue(-50.))
+            .unwrap(),
+        Outcome::Adjusted,
+    );
+    assert_eq!(runtime.app().value, Some(0.));
+    assert_eq!(runtime.app().steps, [true, false]);
+    assert_eq!(runtime.app().writes, 3);
+}
+
+#[test]
+fn directional_adjustment_without_current_value_uses_existing_first_step() {
+    let mut runtime = configured_runtime(None, true);
+    let target = control(&runtime);
+    assert_eq!(offered_steps(&runtime), [true, true]);
+    assert_eq!(
+        runtime
+            .accessibility_adjust(&target, Action::Decrement)
+            .unwrap(),
+        Outcome::Adjusted,
+    );
+    assert_eq!(runtime.app().value, Some(0.));
+    assert!(runtime.app().steps.is_empty());
 }
 
 #[test]
@@ -252,8 +355,16 @@ fn projected_keyboard_action_uses_the_rendered_focus_target() {
 
 #[test]
 fn a_callback_that_hides_the_target_cannot_dispatch_the_old_adjustment() {
+    for cyclic in [false, true] {
+        rejects_hidden_callback(cyclic);
+    }
+}
+
+fn rejects_hidden_callback(cyclic: bool) {
+    let value = if cyclic { 1. } else { 7. };
     let mut runtime = Runtime::new(App {
-        value: Some(7.),
+        value: Some(value),
+        cyclic,
         hide_on_write: true,
         ..App::default()
     })
@@ -267,7 +378,7 @@ fn a_callback_that_hides_the_target_cannot_dispatch_the_old_adjustment() {
         Outcome::Rebuilt
     );
     assert!(runtime.app().hidden);
-    assert_eq!(runtime.app().value, Some(7.));
+    assert_eq!(runtime.app().value, Some(value));
     assert_eq!(runtime.app().writes, 0);
 
     draw(&mut runtime);
@@ -285,7 +396,14 @@ fn a_callback_that_hides_the_target_cannot_dispatch_the_old_adjustment() {
 
 #[test]
 fn composition_modal_scope_disabled_and_held_pointer_block_adjustments() {
-    let mut runtime = runtime(Some(7.));
+    for cyclic in [false, true] {
+        rejects_unavailable_adjustment(cyclic);
+    }
+}
+
+fn rejects_unavailable_adjustment(cyclic: bool) {
+    let value = if cyclic { 1. } else { 7. };
+    let mut runtime = configured_runtime(Some(value), cyclic);
     runtime.activate("editor").unwrap();
     runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
     draw(&mut runtime);
