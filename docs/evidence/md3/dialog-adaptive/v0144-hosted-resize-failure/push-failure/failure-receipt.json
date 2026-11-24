@@ -1,0 +1,466 @@
+{
+  "run": 45460753966,
+  "workflow_url": "https://github.com/faberline/surface/actions/runs/45460753966",
+  "jobs": {
+    "build-and-behavior": {
+      "id": 138682343647,
+      "name": "build-and-behavior",
+      "run_id": 45460753966,
+      "run_attempt": 1,
+      "head_sha": "9c841f6e0654cc43ab778d6660994ad6b63fa28c",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/faberline/surface/actions/runs/45460753966/job/138682343647"
+    },
+    "browser-e2e": {
+      "id": 138682344294,
+      "name": "browser-e2e",
+      "run_id": 45460753966,
+      "run_attempt": 1,
+      "head_sha": "9c841f6e0654cc43ab778d6660994ad6b63fa28c",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "https://github.com/faberline/surface/actions/runs/45460753966/job/138682344294"
+    }
+  },
+  "checkout": "9c841f6e0654cc43ab778d6660994ad6b63fa28c",
+  "checkout_tree": "ad19a57148ade929a60258535ad3ee61ccf88193",
+  "terminal_result": "failure",
+  "passed_cases": 7,
+  "failed_cases": 1,
+  "total_checks": 18245,
+  "last_material_step": "M263",
+  "failure": "M263: missing or misplaced Full-screen FAB container: timed out after 30s waiting for `(s => (d => d.transform.progress === 0 && d.transform.anchor !== null &&\n        [d.transform.anchor.x,d.transform.anchor.y,d.transform.anchor.width,d.transform.anchor.height]\n        .every((v,i)=>v===window.gallery.control_bounds(\"dialog-demo-fab-open\")[i]))(s.dialog_demo))(JSON.parse(window.gallery.inspect()))`",
+  "dialog_page_errors": 0,
+  "browser": "Chrome/158.0.8127.88",
+  "adapter": {
+    "isFallbackAdapter": true,
+    "vendor": "google",
+    "architecture": "swiftshader"
+  },
+  "new_viewport": [
+    0.0,
+    0.0,
+    320.0,
+    400.0
+  ],
+  "actual_enabled_fab": {
+    "stable_id": "dialog-demo-fab-open",
+    "bounds": [
+      24.0,
+      320.0,
+      56.0,
+      56.0
+    ],
+    "clip": [
+      0.0,
+      0.0,
+      320.0,
+      400.0
+    ]
+  },
+  "cached_rendered_anchor": [
+    24.0,
+    1720.0,
+    56.0,
+    56.0
+  ],
+  "transform_progress": 0.0,
+  "successful_pr_anchor": [
+    24.0,
+    320.0,
+    56.0,
+    56.0
+  ],
+  "ime_checks": 77,
+  "ime_cancellations": {
+    "select_all_survives_redraw": {
+      "before": {
+        "browser": [
+          0,
+          2
+        ],
+        "value": "台文",
+        "direction": "forward",
+        "runtime": [
+          "台文",
+          "台文",
+          "0",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": true,
+        "trustedRight": false,
+        "frames": 6
+      },
+      "after": {
+        "browser": [
+          0,
+          2
+        ],
+        "value": "台文",
+        "direction": "forward",
+        "runtime": [
+          "台文",
+          "台文",
+          "0",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": true,
+        "trustedRight": false,
+        "frames": 7
+      },
+      "redraw_width": 1001,
+      "replacement": [
+        "中👨‍👩‍👧‍👦é",
+        "中👨‍👩‍👧‍👦é",
+        "31",
+        "31",
+        "false"
+      ]
+    },
+    "backward_range_and_next_edit": {
+      "canceled": {
+        "browser": [
+          1,
+          2
+        ],
+        "value": "台文",
+        "direction": "backward",
+        "runtime": [
+          "台文",
+          "台文",
+          "6",
+          "3",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": false,
+        "frames": 7
+      },
+      "moved": {
+        "browser": [
+          2,
+          2
+        ],
+        "value": "台文",
+        "direction": "forward",
+        "runtime": [
+          "台文",
+          "台文",
+          "6",
+          "6",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 7
+      },
+      "unpainted": {
+        "browser": [
+          3,
+          3
+        ],
+        "value": "台文X",
+        "direction": "forward",
+        "runtime": [
+          "台文X",
+          "台文X",
+          "7",
+          "7",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 7
+      },
+      "repainted": {
+        "browser": [
+          3,
+          3
+        ],
+        "value": "台文X",
+        "direction": "forward",
+        "runtime": [
+          "台文X",
+          "台文X",
+          "7",
+          "7",
+          "false"
+        ],
+        "trustedSelectAll": false,
+        "trustedRight": true,
+        "frames": 8
+      }
+    }
+  },
+  "ime_line_endings": {
+    "authored": "ab\r\n你🦀\rZ",
+    "browser_value": "ab\n你🦀\nZ",
+    "steps": [
+      {
+        "key": "ArrowLeft",
+        "browser": [
+          1,
+          1
+        ],
+        "runtime": [
+          1,
+          1
+        ],
+        "direction": "forward"
+      },
+      {
+        "key": "Shift+ArrowLeft",
+        "browser": [
+          2,
+          3
+        ],
+        "runtime": [
+          4,
+          2
+        ],
+        "direction": "backward"
+      },
+      {
+        "key": "ArrowRight",
+        "browser": [
+          6,
+          6
+        ],
+        "runtime": [
+          11,
+          11
+        ],
+        "direction": "forward"
+      }
+    ]
+  },
+  "stock_pngs": {
+    "material-dialog-adaptive-alert.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "72eb08d3c39509c432f0632fe78646ce062dfbfc570e07862c7a8b5d72e72283",
+      "decoded_rgba_sha256": "ba970226ad2d2008dd97c2217975d137ada8561218e1f45164034f50f11be53a"
+    },
+    "material-dialog-adaptive-basic-short-after.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "2942a8d49564a87843526f038c71da3b508c74b08fbf0545106d2acee91f7a54",
+      "decoded_rgba_sha256": "b8ce5a784c26bfcc6c7ec6c55aed6b23fcdbb36f2c54a4e108f1544252f9b6ad"
+    },
+    "material-dialog-adaptive-basic-short-before.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "8482668a12437c9ce5163a4917d4ed90036555879be6d6b1cd148f21c7b05eae",
+      "decoded_rgba_sha256": "ff54ebf9f8266213e525c879264d077631b05aa2114c8593cce5ba59ac6bb9bc"
+    },
+    "material-dialog-adaptive-basic-wide.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "c164f9216224370bfcbacc46f9aa76ceed4b393a50e1503b7a73d4c87d65d605",
+      "decoded_rgba_sha256": "8370a2dcc85a157bba0c362ec9c15019629ec6b582987c7aae9f3619469f7075"
+    },
+    "material-dialog-adaptive-dirty-confirm.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "c2f40c4d0f19461a372a49897cab350b7e6a72f2617caf5f5de6ada769de0886",
+      "decoded_rgba_sha256": "7571b8470b9ecdb8f02977d80045fb29fa554b71331d06f77de033e7d0ebfa9a"
+    },
+    "material-dialog-adaptive-edit-compact.png": {
+      "dimensions": [
+        1198,
+        1088
+      ],
+      "sha256": "c36f55beb485532bd1cd4def9c38a15c3774dcc25ef86f4490c81a3cf91ae4cb",
+      "decoded_rgba_sha256": "33d5fa9d93d49101b32cc9265142867790f0b6a9b86de1861f6a2ea2b818a32c"
+    },
+    "material-dialog-adaptive-edit-wide.png": {
+      "dimensions": [
+        1200,
+        1088
+      ],
+      "sha256": "58b1598a69d3c1c341a353ca5a0c901b5361f77e7d9e35989640f611d51754d6",
+      "decoded_rgba_sha256": "d55f92ed4cb15117657025bd6e45fcf13125841decc8ba9a10f08ffb0e434fbb"
+    },
+    "material-dialog-adaptive-failure.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "d5049c635caba166cbc699a6afb50b64d32f640dac1bfa1c773d4b6c123e06fa",
+      "decoded_rgba_sha256": "18f1162e3dc669b60a6ba329d9c592b2f451afb2f334f9b0c438450b5e2868ae"
+    },
+    "material-dialog-adaptive-motion-basic-closed.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "e06e8e880d5779c6a60d531b7e237119057fd9704a7666f94f903de9929e73be",
+      "decoded_rgba_sha256": "917d0867987fde72ae32f0795a9120ad12602085be137bef50699ae4649240e2"
+    },
+    "material-dialog-adaptive-motion-basic-enter-zero.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "650665968b99f66b477cb7ab8fab8f40cd347dedabe65970250badf4498f2465",
+      "decoded_rgba_sha256": "428224005cfcda32d3728a9409badda5763c676c94193f97c9c5250d23695b2c"
+    },
+    "material-dialog-adaptive-motion-basic-entering.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "9f3ff2e16a285bfffaaa3fcf6ae020849cf4f4f06c380ad324eaac3b19ad8c5e",
+      "decoded_rgba_sha256": "fc5ce9c105d083ec31a2942eaed1a58134257975700a5e6dea65ed4fc9d860bf"
+    },
+    "material-dialog-adaptive-motion-basic-exit-start.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "7a3757c704157a319488cfa744bef3a1f0c5c2980405cc53b7a91fbb1fee48e3",
+      "decoded_rgba_sha256": "d63bc316c7ee07276c9b788450703cece3a3107b1db67265b95286e2c46868d8"
+    },
+    "material-dialog-adaptive-motion-basic-exiting.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "af9f3f7160dc8203a1b916b170f1f61fa1da9aedba5fc2a39a82d5db97a31290",
+      "decoded_rgba_sha256": "d5740b658b55511fdd31a11b44133a9f38c32155672c50bf00fee932ed9885f9"
+    },
+    "material-dialog-adaptive-motion-basic-open.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "28099fea82454b920cda30f8f59bc0b17d314e34509949b78edf764e06ee5939",
+      "decoded_rgba_sha256": "334339d74763b00d83a774253de258a1a752f6be3753d6c0c3762b2ef3c05cc3"
+    },
+    "material-dialog-adaptive-motion-basic-reduced-closed.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "e06e8e880d5779c6a60d531b7e237119057fd9704a7666f94f903de9929e73be",
+      "decoded_rgba_sha256": "917d0867987fde72ae32f0795a9120ad12602085be137bef50699ae4649240e2"
+    },
+    "material-dialog-adaptive-motion-basic-reduced-open.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "28099fea82454b920cda30f8f59bc0b17d314e34509949b78edf764e06ee5939",
+      "decoded_rgba_sha256": "334339d74763b00d83a774253de258a1a752f6be3753d6c0c3762b2ef3c05cc3"
+    },
+    "material-dialog-adaptive-motion-basic-rest.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "3e78e874d46c490285a5786262a4f9364ed455897b39c60559be47a490d08f90",
+      "decoded_rgba_sha256": "97aa0d4456e68efeddbe2b3cb09331645e12740621bb4c1be14abe506433774a"
+    },
+    "material-dialog-adaptive-motion-basic-reversed.png": {
+      "dimensions": [
+        1920,
+        1528
+      ],
+      "sha256": "bd653e31fb34f2ac2f117185ad62df99d863197515e80e76bd87c523beb6a089",
+      "decoded_rgba_sha256": "4017040fd1429c96d82fda1284b57c2a4b61242ad7f0742cdfde859f9d26375c"
+    },
+    "material-dialog-adaptive-motion-nested-closed.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "ca0f47a4f3d82d464f8adc11107fe53c6478482403295b8512bec0121d6e696e",
+      "decoded_rgba_sha256": "d66ebf5a909e017f5c49b9a985df327e93fa53d0f38226f2a0de097d0bb99a99"
+    },
+    "material-dialog-adaptive-motion-nested-edit.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "f053124f9c669fd71b280301b603ccae87941e173bf241eb3027a875f2ce85a7",
+      "decoded_rgba_sha256": "046e532cdfb31da3eca84248ccf6d7eabfa14acbef04681e6b6a60b831212a2e"
+    },
+    "material-dialog-adaptive-motion-nested-entering.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "ba206e77f6b6e409ce690fcaba345d5c394f50524a72be1a14ecca8a5ac43d2d",
+      "decoded_rgba_sha256": "bcf01bcfb432133aa5f02642856edd322962132359dd681b9dd82a2ea9d30302"
+    },
+    "material-dialog-adaptive-motion-nested-exit-start.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "81f2d0c91679fab4c954941e5f1e16a59d9a1dd0e4e8e07a0c9987fe9a11c00f",
+      "decoded_rgba_sha256": "7588858ac4975904c406aedc3ac5b42a8b535c79169e64af2b184c62e51b59ed"
+    },
+    "material-dialog-adaptive-motion-nested-exiting.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "b59f7826787d4d9bee4f8da7cb21598f3fefdf0ed8aa005f866e982366be726b",
+      "decoded_rgba_sha256": "0811781d3d9d0f60d76c7cb7f9170758bb8742f51dba1c1fbd1a9280b3fb103a"
+    },
+    "material-dialog-adaptive-motion-nested-open.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "1bab2854fd6a0e366a4592f1a740119fa1eab5037a8ef7642b82ddce534e0358",
+      "decoded_rgba_sha256": "e6d643d27ef52bc241d9db5348ba5e7a9bfa545135f10fcbb48295bd273a6562"
+    },
+    "material-dialog-adaptive-rtl-200-discard-after.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "3639050fbc8fb3b27cefa5939e0f41f9f4c9af16f4eee599ef8f4b2d4c4270cd",
+      "decoded_rgba_sha256": "01ff21bcbe9c931ca225a10401a5387bc4e91df536406590db77ae1a57d1920f"
+    },
+    "material-dialog-adaptive-rtl-200-discard-before.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "da138bf8e772ed804466ccd1d898c35a2dfdfbd7edfee9b476b095a0a2e85772",
+      "decoded_rgba_sha256": "d45ef4b1402d3d4a0fa91ccade949b9b39dc165589f19bf3f405cf197144ace3"
+    },
+    "material-dialog-adaptive-rtl-200-discard-unclipped.png": {
+      "dimensions": [
+        640,
+        1128
+      ],
+      "sha256": "8fc2edc74cbf5b5e857a7a36f534c471128f14df5bb8f6e1452845549846fd94",
+      "decoded_rgba_sha256": "342232b4b815d9ae9265819b0d2af2740aceb409ad5f7eebf6744e6b6fa9e858"
+    },
+    "material-dialog-adaptive-rtl-200-edit.png": {
+      "dimensions": [
+        640,
+        888
+      ],
+      "sha256": "d916e95e267951b820c7d7ffb5a60aefe022f8976cace241f01e3a740c9a0972",
+      "decoded_rgba_sha256": "910b1bdb25895429e443780ae33d6f8f0ae74b32bb8c31756922a4941c87f169"
+    }
+  }
+}
