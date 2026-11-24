@@ -8,9 +8,9 @@ The focused headless Chrome runs passed 20 Showcase input steps and seven Materi
 
 Eleven Metal checks and two independent native offscreen replays passed on this commit. The three screenshot transports agree on every capture. The eight PNGs match between replays. All 28 window checks reported zero.
 
-All five stock Mac headless cases passed 16,103 checks. Material passed 246 steps and 15,842 checks. The full workspace and hosted browser checks are running.
+All five stock Mac headless cases passed 16,103 checks. Material passed 246 steps and 15,842 checks. Both Linux CI runs passed eight cases and 16,480 checks each. Both runs used the same candidate tree. The full local workspace check is running.
 
-[Correction proof](web-correction-preflight/README.md) · [Corrected native replay](native-corrected/README.md) · [Full Mac headless tests](web/README.md) · [Candidate PR](https://github.com/faberline/surface/pull/217)
+[Correction proof](web-correction-preflight/README.md) · [Corrected native replay](native-corrected/README.md) · [Full Mac headless tests](web/README.md) · [Linux CI replays](hosted/README.md) · [Candidate PR](https://github.com/faberline/surface/pull/217)
 
 ## Initial candidate
 
