@@ -33,6 +33,7 @@ mod fab_menu;
 mod fab_menu_layout;
 mod fab_menu_motion;
 mod fab_motion;
+mod flexible_navigation_bar;
 mod full_screen_dialog;
 mod list;
 mod loading_indicator;
@@ -136,6 +137,7 @@ pub use fab_menu_layout::{
 };
 pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
 pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
+pub use flexible_navigation_bar::FlexibleNavigationBarOptions;
 pub use full_screen_dialog::{
     full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
     FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,

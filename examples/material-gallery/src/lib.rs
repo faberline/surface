@@ -12,6 +12,7 @@ mod docked_date_picker_demo;
 mod extended_fab_demo;
 mod fab_demo;
 mod fab_menu_demo;
+mod flexible_navigation_bar_demo;
 mod list_actions_demo;
 mod list_expand_demo;
 mod list_media_demo;
@@ -53,6 +54,7 @@ use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
+use flexible_navigation_bar_demo::{FlexibleNavigationBarDemo, FlexibleNavigationBarDemoEvent};
 use list_actions_demo::{ListActionsDemo, ListActionsEvent};
 use list_expand_demo::{ListExpandDemo, ListExpandEvent};
 use list_media_demo::{ListMediaDemo, ListMediaEvent};
@@ -134,6 +136,7 @@ pub struct Gallery {
     search_overlay_demo: SearchOverlayDemo,
     dialog_demo: DialogDemo,
     menu_demo: MenuDemo,
+    flexible_navigation_bar_demo: FlexibleNavigationBarDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
@@ -198,6 +201,7 @@ impl Default for Gallery {
             search_overlay_demo: SearchOverlayDemo::default(),
             dialog_demo: DialogDemo::default(),
             menu_demo: MenuDemo::default(),
+            flexible_navigation_bar_demo: FlexibleNavigationBarDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
@@ -294,6 +298,7 @@ pub enum Message {
     SearchOverlay(SearchOverlayDemoEvent),
     DialogDemo(DialogDemoEvent),
     MenuDemo(MenuDemoEvent),
+    FlexibleNavigationBarDemo(FlexibleNavigationBarDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
@@ -411,6 +416,9 @@ impl Application for Gallery {
         if self.menu_demo.visible() {
             return self.menu_demo.text_scale();
         }
+        if self.flexible_navigation_bar_demo.visible() {
+            return self.flexible_navigation_bar_demo.text_scale();
+        }
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
         }
@@ -476,6 +484,7 @@ impl Application for Gallery {
         let scroll_modal = self.scroll_modal_demo.viewport_changed(width, height);
         let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
         let dialog = self.dialog_demo.viewport_changed(width, height);
+        let flexible_navigation_bar = self.flexible_navigation_bar_demo.viewport_changed(width);
         let list_actions = self.list_actions_demo.viewport_changed(width);
         let list_media = self.list_media_demo.viewport_changed(width, height);
         let list_reorder = self.list_reorder_demo.viewport_changed(width);
@@ -510,6 +519,7 @@ impl Application for Gallery {
             || scroll_modal
             || search_overlay
             || dialog
+            || flexible_navigation_bar
             || list_actions
             || list_media
             || list_reorder
@@ -770,6 +780,9 @@ impl Application for Gallery {
                 if i != menu_demo::SECTION {
                     self.menu_demo.leave();
                 }
+                if i != flexible_navigation_bar_demo::SECTION {
+                    self.flexible_navigation_bar_demo.leave();
+                }
                 if i != toolbar_demo::SECTION {
                     self.toolbar_demo.leave();
                 }
@@ -827,6 +840,9 @@ impl Application for Gallery {
             Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
             Message::DialogDemo(event) => self.dialog_demo.update(event),
             Message::MenuDemo(event) => self.menu_demo.update(event),
+            Message::FlexibleNavigationBarDemo(event) => {
+                self.flexible_navigation_bar_demo.update(event)
+            }
             Message::Toolbar(event) => self.toolbar_demo.update(event),
             Message::Tooltip(event) => self.tooltip_demo.update(event),
             Message::Nav(i) => self.nav = i,
@@ -962,6 +978,9 @@ impl Application for Gallery {
         }
         if self.menu_demo.visible() {
             return self.menu_demo.view(&t, self.dark);
+        }
+        if self.flexible_navigation_bar_demo.visible() {
+            return self.flexible_navigation_bar_demo.view(&t, self.dark);
         }
         if self.toolbar_demo.visible() {
             return self.toolbar_demo.view(&t, self.dark);
@@ -1501,6 +1520,7 @@ impl Application for Gallery {
                     ),
                     swatch("error-swatch", "Error", t.colors.error, t.colors.on_error),
                 ]);
+                children.push(FlexibleNavigationBarDemo::show_button(&t));
             }
         }
         children.extend(self.snackbar_demo.layer(&t));
@@ -1693,6 +1713,7 @@ mod web {
         state["search_overlay"] = s.search_overlay_demo.inspect();
         state["dialog_demo"] = s.dialog_demo.inspect();
         state["menu_demo"] = s.menu_demo.inspect();
+        state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

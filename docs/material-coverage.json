@@ -125,9 +125,10 @@
       "spec": "https://m3.material.io/components/navigation-bar/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null,
-      "implemented": "Bar with items, 64 by 32 active indicator on the selected item; controlled selection; press and arrow-key focus movement. 80 high"
+      "desktop_evidence": "Native headless Metal checks light and dark, controlled selection, Tab and focus return, and 320 dp dark RTL with 200% text. Two replays reproduce two PNGs through Page.screenshot, CLI and MCP.",
+      "web_evidence": "Chrome WebGPU M270–M273 cover equal 3/4/5 destination layouts, light and dark pixels, named landmark and current-page semantics, trusted Tab/Enter/Space, disabled pointer input, and 320 dp RTL at 200%. The bar, page title, and focus stay in place as the separate page scrolls.",
+      "implemented": "Baseline 80 dp bar with a 64 × 32 dp indicator, arrow focus, and optional vector icons and badges. Compact Expressive bar with three to five equal vertical destinations, 64 dp minimum height, a 56 × 32 dp indicator, controlled selection, individual Tab focus, disabled behavior, RTL and labels that wrap to 200% text. Horizontal destinations and medium arrangements remain open.",
+      "unit_evidence": "Material and Runtime tests check exact token geometry, selected and inactive colors, real CJK label wrapping, fixed icon size, current-page state, repeated activation and disabled input. Existing navigation and consumer contract tests cover the Baseline APIs."
     },
     {
       "id": "navigation-drawer",
