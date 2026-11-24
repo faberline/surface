@@ -40,6 +40,29 @@ to the four Tabs steps. [Scoped log](chrome-scoped/runner.log) ·
 [Pressed](chrome-scoped/material-tabs-dark-pressed.png) ·
 [320 dp RTL](chrome-scoped/material-tabs-rtl-320.png)
 
+## Full macOS browser run
+
+The exact v0.1.51 packages passed five headless suites and 20,664
+checks. The Material suite ran 288 steps. Chrome WebGPU used Apple
+Metal. The observer tracked primary Chrome, detached Bridge Chrome,
+and the native Gallery. It recorded zero visible windows and zero
+surviving processes.
+
+[Full runner log](stock-macos/runner.log.gz) ·
+[Window observation](stock-macos/headless-window-observation.json) ·
+[Independent verification](stock-macos/verified-tabs-offline.json)
+
+[Light fixed](stock-macos/artifacts/material-tabs-fixed-light.png) ·
+[Dark fixed](stock-macos/artifacts/material-tabs-fixed-dark.png) ·
+[Pressed](stock-macos/artifacts/material-tabs-dark-pressed.png) ·
+[320 dp RTL](stock-macos/artifacts/material-tabs-rtl-320.png)
+
+The portable original archive has manifest digest
+`90fdec5ed8a20f716c6aac1dea168ebb30a093b159bfc3cc2f26ed4baf8a5e19`. This GitHub record preserves its source and binary pins,
+original runner log, window and launch receipts, and representative
+screenshots. The full inventory is in
+[the archive manifest](stock-macos/full-local-archive.sha256).
+
 ## Rerun
 
 Use a fresh directory under `/tmp` for the Rust build output and PNGs.

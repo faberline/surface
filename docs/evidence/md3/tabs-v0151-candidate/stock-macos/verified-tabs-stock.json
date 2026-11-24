@@ -1,0 +1,87 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "cases": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 288,
+      "checks": 20383
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 20664,
+  "page_errors": 0,
+  "headless_transport_pngs": {
+    "bridge-web.png": {
+      "size": [
+        756,
+        469
+      ],
+      "sha256": "fe083f9371717ce631436af4a581b2fccc0654d3352a7d94f83a326eec047fdc"
+    },
+    "devtools-headless-screenshot.png": {
+      "size": [
+        720,
+        640
+      ],
+      "sha256": "21f5950edf4757f5bc836638407ea620b371961d4de8de61073feebfbd9d2ff5"
+    }
+  },
+  "tabs_pngs": {
+    "material-tabs-fixed-light.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "6f1d07e0bb51f81db9c8147ce87048cb7ac63900184ea4bb53b44ae21a18d23a"
+    },
+    "material-tabs-fixed-dark.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "1338cd96922a4d7d5c15108d75dd365fd5cda0a2a3cb30e652a8c6e362892a07"
+    },
+    "material-tabs-dark-pressed.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "b48de278fda87dae5cb4ea387ba15d47671ed4ba7f1f1ad90477f9d0157e95d9"
+    },
+    "material-tabs-rtl-320.png": {
+      "size": [
+        640,
+        1608
+      ],
+      "sha256": "4b88bf2f874e5c5df94cf983f4dda61b0249f54bb79b314b285751db6742f743"
+    }
+  },
+  "tabs_report_sha256": "fd828cad573c2d7c07716ca018e56a51a09c98cd8b233a98884af25b833063e5",
+  "guard_and_window_checks": "passed"
+}
