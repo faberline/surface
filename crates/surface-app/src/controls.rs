@@ -40,8 +40,21 @@ pub(crate) struct RovingGroup {
     pub(crate) options: Roving,
     pub(crate) first_enabled_on_entry: bool,
     pub(crate) retain_focus: bool,
-    pub(crate) all_arrows: bool,
+    pub(crate) arrows: RovingArrows,
     pub(crate) reveal_after_rebuild: bool,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum RovingArrows {
+    Axis,
+    All,
+    Radio { reverse_horizontal: bool },
+}
+
+impl RovingGroup {
+    fn is_radio(self) -> bool {
+        matches!(self.arrows, RovingArrows::Radio { .. })
+    }
 }
 
 pub(crate) struct RetainedRovingFocus {
@@ -142,10 +155,12 @@ impl<A: Application> Runtime<A> {
     }
 
     fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
-        let mut parent = self.dom.get(id).ok()?.parent();
+        let member = self.dom.get(id).ok()?;
+        let mut parent = member.parent();
         while let Some(id) = parent {
             if let Some(options) = self.bindings.get(&id).and_then(|b| b.roving) {
-                return Some((id, options));
+                return (!options.is_radio() || member.role() == Role::Radio)
+                    .then_some((id, options));
             }
             parent = self.dom.get(id).ok()?.parent();
         }
@@ -159,7 +174,7 @@ impl<A: Application> Runtime<A> {
     ) -> Vec<NodeId> {
         let measure_members = self.bindings[&group]
             .roving
-            .is_some_and(|group| group.first_enabled_on_entry);
+            .is_some_and(|group| group.first_enabled_on_entry || group.is_radio());
         self.dom
             .iter()
             .filter(|(id, node)| {
@@ -174,7 +189,12 @@ impl<A: Application> Runtime<A> {
             .collect()
     }
 
-    fn roving_entry(&self, members: &[NodeId], options: RovingGroup) -> Option<NodeId> {
+    fn roving_entry(
+        &self,
+        members: &[NodeId],
+        options: RovingGroup,
+        reverse: bool,
+    ) -> Option<NodeId> {
         if !options.first_enabled_on_entry {
             let selected = members.iter().copied().find(|id| {
                 self.dom
@@ -185,7 +205,11 @@ impl<A: Application> Runtime<A> {
                 return selected;
             }
         }
-        members.first().copied()
+        if reverse && options.is_radio() {
+            members.last().copied()
+        } else {
+            members.first().copied()
+        }
     }
 
     // The runtime builds subtrees in preorder. Include stable predecessors
@@ -249,12 +273,16 @@ impl<A: Application> Runtime<A> {
             {
                 self.layout_focus = None;
             }
-        } else if options.all_arrows {
+        } else if !matches!(options.arrows, RovingArrows::Axis) {
             // This group uses measured eligibility. Wait for the replacement
             // tree to lay out before picking a fallback.
             self.pending_roving_focus = Some(retained.group);
         } else if let Some(target) = self
-            .roving_entry(&self.members(group, None, self.computed.as_ref()), options)
+            .roving_entry(
+                &self.members(group, None, self.computed.as_ref()),
+                options,
+                false,
+            )
             .and_then(|target| self.stable(target))
         {
             self.focused = Some(target);
@@ -270,10 +298,10 @@ impl<A: Application> Runtime<A> {
             return false;
         }
         self.focused = self
-            .all_arrows_group(&key)
-            .and_then(|id| {
+            .measured_roving_group(&key)
+            .and_then(|(id, options)| {
                 let members = self.members(id, None, Some(layout));
-                self.stable(*members.first()?)
+                self.stable(self.roving_entry(&members, options, false)?)
             })
             .or_else(|| {
                 self.active_scope_root()?;
@@ -283,17 +311,21 @@ impl<A: Application> Runtime<A> {
         self.focused.is_some()
     }
 
-    fn all_arrows_group(&self, key: &str) -> Option<NodeId> {
-        self.dom.by_id(key).filter(|id| {
-            self.in_scope(*id)
-                && self.bindings[id]
-                    .roving
-                    .is_some_and(|group| group.all_arrows)
-        })
+    fn measured_roving_group(&self, key: &str) -> Option<(NodeId, RovingGroup)> {
+        let id = self.dom.by_id(key).filter(|id| self.in_scope(*id))?;
+        self.bindings[&id]
+            .roving
+            .filter(|group| !matches!(group.arrows, RovingArrows::Axis))
+            .map(|group| (id, group))
     }
 
-    pub(crate) fn tab_stop(&self, id: NodeId, collapsed: Option<&BTreeSet<String>>) -> bool {
-        self.tab_stop_in_layout(id, collapsed, self.computed.as_ref())
+    pub(crate) fn tab_stop(
+        &self,
+        id: NodeId,
+        collapsed: Option<&BTreeSet<String>>,
+        reverse: bool,
+    ) -> bool {
+        self.tab_stop_in_layout(id, collapsed, self.computed.as_ref(), reverse)
     }
 
     fn tab_stop_in_layout(
@@ -301,6 +333,7 @@ impl<A: Application> Runtime<A> {
         id: NodeId,
         collapsed: Option<&BTreeSet<String>>,
         layout: Option<&ComputedDom>,
+        reverse: bool,
     ) -> bool {
         if !self.in_scope(id) {
             return false;
@@ -310,7 +343,7 @@ impl<A: Application> Runtime<A> {
         };
         let members = self.members(group, collapsed, layout);
         let current = self.focused_node().filter(|id| members.contains(id));
-        current.or_else(|| self.roving_entry(&members, options)) == Some(id)
+        current.or_else(|| self.roving_entry(&members, options, reverse)) == Some(id)
     }
     pub(crate) fn has_tab_extent(&self, id: NodeId) -> bool {
         self.computed
@@ -334,7 +367,12 @@ impl<A: Application> Runtime<A> {
             .find(|(id, n)| {
                 self.tab_candidate(*id, n)
                     && measured.is_none_or(|layout| has_extent(layout, *id))
-                    && self.tab_stop_in_layout(*id, None, measured.or(self.computed.as_ref()))
+                    && self.tab_stop_in_layout(
+                        *id,
+                        None,
+                        measured.or(self.computed.as_ref()),
+                        false,
+                    )
             })
             .and_then(|(id, _)| self.stable(id))
             .or_else(|| {
@@ -460,7 +498,7 @@ impl<A: Application> Runtime<A> {
         if self
             .pending_roving_focus
             .as_deref()
-            .is_some_and(|key| self.all_arrows_group(key).is_none())
+            .is_some_and(|key| self.measured_roving_group(key).is_none())
         {
             self.pending_roving_focus = None;
         }
@@ -649,12 +687,26 @@ impl<A: Application> Runtime<A> {
         }
         let index = members.iter().position(|node| *node == id);
         let reversed = self.dom.get(group)?.is_row_reversed();
-        let key = match (key, options.direction, reversed) {
-            (EditKey::Left, _, _) if roving.all_arrows => EditKey::Up,
-            (EditKey::Right, _, _) if roving.all_arrows => EditKey::Down,
-            (EditKey::Left, Direction::Row, true) => EditKey::Right,
-            (EditKey::Right, Direction::Row, true) => EditKey::Left,
-            _ => key,
+        let key = match roving.arrows {
+            RovingArrows::Axis if options.direction == Direction::Row && reversed => match key {
+                EditKey::Left => EditKey::Right,
+                EditKey::Right => EditKey::Left,
+                _ => key,
+            },
+            RovingArrows::Axis => key,
+            RovingArrows::All | RovingArrows::Radio { .. } => {
+                let mirrored = matches!(
+                    roving.arrows,
+                    RovingArrows::Radio {
+                        reverse_horizontal: true
+                    }
+                );
+                match (key, mirrored) {
+                    (EditKey::Left, false) | (EditKey::Right, true) => EditKey::Up,
+                    (EditKey::Right, false) | (EditKey::Left, true) => EditKey::Down,
+                    _ => key,
+                }
+            }
         };
         let next = match (key, options.direction) {
             (EditKey::Home, _) => 0,
@@ -672,6 +724,7 @@ impl<A: Application> Runtime<A> {
         let target = self.stable(next).expect("control has ID");
         if options.automatic && !self.dom.get(next)?.is_disabled() {
             self.activate(&target)
+                .map(|handled| handled || roving.is_radio())
         } else {
             self.focused = Some(target);
             Ok(true)

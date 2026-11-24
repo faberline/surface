@@ -271,10 +271,10 @@
       "id": "radio-button",
       "spec": "https://m3.material.io/components/radio-button/overview",
       "status": "partial",
-      "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Controlled group; automatic arrow selection and disabled skip"
+      "variant_review": "Reviewed Google's November 19 Radio button specifications and DSDB 41.1.12 for unchecked, checked and disabled configurations, interaction colors, artwork, state layer and focus ring.",
+      "desktop_evidence": "Two native headless Metal Gallery replays cover controlled selection, Tab in both directions, disabled choices, and 320 dp RTL with 200% text. Page.screenshot, CLI and MCP produce identical PNGs.",
+      "web_evidence": "Material Gallery M282 through M285 check Chrome group and radio semantics, bidirectional Tab, four arrow keys, one controlled request, pointer cancellation, horizontal layout, and 320 dp dark RTL with 200% text.",
+      "implemented": "Opt-in named group and radio option with one target, 20 dp art, 40 dp state layer, exterior focus, retained dot motion, RTL and wrapping labels. Four arrows select with wrap and skip disabled items. Tab enters the checked option or falls back to the first or last enabled row based on direction. Live screen-reader speech and system high contrast remain open."
     },
     {
       "id": "scroll-fields",

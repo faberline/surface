@@ -478,7 +478,7 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: false,
             retain_focus: false,
-            all_arrows: false,
+            arrows: controls::RovingArrows::Axis,
             reveal_after_rebuild: false,
         });
         self
@@ -492,7 +492,7 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: true,
             retain_focus: false,
-            all_arrows: false,
+            arrows: controls::RovingArrows::Axis,
             reveal_after_rebuild: false,
         });
         self
@@ -507,7 +507,7 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: false,
             retain_focus: true,
-            all_arrows: false,
+            arrows: controls::RovingArrows::Axis,
             reveal_after_rebuild: false,
         });
         self
@@ -521,7 +521,7 @@ impl<M> View<M> {
             options,
             first_enabled_on_entry: false,
             retain_focus: true,
-            all_arrows: false,
+            arrows: controls::RovingArrows::Axis,
             reveal_after_rebuild: true,
         });
         self
@@ -537,11 +537,31 @@ impl<M> View<M> {
             options: Roving::vertical(false),
             first_enabled_on_entry: true,
             retain_focus: true,
-            all_arrows: true,
+            arrows: controls::RovingArrows::All,
             reveal_after_rebuild: false,
         });
         self
     }
+    /// Give a named standalone radio group one Tab stop. Either direction
+    /// enters at the checked enabled member when one exists. Otherwise Tab
+    /// enters at the first enabled member and Shift+Tab at the last.
+    ///
+    /// All four arrows wrap and activate the next eligible radio's press
+    /// binding. Right and Down advance in authored order by default. Set
+    /// `reverse_horizontal` to swap Left and Right. When the focused member is
+    /// removed or disabled, focus falls back to the checked or first eligible
+    /// member without invoking its press binding.
+    pub fn roving_radio_group(mut self, reverse_horizontal: bool) -> Self {
+        self.roving = Some(controls::RovingGroup {
+            options: Roving::vertical(true),
+            first_enabled_on_entry: false,
+            retain_focus: true,
+            arrows: controls::RovingArrows::Radio { reverse_horizontal },
+            reveal_after_rebuild: true,
+        });
+        self
+    }
+
     /// Handle key presses while this node has focus. The handler runs
     /// before the field's own key handling. Return `Some(message)` to
     /// consume the press: the field does not see it, and `message` runs.
@@ -2173,7 +2193,7 @@ impl<A: Application> Runtime<A> {
                         (self.tab_candidate(id, node)
                             && self.has_tab_extent(id)
                             && !collapsed.as_ref().is_some_and(|ids| ids.contains(key))
-                            && self.tab_stop(id, collapsed.as_ref()))
+                            && self.tab_stop(id, collapsed.as_ref(), reverse))
                         .then_some(id)
                     })
                     .collect();

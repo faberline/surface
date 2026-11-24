@@ -173,6 +173,7 @@ does not change application state.
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
 | `checkbox_with_options` | Controlled Material 3 checkbox with three states, disabled and error, a stable label and RTL |
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
+| `radio_with_options` / `radio_group_with_options` | Named Material 3 radio group with checked-first Tab entry, mirrored horizontal keys, retained focus and wrapping labels |
 | `switch` | Controlled on/off choice and disabled state |
 | `switch_with_options` | Controlled Material 3 switch with three icon styles, RTL, press motion and a wrapping label |
 | `segmented_button` / `segmented_group` | Controlled choice; arrows move focus, Enter/Space selects |
@@ -237,6 +238,33 @@ stays readable and rejects activation.
 Open `checkbox-demo-show` in the Gallery to try one mixed parent,
 its child controls, a disabled row and a check that has error help.
 [Material 3 Checkbox specifications](https://m3.material.io/components/checkbox/specs)
+
+## Radio button
+
+Use `radio_with_options(options, &motion, message)` for a selectable
+row and `radio_group_with_options(group, rows)` to name its group.
+The application owns the selection and can leave all choices unchecked.
+The row exposes one radio control for its label and painted circle.
+Selecting the current option keeps the value and sends no new request.
+
+The default Tab stop is the checked enabled option. With no checked
+option, Tab enters at the first enabled row and Shift+Tab enters at the
+last. The four arrow keys skip disabled rows, wrap at the ends, and
+request selection of the next enabled row. In RTL, left and right
+follow the visual direction. Up and down preserve authored order.
+When a focused option disappears or becomes disabled, the group
+moves focus to an eligible option and leaves the value to the caller.
+
+Pick a vertical or horizontal group. Labels wrap at the current text
+scale and the circle stays at logical start. Keep one `RadioMotion`
+per stable ID. Pass input and press details to `RadioMotion::advance`
+from `animation_frame_with_press_detail` when the application opts
+in to `observes_frame_input`. Apply the returned rebuild and frame flags.
+Reduce Motion settles the dot to its target.
+
+Open `radio-demo-show` in the Gallery. Use the clear command to check
+entry in each direction when no option is selected.
+[Material 3 Radio button specification](https://m3.material.io/components/radio-button/specs)
 
 ## Switch
 
