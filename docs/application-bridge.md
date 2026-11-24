@@ -96,17 +96,23 @@ the default browser mode retains its 27 tools.
 
 `cargo xtask web e2e` builds the native and WASM gallery with
 `devtools`, the compact example and jet-bridge at the revision pinned in
-`Cargo.toml`. It then runs the bridge suites with the other browser suites:
+`Cargo.toml`. The bridge suite runs in headless Chrome by default:
 
 ```sh
-cap cargo xtask web e2e bridge-native bridge-native-compact bridge-web
+cap cargo xtask web e2e bridge-web
+```
+
+To test the bridge through native windows, request the window suites:
+
+```sh
+cap cargo xtask web e2e bridge-native bridge-native-compact
 ```
 
 `SURFACE_CHROME` selects Chrome; otherwise a system install is used. The
 web test serves `target/web/devtools/material-gallery`. `--bridge-web`
 selects another built directory and `--jet-bridge` another binary.
 
-The test creates its own window, browser, server and sessions. It checks
+The suites create their own sessions. They check
 actual controlled Chinese input, saved state, slider snapping, disabled
 controls, removed nodes, modal scope, Tab loops, restored focus and shared
 CLI/MCP state. The native test checks authentication, file permissions and

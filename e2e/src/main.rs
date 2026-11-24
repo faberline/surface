@@ -26,9 +26,9 @@ use std::time::Instant;
 const USAGE: &str = "\
 usage: surface-e2e [options] [suite...]
 
-suites: smoke ime material bridge-native bridge-native-compact bridge-web
-        devtools-native devtools-headless
-        (default: all of them, in that order)
+suites: smoke ime material bridge-web devtools-headless (default)
+        bridge-native bridge-native-compact devtools-native (open native windows)
+        all (run every suite, including those that open windows)
 
 options:
   --chrome <path>       Chrome or Chromium (default: SURFACE_CHROME, then a system install)
@@ -51,6 +51,13 @@ const SUITES: [&str; 8] = [
     "bridge-native-compact",
     "bridge-web",
     "devtools-native",
+    "devtools-headless",
+];
+const HEADLESS_SUITES: [&str; 5] = [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
     "devtools-headless",
 ];
 
@@ -120,7 +127,7 @@ struct Options {
     compact_bin: PathBuf,
 }
 
-fn parse(root: &Path) -> Result<(Env, Options)> {
+fn parse(root: &Path, args: impl IntoIterator<Item = String>) -> Result<(Env, Options)> {
     let target = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target"));
@@ -142,7 +149,7 @@ fn parse(root: &Path) -> Result<(Env, Options)> {
         native_bin: target.join("debug/surface-material-gallery"),
         compact_bin: target.join("debug/examples/compact"),
     };
-    let mut args = std::env::args().skip(1);
+    let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         let mut value = || {
             args.next()
@@ -169,9 +176,8 @@ fn parse(root: &Path) -> Result<(Env, Options)> {
         }
     }
     if options.suites.is_empty() {
-        options.suites = SUITES.iter().map(|s| s.to_string()).collect();
+        options.suites = HEADLESS_SUITES.into_iter().map(str::to_owned).collect();
     }
-    std::fs::create_dir_all(&env.artifacts)?;
     Ok((env, options))
 }
 
@@ -278,7 +284,8 @@ async fn main() {
 }
 
 async fn real_main() -> Result<bool> {
-    let (env, options) = parse(&workspace_root())?;
+    let (env, options) = parse(&workspace_root(), std::env::args().skip(1))?;
+    std::fs::create_dir_all(&env.artifacts)?;
     let mut chrome = None;
     let mut passed = 0usize;
     let mut failed = Vec::new();
@@ -334,4 +341,45 @@ async fn real_main() -> Result<bool> {
         println!("failed: {}", failed.join(", "));
     }
     Ok(failed.is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_runs_only_headless_suites() {
+        let (_, options) = parse(Path::new("."), []).unwrap();
+        assert_eq!(
+            options.suites,
+            [
+                "smoke",
+                "ime",
+                "material",
+                "bridge-web",
+                "devtools-headless"
+            ]
+        );
+    }
+
+    #[test]
+    fn windowed_suites_remain_available_by_name_or_with_all() {
+        let (_, options) = parse(Path::new("."), ["devtools-native".into()]).unwrap();
+        assert_eq!(options.suites, ["devtools-native"]);
+
+        let (_, options) = parse(Path::new("."), ["all".into()]).unwrap();
+        assert_eq!(
+            options.suites,
+            [
+                "smoke",
+                "ime",
+                "material",
+                "bridge-native",
+                "bridge-native-compact",
+                "bridge-web",
+                "devtools-native",
+                "devtools-headless",
+            ]
+        );
+    }
 }

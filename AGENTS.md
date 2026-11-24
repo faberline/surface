@@ -26,6 +26,8 @@ See `README.md` and `docs/architecture.md`.
   workspace tests, and the `wasm32-unknown-unknown` checks.
   For a small change, run at least fmt, the affected Rust tests, the native
   `cargo check` and the wasm32 check.
+- Use the headless default for local end-to-end tests. Run windowed tests
+  locally only when the user asks for them.
 - A successful build does not prove browser or GPU runtime behavior.
 - GPU tests are `#[ignore]`. Run them with `sh scripts/check-gpu.sh` on a
   real adapter.

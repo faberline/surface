@@ -51,7 +51,7 @@ jobs:
         env:
           SURFACE_CHROME: ${{ steps.chrome.outputs.chrome-path }}
           SURFACE_CHROME_ARGS: --enable-unsafe-webgpu --enable-features=Vulkan --use-vulkan=swiftshader --use-webgpu-adapter=swiftshader --use-angle=swiftshader
-        run: xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e
+        run: xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e all
       - uses: actions/upload-artifact@v4
         if: always()
         with:
