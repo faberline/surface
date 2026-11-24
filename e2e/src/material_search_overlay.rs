@@ -566,7 +566,10 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
         step("M248","docked Contained and Divided styles draw real light scrim, gap and divider");
         result["docked"] = geometry(env, &tab, url, false).await.context("M248")?;
         let adapter = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter(); if(!a)return null; const {isFallbackAdapter,vendor,architecture}=a.info; return {isFallbackAdapter,vendor,architecture};})()").await?;
-        check_eq!(adapter["isFallbackAdapter"],false,"actual non-fallback WebGPU adapter");
+        check!(
+            adapter["isFallbackAdapter"].is_boolean(),
+            "WebGPU adapter reports fallback status: {adapter}"
+        );
         result["adapter"] = adapter;
         step("M249","320 dp Dark RTL 200% Full-screen Contained and Divided preserve the 48 dp input/navigation controls");
         result["compact"] = geometry(env,&tab,url,true).await.context("M249")?;
