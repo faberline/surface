@@ -1,0 +1,30 @@
+   Compiling surface-devtools-protocol v0.1.43 (<source>/crates/surface-devtools-protocol)
+   Compiling surface-app v0.1.43 (<source>/crates/surface-app)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.17s
+     Running tests/editing.rs (<cargo-target>/debug/deps/editing-6180749fdd6577d2)
+
+running 10 tests
+test browser_offsets_and_field_policies_do_not_split_unicode ... ok
+test browser_rejected_value_does_not_create_a_change_or_break_controlled_state ... ok
+test cancelled_composition_preserves_selected_text_and_blur_clears_it ... ok
+test centered_single_line_uses_one_origin_for_paint_and_caret_without_shrinking_the_target ... ok
+test cleared_native_preedit_preserves_a_commit_range_but_does_not_lock_normal_keys ... ok
+test composition_is_visible_but_does_not_change_app_state_until_one_commit ... ok
+test editor_deletes_graphemes_replaces_selection_and_undoes_composition ... ok
+test late_ime_commits_do_not_follow_focus_to_another_control ... ok
+test placeholder_only_paints_and_yields_to_both_native_composition_routes ... ok
+test right_aligned_editor_shares_paint_pointer_and_composition_geometry ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/paint_export.rs (<cargo-target>/debug/deps/paint_export-4bfa49243836fdd9)
+
+running 6 tests
+test caret_and_text_belong_to_the_focused_field ... ok
+test export_after_a_state_change_is_an_error_until_the_next_render ... ok
+test export_before_the_first_frame_is_an_error ... ok
+test export_json_is_pinned ... ok
+test export_round_trips ... ok
+test owner_ids_match_dom_export ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s

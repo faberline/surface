@@ -1,0 +1,687 @@
+--- a/crates/surface-material/src/basic_dialog.rs
++++ b/crates/surface-material/src/basic_dialog.rs
+@@ -1,8 +1,8 @@
+ //! Material 3 Basic dialogs with separate heading, scroll body and actions.
+ 
+ use surface::{
+-    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer,
+-    TextScaling,
++    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
++    TextMeasurer, TextScaling,
+ };
+ use surface_app::{CursorStyle, ModalDismissal, View};
+ 
+@@ -80,6 +80,11 @@
+         let max_height = window_height - 2. * margin_y;
+         let inset = CONTENT_INSET.min(width / 4.).min(max_height / 8.);
+         let id = |suffix| format!("{}-{suffix}", options.id);
++        let start = if options.direction == LayoutDirection::RightToLeft {
++            TextAlignment::Right
++        } else {
++            TextAlignment::Left
++        };
+ 
+         let mut children = Vec::new();
+         if let Some(glyph) = options.icon {
+@@ -106,6 +111,7 @@
+         }
+         if let Some(heading) = options.heading {
+             let mut style = Style::column()
++                .width(Length::Percent(1.))
+                 .with_text_style(typography::HEADLINE_SMALL)
+                 .foreground(self.colors.on_surface);
+             style.max_width = Length::Percent(1.);
+@@ -113,6 +119,11 @@
+                 Node::new(Role::Heading, heading)
+                     .id(id("heading"))
+                     .text(heading)
++                    .text_alignment(if options.icon.is_some() {
++                        TextAlignment::Center
++                    } else {
++                        start
++                    })
+                     .styled(style),
+             ));
+         }
+@@ -127,8 +138,10 @@
+                     Node::new(Role::Text, text)
+                         .id(id("supporting"))
+                         .text(text)
++                        .text_alignment(start)
+                         .styled(
+                             Style::column()
++                                .width(Length::Percent(1.))
+                                 .with_text_style(typography::BODY_MEDIUM)
+                                 .foreground(self.colors.on_surface_variant),
+                         ),
+--- a/crates/surface-material/src/full_screen_dialog.rs
++++ b/crates/surface-material/src/full_screen_dialog.rs
+@@ -1,7 +1,8 @@
+ //! A full-screen Material dialog with a measured header and scrollable body.
+ 
+ use surface::{
+-    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer,
++    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
++    TextMeasurer,
+ };
+ use surface_app::{ModalDismissal, View};
+ 
+@@ -177,6 +178,11 @@
+             Node::new(Role::Heading, options.title)
+                 .id(id("title"))
+                 .text(options.title)
++                .text_alignment(if options.direction == LayoutDirection::RightToLeft {
++                    TextAlignment::Right
++                } else {
++                    TextAlignment::Left
++                })
+                 .styled(
+                     Style::column()
+                         .clip(true)
+--- a/crates/surface-wgpu/src/lib.rs
++++ b/crates/surface-wgpu/src/lib.rs
+@@ -8,7 +8,7 @@
+ use std::borrow::Cow;
+ use surface::{
+     Color, Corners, DisplayList, ExtendedDisplayList, ExtendedPaintOp, PaintOp, PathFill,
+-    RasterPaint, Rect, TextSelectionPaint, TextStyle,
++    RasterPaint, Rect, TextAlignment, TextSelectionPaint, TextStyle,
+ };
+ pub use text::TextSystem;
+ use wgpu::util::DeviceExt;
+@@ -145,7 +145,7 @@
+ }
+ 
+ enum RenderOp<'a> {
+-    Legacy(&'a PaintOp),
++    Paint(&'a PaintOp, Option<TextAlignment>),
+     Fill(&'a PathFill),
+     Raster(&'a RasterPaint),
+     TextSelection(&'a TextSelectionPaint),
+@@ -478,7 +478,7 @@
+         scale: f32,
+     ) -> Result<(), RenderError> {
+         self.render_ops(
+-            list.ops.iter().map(|op| Ok(RenderOp::Legacy(op))),
++            list.ops.iter().map(|op| Ok(RenderOp::Paint(op, None))),
+             target,
+             width,
+             height,
+@@ -498,7 +498,20 @@
+         let max = self.device.limits().max_texture_dimension_2d;
+         self.render_ops(
+             list.ops().iter().map(|op| match op {
+-                ExtendedPaintOp::Legacy(op) => Ok(RenderOp::Legacy(op)),
++                ExtendedPaintOp::Legacy(op) => Ok(RenderOp::Paint(op, None)),
++                ExtendedPaintOp::AlignedText(text)
++                    if matches!(
++                        text.run(),
++                        PaintOp::Text { .. }
++                            | PaintOp::StyledText {
++                                editable: false,
++                                multiline: true,
++                                ..
++                            }
++                    ) =>
++                {
++                    Ok(RenderOp::Paint(text.run(), Some(text.alignment())))
++                }
+                 ExtendedPaintOp::FillPath(fill) => Ok(RenderOp::Fill(fill)),
+                 ExtendedPaintOp::Raster(paint) => {
+                     let width = paint.image().width();
+@@ -550,8 +563,8 @@
+         let mut rasters = raster::Frame::default();
+         let mut next_text_renderer = 0;
+         for op in ops {
+-            let op = match op? {
+-                RenderOp::Legacy(op) => op,
++            let (op, alignment) = match op? {
++                RenderOp::Paint(op, alignment) => (op, alignment),
+                 RenderOp::TextSelection(selection) => {
+                     let regions = selection.pixel_regions(scale, (width, height));
+                     if regions.is_empty() {
+@@ -573,6 +586,7 @@
+                     self.prepare_text_run(
+                         space,
+                         &run,
++                        None,
+                         regions.into_iter().map(|region| {
+                             let ink = if region.selected {
+                                 colors.foreground
+@@ -678,6 +692,7 @@
+                     self.prepare_text_run(
+                         space,
+                         &run,
++                        alignment,
+                         [(scissor, *run.color)],
+                         &mut next_text_renderer,
+                         &mut draws,
+@@ -779,15 +794,19 @@
+         &mut self,
+         space: RasterSpace,
+         run: &TextRun<'_>,
++        alignment: Option<TextAlignment>,
+         regions: impl IntoIterator<Item = ([u32; 4], Color)>,
+         next_renderer: &mut usize,
+         draws: &mut Vec<Draw>,
+     ) -> Result<(), RenderError> {
+         // Shape the complete run before splitting ink. Glyphon keeps its
+         // prepared vertices, so every region can borrow the same buffer.
+-        let buffer = self
+-            .text
+-            .buffer(run.text, &run.style, run.wrap.then_some(run.rect.width));
++        let buffer = self.text.buffer_with_alignment(
++            run.text,
++            &run.style,
++            run.wrap.then_some(run.rect.width),
++            alignment,
++        );
+         let left = (run.rect.x - run.scroll.0) * space.scale;
+         let top = (run.rect.y - run.scroll.1) * space.scale;
+         for (scissor, color) in regions {
+--- a/crates/surface-wgpu/src/text.rs
++++ b/crates/surface-wgpu/src/text.rs
+@@ -1,7 +1,10 @@
+-use glyphon::fontdb::{Stretch, Style};
++use glyphon::{
++    cosmic_text::Align,
++    fontdb::{Stretch, Style},
++};
+ use glyphon::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Weight, Wrap};
+ use std::sync::Arc;
+-use surface::{FontFamily, Rect, TextCluster, TextLayout, TextMeasurer, TextStyle};
++use surface::{FontFamily, Rect, TextAlignment, TextCluster, TextLayout, TextMeasurer, TextStyle};
+ 
+ /// The family that the sans-serif alias names. `FontFamily::Default` shapes
+ /// with it, and `add_font` only widens the default family's weights for faces
+@@ -131,6 +134,16 @@
+     }
+     /// Shape `text` with the size, line height, weight and family of `style`.
+     pub(crate) fn buffer(&mut self, text: &str, style: &TextStyle, width: Option<f32>) -> Buffer {
++        self.buffer_with_alignment(text, style, width, None)
++    }
++
++    pub(crate) fn buffer_with_alignment(
++        &mut self,
++        text: &str,
++        style: &TextStyle,
++        width: Option<f32>,
++        alignment: Option<TextAlignment>,
++    ) -> Buffer {
+         let (family, weight) = self.resolve(&style.family, style.weight);
+         let mut buffer = Buffer::new(
+             &mut self.fonts,
+@@ -144,6 +157,16 @@
+             Attrs::new().family(family).weight(Weight(weight)),
+             Shaping::Advanced,
+         );
++        if let Some(alignment) = alignment {
++            let align = match alignment {
++                TextAlignment::Left => Align::Left,
++                TextAlignment::Center => Align::Center,
++                TextAlignment::Right => Align::Right,
++            };
++            for line in &mut buffer.lines {
++                line.set_align(Some(align));
++            }
++        }
+         buffer.shape_until_scroll(&mut self.fonts, false);
+         buffer
+     }
+--- a/crates/surface-wgpu/tests/it.rs
++++ b/crates/surface-wgpu/tests/it.rs
+@@ -5,6 +5,8 @@
+ mod list_ripple;
+ #[path = "it/loading_indicator.rs"]
+ mod loading_indicator;
++#[path = "it/text_alignment.rs"]
++mod text_alignment;
+ 
+ /// A copy of the bundled font that claims weight 700 and half the units per em,
+ /// so every glyph is twice as wide. It is built in memory for this test only.
+--- /dev/null
++++ b/crates/surface-wgpu/tests/it/text_alignment.rs
+@@ -0,0 +1,137 @@
++use surface::{
++    Color, ExtendedDisplayList, Insets, InteractionState, LayoutEngine, Length, MicroDom, Node,
++    Role, Style, TextAlignment,
++};
++use surface_wgpu::{Capture, Renderer};
++
++const TEXT_ORIGINS: [u32; 3] = [8, 96, 184];
++const TEXT_WIDTH: u32 = 80;
++
++fn line_ink(capture: &Capture, origin: u32, row: u32, scale: u32) -> (u32, u32) {
++    let mut left = u32::MAX;
++    let mut right = 0;
++    for y in (8 + row * 32) * scale..(8 + (row + 1) * 32) * scale {
++        for x in origin * scale..(origin + TEXT_WIDTH) * scale {
++            let offset = ((y * capture.width + x) * 4) as usize;
++            if capture.rgba[offset] < 128 {
++                left = left.min(x);
++                right = right.max(x);
++            }
++        }
++    }
++    assert!(left < right, "No ink in visual row {row} at {origin}");
++    (left, right)
++}
++
++fn save(capture: &Capture) {
++    let Ok(path) = std::env::var("SURFACE_GPU_EVIDENCE") else {
++        return;
++    };
++    let path = std::path::Path::new(&path).with_file_name("gpu-text-alignment.png");
++    let mut encoder = png::Encoder::new(
++        std::fs::File::create(path).unwrap(),
++        capture.width,
++        capture.height,
++    );
++    encoder.set_color(png::ColorType::Rgba);
++    encoder.set_depth(png::BitDepth::Eight);
++    encoder
++        .write_header()
++        .unwrap()
++        .write_image_data(&capture.rgba)
++        .unwrap();
++}
++
++#[test]
++#[ignore = "requires a native GPU; run explicitly, never skip a missing adapter"]
++fn gpu_offscreen_text_alignment_uses_each_visual_line() {
++    pollster::block_on(async {
++        let instance = wgpu::Instance::new(&Default::default());
++        let adapter = Renderer::request(&instance, None)
++            .await
++            .expect("native GPU adapter is required");
++        eprintln!("GPU text alignment evidence: {:?}", adapter.get_info());
++        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
++            .await
++            .unwrap();
++
++        let mut dom = MicroDom::new(
++            Node::new(Role::Window, "").styled(
++                Style::column()
++                    .width(Length::Px(272.))
++                    .height(Length::Px(112.))
++                    .background(Color::rgb(255, 255, 255)),
++            ),
++        );
++        let text = "編輯行程\n時間";
++        assert_eq!(renderer.text.missing_glyphs(text), 0);
++        for (origin, alignment) in TEXT_ORIGINS.into_iter().zip([
++            TextAlignment::Left,
++            TextAlignment::Center,
++            TextAlignment::Right,
++        ]) {
++            dom.append(
++                dom.root(),
++                Node::new(Role::Heading, text)
++                    .text(text)
++                    .text_alignment(alignment)
++                    .styled(
++                        Style::column()
++                            .width(Length::Px(TEXT_WIDTH as f32))
++                            .height(Length::Px(96.))
++                            .absolute(Insets {
++                                left: Length::Px(origin as f32),
++                                top: Length::Px(8.),
++                                ..Insets::default()
++                            })
++                            .font_size(24.)
++                            .line_height(32.)
++                            .foreground(Color::rgb(0, 0, 0)),
++                    ),
++            )
++            .unwrap();
++        }
++        let layout = LayoutEngine::default()
++            .compute(&dom, 272., 112., &mut renderer.text)
++            .unwrap();
++        let frame = ExtendedDisplayList::compile_with_interaction(
++            &dom,
++            &layout,
++            None,
++            &Default::default(),
++            InteractionState::default(),
++        );
++        for scale in [1, 2] {
++            let capture = renderer
++                .capture_extended(&frame, 272 * scale, 112 * scale, scale as f32)
++                .unwrap();
++            for row in 0..3 {
++                let [left, center, right] =
++                    TEXT_ORIGINS.map(|origin| line_ink(&capture, origin, row, scale));
++                let left_gap = left.0 - TEXT_ORIGINS[0] * scale;
++                let right_gap = (TEXT_ORIGINS[2] + TEXT_WIDTH) * scale - 1 - right.1;
++                let center_twice = (2 * TEXT_ORIGINS[1] + TEXT_WIDTH - 1) * scale;
++                assert!(
++                    left_gap <= 4 * scale && right_gap <= 4 * scale,
++                    "row {row} gaps {left_gap}, {right_gap} at {scale}x"
++                );
++                assert!(
++                    (center.0 + center.1).abs_diff(center_twice) <= 6 * scale,
++                    "row {row} center {center:?} at {scale}x"
++                );
++                assert!((left.1 - left.0).abs_diff(right.1 - right.0) <= 2 * scale);
++            }
++            let [long, short, medium] = [0, 1, 2].map(|row| {
++                let (left, right) = line_ink(&capture, TEXT_ORIGINS[2], row, scale);
++                right - left
++            });
++            assert!(
++                long > medium && medium > short,
++                "expected a soft wrap and another paragraph: {long}, {short}, {medium}"
++            );
++            if scale == 2 {
++                save(&capture);
++            }
++        }
++    });
++}
+--- a/crates/surface/src/lib.rs
++++ b/crates/surface/src/lib.rs
+@@ -46,8 +46,8 @@
+ };
+ pub use motion::{Easing, Transition};
+ pub use paint::{
+-    DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp, TextDecoration,
+-    TextSelectionColors, TextSelectionPaint, TextSelectionRegion,
++    AlignedTextPaint, DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, PaintOp,
++    TextAlignment, TextDecoration, TextSelectionColors, TextSelectionPaint, TextSelectionRegion,
+ };
+ pub use raster::{RasterImage, RasterPaint};
+ pub use scroll_extent::scroll_extent;
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -1,5 +1,7 @@
+ //! An indexed semantic tree. No browser DOM objects or renderer handles live here.
+-use crate::{AdjustableValue, BoxShadow, Color, Corners, Direction, Style, TextScaling};
++use crate::{
++    AdjustableValue, BoxShadow, Color, Corners, Direction, Style, TextAlignment, TextScaling,
++};
+ use serde::{Deserialize, Serialize};
+ use std::collections::BTreeMap;
+ use std::sync::Arc;
+@@ -172,6 +174,8 @@
+     reverse_row: bool,
+     #[serde(default, skip_serializing_if = "TextScaling::is_default")]
+     text_scaling: TextScaling,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    text_alignment: Option<TextAlignment>,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     focus_color: Option<Color>,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+@@ -254,6 +258,7 @@
+             shrink_to_fit_height: false,
+             reverse_row: false,
+             text_scaling: TextScaling::default(),
++            text_alignment: None,
+             focus_color: None,
+             focus_outline_width: None,
+             state_layer_alphas: None,
+@@ -422,6 +427,19 @@
+     pub fn text(mut self, text: impl Into<String>) -> Self {
+         self.text = Some(text.into());
+         self
++    }
++
++    /// Align each visual line of static text inside its existing paint bounds.
++    /// This affects extended paint only. Text inputs keep their own alignment.
++    pub fn text_alignment(mut self, alignment: TextAlignment) -> Self {
++        if self.role != Role::TextInput {
++            self.text_alignment = Some(alignment);
++        }
++        self
++    }
++
++    pub(crate) fn read_only_text_alignment(&self) -> Option<TextAlignment> {
++        self.text_alignment.filter(|_| self.role != Role::TextInput)
+     }
+ 
+     pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -160,12 +160,39 @@
+         }
+     }
+ }
++/// Physical horizontal alignment of each visual line in a static text run.
++#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
++pub enum TextAlignment {
++    Left,
++    Center,
++    Right,
++}
++
++/// Static text with an explicit alignment. The original run retains its
++/// bounds, clip, wrapping and style.
++#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
++pub struct AlignedTextPaint {
++    run: PaintOp,
++    alignment: TextAlignment,
++}
++
++impl AlignedTextPaint {
++    pub fn run(&self) -> &PaintOp {
++        &self.run
++    }
++
++    pub fn alignment(&self) -> TextAlignment {
++        self.alignment
++    }
++}
++
+ /// Ordered drawing commands that retain vector fills and live raster images.
+ #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+ #[non_exhaustive]
+ pub enum ExtendedPaintOp {
+     Legacy(PaintOp),
+     FillPath(crate::PathFill),
++    AlignedText(AlignedTextPaint),
+     /// The two-color paint for one editable text selection.
+     TextSelection(TextSelectionPaint),
+     /// A live resource. Use a screenshot to export its rendered pixels.
+@@ -178,6 +205,10 @@
+     const PRESS_RIPPLE: bool = false;
+ 
+     fn push_fill(path: crate::PathFill, push: impl FnMut(Self));
++
++    fn with_aligned_text(run: PaintOp, _alignment: TextAlignment) -> Self {
++        run.into()
++    }
+ 
+     fn with_text_selection(
+         run: PaintOp,
+@@ -214,6 +245,10 @@
+ 
+     fn push_fill(path: crate::PathFill, mut push: impl FnMut(Self)) {
+         push(Self::FillPath(path));
++    }
++
++    fn with_aligned_text(run: PaintOp, alignment: TextAlignment) -> Self {
++        Self::AlignedText(AlignedTextPaint { run, alignment })
+     }
+ 
+     fn with_text_selection(run: PaintOp, colors: TextSelectionColors, selected: Vec<Rect>) -> Self {
+@@ -761,8 +796,9 @@
+                     color: s.foreground,
+                 }
+             };
+-            let run = match (selection_colors, decoration) {
+-                (Some(colors), Some(decoration)) => {
++            let run = match (n.read_only_text_alignment(), selection_colors, decoration) {
++                (Some(alignment), _, _) => Op::with_aligned_text(run, alignment),
++                (None, Some(colors), Some(decoration)) => {
+                     let selected = text_selection::visible_selection(clip, &decoration.selection);
+                     if selected.is_empty() {
+                         run.into()
+--- /dev/null
++++ b/crates/surface/tests/text_alignment.rs
+@@ -0,0 +1,155 @@
++use std::collections::BTreeMap;
++
++use surface::{
++    Color, DisplayList, ExtendedDisplayList, ExtendedPaintOp, InteractionState, LayoutEngine,
++    Length, MicroDom, Node, PaintOp, Rect, Role, Style, TextAlignment, TextDecoration,
++    TextMeasurer, TextSelectionColors,
++};
++
++struct Fonts;
++
++impl TextMeasurer for Fonts {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.len() as f32 * size / 2., size * 1.5)
++    }
++}
++
++#[test]
++fn text_alignment_node_wire_is_optional_and_text_inputs_keep_their_default() {
++    let heading = Node::new(Role::Heading, "Dialog").text("Title");
++    let default = serde_json::to_value(&heading).unwrap();
++    assert!(default.get("text_alignment").is_none());
++    assert_eq!(
++        serde_json::from_value::<Node>(default.clone()).unwrap(),
++        heading
++    );
++
++    let aligned = heading.text_alignment(TextAlignment::Right);
++    let mut wire = serde_json::to_value(&aligned).unwrap();
++    assert_eq!(
++        serde_json::from_value::<Node>(wire.clone()).unwrap(),
++        aligned
++    );
++    assert_eq!(
++        wire.as_object_mut().unwrap().remove("text_alignment"),
++        Some("Right".into())
++    );
++    assert_eq!(wire, default);
++
++    let editor = Node::new(Role::TextInput, "Editor").text("A draft");
++    assert_eq!(editor.clone().text_alignment(TextAlignment::Center), editor);
++}
++
++#[test]
++fn extended_alignment_keeps_static_run_clip_and_owner_and_leaves_editable_selection() {
++    let mut dom = MicroDom::new(
++        Node::new(Role::Window, "").styled(
++            Style::column()
++                .width(Length::Px(80.))
++                .height(Length::Px(60.))
++                .clip(true),
++        ),
++    );
++    let size = Style::column()
++        .width(Length::Px(90.))
++        .height(Length::Px(18.))
++        .padding(1.);
++    let title = dom
++        .append(
++            dom.root(),
++            Node::new(Role::Heading, "Title")
++                .id("title")
++                .text("Title")
++                .styled(size.clone())
++                .text_alignment(TextAlignment::Right),
++        )
++        .unwrap();
++    let description = dom
++        .append(
++            dom.root(),
++            Node::new(Role::Text, "Supporting")
++                .id("supporting")
++                .text("Supporting")
++                .styled(size.clone().line_height(17.))
++                .text_alignment(TextAlignment::Center),
++        )
++        .unwrap();
++    let mut edited_wire = serde_json::to_value(
++        Node::new(Role::TextInput, "Editor")
++            .id("editor")
++            .text("Draft")
++            .styled(size),
++    )
++    .unwrap();
++    edited_wire["text_alignment"] = "Right".into();
++    let edited = dom
++        .append(dom.root(), serde_json::from_value(edited_wire).unwrap())
++        .unwrap();
++    let layout = LayoutEngine::default()
++        .compute(&dom, 100., 80., &mut Fonts)
++        .unwrap();
++    let editor_bounds = layout.nodes[edited.index()].bounds;
++    let decorations = BTreeMap::from([(
++        edited,
++        TextDecoration {
++            selection: vec![Rect::new(1., editor_bounds.y + 1., 8., 12.)],
++            ..TextDecoration::default()
++        },
++    )]);
++    let interaction = InteractionState::default();
++    let (legacy, legacy_owners) =
++        DisplayList::compile_attributed(&dom, &layout, None, &decorations, interaction);
++    let (extended, owners) =
++        ExtendedDisplayList::compile_attributed(&dom, &layout, None, &decorations, interaction);
++    assert_eq!(owners, legacy_owners);
++    for (index, (op, source)) in extended.ops().iter().zip(&owners).enumerate() {
++        if *source == title || *source == description {
++            let ExtendedPaintOp::AlignedText(aligned) = op else {
++                panic!("missing alignment for {source:?}");
++            };
++            let mode = if *source == title {
++                TextAlignment::Right
++            } else {
++                TextAlignment::Center
++            };
++            assert_eq!(aligned.alignment(), mode);
++            assert_eq!(aligned.run(), &legacy.ops[index]);
++            assert_eq!(aligned.run().clip().width, 79.);
++        } else {
++            assert_eq!(*op, ExtendedPaintOp::Legacy(legacy.ops[index].clone()));
++        }
++    }
++    assert!(matches!(legacy.ops[0], PaintOp::Text { .. }));
++    assert!(matches!(
++        legacy.ops[1],
++        PaintOp::StyledText {
++            editable: false,
++            ..
++        }
++    ));
++    assert_eq!(
++        serde_json::from_str::<ExtendedDisplayList>(&serde_json::to_string(&extended).unwrap())
++            .unwrap(),
++        extended,
++    );
++    let from_ops = ExtendedDisplayList::new(extended.viewport(), extended.clone().into_ops());
++    assert_eq!(from_ops, extended);
++
++    let (forced, owners) = ExtendedDisplayList::compile_attributed_with_selection_colors(
++        &dom,
++        &layout,
++        None,
++        &decorations,
++        interaction,
++        TextSelectionColors {
++            background: Color::rgb(30, 64, 80),
++            foreground: Color::rgb(255, 255, 255),
++        },
++    );
++    assert_eq!(owners, [title, description, edited]);
++    assert_eq!(forced.ops()[..2], extended.ops()[..2]);
++    assert!(
++        matches!(&forced.ops()[2], ExtendedPaintOp::TextSelection(selection)
++        if matches!(selection.run(), PaintOp::EditableText { .. }))
++    );
++}
+--- a/docs/provenance.json
++++ b/docs/provenance.json
+@@ -33,7 +33,7 @@
+   },
+   "modified_since_import": {
+     "crates/surface/src/element.rs": "Allows clippy::large_enum_variant on Element so its public variants stay unchanged.",
+-    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, live raster paint and paired text selection paint, after the Core exports. The Core lines are unchanged.",
++    "crates/surface/src/lib.rs": "Appends Surface-only modules and their exports, including GridRole, live raster paint, static text alignment and paired text selection paint, after the Core exports. The Core lines are unchanged.",
+     "crates/surface/src/snapshot.rs": "Passes tag instead of *tag to two helpers to satisfy Clippy. Behavior is unchanged.",
+     "crates/ui-runtime/src/domain/use_reducer.rs": "Names the reducer type with a Reducer alias to satisfy Clippy type_complexity. The signature is unchanged."
+   },
