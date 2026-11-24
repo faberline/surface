@@ -151,18 +151,20 @@ flowchart LR
 ```sh
 ./scripts/check.sh
 ./scripts/check-gpu.sh
-cap cargo run --locked -p surface-showcase -- --smoke
+cap cargo xtask web e2e
 ```
 
 The first script checks source provenance, format, Rust behavior, native
 compilation, and WASM compilation. Its WASM step also builds `ui-runtime`
 with and without `debug`, plus the consumer contract test that pins the API
 Jet and Core use. The second explicitly runs the GPU pixel test. It fails when
-an adapter is unavailable. The desktop smoke run creates a real window,
-paints two frames, and exits. `cargo xtask web e2e` builds the web and
-native inputs and runs the browser and bridge end-to-end tests in
-[`e2e/`](e2e). It needs Chrome; see
-[verification](docs/verification.md#re-run-the-browser-tests).
+an adapter is unavailable. `cargo xtask web e2e` builds the web and native
+inputs and runs the headless end-to-end tests in [`e2e/`](e2e).
+It needs Chrome. See [verification](docs/verification.md#re-run-the-browser-tests).
+
+For a window smoke test, run
+`cap cargo run --locked -p surface-showcase -- --smoke`.
+The Showcase opens a window, paints two frames, and exits.
 
 ## Current limits
 

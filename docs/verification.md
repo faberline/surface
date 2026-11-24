@@ -14,7 +14,17 @@ through the test-only `png` dev-dependency. Refs #126.
 
 ## Native DevTools screenshot
 
-Run this on a Mac with a usable Metal adapter. The native Gallery journey
+Run the headless test with a usable native GPU adapter:
+
+```sh
+cap cargo xtask web e2e devtools-headless
+```
+
+This checks semantic input and compares PNG bytes from the raw API, CLI,
+and MCP.
+
+The optional window tests below open the Gallery on a Mac with Metal.
+The native Gallery journey
 compares pixels to the expected Material colors, checks that theme changes
 appear in the next PNG, and checks the scaled dimensions. It compares the
 bytes from the raw API, CLI and MCP on the same frame. The CLI test also
@@ -344,17 +354,18 @@ Local generated evidence lives under `artifacts/`. The screenshot in
 
 The browser and bridge tests are Rust, in [`e2e/`](../e2e). They drive
 Chrome through jet-bridge's CDP client; there is no Node or Python step.
-One command builds every input and runs every suite:
+One command builds the inputs and runs the headless suites:
 
 ```sh
 cap cargo xtask web e2e
 ```
 
-Suites: `smoke`, `ime`, `material`, `bridge-native`,
-`bridge-native-compact`, `bridge-web` and `devtools-native`. Name some to
-run only those. `devtools-native` opens the native gallery window and
-speaks the devtools protocol over raw TCP; see
-[devtools-protocol.md](devtools-protocol.md#native-transport).
+The default runs `smoke`, `ime`, `material`, `bridge-web`,
+and `devtools-headless`. Chrome and the native Gallery run without windows.
+Name suites to run only those. The `bridge-native`, `bridge-native-compact`,
+and `devtools-native` suites open native windows when requested.
+Use `cap cargo xtask web e2e all` to run every suite. Hosted CI uses this
+form with a virtual display.
 `--no-build` reuses the last build. `SURFACE_CHROME` selects Chrome and
 `SURFACE_CHROME_ARGS` adds browser flags. Each browser suite starts its own
 local HTTP server on a free port; `--url` tests an already running server
