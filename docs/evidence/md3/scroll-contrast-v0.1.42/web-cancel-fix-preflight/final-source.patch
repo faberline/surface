@@ -1,0 +1,241 @@
+--- a/crates/surface-platform/src/web_input.rs
++++ b/crates/surface-platform/src/web_input.rs
+@@ -465,7 +465,7 @@
+                 let Some(event) = event.dyn_ref::<web_sys::CompositionEvent>() else {
+                     return;
+                 };
+-                composing.set(false);
++                let was_composing = composing.replace(false);
+                 text.borrow_mut().clear();
+                 let value = event.data().unwrap_or_default();
+                 let id = owner.borrow_mut().take();
+@@ -485,18 +485,22 @@
+                         ImeEvent::Cancel
+                     },
+                 );
+-                if commit {
+-                    let snapshot = runtime.borrow().input_snapshot();
+-                    let mut mirror = mirror.borrow_mut();
+-                    if let Some(snapshot) = snapshot.filter(|snapshot| {
+-                        !snapshot.composing
+-                            && id.as_deref() == Some(snapshot.id.as_str())
+-                            && mirror.owns(snapshot)
+-                            && textarea_value(&snapshot.value).as_ref() == area.value()
+-                    }) {
+-                        // The browser finished the same edit. The next select
+-                        // may arrive before a frame can acknowledge the commit.
+-                        mirror.state = Some(EditorState::from_snapshot(&snapshot));
++                let snapshot = runtime.borrow().input_snapshot();
++                if let Some(snapshot) = snapshot.filter(|snapshot| {
++                    !snapshot.composing
++                        && id.as_deref() == Some(snapshot.id.as_str())
++                        && mirror.borrow().owns(snapshot)
++                }) {
++                    if !commit && was_composing {
++                        // Cancel restores the authoritative value and its
++                        // saved range. The browser may have removed the
++                        // selected text with the temporary composition.
++                        // Finish synchronization before the next native edit.
++                        write_host_input(&area, &snapshot, &mirror, true);
++                    } else if commit && textarea_value(&snapshot.value).as_ref() == area.value() {
++                        // The next select may arrive before the first frame
++                        // that acknowledges this browser commit.
++                        mirror.borrow_mut().state = Some(EditorState::from_snapshot(&snapshot));
+                     }
+                 }
+             })?;
+--- a/e2e/src/ime.rs
++++ b/e2e/src/ime.rs
+@@ -15,6 +15,50 @@
+ 
+ const STATE: &str = "window.showcase.editing_state()";
+ 
++// Reliable I11 event order. Keep the real cancel redraw pending until Chrome
++// has applied the trusted selection and delivered its ordinary DOM events.
++const HOLD_CANCEL_REDRAW: &str = r#"(() => {
++    const original = window.requestAnimationFrame;
++    const request = original.bind(window);
++    let holding = false;
++    let trustedSelectAll = false;
++    let trustedRight = false;
++    let frames = 0;
++    const pending = [];
++    const keydown = event => {
++        if (!holding || event.target.id !== "surface-text-input") return;
++        if (event.key === "ArrowRight") trustedRight = event.isTrusted;
++        if (event.key.toLowerCase() === "a" && (event.metaKey || event.ctrlKey)) {
++            trustedSelectAll = event.isTrusted;
++        }
++    };
++    const controlled = callback => request(time => {
++        if (holding) pending.push(callback);
++        else { ++frames; callback(time); }
++    });
++    window.requestAnimationFrame = controlled;
++    window.cancelRedrawTest = {
++        hold() {
++            holding = true;
++            trustedSelectAll = trustedRight = false;
++            window.requestAnimationFrame = controlled;
++            window.addEventListener("keydown", keydown, true);
++        },
++        release() {
++            holding = false;
++            window.requestAnimationFrame = original;
++            window.removeEventListener("keydown", keydown, true);
++            for (const callback of pending.splice(0)) request(callback);
++        },
++        snapshot() {
++            const editor = document.getElementById("surface-text-input");
++            return {browser:[editor.selectionStart,editor.selectionEnd],
++                value:editor.value,direction:editor.selectionDirection,
++                runtime:window.showcase.editing_state(),trustedSelectAll,trustedRight,frames};
++        }
++    };
++})()"#;
++
+ async fn wait_value(tab: &Tab, value: &str) -> Result<()> {
+     tab.wait_for(&format!("{STATE}[0] === {}", js(value))).await
+ }
+@@ -36,6 +80,11 @@
+ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     let (_server, url) = env.serve("showcase")?;
+     let tab = chrome.page(1000, 900, 2.0).await?;
++    tab.cdp(
++        "Page.addScriptToEvaluateOnNewDocument",
++        json!({"source": HOLD_CANCEL_REDRAW}),
++    )
++    .await?;
+     tab.goto(&url).await?;
+ 
+     step("I1", "Ready; click name → textarea focused");
+@@ -138,6 +187,7 @@
+     step("I10", "compose ㄅㄆ then cancel → value kept");
+     compose(&tab, "ㄅㄆ").await?;
+     composing(&tab, true).await?;
++    tab.eval("window.cancelRedrawTest.hold()").await?;
+     tab.ime_compose("", 0, 0).await?;
+     composing(&tab, false).await?;
+     wait_value(&tab, "台文").await?;
+@@ -147,6 +197,121 @@
+         "select all, commit text with ZWJ emoji and combining mark",
+     );
+     let mixed = "中👨‍👩‍👧‍👦e\u{301}";
++    tab.shortcut("A").await?;
++    let before = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    tab.viewport(1001, 900).await?;
++    tab.eval("window.cancelRedrawTest.release()").await?;
++    tab.wait_for("JSON.parse(window.showcase.export_dom()).layout?.viewport?.width === 1001")
++        .await?;
++    tab.settle().await?;
++    let after = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    tab.insert_text(mixed).await?;
++    let replacement = tab.eval(STATE).await?;
++    env.write_json(
++        "browser-ime-cancel-redraw.json",
++        &json!({"before":before,"after":after,"redraw_width":1001,"replacement":replacement}),
++    )?;
++    check_eq!(
++        before["trustedSelectAll"],
++        true,
++        "actual browser Select All is trusted"
++    );
++    check_eq!(
++        before["browser"],
++        json!([0, 2]),
++        "Chrome selected the entire pre-cancel value"
++    );
++    check_eq!(
++        after["browser"],
++        before["browser"],
++        "redraw preserves Chrome's new selection after cancel"
++    );
++    check_eq!(
++        json!([after["runtime"][2], after["runtime"][3]]),
++        json!(["0", "6"]),
++        "runtime retains the complete selection of two CJK characters"
++    );
++    wait_value(&tab, mixed).await?;
++    tab.viewport(1000, 900).await?;
++    tab.wait_for("JSON.parse(window.showcase.export_dom()).layout?.viewport?.width === 1000")
++        .await?;
++    tab.settle().await?;
++
++    tab.shortcut("A").await?;
++    tab.insert_text("台文").await?;
++    wait_value(&tab, "台文").await?;
++    tab.press("Shift+ArrowLeft").await?;
++    tab.wait_for(
++        "(() => {
++          const e=document.querySelector('#surface-text-input'), s=window.showcase.editing_state();
++          return e.selectionStart===1 && e.selectionEnd===2 && e.selectionDirection==='backward'
++            && s[2]==='6' && s[3]==='3';
++        })()",
++    )
++    .await?;
++    compose(&tab, "ㄅㄆ").await?;
++    composing(&tab, true).await?;
++    tab.eval("window.cancelRedrawTest.hold()").await?;
++    tab.ime_compose("", 0, 0).await?;
++    composing(&tab, false).await?;
++    let canceled = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    tab.press("ArrowRight").await?;
++    let moved = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    tab.insert_text("X").await?;
++    let unpainted = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    tab.eval("window.cancelRedrawTest.release()").await?;
++    tab.settle().await?;
++    let repainted = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    env.write_json(
++        "browser-ime-cancel-selected-redraw.json",
++        &json!({"canceled":canceled,"moved":moved,"unpainted":unpainted,"repainted":repainted}),
++    )?;
++    check_eq!(
++        canceled["value"],
++        "台文",
++        "selected cancel restores the native editor before paint"
++    );
++    check_eq!(
++        canceled["direction"],
++        "backward",
++        "selected cancel keeps the browser selection direction"
++    );
++    check_eq!(
++        canceled["browser"],
++        json!([1, 2]),
++        "selected cancel restores the exact native range"
++    );
++    check_eq!(
++        json!([canceled["runtime"][2], canceled["runtime"][3]]),
++        json!(["6", "3"]),
++        "selected cancel retains the same directed Runtime byte range"
++    );
++    check_eq!(
++        moved["trustedRight"],
++        true,
++        "actual browser Right key is trusted"
++    );
++    check_eq!(
++        moved["browser"],
++        json!([2, 2]),
++        "trusted Right collapses at the end of restored text"
++    );
++    check_eq!(
++        unpainted["frames"],
++        canceled["frames"],
++        "Right and insertion run before any held repaint"
++    );
++    check_eq!(
++        unpainted["runtime"][0],
++        "台文X",
++        "first post-cancel insertion preserves the original text"
++    );
++    check_eq!(
++        repainted["runtime"][0],
++        "台文X",
++        "redraw preserves the accepted insertion"
++    );
++
+     tab.shortcut("A").await?;
+     tab.insert_text(mixed).await?;
+     wait_value(&tab, mixed).await?;

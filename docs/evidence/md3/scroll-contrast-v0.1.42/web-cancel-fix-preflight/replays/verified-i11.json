@@ -1,0 +1,56 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "runner": "same copied stock IME source with one I11 patch",
+  "base": "ab8615c8495d99a652f4fac38d4db37f08c82c7f",
+  "test_only_patch_sha256": "ab548ca58667301302786c8f181b36c8b0a73241a93d8bd55a5c78d28fdb7a23",
+  "fixed_production_patch_sha256": "04d0af0591818a065abb73bda551762e3eac3894ee98f2c560fddfb1123c3e04",
+  "fixed_source_seal_sha256": "835f2c69ebd3b147691e3ec7303c25a7b05ea2df6afc1f098dea60f25480cf35",
+  "failed_rollback": {
+    "old_browser_range": [
+      0,
+      2
+    ],
+    "new_browser_range": [
+      1,
+      1
+    ],
+    "replacement": "台中👨‍👩‍👧‍👦é文"
+  },
+  "fixed_replacement": {
+    "browser_range": [
+      0,
+      2
+    ],
+    "runtime_bytes": [
+      "0",
+      "6"
+    ],
+    "replacement": "中👨‍👩‍👧‍👦é"
+  },
+  "separate_selected_prepaint_failure": {
+    "expected": "台文X",
+    "all_three_observed": "台X",
+    "verified_on": [
+      "0.1.41",
+      "rejected 0.1.42",
+      "matched-value 0.1.42 repair"
+    ]
+  },
+  "widened_selected_candidate": {
+    "source_sha256": "c99ed8ff89b0cee66a84732598ac2ba652802c2e52c9122c3c5bb27f250ccd4b",
+    "test_patch_sha256": "d31dbaa7c41bb8fb312f34fc89660eb95ddffa59a725844808ec5cad4609f903",
+    "source_only_patch_sha256": "443c46814a685d5772d2e823275703d79d4ea767b794a94a012059f1cd41f7ba",
+    "canceled_direction": "backward",
+    "cancel_browser_range": [
+      1,
+      2
+    ],
+    "after_right_browser_range": [
+      2,
+      2
+    ],
+    "stored_before_repaint": "台文X",
+    "ime_count": 20,
+    "checks": 77
+  }
+}

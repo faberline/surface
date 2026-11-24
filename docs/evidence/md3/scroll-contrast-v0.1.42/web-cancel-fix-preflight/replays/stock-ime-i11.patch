@@ -1,0 +1,109 @@
+--- a/e2e/src/ime.rs
++++ b/e2e/src/ime.rs
+@@ -15,6 +15,41 @@
+ 
+ const STATE: &str = "window.showcase.editing_state()";
+ 
++// Reliable I11 event order. Keep the real cancel redraw pending until Chrome
++// has applied the trusted selection and delivered its ordinary DOM events.
++const HOLD_CANCEL_REDRAW: &str = r#"(() => {
++    const original = window.requestAnimationFrame;
++    const request = original.bind(window);
++    let holding = false;
++    let trustedSelectAll = false;
++    const pending = [];
++    const keydown = event => {
++        if (holding && event.target.id === "surface-text-input" &&
++            event.key.toLowerCase() === "a" && (event.metaKey || event.ctrlKey)) {
++            trustedSelectAll = event.isTrusted;
++        }
++    };
++    window.addEventListener("keydown", keydown, true);
++    window.requestAnimationFrame = callback => request(time => {
++        if (holding) pending.push(callback);
++        else callback(time);
++    });
++    window.cancelRedrawTest = {
++        hold() { holding = true; },
++        release() {
++            holding = false;
++            window.requestAnimationFrame = original;
++            window.removeEventListener("keydown", keydown, true);
++            for (const callback of pending.splice(0)) request(callback);
++        },
++        snapshot() {
++            const editor = document.getElementById("surface-text-input");
++            return {browser:[editor.selectionStart,editor.selectionEnd],
++                runtime:window.showcase.editing_state(), trustedSelectAll};
++        }
++    };
++})()"#;
++
+ async fn wait_value(tab: &Tab, value: &str) -> Result<()> {
+     tab.wait_for(&format!("{STATE}[0] === {}", js(value))).await
+ }
+@@ -36,6 +71,11 @@
+ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     let (_server, url) = env.serve("showcase")?;
+     let tab = chrome.page(1000, 900, 2.0).await?;
++    tab.cdp(
++        "Page.addScriptToEvaluateOnNewDocument",
++        json!({"source": HOLD_CANCEL_REDRAW}),
++    )
++    .await?;
+     tab.goto(&url).await?;
+ 
+     step("I1", "Ready; click name → textarea focused");
+@@ -138,6 +178,7 @@
+     step("I10", "compose ㄅㄆ then cancel → value kept");
+     compose(&tab, "ㄅㄆ").await?;
+     composing(&tab, true).await?;
++    tab.eval("window.cancelRedrawTest.hold()").await?;
+     tab.ime_compose("", 0, 0).await?;
+     composing(&tab, false).await?;
+     wait_value(&tab, "台文").await?;
+@@ -148,8 +189,44 @@
+     );
+     let mixed = "中👨‍👩‍👧‍👦e\u{301}";
+     tab.shortcut("A").await?;
++    let before = tab.eval("window.cancelRedrawTest.snapshot()").await?;
++    tab.viewport(1001, 900).await?;
++    tab.eval("window.cancelRedrawTest.release()").await?;
++    tab.wait_for("JSON.parse(window.showcase.export_dom()).layout?.viewport?.width === 1001")
++        .await?;
++    tab.settle().await?;
++    let after = tab.eval("window.cancelRedrawTest.snapshot()").await?;
+     tab.insert_text(mixed).await?;
++    let replacement = tab.eval(STATE).await?;
++    env.write_json(
++        "browser-ime-cancel-redraw.json",
++        &json!({"before":before,"after":after,"redraw_width":1001,"replacement":replacement}),
++    )?;
++    check_eq!(
++        before["trustedSelectAll"],
++        true,
++        "actual browser Select All is trusted"
++    );
++    check_eq!(
++        before["browser"],
++        json!([0, 2]),
++        "Chrome selected the entire pre-cancel value"
++    );
++    check_eq!(
++        after["browser"],
++        before["browser"],
++        "redraw preserves Chrome's new selection after cancel"
++    );
++    check_eq!(
++        json!([after["runtime"][2], after["runtime"][3]]),
++        json!(["0", "6"]),
++        "runtime retains the complete selection of two CJK characters"
++    );
+     wait_value(&tab, mixed).await?;
++    tab.viewport(1000, 900).await?;
++    tab.wait_for("JSON.parse(window.showcase.export_dom()).layout?.viewport?.width === 1000")
++        .await?;
++    tab.settle().await?;
+ 
+     step("I12", "Backspace deletes one grapheme at a time");
+     tab.press("Backspace").await?;

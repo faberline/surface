@@ -1,0 +1,37 @@
+--- a/crates/surface-platform/src/web_input.rs
++++ b/crates/surface-platform/src/web_input.rs
+@@ -485,18 +485,22 @@
+                         ImeEvent::Cancel
+                     },
+                 );
+-                if commit {
+-                    let snapshot = runtime.borrow().input_snapshot();
+-                    let mut mirror = mirror.borrow_mut();
+-                    if let Some(snapshot) = snapshot.filter(|snapshot| {
+-                        !snapshot.composing
+-                            && id.as_deref() == Some(snapshot.id.as_str())
+-                            && mirror.owns(snapshot)
+-                            && textarea_value(&snapshot.value).as_ref() == area.value()
+-                    }) {
+-                        // The browser finished the same edit. The next select
+-                        // may arrive before a frame can acknowledge the commit.
+-                        mirror.state = Some(EditorState::from_snapshot(&snapshot));
++                let snapshot = runtime.borrow().input_snapshot();
++                if let Some(snapshot) = snapshot.filter(|snapshot| {
++                    !snapshot.composing
++                        && id.as_deref() == Some(snapshot.id.as_str())
++                        && mirror.borrow().owns(snapshot)
++                        && textarea_value(&snapshot.value).as_ref() == area.value()
++                }) {
++                    if commit {
++                        // The next select may arrive before the first frame
++                        // that acknowledges this browser commit.
++                        mirror.borrow_mut().state = Some(EditorState::from_snapshot(&snapshot));
++                    } else {
++                        // Restore the saved range now and acknowledge the
++                        // cancellation. The next native select can otherwise
++                        // race the first frame and lose the user's new range.
++                        write_host_input(&area, &snapshot, &mirror, true);
+                     }
+                 }
+             })?;

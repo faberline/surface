@@ -2,7 +2,7 @@
 
 ## Cancellation regression
 
-The current draft is on hold. A trusted Select All after a canceled composition can lose its selection during a real redraw. The controlled replay passed on v0.1.41 and failed on this draft. [Reproduction and traces](web-cancel-regression/README.md)
+The current draft is on hold. A trusted Select All after a canceled composition can lose its selection during a real redraw. The controlled replay passed on v0.1.41 and failed on this draft. [Reproduction and traces](web-cancel-regression/README.md) · [Repair preflight](web-cancel-fix-preflight/README.md)
 
 ## Corrected candidate
 

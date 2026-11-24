@@ -1,0 +1,40 @@
+case smoke ...
+browser: Chrome/158.0.8127.37
+  [S1] #status reaches Ready within 45 s
+  [S2] navigator.gpu exists
+  [S3] root width matches canvas; buffer is CSS width × DPR
+  [S4] click increment → count=1
+  [S5] Enter → count=2
+  [S6] Tab → reset, Tab → name
+  [S7] type Chris, Backspace → Chri
+  [S8] click dark-mode → dark=true
+  [S9] click disabled, two frames → still count=2
+  [S10] screenshot browser-showcase-wide.png
+  [S11] resize to 480×600 → root width 480
+  [S12] click increment → count=3
+  [S13] wheel 350 at (200,450) → title moves up
+  [S14] no page errors and no console errors
+  [S15] #status still starts with Ready
+  [S16] screenshot and evidence JSON
+  evidence: {"browser":"Chrome/158.0.8127.37","driver":"jet-bridge CDP","state":"count=3;dark=true;name=Chri;nodes=31;focused=increment","errors":[],"adapter":{"vendor":"apple","architecture":"metal-3","device":"","description":"","isFallbackAdapter":false},"viewport":{"width":480,"height":600}}
+  [S17] navigator.gpu asserted before the timer write
+  [S18] setTimeout write wakes the host: name and DOM change
+  [S19] the canvas repainted: screenshot differs, no page errors
+case smoke ... ok (19 steps, 34 checks, 1.6s)
+case ime ...
+  [I1] Ready; click name → textarea focused
+  [I2] record composition and input events
+  [I3] compose ㄓㄨㄥ → preedit, composing, empty value
+  [I4] compose 中文 → preedit; screenshot
+  [I5] DOM export during preedit
+  [I6] textarea position matches input_caret()
+  [I7] commit 中文
+  [I8] setSelectionRange(0,1) → bytes 0..3
+  [I9] compose and commit 台 → 台文
+  [I10] compose ㄅㄆ then cancel → value kept
+  [I11] select all, commit text with ZWJ emoji and combining mark
+case ime ... FAILED after 0.5s: selected cancel restores the native editor before paint: expected "台文", got String("台")
+  last step: I11
+
+e2e result: 1 passed; 1 failed; 68 checks; artifacts in <artifacts>
+failed: ime
