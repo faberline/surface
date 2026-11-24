@@ -1,0 +1,912 @@
+{
+  "source_manifest_sha256": "f085d23da82a3505bb94a1e14c104d9cdf2653ea28da2f9ff0e4f6de28153a97",
+  "gallery_sha256": "d96bc8be046d175a8e9cfc0c77eca2da7c9137a907e2faa507822b4c455d986d",
+  "cli_sha256": "ff049c919373a2b7e2982ac2f624442fd19b4c48ef57a2d97e7b2084e85140f2",
+  "motion": "native headless Reduce Motion canonical endpoints",
+  "input": "headless DevTools Action.key, Action.activate and Action.fill",
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ],
+  "profiles": {
+    "numeric": {
+      "initial": {
+        "name": "數量",
+        "min": 2,
+        "max": 10,
+        "step": 2,
+        "value": 10,
+        "value_text": "10 件",
+        "painted": {
+          "center": "10",
+          "above": "2",
+          "below": "8"
+        },
+        "saved": "已選 10 件"
+      },
+      "up_wrap": {
+        "name": "數量",
+        "min": 2,
+        "max": 10,
+        "step": 2,
+        "value": 2,
+        "value_text": "2 件",
+        "painted": {
+          "center": "2",
+          "above": "4",
+          "below": "10"
+        },
+        "saved": "已選 2 件"
+      },
+      "down_wrap": {
+        "name": "數量",
+        "min": 2,
+        "max": 10,
+        "step": 2,
+        "value": 10,
+        "value_text": "10 件",
+        "painted": {
+          "center": "10",
+          "above": "2",
+          "below": "8"
+        },
+        "saved": "已選 10 件"
+      },
+      "minimum_geometry": {
+        "face": {
+          "height": 200.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 186.0
+        },
+        "owner": {
+          "height": 228.0,
+          "width": 130.0,
+          "x": 28.0,
+          "y": 172.0
+        },
+        "center": {
+          "height": 64.0,
+          "width": 33.0,
+          "x": 76.5,
+          "y": 254.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 172.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 352.0
+        },
+        "above_label": {
+          "height": 52.0,
+          "width": 26.0,
+          "x": 80.0,
+          "y": 168.0
+        },
+        "below_label": {
+          "height": 52.0,
+          "width": 51.0,
+          "x": 67.5,
+          "y": 352.0
+        },
+        "focus_ring": {
+          "height": 210.0,
+          "width": 130.0,
+          "x": 28.0,
+          "y": 181.0
+        }
+      },
+      "maximum_geometry": {
+        "face": {
+          "height": 200.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 186.0
+        },
+        "owner": {
+          "height": 228.0,
+          "width": 130.0,
+          "x": 28.0,
+          "y": 172.0
+        },
+        "center": {
+          "height": 64.0,
+          "width": 65.0,
+          "x": 60.5,
+          "y": 254.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 172.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 120.0,
+          "x": 33.0,
+          "y": 352.0
+        },
+        "above_label": {
+          "height": 52.0,
+          "width": 26.0,
+          "x": 80.0,
+          "y": 168.0
+        },
+        "below_label": {
+          "height": 52.0,
+          "width": 26.0,
+          "x": 80.0,
+          "y": 352.0
+        },
+        "focus_ring": {
+          "height": 210.0,
+          "width": 130.0,
+          "x": 28.0,
+          "y": 181.0
+        }
+      },
+      "focus_path": [
+        "scroll-field-demo-theme",
+        "scroll-field-demo-rtl",
+        "scroll-field-demo-large-text",
+        "scroll-field-demo-small",
+        "scroll-field-demo-medium",
+        "scroll-field-demo-large",
+        "scroll-field-demo-compact",
+        "scroll-field-demo-disabled",
+        "scroll-field-demo-wide-range",
+        "scroll-field-demo-value-adjustable"
+      ],
+      "back": {
+        "tab_path": [
+          "scroll-field-demo-value-use-input",
+          "scroll-field-demo-back"
+        ],
+        "restored": "scroll-loop-numeric-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-loop-numeric-light-minimum.png",
+          "sha256": "a0cd3d7d64a615739e9529a4470bd433d9103dc67209250b51f186ea43375dea",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              232,
+              232,
+              232,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "active": {
+              "text": "2",
+              "ink_box": [
+                79,
+                268,
+                26,
+                43
+              ],
+              "ink_pixels": 370,
+              "rgb_tolerance": 64,
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ]
+            },
+            "focus_layer_alpha": 26,
+            "text_contrast": 13.9356,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "above": {
+              "text": "4",
+              "ink_box": [
+                81,
+                186,
+                22,
+                28
+              ],
+              "ink_pixels": 228,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            },
+            "below": {
+              "text": "10",
+              "ink_box": [
+                73,
+                364,
+                42,
+                22
+              ],
+              "ink_pixels": 283,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-loop-numeric-light-maximum.png",
+          "sha256": "cb3b9ead786cf610d8d39abe24e6078f498d534cd85585a92ea4c7c6d3cf393a",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              232,
+              232,
+              232,
+              255
+            ],
+            "base_face_rgba": [
+              255,
+              255,
+              255,
+              255
+            ],
+            "active": {
+              "text": "10",
+              "ink_box": [
+                66,
+                268,
+                55,
+                44
+              ],
+              "ink_pixels": 748,
+              "rgb_tolerance": 64,
+              "rgba": [
+                29,
+                27,
+                32,
+                255
+              ]
+            },
+            "focus_layer_alpha": 26,
+            "text_contrast": 13.9356,
+            "focus_stroke_rgba": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "focus_gap_rgba": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "above": {
+              "text": "2",
+              "ink_box": [
+                82,
+                186,
+                21,
+                28
+              ],
+              "ink_pixels": 175,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            },
+            "below": {
+              "text": "8",
+              "ink_box": [
+                83,
+                364,
+                19,
+                22
+              ],
+              "ink_pixels": 192,
+              "rgb_tolerance": 48,
+              "rgba": [
+                122,
+                117,
+                127,
+                255
+              ]
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "choice": {
+      "rtl": true,
+      "initial": {
+        "name": "地點",
+        "min": 1,
+        "max": 2,
+        "step": 1,
+        "value": 1,
+        "value_text": "板橋",
+        "painted": {
+          "center": "板橋",
+          "above": "台北 車站",
+          "below": "台北 車站"
+        },
+        "saved": "已選 板橋"
+      },
+      "down_wrap": {
+        "name": "地點",
+        "min": 1,
+        "max": 2,
+        "step": 1,
+        "value": 2,
+        "value_text": "台北 車站",
+        "painted": {
+          "center": "台北 車站",
+          "above": "板橋",
+          "below": "板橋"
+        },
+        "saved": "已選 台北 車站"
+      },
+      "up_wrap": {
+        "name": "地點",
+        "min": 1,
+        "max": 2,
+        "step": 1,
+        "value": 1,
+        "value_text": "板橋",
+        "painted": {
+          "center": "板橋",
+          "above": "台北 車站",
+          "below": "台北 車站"
+        },
+        "saved": "已選 板橋"
+      },
+      "reordered": {
+        "name": "地點",
+        "min": 1,
+        "max": 2,
+        "step": 1,
+        "value": 2,
+        "value_text": "板橋",
+        "painted": {
+          "center": "板橋",
+          "above": "台北 車站",
+          "below": "台北 車站"
+        },
+        "saved": "已選 板橋"
+      },
+      "preserved_authored_id": "banqiao",
+      "focus_path": [
+        "scroll-choice-demo-large-text",
+        "scroll-choice-demo-compact",
+        "scroll-choice-demo-disabled",
+        "scroll-choice-demo-reorder",
+        "scroll-choice-demo-relabel",
+        "scroll-choice-demo-value-adjustable"
+      ],
+      "reorder_focus_path": [
+        "scroll-choice-demo-relabel",
+        "scroll-choice-demo-value-adjustable"
+      ],
+      "station_geometry": {
+        "face": {
+          "height": 200.0,
+          "width": 302.0,
+          "x": 625.0,
+          "y": 186.0
+        },
+        "owner": {
+          "height": 228.0,
+          "width": 312.0,
+          "x": 620.0,
+          "y": 172.0
+        },
+        "center": {
+          "height": 64.0,
+          "width": 242.0,
+          "x": 655.0,
+          "y": 254.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 302.0,
+          "x": 625.0,
+          "y": 172.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 302.0,
+          "x": 625.0,
+          "y": 352.0
+        },
+        "above_label": {
+          "height": 52.0,
+          "width": 91.0,
+          "x": 730.5,
+          "y": 168.0
+        },
+        "below_label": {
+          "height": 52.0,
+          "width": 91.0,
+          "x": 730.5,
+          "y": 352.0
+        },
+        "focus_ring": {
+          "height": 210.0,
+          "width": 312.0,
+          "x": 620.0,
+          "y": 181.0
+        }
+      },
+      "reordered_geometry": {
+        "face": {
+          "height": 200.0,
+          "width": 302.0,
+          "x": 625.0,
+          "y": 186.0
+        },
+        "owner": {
+          "height": 228.0,
+          "width": 312.0,
+          "x": 620.0,
+          "y": 172.0
+        },
+        "center": {
+          "height": 64.0,
+          "width": 115.0,
+          "x": 718.5,
+          "y": 254.0
+        },
+        "above_target": {
+          "height": 48.0,
+          "width": 302.0,
+          "x": 625.0,
+          "y": 172.0
+        },
+        "below_target": {
+          "height": 48.0,
+          "width": 302.0,
+          "x": 625.0,
+          "y": 352.0
+        },
+        "above_label": {
+          "height": 52.0,
+          "width": 192.0,
+          "x": 680.0,
+          "y": 168.0
+        },
+        "below_label": {
+          "height": 52.0,
+          "width": 192.0,
+          "x": 680.0,
+          "y": 352.0
+        },
+        "focus_ring": {
+          "height": 210.0,
+          "width": 312.0,
+          "x": 620.0,
+          "y": 181.0
+        }
+      },
+      "back": {
+        "tab_path": [
+          "scroll-choice-demo-value-use-input",
+          "scroll-choice-demo-back"
+        ],
+        "restored": "scroll-loop-choice-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-loop-choice-dark-station.png",
+          "sha256": "68d400345e1470bfee6dd8d6d6080d26c632c46b4bc1fc9f77f6d6f9b776e2c6",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              37,
+              35,
+              41,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "active": {
+              "text": "台北 車站",
+              "ink_box": [
+                661,
+                263,
+                232,
+                53
+              ],
+              "ink_pixels": 3292,
+              "rgb_tolerance": 64,
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ]
+            },
+            "focus_layer_alpha": 26,
+            "text_contrast": 11.9929,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "above": {
+              "text": "板橋",
+              "ink_box": [
+                732,
+                186,
+                87,
+                32
+              ],
+              "ink_pixels": 1102,
+              "rgb_tolerance": 48,
+              "rgba": [
+                148,
+                143,
+                153,
+                255
+              ]
+            },
+            "below": {
+              "text": "板橋",
+              "ink_box": [
+                733,
+                359,
+                86,
+                27
+              ],
+              "ink_pixels": 927,
+              "rgb_tolerance": 48,
+              "rgba": [
+                148,
+                143,
+                153,
+                255
+              ]
+            }
+          }
+        },
+        {
+          "name": "scroll-loop-choice-dark-reordered.png",
+          "sha256": "c0ed3ba05645e0f7e3536cecfe45f0c09e81d8fcca79c41c5f6e8678c588f131",
+          "format": "png",
+          "width": 960,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              37,
+              35,
+              41,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "active": {
+              "text": "板橋",
+              "ink_box": [
+                720,
+                263,
+                110,
+                53
+              ],
+              "ink_pixels": 2124,
+              "rgb_tolerance": 64,
+              "rgba": [
+                230,
+                224,
+                233,
+                255
+              ]
+            },
+            "focus_layer_alpha": 26,
+            "text_contrast": 11.9929,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "above": {
+              "text": "台北 車站",
+              "ink_box": [
+                685,
+                186,
+                183,
+                32
+              ],
+              "ink_pixels": 1778,
+              "rgb_tolerance": 48,
+              "rgba": [
+                148,
+                143,
+                153,
+                255
+              ]
+            },
+            "below": {
+              "text": "台北 車站",
+              "ink_box": [
+                685,
+                359,
+                183,
+                27
+              ],
+              "ink_pixels": 1352,
+              "rgb_tolerance": 48,
+              "rgba": [
+                148,
+                143,
+                153,
+                255
+              ]
+            }
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        960,
+        820
+      ]
+    },
+    "compact": {
+      "rtl": true,
+      "text_scale": 2,
+      "fallback_initial": "板橋",
+      "submitted_alias": "台北車站",
+      "normalized_editor": "台北",
+      "saved_after_enter": "已選 台北 車站",
+      "authored_selected_id": "taipei-station",
+      "retained_focus": "scroll-choice-demo-value-editor",
+      "geometry": {
+        "face": {
+          "height": 88.0,
+          "width": 254.0,
+          "x": 33.0,
+          "y": 325.0
+        },
+        "editor": {
+          "height": 88.0,
+          "width": 254.0,
+          "x": 33.0,
+          "y": 325.0
+        }
+      },
+      "focus_path": [
+        "scroll-choice-demo-disabled",
+        "scroll-choice-demo-reorder",
+        "scroll-choice-demo-relabel",
+        "scroll-choice-demo-value-editor"
+      ],
+      "back": {
+        "tab_path": [
+          "scroll-choice-demo-back"
+        ],
+        "restored": "scroll-loop-choice-show"
+      },
+      "captures": [
+        {
+          "name": "scroll-loop-choice-dark-compact.png",
+          "sha256": "3ab475175a14b88f2e7803543101fe36d633a7b01cc3540113b07d175c2b8011",
+          "format": "png",
+          "width": 320,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "active": {
+              "text": "板橋",
+              "ink_box": [
+                33,
+                325,
+                254,
+                88
+              ],
+              "ink_pixels": 2627,
+              "rgb_tolerance": 64,
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            },
+            "focus_layer_alpha": 0,
+            "text_contrast": 11.3708,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "editor_stroke_rgba": [
+              207,
+              189,
+              254,
+              255
+            ]
+          }
+        },
+        {
+          "name": "scroll-loop-choice-dark-compact-station.png",
+          "sha256": "303dd26353256fe8c44fcdd23b66a83ebad00abb897267cc82554d8a65012fb2",
+          "format": "png",
+          "width": 320,
+          "height": 820,
+          "scale": 1.0,
+          "visible_windows": [
+            0,
+            0
+          ],
+          "paint": {
+            "face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "base_face_rgba": [
+              15,
+              13,
+              19,
+              255
+            ],
+            "active": {
+              "text": "台北",
+              "ink_box": [
+                33,
+                325,
+                254,
+                88
+              ],
+              "ink_pixels": 2218,
+              "rgb_tolerance": 64,
+              "rgba": [
+                207,
+                189,
+                254,
+                255
+              ]
+            },
+            "focus_layer_alpha": 0,
+            "text_contrast": 11.3708,
+            "focus_stroke_rgba": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "focus_gap_rgba": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "editor_stroke_rgba": [
+              207,
+              189,
+              254,
+              255
+            ]
+          }
+        }
+      ],
+      "visible_windows": [
+        0,
+        0
+      ],
+      "viewport": [
+        320,
+        820
+      ]
+    }
+  }
+}
