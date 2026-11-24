@@ -1,0 +1,253 @@
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -284,7 +284,15 @@
+             let binding = &self.bindings[&id];
+             let options = &binding.text_options;
+             let g = &computed.nodes[id.index()];
+-            let mut origin = g.bounds.inset(node.style().padding);
++            let content_inset = if options.multiline {
++                0.
++            } else {
++                binding.single_line_text_horizontal_inset
++            };
++            let mut origin = g
++                .bounds
++                .inset(node.style().padding)
++                .inset_horizontal(content_inset);
+             let content_width = origin.width;
+             let text = editor.display_value();
+             let text_style = node.style().text_style();
+@@ -397,6 +405,9 @@
+                 },
+             );
+             decorations.insert(id, decoration);
++            if content_inset > 0. {
++                display.set_presented_text_input_horizontal_inset(id, content_inset)?;
++            }
+             if let Some(placeholder) = placeholder {
+                 display.set_presented_text_input_placeholder(id, placeholder.clone())?;
+             }
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -80,6 +80,7 @@
+     text_options: TextOptions,
+     center_single_line_text: bool,
+     right_align_single_line_text: bool,
++    single_line_text_horizontal_inset: f32,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+@@ -136,6 +137,7 @@
+             text_options: TextOptions::default(),
+             center_single_line_text: false,
+             right_align_single_line_text: false,
++            single_line_text_horizontal_inset: 0.,
+             text_input_placeholder: None,
+             value: None,
+             accessible_step: None,
+@@ -389,6 +391,13 @@
+     /// shaped order of the text use the same rules as other editors.
+     pub fn right_align_single_line_text(mut self) -> Self {
+         self.right_align_single_line_text = true;
++        self
++    }
++
++    /// Inset the content on both sides of a single-line editor. The focus
++    /// outline, hit target, and vertical placement keep their original bounds.
++    pub fn inset_single_line_text_horizontally(mut self, inset: f32) -> Self {
++        self.single_line_text_horizontal_inset = if inset.is_finite() { inset.max(0.) } else { 0. };
+         self
+     }
+ 
+@@ -876,6 +885,7 @@
+     text_options: TextOptions,
+     center_single_line_text: bool,
+     right_align_single_line_text: bool,
++    single_line_text_horizontal_inset: f32,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+@@ -1341,6 +1351,7 @@
+                     text_options: view.text_options,
+                     center_single_line_text: view.center_single_line_text,
+                     right_align_single_line_text: view.right_align_single_line_text,
++                    single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
+                     text_input_placeholder: view.text_input_placeholder,
+                     value: view.value,
+                     accessible_step: view.accessible_step,
+--- a/crates/surface-app/tests/editing.rs
++++ b/crates/surface-app/tests/editing.rs
+@@ -315,6 +315,7 @@
+             )
+             .center_single_line_text()
+             .right_align_single_line_text()
++            .inset_single_line_text_horizontally(4.)
+             .text_input_placeholder("搜尋文件", Color::rgb(90, 78, 87))
+             .on_input(|value| value)])
+         }
+@@ -339,18 +340,18 @@
+     let mut runtime = Runtime::new(Editor(String::new())).unwrap();
+     runtime.activate("query").unwrap();
+     let empty = runtime.render(200., 80., &mut Metrics).unwrap();
+-    assert_eq!(text_origin(&empty, "搜尋文件"), (134., 12.));
++    assert_eq!(text_origin(&empty, "搜尋文件"), (130., 12.));
+     let input = runtime.input_snapshot().unwrap();
+     assert_eq!(input.value, "");
+-    assert_eq!(input.caret.unwrap(), Rect::new(198., 12., 1., 24.));
++    assert_eq!(input.caret.unwrap(), Rect::new(194., 12., 1., 24.));
+ 
+     runtime.dispatch(Event::Text("設計".into())).unwrap();
+     let query = runtime.render(200., 80., &mut Metrics).unwrap();
+-    assert_eq!(text_origin(&query, "設計"), (166., 12.));
++    assert_eq!(text_origin(&query, "設計"), (162., 12.));
+     for event in [
+-        Event::PointerDown { x: 168., y: 20. },
+-        Event::PointerMove { x: 179., y: 20. },
+-        Event::PointerUp { x: 179., y: 20. },
++        Event::PointerDown { x: 164., y: 20. },
++        Event::PointerMove { x: 175., y: 20. },
++        Event::PointerUp { x: 175., y: 20. },
+     ] {
+         runtime.dispatch(event).unwrap();
+     }
+@@ -364,7 +365,7 @@
+         .ops
+         .iter()
+         .any(|op| matches!(op, PaintOp::Quad { rect, .. }
+-        if *rect == Rect::new(166., 12., 16., 24.))));
++        if *rect == Rect::new(162., 12., 16., 24.))));
+ 
+     runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+     runtime
+@@ -374,16 +375,16 @@
+         }))
+         .unwrap();
+     let preedit = runtime.render(224., 80., &mut Metrics).unwrap();
+-    assert_eq!(text_origin(&preedit, "ㄕ計"), (190., 12.));
++    assert_eq!(text_origin(&preedit, "ㄕ計"), (186., 12.));
+     assert!(preedit
+         .ops
+         .iter()
+         .any(|op| matches!(op, PaintOp::Quad { rect, .. }
+-        if *rect == Rect::new(190., 34., 16., 1.))));
++        if *rect == Rect::new(186., 34., 16., 1.))));
+     let snapshot = runtime.input_snapshot().unwrap();
+     assert!(snapshot.composing);
+     assert_eq!(snapshot.value, "設計");
+-    assert_eq!(snapshot.caret.unwrap().x, 206.);
++    assert_eq!(snapshot.caret.unwrap().x, 202.);
+     runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+ 
+     let long = "文".repeat(20);
+@@ -395,13 +396,18 @@
+         })
+         .unwrap();
+     let overflow = runtime.render(200., 80., &mut Metrics).unwrap();
+-    assert_eq!(text_origin(&overflow, &long), (-122., 12.));
+-    assert_eq!(runtime.input_snapshot().unwrap().caret.unwrap().x, 198.);
++    assert_eq!(text_origin(&overflow, &long), (-126., 12.));
++    assert!(overflow
++        .ops
++        .iter()
++        .any(|op| matches!(op, PaintOp::StyledText { text, clip, .. }
++        if text == &long && *clip == Rect::new(4., 0., 192., 48.))));
++    assert_eq!(runtime.input_snapshot().unwrap().caret.unwrap().x, 194.);
+ 
+     runtime.dispatch(Event::Blur).unwrap();
+     runtime.apply(String::new()).unwrap();
+     let cleared = runtime.render(200., 80., &mut Metrics).unwrap();
+-    assert_eq!(text_origin(&cleared, "搜尋文件"), (134., 12.));
++    assert_eq!(text_origin(&cleared, "搜尋文件"), (130., 12.));
+ }
+ 
+ #[test]
+--- a/crates/surface-material/src/search_overlay.rs
++++ b/crates/surface-material/src/search_overlay.rs
+@@ -11,6 +11,7 @@
+ 
+ const TOUCH_TARGET: f32 = 48.;
+ const CONTROL_GAP: f32 = 4.;
++const EDITOR_TEXT_INSET: f32 = 4.;
+ const MIN_EDITOR_WIDTH: f32 = 24.;
+ 
+ /// Accessible labels, state and geometry for [Theme::search_overlay].
+@@ -232,6 +233,7 @@
+     )
+     .on_input(on_query)
+     .center_single_line_text()
++    .inset_single_line_text_horizontally(EDITOR_TEXT_INSET)
+     .on_key(move |press| {
+         (!press.repeat && press.text_action() == Some(TextAction::Submit))
+             .then(|| on_submit.clone())
+--- a/crates/surface/src/geometry.rs
++++ b/crates/surface/src/geometry.rs
+@@ -33,6 +33,12 @@
+             (self.y + self.height).min(rhs.y + rhs.height).max(y) - y,
+         )
+     }
++    /// Inset both horizontal edges equally. Clamp to half the width.
++    pub fn inset_horizontal(self, value: f32) -> Self {
++        let inset = value.max(0.).min(self.width.max(0.) / 2.);
++        Self::new(self.x + inset, self.y, self.width - 2. * inset, self.height)
++    }
++
+     pub fn inset(self, value: f32) -> Self {
+         Self::new(
+             self.x + value,
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -182,6 +182,8 @@
+     pub(crate) text: Option<String>,
+     #[serde(skip)]
+     presented_text_input_placeholder: Option<Arc<(String, Color)>>,
++    #[serde(skip)]
++    pub(crate) presented_text_input_horizontal_inset: f32,
+     pub(crate) disabled: bool,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+     invalid: bool,
+@@ -254,6 +256,7 @@
+             name: name.into(),
+             text: None,
+             presented_text_input_placeholder: None,
++            presented_text_input_horizontal_inset: 0.,
+             disabled: false,
+             invalid: false,
+             checked: None,
+@@ -976,6 +979,23 @@
+         Ok(())
+     }
+ 
++    /// Inset only the painted text box on the display copy after layout.
++    #[doc(hidden)]
++    pub fn set_presented_text_input_horizontal_inset(
++        &mut self,
++        id: NodeId,
++        inset: f32,
++    ) -> Result<(), DomError> {
++        let node = self
++            .nodes
++            .get_mut(id.index())
++            .ok_or(DomError::InvalidNode(id.index()))?;
++        if node.role() == Role::TextInput {
++            node.presented_text_input_horizontal_inset = inset;
++        }
++        Ok(())
++    }
++
+     pub fn set_text(&mut self, id: NodeId, text: impl Into<String>) -> Result<(), DomError> {
+         let n = self
+             .nodes
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -696,7 +696,10 @@
+         let placeholder = n.text_input_placeholder();
+         let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
+         if let Some((text, text_color)) = text_run {
+-            let rect = g.bounds.inset(s.padding);
++            let rect = g
++                .bounds
++                .inset(s.padding)
++                .inset_horizontal(n.presented_text_input_horizontal_inset);
+             let clip = g.clip.intersect(rect);
+             let decoration = decorations.get(id);
+             let editable = n.role() == Role::TextInput;

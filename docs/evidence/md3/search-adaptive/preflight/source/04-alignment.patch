@@ -1,0 +1,376 @@
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -4,6 +4,15 @@
+     ComputedDom, Length, MicroDom, NodeId, Rect, Role, TextDecoration, TextLayout, TextMeasurer,
+     TextScaling,
+ };
++
++const CARET_REVEAL_WIDTH: f32 = 2.;
++
++fn right_alignment_space(content_width: f32, layout: &TextLayout) -> f32 {
++    let text_right = layout.clusters.iter().fold(0_f32, |right, cluster| {
++        right.max(cluster.bounds.x + cluster.bounds.width)
++    });
++    content_width - text_right - CARET_REVEAL_WIDTH
++}
+ 
+ pub(crate) struct EditingGeometry {
+     layout: TextLayout,
+@@ -276,12 +285,14 @@
+             let options = &binding.text_options;
+             let g = &computed.nodes[id.index()];
+             let mut origin = g.bounds.inset(node.style().padding);
++            let content_width = origin.width;
+             let text = editor.display_value();
++            let text_style = node.style().text_style();
+             let layout = measurer.text_layout_styled(
+                 &text,
+-                &node.style().text_style(),
++                &text_style,
+                 if options.multiline {
+-                    Some(origin.width)
++                    Some(content_width)
+                 } else {
+                     None
+                 },
+@@ -291,6 +302,12 @@
+             } else {
+                 0.
+             };
++            let right_aligned = binding.right_align_single_line_text && !options.multiline;
++            let horizontal_space =
++                right_aligned.then(|| right_alignment_space(content_width, &layout));
++            let horizontal_inset = horizontal_space.unwrap_or_default().max(0.);
++            origin.x += horizontal_inset;
++            origin.width -= horizontal_inset;
+             origin.y += vertical_inset;
+             origin.height -= vertical_inset;
+             let mut scroll = self
+@@ -298,6 +315,9 @@
+                 .get(key)
+                 .map(|g| g.scroll)
+                 .unwrap_or_default();
++            if horizontal_space.is_some_and(|space| space >= 0.) {
++                scroll.0 = 0.;
++            }
+             if vertical_inset > 0. {
+                 scroll.1 = 0.;
+             }
+@@ -308,8 +328,8 @@
+                     let caret = layout.caret(selection.cursor);
+                     if caret.x < scroll.0 {
+                         scroll.0 = caret.x;
+-                    } else if caret.x + 2. > scroll.0 + origin.width {
+-                        scroll.0 = caret.x + 2. - origin.width;
++                    } else if caret.x + CARET_REVEAL_WIDTH > scroll.0 + origin.width {
++                        scroll.0 = caret.x + CARET_REVEAL_WIDTH - origin.width;
+                     }
+                     if caret.y < scroll.1 {
+                         scroll.1 = caret.y;
+@@ -328,10 +348,20 @@
+                     r.height,
+                 )
+             };
++            let placeholder = binding
++                .text_input_placeholder
++                .as_ref()
++                .filter(|_| editor.value().is_empty() && !editor.is_composing());
++            let paint_scroll_x = if let (true, Some(hint)) = (right_aligned, placeholder) {
++                let hint_layout = measurer.text_layout_styled(&hint.0, &text_style, None);
++                -right_alignment_space(content_width, &hint_layout).max(0.)
++            } else {
++                scroll.0 - horizontal_inset
++            };
+             let mut decoration = TextDecoration {
+-                // Paint starts at the original content box. The shared run
+-                // translation places its baseline at the editor's new origin.
+-                scroll: (scroll.0, scroll.1 - vertical_inset),
++                // Paint starts at the original content box. Signed scroll
++                // places its run at the editor or placeholder origin.
++                scroll: (paint_scroll_x, scroll.1 - vertical_inset),
+                 multiline: options.multiline,
+                 ..Default::default()
+             };
+@@ -367,11 +397,7 @@
+                 },
+             );
+             decorations.insert(id, decoration);
+-            if let Some(placeholder) = binding
+-                .text_input_placeholder
+-                .as_ref()
+-                .filter(|_| editor.value().is_empty() && !editor.is_composing())
+-            {
++            if let Some(placeholder) = placeholder {
+                 display.set_presented_text_input_placeholder(id, placeholder.clone())?;
+             }
+         }
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -79,6 +79,7 @@
+     input: Option<Rc<dyn Fn(String) -> M>>,
+     text_options: TextOptions,
+     center_single_line_text: bool,
++    right_align_single_line_text: bool,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+@@ -134,6 +135,7 @@
+             input: None,
+             text_options: TextOptions::default(),
+             center_single_line_text: false,
++            right_align_single_line_text: false,
+             text_input_placeholder: None,
+             value: None,
+             accessible_step: None,
+@@ -379,6 +381,14 @@
+     /// The focus outline, hit target and multiline layout stay the same.
+     pub fn center_single_line_text(mut self) -> Self {
+         self.center_single_line_text = true;
++        self
++    }
++
++    /// Align a single-line editor's text, placeholder, and caret to the right.
++    /// Long values scroll to keep the caret visible. The hit target and the
++    /// shaped order of the text use the same rules as other editors.
++    pub fn right_align_single_line_text(mut self) -> Self {
++        self.right_align_single_line_text = true;
+         self
+     }
+ 
+@@ -865,6 +875,7 @@
+     input: Option<Rc<dyn Fn(String) -> M>>,
+     text_options: TextOptions,
+     center_single_line_text: bool,
++    right_align_single_line_text: bool,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+@@ -1329,6 +1340,7 @@
+                     input: view.input,
+                     text_options: view.text_options,
+                     center_single_line_text: view.center_single_line_text,
++                    right_align_single_line_text: view.right_align_single_line_text,
+                     text_input_placeholder: view.text_input_placeholder,
+                     value: view.value,
+                     accessible_step: view.accessible_step,
+--- a/crates/surface-app/tests/editing.rs
++++ b/crates/surface-app/tests/editing.rs
+@@ -291,6 +291,120 @@
+ }
+ 
+ #[test]
++fn right_aligned_editor_shares_paint_pointer_and_composition_geometry() {
++    struct Editor(String);
++
++    impl Application for Editor {
++        type Message = String;
++
++        fn update(&mut self, value: String) {
++            self.0 = value;
++        }
++
++        fn view(&self) -> View<String> {
++            View::new(Node::new(Role::Group, "Page")).children([View::new(
++                Node::new(Role::TextInput, "搜尋文件")
++                    .id("query")
++                    .text(&self.0)
++                    .styled(
++                        Style::column()
++                            .height(Length::Px(48.))
++                            .font_size(16.)
++                            .line_height(24.),
++                    ),
++            )
++            .center_single_line_text()
++            .right_align_single_line_text()
++            .text_input_placeholder("搜尋文件", Color::rgb(90, 78, 87))
++            .on_input(|value| value)])
++        }
++    }
++
++    fn text_origin(list: &DisplayList, expected: &str) -> (f32, f32) {
++        list.ops
++            .iter()
++            .find_map(|op| match op {
++                PaintOp::StyledText {
++                    text,
++                    rect,
++                    scroll,
++                    editable: true,
++                    ..
++                } if text == expected => Some((rect.x - scroll.0, rect.y - scroll.1)),
++                _ => None,
++            })
++            .expect("expected editor paint run")
++    }
++
++    let mut runtime = Runtime::new(Editor(String::new())).unwrap();
++    runtime.activate("query").unwrap();
++    let empty = runtime.render(200., 80., &mut Metrics).unwrap();
++    assert_eq!(text_origin(&empty, "搜尋文件"), (134., 12.));
++    let input = runtime.input_snapshot().unwrap();
++    assert_eq!(input.value, "");
++    assert_eq!(input.caret.unwrap(), Rect::new(198., 12., 1., 24.));
++
++    runtime.dispatch(Event::Text("設計".into())).unwrap();
++    let query = runtime.render(200., 80., &mut Metrics).unwrap();
++    assert_eq!(text_origin(&query, "設計"), (166., 12.));
++    for event in [
++        Event::PointerDown { x: 168., y: 20. },
++        Event::PointerMove { x: 179., y: 20. },
++        Event::PointerUp { x: 179., y: 20. },
++    ] {
++        runtime.dispatch(event).unwrap();
++    }
++    let snapshot = runtime.input_snapshot().unwrap();
++    assert_eq!(
++        (snapshot.selection.anchor, snapshot.selection.cursor),
++        (0, 3)
++    );
++    let range = runtime.render(200., 80., &mut Metrics).unwrap();
++    assert!(range
++        .ops
++        .iter()
++        .any(|op| matches!(op, PaintOp::Quad { rect, .. }
++        if *rect == Rect::new(166., 12., 16., 24.))));
++
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄕ".into(),
++            selection: Some((3, 3)),
++        }))
++        .unwrap();
++    let preedit = runtime.render(224., 80., &mut Metrics).unwrap();
++    assert_eq!(text_origin(&preedit, "ㄕ計"), (190., 12.));
++    assert!(preedit
++        .ops
++        .iter()
++        .any(|op| matches!(op, PaintOp::Quad { rect, .. }
++        if *rect == Rect::new(190., 34., 16., 1.))));
++    let snapshot = runtime.input_snapshot().unwrap();
++    assert!(snapshot.composing);
++    assert_eq!(snapshot.value, "設計");
++    assert_eq!(snapshot.caret.unwrap().x, 206.);
++    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
++
++    let long = "文".repeat(20);
++    runtime
++        .dispatch(Event::InputValue {
++            anchor: long.len(),
++            cursor: long.len(),
++            value: long.clone(),
++        })
++        .unwrap();
++    let overflow = runtime.render(200., 80., &mut Metrics).unwrap();
++    assert_eq!(text_origin(&overflow, &long), (-122., 12.));
++    assert_eq!(runtime.input_snapshot().unwrap().caret.unwrap().x, 198.);
++
++    runtime.dispatch(Event::Blur).unwrap();
++    runtime.apply(String::new()).unwrap();
++    let cleared = runtime.render(200., 80., &mut Metrics).unwrap();
++    assert_eq!(text_origin(&cleared, "搜尋文件"), (134., 12.));
++}
++
++#[test]
+ fn composition_is_visible_but_does_not_change_app_state_until_one_commit() {
+     let mut runtime = Runtime::new(App {
+         text: "台灣".to_owned(),
+--- a/crates/surface-material/src/search_overlay.rs
++++ b/crates/surface-material/src/search_overlay.rs
+@@ -222,6 +222,10 @@
+                     .width(Length::Px(0.))
+                     .height(Length::Px(TOUCH_TARGET.min(layout.controls.height)))
+                     .grow(1.)
++                    .corners(match options.style {
++                        SearchStyle::Contained => shape::FULL,
++                        SearchStyle::Divided => shape::EXTRA_SMALL,
++                    })
+                     .with_text_style(typography::BODY_LARGE)
+                     .foreground(theme.colors.on_surface),
+             ),
+@@ -233,6 +237,11 @@
+             .then(|| on_submit.clone())
+     })
+     .cursor(CursorStyle::Text);
++    let input = if options.direction == LayoutDirection::RightToLeft {
++        input.right_align_single_line_text()
++    } else {
++        input
++    };
+     let input = if let Some(hint) = options.placeholder {
+         input.text_input_placeholder(hint, theme.colors.on_surface_variant)
+     } else {
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -718,8 +718,8 @@
+             let (scroll_x, scroll_y) = decoration.map(|d| d.scroll).unwrap_or_default();
+             let scroll = if placeholder.is_some() {
+                 // A cleared field can retain scroll from its previous value.
+-                // Keep the negative inset used for centered single-line text.
+-                (0., scroll_y.min(0.))
++                // Keep negative insets used for single-line alignment.
++                (scroll_x.min(0.), scroll_y.min(0.))
+             } else {
+                 (scroll_x, scroll_y)
+             };
+--- a/examples/material-gallery/src/search_overlay_demo.rs
++++ b/examples/material-gallery/src/search_overlay_demo.rs
+@@ -264,22 +264,28 @@
+         } else {
+             &self.query
+         };
+-        let opener = View::new(
+-            Node::new(Role::Button, "搜尋文件").id(OPENER).styled(
+-                Style::row()
+-                    .width(Length::Px(bounds.width))
+-                    .height(Length::Px(bounds.height))
+-                    .corners(shape)
+-                    .align(Align::Center)
+-                    .justify(Align::Center)
+-                    .background(theme.colors.surface_container_high),
+-            ),
+-        )
+-        .children([theme.text("search-overlay-demo-opener-label", label)])
+-        .on_press(Message::SearchOverlay(SearchOverlayDemoEvent::Open))
+-        .disclosure_expanded(self.open)
+-        .suppress_repeated_activation()
+-        .accessible_activation();
++        let opener = Node::new(Role::Button, "搜尋文件").id(OPENER).styled(
++            Style::row()
++                .width(Length::Px(bounds.width))
++                .height(Length::Px(bounds.height))
++                .corners(shape)
++                .align(Align::Center)
++                .justify(Align::Start)
++                .padding(16.)
++                .clip(true)
++                .background(theme.colors.surface_container_high),
++        );
++        let opener = if self.rtl {
++            opener.reverse_row()
++        } else {
++            opener
++        };
++        let opener = View::new(opener)
++            .children([theme.text("search-overlay-demo-opener-label", label)])
++            .on_press(Message::SearchOverlay(SearchOverlayDemoEvent::Open))
++            .disclosure_expanded(self.open)
++            .suppress_repeated_activation()
++            .accessible_activation();
+         View::new(
+             Node::new(Role::Group, "").id(ANCHOR).styled(
+                 Style::column()
+@@ -511,6 +517,12 @@
+                 let opener = bounds(&runtime, OPENER);
+                 assert_eq!(opener.height, 56.);
+                 assert_eq!(anchor.intersect(opener), opener);
++                let label = bounds(&runtime, "search-overlay-demo-opener-label");
++                if compact {
++                    assert_eq!(opener.x + opener.width - label.x - label.width, 16.);
++                } else {
++                    assert_eq!(label.x - opener.x, 16.);
++                }
+                 runtime.activate(OPENER).unwrap();
+                 render(&mut runtime, width, height);
+ 

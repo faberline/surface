@@ -1,0 +1,967 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "fixture": "Search input after 599→600 resize",
+  "cases": [
+    {
+      "selected": true,
+      "trusted_enter": false,
+      "explicit_cancel": false,
+      "before_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 1,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 1,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_explicit_completion": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "compositionupdate",
+            "data": "定",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": "定",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "input",
+            "data": "定",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設定",
+            "start": 2,
+            "end": 2
+          },
+          {
+            "type": "compositionend",
+            "data": "定",
+            "defaultPrevented": false,
+            "trusted": false,
+            "value": "設定",
+            "start": 2,
+            "end": 2
+          }
+        ],
+        "value": "設定",
+        "start": 2,
+        "end": 2,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設定",
+          "display_value": "設定",
+          "selection_anchor": 6,
+          "selection_cursor": 6,
+          "composing": false,
+          "preedit_range": null
+        }
+      }
+    },
+    {
+      "selected": true,
+      "trusted_enter": true,
+      "explicit_cancel": false,
+      "before_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 1,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": null,
+            "kind": "insertLineBreak",
+            "isComposing": false,
+            "defaultPrevented": true,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 1,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_explicit_completion": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": null,
+            "kind": "insertLineBreak",
+            "isComposing": false,
+            "defaultPrevented": true,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "compositionupdate",
+            "data": "定",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": "定",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "input",
+            "data": "定",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設定",
+            "start": 2,
+            "end": 2
+          },
+          {
+            "type": "compositionend",
+            "data": "定",
+            "defaultPrevented": false,
+            "trusted": false,
+            "value": "設定",
+            "start": 2,
+            "end": 2
+          }
+        ],
+        "value": "設定",
+        "start": 2,
+        "end": 2,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設定",
+          "display_value": "設定",
+          "selection_anchor": 6,
+          "selection_cursor": 6,
+          "composing": false,
+          "preedit_range": null
+        }
+      }
+    },
+    {
+      "selected": false,
+      "trusted_enter": true,
+      "explicit_cancel": false,
+      "before_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 3,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": null,
+            "kind": "insertLineBreak",
+            "isComposing": false,
+            "defaultPrevented": true,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 3,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_explicit_completion": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          },
+          {
+            "type": "keydown",
+            "key": "Enter",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": null,
+            "kind": "insertLineBreak",
+            "isComposing": false,
+            "defaultPrevented": true,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 3,
+            "end": 3
+          },
+          {
+            "type": "compositionupdate",
+            "data": "定",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": "定",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "input",
+            "data": "定",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設定",
+            "start": 2,
+            "end": 2
+          },
+          {
+            "type": "compositionend",
+            "data": "定",
+            "defaultPrevented": false,
+            "trusted": false,
+            "value": "設定",
+            "start": 2,
+            "end": 2
+          }
+        ],
+        "value": "設定",
+        "start": 2,
+        "end": 2,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設定",
+          "display_value": "設定",
+          "selection_anchor": 6,
+          "selection_cursor": 6,
+          "composing": false,
+          "preedit_range": null
+        }
+      }
+    },
+    {
+      "selected": true,
+      "trusted_enter": false,
+      "explicit_cancel": true,
+      "before_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 1,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_enter": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          }
+        ],
+        "value": "設ㄐㄧ",
+        "start": 1,
+        "end": 3,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設ㄐㄧ",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": true,
+          "preedit_range": {
+            "start": 3,
+            "end": 9
+          }
+        }
+      },
+      "after_explicit_completion": {
+        "trace": [
+          {
+            "type": "compositionstart",
+            "data": "計",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "compositionupdate",
+            "data": "ㄐㄧ",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "beforeinput",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設計",
+            "start": 1,
+            "end": 2
+          },
+          {
+            "type": "input",
+            "data": "ㄐㄧ",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "compositionupdate",
+            "data": "",
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "beforeinput",
+            "data": "",
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設ㄐㄧ",
+            "start": 1,
+            "end": 3
+          },
+          {
+            "type": "input",
+            "data": null,
+            "kind": "insertCompositionText",
+            "isComposing": true,
+            "defaultPrevented": false,
+            "trusted": true,
+            "value": "設",
+            "start": 1,
+            "end": 1
+          },
+          {
+            "type": "compositionend",
+            "data": "",
+            "defaultPrevented": false,
+            "trusted": false,
+            "value": "設",
+            "start": 1,
+            "end": 1
+          }
+        ],
+        "value": "設計",
+        "start": 1,
+        "end": 2,
+        "focus": "surface-text-input",
+        "runtime": {
+          "value": "設計",
+          "display_value": "設計",
+          "selection_anchor": 6,
+          "selection_cursor": 3,
+          "composing": false,
+          "preedit_range": null
+        }
+      }
+    }
+  ],
+  "errors": []
+}

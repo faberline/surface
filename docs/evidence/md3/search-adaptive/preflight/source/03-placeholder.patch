@@ -1,0 +1,434 @@
+diff --git a/crates/surface-app/src/editing_runtime.rs b/crates/surface-app/src/editing_runtime.rs
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -367,6 +367,13 @@
+                 },
+             );
+             decorations.insert(id, decoration);
++            if let Some(placeholder) = binding
++                .text_input_placeholder
++                .as_ref()
++                .filter(|_| editor.value().is_empty() && !editor.is_composing())
++            {
++                display.set_presented_text_input_placeholder(id, placeholder.clone())?;
++            }
+         }
+         Ok((display, decorations, computed))
+     }
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -60,9 +60,10 @@
+     cell::{Cell, RefCell},
+     collections::{BTreeMap, VecDeque},
+     rc::Rc,
++    sync::Arc,
+ };
+ use surface::{
+-    ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
++    Color, ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
+     LayoutError, MicroDom, Node, NodeId, Rect, Role, TextMeasurer,
+ };
+ 
+@@ -78,6 +79,7 @@
+     input: Option<Rc<dyn Fn(String) -> M>>,
+     text_options: TextOptions,
+     center_single_line_text: bool,
++    text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+@@ -132,6 +134,7 @@
+             input: None,
+             text_options: TextOptions::default(),
+             center_single_line_text: false,
++            text_input_placeholder: None,
+             value: None,
+             accessible_step: None,
+             roving: None,
+@@ -376,6 +379,15 @@
+     /// The focus outline, hit target and multiline layout stay the same.
+     pub fn center_single_line_text(mut self) -> Self {
+         self.center_single_line_text = true;
++        self
++    }
++
++    /// Paint a hint while this editor is empty and has no active IME
++    /// composition. The hint keeps the field's geometry, value and
++    /// accessible name. Use the node's name to label the actual text input.
++    pub fn text_input_placeholder(mut self, text: impl Into<String>, color: Color) -> Self {
++        let text = text.into();
++        self.text_input_placeholder = (!text.is_empty()).then(|| Arc::new((text, color)));
+         self
+     }
+     /// Bind a slider value or an opted-in adjustable Group.
+@@ -853,6 +865,7 @@
+     input: Option<Rc<dyn Fn(String) -> M>>,
+     text_options: TextOptions,
+     center_single_line_text: bool,
++    text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+@@ -1316,6 +1329,7 @@
+                     input: view.input,
+                     text_options: view.text_options,
+                     center_single_line_text: view.center_single_line_text,
++                    text_input_placeholder: view.text_input_placeholder,
+                     value: view.value,
+                     accessible_step: view.accessible_step,
+                     roving: view.roving,
+diff --git a/crates/surface-app/tests/editing.rs b/crates/surface-app/tests/editing.rs
+--- a/crates/surface-app/tests/editing.rs
++++ b/crates/surface-app/tests/editing.rs
+@@ -1,4 +1,6 @@
+-use surface::{Length, Node, PaintOp, Rect, Role, Style, TextMeasurer};
++use surface::{
++    Color, DisplayList, ExtendedPaintOp, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer,
++};
+ use surface_app::{
+     utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Runtime, TextEditor,
+     TextOptions, View,
+@@ -81,6 +83,152 @@
+     fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
+         (text.chars().count() as f32 * size, size * 1.5)
+     }
++}
++
++#[test]
++fn placeholder_only_paints_and_yields_to_both_native_composition_routes() {
++    const HINT: &str = "搜尋文件";
++    const HINT_COLOR: Color = Color::rgb(90, 78, 87);
++    const INK: Color = Color::rgb(14, 17, 23);
++
++    #[derive(Default)]
++    struct Editor {
++        value: String,
++        hint: bool,
++        multiline: bool,
++    }
++    impl Application for Editor {
++        type Message = String;
++        fn update(&mut self, value: String) {
++            self.value = value;
++        }
++        fn view(&self) -> View<String> {
++            let field = View::new(
++                Node::new(Role::TextInput, "Accessible search field")
++                    .id("field")
++                    .text(&self.value)
++                    .styled(
++                        Style::column()
++                            .height(Length::Px(48.))
++                            .line_height(24.)
++                            .foreground(INK),
++                    ),
++            )
++            .center_single_line_text()
++            .text_options(TextOptions {
++                multiline: self.multiline,
++                ..TextOptions::default()
++            })
++            .on_input(|value| value);
++            let field = if self.hint {
++                field.text_input_placeholder(HINT, HINT_COLOR)
++            } else {
++                field
++            };
++            View::new(Node::new(Role::Group, "Root")).children([field])
++        }
++    }
++
++    fn run(list: &DisplayList) -> (&str, Color) {
++        list.ops
++            .iter()
++            .find_map(|op| match op {
++                PaintOp::StyledText {
++                    text,
++                    color,
++                    editable: true,
++                    ..
++                } => Some((text.as_str(), *color)),
++                _ => None,
++            })
++            .unwrap()
++    }
++    fn render(runtime: &mut Runtime<Editor>) -> DisplayList {
++        runtime.render(200., 84., &mut Metrics).unwrap()
++    }
++
++    let mut runtime = Runtime::new(Editor {
++        hint: true,
++        ..Editor::default()
++    })
++    .unwrap();
++    let mut legacy = Runtime::new(Editor::default()).unwrap();
++    for app in [&mut runtime, &mut legacy] {
++        app.activate("field").unwrap();
++    }
++    let paint = render(&mut runtime);
++    assert_eq!(run(&paint), (HINT, HINT_COLOR));
++    assert_eq!(run(&render(&mut legacy)), ("", INK));
++    assert_eq!(runtime.export_dom().unwrap(), legacy.export_dom().unwrap());
++    let field = runtime.dom().by_id("field").unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    assert_eq!(
++        frame.node(field).unwrap().node.name(),
++        "Accessible search field"
++    );
++    assert_eq!(frame.node(field).unwrap().node.text_value(), Some(""));
++    let caret = runtime.input_snapshot().unwrap().caret.unwrap();
++    assert_eq!(Some(caret), legacy.input_snapshot().unwrap().caret);
++    assert!(paint.ops.iter().any(
++        |op| matches!(op, PaintOp::Quad { rect, color, .. } if *rect == caret && *color == INK)
++    ));
++    let extended = runtime.render_extended(200., 84., &mut Metrics).unwrap();
++    assert!(extended.ops().iter().any(
++        |op| matches!(op, ExtendedPaintOp::Legacy(PaintOp::StyledText {
++        text, color, ..
++    }) if text == HINT && *color == HINT_COLOR)
++    ));
++
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    assert_eq!(run(&render(&mut runtime)).0, "");
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄕ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    assert_eq!(run(&render(&mut runtime)), ("ㄕ", INK));
++    assert!(runtime.app().value.is_empty());
++    assert_eq!(runtime.snapshot().text_inputs["field"].display_value, "ㄕ");
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: String::new(),
++            selection: None,
++        }))
++        .unwrap();
++    assert!(!runtime.input_snapshot().unwrap().composing);
++    assert!(runtime.editor("field").unwrap().composition().is_some());
++    assert_eq!(run(&render(&mut runtime)), (HINT, HINT_COLOR));
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("設".into())))
++        .unwrap();
++    assert_eq!(run(&render(&mut runtime)), ("設", INK));
++    assert_eq!(runtime.app().value, "設");
++    runtime
++        .dispatch(Event::InputValue {
++            value: String::new(),
++            anchor: 0,
++            cursor: 0,
++        })
++        .unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
++    assert_eq!(run(&render(&mut runtime)), (HINT, HINT_COLOR));
++    assert!(runtime.app().value.is_empty());
++
++    let mut multiline = Runtime::new(Editor {
++        value: "value\n".repeat(16),
++        hint: true,
++        multiline: true,
++    })
++    .unwrap();
++    multiline.activate("field").unwrap();
++    assert!(render(&mut multiline).ops.iter().any(|op| matches!(op,
++        PaintOp::StyledText { scroll, editable: true, .. } if scroll.1 > 0.)));
++    multiline.dispatch(Event::Blur).unwrap();
++    multiline.apply(String::new()).unwrap();
++    assert!(render(&mut multiline).ops.iter().any(|op| matches!(op,
++        PaintOp::StyledText { text, scroll, editable: true, .. } if text == HINT && *scroll == (0., 0.))));
+ }
+ 
+ #[test]
+diff --git a/crates/surface-material/src/search_overlay.rs b/crates/surface-material/src/search_overlay.rs
+--- a/crates/surface-material/src/search_overlay.rs
++++ b/crates/surface-material/src/search_overlay.rs
+@@ -21,6 +21,9 @@
+     pub open: bool,
+     pub title: &'a str,
+     pub input_label: &'a str,
++    /// Hint shown while the query is empty. Use the same localized words
++    /// for `input_label` when the hint is the field's only label.
++    pub placeholder: Option<&'a str>,
+     pub results_label: &'a str,
+     pub back_label: &'a str,
+     pub clear_label: &'a str,
+@@ -230,6 +233,11 @@
+             .then(|| on_submit.clone())
+     })
+     .cursor(CursorStyle::Text);
++    let input = if let Some(hint) = options.placeholder {
++        input.text_input_placeholder(hint, theme.colors.on_surface_variant)
++    } else {
++        input
++    };
+     if let Some(first) = first_result.filter(|_| layout.results_viewport.height > 0.) {
+         input.on_text_input_arrow_navigation(move |press| {
+             (press.key == Key::ArrowDown).then(|| first.clone())
+diff --git a/crates/surface-material/tests/search_overlay.rs b/crates/surface-material/tests/search_overlay.rs
+--- a/crates/surface-material/tests/search_overlay.rs
++++ b/crates/surface-material/tests/search_overlay.rs
+@@ -1,4 +1,4 @@
+-use surface::{Color, Length, Node, Rect, Role, Style, TextMeasurer};
++use surface::{Color, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer};
+ use surface_app::{
+     Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Roving, Runtime, ScrollTarget,
+     View,
+@@ -106,6 +106,7 @@
+                     open: self.open,
+                     title: "Search",
+                     input_label: "Query",
++                    placeholder: Some("搜尋文件"),
+                     results_label: "Results",
+                     back_label: "Back",
+                     clear_label: "Clear query",
+@@ -308,6 +309,21 @@
+ }
+ 
+ #[test]
++fn clearing_the_search_paints_the_hint_without_changing_the_editor_or_history() {
++    let mut runtime = open(SearchStyle::Divided, LayoutDirection::RightToLeft, 320.);
++    runtime.activate("search-clear").unwrap();
++    let paint = runtime.render(320., 720., &mut Metrics).unwrap();
++    assert_eq!(runtime.focused(), Some(INPUT));
++    assert_eq!(node(&runtime, INPUT).name(), "Query");
++    assert_eq!(runtime.snapshot().text_inputs[INPUT].display_value, "");
++    assert_eq!(node(&runtime, "search-status").name(), "History");
++    assert_eq!(bounds(&runtime, INPUT).height, 48.);
++    assert!(paint.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
++        text, color, editable: true, ..
++    } if text == "搜尋文件" && *color == Theme::dark().colors.on_surface_variant)));
++}
++
++#[test]
+ fn scroll_selection_and_preedit_survive_mode_switch() {
+     let mut runtime = open(SearchStyle::Contained, LayoutDirection::RightToLeft, 600.);
+     assert!(runtime.scroll_to(RESULTS, ScrollTarget::Offset { x: 0., y: 144. }));
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -180,6 +180,8 @@
+     pub(crate) role: Role,
+     pub(crate) name: String,
+     pub(crate) text: Option<String>,
++    #[serde(skip)]
++    presented_text_input_placeholder: Option<Arc<(String, Color)>>,
+     pub(crate) disabled: bool,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+     invalid: bool,
+@@ -251,6 +253,7 @@
+             role,
+             name: name.into(),
+             text: None,
++            presented_text_input_placeholder: None,
+             disabled: false,
+             invalid: false,
+             checked: None,
+@@ -410,6 +413,13 @@
+     pub fn text(mut self, text: impl Into<String>) -> Self {
+         self.text = Some(text.into());
+         self
++    }
++
++    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
++        self.presented_text_input_placeholder
++            .as_deref()
++            .filter(|_| self.text_value().is_none_or(str::is_empty))
++            .map(|(text, color)| (text.as_str(), *color))
+     }
+     /// Draw one closed fill relative to the node's origin after its paths.
+     /// The ancestor clip applies. The fill adds no layout or input area and
+@@ -948,6 +958,24 @@
+         Ok(())
+     }
+ 
++    /// Supply the placeholder run on the display copy after layout. The
++    /// text value, semantic tree, and wire snapshot remain unchanged.
++    #[doc(hidden)]
++    pub fn set_presented_text_input_placeholder(
++        &mut self,
++        id: NodeId,
++        placeholder: Arc<(String, Color)>,
++    ) -> Result<(), DomError> {
++        let node = self
++            .nodes
++            .get_mut(id.index())
++            .ok_or(DomError::InvalidNode(id.index()))?;
++        if node.role() == Role::TextInput && !placeholder.0.is_empty() {
++            node.presented_text_input_placeholder = Some(placeholder);
++        }
++        Ok(())
++    }
++
+     pub fn set_text(&mut self, id: NodeId, text: impl Into<String>) -> Result<(), DomError> {
+         let n = self
+             .nodes
+diff --git a/crates/surface/src/paint.rs b/crates/surface/src/paint.rs
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -693,7 +693,9 @@
+         } else if let Some(focus) = focus {
+             focus.push(*id, &mut ops);
+         }
+-        if let Some(text) = n.text_value() {
++        let placeholder = n.text_input_placeholder();
++        let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
++        if let Some((text, text_color)) = text_run {
+             let rect = g.bounds.inset(s.padding);
+             let clip = g.clip.intersect(rect);
+             let decoration = decorations.get(id);
+@@ -713,12 +715,17 @@
+                 }
+             }
+             let text_style = s.text_style();
++            let (scroll_x, scroll_y) = decoration.map(|d| d.scroll).unwrap_or_default();
++            let scroll = if placeholder.is_some() {
++                // A cleared field can retain scroll from its previous value.
++                // Keep the negative inset used for centered single-line text.
++                (0., scroll_y.min(0.))
++            } else {
++                (scroll_x, scroll_y)
++            };
+             let run = if !text_style.is_legacy() {
+                 let (scroll, multiline) = if editable {
+-                    (
+-                        decoration.map(|d| d.scroll).unwrap_or_default(),
+-                        decoration.is_some_and(|d| d.multiline),
+-                    )
++                    (scroll, decoration.is_some_and(|d| d.multiline))
+                 } else {
+                     ((0., 0.), true)
+                 };
+@@ -727,7 +734,7 @@
+                     clip,
+                     text: text.to_owned(),
+                     style: text_style,
+-                    color: s.foreground,
++                    color: text_color,
+                     scroll,
+                     multiline,
+                     editable,
+@@ -738,8 +745,8 @@
+                     clip,
+                     text: text.to_owned(),
+                     font_size: s.font_size,
+-                    color: s.foreground,
+-                    scroll: decoration.map(|d| d.scroll).unwrap_or_default(),
++                    color: text_color,
++                    scroll,
+                     multiline: decoration.is_some_and(|d| d.multiline),
+                 }
+             } else {
+diff --git a/examples/material-gallery/src/search_overlay_demo.rs b/examples/material-gallery/src/search_overlay_demo.rs
+--- a/examples/material-gallery/src/search_overlay_demo.rs
++++ b/examples/material-gallery/src/search_overlay_demo.rs
+@@ -413,6 +413,7 @@
+                 open: self.open,
+                 title: "搜尋工作區",
+                 input_label: "搜尋文件",
++                placeholder: Some("搜尋文件"),
+                 results_label: "搜尋結果",
+                 back_label: "關閉搜尋",
+                 clear_label: "清除搜尋",

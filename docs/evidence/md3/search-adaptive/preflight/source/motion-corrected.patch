@@ -1,0 +1,837 @@
+--- a/crates/surface-app/src/motion.rs
++++ b/crates/surface-app/src/motion.rs
+@@ -518,6 +518,7 @@
+ pub enum ToggleSpring {
+     StandardDefaultSpatial,
+     StandardFastSpatial,
++    StandardSlowSpatial,
+     StandardDefaultEffects,
+ }
+ 
+@@ -526,6 +527,7 @@
+         match self {
+             Self::StandardDefaultSpatial => (700., 0.9),
+             Self::StandardFastSpatial => STANDARD_FAST_SPATIAL,
++            Self::StandardSlowSpatial => (300., 0.9),
+             Self::StandardDefaultEffects => (1600., 1.),
+         }
+     }
+@@ -592,7 +594,7 @@
+ }
+ 
+ /// Sample an app-controlled transition from its current position and velocity.
+-/// Use the same preset for this track throughout its lifetime.
++/// A new target uses the supplied preset and the current position and velocity.
+ #[derive(Default)]
+ pub struct ToggleMotion(BinarySpring);
+ 
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -40,6 +40,7 @@
+ mod scroll_field;
+ mod scroll_field_state;
+ mod search_layout;
++mod search_motion;
+ mod search_overlay;
+ pub mod shape;
+ mod side_sheet;
+@@ -156,6 +157,7 @@
+     ScrollFieldState, ScrollFieldStep,
+ };
+ pub use search_layout::SearchStyle;
++pub use search_motion::{SearchOverlayMotion, SearchOverlayMotionTarget};
+ pub use search_overlay::{SearchOverlayContent, SearchOverlayOptions};
+ pub use side_sheet::{
+     SideSheetContent, SideSheetEdge, SideSheetMotion, SideSheetOptions, SideSheetPresentation,
+--- a/crates/surface-material/src/search_layout.rs
++++ b/crates/surface-material/src/search_layout.rs
+@@ -63,6 +63,39 @@
+     pub(super) results_surface: Rect,
+     /// Clipped viewport for the scrolling results. The input is outside it.
+     pub(super) results_viewport: Rect,
++}
++
++impl SearchLayout {
++    /// Interpolate only between geometries already contained by the viewport.
++    pub(super) fn interpolate_from(self, rest: Rect, progress: f32) -> Self {
++        if progress == 1. {
++            return self;
++        }
++        let empty = Rect::new(rest.x, bottom(rest), rest.width, 0.);
++        let bar = mix_rect(rest, self.bar, progress);
++        Self {
++            presentation: self.presentation,
++            bounds: mix_rect(rest, self.bounds, progress),
++            bar,
++            controls: mix_rect(inset_bar(rest, CONTROL_EDGE_INSET), self.controls, progress),
++            divider: self
++                .divider
++                .filter(|_| progress > 0.)
++                .map(|rect| mix_rect(empty, rect, progress)),
++            results_surface: mix_rect(empty, self.results_surface, progress),
++            results_viewport: mix_rect(empty, self.results_viewport, progress),
++        }
++    }
++}
++
++fn mix_rect(from: Rect, to: Rect, progress: f32) -> Rect {
++    let mix = |a, b| a + (b - a) * progress;
++    Rect::new(
++        mix(from.x, to.x),
++        mix(from.y, to.y),
++        mix(from.width, to.width),
++        mix(from.height, to.height),
++    )
+ }
+ 
+ /// Plan the open layout from the current safe viewport and stable bar
+--- /dev/null
++++ b/crates/surface-material/src/search_motion.rs
+@@ -0,0 +1,79 @@
++//! Retained language-independent motion for the entering and exiting Search view.
++
++use surface::Rect;
++use surface_app::{AnimationFrame, AnimationUpdate, ToggleMotion, ToggleSpring};
++
++use crate::search_layout::{SearchLayout, SearchPresentation, SearchStyle};
++
++/// A frame target derived from the current Search options and safe geometry.
++#[derive(Clone, Copy, Debug)]
++pub struct SearchOverlayMotionTarget {
++    pub(super) open: bool,
++    pub(super) style: SearchStyle,
++    pub(super) resting_bar: Option<Rect>,
++    pub(super) destination: Option<SearchLayout>,
++}
++
++/// Retained motion for one caller-controlled Search overlay.
++#[derive(Default)]
++pub struct SearchOverlayMotion {
++    spring: ToggleMotion,
++    progress: f32,
++    moving: bool,
++}
++
++impl SearchOverlayMotion {
++    /// Begin at the specified resting state.
++    pub fn new(open: bool) -> Self {
++        Self {
++            spring: ToggleMotion::new(open),
++            progress: if open { 1. } else { 0. },
++            moving: false,
++        }
++    }
++
++    /// Current clamped fraction between the measured start and destination.
++    pub fn progress(&self) -> f32 {
++        self.progress
++    }
++
++    /// Whether the spatial track is settling.
++    pub fn is_animating(&self) -> bool {
++        self.moving
++    }
++
++    /// Advance the retained track for the caller's current open state. Pass
++    /// the same geometry to the builder. A missing or unfit anchor, missing
++    /// clock, or Reduce Motion snaps to the target immediately.
++    pub fn advance(
++        &mut self,
++        frame: &AnimationFrame<'_>,
++        target: SearchOverlayMotionTarget,
++    ) -> AnimationUpdate {
++        let preset = match (
++            target.style,
++            target.destination.map(|layout| layout.presentation),
++            target.open,
++        ) {
++            (SearchStyle::Contained, Some(SearchPresentation::Docked), true) => {
++                ToggleSpring::StandardDefaultSpatial
++            }
++            (SearchStyle::Contained, _, _) => ToggleSpring::StandardFastSpatial,
++            (SearchStyle::Divided, _, true) => ToggleSpring::StandardSlowSpatial,
++            (SearchStyle::Divided, _, false) => ToggleSpring::StandardDefaultSpatial,
++        };
++        let (progress, moving) = self.spring.sample(
++            target.open,
++            frame.now_ms,
++            frame.reduced_motion || target.resting_bar.is_none() || target.destination.is_none(),
++            preset,
++        );
++        let rebuild = self.progress != progress;
++        self.progress = progress;
++        self.moving = moving;
++        AnimationUpdate {
++            rebuild,
++            request_next: moving,
++        }
++    }
++}
+--- a/crates/surface-material/src/search_overlay.rs
++++ b/crates/surface-material/src/search_overlay.rs
+@@ -1,10 +1,11 @@
+ //! Controlled Material Search overlay. The caller owns the query and results.
+ 
+-use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style, TextScaling};
++use surface::{Align, Color, Corners, Insets, Length, Node, Rect, Role, Style, TextScaling};
+ use surface_app::{CursorStyle, FocusNavigation, Key, TextAction, View};
+ 
+ use crate::{
+     search_layout::{plan_search_layout, SearchLayout, SearchPresentation, SearchStyle},
++    search_motion::{SearchOverlayMotion, SearchOverlayMotionTarget},
+     shape::{self, LayoutDirection},
+     typography, IconButtonKind, Theme,
+ };
+@@ -12,6 +13,7 @@
+ const TOUCH_TARGET: f32 = 48.;
+ const CONTROL_GAP: f32 = 4.;
+ const MIN_EDITOR_WIDTH: f32 = 24.;
++const MIN_MOTION_BAR_WIDTH: f32 = MIN_EDITOR_WIDTH + 2. * (TOUCH_TARGET + CONTROL_GAP) + 8.;
+ 
+ /// Accessible labels, state and geometry for [Theme::search_overlay].
+ #[derive(Clone, Copy, Debug)]
+@@ -44,6 +46,44 @@
+     pub results_status: Option<&'a str>,
+ }
+ 
++impl SearchOverlayOptions<'_> {
++    /// Snapshot current geometry and state before advancing a retained motion.
++    pub fn motion_target(&self) -> SearchOverlayMotionTarget {
++        let destination = self.layout();
++        let resting_bar = self
++            .anchor
++            .and_then(|anchor| self.style.resting_bar_bounds(anchor))
++            .filter(|bar| {
++                bar.width >= MIN_MOTION_BAR_WIDTH
++                    && bar.height >= TOUCH_TARGET
++                    && bar.x >= self.viewport.x
++                    && bar.y >= self.viewport.y
++                    && bar.x + bar.width <= self.viewport.x + self.viewport.width
++                    && bar.y + bar.height <= self.viewport.y + self.viewport.height
++                    && destination.is_some_and(|destination| {
++                        destination.bar.width >= MIN_MOTION_BAR_WIDTH
++                            && destination.bar.height >= TOUCH_TARGET
++                    })
++            });
++        SearchOverlayMotionTarget {
++            open: self.open,
++            style: self.style,
++            resting_bar,
++            destination,
++        }
++    }
++
++    fn layout(&self) -> Option<SearchLayout> {
++        plan_search_layout(
++            self.viewport,
++            self.anchor,
++            self.style,
++            self.direction,
++            self.preferred_docked_height,
++        )
++    }
++}
++
+ /// Caller-authored result views and search actions.
+ pub struct SearchOverlayContent<M> {
+     /// A results or suggestions view with stable IDs for interactive children.
+@@ -78,13 +118,42 @@
+         if !options.open {
+             return None;
+         }
+-        let layout = plan_search_layout(
+-            options.viewport,
+-            options.anchor,
+-            options.style,
+-            options.direction,
+-            options.preferred_docked_height,
+-        )?;
++        Some(self.search_overlay_at(options, content, on_query, options.layout()?, 1.))
++    }
++
++    /// Build Search at the current frame of a retained motion. Advance motion
++    /// with [SearchOverlayOptions::motion_target] from the same caller state.
++    /// The live editor and scope remain while `open` is true. Setting `open`
++    /// false immediately leaves only an inert closing shell, if visible.
++    pub fn search_overlay_with_motion<M: Clone + 'static>(
++        &self,
++        options: SearchOverlayOptions<'_>,
++        content: SearchOverlayContent<M>,
++        on_query: impl Fn(String) -> M + 'static,
++        motion: &SearchOverlayMotion,
++    ) -> Option<View<M>> {
++        let target = options.motion_target();
++        let destination = target.destination?;
++        let progress = motion.progress();
++        let Some(rest) = target.resting_bar else {
++            return self.search_overlay(options, content, on_query);
++        };
++        let layout = destination.interpolate_from(rest, progress);
++        if options.open {
++            Some(self.search_overlay_at(options, content, on_query, layout, progress))
++        } else {
++            (progress > 0.).then(|| self.closing_search(options, layout, progress))
++        }
++    }
++
++    fn search_overlay_at<M: Clone + 'static>(
++        &self,
++        options: SearchOverlayOptions<'_>,
++        content: SearchOverlayContent<M>,
++        on_query: impl Fn(String) -> M + 'static,
++        layout: SearchLayout,
++        progress: f32,
++    ) -> View<M> {
+         let SearchOverlayContent {
+             results,
+             first_result,
+@@ -94,25 +163,14 @@
+         } = content;
+         let id = |suffix| format!("{}-{suffix}", options.id);
+         let input_id = id("input");
+-        let docked = layout.presentation == SearchPresentation::Docked;
+-        let divided = options.style == SearchStyle::Divided;
+-        let panel_style = placed(Style::column(), layout.bounds, Rect::default()).background(
+-            match (docked, divided) {
+-                (true, true) => self.colors.surface_container_high,
+-                (true, false) => Color::TRANSPARENT,
+-                _ => self.colors.surface_container_low,
+-            },
+-        );
+-        let panel_style = if docked && divided {
+-            panel_style.corners(shape::EXTRA_LARGE)
+-        } else {
+-            panel_style
+-        };
+         let panel = Node::new(Role::Dialog, options.title)
+             .id(id("dialog"))
+             .tab_index(-1)
+             .focus_color(Color::TRANSPARENT)
+-            .styled(panel_style);
++            .styled(panel_style(self, layout, options.style, progress));
++
++        let results_live = progress == 1. || layout.results_viewport.height >= TOUCH_TARGET;
++        let first_result = first_result.filter(|_| results_live);
+ 
+         let input = search_input(
+             self,
+@@ -156,19 +214,16 @@
+         )
+         .children([results.restore_focus_in_subtree_on_removal(&input_id)])
+         .accessibility_scroll_pages();
+-        let surface = placed(Style::column(), layout.results_surface, layout.bounds);
+-        let surface = if docked && !divided {
+-            surface
+-                .background(self.colors.surface_container_high)
+-                .corners(shape::SMALL)
++        let results_view = if results_live {
++            results_view
+         } else {
+-            surface
++            results_view.without_interaction(Some(&input_id))
+         };
+         children.push(
+             View::new(
+                 Node::new(Role::Group, "")
+                     .id(id("results-surface"))
+-                    .styled(surface),
++                    .styled(results_style(self, layout, options.style)),
+             )
+             .children([results_view]),
+         );
+@@ -191,16 +246,93 @@
+         if let Some(target) = options.restore_focus_to {
+             panel = panel.modal_focus_fallback(target);
+         }
+-        let Color(red, green, blue, _) = self.colors.scrim;
+-        let mut backdrop = Style::column().fixed(Insets::all(0.));
+-        if docked {
+-            backdrop = backdrop.background(Color(red, green, blue, 82));
+-        }
+-        backdrop.z_index = 1000;
+-        Some(panel.modal_with_backdrop(
+-            Node::new(Role::Group, "").id(id("layer")).styled(backdrop),
++        panel.modal_with_backdrop(
++            backdrop(self, id("layer"), layout.presentation, progress),
+             on_close,
+-        ))
++        )
++    }
++
++    fn closing_search<M>(
++        &self,
++        options: SearchOverlayOptions<'_>,
++        layout: SearchLayout,
++        progress: f32,
++    ) -> View<M> {
++        let id = |suffix| format!("{}-closing-{suffix}", options.id);
++        let bar = bar_style(self, layout, options.style);
++        let mut children = vec![View::new(
++            Node::new(Role::Group, "").id(id("bar")).styled(bar),
++        )];
++        if let Some(divider) = layout.divider {
++            children.push(View::new(
++                Node::new(Role::Group, "").id(id("divider")).styled(
++                    placed(Style::column(), divider, layout.bounds)
++                        .background(self.colors.outline_variant),
++                ),
++            ));
++        }
++        children.push(View::new(
++            Node::new(Role::Group, "")
++                .id(id("results-surface"))
++                .styled(results_style(self, layout, options.style)),
++        ));
++        let panel = View::new(
++            Node::new(Role::Group, "")
++                .id(id("shell"))
++                .styled(panel_style(self, layout, options.style, progress)),
++        )
++        .children(children);
++        View::new(backdrop(self, id("layer"), layout.presentation, progress))
++            .children([panel])
++            .visual_overlay()
++    }
++}
++
++fn backdrop(theme: &Theme, id: String, presentation: SearchPresentation, progress: f32) -> Node {
++    let mut style = Style::column().fixed(Insets::all(0.));
++    if presentation == SearchPresentation::Docked {
++        let Color(red, green, blue, _) = theme.colors.scrim;
++        style = style.background(Color(red, green, blue, (82. * progress).round() as u8));
++    }
++    style.z_index = 1000;
++    Node::new(Role::Group, "").id(id).styled(style)
++}
++
++fn panel_style(theme: &Theme, layout: SearchLayout, style: SearchStyle, progress: f32) -> Style {
++    let docked = layout.presentation == SearchPresentation::Docked;
++    let color = match (docked, style) {
++        (true, SearchStyle::Divided) => theme.colors.surface_container_high,
++        (true, SearchStyle::Contained) => Color::TRANSPARENT,
++        (false, _) => theme.colors.surface_container_low,
++    };
++    let panel = placed(Style::column(), layout.bounds, Rect::default()).background(color);
++    if docked && style == SearchStyle::Divided {
++        panel.corners(shape::EXTRA_LARGE)
++    } else if !docked && progress < 1. {
++        panel.corners(Corners::all(28. * (1. - progress)))
++    } else {
++        panel
++    }
++}
++
++fn results_style(theme: &Theme, layout: SearchLayout, style: SearchStyle) -> Style {
++    let results = placed(Style::column(), layout.results_surface, layout.bounds);
++    if layout.presentation == SearchPresentation::Docked && style == SearchStyle::Contained {
++        results
++            .background(theme.colors.surface_container_high)
++            .corners(shape::SMALL)
++    } else {
++        results
++    }
++}
++
++fn bar_style(theme: &Theme, layout: SearchLayout, style: SearchStyle) -> Style {
++    let bar = placed(Style::column(), layout.bar, layout.bounds);
++    if style == SearchStyle::Contained {
++        bar.background(theme.colors.surface_container_high)
++            .corners(shape::FULL)
++    } else {
++        bar
+     }
+ }
+ 
+@@ -290,13 +422,7 @@
+     } else {
+         controls_node
+     };
+-    let bar = placed(Style::column(), layout.bar, layout.bounds);
+-    let bar = if options.style == SearchStyle::Contained {
+-        bar.background(theme.colors.surface_container_high)
+-            .corners(shape::FULL)
+-    } else {
+-        bar
+-    };
++    let bar = bar_style(theme, layout, options.style);
+     View::new(Node::new(Role::Group, "").id(id("bar")).styled(bar))
+         .children([View::new(controls_node).children(controls)])
+ }
+--- a/examples/material-gallery/src/search_overlay_demo.rs
++++ b/examples/material-gallery/src/search_overlay_demo.rs
+@@ -3,7 +3,7 @@
+ use surface_material::{
+     shape::{self, LayoutDirection},
+     ButtonKind, ChoiceState, ListItem, ListLines, ListMode, ListOptions, ListStyle,
+-    SearchOverlayContent, SearchOverlayOptions, SearchStyle, Theme,
++    SearchOverlayContent, SearchOverlayMotion, SearchOverlayOptions, SearchStyle, Theme,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+@@ -121,6 +121,7 @@
+     large_text: bool,
+     viewport: Rect,
+     anchor: Option<Rect>,
++    motion: SearchOverlayMotion,
+     query: String,
+     selected: Option<&'static str>,
+     submissions: usize,
+@@ -136,6 +137,7 @@
+             large_text: false,
+             viewport: Rect::default(),
+             anchor: None,
++            motion: SearchOverlayMotion::new(false),
+             query: String::new(),
+             selected: None,
+             submissions: 0,
+@@ -160,6 +162,7 @@
+         self.visible = false;
+         self.open = false;
+         self.anchor = None;
++        self.motion = SearchOverlayMotion::new(false);
+     }
+ 
+     pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
+@@ -193,10 +196,10 @@
+             .map(|node| node.bounds);
+         let changed = self.anchor != anchor;
+         self.anchor = anchor;
+-        AnimationUpdate {
+-            rebuild: self.open && changed,
+-            request_next: false,
+-        }
++        let target = self.overlay_options(None).motion_target();
++        let mut update = self.motion.advance(frame, target);
++        update.rebuild |= changed && (self.open || self.motion.progress() > 0.);
++        update
+     }
+ 
+     pub(crate) fn update(&mut self, event: SearchOverlayDemoEvent) {
+@@ -364,8 +367,29 @@
+         })
+     }
+ 
++    fn overlay_options<'a>(&'a self, status: Option<&'a str>) -> SearchOverlayOptions<'a> {
++        SearchOverlayOptions {
++            id: ID,
++            open: self.open,
++            title: "搜尋工作區",
++            input_label: "搜尋文件",
++            placeholder: Some("搜尋文件"),
++            results_label: "搜尋結果",
++            back_label: "關閉搜尋",
++            clear_label: "清除搜尋",
++            query: &self.query,
++            style: self.style,
++            direction: self.direction(),
++            viewport: self.viewport,
++            anchor: self.anchor,
++            preferred_docked_height: Some(440.),
++            restore_focus_to: Some(OPENER),
++            results_status: status,
++        }
++    }
++
+     fn overlay(&self, theme: &Theme) -> Option<View<Message>> {
+-        if !self.open {
++        if !self.open && self.motion.progress() == 0. {
+             return None;
+         }
+         use SearchOverlayDemoEvent::*;
+@@ -407,25 +431,8 @@
+             )
+         };
+ 
+-        theme.search_overlay(
+-            SearchOverlayOptions {
+-                id: ID,
+-                open: self.open,
+-                title: "搜尋工作區",
+-                input_label: "搜尋文件",
+-                placeholder: Some("搜尋文件"),
+-                results_label: "搜尋結果",
+-                back_label: "關閉搜尋",
+-                clear_label: "清除搜尋",
+-                query: &self.query,
+-                style: self.style,
+-                direction: self.direction(),
+-                viewport: self.viewport,
+-                anchor: self.anchor,
+-                preferred_docked_height: Some(440.),
+-                restore_focus_to: Some(OPENER),
+-                results_status: Some(&status),
+-            },
++        theme.search_overlay_with_motion(
++            self.overlay_options(Some(&status)),
+             SearchOverlayContent {
+                 results,
+                 first_result: entries.iter().find(|entry| !entry.disabled).map(|entry| {
+@@ -439,6 +446,7 @@
+                 on_close: Message::SearchOverlay(Close),
+             },
+             |query| Message::SearchOverlay(Query(query)),
++            &self.motion,
+         )
+     }
+ 
+@@ -447,7 +455,8 @@
+         let ids: Vec<_> = self.matches().map(|entry| entry.id).collect();
+         serde_json::json!({"open":self.open,"style":format!("{:?}",self.style),"rtl":self.rtl,
+             "text_scale":self.text_scale(),"query":self.query,"selected":self.selected,
+-            "submissions":self.submissions,"result_ids":ids})
++            "submissions":self.submissions,"result_ids":ids,
++            "motion":{"progress":self.motion.progress(),"moving":self.motion.is_animating()}})
+     }
+ }
+ 
+@@ -455,13 +464,20 @@
+ mod tests {
+     use super::*;
+     use crate::Gallery;
+-    use surface::TextMeasurer;
+-    use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime};
++    use surface::{Color, TextMeasurer};
++    use surface_app::{
++        Application, DisplayContrast, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime,
++        SystemColorPair, SystemContrastColors,
++    };
+ 
+     const INPUT: &str = "search-overlay-demo-input";
+     const DIALOG: &str = "search-overlay-demo-dialog";
+     const BAR: &str = "search-overlay-demo-bar";
+     const STATUS: &str = "search-overlay-demo-status";
++    const RESULTS: &str = "search-overlay-demo-results";
++    const LAYER: &str = "search-overlay-demo-layer";
++    const CLOSING_BAR: &str = "search-overlay-demo-closing-bar";
++    const CLOSING_SHELL: &str = "search-overlay-demo-closing-shell";
+ 
+     struct Metrics;
+     impl TextMeasurer for Metrics {
+@@ -485,6 +501,227 @@
+ 
+     fn bounds(runtime: &Runtime<Gallery>, id: &str) -> Rect {
+         runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++    }
++
++    fn frame(runtime: &mut Runtime<Gallery>, width: f32, height: f32, time: f64) {
++        runtime.set_time(time);
++        render(runtime, width, height);
++    }
++
++    fn background(runtime: &Runtime<Gallery>, id: &str) -> Color {
++        runtime
++            .dom()
++            .get(runtime.dom().by_id(id).unwrap())
++            .unwrap()
++            .style()
++            .background
++    }
++
++    #[test]
++    fn search_motion_interpolates_both_styles_and_both_presentations() {
++        for (width, height) in [(960., 800.), (320., 400.)] {
++            for divided in [false, true] {
++                let mut runtime = Runtime::new(Gallery::default()).unwrap();
++                route(&mut runtime, width, height);
++                if divided {
++                    runtime.activate("search-overlay-demo-style").unwrap();
++                    render(&mut runtime, width, height);
++                }
++                let rest = bounds(&runtime, OPENER);
++                runtime.activate(OPENER).unwrap();
++                frame(&mut runtime, width, height, 0.);
++                assert_eq!(bounds(&runtime, BAR), rest);
++                assert_eq!(bounds(&runtime, RESULTS).height, 0.);
++                assert_eq!(runtime.focused(), Some(INPUT));
++                assert!(runtime.app().search_overlay_demo.motion.is_animating());
++                assert!(!runtime
++                    .key(&KeyPress::new(Key::ArrowDown, Modifiers::default()))
++                    .unwrap());
++
++                frame(&mut runtime, width, height, 60.);
++                let middle = bounds(&runtime, BAR);
++                let results = bounds(&runtime, RESULTS);
++                let progress = runtime.app().search_overlay_demo.motion.progress();
++                assert!(progress > 0. && progress < 1.);
++                if divided && width > 600. {
++                    assert_eq!(middle, rest);
++                } else {
++                    assert_ne!(middle, rest);
++                }
++                assert!(results.y >= middle.y + middle.height - 0.01);
++                assert!(results.height > 0.);
++                assert!(runtime.dom().by_id("search-overlay-demo-divider").is_some() == divided);
++                assert_eq!(bounds(&runtime, "search-overlay-demo-back").width, 48.);
++                assert_eq!(runtime.focused(), Some(INPUT));
++                if width > 600. {
++                    assert_eq!(middle.y, rest.y);
++                    let Color(_, _, _, alpha) = background(&runtime, LAYER);
++                    assert!((1..82).contains(&alpha));
++                }
++
++                frame(&mut runtime, width, height, 1000.);
++                assert!(!runtime.app().search_overlay_demo.motion.is_animating());
++                assert_eq!(runtime.app().search_overlay_demo.motion.progress(), 1.);
++                if divided && width > 600. {
++                    assert_eq!(bounds(&runtime, BAR), middle);
++                } else {
++                    assert_ne!(bounds(&runtime, BAR), middle);
++                }
++                assert!(bounds(&runtime, RESULTS).height > results.height);
++                if width < 600. {
++                    assert_eq!(bounds(&runtime, DIALOG), Rect::new(0., 0., width, height));
++                }
++            }
++        }
++    }
++
++    #[test]
++    fn search_motion_retains_settings_through_frames_and_reverses_without_stealing_input() {
++        let (width, height) = (960., 800.);
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        route(&mut runtime, width, height);
++        let rest = bounds(&runtime, OPENER);
++        runtime.activate(OPENER).unwrap();
++        frame(&mut runtime, width, height, 0.);
++        runtime
++            .dispatch(Event::InputValue {
++                value: "設計".into(),
++                anchor: 6,
++                cursor: 3,
++            })
++            .unwrap();
++        runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++        runtime
++            .dispatch(Event::Ime(ImeEvent::Preedit {
++                text: "ㄐ".into(),
++                selection: Some((0, 3)),
++            }))
++            .unwrap();
++        let initial = runtime.input_snapshot().unwrap();
++
++        frame(&mut runtime, width, height, 60.);
++        let editing = runtime.input_snapshot().unwrap();
++        assert_eq!(editing.id, initial.id);
++        assert_eq!(editing.selection, initial.selection);
++        assert_eq!(editing.value, "設計");
++        assert!(editing.composing);
++        assert_eq!(
++            runtime.editor(INPUT).unwrap().composition().unwrap().text,
++            "ㄐ"
++        );
++        assert!(!runtime
++            .key(&KeyPress::new(Key::Enter, Modifiers::default()))
++            .unwrap());
++        assert_eq!(runtime.app().search_overlay_demo.submissions, 0);
++
++        let halfway = bounds(&runtime, BAR);
++        runtime.dispatch(Event::Cancel).unwrap();
++        assert_eq!(runtime.focused(), Some(INPUT));
++        assert!(!runtime.input_snapshot().unwrap().composing);
++        runtime.dispatch(Event::Cancel).unwrap();
++        assert_eq!(runtime.focused(), Some(OPENER));
++        assert!(runtime.dom().by_id(INPUT).is_none());
++        frame(&mut runtime, width, height, 60.);
++        assert_eq!(bounds(&runtime, CLOSING_BAR), halfway);
++        let shell = runtime.dom().by_id(CLOSING_SHELL).unwrap();
++        assert!(runtime.accessibility_frame().unwrap().node(shell).is_none());
++        assert!(runtime.activate(INPUT).is_err());
++        assert!(runtime.app().search_overlay_demo.motion.is_animating());
++
++        let x = rest.x + rest.width / 2.;
++        let y = rest.y + rest.height / 2.;
++        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++        frame(&mut runtime, width, height, 60.);
++        assert_eq!(runtime.focused(), Some(INPUT));
++        assert_eq!(bounds(&runtime, BAR), halfway);
++        assert!(runtime.dom().by_id(CLOSING_SHELL).is_none());
++        assert_eq!(runtime.app().search_overlay_demo.query, "設計");
++        frame(&mut runtime, width, height, 1000.);
++        assert_eq!(runtime.app().search_overlay_demo.motion.progress(), 1.);
++    }
++
++    #[test]
++    fn search_motion_keeps_live_palette_and_editor_on_resize_and_respects_reduced_motion() {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        route(&mut runtime, 960., 800.);
++        runtime.activate(OPENER).unwrap();
++        frame(&mut runtime, 960., 800., 0.);
++        runtime
++            .dispatch(Event::InputValue {
++                value: "設計".into(),
++                anchor: 3,
++                cursor: 0,
++            })
++            .unwrap();
++        runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++        runtime
++            .dispatch(Event::Ime(ImeEvent::Preedit {
++                text: "ㄕ".into(),
++                selection: None,
++            }))
++            .unwrap();
++        frame(&mut runtime, 960., 800., 40.);
++        let before = runtime.input_snapshot().unwrap();
++        let progress = runtime.app().search_overlay_demo.motion.progress();
++        let button = SystemColorPair {
++            background: Color::rgb(10, 25, 40),
++            foreground: Color::rgb(255, 255, 255),
++        };
++        let canvas = SystemColorPair {
++            background: Color::rgb(0, 0, 0),
++            foreground: Color::rgb(255, 255, 255),
++        };
++        runtime
++            .set_display_contrast(DisplayContrast::Forced(SystemContrastColors::new(
++                canvas, button, canvas,
++            )))
++            .unwrap();
++        frame(&mut runtime, 960., 800., 40.);
++        assert_eq!(
++            background(&runtime, BAR),
++            runtime
++                .app()
++                .effective_theme()
++                .colors
++                .surface_container_high
++        );
++        assert_eq!(
++            runtime.app().search_overlay_demo.motion.progress(),
++            progress
++        );
++
++        frame(&mut runtime, 320., 400., 56.);
++        assert_eq!(runtime.focused(), Some(INPUT));
++        let safe = Rect::new(0., 0., 320., 400.);
++        let resized = bounds(&runtime, DIALOG);
++        assert_eq!(safe.intersect(resized), resized);
++        let after = runtime.input_snapshot().unwrap();
++        assert_eq!(after.id, before.id);
++        assert_eq!(after.selection, before.selection);
++        assert_eq!(after.value, before.value);
++        assert_eq!(after.composing, before.composing);
++        assert_eq!(
++            runtime.editor(INPUT).unwrap().composition().unwrap().text,
++            "ㄕ"
++        );
++        frame(&mut runtime, 320., 400., 1000.);
++        assert_eq!(bounds(&runtime, DIALOG), safe);
++        assert!(runtime.input_snapshot().unwrap().composing);
++
++        runtime.set_reduced_motion(true);
++        runtime.dispatch(Event::Cancel).unwrap();
++        runtime.dispatch(Event::Cancel).unwrap();
++        frame(&mut runtime, 320., 400., 1016.);
++        assert!(!runtime.app().search_overlay_demo.motion.is_animating());
++        assert_eq!(runtime.app().search_overlay_demo.motion.progress(), 0.);
++        assert_eq!(runtime.focused(), Some(OPENER));
++        assert!(runtime.dom().by_id(CLOSING_SHELL).is_none());
++        runtime.activate(OPENER).unwrap();
++        frame(&mut runtime, 320., 400., 1032.);
++        assert_eq!(runtime.app().search_overlay_demo.motion.progress(), 1.);
++        assert!(!runtime.app().search_overlay_demo.motion.is_animating());
++        assert_eq!(runtime.focused(), Some(INPUT));
+     }
+ 
+     #[test]

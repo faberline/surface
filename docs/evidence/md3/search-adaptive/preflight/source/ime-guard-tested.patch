@@ -1,0 +1,43 @@
+--- a/crates/surface-platform/src/web_input.rs
++++ b/crates/surface-platform/src/web_input.rs
+@@ -7,10 +7,10 @@
+     sync::Arc,
+ };
+ use surface_app::{
+-    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, InputSnapshot, Modifiers,
+-    Runtime,
++    Application, EditKey, Event, ImeEvent, InputSnapshot, Modifiers, Runtime, utf8_to_utf16,
++    utf16_to_utf8,
+ };
+-use wasm_bindgen::{closure::Closure, prelude::wasm_bindgen, JsCast};
++use wasm_bindgen::{JsCast, closure::Closure, prelude::wasm_bindgen};
+ use web_sys::{EventTarget, HtmlTextAreaElement, PointerEvent};
+ use winit::{platform::web::WindowExtWebSys, window::Window};
+ 
+@@ -302,13 +302,22 @@
+             let ignore_input = ignore_input.clone();
+             let mirror = mirror.clone();
+             bridge.listen(target.clone(), "beforeinput", move |event| {
+-                if composing.get() {
+-                    return;
+-                }
+                 let Some(input) = event.dyn_ref::<web_sys::InputEvent>() else {
+                     return;
+                 };
+-                if input.is_composing() {
++                if composing.get() || input.is_composing() {
++                    // The hidden textarea is multiline even for a single-line
++                    // Surface editor. An Enter that did not confirm the IME
++                    // must not replace its active preedit with a line break.
++                    if input.input_type() == "insertLineBreak"
++                        && runtime
++                            .borrow()
++                            .input_snapshot()
++                            .is_some_and(|snapshot| !snapshot.multiline)
++                    {
++                        event.prevent_default();
++                        event.stop_propagation();
++                    }
+                     return;
+                 }
+                 // Cancellation need not send a final input event. Do not

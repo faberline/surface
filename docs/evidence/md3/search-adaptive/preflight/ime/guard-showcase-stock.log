@@ -1,0 +1,26 @@
+case ime ...
+browser: Chrome/158.0.8127.37
+  [I1] Ready; click name → textarea focused
+  [I2] record composition and input events
+  [I3] compose ㄓㄨㄥ → preedit, composing, empty value
+  [I4] compose 中文 → preedit; screenshot
+  [I5] DOM export during preedit
+  [I6] textarea position matches input_caret()
+  [I7] commit 中文
+  [I8] setSelectionRange(0,1) → bytes 0..3
+  [I9] compose and commit 台 → 台文
+  [I10] compose ㄅㄆ then cancel → value kept
+  [I11] select all, commit text with ZWJ emoji and combining mark
+  [I12] Backspace deletes one grapheme at a time
+  [I13] undo and redo
+  [I14] select all, commit mixed scripts
+  [I15] compose ㄅ then click increment → composition cancelled
+  [I16] click name again, select all, commit; screenshot
+  [I17] final DOM export
+  [I18] events include composition and input
+  [I19] no page errors; evidence JSON
+  evidence: committed="繁體中文、简体中文" events=40
+  [I20] authored line endings keep directed browser and Rust selections
+case ime ... ok (20 steps, 57 checks, 1.1s)
+
+e2e result: 1 passed; 0 failed; 57 checks; artifacts in <artifacts>

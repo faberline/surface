@@ -1,0 +1,1865 @@
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -39,6 +39,8 @@
+ mod scroll_choice_field_state;
+ mod scroll_field;
+ mod scroll_field_state;
++mod search_layout;
++mod search_overlay;
+ pub mod shape;
+ mod side_sheet;
+ mod snackbar;
+@@ -153,6 +155,8 @@
+     ScrollFieldDrag, ScrollFieldError, ScrollFieldEvent, ScrollFieldMode, ScrollFieldRange,
+     ScrollFieldState, ScrollFieldStep,
+ };
++pub use search_layout::SearchStyle;
++pub use search_overlay::{SearchOverlayContent, SearchOverlayOptions};
+ pub use side_sheet::{
+     SideSheetContent, SideSheetEdge, SideSheetMotion, SideSheetOptions, SideSheetPresentation,
+     SideSheetStyle,
+diff --git a/crates/surface-material/src/search_layout.rs b/crates/surface-material/src/search_layout.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/surface-material/src/search_layout.rs
+@@ -0,0 +1,409 @@
++//! Pure window geometry for Material 3 Search. All dimensions are logical dp.
++
++use surface::Rect;
++
++use crate::{adaptive::WindowWidthSizeClass, shape::LayoutDirection};
++
++const DOCKED_MIN_WIDTH: f32 = 360.;
++const DOCKED_MAX_WIDTH: f32 = 720.;
++const DOCKED_MIN_HEIGHT: f32 = 240.;
++const BAR_HEIGHT: f32 = 56.;
++const DIVIDED_FULL_SCREEN_BAR_HEIGHT: f32 = 72.;
++const CONTAINED_RESTING_MARGIN: f32 = 24.;
++const CONTAINED_FOCUSED_MARGIN: f32 = 12.;
++const CONTAINED_DOCKED_GAP: f32 = 2.;
++const CONTAINED_DOCKED_RESULTS_INSET: f32 = 4.;
++const DIVIDED_DOCKED_RESULTS_BOTTOM: f32 = 16.;
++const DIVIDER_HEIGHT: f32 = 1.;
++const CONTROL_SIDE: f32 = 48.;
++const CONTROL_EDGE_INSET: f32 = 4.;
++
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++/// Appearance of the expanding Material search bar.
++pub enum SearchStyle {
++    /// Keep the rounded search pill above suggestions and results.
++    Contained,
++    /// Separate the search row and result surface with a divider.
++    Divided,
++}
++
++impl SearchStyle {
++    /// Place a resting face in its un-inset allocation. Pass the same
++    /// allocation as the expanded overlay's anchor.
++    pub fn resting_bar_bounds(self, anchor: Rect) -> Option<Rect> {
++        if !valid(anchor) {
++            return None;
++        }
++        let mut bar = anchor;
++        bar.height = BAR_HEIGHT.min(anchor.height);
++        if self == Self::Contained {
++            bar = inset_bar(bar, CONTAINED_RESTING_MARGIN);
++        }
++        Some(bar)
++    }
++}
++
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++pub(super) enum SearchPresentation {
++    Docked,
++    FullScreen,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub(super) struct SearchLayout {
++    pub(super) presentation: SearchPresentation,
++    /// Outer bounds of the bar and results. Docked rendering adds a viewport scrim.
++    pub(super) bounds: Rect,
++    /// The pinned input row's painted bounds.
++    pub(super) bar: Rect,
++    /// The bar's inner strip for the editor and centered icon targets.
++    pub(super) controls: Rect,
++    pub(super) divider: Option<Rect>,
++    /// Painted results background, including internal blank space.
++    pub(super) results_surface: Rect,
++    /// Clipped viewport for the scrolling results. The input is outside it.
++    pub(super) results_viewport: Rect,
++}
++
++/// Plan the open layout from the current safe viewport and stable bar
++/// allocation in window coordinates. The anchor's y is the resting bar top.
++/// Docking keeps the logical start edge and grows only downward. A missing,
++/// clipped, or unfit anchor picks Full-screen. An absent height preference
++/// uses the available docked height. A preference describes the whole surface.
++pub(super) fn plan_search_layout(
++    viewport: Rect,
++    anchor: Option<Rect>,
++    style: SearchStyle,
++    direction: LayoutDirection,
++    preferred_docked_height: Option<f32>,
++) -> Option<SearchLayout> {
++    if !valid(viewport)
++        || preferred_docked_height.is_some_and(|height| !height.is_finite() || height < 0.)
++    {
++        return None;
++    }
++    let width_class = WindowWidthSizeClass::from_dp(viewport.width)?;
++    let docked = if width_class >= WindowWidthSizeClass::Medium {
++        anchor.and_then(|anchor| {
++            docked_bounds(viewport, anchor, style, direction, preferred_docked_height)
++        })
++    } else {
++        None
++    };
++    let (bounds, presentation) = docked
++        .map_or((viewport, SearchPresentation::FullScreen), |bounds| {
++            (bounds, SearchPresentation::Docked)
++        });
++    Some(place_contents(bounds, presentation, style))
++}
++
++fn docked_bounds(
++    viewport: Rect,
++    anchor: Rect,
++    style: SearchStyle,
++    direction: LayoutDirection,
++    preferred_height: Option<f32>,
++) -> Option<Rect> {
++    if !valid(anchor)
++        || anchor.x < viewport.x
++        || anchor.y < viewport.y
++        || right(anchor) > right(viewport)
++        || bottom(anchor) > bottom(viewport)
++    {
++        return None;
++    }
++    let focused = match style {
++        SearchStyle::Contained => inset_bar(anchor, CONTAINED_FOCUSED_MARGIN),
++        SearchStyle::Divided => anchor,
++    };
++    let (start, room) = match direction {
++        LayoutDirection::LeftToRight => (focused.x, right(viewport) - focused.x),
++        LayoutDirection::RightToLeft => (right(focused), right(focused) - viewport.x),
++    };
++    let max_height = (viewport.height / 3. * 2.).min(bottom(viewport) - anchor.y);
++    if room < DOCKED_MIN_WIDTH || max_height < DOCKED_MIN_HEIGHT {
++        return None;
++    }
++
++    let width = focused
++        .width
++        .clamp(DOCKED_MIN_WIDTH, DOCKED_MAX_WIDTH)
++        .min(room);
++    let height = preferred_height
++        .unwrap_or(max_height)
++        .clamp(DOCKED_MIN_HEIGHT, max_height);
++    let x = match direction {
++        LayoutDirection::LeftToRight => start,
++        LayoutDirection::RightToLeft => start - width,
++    };
++    Some(Rect::new(x, anchor.y, width, height))
++}
++
++fn place_contents(
++    bounds: Rect,
++    presentation: SearchPresentation,
++    style: SearchStyle,
++) -> SearchLayout {
++    let docked = presentation == SearchPresentation::Docked;
++    let contained = style == SearchStyle::Contained;
++    let bar_height = match (style, presentation) {
++        (SearchStyle::Divided, SearchPresentation::FullScreen) => DIVIDED_FULL_SCREEN_BAR_HEIGHT,
++        _ => BAR_HEIGHT,
++    };
++    let mut bar = bounds;
++    if contained && !docked {
++        // Keep the input usable first if the safe viewport becomes very small.
++        bar = inset_bar(bar, CONTAINED_FOCUSED_MARGIN);
++        bar.y += CONTAINED_FOCUSED_MARGIN.min((bounds.height - bar_height).max(0.));
++    }
++    bar.height = bar_height.min((bottom(bounds) - bar.y).max(0.));
++    // A 24 dp centered icon in a 48 dp target starts 16 dp from the face edge.
++    let controls = inset_bar(bar, CONTROL_EDGE_INSET);
++    let remaining = section_from(bounds, bottom(bar));
++    let divider = (!contained && remaining.height >= DIVIDER_HEIGHT)
++        .then(|| Rect::new(remaining.x, remaining.y, remaining.width, DIVIDER_HEIGHT));
++    let separation = match (style, presentation) {
++        (SearchStyle::Contained, SearchPresentation::Docked) => CONTAINED_DOCKED_GAP,
++        (SearchStyle::Divided, _) if divider.is_some() => DIVIDER_HEIGHT,
++        _ => 0.,
++    };
++    let results_surface = section_from(bounds, remaining.y + separation);
++    let results_viewport = match (style, presentation) {
++        (SearchStyle::Contained, SearchPresentation::Docked) => {
++            results_surface.inset(CONTAINED_DOCKED_RESULTS_INSET)
++        }
++        (SearchStyle::Divided, SearchPresentation::Docked) => {
++            let mut viewport = results_surface;
++            viewport.height -= DIVIDED_DOCKED_RESULTS_BOTTOM;
++            viewport
++        }
++        _ => results_surface,
++    };
++    SearchLayout {
++        presentation,
++        bounds,
++        bar,
++        controls,
++        divider,
++        results_surface,
++        results_viewport,
++    }
++}
++
++fn inset_bar(bounds: Rect, inset: f32) -> Rect {
++    let inset = inset.min(((bounds.width - CONTROL_SIDE) / 2.).max(0.));
++    Rect::new(
++        bounds.x + inset,
++        bounds.y,
++        bounds.width - 2. * inset,
++        bounds.height,
++    )
++}
++
++fn section_from(bounds: Rect, y: f32) -> Rect {
++    let y = y.min(bottom(bounds));
++    Rect::new(bounds.x, y, bounds.width, bottom(bounds) - y)
++}
++
++fn right(rect: Rect) -> f32 {
++    rect.x + rect.width
++}
++
++fn bottom(rect: Rect) -> f32 {
++    rect.y + rect.height
++}
++
++fn valid(rect: Rect) -> bool {
++    rect.x.is_finite()
++        && rect.y.is_finite()
++        && right(rect).is_finite()
++        && bottom(rect).is_finite()
++        && right(rect) > rect.x
++        && bottom(rect) > rect.y
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use LayoutDirection::{LeftToRight, RightToLeft};
++    use SearchPresentation::{Docked, FullScreen};
++    use SearchStyle::{Contained, Divided};
++
++    #[test]
++    fn switches_at_600_dp_for_both_styles() {
++        let narrow = Rect::new(0., 0., 599., 720.);
++        let medium = Rect::new(0., 0., 600., 720.);
++        let anchor = Some(Rect::new(0., 64., 410., 56.));
++        for style in [Contained, Divided] {
++            let compact = plan_search_layout(narrow, anchor, style, LeftToRight, None).unwrap();
++            assert_eq!(compact.presentation, FullScreen);
++            assert_eq!(compact.bounds, narrow);
++
++            let docked = plan_search_layout(medium, anchor, style, LeftToRight, None).unwrap();
++            assert_eq!(docked.presentation, Docked);
++            assert_eq!(docked.bounds.y, 64.);
++            assert_eq!(docked.bounds.height, 480.);
++        }
++    }
++
++    #[test]
++    fn docked_bounds_keep_logical_start_and_respect_width_limits() {
++        let viewport = Rect::new(40., 20., 960., 600.);
++        let narrow = Some(Rect::new(404., 60., 210., 56.));
++        let wide = Some(Rect::new(80., 60., 860., 56.));
++        let plan = |anchor, style, direction| {
++            plan_search_layout(viewport, anchor, style, direction, Some(240.)).unwrap()
++        };
++        assert_eq!(
++            plan(narrow, Contained, LeftToRight).bounds,
++            Rect::new(416., 60., 360., 240.)
++        );
++        assert_eq!(
++            plan(narrow, Contained, RightToLeft).bounds,
++            Rect::new(242., 60., 360., 240.)
++        );
++        assert_eq!(
++            plan(wide, Divided, LeftToRight).bounds,
++            Rect::new(80., 60., 720., 240.)
++        );
++        assert_eq!(
++            plan(wide, Divided, RightToLeft).bounds,
++            Rect::new(220., 60., 720., 240.)
++        );
++    }
++
++    #[test]
++    fn docking_never_flips_when_the_logical_start_cannot_hold_minimum_width() {
++        let viewport = Rect::new(40., 20., 960., 600.);
++        let near_right = Some(Rect::new(630., 60., 350., 56.));
++        let near_left = Some(Rect::new(60., 60., 350., 56.));
++        let plan = |anchor, direction| {
++            plan_search_layout(viewport, anchor, Contained, direction, None).unwrap()
++        };
++        assert_eq!(plan(near_right, LeftToRight).presentation, FullScreen);
++        assert_eq!(plan(near_left, RightToLeft).presentation, FullScreen);
++        let exact = Some(Rect::new(628., 60., 350., 56.));
++        assert_eq!(
++            plan(exact, LeftToRight).bounds,
++            Rect::new(640., 60., 360., 400.)
++        );
++        assert_eq!(plan(near_left, LeftToRight).presentation, Docked);
++        assert_eq!(plan(near_right, RightToLeft).presentation, Docked);
++    }
++
++    #[test]
++    fn height_clamps_to_minimum_two_thirds_and_actual_room_below() {
++        let plan = |height, y, preferred| {
++            plan_search_layout(
++                Rect::new(0., 10., 780., height),
++                Some(Rect::new(60., y, 440., 56.)),
++                Divided,
++                LeftToRight,
++                preferred,
++            )
++            .unwrap()
++        };
++        assert_eq!(plan(359., 10., None).presentation, FullScreen);
++        assert_eq!(plan(360., 10., Some(800.)).bounds.height, 240.);
++        assert_eq!(plan(720., 10., Some(0.)).bounds.height, 240.);
++        assert_eq!(plan(720., 20., Some(600.)).bounds.height, 480.);
++        assert_eq!(plan(720., 380., Some(460.)).bounds.height, 350.);
++        assert_eq!(plan(720., 490., None).bounds.height, 240.);
++        assert_eq!(plan(720., 491., None).presentation, FullScreen);
++    }
++
++    #[test]
++    fn contained_keeps_a_pinned_pill_and_its_separate_scroller() {
++        let anchor = Rect::new(0., 40., 440., 56.);
++        let viewport = Rect::new(0., 0., 620., 720.);
++        let open =
++            plan_search_layout(viewport, Some(anchor), Contained, LeftToRight, Some(300.)).unwrap();
++        assert_eq!(
++            Contained.resting_bar_bounds(anchor),
++            Some(Rect::new(24., 40., 392., 56.))
++        );
++        assert_eq!(open.bar, Rect::new(12., 40., 416., 56.));
++        assert_eq!(open.controls, Rect::new(16., 40., 408., 56.));
++        assert_eq!(open.divider, None);
++        assert_eq!(open.results_surface, Rect::new(12., 98., 416., 242.));
++        assert_eq!(open.results_viewport, Rect::new(16., 102., 408., 234.));
++
++        let compact = Rect::new(5., 20., 320., 400.);
++        let open = plan_search_layout(compact, None, Contained, RightToLeft, None).unwrap();
++        assert_eq!(open.bounds, compact);
++        assert_eq!(open.bar, Rect::new(17., 32., 296., 56.));
++        assert_eq!(open.divider, None);
++        assert_eq!(open.results_viewport, Rect::new(5., 88., 320., 332.));
++    }
++
++    #[test]
++    fn divided_separates_the_pinned_header_from_both_scrollers() {
++        let anchor = Rect::new(80., 40., 400., 56.);
++        let viewport = Rect::new(0., 0., 620., 720.);
++        assert_eq!(Divided.resting_bar_bounds(anchor), Some(anchor));
++        let docked =
++            plan_search_layout(viewport, Some(anchor), Divided, RightToLeft, Some(300.)).unwrap();
++        assert_eq!(docked.bar, anchor);
++        assert_eq!(docked.controls, Rect::new(84., 40., 392., 56.));
++        assert_eq!(docked.divider, Some(Rect::new(80., 96., 400., 1.)));
++        assert_eq!(docked.results_viewport, Rect::new(80., 97., 400., 227.));
++
++        let viewport = Rect::new(12., 19., 320., 400.);
++        let full = plan_search_layout(viewport, None, Divided, LeftToRight, None).unwrap();
++        assert_eq!(full.bar, Rect::new(12., 19., 320., 72.));
++        assert_eq!(
++            full.controls.x + (CONTROL_SIDE - 24.) / 2.,
++            viewport.x + 16.
++        );
++        assert_eq!(full.divider, Some(Rect::new(12., 91., 320., 1.)));
++        assert_eq!(full.results_viewport, Rect::new(12., 92., 320., 327.));
++    }
++
++    #[test]
++    fn invalid_viewport_returns_none_and_missing_or_stale_anchor_falls_back() {
++        let viewport = Rect::new(20., 20., 620., 720.);
++        for invalid in [
++            Rect::new(f32::NAN, 0., 600., 600.),
++            Rect::new(0., f32::INFINITY, 600., 600.),
++            Rect::new(0., 0., 0., 600.),
++            Rect::new(0., 0., 600., -1.),
++            Rect::new(0., 0., 600., f32::INFINITY),
++            Rect::new(f32::MAX, 0., f32::MAX, 600.),
++        ] {
++            assert!(plan_search_layout(invalid, None, Contained, LeftToRight, None).is_none());
++            assert!(Contained.resting_bar_bounds(invalid).is_none());
++            let result =
++                plan_search_layout(viewport, Some(invalid), Contained, LeftToRight, None).unwrap();
++            assert_eq!(result.presentation, FullScreen);
++        }
++        for anchor in [
++            None,
++            Some(Rect::new(10., 40., 400., 56.)),
++            Some(Rect::new(650., 40., 60., 56.)),
++        ] {
++            assert_eq!(
++                plan_search_layout(viewport, anchor, Divided, RightToLeft, None)
++                    .unwrap()
++                    .presentation,
++                FullScreen
++            );
++        }
++        assert!(
++            plan_search_layout(viewport, None, Contained, LeftToRight, Some(f32::NAN)).is_none()
++        );
++    }
++
++    #[test]
++    fn a_very_small_full_screen_viewport_allocates_input_before_results() {
++        let viewport = Rect::new(10., 20., 60., 61.);
++        let contained = plan_search_layout(viewport, None, Contained, LeftToRight, None).unwrap();
++        assert_eq!(contained.bar, Rect::new(16., 25., 48., 56.));
++        assert_eq!(contained.results_viewport.height, 0.);
++        assert_eq!(contained.results_viewport.y, 81.);
++
++        let divided = plan_search_layout(viewport, None, Divided, LeftToRight, None).unwrap();
++        assert_eq!(divided.bar, viewport);
++        assert_eq!(divided.divider, None);
++        assert_eq!(divided.results_viewport.height, 0.);
++    }
++}
+diff --git a/crates/surface-material/src/search_overlay.rs b/crates/surface-material/src/search_overlay.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/surface-material/src/search_overlay.rs
+@@ -0,0 +1,290 @@
++//! Controlled Material Search overlay. The caller owns the query and results.
++
++use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style, TextScaling};
++use surface_app::{CursorStyle, TextAction, View};
++
++use crate::{
++    search_layout::{plan_search_layout, SearchLayout, SearchPresentation, SearchStyle},
++    shape::{self, LayoutDirection},
++    typography, IconButtonKind, Theme,
++};
++
++const TOUCH_TARGET: f32 = 48.;
++const CONTROL_GAP: f32 = 4.;
++const MIN_EDITOR_WIDTH: f32 = 24.;
++
++/// Accessible labels, state and geometry for [Theme::search_overlay].
++#[derive(Clone, Copy, Debug)]
++pub struct SearchOverlayOptions<'a> {
++    /// Unique, stable prefix for the editor and overlay controls.
++    pub id: &'a str,
++    pub open: bool,
++    pub title: &'a str,
++    pub input_label: &'a str,
++    pub results_label: &'a str,
++    pub back_label: &'a str,
++    pub clear_label: &'a str,
++    pub query: &'a str,
++    pub style: SearchStyle,
++    pub direction: LayoutDirection,
++    /// Safe area in window coordinates. Recompute it after a resize.
++    pub viewport: Rect,
++    /// The caller's stable resting bar allocation before margins. Leave it
++    /// absent until measured, or when the overlay always fills the viewport.
++    pub anchor: Option<Rect>,
++    /// The preferred outer height when docked. `None` uses the available room.
++    pub preferred_docked_height: Option<f32>,
++    /// A fallback when the original focus target vanishes while Search is open.
++    pub restore_focus_to: Option<&'a str>,
++    /// Localized result count or empty-state announcement. Place any visible
++    /// empty-state content in the results slot.
++    pub results_status: Option<&'a str>,
++}
++
++/// Caller-authored result views and search actions.
++pub struct SearchOverlayContent<M> {
++    /// A results or suggestions view with stable IDs for interactive children.
++    /// It may contain a roving group for result arrow navigation.
++    pub results: View<M>,
++    pub on_submit: M,
++    pub on_clear: M,
++    pub on_close: M,
++}
++
++impl Theme {
++    /// Render the controlled open Search overlay as a sibling of page content.
++    ///
++    /// Docked and Full-screen share `{id}-dialog`, `{id}-input`, and
++    /// `{id}-results`. Keep these IDs and the authored query across resizes
++    /// to retain editing state, focus, and scroll where the new viewport fits.
++    /// The modal initially focuses the editor and returns focus on dismissal.
++    ///
++    /// Plain Enter in the editor sends `on_submit` after IME composition.
++    /// Clear sends `on_clear`. Back, unhandled Escape, and backdrop dismissal
++    /// send `on_close`. Render the caller's new model on the next rebuild.
++    pub fn search_overlay<M: Clone + 'static>(
++        &self,
++        options: SearchOverlayOptions<'_>,
++        content: SearchOverlayContent<M>,
++        on_query: impl Fn(String) -> M + 'static,
++    ) -> Option<View<M>> {
++        if !options.open {
++            return None;
++        }
++        let layout = plan_search_layout(
++            options.viewport,
++            options.anchor,
++            options.style,
++            options.direction,
++            options.preferred_docked_height,
++        )?;
++        let SearchOverlayContent {
++            results,
++            on_submit,
++            on_clear,
++            on_close,
++        } = content;
++        let id = |suffix| format!("{}-{suffix}", options.id);
++        let input_id = id("input");
++        let docked = layout.presentation == SearchPresentation::Docked;
++        let divided = options.style == SearchStyle::Divided;
++        let panel_style = placed(Style::column(), layout.bounds, Rect::default()).background(
++            match (docked, divided) {
++                (true, true) => self.colors.surface_container_high,
++                (true, false) => Color::TRANSPARENT,
++                _ => self.colors.surface_container_low,
++            },
++        );
++        let panel_style = if docked && divided {
++            panel_style.corners(shape::EXTRA_LARGE)
++        } else {
++            panel_style
++        };
++        let panel = Node::new(Role::Dialog, options.title)
++            .id(id("dialog"))
++            .tab_index(-1)
++            .focus_color(Color::TRANSPARENT)
++            .styled(panel_style);
++
++        let bar = search_bar(
++            self,
++            options,
++            layout,
++            on_query,
++            on_submit,
++            on_clear,
++            on_close.clone(),
++        );
++        let mut children = vec![bar];
++        if let Some(divider) = layout.divider {
++            children.push(View::new(
++                Node::new(Role::Separator, "").id(id("divider")).styled(
++                    placed(Style::column(), divider, layout.bounds)
++                        .background(self.colors.outline_variant),
++                ),
++            ));
++        }
++
++        let results_view = View::new(
++            Node::new(Role::Group, options.results_label)
++                .id(id("results"))
++                .styled(
++                    placed(
++                        Style::column(),
++                        layout.results_viewport,
++                        layout.results_surface,
++                    )
++                    .clip(true),
++                ),
++        )
++        .children([results.restore_focus_in_subtree_on_removal(&input_id)])
++        .accessibility_scroll_pages();
++        let surface = placed(Style::column(), layout.results_surface, layout.bounds);
++        let surface = if docked && !divided {
++            surface
++                .background(self.colors.surface_container_high)
++                .corners(shape::SMALL)
++        } else {
++            surface
++        };
++        children.push(
++            View::new(
++                Node::new(Role::Group, "")
++                    .id(id("results-surface"))
++                    .styled(surface),
++            )
++            .children([results_view]),
++        );
++        if let Some(status) = options.results_status {
++            // Keep announcements projected if the results are scrolled away.
++            children.push(View::new(
++                Node::new(Role::Status, status)
++                    .id(id("status"))
++                    .styled(placed(
++                        Style::column(),
++                        Rect::new(layout.bounds.x, layout.bounds.y, 1., 1.),
++                        layout.bounds,
++                    )),
++            ));
++        }
++
++        let mut panel = View::new(panel)
++            .children(children)
++            .modal_initial_focus(input_id);
++        if let Some(target) = options.restore_focus_to {
++            panel = panel.modal_focus_fallback(target);
++        }
++        let Color(red, green, blue, _) = self.colors.scrim;
++        let mut backdrop = Style::column().fixed(Insets::all(0.));
++        if docked {
++            backdrop = backdrop.background(Color(red, green, blue, 82));
++        }
++        backdrop.z_index = 1000;
++        Some(panel.modal_with_backdrop(
++            Node::new(Role::Group, "").id(id("layer")).styled(backdrop),
++            on_close,
++        ))
++    }
++}
++
++fn search_bar<M: Clone + 'static>(
++    theme: &Theme,
++    options: SearchOverlayOptions<'_>,
++    layout: SearchLayout,
++    on_query: impl Fn(String) -> M + 'static,
++    on_submit: M,
++    on_clear: M,
++    on_close: M,
++) -> View<M> {
++    let rtl = options.direction == LayoutDirection::RightToLeft;
++    let id = |suffix| format!("{}-{suffix}", options.id);
++    let input_id = id("input");
++    let input = View::new(
++        Node::new(Role::TextInput, options.input_label)
++            .id(&input_id)
++            .text(options.query)
++            .styled(
++                Style::column()
++                    .width(Length::Px(0.))
++                    .height(Length::Px(TOUCH_TARGET.min(layout.controls.height)))
++                    .grow(1.)
++                    .with_text_style(typography::BODY_LARGE)
++                    .foreground(theme.colors.on_surface),
++            ),
++    )
++    .on_input(on_query)
++    .on_key(move |press| {
++        (!press.repeat && press.text_action() == Some(TextAction::Submit))
++            .then(|| on_submit.clone())
++    })
++    .cursor(CursorStyle::Text);
++
++    let mut controls = Vec::new();
++    let room_for_buttons = layout.controls.width - MIN_EDITOR_WIDTH;
++    if layout.controls.height >= TOUCH_TARGET && room_for_buttons >= TOUCH_TARGET + CONTROL_GAP {
++        controls.push(search_button(
++            theme,
++            &id("back"),
++            options.back_label,
++            if rtl { "→" } else { "←" },
++            on_close,
++        ));
++    }
++    controls.push(input);
++    if !options.query.is_empty()
++        && layout.controls.height >= TOUCH_TARGET
++        && room_for_buttons >= 2. * (TOUCH_TARGET + CONTROL_GAP)
++    {
++        controls.push(
++            search_button(theme, &id("clear"), options.clear_label, "×", on_clear)
++                .restore_focus_on_removal(input_id),
++        );
++    }
++    let controls_style = placed(
++        Style::row().align(Align::Center).gap(CONTROL_GAP),
++        layout.controls,
++        layout.bar,
++    );
++    let controls_node = Node::new(Role::Group, "").styled(controls_style);
++    let controls_node = if rtl {
++        controls_node.reverse_row()
++    } else {
++        controls_node
++    };
++    let bar = placed(Style::column(), layout.bar, layout.bounds);
++    let bar = if options.style == SearchStyle::Contained {
++        bar.background(theme.colors.surface_container_high)
++            .corners(shape::FULL)
++    } else {
++        bar
++    };
++    View::new(Node::new(Role::Group, "").id(id("bar")).styled(bar))
++        .children([View::new(controls_node).children(controls)])
++}
++
++fn search_button<M>(theme: &Theme, id: &str, label: &str, icon: &str, message: M) -> View<M> {
++    theme
++        .icon_button_with_text_scaling(
++            id,
++            label,
++            (icon, TextScaling::Fixed),
++            IconButtonKind::Standard,
++            None,
++            false,
++            message,
++        )
++        .accessible_activation()
++        .suppress_repeated_activation()
++        .protect_composition_on_press()
++}
++
++fn placed(style: Style, rect: Rect, parent: Rect) -> Style {
++    style
++        .width(Length::Px(rect.width))
++        .height(Length::Px(rect.height))
++        .absolute(Insets {
++            left: Length::Px(rect.x - parent.x),
++            top: Length::Px(rect.y - parent.y),
++            ..Insets::default()
++        })
++}
+diff --git a/crates/surface-material/tests/search_overlay.rs b/crates/surface-material/tests/search_overlay.rs
+new file mode 100644
+--- /dev/null
++++ b/crates/surface-material/tests/search_overlay.rs
+@@ -0,0 +1,399 @@
++use surface::{Color, Length, Node, Rect, Role, Style, TextMeasurer};
++use surface_app::{
++    Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Roving, Runtime, ScrollTarget,
++    View,
++};
++use surface_material::{
++    shape::{self, LayoutDirection},
++    SearchOverlayContent, SearchOverlayOptions, SearchStyle, Theme,
++};
++
++const INPUT: &str = "search-input";
++const RESULTS: &str = "search-results";
++
++#[derive(Clone)]
++enum Message {
++    Open,
++    Close,
++    Query(String),
++    Clear,
++    Submit,
++    Result(usize),
++    RemoveFirstResult,
++    RemoveOpener,
++    Background,
++}
++
++struct SearchApp {
++    style: SearchStyle,
++    direction: LayoutDirection,
++    viewport: Rect,
++    open: bool,
++    query: String,
++    submits: Vec<String>,
++    picked: Vec<usize>,
++    first_result: bool,
++    opener: bool,
++    clears: usize,
++    closes: usize,
++    background: usize,
++}
++
++impl Application for SearchApp {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Open => self.open = true,
++            Message::Close => {
++                self.open = false;
++                self.closes += 1;
++            }
++            Message::Query(value) => self.query = value,
++            Message::Clear => {
++                self.query.clear();
++                self.clears += 1;
++            }
++            Message::Submit => self.submits.push(self.query.clone()),
++            Message::Result(id) => self.picked.push(id),
++            Message::RemoveFirstResult => self.first_result = false,
++            Message::RemoveOpener => self.opener = false,
++            Message::Background => self.background += 1,
++        }
++    }
++
++    fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        self.viewport = Rect::new(0., 0., width, height);
++        true
++    }
++
++    fn text_scale(&self) -> f32 {
++        2.
++    }
++
++    fn view(&self) -> View<Message> {
++        let theme = Theme::dark();
++        let mut children = Vec::new();
++        if self.opener {
++            children.push(button("opener", "Open Search", false, Message::Open));
++        }
++        children.push(button(
++            "background",
++            "Background",
++            false,
++            Message::Background,
++        ));
++        if self.open {
++            let start = usize::from(!self.first_result);
++            let results = View::new(
++                Node::new(Role::List, "Suggestions")
++                    .id("rows")
++                    .styled(Style::column().width(Length::Percent(1.))),
++            )
++            .children((start..24).map(|index| {
++                button(
++                    &format!("result-{index}"),
++                    &format!("Suggestion {index}"),
++                    index == 1,
++                    Message::Result(index),
++                )
++                .protect_composition_on_press()
++            }))
++            .roving_retained_layout(Roving::vertical(false));
++            children.extend(theme.search_overlay(
++                SearchOverlayOptions {
++                    id: "search",
++                    open: self.open,
++                    title: "Search",
++                    input_label: "Query",
++                    results_label: "Results",
++                    back_label: "Back",
++                    clear_label: "Clear query",
++                    query: &self.query,
++                    style: self.style,
++                    direction: self.direction,
++                    viewport: self.viewport,
++                    anchor: Some(Rect::new(48., 36., 464., 56.)),
++                    preferred_docked_height: Some(300.),
++                    restore_focus_to: Some("background"),
++                    results_status: Some(if self.query.is_empty() {
++                        "History"
++                    } else {
++                        "24 results"
++                    }),
++                },
++                SearchOverlayContent {
++                    results,
++                    on_submit: Message::Submit,
++                    on_clear: Message::Clear,
++                    on_close: Message::Close,
++                },
++                Message::Query,
++            ));
++        }
++        theme.page(children)
++    }
++}
++
++fn button(id: &str, label: &str, disabled: bool, action: Message) -> View<Message> {
++    View::new(
++        Node::new(Role::Button, label)
++            .id(id)
++            .disabled(disabled)
++            .styled(
++                Style::row()
++                    .width(Length::Percent(1.))
++                    .height(Length::Px(48.)),
++            ),
++    )
++    .on_press(action)
++    .accessible_activation()
++}
++
++struct Metrics;
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.chars().count() as f32 * size * 0.55, size * 1.2)
++    }
++}
++
++fn open(style: SearchStyle, direction: LayoutDirection, width: f32) -> Runtime<SearchApp> {
++    let mut runtime = Runtime::new(SearchApp {
++        style,
++        direction,
++        viewport: Rect::default(),
++        open: false,
++        query: "alpha".into(),
++        submits: vec![],
++        picked: vec![],
++        first_result: true,
++        opener: true,
++        clears: 0,
++        closes: 0,
++        background: 0,
++    })
++    .unwrap();
++    render(&mut runtime, width);
++    assert!(runtime.activate("opener").unwrap());
++    render(&mut runtime, width);
++    assert_eq!(runtime.focused(), Some(INPUT));
++    runtime
++}
++
++fn render(runtime: &mut Runtime<SearchApp>, width: f32) {
++    runtime.render(width, 720., &mut Metrics).unwrap();
++}
++
++fn node<'a>(runtime: &'a Runtime<SearchApp>, id: &str) -> &'a Node {
++    runtime.dom().get(runtime.dom().by_id(id).unwrap()).unwrap()
++}
++
++fn bounds(runtime: &Runtime<SearchApp>, id: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++}
++
++fn click(runtime: &mut Runtime<SearchApp>, x: f32, y: f32) {
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++}
++
++fn tab(runtime: &mut Runtime<SearchApp>, reverse: bool) {
++    runtime.dispatch(Event::FocusNext { reverse }).unwrap();
++}
++
++fn enter(runtime: &mut Runtime<SearchApp>) -> bool {
++    runtime
++        .key(&KeyPress::new(Key::Enter, Modifiers::default()))
++        .unwrap()
++}
++
++#[test]
++fn builds_both_variants_with_unclipped_buttons_and_named_results() {
++    for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++        let rtl = direction == LayoutDirection::RightToLeft;
++        for style in [SearchStyle::Contained, SearchStyle::Divided] {
++            let mut runtime = open(style, direction, 600.);
++            assert_eq!(bounds(&runtime, "search-dialog").height, 300.);
++            assert_eq!(bounds(&runtime, "search-bar").height, 56.);
++            assert_eq!(node(&runtime, "search-layer").style().background.3, 82);
++            assert_eq!(node(&runtime, INPUT).name(), "Query");
++            assert_eq!(node(&runtime, RESULTS).name(), "Results");
++            assert_eq!(node(&runtime, "search-status").role(), Role::Status);
++            assert_eq!(node(&runtime, "search-status").name(), "24 results");
++            assert_eq!(
++                runtime.dom().by_id("search-divider").is_some(),
++                style == SearchStyle::Divided
++            );
++            let frame = runtime.accessibility_frame().unwrap();
++            assert_eq!(frame.modal_root(), runtime.dom().by_id("search-dialog"));
++            assert!(frame
++                .node(runtime.dom().by_id("background").unwrap())
++                .is_none());
++            assert!(frame
++                .node(runtime.dom().by_id("search-status").unwrap())
++                .is_some());
++
++            render(&mut runtime, 320.);
++            assert_eq!(
++                bounds(&runtime, "search-dialog"),
++                Rect::new(0., 0., 320., 720.)
++            );
++            assert_eq!(
++                node(&runtime, "search-layer").style().background,
++                Color::TRANSPARENT
++            );
++            let (back, clear) = (
++                bounds(&runtime, "search-back"),
++                bounds(&runtime, "search-clear"),
++            );
++            for target in [back, clear] {
++                assert_eq!((target.width, target.height), (48., 48.));
++                assert_eq!(bounds(&runtime, "search-bar").intersect(target), target);
++            }
++            assert_eq!(back.x > clear.x, rtl);
++            let bar = bounds(&runtime, "search-bar");
++            match style {
++                SearchStyle::Contained => {
++                    assert_eq!(
++                        node(&runtime, "search-bar").style().corners,
++                        Some(shape::FULL)
++                    );
++                    assert_eq!(bar, Rect::new(12., 12., 296., 56.));
++                }
++                SearchStyle::Divided => {
++                    assert_eq!(bar.height, 72.);
++                    assert_eq!(bounds(&runtime, "search-divider").y, 72.);
++                }
++            }
++            assert!(bounds(&runtime, RESULTS).y >= bar.y + bar.height);
++        }
++    }
++}
++
++#[test]
++fn editor_submit_is_distinct_from_click_candidate_and_clear() {
++    let mut runtime = open(SearchStyle::Contained, LayoutDirection::LeftToRight, 600.);
++    let rect = bounds(&runtime, INPUT);
++    click(&mut runtime, rect.x + 2., rect.y + 8.);
++    assert!(runtime.app().submits.is_empty());
++    runtime
++        .dispatch(Event::Select {
++            anchor: 0,
++            cursor: 5,
++        })
++        .unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄓ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    assert!(!enter(&mut runtime));
++    assert!(runtime.app().submits.is_empty());
++    assert!(runtime.input_snapshot().unwrap().composing);
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("中".into())))
++        .unwrap();
++    assert_eq!(runtime.app().query, "中");
++    assert!(enter(&mut runtime));
++    assert_eq!(runtime.app().submits, ["中"]);
++
++    runtime.activate("search-clear").unwrap();
++    assert_eq!(runtime.app().clears, 1);
++    assert_eq!(runtime.focused(), Some(INPUT));
++    assert!(runtime.dom().by_id("search-clear").is_none());
++    assert_eq!(node(&runtime, "search-status").name(), "History");
++}
++
++#[test]
++fn scroll_selection_and_preedit_survive_mode_switch() {
++    let mut runtime = open(SearchStyle::Contained, LayoutDirection::RightToLeft, 600.);
++    assert!(runtime.scroll_to(RESULTS, ScrollTarget::Offset { x: 0., y: 144. }));
++    render(&mut runtime, 600.);
++    assert_eq!(runtime.scroll_metrics(RESULTS).unwrap().offset.1, 144.);
++    assert_eq!(bounds(&runtime, "search-bar").y, 36.);
++    runtime
++        .dispatch(Event::Select {
++            anchor: 4,
++            cursor: 1,
++        })
++        .unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄓ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    render(&mut runtime, 599.);
++    assert_eq!(runtime.scroll_metrics(RESULTS).unwrap().offset.1, 144.);
++    assert_eq!(bounds(&runtime, "search-bar").y, 12.);
++    let input = runtime.input_snapshot().unwrap();
++    assert_eq!(input.id, INPUT);
++    assert_eq!(input.value, "alpha");
++    assert_eq!((input.selection.anchor, input.selection.cursor), (4, 1));
++    assert!(input.composing);
++    assert_eq!(runtime.focused(), Some(INPUT));
++
++    runtime.dispatch(Event::Cancel).unwrap();
++    assert!(runtime.app().open);
++    assert!(!runtime.input_snapshot().unwrap().composing);
++    runtime.dispatch(Event::Cancel).unwrap();
++    assert!(!runtime.app().open);
++    assert_eq!(runtime.focused(), Some("opener"));
++}
++
++#[test]
++fn caller_results_keep_disabled_and_ordinary_arrow_rules() {
++    let mut runtime = open(SearchStyle::Divided, LayoutDirection::RightToLeft, 600.);
++    tab(&mut runtime, true);
++    assert_eq!(runtime.focused(), Some("search-back"));
++    tab(&mut runtime, false);
++    assert_eq!(runtime.focused(), Some(INPUT));
++    tab(&mut runtime, false);
++    assert_eq!(runtime.focused(), Some("search-clear"));
++    tab(&mut runtime, false);
++    assert_eq!(runtime.focused(), Some("result-0"));
++    runtime
++        .dispatch(Event::Edit {
++            key: EditKey::Down,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("result-2"));
++    assert!(runtime.app().picked.is_empty());
++    runtime.dispatch(Event::Activate).unwrap();
++    assert_eq!(runtime.app().picked, [2]);
++    assert!(runtime.activate("result-1").is_err());
++    render(&mut runtime, 600.);
++    runtime
++        .dispatch(Event::Edit {
++            key: EditKey::Up,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("result-0"));
++    runtime.apply(Message::RemoveFirstResult).unwrap();
++    assert_eq!(runtime.focused(), Some(INPUT));
++}
++
++#[test]
++fn modal_dismissal_does_not_activate_background_and_recovers_missing_opener() {
++    let mut runtime = open(SearchStyle::Contained, LayoutDirection::LeftToRight, 900.);
++    assert!(runtime.activate("background").is_err());
++    click(&mut runtime, 800., 120.);
++    assert_eq!(runtime.app().background, 0);
++    assert_eq!(runtime.app().closes, 1);
++    assert_eq!(runtime.focused(), Some("opener"));
++
++    runtime.activate("opener").unwrap();
++    runtime.apply(Message::RemoveOpener).unwrap();
++    render(&mut runtime, 900.);
++    runtime.activate("search-back").unwrap();
++    assert_eq!(runtime.app().closes, 2);
++    assert_eq!(runtime.focused(), Some("background"));
++    assert_eq!(runtime.app().background, 0);
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -25,6 +25,7 @@
+ mod scroll_modal_demo;
+ mod scroll_pair_demo;
+ mod scroll_popup_demo;
++mod search_overlay_demo;
+ mod side_sheet_demo;
+ mod snackbar_demo;
+ mod split_demo;
+@@ -61,6 +62,7 @@
+ use scroll_modal_demo::{ScrollModalDemo, ScrollModalDemoEvent};
+ use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
+ use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
++use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
+ use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
+ use snackbar_demo::{SnackbarDemo, SnackbarEvent};
+ use split_demo::{SplitDemo, SplitEvent};
+@@ -122,6 +124,7 @@
+     scroll_pair_demo: ScrollPairDemo,
+     scroll_popup_demo: ScrollPopupDemo,
+     scroll_modal_demo: ScrollModalDemo,
++    search_overlay_demo: SearchOverlayDemo,
+     lists_demo: ListsDemo,
+     list_actions_demo: ListActionsDemo,
+     list_expand_demo: ListExpandDemo,
+@@ -182,6 +185,7 @@
+             scroll_pair_demo: ScrollPairDemo::default(),
+             scroll_popup_demo: ScrollPopupDemo::default(),
+             scroll_modal_demo: ScrollModalDemo::default(),
++            search_overlay_demo: SearchOverlayDemo::default(),
+             lists_demo: ListsDemo::default(),
+             list_actions_demo: ListActionsDemo::default(),
+             list_expand_demo: ListExpandDemo::default(),
+@@ -274,6 +278,7 @@
+     ScrollPair(ScrollPairDemoEvent),
+     ScrollPopup(ScrollPopupDemoEvent),
+     ScrollModal(ScrollModalDemoEvent),
++    SearchOverlay(SearchOverlayDemoEvent),
+     Lists(ListsEvent),
+     ListActions(ListActionsEvent),
+     ListExpand(ListExpandEvent),
+@@ -382,6 +387,9 @@
+         if self.scroll_modal_demo.visible() {
+             return self.scroll_modal_demo.text_scale();
+         }
++        if self.search_overlay_demo.visible() {
++            return self.search_overlay_demo.text_scale();
++        }
+         if self.lists_demo.visible() {
+             return self.lists_demo.text_scale();
+         }
+@@ -442,6 +450,7 @@
+         let scroll_pair = self.scroll_pair_demo.viewport_changed(width, height);
+         let scroll_popup = self.scroll_popup_demo.viewport_changed(width, height);
+         let scroll_modal = self.scroll_modal_demo.viewport_changed(width, height);
++        let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
+         let list_actions = self.list_actions_demo.viewport_changed(width);
+         let list_media = self.list_media_demo.viewport_changed(width, height);
+         let list_reorder = self.list_reorder_demo.viewport_changed(width);
+@@ -474,6 +483,7 @@
+             || scroll_pair
+             || scroll_popup
+             || scroll_modal
++            || search_overlay
+             || list_actions
+             || list_media
+             || list_reorder
+@@ -522,6 +532,9 @@
+         let scroll_popup = self.scroll_popup_demo.observe(&frame);
+         update.animation.rebuild |= scroll_popup.rebuild;
+         update.animation.request_next |= scroll_popup.request_next;
++        let search_overlay = self.search_overlay_demo.observe(&frame);
++        update.animation.rebuild |= search_overlay.rebuild;
++        update.animation.request_next |= search_overlay.request_next;
+         let range = self.date_range_picker_demo.observe(&frame, input);
+         update.animation.rebuild |= range.rebuild;
+         update.animation.request_next |= range.request_next;
+@@ -716,6 +729,9 @@
+                 if i != app_bar_demo::SECTION {
+                     self.app_bar_demo.leave();
+                 }
++                if i != search_overlay_demo::SECTION {
++                    self.search_overlay_demo.leave();
++                }
+                 if i != toolbar_demo::SECTION {
+                     self.toolbar_demo.leave();
+                 }
+@@ -766,6 +782,7 @@
+             Message::Card(event) => self.card_demo.update(event),
+             Message::Carousel(event) => self.carousel_demo.update(event),
+             Message::AppBar(event) => self.app_bar_demo.update(event),
++            Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
+             Message::Toolbar(event) => self.toolbar_demo.update(event),
+             Message::Tooltip(event) => self.tooltip_demo.update(event),
+             Message::Nav(i) => self.nav = i,
+@@ -892,6 +909,9 @@
+         }
+         if self.app_bar_demo.visible() {
+             return self.app_bar_demo.view(&t, self.dark);
++        }
++        if self.search_overlay_demo.visible() {
++            return self.search_overlay_demo.view(&t, self.dark);
+         }
+         if self.toolbar_demo.visible() {
+             return self.toolbar_demo.view(&t, self.dark);
+@@ -1004,6 +1024,7 @@
+             1 => {
+                 children.push(t.row([
+                     AppBarDemo::show_button(&t),
++                    SearchOverlayDemo::show_button(&t),
+                     ToolbarDemo::show_button(&t),
+                     CarouselDemo::show_button(&t),
+                     ButtonGroupDemo::show_button(&t),
+@@ -1610,6 +1631,7 @@
+         state["scroll_pair"] = s.scroll_pair_demo.inspect(&runtime);
+         state["scroll_popup"] = s.scroll_popup_demo.inspect(&runtime);
+         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
++        state["search_overlay"] = s.search_overlay_demo.inspect();
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
+diff --git a/examples/material-gallery/src/search_overlay_demo.rs b/examples/material-gallery/src/search_overlay_demo.rs
+new file mode 100644
+--- /dev/null
++++ b/examples/material-gallery/src/search_overlay_demo.rs
+@@ -0,0 +1,603 @@
++use surface::{Align, Length, Node, Rect, Role, Style};
++use surface_app::{AnimationFrame, AnimationUpdate, View};
++use surface_material::{
++    shape::{self, LayoutDirection},
++    ButtonKind, ChoiceState, ListItem, ListLines, ListMode, ListOptions, ListStyle,
++    SearchOverlayContent, SearchOverlayOptions, SearchStyle, Theme,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 1;
++const ID: &str = "search-overlay-demo";
++const SHOW: &str = "search-overlay-demo-show";
++const BACK: &str = "search-overlay-demo-route-back";
++const OPENER: &str = "search-overlay-demo-opener";
++const ANCHOR: &str = "search-overlay-demo-anchor";
++
++struct Document {
++    id: &'static str,
++    title: &'static str,
++    details: &'static str,
++    disabled: bool,
++}
++
++const DOCUMENTS: &[Document] = &[
++    Document {
++        id: "search-doc-design",
++        title: "設計紀錄",
++        details: "元件與版面規格",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-archive",
++        title: "設計封存",
++        details: "封存文件暫停開啟",
++        disabled: true,
++    },
++    Document {
++        id: "search-doc-review",
++        title: "設計審查",
++        details: "本週核對重點",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-tests",
++        title: "測試結果",
++        details: "鍵盤與瀏覽器",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-accessibility",
++        title: "可及性檢查",
++        details: "焦點與閱讀順序",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-release",
++        title: "發佈進度",
++        details: "當前工作與變更",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-palette",
++        title: "配色驗證",
++        details: "深色與提高對比",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-localization",
++        title: "語系設計",
++        details: "字型與右起版面",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-gesture",
++        title: "觸控驗收",
++        details: "按壓與捲動",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-guide",
++        title: "開發指南",
++        details: "元件接線範例",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-notes",
++        title: "開發筆記",
++        details: "整合紀錄",
++        disabled: false,
++    },
++    Document {
++        id: "search-doc-handoff",
++        title: "交接清單",
++        details: "後續驗證項目",
++        disabled: false,
++    },
++];
++
++#[derive(Clone)]
++pub enum SearchOverlayDemoEvent {
++    Show,
++    Back,
++    Open,
++    Close,
++    ToggleStyle,
++    Direction,
++    LargeText,
++    Query(String),
++    Clear,
++    Submit,
++    Select(&'static str),
++}
++
++pub(crate) struct SearchOverlayDemo {
++    visible: bool,
++    open: bool,
++    style: SearchStyle,
++    rtl: bool,
++    large_text: bool,
++    viewport: Rect,
++    anchor: Option<Rect>,
++    query: String,
++    selected: Option<&'static str>,
++    submissions: usize,
++}
++
++impl Default for SearchOverlayDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            open: false,
++            style: SearchStyle::Contained,
++            rtl: false,
++            large_text: false,
++            viewport: Rect::default(),
++            anchor: None,
++            query: String::new(),
++            selected: None,
++            submissions: 0,
++        }
++    }
++}
++
++impl SearchOverlayDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.open = false;
++        self.anchor = None;
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let viewport = Rect::new(0., 0., width, height);
++        if self.viewport == viewport {
++            return false;
++        }
++        self.viewport = viewport;
++        self.anchor = None;
++        self.visible
++    }
++
++    pub(crate) fn observe(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
++        if !self.visible {
++            return AnimationUpdate::default();
++        }
++        let Some(layout) = frame
++            .layout
++            .filter(|layout| layout.viewport == self.viewport)
++        else {
++            return AnimationUpdate {
++                rebuild: false,
++                request_next: true,
++            };
++        };
++        let anchor = frame
++            .dom
++            .by_id(ANCHOR)
++            .and_then(|id| layout.nodes.get(id.index()))
++            .filter(|node| node.bounds.intersect(node.clip) == node.bounds)
++            .map(|node| node.bounds);
++        let changed = self.anchor != anchor;
++        self.anchor = anchor;
++        AnimationUpdate {
++            rebuild: self.open && changed,
++            request_next: false,
++        }
++    }
++
++    pub(crate) fn update(&mut self, event: SearchOverlayDemoEvent) {
++        use SearchOverlayDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            Open => self.open = true,
++            Close => self.open = false,
++            ToggleStyle => {
++                self.style = if self.style == SearchStyle::Contained {
++                    SearchStyle::Divided
++                } else {
++                    SearchStyle::Contained
++                }
++            }
++            Direction => self.rtl = !self.rtl,
++            LargeText => self.large_text = !self.large_text,
++            Query(query) => self.query = query,
++            Clear => self.query.clear(),
++            Submit => self.submissions += 1,
++            Select(id) => {
++                self.selected = Some(id);
++                self.open = false;
++            }
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "搜尋浮層",
++                ButtonKind::Outlined,
++                false,
++                Message::SearchOverlay(SearchOverlayDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn direction(&self) -> LayoutDirection {
++        if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        }
++    }
++
++    fn opener(&self, theme: &Theme) -> View<Message> {
++        let width = (self.viewport.width - 56.).clamp(1., 620.);
++        let allocation = Rect::new(0., 0., width, 56.);
++        let bounds = self
++            .style
++            .resting_bar_bounds(allocation)
++            .unwrap_or(allocation);
++        let shape = if self.style == SearchStyle::Contained {
++            shape::FULL
++        } else {
++            shape::LARGE
++        };
++        let label = if self.query.is_empty() {
++            "搜尋文件"
++        } else {
++            &self.query
++        };
++        let opener = View::new(
++            Node::new(Role::Button, "搜尋文件").id(OPENER).styled(
++                Style::row()
++                    .width(Length::Px(bounds.width))
++                    .height(Length::Px(bounds.height))
++                    .corners(shape)
++                    .align(Align::Center)
++                    .justify(Align::Center)
++                    .background(theme.colors.surface_container_high),
++            ),
++        )
++        .children([theme.text("search-overlay-demo-opener-label", label)])
++        .on_press(Message::SearchOverlay(SearchOverlayDemoEvent::Open))
++        .disclosure_expanded(self.open)
++        .suppress_repeated_activation()
++        .accessible_activation();
++        View::new(
++            Node::new(Role::Group, "").id(ANCHOR).styled(
++                Style::column()
++                    .width(Length::Px(width))
++                    .height(Length::Px(56.))
++                    .align(Align::Center),
++            ),
++        )
++        .children([opener])
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use SearchOverlayDemoEvent::*;
++        let toggle = |id, label, selected, event| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    Message::SearchOverlay(event),
++                )
++                .accessible_activation()
++        };
++        let profile = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::SearchOverlay(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            theme
++                .switch(
++                    "search-overlay-demo-theme",
++                    "深色",
++                    ChoiceState {
++                        selected: dark,
++                        disabled: false,
++                    },
++                    Message::Theme,
++                )
++                .accessible_activation(),
++            toggle(
++                "search-overlay-demo-style",
++                "分隔",
++                self.style == SearchStyle::Divided,
++                ToggleStyle,
++            ),
++            toggle("search-overlay-demo-rtl", "右起", self.rtl, Direction),
++            toggle(
++                "search-overlay-demo-large-text",
++                "大字",
++                self.large_text,
++                LargeText,
++            ),
++        ]);
++        let selected = self
++            .selected
++            .and_then(|id| DOCUMENTS.iter().find(|entry| entry.id == id));
++        let mut page = vec![
++            theme.heading("search-overlay-demo-title", "搜尋工作區"),
++            profile,
++            self.opener(theme),
++        ];
++        if let Some(entry) = selected {
++            page.push(theme.text(
++                "search-overlay-demo-selected",
++                format!("已開啟 {}", entry.title),
++            ));
++        }
++        if let Some(overlay) = self.overlay(theme) {
++            page.push(overlay);
++        }
++        theme.page(page)
++    }
++
++    fn matches(&self) -> impl Iterator<Item = &'static Document> + '_ {
++        let query = self.query.trim().to_lowercase();
++        DOCUMENTS.iter().filter(move |entry| {
++            entry.title.to_lowercase().contains(&query)
++                || entry.details.to_lowercase().contains(&query)
++        })
++    }
++
++    fn overlay(&self, theme: &Theme) -> Option<View<Message>> {
++        if !self.open {
++            return None;
++        }
++        use SearchOverlayDemoEvent::*;
++        let entries: Vec<_> = self.matches().collect();
++        let status = if entries.is_empty() {
++            "找不到相符文件".to_owned()
++        } else if self.query.trim().is_empty() {
++            format!("近期文件，共 {} 筆", entries.len())
++        } else {
++            format!("找到 {} 筆文件", entries.len())
++        };
++        let results = if entries.is_empty() {
++            View::new(Node::new(Role::Group, "").styled(Style::column().padding(16.)))
++                .children([theme.text("search-overlay-demo-empty", "找不到相符文件")])
++        } else {
++            theme.list(
++                ListOptions {
++                    id: "search-overlay-demo-documents",
++                    name: "文件",
++                    style: if self.style == SearchStyle::Contained {
++                        ListStyle::Standard
++                    } else {
++                        ListStyle::Baseline
++                    },
++                    mode: ListMode::Action,
++                    direction: self.direction(),
++                },
++                entries.iter().map(|entry| ListItem {
++                    id: entry.id,
++                    headline: entry.title,
++                    supporting: Some(entry.details),
++                    overline: None,
++                    leading: None,
++                    trailing: None,
++                    lines: ListLines::Two,
++                    disabled: entry.disabled,
++                    on_activate: Some(Message::SearchOverlay(Select(entry.id))),
++                }),
++            )
++        };
++
++        theme.search_overlay(
++            SearchOverlayOptions {
++                id: ID,
++                open: self.open,
++                title: "搜尋工作區",
++                input_label: "搜尋文件",
++                results_label: "搜尋結果",
++                back_label: "關閉搜尋",
++                clear_label: "清除搜尋",
++                query: &self.query,
++                style: self.style,
++                direction: self.direction(),
++                viewport: self.viewport,
++                anchor: self.anchor,
++                preferred_docked_height: Some(440.),
++                restore_focus_to: Some(OPENER),
++                results_status: Some(&status),
++            },
++            SearchOverlayContent {
++                results,
++                on_submit: Message::SearchOverlay(Submit),
++                on_clear: Message::SearchOverlay(Clear),
++                on_close: Message::SearchOverlay(Close),
++            },
++            |query| Message::SearchOverlay(Query(query)),
++        )
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self) -> serde_json::Value {
++        let ids: Vec<_> = self.matches().map(|entry| entry.id).collect();
++        serde_json::json!({"open":self.open,"style":format!("{:?}",self.style),"rtl":self.rtl,
++            "text_scale":self.text_scale(),"query":self.query,"selected":self.selected,
++            "submissions":self.submissions,"result_ids":ids})
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::Gallery;
++    use surface::TextMeasurer;
++    use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime};
++
++    const INPUT: &str = "search-overlay-demo-input";
++    const DIALOG: &str = "search-overlay-demo-dialog";
++    const BAR: &str = "search-overlay-demo-bar";
++    const STATUS: &str = "search-overlay-demo-status";
++
++    struct Metrics;
++    impl TextMeasurer for Metrics {
++        fn measure(&mut self, value: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++            (value.chars().count() as f32 * size * 0.8, size * 1.2)
++        }
++    }
++
++    fn render(runtime: &mut Runtime<Gallery>, width: f32, height: f32) {
++        for _ in 0..3 {
++            runtime.render(width, height, &mut Metrics).unwrap();
++        }
++    }
++
++    fn route(runtime: &mut Runtime<Gallery>, width: f32, height: f32) {
++        render(runtime, width, height);
++        runtime.apply(Message::Section(SECTION)).unwrap();
++        runtime.activate(SHOW).unwrap();
++        render(runtime, width, height);
++    }
++
++    fn bounds(runtime: &Runtime<Gallery>, id: &str) -> Rect {
++        runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++    }
++
++    #[test]
++    fn gallery_route_has_all_style_layout_combinations() {
++        for compact in [false, true] {
++            let (width, height) = if compact { (320., 400.) } else { (960., 800.) };
++            for divided in [false, true] {
++                let mut runtime = Runtime::new(Gallery::default()).unwrap();
++                route(&mut runtime, width, height);
++                if compact {
++                    for id in [
++                        "search-overlay-demo-theme",
++                        "search-overlay-demo-rtl",
++                        "search-overlay-demo-large-text",
++                    ] {
++                        runtime.activate(id).unwrap();
++                    }
++                }
++                if divided {
++                    runtime.activate("search-overlay-demo-style").unwrap();
++                }
++                render(&mut runtime, width, height);
++                let anchor = bounds(&runtime, ANCHOR);
++                let opener = bounds(&runtime, OPENER);
++                assert_eq!(opener.height, 56.);
++                assert_eq!(anchor.intersect(opener), opener);
++                runtime.activate(OPENER).unwrap();
++                render(&mut runtime, width, height);
++
++                assert_eq!(runtime.focused(), Some(INPUT));
++                assert_eq!(runtime.app().text_scale(), if compact { 2. } else { 1. });
++                assert_eq!(runtime.app().dark, compact);
++                let dialog = bounds(&runtime, DIALOG);
++                let bar = bounds(&runtime, BAR);
++                assert_eq!(bar.height, if compact && divided { 72. } else { 56. });
++                assert_eq!(
++                    runtime.dom().by_id("search-overlay-demo-divider").is_some(),
++                    divided
++                );
++                if compact {
++                    assert_eq!(dialog, Rect::new(0., 0., width, height));
++                    assert_eq!(bounds(&runtime, "search-overlay-demo-back").width, 48.);
++                    assert!(
++                        bounds(&runtime, "search-overlay-demo-back").x > bounds(&runtime, INPUT).x
++                    );
++                } else {
++                    assert_eq!(dialog.y, anchor.y);
++                    assert!((360. ..=720.).contains(&dialog.width));
++                    assert_eq!(opener.x - bar.x, if divided { 0. } else { 12. });
++                }
++                assert!(runtime.dom().by_id("search-doc-archive").is_some());
++                runtime.dispatch(Event::Cancel).unwrap();
++                assert_eq!(runtime.focused(), Some(OPENER));
++            }
++        }
++    }
++
++    #[test]
++    fn gallery_query_history_submit_and_results_are_controlled() {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        route(&mut runtime, 960., 800.);
++        runtime.activate(OPENER).unwrap();
++        render(&mut runtime, 960., 800.);
++        let status = |runtime: &Runtime<Gallery>| {
++            runtime
++                .dom()
++                .get(runtime.dom().by_id(STATUS).unwrap())
++                .unwrap()
++                .name()
++                .to_owned()
++        };
++        assert_eq!(status(&runtime), "近期文件，共 12 筆");
++
++        let enter = KeyPress::new(Key::Enter, Modifiers::default());
++        runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++        runtime
++            .dispatch(Event::Ime(ImeEvent::Preedit {
++                text: "ㄕ".into(),
++                selection: None,
++            }))
++            .unwrap();
++        assert!(!runtime.key(&enter).unwrap());
++        assert_eq!(runtime.app().search_overlay_demo.submissions, 0);
++        runtime
++            .dispatch(Event::Ime(ImeEvent::Commit("設計".into())))
++            .unwrap();
++        assert_eq!(runtime.app().search_overlay_demo.query, "設計");
++        assert!(runtime.key(&enter).unwrap());
++        assert_eq!(runtime.app().search_overlay_demo.submissions, 1);
++        render(&mut runtime, 960., 800.);
++        assert_eq!(status(&runtime), "找到 4 筆文件");
++
++        for expected in ["search-overlay-demo-clear", "search-doc-design"] {
++            runtime
++                .dispatch(Event::FocusNext { reverse: false })
++                .unwrap();
++            assert_eq!(runtime.focused(), Some(expected));
++        }
++        runtime
++            .dispatch(Event::Edit {
++                key: EditKey::Down,
++                extend: false,
++                by_word: false,
++            })
++            .unwrap();
++        assert_eq!(runtime.focused(), Some("search-doc-review"));
++        runtime.dispatch(Event::Activate).unwrap();
++        assert_eq!(
++            runtime.app().search_overlay_demo.selected,
++            Some("search-doc-review")
++        );
++        assert_eq!(runtime.focused(), Some(OPENER));
++
++        runtime.activate(OPENER).unwrap();
++        runtime
++            .dispatch(Event::InputValue {
++                value: "無匹配".into(),
++                anchor: 9,
++                cursor: 9,
++            })
++            .unwrap();
++        assert!(runtime.dom().by_id("search-overlay-demo-empty").is_some());
++        assert_eq!(status(&runtime), "找不到相符文件");
++    }
++}

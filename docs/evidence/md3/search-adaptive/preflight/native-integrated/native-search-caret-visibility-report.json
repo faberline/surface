@@ -1,0 +1,188 @@
+{
+  "schema": "surface.test.search-caret-visibility-native.v1",
+  "binary_sha256": {
+    "gallery": "d1869cf09f1d80c6b142f64ec354587c3810984d39fcec4c1d0f9b02609cba9a",
+    "cli": "df90ffecafbee55b74dd8ca8ef483caf603cdf9d9c1ffc4b49466336f8ea5c91"
+  },
+  "transport_equality": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "profiles": [
+    {
+      "profile": "compact-dark-rtl-200-divided",
+      "editor_bounds": {
+        "height": 48.0,
+        "width": 208.0,
+        "x": 56.0,
+        "y": 12.0
+      },
+      "query": "設計",
+      "captures": [
+        {
+          "caret_byte": 6,
+          "name": "compact-dark-rtl-200-divided-edge.png",
+          "sha256": "7f8e1f0893557b58a4f0dbd734476450b179d95e324ee66ba38211892b38f1b2",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        },
+        {
+          "caret_byte": 3,
+          "name": "compact-dark-rtl-200-divided-middle.png",
+          "sha256": "8c31975f7fc8f4f6f77718348c69cf5aa346a91b03bb8f54d0cb76de56594de1",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        },
+        {
+          "caret_byte": 6,
+          "name": "compact-dark-rtl-200-divided-edge-returned.png",
+          "sha256": "7f8e1f0893557b58a4f0dbd734476450b179d95e324ee66ba38211892b38f1b2",
+          "format": "png",
+          "width": 320,
+          "height": 400,
+          "scale": 1.0
+        }
+      ],
+      "visible_windows": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "separate_caret_pixels": {
+        "edge": {
+          "x": 258,
+          "y_inclusive": [
+            18,
+            53
+          ],
+          "length_px": 36,
+          "caret_rgba": [
+            230,
+            224,
+            233,
+            255
+          ],
+          "control_rgba": [
+            29,
+            27,
+            32,
+            255
+          ]
+        },
+        "middle": {
+          "x": 226,
+          "y_inclusive": [
+            18,
+            53
+          ],
+          "length_px": 36,
+          "caret_rgba": [
+            230,
+            224,
+            233,
+            255
+          ],
+          "control_rgba": [
+            29,
+            27,
+            32,
+            255
+          ]
+        }
+      }
+    },
+    {
+      "profile": "docked-light-ltr-contained",
+      "editor_bounds": {
+        "height": 48.0,
+        "width": 484.0,
+        "x": 96.0,
+        "y": 176.0
+      },
+      "query": "設計",
+      "captures": [
+        {
+          "caret_byte": 0,
+          "name": "docked-light-ltr-contained-edge.png",
+          "sha256": "752f9a5ebefad1d6ee30e49601c1855269d54c226363e32f30f52150bbfd786f",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0
+        },
+        {
+          "caret_byte": 3,
+          "name": "docked-light-ltr-contained-middle.png",
+          "sha256": "272628df0c8a702b66e6c92fc71c85ce1baf6293139eaf320fa4f505509b7075",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0
+        },
+        {
+          "caret_byte": 0,
+          "name": "docked-light-ltr-contained-edge-returned.png",
+          "sha256": "752f9a5ebefad1d6ee30e49601c1855269d54c226363e32f30f52150bbfd786f",
+          "format": "png",
+          "width": 960,
+          "height": 800,
+          "scale": 1.0
+        }
+      ],
+      "visible_windows": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "separate_caret_pixels": {
+        "edge": {
+          "x": 100,
+          "y_inclusive": [
+            189,
+            210
+          ],
+          "length_px": 22,
+          "caret_rgba": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "control_rgba": [
+            100,
+            96,
+            102,
+            255
+          ]
+        },
+        "middle": {
+          "x": 116,
+          "y_inclusive": [
+            188,
+            211
+          ],
+          "length_px": 24,
+          "caret_rgba": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "control_rgba": [
+            236,
+            230,
+            238,
+            255
+          ]
+        }
+      }
+    }
+  ]
+}
