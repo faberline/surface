@@ -93,7 +93,7 @@ async fn value(tab: &Tab, text: &str, edits: u32, submits: u32, actions: u32) ->
     .await
 }
 
-async fn route(tab: &Tab, url: &str) -> Result<()> {
+pub(super) async fn route(tab: &Tab, url: &str) -> Result<()> {
     tab.goto(url).await?;
     crate::smoke::ready(tab, "gallery").await?;
     resize(tab, HOME.0, HOME.1).await?;

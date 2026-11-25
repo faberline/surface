@@ -155,6 +155,15 @@ pub(super) fn element(
                 set_bool(&element, "aria-multiline", options.multiline)?;
                 set_bool(&element, "aria-readonly", options.read_only)?;
             }
+            if let Some(value) = node.text_value().filter(|_| leaf) {
+                // Preserve the committed value without a separate readable
+                // child in the browser accessibility tree.
+                element.set_attribute("style", "white-space:pre")?;
+                let text = document.create_element("span")?;
+                text.set_attribute("aria-hidden", "true")?;
+                text.set_text_content(Some(value));
+                element.append_child(&text)?;
+            }
         }
         _ => {}
     }
