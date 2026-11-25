@@ -24,6 +24,7 @@ mod menu_demo;
 mod modal_wide_navigation_rail_demo;
 mod navigation_drawer_demo;
 mod progress_demo;
+mod radio_demo;
 mod rail_icons;
 mod scroll_choice_demo;
 mod scroll_field_demo;
@@ -68,6 +69,7 @@ use menu_demo::{MenuDemo, MenuDemoEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
+use radio_demo::{RadioDemo, RadioDemoEvent};
 use scroll_choice_demo::{ScrollChoiceDemo, ScrollChoiceDemoEvent};
 use scroll_field_demo::{ScrollFieldDemo, ScrollFieldDemoEvent};
 use scroll_modal_demo::{ScrollModalDemo, ScrollModalDemoEvent};
@@ -122,6 +124,7 @@ pub struct Gallery {
     divider_demo: DividerDemo,
     switch_demo: SwitchDemo,
     checkbox_demo: CheckboxDemo,
+    radio_demo: RadioDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -189,6 +192,7 @@ impl Default for Gallery {
             divider_demo: DividerDemo::default(),
             switch_demo: SwitchDemo::default(),
             checkbox_demo: CheckboxDemo::default(),
+            radio_demo: RadioDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -301,6 +305,7 @@ pub enum Message {
     ScrollField(ScrollFieldDemoEvent),
     SwitchDemo(SwitchDemoEvent),
     CheckboxDemo(CheckboxDemoEvent),
+    RadioDemo(RadioDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -468,6 +473,9 @@ impl Application for Gallery {
         if self.checkbox_demo.visible() {
             return self.checkbox_demo.text_scale();
         }
+        if self.radio_demo.visible() {
+            return self.radio_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -545,7 +553,8 @@ impl Application for Gallery {
             || tooltip
     }
     fn observes_frame_input(&self) -> bool {
-        self.checkbox_demo.visible()
+        self.radio_demo.visible()
+            || self.checkbox_demo.visible()
             || self.switch_demo.visible()
             || self.tooltip_demo.visible()
             || self.scroll_popup_demo.visible()
@@ -630,13 +639,18 @@ impl Application for Gallery {
         let menu = self.fab_menu_demo.frame(&frame, &input, press, hovered);
         let switch = self.switch_demo.frame(&frame, &input, press, hovered);
         let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
+        let radio = self.radio_demo.frame(&frame, &input, press, hovered);
         let mut update = self.animation_frame_with_press(frame, input, pressed);
-        update.animation.rebuild |=
-            fab.animation.rebuild || menu.rebuild || switch.rebuild || checkbox.rebuild;
+        update.animation.rebuild |= fab.animation.rebuild
+            || menu.rebuild
+            || switch.rebuild
+            || checkbox.rebuild
+            || radio.rebuild;
         update.animation.request_next |= fab.animation.request_next
             || menu.request_next
             || switch.request_next
-            || checkbox.request_next;
+            || checkbox.request_next
+            || radio.request_next;
         update.suppress_touch_activation |= fab.suppress_touch_activation;
         update
     }
@@ -819,6 +833,9 @@ impl Application for Gallery {
                 if i != checkbox_demo::SECTION {
                     self.checkbox_demo.leave();
                 }
+                if i != radio_demo::SECTION {
+                    self.radio_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -832,6 +849,7 @@ impl Application for Gallery {
             Message::DividerDemo(event) => self.divider_demo.update(event),
             Message::SwitchDemo(event) => self.switch_demo.update(event),
             Message::CheckboxDemo(event) => self.checkbox_demo.update(event),
+            Message::RadioDemo(event) => self.radio_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1029,6 +1047,9 @@ impl Application for Gallery {
         if self.checkbox_demo.visible() {
             return self.checkbox_demo.view(&t, self.dark);
         }
+        if self.radio_demo.visible() {
+            return self.radio_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1129,6 +1150,7 @@ impl Application for Gallery {
                             ScrollModalDemo::show_button(&t),
                             SwitchDemo::show_button(&t),
                             CheckboxDemo::show_button(&t),
+                            RadioDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1756,6 +1778,7 @@ mod web {
         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
         state["switch_demo"] = s.switch_demo.inspect(&theme);
         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
+        state["radio_demo"] = s.radio_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
