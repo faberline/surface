@@ -1,0 +1,365 @@
+##[group]Operating System
+Ubuntu
+Run xvfb-run -a -s "-screen 0 1920x1080x24" cargo xtask web e2e
+  SURFACE_CHROME_ARGS: --enable-unsafe-webgpu --enable-features=Vulkan --use-vulkan=swiftshader --use-webgpu-adapter=swiftshader --use-angle=swiftshader
+case smoke ...
+browser: Chrome/158.0.8127.88
+case smoke ... ok (19 steps, 34 checks, 4.9s)
+case ime ...
+  [I1] Ready; click name → textarea focused
+  [I2] record composition and input events
+  [I3] compose ㄓㄨㄥ → preedit, composing, empty value
+  [I4] compose 中文 → preedit; screenshot
+  [I5] DOM export during preedit
+  [I6] textarea position matches input_caret()
+  [I7] commit 中文
+  [I8] setSelectionRange(0,1) → bytes 0..3
+  [I9] compose and commit 台 → 台文
+  [I10] compose ㄅㄆ then cancel → value kept
+  [I11] select all, commit text with ZWJ emoji and combining mark
+  [I12] Backspace deletes one grapheme at a time
+  [I13] undo and redo
+  [I14] select all, commit mixed scripts
+  [I15] compose ㄅ then click increment → composition cancelled
+  [I16] click name again, select all, commit; screenshot
+  [I17] final DOM export
+  [I18] events include composition and input
+  [I19] no page errors; evidence JSON
+  [I20] authored line endings keep directed browser and Rust selections
+case ime ... ok (20 steps, 77 checks, 2.6s)
+case material ...
+  [M1] Ready
+  [M2] radio arrows
+  [M3] segment manual focus, Space selects
+  [M4] check and switch
+  [M5] slider pointer and keys
+  [M6] light screenshot, theme → dark, dark screenshot
+  [M7] section 1
+  [M8] button updates on release
+  [M9] disabled action does nothing
+  [M10] filter chip on; input chip removed; screenshot
+  [M11] section 2, open dialog, textarea focused
+  [M12] insert draft; saved name unchanged
+  [M13] Escape closes dialog and restores focus
+  [M14] outside click dismisses without activating the tab
+  [M15] Tab through dialog with DOM host checks
+  [M16] three Tab / Shift+Tab cycles
+  [M17] dialog screenshot and DOM export
+  [M18] save the dialog
+  [M19] menu focus, arrows and Escape
+  [M20] 480×760 dialog fits; mobile screenshot
+  [M21] canvas corner click dismisses; section stays 2
+  [M22] no page errors; evidence JSON
+  [M24] inline rail reflows, keeps one selection, and hands focus to the compact bar
+  [M25] standalone modal follows mouse and touch swipes and releases at the right anchor
+  [M26] modal rail scrolls at 320×240 with 200% text and supports retained layout
+  [M27] Chrome keeps a named modal during drag and restores focus with Reduce Motion
+  [M28] Snackbar keeps trigger focus and expires a short message
+  [M29] Queued actions advance once on Enter and pointer release
+  [M30] Dark RTL Snackbar wraps large CJK text in a 320 dp viewport
+  [M31] Snackbar exposes passive status and separate named controls
+  [M32] Badge paints both sizes without changing the anchor geometry
+  [M33] Badge updates the accessible count without adding a hit or tab target
+  [M34] Badge mirrors and keeps CJK glyphs clear at 320 dp and 200% text
+  [M35] Navigation and clipped anchors preserve selection and paint scope
+  [M36] permanent and dismissible drawers share space and preserve routing
+  [M37] modal drawer isolates its destinations and restores focus
+  [M38] 320 dp RTL at 200% keeps shared controls visible and reveals wrapped destinations
+  [M39] trusted mouse and touch drag the logical edge, panel, and scrim
+  [M40] open drawer reflows on resize and Reduce Motion retires the closing layer
+  [M41] known progress exposes a read-only range and paints a gap, stop, arc, and waves
+  [M42] switching to unknown progress removes stale ranges on all four indicators
+  [M43] browser frames animate all unknown indicators and Reduce Motion freezes them
+  [M44] dark RTL at 320 dp with 200% text adapts further at 260 dp
+  [M45] standard overlay keeps body bounds and outside actions
+  [M46] standard coplanar shares space on both logical edges
+  [M47] modal isolates background and restores focus on Escape, scrim and Close
+  [M48] 320 dp uses modal fallback, wraps 200% Chinese, and preserves state on resize
+  [M49] WebGPU frames follow trusted mouse and touch; Reduce Motion snaps
+  [M50] standard bottom sheet peeks and expands while the page stays live
+  [M51] modal bottom sheet shields outside actions and restores opener focus
+  [M52] modal keyboard scope omits the page and the disabled control
+  [M53] 320 dp dark mode wraps 200% text and clips the real scrolled content
+  [M54] trusted vertical touch and mouse drag, rollback, collapse, and dismissal
+  [M55] Reduce Motion reaches all anchors while the animation clock is frozen
+  [M56] all top app bar variants use the intended dimensions and surface colors
+  [M57] center title stays centered with asymmetric actions, including RTL and keyboard
+  [M58] pinned and enter-always bars forward exactly the unused wheel delta
+  [M59] exit-until-collapsed drains content before expanding and forwards the remainder
+  [M60] search owns focus, accepts actual text and a result, and restores its entry
+  [M61] 320 dp dark RTL app bars fit controls and paint text at 200%
+  [M62] context actions replace the app bar and return focus to the selected row
+  [M63] docked and floating toolbar layouts paint both Material palettes
+  [M64] arrow navigation mirrors horizontal RTL and skips the disabled action
+  [M65] overflow restores focus and optional FAB has its own target and collapsed state
+  [M66] real wheel travels 40 dp before hiding or collapsing; focus keeps actions visible
+  [M67] 320 dp dark RTL keeps 200% controls and toolbar actions inside the viewport
+  [M68] 320 dp horizontal toolbar and FAB fit inside the margins at 200% RTL
+  [M69] passive tooltip waits 500 ms, describes its owner, and dismisses without stealing focus
+  [M70] rich tooltip has a nonmodal action, returns focus, and leaves outside actions live
+  [M71] dark 320 dp RTL tooltips flip at the top, clamp at both edges, and wrap text at 200%
+  [M72] trusted touch tap, long press, cancellation, and moved contact have distinct actions
+  [M73] six carousel layouts paint visible cards and constrain them to the track
+  [M74] wheel moves cards continuously, snaps only fitted variants, and clamps
+  [M75] keyboard moves card focus; explicit Enter and Show All select once
+  [M76] trusted mouse and touch drag without card activation; canceled touch rolls back
+  [M77] 320 dp dark RTL stays readable at 200% and honors Reduce Motion
+  [M78] elevated, filled and outlined cards paint their Material surfaces in both themes
+  [M79] whole card activates once through pointer and keyboard and exposes its toggle to Chrome
+  [M80] a passive card keeps its own role and nested actions activate independently
+  [M81] captured mouse and touch move the passive card, cancel safely and match the keyboard action
+  [M82] dark RTL cards at 320 dp keep 200% text and separate action targets reachable
+  [M83] all five sizes keep full hit targets and both themes paint the group states
+  [M84] trusted hold reallocates adjacent width and cancellation restores the group, including Reduce Motion
+  [M85] connected buttons have a smaller join, a pressed contour, and mirrored end shapes
+  [M86] Tab enters the first enabled button, arrows skip disabled, and Enter or Space updates selection
+  [M87] 320 dp dark RTL keeps 200% button names and touch targets accessible on a single row
+  [M88] compact trailing commands overflow, activate once, and restore the menu trigger focus
+  [M89] five split sizes preserve two full targets and four appearances paint in both themes
+  [M90] the primary action stays independent and Chrome exposes a menu disclosure
+  [M91] keyboard menu navigation skips disabled items and exits to the correct tab stop
+  [M92] RTL mirrors the painted 180 degree chevron turn and Reduce Motion reaches both endpoints
+  [M93] disabled halves stay independent and compact XL text and popup fit at 320 dp dark RTL
+  [M94] Button Groups keep the shared menu hint and leave the row on Tab in either direction
+  [M95] three Extended FAB sizes and six Material palettes paint their contours in both themes
+  [M96] real pointer and touch, keyboard and accessibility share one action with Material states
+  [M97] real wheel moves the body, morphing reverses smoothly, and Reduce Motion keeps one anchored action
+  [M98] the 320 dp dark RTL Extended FAB mirrors its icon and paints all six 200% glyphs inside the rounded face
+  [M99] text-only stays legible, and disabled or exiting actions yield focus and block activation
+  [M100] three square FAB sizes retain legacy sizing and paint six expressive palettes in both themes
+  [M101] trusted off-center hold paints a clipped radial ripple and Reduce Motion paints a static press
+  [M102] one named button accepts trusted keyboard and short touch activation, then becomes inert when disabled
+  [M103] shared tooltip responds to delayed hover, keyboard focus, and trusted long touch without activating the FAB
+  [M104] compact dark RTL at 200 percent anchors the icon and focus ring through a real notes scroll
+  [M105] focus returns to the caller while the hidden FAB exits, then the restored action becomes operable again
+  [M106] Web keeps one stationary menu button, flips the baseline menu, and paints the surface in light and dark
+  [M107] Web arrows skip disabled items and dismissal restores or advances focus across keyboard and outside input
+  [M108] Floating FAB preserves its top trailing anchor, uses exact tokens, and paints three palettes in both themes
+  [M109] Floating mode keeps the stable close first, follows authored Button order, and consumes outside touch
+  [M110] both 320 dp dark RTL menus keep a long 200 percent label, scrolling, and the focused target inside the viewport
+  [M111] real floating entry and exit stagger in opposite orders, reverse mid-flight, and snap under Reduce Motion
+  [M112] the calendar uses a real date grid with distinct focus, today and selection
+  [M113] the modal can browse years and outside dismissal restores the opener
+  [M114] input validates on Enter and blur, and IME composition holds the first Enter
+  [M115] 320 dp dark RTL at 200 percent text keeps date targets and the mode switch reachable
+  [M116] docked field and icon have separate Tab stops and typed dates commit on Enter or blur
+  [M117] the first Enter belongs to IME composition and a later Enter commits once
+  [M118] docked calendar exposes a date grid and commits one keyboard choice
+  [M119] month and bounded year lists browse by keyboard without committing a date
+  [M120] the dark popup flips above and outside mouse or touch dismisses without click-through
+  [M121] 320 dp dark RTL at 200 percent retains touch targets and date focus
+  [M122] cross-month range bands and endpoints paint inside named multi-select grids
+  [M123] keyboard navigation crosses months and years without editing the saved range
+  [M124] partial, same-day and full calendar ranges commit only through Save
+  [M125] separate date fields expose their own format hints and validation errors
+  [M126] IME Enter completes text without saving and explicit Save commits once
+  [M127] 320 dp dark RTL at 200 percent scrolls both axes and caps mounted months
+  [M128] trusted calendar swipe previews one passive page and restores or turns on release
+  [M129] 320 dp RTL contacts pan first and a new edge contact pages
+  [M130] Reduce Motion turns on release with no preview while retaining the saved date
+  [M131] Shift+M and Shift+Y focus docked selectors and Enter or Space opens the list
+  [M132] docked shortcuts stay scoped to Calendar focus and remain reachable in compact RTL
+  [M133] the docked textarea and live IME keep shifted letters and Enter in the editor
+  [M134] inline Hour and Minute edit independently and AM/PM maps midnight and noon
+  [M135] modal 24-hour input accepts localized Japanese digits and rejects invalid or incomplete times
+  [M136] independent errors and focus stay with their named editors inside the modal
+  [M137] only explicit Save commits; IME Enter and all three dismissal paths preserve the saved time
+  [M138] short dark RTL at 200% keeps fields, help, period and actions reachable
+  [M139] portrait face previews a held diagonal and chooses only on release
+  [M140] landscape 24-hour dark RTL touch reads the inner ring and every minute
+  [M141] projected keyboard permits each minute and the selected value is named
+  [M142] unexpected browser capture loss restores the draft and a fresh drag still works
+  [M143] Input and Dial share invalid drafts and Enter during composition only accepts text
+  [M144] short dark RTL at 200% uses the editor and can explicitly return to the full dial
+  [M145] trusted selector Enter focuses the first value without choosing it
+  [M146] the hand takes the short arc through wrap and reverses from its current pose
+  [M147] a held hand snaps to input and capture loss retires motion and the draft preview
+  [M148] compact fallback and Reduce Motion remove stale hand animation at frozen time
+  [M149] two inline wheels settle independently and the surrounding page still scrolls
+  [M150] trusted pointer preview, capture loss, swipe and adjacent tap choose only on acceptance
+  [M151] projected spinbuttons keep keyboard scope, bounds and a distinct missing value
+  [M152] dark RTL at 200% keeps both localized wheels and preserves the draft in compact Input
+  [M153] IME Enter stays in Input, and explicit Save resolves queued wheel input once
+  [M154] Cancel, Escape and a real scrim click discard the draft and restore the opener
+  [M155] Baseline Input measures its editors and period targets and paints the active field
+  [M156] both Baseline Dial arrangements retain exact face and selector dimensions in both formats
+  [M157] a held pointer, both 24-hour rings and an exact minute share the Baseline clock
+  [M158] Baseline Dial and Input share a draft, preedit survives a mode press, and Save commits once
+  [M159] the dark 320 dp RTL Baseline editor retains the 200 percent draft and full actions
+  [M160] Baseline Input discards three ways and commits only on explicit Save
+  [M161] the three list styles keep exact row heights, gaps, and resting corner tokens
+  [M162] passive and command rows expose different accessible targets and command activation is momentary
+  [M163] the named listbox wraps, skips disabled rows, and reveals focus before manual selection
+  [M164] trusted touch and pointer use the row target, with inert gaps and disabled rows
+  [M165] the neighboring selection changes shape and color over time or snaps with Reduce Motion
+  [M166] dark RTL at 200 percent wraps long labels and keeps their full rows reachable at 320 dp
+  [M167] one named listbox exposes multiple selected options and keeps single selection intact
+  [M168] keyboard wraps and skips disabled rows, and held Space and Enter toggle once each
+  [M169] the checkbox and row text share one touch target, with disabled input inert
+  [M170] all three list styles reserve stable checkbox geometry and paint both states
+  [M171] dark RTL at 200 percent keeps full names, mirrored checkbox paint and short keyboard access
+  [M172] one named list exposes sibling buttons with independent disabled and toggle states
+  [M173] all three styles preserve 48 dp wide supplementary targets and the segmented gap
+  [M174] four arrows follow authored order, skip disabled actions and wrap through clipped rows
+  [M175] trusted pointer and touch activate one sibling with canceled, crossed and disabled input inert
+  [M176] dark RTL at 200 percent moves supplementary actions below the complete long primary label
+  [M177] the same supplementary action stays focused across reflow and short resize
+  [M178] a closed named disclosure stays in ordinary list flow and exposes no child controls
+  [M179] the branch and following row move together and reverse without a jump
+  [M180] external collapse restores the header and suppresses all child actions before paint ends
+  [M181] Reduce Motion snaps the endpoints and 320 dp RTL wraps text without hiding controls
+  [M182] keyboard, mouse and touch use separate move buttons and honor a fixed barrier
+  [M183] mouse drag previews unequal-height rows with Material lift and destination paint
+  [M184] mouse and touch release use the rendered edge-scroll layout without another move
+  [M185] Escape, trusted capture loss, touch cancel and an external revision clear held paint
+  [M186] at 320 dp RTL with 200 percent text each keyboard, mouse and touch target stays reachable
+  [M187] real photo and poster paint at the preferred wide and portrait sizes in a passive list
+  [M188] actual GPU pixels prove center crop, orientation, alpha, corner masks and list clipping
+  [M189] keyboard and a click on the poster open one named detail each and return focus
+  [M190] media, checkbox and keyboard share one independent action per enabled row
+  [M191] 320 dp dark RTL at 200 percent keeps a full media label, mirrored checkbox and one hit target
+  [M192] locked-time hover takes a real intermediate arc and can reverse without jumping
+  [M193] mouse and touch use the rectangular target and the pressed-to-selected arc continues
+  [M194] keyboard focus follows the animated row contour and Reduce Motion snaps the same target
+  [M195] Standard media focus animates at 320 dp dark RTL without moving artwork and text
+  [M196] the bounded pointer ripple grows from the real off-center down point and fades once
+  [M197] a coalesced trusted tap paints from its own origin and canceled contacts retire
+  [M198] a real touch tints the poster below its text, check and focus outline
+  [M199] 320 dp dark RTL retains a physical right-side origin and clips the expanded wave
+  [M200] Reduce Motion changes a held Baseline wave into one static press immediately
+  [M201] two real 48 dp variants paint their tokens; the named indeterminate progress stays outside Tab
+  [M202] seven measured GPU silhouettes morph along the spring and wrap without focus or announcement churn
+  [M203] 24 and 48 dp fit 320 dp dark RTL at 200% text and the 240 dp frame stays bounded
+  [M204] Reduce Motion and Stop leave no animation frames; restart and re-entry reset the pose
+  [M205] Small, Medium and Large paint the scroll colors and keep focused geometry explicit
+  [M206] trusted mouse and touch tap the 48 dp cropped zones and wheel remains page scrolling
+  [M207] trusted keys move one adjustable value; the direct editor rejects off-step and out-of-range input
+  [M208] CDP-simulated composition consumes the first Enter and only a second Enter commits
+  [M209] trusted swipe previews without changing the value, cancels cleanly and springs after acceptance
+  [M210] dark RTL at 320 dp and 200% text uses the real editor when the measured scroll field cannot fit
+  [M211] finite text choices show the cropped Material face and one localized Chrome spinbutton
+  [M212] one typed character suggests a unique place and only explicit Enter accepts it
+  [M213] ambiguous and unresolved input keep the current ID until an exact disambiguating alias is confirmed
+  [M214] reorder and relabel preserve the committed ID and publish its updated position and name
+  [M215] real cropped mouse and touch targets pick stable IDs, and cancellation or catalog change rejects a held release
+  [M216] dark RTL at 320 dp and 200 percent keeps the editor, raw draft and IME composition through resize
+  [M217] ArrowUp and ArrowDown wrap the real numeric bounds using continuous signed motion
+  [M218] a real mouse drag crosses two numeric seams, commits once and a canceled touch rolls back
+  [M219] 48 dp targets outside the face wrap both ways and wheel input scrolls the page
+  [M220] both neighbors of a two-item list paint the same name but travel in the chosen direction
+  [M221] catalog changes retire the held route without changing the accepted choice or losing the typed draft
+  [M222] explicit input stays bounded and dark RTL 200 percent fallback preserves live composition through resize
+  [M223] one passive volume group holds two distinct labeled and bounded controls
+  [M224] quantity and unit keyboard steps, validation, and direct commits stay independent
+  [M225] 960 dp mirrors the visual fields in RTL and retains the authored keyboard order
+  [M226] each disabled field and its mode button are skipped while the other field still changes
+  [M227] 320 dp dark RTL stacks both 200 percent editors and preserves active composition through resize
+  [M228] Tab reveals both fields inside the short scroller and Back restores the Gallery launcher
+  [M229] keyboard opens the named nonmodal popup below its anchor and enters the quantity field
+  [M230] pointer opening keeps the anchor focused, then Tab enters and an outside action stays live
+  [M231] independent field commits survive Close while both pending invalid drafts are discarded
+  [M232] Escape gives active composition and an editor draft priority before dismissing the dialog
+  [M233] bottom anchoring flips above, RTL aligns, and anchor removal closes without stealing outside focus
+  [M234] dark RTL at 200 percent scrolls distinct editors, shields covered controls, and leaves the outside action reachable
+  [M235] the named modal owns browser and Runtime focus and wraps every authored Tab stop
+  [M236] explicit Save writes both locally accepted or still unsubmitted editor values once
+  [M237] failed Save reports both named errors, preserves a repaired peer, and never partially writes
+  [M238] Cancel, clean Escape and a real scrim click discard the transaction and restore the opener
+  [M239] preedit blocks pointer and projected Save, and only explicit Save writes the settled pair
+  [M240] dark RTL at 200 percent keeps both actions and whole focused rings visible at 320 dp
+  [M241] the first ready browser state accepts Forced over More and keeps all three exact system pairs
+  [M242] live browser system pairs recolor actual popup Canvas paint and then restore Normal
+  [M243] live contrast preserves focused invalid popup drafts and active synthetic preedit
+  [M244] the popup edge remains visible when its forced fill and the surrounding Canvas match
+  [M245] the resting wheel has its own forced edge, clipped neighbor ink and a real disabled state
+  [M246] the actual partial text selection uses paired browser paint at 1.25 DPR and restores Normal
+  [M247] the actual preedit underline switches ink inside its forced-color selection
+  [M248] docked Contained and Divided styles draw real light scrim, gap and divider
+  [M249] 320 dp Dark RTL 200% Full-screen Contained and Divided preserve the 48 dp input/navigation controls
+  [M250] real wheel, native selection and synthetic preedit survive the 599→600 dp breakpoint
+  [M251] Chrome AX, trusted Tab, real disabled pointer, result ID and scrim dismissal
+  [M252] ArrowDown jumps to first enabled result only, and Canvas glyph and textarea caret center
+  [M253] RTL actual glyphs, pointer selection, composition and separated focus and caret
+  [M254] four Search style/presentation combinations use real Chrome system colors
+  [M255] real Search entry and exit move through pixels; Reduce Motion snaps to both endpoints
+  [M256] Basic exposes a named modal and traps Tab, Escape and scrim return focus
+  [M257] trusted wheel scrolls a short Basic under its pinned heading and complete action targets
+  [M258] named Alert requires acknowledgement and blocks outside input and Escape
+  [M259] 599 to 600 dp keeps the named editor, draft and backward selection across presentations
+  [M260] dirty Close and Escape ask first, Continue restores exact prior focus, and explicit Save or Discard acts once
+  [M261] 320 dp dark RTL 200% aligns both title lines and wheels the entire discard description without moving actions
+  [M262] real Basic and nested Discard opacity frames, immediate modal handback, reversal and Reduce Motion
+  [M263] actual measured FAB container expands, retires, reverses, reduces motion and keeps the adaptive draft
+  [M264] wide light dividers paint the named layouts without adding focus or AX stops
+  [M265] 320 dp dark RTL and 200 percent text keep the four regular divider layouts visible
+  [M266] Heavy dividers paint eight dp in every layout before and after reflow
+  [M267] named command menu keeps a disabled command focusable and rejects its activation
+  [M268] Tab leaves the menu in both directions and outside clicks dismiss without activating the page
+  [M269] short dark RTL menu flips above, wraps 200 percent text and keeps the bottom launcher clear of scrolling content
+  [M270] compact navigation fits three, four and five equal cells with light and dark WebGPU paint
+  [M271] real navigation semantics expose the current page and let Tab explore without selecting
+  [M272] Enter, Space and touch each choose one destination, while disabled pointer input stays inert
+  [M273] 320 dp RTL and 200% type paint complete wrapped labels while wheel leaves the bottom and focus pinned
+  [M274] switch sizes, icons and checked/disabled names in the real browser accessibility tree
+  [M275] Space and actual pointer input each request one controlled switch update
+  [M276] hover, held handle enlargement, outside release and touch cancellation
+  [M277] dark compact RTL at 200% wraps text and accepts a click within the full label
+  [M278] real Chrome checkbox states, disabled mixed value, error description and painted focus
+  [M279] Space and Enter each send one request, update parent and children, and skip the disabled checkbox
+  [M280] physical label and box clicks, pressed paint, outside release and touch cancellation
+  [M281] 320 dp dark RTL at 200% keeps the wrapped label and help visible, then retires the error
+  [M282] named radio group, checked and disabled states, shared Tab stop and radio paint
+  [M283] arrows select and wrap, empty entry has first and last stops, trusted Space repeats stay inert
+  [M284] whole-row and label hits select once, with actual press paint and cancellation
+  [M285] 320 dp dark RTL paints wrapped 200% labels and mirrors horizontal arrows
+  [M286] fixed M3 tabs, linked AX panels, keyboard and both palettes
+  [M287] automatic activation, measured motion, Reduce Motion and press paint
+  [M288] scrollable LTR and RTL strip, wheel, touch and 200 percent focus reveal
+  [M289] restore Gallery focus when closing the tabs demonstration
+  [M290] all seven Material chip surfaces, targets, artwork and actual Chrome grid semantics
+  [M291] keyboard grid traversal, controlled single/multiple filters, independent menu and focus paint
+  [M292] trusted pointer, touch cancellation, split recipient, deletion and retained focus
+  [M293] 320 dp dark RTL 200 percent measured rows, full label and whole-chip menu
+  [M294] Icon Button visual tokens, independent targets, and actual Chrome action states
+  [M295] Icon Button keyboard activation, held repeat, checked artwork, and focus outline
+  [M296] Icon Button pointer hit slack, animated press, cancel, and Reduce Motion
+  [M297] Icon Button compact dark RTL at 200 percent, tooltip description, and focus restore
+  [M298] Standard slider size tokens, track/stop paint and Chrome range semantics
+  [M299] Standard slider keys, exact endpoints, discrete stops, focus and accessible value text
+  [M300] Standard slider target geometry, continuous mouse drag, discrete touch and cancellation
+  [M301] Standard slider dark 320 dp RTL, 200 percent value text and scroll reveal
+  [M302] Centered sliders show negative, neutral, and positive tracks with two end stops
+  [M303] Centered keyboard reaches the neutral and exact endpoints and mirrors in RTL
+  [M304] Vertical AX semantics and trusted mouse follow the measured bottom-to-top rail
+  [M305] Vertical compact dark RTL has touch cancellation, a 200 percent label and focus restoration
+  [M306] Range shows two constrained Chrome sliders, one rail and actual light paint
+  [M307] Range keyboard keeps both coincident stops, locked bounds and the signed discrete grid
+  [M308] Range drops a trusted lost mouse capture and ignores a real foreign touch release
+  [M309] Range touch cancellation and focus keep the 320 dp dark RTL 200 percent layout usable
+  [M310] Vertical Centered paints both signs, neutral and outer stops with separate ARIA values
+  [M311] Vertical Centered reaches neutral and signed endpoints with a localized focused readout
+  [M312] Vertical Centered keeps bottom-to-top touch and 200 percent labels in compact dark RTL
+  [M313] Standard slider inset glyphs paint at both axes and all three sizes with one accessibility peer
+  [M314] the inset glyph changes contour at the minimum and moves tracks without moving the rail
+  [M315] dark 320 dp RTL keeps the upright vertical glyph, focus and large label visible
+  [M316] Five sizes and five command appearances use measured targets and actual Material paint
+  [M317] Four caller-controlled toggles expose one stable action and ignore held key repeats
+  [M318] Trusted pointer presses the XS hit slack, samples the shape spring and cancels outside
+  [M319] A compact dark RTL route keeps logical icon slots, large text and visible exterior focus
+  [M320] Baseline segmented rows have equal faces, a single seam and distinct accessible roles
+  [M321] trusted Tab and arrows move focus and explicit keys own selection
+  [M322] padded pointer or touch targets accept once and cancel cleanly
+  [M323] compact dark RTL grows the row and scrolls without reducing targets
+  [M324] touch panning locks the scroll axis in both directions and preserves short taps
+case material ... ok (323 steps, 23197 checks, 1857.9s)
+case bridge-native ...
+case bridge-native ... ok (23 steps, 92 checks, 4.5s)
+case bridge-native-compact ...
+case bridge-native-compact ... ok (24 steps, 93 checks, 3.3s)
+case bridge-web ...
+case bridge-web ... ok (24 steps, 94 checks, 5.7s)
+case devtools-native ...
+case devtools-native ... ok (17 steps, 192 checks, 4.5s)
+case devtools-headless ...
+case devtools-headless ... ok (3 steps, 76 checks, 1.4s)
+e2e result: 8 passed; 0 failed; 23855 checks;

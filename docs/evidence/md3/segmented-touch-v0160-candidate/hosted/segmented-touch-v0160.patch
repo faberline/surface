@@ -1,0 +1,1846 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index c1345e31ba0a279b505ca4b8dd4c8dd73105f51a..09f3b0345d93558f00b306ed9675844321d5b6cb 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.59"
++version = "0.1.60"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 9be0e0fdd50d2a509cd1acd67bfc32fe404254de..3cec45609e64c06f79bdc48d32d6ab5f1cb99935 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.59"
++version = "0.1.60"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/captured_drag.rs b/crates/surface-app/src/captured_drag.rs
+index ba314a7ac129ae1d9ed6575354253683870d415f..70a365af4e93767bb2bcc879aded8b7aa57768d5 100644
+--- a/crates/surface-app/src/captured_drag.rs
++++ b/crates/surface-app/src/captured_drag.rs
+@@ -147,7 +147,7 @@ impl PointDragLayout {
+ }
+ 
+ #[derive(Clone, Copy)]
+-enum Axis {
++pub(crate) enum Axis {
+     Horizontal,
+     Vertical,
+ }
+@@ -155,14 +155,14 @@ enum Axis {
+ impl Axis {
+     const ALL: [Self; 2] = [Self::Horizontal, Self::Vertical];
+ 
+-    fn component(self, x: f32, y: f32) -> f32 {
++    pub(crate) fn component(self, x: f32, y: f32) -> f32 {
+         match self {
+             Self::Horizontal => x,
+             Self::Vertical => y,
+         }
+     }
+ 
+-    fn dominant(dx: f32, dy: f32) -> Option<Self> {
++    pub(crate) fn dominant(dx: f32, dy: f32) -> Option<Self> {
+         if dx.abs() > dy.abs() {
+             Some(Self::Horizontal)
+         } else if dy.abs() > dx.abs() {
+diff --git a/crates/surface-app/src/frame_input.rs b/crates/surface-app/src/frame_input.rs
+index ad0d77e66fd9de59c4fdd1eabf4741c94dafed10..98a82283f032c4023a379b877b5f44410a6acba4 100644
+--- a/crates/surface-app/src/frame_input.rs
++++ b/crates/surface-app/src/frame_input.rs
+@@ -192,9 +192,17 @@ pub struct InputAnimationUpdate {
+     pub suppress_touch_activation: bool,
+ }
+ 
++#[derive(Clone, Copy, PartialEq, Eq)]
++pub(crate) enum PointerPolicy {
++    Normal,
++    DeferFocus,
++    SuppressActivation,
++}
++
+ pub(crate) struct ActiveTouch {
+     pub(crate) contact: TouchContact,
+     pub(crate) suppress_activation: bool,
++    pub(crate) scroll: Option<crate::touch_scroll::TouchScroll>,
+ }
+ 
+ impl<A: Application> Runtime<A> {
+@@ -229,7 +237,7 @@ impl<A: Application> Runtime<A> {
+             Event::PointerLeave | Event::Blur => self.pointer_position.take().is_some(),
+             _ => false,
+         };
+-        let changed = self.dispatch_event(event, false)?;
++        let changed = self.dispatch_event(event, PointerPolicy::Normal)?;
+         Ok(changed || cancelled || (pointer_changed && self.app.observes_frame_input()))
+     }
+ 
+@@ -254,7 +262,13 @@ impl<A: Application> Runtime<A> {
+                     self.cancel_pointer()?;
+                 }
+                 self.pointer_position = None;
+-                let changed = self.dispatch_event(event, false)?;
++                let scroll = self.touch_scroll_at(point);
++                let policy = if scroll.is_some() {
++                    PointerPolicy::DeferFocus
++                } else {
++                    PointerPolicy::Normal
++                };
++                let changed = self.dispatch_event(event, policy)?;
+                 self.touch = Some(ActiveTouch {
+                     contact: TouchContact {
+                         origin: point,
+@@ -262,6 +276,7 @@ impl<A: Application> Runtime<A> {
+                         started_ms: self.input_time_ms(),
+                     },
+                     suppress_activation: false,
++                    scroll,
+                 });
+                 (changed, true)
+             }
+@@ -270,13 +285,39 @@ impl<A: Application> Runtime<A> {
+                     return Ok(false);
+                 };
+                 let observed = std::mem::replace(&mut touch.contact.position, point) != point;
+-                (self.dispatch_event(event, false)?, observed)
++                let origin = touch.contact.origin;
++                let panned = if let Some(mut scroll) = touch.scroll.take() {
++                    let result =
++                        self.advance_touch_scroll(&mut scroll, (x - origin.0, y - origin.1));
++                    self.touch.as_mut().expect("touch remains active").scroll = Some(scroll);
++                    result?
++                } else {
++                    None
++                };
++                let changed = match panned {
++                    Some(changed) => changed,
++                    None => self.dispatch_event(event, PointerPolicy::Normal)?,
++                };
++                (changed, observed)
+             }
+             Event::PointerUp { .. } => {
+-                let Some(touch) = self.touch.take() else {
++                let Some(mut touch) = self.touch.take() else {
+                     return Ok(false);
+                 };
+-                let changed = self.dispatch_event(event, touch.suppress_activation)?;
++                if let Some(scroll) = &mut touch.scroll {
++                    let origin = touch.contact.origin;
++                    if let Some(changed) =
++                        self.advance_touch_scroll(scroll, (x - origin.0, y - origin.1))?
++                    {
++                        return Ok(changed || self.app.observes_frame_input());
++                    }
++                }
++                let policy = if touch.suppress_activation {
++                    PointerPolicy::SuppressActivation
++                } else {
++                    PointerPolicy::Normal
++                };
++                let changed = self.dispatch_event(event, policy)?;
+                 (changed, true)
+             }
+             _ => unreachable!("other events cannot supply touch coordinates"),
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 5d96b0e52f372a51303bb16efe6efd3b99131db5..46dda12858008ba9420dc308833c5da914ca99b5 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -25,6 +25,7 @@ mod scroll_control;
+ mod slider;
+ mod slider_pair;
+ mod snapshot;
++mod touch_scroll;
+ #[cfg(feature = "devtools")]
+ pub mod trace;
+ pub use accessibility::{
+@@ -108,6 +109,7 @@ pub struct View<M> {
+     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
+     context: Option<context::ContextHandler<M>>,
+     stick: bool,
++    horizontal_touch_scroll: bool,
+     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
+     horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
+     cursor: Option<CursorStyle>,
+@@ -198,6 +200,7 @@ impl<M> View<M> {
+             focus_navigation: None,
+             context: None,
+             stick: false,
++            horizontal_touch_scroll: false,
+             vertical_scroll: None,
+             horizontal_scroll: None,
+             cursor: None,
+@@ -782,6 +785,17 @@ impl<M> View<M> {
+         self.horizontal_scroll = Some(Rc::new(handler));
+         self
+     }
++    /// Pan a named, clipped viewport with a primary touch when it overflows
++    /// horizontally. A vertical gesture can scroll the nearest ordinary
++    /// outer scroll container. A custom vertical scroll handler reserves
++    /// that route for wheel or trackpad input. Short taps keep their action.
++    ///
++    /// Explicit drags, text editing and sliders have priority. Wheel and
++    /// accessibility scrolling use their ordinary routes.
++    pub fn horizontal_touch_scroll(mut self) -> Self {
++        self.horizontal_touch_scroll = true;
++        self
++    }
+     /// The mouse cursor over this node. It does not change the DOM, layout
+     /// or display list. Read it with `Runtime::cursor_at`.
+     pub fn cursor(mut self, cursor: CursorStyle) -> Self {
+@@ -1142,6 +1156,7 @@ struct Binding<M> {
+     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
+     context: Option<context::ContextHandler<M>>,
+     stick: bool,
++    horizontal_touch_scroll: bool,
+     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
+     horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
+     cursor: Option<CursorStyle>,
+@@ -1374,6 +1389,7 @@ impl<A: Application> Runtime<A> {
+ 
+     /// Cancel a pointer sequence without invoking a destination or dismissal.
+     pub fn cancel_pointer(&mut self) -> Result<bool, AppError> {
++        let rollback = self.cancel_touch_scroll();
+         let touch_changed = self.cancel_touch_contact();
+         let changed = self.cancel_press_ripple()
+             || touch_changed
+@@ -1383,7 +1399,9 @@ impl<A: Application> Runtime<A> {
+             || self.text_drag.is_some()
+             || self.modal_outside;
+         self.clear_modal_pointer();
+-        self.cancel_drag().map(|drag| changed || drag)
++        let drag = self.cancel_drag();
++        rollback?;
++        drag.map(|drag| changed || drag)
+     }
+ 
+     /// Cancel a pending or claimed contact on a paired slider.
+@@ -1424,7 +1442,15 @@ impl<A: Application> Runtime<A> {
+     }
+ 
+     fn has_captured_drag(&self) -> bool {
+-        self.captured_drag.is_some()
++        self.captured_drag.is_some() || self.has_touch_scroll_capture()
++    }
++
++    fn cancel_drag_for_editing(&mut self) -> Result<bool, AppError> {
++        if self.has_touch_scroll_capture() {
++            self.cancel_pointer()
++        } else {
++            self.cancel_drag()
++        }
+     }
+ 
+     fn drag_scope(&self) -> Option<&str> {
+@@ -1546,6 +1572,7 @@ impl<A: Application> Runtime<A> {
+         } else {
+             self.cancel_press_ripple();
+             self.discard_drag();
++            let _ = self.cancel_touch_scroll();
+             if self.cancel_touch_contact()
+                 || self.active_scope_root().is_some()
+                 || self.has_slider_pair_capture()
+@@ -1561,6 +1588,7 @@ impl<A: Application> Runtime<A> {
+             },
+         );
+         result?;
++        self.reconcile_touch_scroll()?;
+         self.reconcile_drag_binding()
+     }
+     fn prepare_view(&self) -> Result<PreparedView<A::Message>, AppError> {
+@@ -1585,6 +1613,7 @@ impl<A: Application> Runtime<A> {
+                 || view.dismiss.is_some()
+                 || view.modal_layer.is_some_and(ModalLayer::is_retiring)
+                 || view.stick
++                || view.horizontal_touch_scroll
+                 || view.vertical_scroll.is_some()
+                 || view.horizontal_scroll.is_some()
+                 || view.slider_pair.is_some()
+@@ -1658,6 +1687,7 @@ impl<A: Application> Runtime<A> {
+                     focus_navigation: view.focus_navigation,
+                     context: view.context,
+                     stick: view.stick,
++                    horizontal_touch_scroll: view.horizontal_touch_scroll,
+                     vertical_scroll: view.vertical_scroll,
+                     horizontal_scroll: view.horizontal_scroll,
+                     cursor: view.cursor,
+@@ -2197,8 +2227,9 @@ impl<A: Application> Runtime<A> {
+     fn dispatch_event(
+         &mut self,
+         event: Event,
+-        suppress_touch_activation: bool,
++        policy: frame_input::PointerPolicy,
+     ) -> Result<bool, AppError> {
++        let suppress_touch_activation = policy == frame_input::PointerPolicy::SuppressActivation;
+         match event {
+             Event::PointerDown { x, y } => {
+                 if self.has_captured_drag() || self.has_slider_pair_capture() {
+@@ -2260,7 +2291,10 @@ impl<A: Application> Runtime<A> {
+                 let defer_focus = hit
+                     .and_then(|id| self.bindings.get(&id))
+                     .is_some_and(|binding| binding.focus_on_pointer_release);
+-                if drag.is_none() && !defer_focus {
++                if drag.is_none()
++                    && !defer_focus
++                    && policy != frame_input::PointerPolicy::DeferFocus
++                {
+                     // Blank clicks within a modal must not release its focus scope.
+                     if self.pressed.is_some() || self.active_scope_root().is_none() {
+                         self.focused = self.pressed.clone();
+@@ -2421,7 +2455,7 @@ impl<A: Application> Runtime<A> {
+                 if self.focused.as_ref() != Some(&id) {
+                     return Ok(false);
+                 }
+-                let cancelled = self.cancel_drag()?;
++                let cancelled = self.cancel_drag_for_editing()?;
+                 self.editing_event(Event::Ime(event))
+                     .map(|handled| handled || cancelled)
+             }
+@@ -2446,7 +2480,7 @@ impl<A: Application> Runtime<A> {
+             }
+             Event::SetValue { id, value } => self.set_value(&id, value),
+             event @ Event::Ime(_) => {
+-                let cancelled = self.cancel_drag()?;
++                let cancelled = self.cancel_drag_for_editing()?;
+                 self.editing_event(event)
+                     .map(|handled| handled || cancelled)
+             }
+diff --git a/crates/surface-app/src/scroll_control.rs b/crates/surface-app/src/scroll_control.rs
+index 00319e28ebfeeefd3fb92b67364203faf9f6de1b..3a63997f1143d5704d945f88c4c44fe9e806d1e6 100644
+--- a/crates/surface-app/src/scroll_control.rs
++++ b/crates/surface-app/src/scroll_control.rs
+@@ -261,9 +261,9 @@ impl<A: Application> Runtime<A> {
+             .iter()
+             .rev()
+             .copied()
+-            .find(|&id| self.wheel_target_at(computed, id, point))?;
++            .find(|&id| self.scroll_region_at(computed, id, point))?;
+         let horizontal = self
+-            .wheel_ancestors(computed, hit, point)
++            .scroll_ancestors_at(computed, hit, point)
+             .find(|id| self.bindings[id].horizontal_scroll.is_some());
+         Some(WheelRoute {
+             hit,
+@@ -302,7 +302,7 @@ impl<A: Application> Runtime<A> {
+         let (max_x, max_y) = self.wheel_limits(computed, target);
+         let scroll_x = self.dom.get(target)?.style().scroll_x;
+         let (y, message) = self.vertical_wheel(target, delta.1, max_y);
+-        self.save_wheel_offsets(target, ((scroll_x + delta.0).clamp(0., max_x), y))?;
++        self.save_scroll_offsets(target, ((scroll_x + delta.0).clamp(0., max_x), y))?;
+         self.computed = None;
+         self.ime_area = None;
+         self.message(message)?;
+@@ -333,14 +333,14 @@ impl<A: Application> Runtime<A> {
+         if let Some((offset, message)) = horizontal_result {
+             if let Some(x) = offset {
+                 let y = self.dom.get(horizontal)?.style().scroll_y;
+-                self.save_wheel_offsets(horizontal, (x, y))?;
++                self.save_scroll_offsets(horizontal, (x, y))?;
+             }
+             messages[0] = message;
+         }
+         if let Some((id, y, message)) = vertical_result {
+             let style = self.dom.get(id)?.style();
+             if y != style.scroll_y {
+-                self.save_wheel_offsets(id, (style.scroll_x, y))?;
++                self.save_scroll_offsets(id, (style.scroll_x, y))?;
+             }
+             messages[1] = message;
+         }
+@@ -357,7 +357,12 @@ impl<A: Application> Runtime<A> {
+         Ok(handled)
+     }
+ 
+-    fn wheel_target_at(&self, computed: &ComputedDom, id: NodeId, point: (f32, f32)) -> bool {
++    pub(crate) fn scroll_region_at(
++        &self,
++        computed: &ComputedDom,
++        id: NodeId,
++        point: (f32, f32),
++    ) -> bool {
+         let node = self.dom.get(id).expect("valid wheel node");
+         let geometry = &computed.nodes[id.index()];
+         node.style().clip
+@@ -369,28 +374,39 @@ impl<A: Application> Runtime<A> {
+                 .contains(point.0, point.1)
+     }
+ 
+-    fn wheel_ancestors<'a>(
++    pub(crate) fn scroll_ancestors_at<'a>(
+         &'a self,
+         computed: &'a ComputedDom,
+         start: NodeId,
+         point: (f32, f32),
+     ) -> impl Iterator<Item = NodeId> + 'a {
+         std::iter::successors(Some(start), |id| self.dom.get(*id).ok()?.parent())
+-            .filter(move |&id| self.wheel_target_at(computed, id, point))
++            .filter(move |&id| self.scroll_region_at(computed, id, point))
+     }
+ 
+-    fn vertical_wheel_target(
++    pub(crate) fn vertical_wheel_target(
+         &self,
+         computed: &ComputedDom,
+         target: NodeId,
+         point: (f32, f32),
+     ) -> Option<NodeId> {
+-        self.wheel_ancestors(computed, target, point).find(|id| {
+-            let binding = &self.bindings[id];
+-            let enabled = self.dom.get(*id).is_ok_and(|node| !node.is_disabled());
+-            (enabled && binding.vertical_scroll.is_some())
+-                || (binding.horizontal_scroll.is_none() && self.wheel_limits(computed, *id).1 > 0.)
+-        })
++        self.scroll_ancestors_at(computed, target, point)
++            .find(|id| {
++                let binding = &self.bindings[id];
++                self.has_vertical_scroll_owner(*id)
++                    || (binding.horizontal_scroll.is_none()
++                        && self.wheel_limits(computed, *id).1 > 0.)
++            })
++    }
++
++    pub(crate) fn has_vertical_scroll_owner(&self, id: NodeId) -> bool {
++        self.bindings
++            .get(&id)
++            .is_some_and(|binding| binding.vertical_scroll.is_some())
++            && self
++                .dom
++                .get(id)
++                .is_ok_and(|node| node.style().clip && !node.is_disabled())
+     }
+ 
+     fn wheel_limits(&self, computed: &ComputedDom, id: NodeId) -> (f32, f32) {
+@@ -475,7 +491,11 @@ impl<A: Application> Runtime<A> {
+         )
+     }
+ 
+-    fn save_wheel_offsets(&mut self, id: NodeId, offset: (f32, f32)) -> Result<(), AppError> {
++    pub(crate) fn save_scroll_offsets(
++        &mut self,
++        id: NodeId,
++        offset: (f32, f32),
++    ) -> Result<(), AppError> {
+         let key = self.stable(id).expect("scroll node has ID");
+         self.scroll.insert(key, offset);
+         let mut style = self.dom.get(id)?.style().clone();
+diff --git a/crates/surface-app/src/touch_scroll.rs b/crates/surface-app/src/touch_scroll.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..eb33b294a603b96f3e56bbfb504d3f0ac01a85a5
+--- /dev/null
++++ b/crates/surface-app/src/touch_scroll.rs
+@@ -0,0 +1,299 @@
++use crate::{captured_drag::Axis, drag_motion::SLOP, AppError, Application, Runtime};
++use surface::{ComputedDom, NodeId, Role};
++
++impl Axis {
++    fn value(self, pair: (f32, f32)) -> f32 {
++        self.component(pair.0, pair.1)
++    }
++
++    fn offset(self, pair: (f32, f32), value: f32) -> (f32, f32) {
++        match self {
++            Self::Horizontal => (value, pair.1),
++            Self::Vertical => (pair.0, value),
++        }
++    }
++}
++
++struct Target {
++    key: String,
++    role: Role,
++    limit: f32,
++    initial: f32,
++    presented: f32,
++}
++
++enum Phase {
++    Pending,
++    Panning(Axis),
++    Retired,
++}
++
++/// The ordinary pointer route owns a tap until this contact takes an axis.
++pub(crate) struct TouchScroll {
++    horizontal: Target,
++    vertical: Option<Target>,
++    hit: Option<String>,
++    scope: Option<String>,
++    phase: Phase,
++}
++
++impl TouchScroll {
++    fn target(&mut self, axis: Axis) -> Option<&mut Target> {
++        match axis {
++            Axis::Horizontal => Some(&mut self.horizontal),
++            Axis::Vertical => self.vertical.as_mut(),
++        }
++    }
++}
++
++impl<A: Application> Runtime<A> {
++    pub(crate) fn touch_scroll_at(&self, point: (f32, f32)) -> Option<TouchScroll> {
++        if !self.pointer_geometry_current || self.has_pending_composition() {
++            return None;
++        }
++        let hit = self.raw_hit(point.0, point.1);
++        let layout = self.computed.as_ref()?;
++        let horizontal = |id| {
++            if !self.bindings.get(&id)?.horizontal_touch_scroll {
++                return None;
++            }
++            Some((
++                id,
++                self.touch_scroll_target(layout, id, point, Axis::Horizontal)?,
++            ))
++        };
++        let (owner, horizontal) = if let Some(hit) = hit {
++            self.scroll_ancestors_at(layout, hit, point)
++                .find_map(horizontal)
++        } else {
++            layout
++                .paint_order
++                .iter()
++                .rev()
++                .copied()
++                .find_map(horizontal)
++        }?;
++        if hit.is_some_and(|id| {
++            self.dom
++                .get(id)
++                .is_ok_and(|node| matches!(node.role(), Role::TextInput | Role::Slider))
++        }) || self.horizontal_pair_at(hit, point.0, point.1).is_some()
++            || self.drag_candidate(hit, point.0, point.1).is_some()
++            || self.outside_scope(point.0, point.1, hit)
++        {
++            return None;
++        }
++        // The nearest custom vertical owner reserves this route even when
++        // its content fits. A touch pan neither runs a wheel handler nor
++        // skips it to move a more distant ancestor.
++        let vertical = self
++            .vertical_wheel_target(layout, hit.unwrap_or(owner), point)
++            .filter(|&id| id != owner && self.descendant(owner, id))
++            .filter(|&id| !self.has_vertical_scroll_owner(id))
++            .and_then(|id| self.touch_scroll_target(layout, id, point, Axis::Vertical));
++        Some(TouchScroll {
++            horizontal,
++            vertical,
++            hit: hit.and_then(|id| self.stable(id)),
++            scope: self.drag_scope().map(str::to_owned),
++            phase: Phase::Pending,
++        })
++    }
++
++    fn touch_scroll_target(
++        &self,
++        layout: &ComputedDom,
++        id: NodeId,
++        point: (f32, f32),
++        axis: Axis,
++    ) -> Option<Target> {
++        if !self.scroll_region_at(layout, id, point) {
++            return None;
++        }
++        let node = self.dom.get(id).ok()?;
++        let key = node.stable_id()?;
++        let metrics = self.scroll_metrics(key)?;
++        let limit = axis.value(metrics.content) - axis.value(metrics.viewport);
++        if node.is_disabled() || !limit.is_finite() || limit <= 0. {
++            return None;
++        }
++        let initial = axis.value((node.style().scroll_x, node.style().scroll_y));
++        Some(Target {
++            key: key.to_owned(),
++            role: node.role(),
++            limit,
++            initial,
++            presented: initial,
++        })
++    }
++
++    /// Tell the Web host whether to monitor capture loss for this touch.
++    #[doc(hidden)]
++    pub fn has_touch_scroll_capture(&self) -> bool {
++        self.touch
++            .as_ref()
++            .is_some_and(|touch| touch.scroll.is_some())
++    }
++
++    /// Retire just an opted-in touch contact after host capture loss.
++    #[doc(hidden)]
++    pub fn cancel_touch_scroll_capture(&mut self) -> Result<bool, AppError> {
++        if self.has_touch_scroll_capture() {
++            self.cancel_pointer()
++        } else {
++            Ok(false)
++        }
++    }
++
++    fn current_touch_scroll_owner(&self, target: &Target) -> Option<NodeId> {
++        let id = self.dom.by_id(&target.key)?;
++        self.dom.get(id).ok().filter(|node| {
++            node.style().clip
++                && node.role() == target.role
++                && !node.is_disabled()
++                && self.in_scope(id)
++        })?;
++        Some(id)
++    }
++
++    fn touch_scroll_in_scope(&self, scroll: &TouchScroll) -> bool {
++        scroll.scope.as_deref() == self.drag_scope()
++            && self
++                .current_touch_scroll_owner(&scroll.horizontal)
++                .is_some_and(|id| {
++                    self.bindings
++                        .get(&id)
++                        .is_some_and(|binding| binding.horizontal_touch_scroll)
++                })
++    }
++
++    fn valid_vertical_touch_owner(&self, scroll: &TouchScroll) -> bool {
++        let Some(ancestor) = scroll
++            .vertical
++            .as_ref()
++            .and_then(|target| self.current_touch_scroll_owner(target))
++        else {
++            return false;
++        };
++        let Some(strip) = self.current_touch_scroll_owner(&scroll.horizontal) else {
++            return false;
++        };
++        let hit = match &scroll.hit {
++            Some(key) => self
++                .dom
++                .by_id(key)
++                .filter(|&hit| self.descendant(hit, strip)),
++            None => Some(strip),
++        };
++        let Some(hit) = hit else {
++            return false;
++        };
++        if !self.descendant(strip, ancestor) || self.has_vertical_scroll_owner(ancestor) {
++            return false;
++        }
++        // A rebuild can insert a new scroll owner before the old target.
++        std::iter::successors(Some(hit), |id| self.dom.get(*id).ok()?.parent())
++            .take_while(|id| *id != ancestor)
++            .all(|id| !self.has_vertical_scroll_owner(id))
++    }
++
++    pub(crate) fn reconcile_touch_scroll(&mut self) -> Result<(), AppError> {
++        if self
++            .touch
++            .as_ref()
++            .and_then(|touch| touch.scroll.as_ref())
++            .is_some_and(|scroll| !self.touch_scroll_in_scope(scroll))
++        {
++            self.cancel_pointer()?;
++        }
++        Ok(())
++    }
++
++    pub(crate) fn cancel_touch_scroll(&mut self) -> Result<(), AppError> {
++        let Some(mut scroll) = self.touch.as_mut().and_then(|touch| touch.scroll.take()) else {
++            return Ok(());
++        };
++        if !self.touch_scroll_in_scope(&scroll)
++            || (matches!(scroll.phase, Phase::Panning(Axis::Vertical))
++                && !self.valid_vertical_touch_owner(&scroll))
++        {
++            return Ok(());
++        }
++        if let Phase::Panning(axis) = scroll.phase {
++            if let Some(target) = scroll.target(axis) {
++                self.set_touch_scroll_offset(target, axis, target.initial)?;
++            }
++        }
++        Ok(())
++    }
++
++    /// Return None for a pending tap, or Some after taking the contact.
++    /// A direct release can be the first sample to cross the threshold.
++    pub(crate) fn advance_touch_scroll(
++        &mut self,
++        scroll: &mut TouchScroll,
++        delta: (f32, f32),
++    ) -> Result<Option<bool>, AppError> {
++        if !self.touch_scroll_in_scope(scroll)
++            || (matches!(scroll.phase, Phase::Panning(Axis::Vertical))
++                && !self.valid_vertical_touch_owner(scroll))
++            || !delta.0.is_finite()
++            || !delta.1.is_finite()
++        {
++            self.clear_modal_pointer();
++            self.cancel_press_ripple();
++            scroll.phase = Phase::Retired;
++            return Ok(Some(true));
++        }
++        let (axis, claimed_now) = match scroll.phase {
++            Phase::Pending => {
++                if delta.0.abs().max(delta.1.abs()) < SLOP {
++                    return Ok(None);
++                }
++                self.clear_modal_pointer();
++                self.cancel_press_ripple();
++                let axis = match Axis::dominant(delta.0, delta.1) {
++                    Some(Axis::Horizontal) => Axis::Horizontal,
++                    Some(Axis::Vertical) if self.valid_vertical_touch_owner(scroll) => {
++                        Axis::Vertical
++                    }
++                    _ => {
++                        scroll.phase = Phase::Retired;
++                        return Ok(Some(true));
++                    }
++                };
++                scroll.phase = Phase::Panning(axis);
++                (axis, true)
++            }
++            Phase::Panning(axis) => (axis, false),
++            Phase::Retired => return Ok(Some(false)),
++        };
++        let target = scroll.target(axis).expect("panning has an owner");
++        let goal = (target.initial - axis.value(delta)).clamp(0., target.limit);
++        let changed = self.set_touch_scroll_offset(target, axis, goal)?;
++        Ok(Some(claimed_now || changed))
++    }
++
++    fn set_touch_scroll_offset(
++        &mut self,
++        target: &mut Target,
++        axis: Axis,
++        goal: f32,
++    ) -> Result<bool, AppError> {
++        let Some(id) = self.current_touch_scroll_owner(target) else {
++            return Ok(false);
++        };
++        let style = self.dom.get(id)?.style();
++        let current = (style.scroll_x, style.scroll_y);
++        // A queued scroll or different input can take ownership of the axis.
++        // Leave that newer offset intact, even on cancellation.
++        if axis.value(current) != target.presented || target.presented == goal {
++            return Ok(false);
++        }
++        self.save_scroll_offsets(id, axis.offset(current, goal))?;
++        target.presented = goal;
++        self.computed = None;
++        self.ime_area = None;
++        Ok(true)
++    }
++}
+diff --git a/crates/surface-app/tests/touch_scroll.rs b/crates/surface-app/tests/touch_scroll.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c1bf123e5477a2b5d91f8a9687283fdd5ba434b
+--- /dev/null
++++ b/crates/surface-app/tests/touch_scroll.rs
+@@ -0,0 +1,566 @@
++use surface::{Align, Length, Node, Rect, Role, Style, TextMeasurer};
++use surface_app::{
++    AccessibilityActivationResult, AccessibilityFocusResult, AccessibilityScrollResult,
++    Application, Event, Runtime, ScrollTarget, VerticalDrag, VerticalDragSession,
++    VerticalScrollResponse, View,
++};
++
++const ITEMS: [&str; 5] = ["walk", "tram", "bike", "boat", "rail"];
++
++#[derive(Clone)]
++enum Message {
++    Toggle(usize),
++    ExplicitDrag(VerticalDrag),
++    EnableVerticalHook,
++    VerticalWheel,
++    Modal,
++    RemoveOptIn,
++}
++
++struct App {
++    rtl: bool,
++    opt_in: bool,
++    items: usize,
++    vertical: bool,
++    modal: bool,
++    checked: [bool; 5],
++    activations: usize,
++    explicit_drag: Option<VerticalDragSession>,
++    explicit_events: Vec<VerticalDrag>,
++    custom_vertical_overflows: Option<bool>,
++    custom_wheels: usize,
++}
++
++impl Default for App {
++    fn default() -> Self {
++        Self {
++            rtl: false,
++            opt_in: true,
++            items: 5,
++            vertical: true,
++            modal: false,
++            checked: [false; 5],
++            activations: 0,
++            explicit_drag: None,
++            explicit_events: Vec::new(),
++            custom_vertical_overflows: None,
++            custom_wheels: 0,
++        }
++    }
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Toggle(i) => {
++                self.checked[i] = !self.checked[i];
++                self.activations += 1;
++            }
++            Message::Modal => self.modal = !self.modal,
++            Message::ExplicitDrag(drag) => self.explicit_events.push(drag),
++            Message::EnableVerticalHook => self.custom_vertical_overflows = Some(false),
++            Message::VerticalWheel => self.custom_wheels += 1,
++            Message::RemoveOptIn => self.opt_in = false,
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let width = 128.;
++        let content_width = (self.items as f32) * 64.;
++        let mut rail = Style::row().height(Length::Px(64.));
++        rail.min_width = content_width;
++        let mut track = Node::new(Role::Group, "").styled(rail);
++        if self.rtl {
++            track = track.reverse_row();
++        }
++        let mut inner_style = Style::column()
++            .align(Align::Start)
++            .width(Length::Px(width))
++            .height(Length::Px(64.))
++            .clip(true);
++        if self.rtl {
++            inner_style.scroll_x = (content_width - width).max(0.);
++        }
++        let inner = View::new(
++            Node::new(Role::Group, "Transport")
++                .id("inner")
++                .styled(inner_style),
++        )
++        .children([
++            View::new(track).children(ITEMS[..self.items].iter().enumerate().map(|(i, id)| {
++                let checkbox = Node::new(Role::Checkbox, *id)
++                    .id(*id)
++                    .checked(self.checked[i])
++                    .styled(
++                        Style::column()
++                            .width(Length::Px(64.))
++                            .height(Length::Px(64.)),
++                    );
++                View::new(checkbox)
++                    .on_press(Message::Toggle(i))
++                    .accessible_activation()
++                    .accessibility_scroll_into_view()
++            })),
++        ])
++        .on_horizontal_scroll(|_, _| None)
++        .accessibility_scroll_pages();
++        let inner = if self.opt_in {
++            inner.horizontal_touch_scroll()
++        } else {
++            inner
++        };
++        let inner = if let Some(overflows) = self.custom_vertical_overflows {
++            let child = View::new(
++                Node::new(Role::Group, "")
++                    .styled(Style::column().height(Length::Px(if overflows { 164. } else { 16. }))),
++            );
++            View::new(
++                Node::new(Role::Group, "Custom scroller")
++                    .id("middle")
++                    .styled(
++                        Style::column()
++                            .align(Align::Start)
++                            .width(Length::Px(160.))
++                            .height(Length::Px(96.))
++                            .clip(true),
++                    ),
++            )
++            .children([inner, child])
++            .on_vertical_scroll(|scroll| {
++                Some(VerticalScrollResponse {
++                    consumed: scroll.delta,
++                    message: Message::VerticalWheel,
++                })
++            })
++        } else {
++            inner
++        };
++        let filler = View::new(
++            Node::new(Role::Group, "")
++                .styled(Style::column().height(Length::Px(if self.vertical { 300. } else { 16. }))),
++        );
++        let outer = View::new(
++            Node::new(Role::Group, "Page").id("outer").styled(
++                Style::column()
++                    .align(Align::Start)
++                    .width(Length::Px(160.))
++                    .height(Length::Px(156.))
++                    .clip(true),
++            ),
++        )
++        .children([inner, filler]);
++        let outer = if let Some(session) = &self.explicit_drag {
++            outer.on_vertical_drag(session.clone(), Message::ExplicitDrag)
++        } else {
++            outer
++        };
++        let after = View::new(
++            Node::new(Role::Button, "After").id("after").styled(
++                Style::column()
++                    .width(Length::Px(64.))
++                    .height(Length::Px(44.)),
++            ),
++        );
++        let modal = self.modal.then(|| {
++            View::new(Node::new(Role::Dialog, "Other scope").id("modal"))
++                .children([View::new(Node::new(Role::Button, "Close").id("close"))
++                    .on_press(Message::Modal)])
++                .modal(Message::Modal)
++        });
++        View::new(Node::new(Role::Window, "Demo").styled(Style::column().padding(12.).gap(12.)))
++            .children([outer, after].into_iter().chain(modal))
++    }
++}
++
++struct Metrics;
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.chars().count() as f32 * size, size)
++    }
++}
++
++fn draw(runtime: &mut Runtime<App>) {
++    runtime.render(360., 400., &mut Metrics).unwrap();
++}
++
++fn bounds(runtime: &Runtime<App>, id: &str) -> Rect {
++    let id = runtime.dom().by_id(id).unwrap();
++    runtime.computed().unwrap().nodes[id.index()].bounds
++}
++
++fn point(runtime: &Runtime<App>) -> (f32, f32) {
++    let first = bounds(runtime, "walk").intersect(bounds(runtime, "inner"));
++    (first.x + first.width / 2., first.y + first.height / 2.)
++}
++
++fn offset(runtime: &Runtime<App>, container: &str) -> (f32, f32) {
++    runtime.scroll_metrics(container).unwrap().offset
++}
++
++fn down(runtime: &mut Runtime<App>, (x, y): (f32, f32)) {
++    runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
++}
++
++fn move_to(runtime: &mut Runtime<App>, (x, y): (f32, f32)) {
++    runtime.dispatch_touch(Event::PointerMove { x, y }).unwrap();
++}
++
++fn up(runtime: &mut Runtime<App>, (x, y): (f32, f32)) {
++    runtime.dispatch_touch(Event::PointerUp { x, y }).unwrap();
++}
++
++#[test]
++fn touch_tap_stays_on_the_original_checkbox_and_claim_does_not_take_focus() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    draw(&mut runtime);
++    runtime.activate("after").unwrap();
++    draw(&mut runtime);
++    let (x, y) = point(&runtime);
++    down(&mut runtime, (x, y));
++    assert!(runtime.has_touch_scroll_capture());
++    assert_eq!(runtime.focused(), Some("after"));
++    move_to(&mut runtime, (x - 3., y + 2.));
++    assert_eq!(runtime.app().activations, 0);
++    up(&mut runtime, (x - 3., y + 2.));
++    assert!(!runtime.has_touch_scroll_capture());
++    assert_eq!(runtime.focused(), Some("walk"));
++    assert_eq!(runtime.app().activations, 1);
++    assert!(runtime.app().checked[0]);
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (0., 0.));
++}
++
++#[test]
++fn horizontal_touch_is_physical_in_both_directions_and_locks_its_axis() {
++    for rtl in [false, true] {
++        let mut runtime = Runtime::new(App {
++            rtl,
++            ..App::default()
++        })
++        .unwrap();
++        draw(&mut runtime);
++        let initial = offset(&runtime, "inner").0;
++        let (x, y) = point(&runtime);
++        let sign = if rtl { 1. } else { -1. };
++        down(&mut runtime, (x, y));
++        move_to(&mut runtime, (x + sign * 24., y + 2.));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "inner").0, initial - sign * 24.);
++        assert_eq!(offset(&runtime, "outer").1, 0.);
++        up(&mut runtime, (x + sign * 38., y - 120.));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "inner").0, initial - sign * 38.);
++        assert_eq!(offset(&runtime, "outer").1, 0.);
++        assert_eq!(runtime.app().activations, 0);
++        assert_eq!(runtime.focused(), None);
++    }
++}
++
++#[test]
++fn vertical_touch_started_in_the_inner_strip_moves_only_the_parent() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    draw(&mut runtime);
++    let (x, y) = point(&runtime);
++    down(&mut runtime, (x, y));
++    move_to(&mut runtime, (x - 1., y - 24.));
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (0., 0.));
++    assert_eq!(offset(&runtime, "outer"), (0., 24.));
++    up(&mut runtime, (x - 110., y - 31.));
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (0., 0.));
++    assert_eq!(offset(&runtime, "outer"), (0., 31.));
++    assert_eq!(runtime.app().activations, 0);
++}
++
++#[test]
++fn nearest_custom_vertical_owner_blocks_touch_handoff_and_keeps_wheel() {
++    for overflows in [false, true] {
++        let mut runtime = Runtime::new(App {
++            custom_vertical_overflows: Some(overflows),
++            ..App::default()
++        })
++        .unwrap();
++        draw(&mut runtime);
++        let middle = runtime.scroll_metrics("middle").unwrap();
++        assert_eq!(middle.content.1 > middle.viewport.1, overflows);
++        assert!(
++            runtime.scroll_metrics("outer").unwrap().content.1 > bounds(&runtime, "outer").height
++        );
++        let (x, y) = point(&runtime);
++        down(&mut runtime, (x, y));
++        assert!(runtime.has_touch_scroll_capture());
++        move_to(&mut runtime, (x - 1., y - 20.));
++        up(&mut runtime, (x, y));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "middle"), (0., 0.));
++        assert_eq!(offset(&runtime, "outer"), (0., 0.));
++        assert_eq!(runtime.app().custom_wheels, 0);
++        assert_eq!(runtime.app().activations, 0);
++
++        runtime
++            .dispatch(Event::Scroll {
++                x,
++                y,
++                delta_x: 0.,
++                delta_y: 20.,
++            })
++            .unwrap();
++        draw(&mut runtime);
++        assert_eq!(runtime.app().custom_wheels, 1);
++        assert_eq!(offset(&runtime, "middle"), (0., 0.));
++        assert_eq!(offset(&runtime, "outer"), (0., 0.));
++
++        down(&mut runtime, (x, y));
++        up(&mut runtime, (x - 24., y));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "inner"), (24., 0.));
++        assert_eq!(runtime.app().custom_wheels, 1);
++        assert_eq!(runtime.app().activations, 0);
++    }
++}
++
++#[test]
++fn custom_owner_inserted_during_a_vertical_pan_stops_foreign_writes() {
++    for cancel in [false, true] {
++        let mut runtime = Runtime::new(App::default()).unwrap();
++        draw(&mut runtime);
++        let (x, y) = point(&runtime);
++        down(&mut runtime, (x, y));
++        move_to(&mut runtime, (x, y - 20.));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "outer"), (0., 20.));
++        runtime.apply(Message::EnableVerticalHook).unwrap();
++        draw(&mut runtime);
++        if cancel {
++            runtime.cancel_pointer().unwrap();
++        } else {
++            move_to(&mut runtime, (x, y - 40.));
++        }
++        up(&mut runtime, (x, y - 45.));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "middle"), (0., 0.));
++        assert_eq!(offset(&runtime, "outer"), (0., 20.));
++        assert_eq!(runtime.app().custom_wheels, 0);
++        assert_eq!(runtime.app().activations, 0);
++    }
++}
++
++#[test]
++fn panning_past_existing_focus_does_not_reveal_it_until_requested() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    draw(&mut runtime);
++    let walk = runtime.dom().by_id("walk").unwrap();
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .focus_target(walk)
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_focus(&target).unwrap(),
++        AccessibilityFocusResult::Moved,
++    );
++    draw(&mut runtime);
++    let (x, y) = point(&runtime);
++    down(&mut runtime, (x, y));
++    move_to(&mut runtime, (x - 88., y));
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (88., 0.));
++    up(&mut runtime, (x - 112., y));
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (112., 0.));
++    assert_eq!(runtime.focused(), Some("walk"));
++    assert!(
++        bounds(&runtime, "walk")
++            .intersect(bounds(&runtime, "inner"))
++            .width
++            <= 0.
++    );
++    assert_eq!(runtime.app().activations, 0);
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .scroll_target(walk)
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_scroll_into_view(&target).unwrap(),
++        AccessibilityScrollResult::Scheduled,
++    );
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (0., 0.));
++    assert_eq!(runtime.focused(), Some("walk"));
++}
++
++#[test]
++fn release_only_pans_but_diagonal_and_missing_vertical_extent_retire_taps() {
++    let mut runtime = Runtime::new(App {
++        vertical: false,
++        ..App::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    let (x, y) = point(&runtime);
++    down(&mut runtime, (x, y));
++    up(&mut runtime, (x - 20., y));
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (20., 0.));
++    let view = bounds(&runtime, "inner");
++    let (x, y) = (view.x + 18., view.y + 26.);
++    for (dx, dy) in [(0., 18.), (8., 8.)] {
++        down(&mut runtime, (x, y));
++        move_to(&mut runtime, (x + dx, y + dy));
++        up(&mut runtime, (x, y));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "inner"), (20., 0.));
++        assert_eq!(offset(&runtime, "outer"), (0., 0.));
++        assert_eq!(runtime.app().activations, 0);
++    }
++}
++
++#[test]
++fn cancel_and_matched_host_loss_restore_offset_and_retire_the_old_touch() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    draw(&mut runtime);
++    let (x, y) = point(&runtime);
++    for cancel in [
++        Runtime::<App>::cancel_pointer,
++        Runtime::<App>::cancel_touch_scroll_capture,
++    ] {
++        down(&mut runtime, (x, y));
++        move_to(&mut runtime, (x - 20., y + 1.));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "inner"), (20., 0.));
++        assert!(cancel(&mut runtime).unwrap());
++        assert!(!runtime.has_touch_scroll_capture());
++        up(&mut runtime, (x, y));
++        draw(&mut runtime);
++        assert_eq!(offset(&runtime, "inner"), (0., 0.));
++        assert_eq!(runtime.app().activations, 0);
++    }
++    assert!(!runtime.cancel_touch_scroll_capture().unwrap());
++    down(&mut runtime, (x, y));
++    up(&mut runtime, (x, y));
++    assert_eq!(runtime.app().activations, 1);
++}
++
++#[test]
++fn programmatic_scroll_wins_and_ordinary_wheel_and_projected_reveal_still_work() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    draw(&mut runtime);
++    let (x, y) = point(&runtime);
++    let rail = runtime.dom().by_id("rail").unwrap();
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .scroll_target(rail)
++        .unwrap();
++    down(&mut runtime, (x, y));
++    move_to(&mut runtime, (x - 24., y));
++    draw(&mut runtime);
++    assert_ne!(
++        runtime.accessibility_scroll_into_view(&target).unwrap(),
++        AccessibilityScrollResult::Scheduled
++    );
++    assert!(runtime.scroll_to("inner", ScrollTarget::Offset { x: 40., y: 0. }));
++    draw(&mut runtime);
++    assert!(runtime.cancel_pointer().unwrap());
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (40., 0.));
++    runtime
++        .dispatch(Event::Scroll {
++            x,
++            y,
++            delta_x: 12.,
++            delta_y: 16.,
++        })
++        .unwrap();
++    draw(&mut runtime);
++    assert_eq!(offset(&runtime, "inner"), (52., 0.));
++    assert_eq!(offset(&runtime, "outer"), (0., 16.));
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .scroll_target(rail)
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_scroll_into_view(&target).unwrap(),
++        AccessibilityScrollResult::Scheduled
++    );
++    draw(&mut runtime);
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(rail)
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_activate(&target).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++}
++
++#[test]
++fn scope_replacement_resize_and_opt_out_leave_no_stale_touch() {
++    for replacement in [Some(Message::Modal), Some(Message::RemoveOptIn), None] {
++        let mut runtime = Runtime::new(App::default()).unwrap();
++        draw(&mut runtime);
++        let (x, y) = point(&runtime);
++        down(&mut runtime, (x, y));
++        move_to(&mut runtime, (x - 20., y));
++        draw(&mut runtime);
++        if let Some(message) = replacement {
++            runtime.apply(message).unwrap();
++        } else {
++            assert!(runtime.pointer_geometry_changed().unwrap());
++        }
++        assert!(!runtime.has_touch_scroll_capture());
++        up(&mut runtime, (x, y));
++        draw(&mut runtime);
++        assert_eq!(runtime.app().activations, 0);
++    }
++}
++
++#[test]
++fn existing_explicit_drags_and_nonoverflowing_or_unopted_views_keep_the_old_route() {
++    let app = App {
++        explicit_drag: Some(VerticalDragSession::new()),
++        ..App::default()
++    };
++    let mut explicit = Runtime::new(app).unwrap();
++    draw(&mut explicit);
++    let (x, y) = point(&explicit);
++    down(&mut explicit, (x, y));
++    assert!(!explicit.has_touch_scroll_capture());
++    move_to(&mut explicit, (x, y - 24.));
++    up(&mut explicit, (x, y - 28.));
++    draw(&mut explicit);
++    assert!(matches!(
++        explicit.app().explicit_events.as_slice(),
++        [
++            VerticalDrag::Move { delta_y: -24. },
++            VerticalDrag::End { delta_y: -28., .. }
++        ]
++    ));
++    assert_eq!(offset(&explicit, "inner"), (0., 0.));
++    assert_eq!(offset(&explicit, "outer"), (0., 0.));
++    for app in [
++        App {
++            items: 2,
++            ..App::default()
++        },
++        App {
++            opt_in: false,
++            ..App::default()
++        },
++    ] {
++        let mut runtime = Runtime::new(app).unwrap();
++        draw(&mut runtime);
++        let (x, y) = point(&runtime);
++        down(&mut runtime, (x, y));
++        assert!(!runtime.has_touch_scroll_capture());
++        assert_eq!(runtime.focused(), Some("walk"));
++        up(&mut runtime, (x, y));
++        assert_eq!(runtime.app().activations, 1);
++    }
++}
+diff --git a/crates/surface-material/src/baseline_segmented_button.rs b/crates/surface-material/src/baseline_segmented_button.rs
+index 7a631a83c41bce23929dc9fb4a95ed05bd38b916..d7d1e2603061395da1d05bb7db194744e6f4e2d2 100644
+--- a/crates/surface-material/src/baseline_segmented_button.rs
++++ b/crates/surface-material/src/baseline_segmented_button.rs
+@@ -70,7 +70,7 @@ impl Theme {
+     ///
+     /// The default face is 40 dp high and each hit target is at least
+     /// 48 × 48 dp. Long labels can wrap within their segment. A viewport
+-    /// too narrow for all minimum targets scrolls the single row with wheel,
++    /// too narrow for all minimum targets scrolls the single row with touch, a wheel,
+     /// keyboard focus, or accessibility reveal. Provide
+     /// the actual available width and unique IDs, including generated
+     /// descendant IDs. Unusable geometry, content or selection returns None.
+@@ -201,6 +201,7 @@ impl Theme {
+         if scroll {
+             Some(
+                 root.on_horizontal_scroll(|_, _| None)
++                    .horizontal_touch_scroll()
+                     .accessibility_scroll_pages(),
+             )
+         } else {
+@@ -441,25 +442,30 @@ impl ContentLayout {
+             reserve || self.checked
+         };
+         let minimum = first.0.min(self.font.font_size.max(ICON));
+-        let stacked = second && usable < minimum + GAP + ICON;
+-        let label_width = if self.label.is_some() {
+-            first
+-                .0
+-                .min(if second && !stacked {
+-                    usable - GAP - ICON
+-                } else {
+-                    usable
+-                })
+-                .max(1.)
++        let mut stacked = second && usable < minimum + GAP + ICON;
++        let limit = if second && !stacked {
++            usable - GAP - ICON
+         } else {
+-            ICON
++            usable
+         };
+-        let label_height = self.label.as_ref().map_or(ICON, |label| {
+-            fonts
+-                .measure_text(label, &self.font, Some(label_width))
+-                .1
+-                .ceil()
+-        });
++        let measure_label = |max_width: f32, fonts: &mut dyn TextMeasurer| {
++            self.label.as_ref().map_or((ICON, ICON), |label| {
++                let width = first.0.min(max_width).max(1.);
++                let height = fonts.measure_text(label, &self.font, Some(width)).1.ceil();
++                (width, height)
++            })
++        };
++        let (mut label_width, mut label_height) = measure_label(limit, fonts);
++        if second && !stacked && self.label.is_some() && label_width < first.0 {
++            let (width, height) = measure_label(usable, fonts);
++            // At larger text sizes a leading icon can force extra lines.
++            // Stack the icon where it makes the whole content block shorter.
++            if ICON + GAP + height < label_height {
++                stacked = true;
++                label_width = width;
++                label_height = height;
++            }
++        }
+         if stacked {
+             return (
+                 ICON + GAP + label_height,
+diff --git a/crates/surface-material/tests/baseline_segmented_button.rs b/crates/surface-material/tests/baseline_segmented_button.rs
+index 77dd4f23771a649d01dd22626817565972737da5..d4618bbc82c15e722ab4466b9a81b92545b62800 100644
+--- a/crates/surface-material/tests/baseline_segmented_button.rs
++++ b/crates/surface-material/tests/baseline_segmented_button.rs
+@@ -657,3 +657,20 @@ fn measured_cjk_and_actual_accessibility_reveal_at_two_times_scale() {
+     );
+     assert_eq!(runtime.app().requests, [4]);
+ }
++
++#[test]
++fn icon_stacks_when_more_chinese_text_fits_on_each_line() {
++    let mut runtime = Runtime::new(Model {
++        available_width: 288.,
++        rtl: true,
++        text_scale: 2.,
++        ..Model::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    let icon = rect(&runtime, "walk-icon");
++    let label = rect(&runtime, "walk-label");
++    assert!(icon.y + icon.height < label.y);
++    assert!(label.width >= 56.);
++    assert!(label.height <= 80.);
++}
+diff --git a/crates/surface-platform/src/lib.rs b/crates/surface-platform/src/lib.rs
+index 4e188a96a0050e8133ba53eac2fb8c1a9175b560..a30610242831827108a45fe2bcb585d26cff336a 100644
+--- a/crates/surface-platform/src/lib.rs
++++ b/crates/surface-platform/src/lib.rs
+@@ -561,6 +561,8 @@ impl<A: Application> Host<A> {
+                 Some(DragOwner::Point)
+             } else if runtime.has_slider_pair_capture() {
+                 Some(DragOwner::SliderPair)
++            } else if touch.is_some() && runtime.has_touch_scroll_capture() {
++                Some(DragOwner::TouchScroll)
+             } else {
+                 None
+             };
+@@ -579,6 +581,7 @@ impl<A: Application> Host<A> {
+                 self.dispatch_input(event_loop, |runtime| match contact.owner {
+                     DragOwner::Point => runtime.cancel_point_drag(),
+                     DragOwner::SliderPair => runtime.cancel_slider_pair_capture(),
++                    DragOwner::TouchScroll => runtime.cancel_touch_scroll_capture(),
+                 });
+             }
+         }
+diff --git a/crates/surface-platform/src/web_pointer_capture.rs b/crates/surface-platform/src/web_pointer_capture.rs
+index 4dea01eb6064c8bc548b781eb4247323780ea942..3345912f7a303bbcdd44bb592f9a32ef8a32724d 100644
+--- a/crates/surface-platform/src/web_pointer_capture.rs
++++ b/crates/surface-platform/src/web_pointer_capture.rs
+@@ -19,6 +19,7 @@ impl Pointer {
+ pub(crate) enum DragOwner {
+     Point,
+     SliderPair,
++    TouchScroll,
+ }
+ 
+ #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+@@ -232,6 +233,27 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn touch_scroll_arms_only_the_matched_touch_and_delivers_loss_once() {
++        let mut capture = Capture::default();
++        let pointer = Pointer::Touch(7);
++        capture.pointer_down(pointer);
++        capture.accept_down(Some(8), Some(DragOwner::TouchScroll));
++        assert!(!capture.capture_lost(pointer));
++        capture.pointer_down(pointer);
++        capture.accept_down(Some(7), Some(DragOwner::TouchScroll));
++        assert!(!capture.capture_lost(Pointer::MouseLike(7)));
++        assert!(capture.capture_lost(pointer));
++        assert_eq!(
++            capture.take_loss(),
++            Some(Contact {
++                pointer,
++                owner: DragOwner::TouchScroll
++            }),
++        );
++        assert_eq!(capture.take_loss(), None);
++    }
++
+     #[test]
+     fn explicit_loss_is_retained_before_late_up_and_drains_once() {
+         let mut capture = Capture::default();
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 658685363086d3f72930913dcb2b4d8f0cdf0ed9..5649186f8c0d977712baa0ed139d741838f1217d 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -68,9 +68,9 @@
+       "spec": "https://m3.material.io/components/segmented-buttons/overview",
+       "status": "partial",
+       "variant_review": "audit baseline outlined segment groups and the Expressive Connected successor against Material 3's published catalog",
+-      "desktop_evidence": "The native headless Gallery replay covers light, dark, compact RTL at 200%, keyboard selection, and matching Page.screenshot, CLI and MCP PNGs",
+-      "web_evidence": "M320–M323 in e2e/src/material_segmented.rs cover shared outline and seams, projected roles and state, keyboard focus, pointer and touch targets, and narrow RTL scroll",
+-      "implemented": "Two to five equal-width Baseline choices with a shared outline, one seam, icon or text, caller-owned radio or checkbox selection, disabled state and a 48 dp minimum hit target. The row grows for large labels and scrolls with a wheel, keyboard focus or accessibility reveal. Direct touch panning, live assistive speech and system contrast remain open. The separate Connected button group provides the Expressive successor.",
++      "desktop_evidence": "The native headless Gallery replay covers light, dark, compact RTL at 200%, keyboard selection, and matching Page.screenshot, CLI and MCP PNGs. https://github.com/faberline/surface/tree/8427f13c8f2861744b6e316f76525255521b7341/docs/evidence/md3/segmented-v0159-candidate",
++      "web_evidence": "M320–M324 in e2e/src/material_segmented.rs cover shared outline and seams, projected roles and state, keyboard focus, pointer and touch targets, narrow RTL scroll, and directional touch panning with cancel and capture-loss coverage",
++      "implemented": "Two to five equal-width Baseline choices with a shared outline, one seam, icon or text, caller-owned radio or checkbox selection, disabled state and a 48 dp minimum hit target. The row grows for large labels and scrolls with touch, a wheel, keyboard focus or accessibility reveal. A vertical drag can move a plain enclosing scroll area. Measured labels can put the icon above the text to save space. Live assistive speech and system contrast remain open. The separate Connected button group provides the Expressive successor.",
+       "unit_evidence": "crates/surface-material/tests/baseline_segmented_button.rs covers layout, paint, validation, roles, selection, accessible activation and focus"
+     },
+     {
+diff --git a/docs/material.md b/docs/material.md
+index d413f62868598d2a5575528b7107953e988fb7e2..322a3c83f2a3727e4aa48d98959c616bad9e0c52 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1228,8 +1228,9 @@ Tab enters on the first enabled item. Left and Right move focus in the
+ visual direction and skip disabled items. Space or Enter activates the
+ focused choice. The default face is 40 dp tall. The 48 dp minimum target
+ stays in place when labels wrap and the row grows. When the targets cannot
+-fit, the row scrolls with a wheel, keyboard focus, or an accessibility
+-reveal action. Choose a Connected button group for the Expressive style.
++fit, the row scrolls with touch, a wheel, keyboard focus, or an
++accessibility reveal action. A vertical touch drag can scroll the enclosing
++page. The icon moves above a wrapped label when this saves space. Choose a Connected button group for the Expressive style.
+ Existing segmented helpers retain their behavior.
+ 
+ In Material Gallery, choose 動作, then 分段按鈕. The example includes left
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index dea3caee1a34c4234336902f01fd4213caf184b3..dd1a89be53452d77720d84e9ea180b19e007c5aa 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -157,7 +157,7 @@ pub const STEPS: &[&str] = &[
+     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
+     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+-    "M323",
++    "M323", "M324",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+diff --git a/e2e/src/material_segmented.rs b/e2e/src/material_segmented.rs
+index d4231d705948a3f5d26dc09b59c0e40088959c39..72fdb2aab93435d4f02aa2f26f7136f002d3fea1 100644
+--- a/e2e/src/material_segmented.rs
++++ b/e2e/src/material_segmented.rs
+@@ -37,7 +37,7 @@ const SELECTED: &str = "material-segmented-selection.png";
+ const PRESSED: &str = "material-segmented-pressed.png";
+ const COMPACT: &str = "material-segmented-rtl-200.png";
+ const SCROLLED: &str = "material-segmented-scroll-rtl.png";
+-pub(super) const STEPS: [&str; 4] = ["M320", "M321", "M322", "M323"];
++pub(super) const STEPS: [&str; 5] = ["M320", "M321", "M322", "M323", "M324"];
+ 
+ type Rect = [f64; 4];
+ type Rgb = [u8; 3];
+@@ -443,6 +443,208 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+     )
+ }
+ 
++async fn touch_at(tab: &Tab, kind: &str, point: Option<[f64; 2]>) -> Result<()> {
++    let mut points = Vec::new();
++    if let Some([x, y]) = point {
++        let canvas = tab.canvas_box().await?;
++        points.push(json!({"x":canvas[0] + x,"y":canvas[1] + y,"id":1}));
++    }
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":kind,"touchPoints":points}),
++    )
++    .await?;
++    tab.settle().await
++}
++
++async fn overflow_path(tab: &Tab, url: &str, rtl: bool, height: u32) -> Result<()> {
++    route(tab, url).await?;
++    if rtl {
++        activate(tab, THEME).await?;
++        activate(tab, RTL).await?;
++    }
++    activate(tab, TEXT).await?;
++    resize(tab, 240, height).await?;
++    for id in [LEFT, LIST, NEW] {
++        tab.press("Tab").await?;
++        focused(tab, id).await?;
++    }
++    Ok(())
++}
++
++async fn touch_overflow(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    let mut replays = Vec::new();
++    const TOUCH_LTR: &str = "material-segmented-touch-ltr.png";
++    const TOUCH_RTL: &str = "material-segmented-touch-rtl.png";
++    for (rtl, dx, capture) in [(false, -1., TOUCH_LTR), (true, 1., TOUCH_RTL)] {
++        overflow_path(tab, url, rtl, 880).await?;
++        let port = bounds(tab, FILTERS).await?;
++        let start = part(tab, FILTERS, "track").await?;
++        check!(
++            start[2] > port[2] && contains(port, bounds(tab, NEW).await?),
++            "touch replay starts at the visible logical leading end"
++        );
++        let hit = bounds(tab, SAVED).await?;
++        let [x, y] = centre(hit);
++        check!(
++            contains(port, hit) && x + dx * 70. > 0. && x + dx * 70. < 240. && y > 85.,
++            "the touch journey starts on an enabled segment and stays in the viewport"
++        );
++        touch_at(tab, "touchStart", Some([x, y])).await?;
++        pressed(tab, Some(SAVED)).await?;
++        touch_at(tab, "touchMove", Some([x + dx * 2., y])).await?;
++        pressed(tab, Some(SAVED)).await?;
++        check!(
++            near(part(tab, FILTERS, "track").await?[0], start[0]),
++            "motion below the drag threshold retains the tap"
++        );
++        touch_at(tab, "touchMove", Some([x + dx * 30., y])).await?;
++        pressed(tab, None).await?;
++        let preview = part(tab, FILTERS, "track").await?;
++        check!(
++            (preview[0] - start[0]) * dx > 12. && near(preview[1], start[1]),
++            "horizontal drag reveals the row without moving the parent"
++        );
++        touch_at(tab, "touchCancel", None).await?;
++        let canceled = part(tab, FILTERS, "track").await?;
++        check!(
++            near(canceled[0], start[0]) && near(canceled[1], start[1]),
++            "touch cancellation restores the original offsets"
++        );
++        model(tab, "d.activations === 0 && d.filters.length === 0").await?;
++
++        touch_at(tab, "touchStart", Some([x, y])).await?;
++        touch_at(tab, "touchMove", Some([x + dx * 30., y])).await?;
++        touch_at(tab, "touchMove", Some([x + dx * 70., y - 85.])).await?;
++        touch_at(tab, "touchEnd", None).await?;
++        let end = part(tab, FILTERS, "track").await?;
++        check!(
++            (end[0] - start[0]) * dx > 25. && near(end[1], start[1]),
++            "drag keeps its axis until release"
++        );
++        let last = segment(tab, ARCHIVED).await?.hit;
++        check!(
++            contains(port, last),
++            "the trailing 48 dp target fits completely after drag"
++        );
++        model(tab, "d.activations === 0 && d.filters.length === 0").await?;
++        photo(tab, env, capture).await?;
++
++        let last_point = centre(last);
++        touch_at(tab, "touchStart", Some(last_point)).await?;
++        pressed(tab, Some(ARCHIVED)).await?;
++        touch_at(tab, "touchMove", Some([last_point[0] + 2., last_point[1]])).await?;
++        pressed(tab, Some(ARCHIVED)).await?;
++        touch_at(tab, "touchEnd", None).await?;
++        let tapped = model(
++            tab,
++            "d.activations === 1 && d.filters.join() === 'segment-archived'",
++        )
++        .await?;
++        replays.push(json!({
++            "rtl":rtl,"capture":capture,"start":start,"preview":preview,
++            "canceled":canceled,"end":end,"port":port,"trailing_target":last,"tap":tapped
++        }));
++    }
++
++    overflow_path(tab, url, false, 600).await?;
++    let start = part(tab, FILTERS, "track").await?;
++    let target = bounds(tab, SAVED).await?;
++    let x = centre(target)[0];
++    let y = target[1].max(0.) + 9.;
++    check!(
++        y < target[1] + target[3] && y + 55. < 600.,
++        "a contact in the overflowing row has room for vertical motion"
++    );
++    touch_at(tab, "touchStart", Some([x, y])).await?;
++    pressed(tab, Some(SAVED)).await?;
++    touch_at(tab, "touchMove", Some([x + 3., y + 28.])).await?;
++    pressed(tab, None).await?;
++    let preview = part(tab, FILTERS, "track").await?;
++    check!(
++        preview[1] > start[1] + 12. && near(preview[0], start[0]),
++        "vertical motion inside the row scrolls its parent and preserves horizontal offset"
++    );
++    touch_at(tab, "touchMove", Some([x + 70., y + 42.])).await?;
++    touch_at(tab, "touchEnd", None).await?;
++    let end = part(tab, FILTERS, "track").await?;
++    check!(
++        end[1] > preview[1] && near(end[0], start[0]),
++        "vertical motion stays locked to the parent after the horizontal coordinate changes"
++    );
++    model(tab, "d.activations === 0 && d.filters.length === 0").await?;
++    Ok(json!({"directions":replays,"parent":{"start":start,"preview":preview,"end":end}}))
++}
++
++async fn touch_capture_loss(tab: &Tab, url: &str) -> Result<Value> {
++    overflow_path(tab, url, false, 880).await?;
++    tab.eval(
++        "(() => {
++            const canvas = document.getElementById('surface');
++            window.segmentedTouchEvents = [];
++            for (const kind of ['gotpointercapture', 'lostpointercapture']) {
++                canvas.addEventListener(kind, event => {
++                    if (event.isTrusted && event.pointerType === 'touch') {
++                        window.segmentedTouchEvents.push({kind, id:event.pointerId});
++                    }
++                }, {capture:true,passive:true});
++            }
++        })()",
++    )
++    .await?;
++    let start = part(tab, FILTERS, "track").await?;
++    let [x, y] = centre(bounds(tab, SAVED).await?);
++    touch_at(tab, "touchStart", Some([x, y])).await?;
++    pressed(tab, Some(SAVED)).await?;
++    touch_at(tab, "touchMove", Some([x - 30., y])).await?;
++    let preview = part(tab, FILTERS, "track").await?;
++    check!(preview[0] < start[0] - 12., "held touch moves the row");
++    tab.wait_for("window.segmentedTouchEvents.some(event => event.kind === 'gotpointercapture')")
++        .await?;
++    let owner = tab
++        .eval("window.segmentedTouchEvents.find(event => event.kind === 'gotpointercapture').id")
++        .await?
++        .as_i64()
++        .context("the active touch capture ID")?;
++
++    tab.eval(&format!(
++        "document.getElementById('surface').releasePointerCapture({owner})"
++    ))
++    .await?;
++    touch_at(tab, "touchMove", Some([x - 40., y])).await?;
++    tab.wait_for(&format!(
++        "window.segmentedTouchEvents.some(event =>
++          event.kind === 'lostpointercapture' && event.id === {owner})"
++    ))
++    .await?;
++    let restored = part(tab, FILTERS, "track").await?;
++    check!(
++        near(restored[0], start[0]) && near(restored[1], start[1]),
++        "trusted capture loss restores the pre-gesture offset"
++    );
++    touch_at(tab, "touchEnd", None).await?;
++    let after_up = part(tab, FILTERS, "track").await?;
++    check!(
++        near(after_up[0], restored[0]),
++        "a stale release cannot revive the lost gesture"
++    );
++    model(tab, "d.activations === 0 && d.filters.length === 0").await?;
++    // A pointer gesture can move browser focus to the canvas. The
++    // Runtime must keep the original item and route the next key from it.
++    until(tab, "s.focused === 'segment-new'").await?;
++    let browser_focus = tab
++        .eval("document.activeElement?.dataset.surfaceId || document.activeElement?.id")
++        .await?;
++    tab.press("ArrowRight").await?;
++    until(tab, "s.focused === 'segment-saved'").await?;
++    model(tab, "d.activations === 0 && d.filters.length === 0").await?;
++    Ok(json!({
++        "start":start,"preview":preview,"restored":restored,"after_up":after_up,
++        "owner":owner,"events":tab.eval("window.segmentedTouchEvents").await?,
++        "browser_focus":browser_focus,"keyboard_resumed_at":SAVED,
++    }))
++}
++
+ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+     let tab = chrome.page(960, 924, 2.).await?;
+     let mut report = json!({"browser":chrome.version});
+@@ -468,6 +670,12 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+             "compact dark RTL grows the row and scrolls without reducing targets",
+         );
+         report["compact"] = compact(&tab, env, url).await?;
++        step(
++            STEPS[4],
++            "touch panning locks the scroll axis in both directions and preserves short taps",
++        );
++        report["touch_overflow"] = touch_overflow(&tab, env, url).await?;
++        report["touch_capture_loss"] = touch_capture_loss(&tab, url).await?;
+         Ok(())
+     }
+     .await;
