@@ -1,12 +1,14 @@
+use super::inset_icon::{Axis, IconPaint, SliderInsetIcon};
 use super::{
-    range, ticks, Artwork, Palette, FOCUS_OUTSET, FOCUS_STROKE, INNER_RADIUS, LABEL_BLOCK_PADDING,
-    LABEL_GAP, LABEL_INLINE_PADDING, LABEL_MIN_HEIGHT, LABEL_MIN_WIDTH, MIN_TARGET, RAIL_INSET,
+    neutral_fraction, range, ticks, Artwork, Palette, FOCUS_OUTSET, FOCUS_STROKE, INNER_RADIUS,
+    LABEL_BLOCK_PADDING, LABEL_GAP, LABEL_INLINE_PADDING, LABEL_MIN_HEIGHT, LABEL_MIN_WIDTH,
+    MIN_TARGET, RAIL_INSET,
 };
 use crate::{shape::LayoutDirection, typography, Elevation, StandardSliderOptions, Theme};
 use surface::{Color, Corners, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer};
 use surface_app::{CursorStyle, View};
 
-/// Space allocated to a vertical Standard slider and its optional value label.
+/// Space allocated to a vertical slider and its optional value label.
 #[derive(Clone, Copy, Debug)]
 pub struct VerticalStandardSliderPlacement {
     /// The full slider target height in dp, including 12 dp padding at
@@ -35,6 +37,47 @@ impl Theme {
         placement: VerticalStandardSliderPlacement,
         handler: impl Fn(f64) -> M + 'static,
     ) -> Option<View<M>> {
+        self.vertical_slider(options, placement, None, None, handler)
+    }
+
+    /// Build a vertical Standard slider with an upright inset glyph.
+    /// The value grows upward in either layout direction. The glyph uses
+    /// the same size, track priority, and fit rules as the horizontal form.
+    pub fn vertical_standard_slider_with_inset_icon<M>(
+        &self,
+        options: StandardSliderOptions<'_>,
+        placement: VerticalStandardSliderPlacement,
+        icon: SliderInsetIcon<'_>,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.vertical_slider(options, placement, None, Some(icon), handler)
+    }
+
+    /// Build a vertical slider whose active span joins its value to a fixed
+    /// neutral value. The minimum is at the bottom in either layout direction.
+    ///
+    /// The neutral value must be finite and strictly inside the range, and
+    /// must be an existing stop when the scale is discrete. Neutral introduces
+    /// no additional input stop. Placement and label fitting work the same as
+    /// on [Self::vertical_standard_slider].
+    pub fn vertical_centered_slider<M>(
+        &self,
+        options: StandardSliderOptions<'_>,
+        placement: VerticalStandardSliderPlacement,
+        neutral: f64,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.vertical_slider(options, placement, Some(neutral), None, handler)
+    }
+
+    fn vertical_slider<M>(
+        &self,
+        options: StandardSliderOptions<'_>,
+        placement: VerticalStandardSliderPlacement,
+        neutral: Option<f64>,
+        inset: Option<SliderInsetIcon<'_>>,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> Option<View<M>> {
         if options.id.trim().is_empty()
             || options.name.trim().is_empty()
             || !placement.height.is_finite()
@@ -45,6 +88,11 @@ impl Theme {
             return None;
         }
         let (range, intervals, input) = range(options)?;
+        let neutral = match neutral {
+            Some(value) => Some(neutral_fraction(range, input, value)?),
+            None => None,
+        };
+        let centered = neutral.is_some();
         let size = options.size.tokens();
         let width = size.handle_height.max(MIN_TARGET);
         let engaged = options.engaged && !options.disabled;
@@ -54,8 +102,13 @@ impl Theme {
             .value_label
             .filter(|label| engaged && label_width >= LABEL_MIN_WIDTH && !label.trim().is_empty());
         let fraction = input.value_fraction(range)? as f32;
-        let ticks = ticks(intervals);
+        let mut ticks = ticks(intervals);
+        if centered {
+            // Centered has a dedicated stop at each rail end.
+            ticks.retain(|tick| tick.index != 0);
+        }
         let palette = Palette::new(self, options.disabled);
+        let inset = IconPaint::prepare(inset, options, &palette, range.value == range.min);
         let pill = |color| Style::default().background(color).corners(Corners::full());
         let track = |color, top, bottom| {
             Style::default()
@@ -73,14 +126,27 @@ impl Theme {
         } else {
             Elevation::Level1
         });
+        let active_bottom = if centered {
+            INNER_RADIUS
+        } else {
+            size.outer_radius
+        };
         let mut parts = vec![
             passive(part("rail", Style::default())),
             passive(part(
                 "active",
-                track(palette.active, INNER_RADIUS, size.outer_radius),
+                track(palette.active, INNER_RADIUS, active_bottom),
             )),
+        ];
+        if centered {
+            parts.push(passive(part(
+                "inactive-min",
+                track(palette.inactive, INNER_RADIUS, size.outer_radius),
+            )));
+        }
+        parts.extend([
             passive(part(
-                "inactive",
+                if centered { "inactive-max" } else { "inactive" },
                 track(palette.inactive, size.outer_radius, INNER_RADIUS),
             )),
             passive(part("handle", pill(palette.active)).box_shadows(handle_shadow)),
@@ -90,10 +156,19 @@ impl Theme {
                     .focus_outline_width(FOCUS_STROKE)
                     .focus_color(self.colors.secondary),
             ),
-            passive(part("stop", pill(palette.inactive_stop))),
-        ];
+        ]);
+        if centered {
+            parts.push(passive(part("stop-min", pill(palette.inactive_stop))));
+        }
+        parts.push(passive(part(
+            if centered { "stop-max" } else { "stop" },
+            pill(palette.inactive_stop),
+        )));
         for tick in &ticks {
-            let ink = if tick.fraction <= fraction {
+            let active = neutral.map_or(tick.fraction <= fraction, |neutral| {
+                (neutral.min(fraction)..neutral.max(fraction)).contains(&tick.fraction)
+            });
+            let ink = if active {
                 palette.active_stop
             } else {
                 palette.inactive_stop
@@ -126,26 +201,32 @@ impl Theme {
             .padding(RAIL_INSET);
         style.min_width = width;
         style.min_height = placement.height;
-        let mut node = Node::new(Role::Slider, options.name)
+        let node = Node::new(Role::Slider, options.name)
             .id(options.id)
             .range(range)
             .disabled(options.disabled)
             .focus_color(Color::TRANSPARENT)
-            .styled(style)
-            .measured_group(VerticalArtwork {
+            .styled(style);
+        let mut node = IconPaint::attach(
+            inset,
+            Axis::Vertical,
+            node,
+            &mut parts,
+            VerticalArtwork {
                 width,
                 height: placement.height,
                 rail: Artwork {
                     size,
                     reverse: true,
                     fraction,
-                    neutral: None,
+                    neutral,
                     handle_width: if engaged { 2. } else { 4. },
                     ticks,
                     has_label: false,
                 },
                 label: label.map(|_| (options.direction, label_width)),
-            });
+            },
+        );
         if let Some(text) = options.value_label {
             node = node.with_slider_value_text(text);
         }
@@ -190,8 +271,8 @@ impl MeasuredGroupLayout for VerticalArtwork {
             *part = Rect::new(part.y, part.x, part.height, part.width);
         }
         if let Some((direction, limit)) = self.label {
-            // The Standard planner authors the handle after rail and both tracks.
-            let thumb = parts[3];
+            // Rail, active span, and one or two inactive spans precede the handle.
+            let thumb = parts[3 + usize::from(self.rail.neutral.is_some())];
             let label = children
                 .last()
                 .expect("vertical slider indicator text child");

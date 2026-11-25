@@ -1018,6 +1018,21 @@ beside the control. This space includes the outline and gap. It stays
 outside the slider's hit target. The value text remains available to
 accessibility when the label has too little space to paint.
 
+Use `Theme::vertical_centered_slider` for a vertical scale with a
+neutral value. It uses the same placement and label rules as vertical
+Standard. The label stays upright. The active track fills from the
+neutral point to the current value. Choose an existing
+stop for a discrete neutral value.
+
+Use `Theme::standard_slider_with_inset_icon` or
+`Theme::vertical_standard_slider_with_inset_icon` to add a
+decorative `SliderInsetIcon`. Provide a `VectorIcon` and an optional
+`at_minimum` glyph. Medium and Large use a 24 dp icon. ExtraLarge
+uses 32 dp. The icon uses the active track when it fits and the
+inactive track when it is the only one that fits. A short track
+can omit the icon. The icon stays upright in both orientations
+and keeps the slider name, hit target, and keyboard behavior.
+
 Use `Theme::range_slider` with `RangeSliderOptions` for a horizontal
 interval. Give the pair and both ends distinct localized names. Store
 the lower and upper values together and apply both values from each
