@@ -1,0 +1,22 @@
+usage: prepare-pins.py [-h] --source-manifest SOURCE_MANIFEST --native-source
+                       NATIVE_SOURCE --web-source WEB_SOURCE --native-binaries
+                       NATIVE_BINARIES --native-ready NATIVE_READY --web-ready
+                       WEB_READY --web-target WEB_TARGET --source-sha256
+                       SOURCE_SHA256 --wide-canvas-height WIDE_CANVAS_HEIGHT
+                       --rtl-canvas-height RTL_CANVAS_HEIGHT
+
+Pin approved Standard Slider source and build outputs without launching the
+suite.
+
+options:
+  -h, --help            show this help message and exit
+  --source-manifest SOURCE_MANIFEST
+  --native-source NATIVE_SOURCE
+  --web-source WEB_SOURCE
+  --native-binaries NATIVE_BINARIES
+  --native-ready NATIVE_READY
+  --web-ready WEB_READY
+  --web-target WEB_TARGET
+  --source-sha256 SOURCE_SHA256
+  --wide-canvas-height WIDE_CANVAS_HEIGHT
+  --rtl-canvas-height RTL_CANVAS_HEIGHT

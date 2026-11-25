@@ -1,0 +1,133 @@
+{
+  "focused": {
+    "checks": 504,
+    "pixels_sha256": "caafaa61a3e2c984642962dc4cc6fcbe55381814318b65ccd3824492bfaabd6a",
+    "runner_log_sha256": "558d8181ec60e6898b8c62f0f54414f20d2913f684368420ebeb4cafdcc48771",
+    "scope": "focused development pack",
+    "steps": 8,
+    "visible_windows": 0,
+    "window_receipt_sha256": "3ee37b32792ba9beec921b74fa64565c96888bc28fb1a99bae936ed6f2743c58"
+  },
+  "native": {
+    "binaries": {
+      "surface-devtools": "4c94b58aa26c9e36a6f7e0d654cbb90bc08f49c84425b7134f5bca70bee2bf28",
+      "surface-material-gallery": "ff400ac3e1032f333dc162bf9a8012f0f5d1ded495aea4be70db853d4c64781c"
+    },
+    "captures": {
+      "compact-dark-rtl-200-centered-focus.png": "2561a5c4e8e6f8511bc08b4adcfa233646e5eed7d3f7d99175a336d0af158d72",
+      "compact-dark-rtl-200-vertical-focus.png": "fdcfee2823df9fb17f187d5d8b8fb17b2ce49eaeeef19618f41a6a37432dbc2d",
+      "wide-light-centered-focus.png": "8ec1bc7d311216fbb08d28b4282ff494d2458a24882432a31dba1d3546aee5dd",
+      "wide-light-rest.png": "52c90d5dd9d4ae0b70189ca18b3ec1b158621001a6fe12f5bd21cca19ff0c973",
+      "wide-light-vertical-focus.png": "79394cb61fc72a6e24c2a4536aae32b586682207f0b0426676d734736311e2f8"
+    },
+    "report_sha256": "729ecb0e13825e00cf5f90583de786bbe4064fbe540a548a52b27f0cbcd0317a",
+    "runs": 2,
+    "seal": "cdaa91db250c10304c6dece3f9255654b9902f0d30345366fcfd94a7ff84168b",
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ],
+    "visible_windows": 0,
+    "window_samples": 20
+  },
+  "rust": {
+    "metal": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "77e330a799da1159db4f6b478c7e4665aee0cfe544926704bfae742149ffe12c",
+      "passed": 16
+    },
+    "supplemental": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "d51eef39ebe94613104394ebfcefd4ed3b79b6c08d0347749ddd4ac762ea8c78",
+      "passed": 2
+    },
+    "workspace": {
+      "ignored": 19,
+      "log_sha256": "cfc1c02418b59090b6e13fd2a8379a03b0fcd6750c169962c8ba311b6e05d029",
+      "passed": 1439,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_source_sha256": "1e1c1be43dbd652ff26dbaab2f264651c2c811915bc04e41dfbedd425ba830d8",
+    "base_tree": "a92d66c4998656b1749f322723aa4324028afdc4",
+    "changed_paths": 21,
+    "patch_sha256": "943fbb810dc8a252db2281e7a37f004fdf7fb3211b94c5599f9b6606ec52358e",
+    "source_files": 640,
+    "source_sha256": "93fbdb8c80cfaf7698ae702a8bbc155b15411f2fe427048e1040100a672fc2d4",
+    "tree": "18bf4098eefd03ff562e058ceb5d7f99a34447a2",
+    "version": "0.1.55"
+  },
+  "status": "verified",
+  "stock_macos": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "captures": {
+      "material-slider-forms-centered-keys.png": {
+        "decoded_rgb_sha256": "98f50770d8d3b45aa9668d71f94a662b3e6bb5a7f49069a997c2589b86c6386f",
+        "sha256": "2526473de7584f964f7cda04a547aa1bd66bd25f854b5fae20474e866dbfe052",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-slider-forms-centered-light.png": {
+        "decoded_rgb_sha256": "c434405db9f8f9517165f8dcdd628e815b87bb23ccc4e9e0f5d7f2c9fc03efa8",
+        "sha256": "8f2eb33477b6808b93264242f148088c39afdcd047572f38e9bae6aa6a2e5f7b",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-slider-forms-vertical-compact-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "314f5a9c943f9de449319f84083928c452ebf0dfb2bc1eaf3e156509d599b073",
+        "sha256": "39d111c0238238a5fc1c8b814377fe894eefbe82e44a077c1ed804379600e4b8",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-slider-forms-vertical-light.png": {
+        "decoded_rgb_sha256": "82e8e870c6a1b8c8d8b91e0bf9006b66c77d0495de5cc242819eac1fafdd31b4",
+        "sha256": "5ad89e599fd8389611649737f05db24424b1cd042b5e18e64e15bb3985d83c2c",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 21464,
+        "steps": 304
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "page_errors": 0,
+    "receipt_sha256": "ed98dcefbd37d2ee1f127948d2db2fde070422324771866b3a16118758b7b822",
+    "total_checks": 21745,
+    "visible_windows": 0
+  }
+}

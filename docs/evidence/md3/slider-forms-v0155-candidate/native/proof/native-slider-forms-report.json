@@ -1,0 +1,6199 @@
+{
+  "schema": "surface.test.slider-forms.native.v1",
+  "source": {
+    "manifest_sha256": "93fbdb8c80cfaf7698ae702a8bbc155b15411f2fe427048e1040100a672fc2d4",
+    "files_verified": 640,
+    "version": "0.1.55"
+  },
+  "native_binary_manifest_sha256": "f5bed61a33c963a6131ddf3b42094cad3d5dbb6c2b0bed302fd27c210ed928e1",
+  "binaries": {
+    "surface-material-gallery": "ff400ac3e1032f333dc162bf9a8012f0f5d1ded495aea4be70db853d4c64781c",
+    "surface-devtools": "4c94b58aa26c9e36a6f7e0d654cbb90bc08f49c84425b7134f5bca70bee2bf28"
+  },
+  "rendering": "headless",
+  "reduce_motion": true,
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "input_scope": [
+    "Action.key",
+    "Action.setValue",
+    "Action.activate"
+  ],
+  "window_samples": 20,
+  "replays": [
+    {
+      "wide": {
+        "viewport": [
+          960,
+          1040
+        ],
+        "rtl": false,
+        "text_scale": 1,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show"
+        ],
+        "initial_ranges": {
+          "slider-forms-demo-centered-negative": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-neutral": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 0.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-positive": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-discrete": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -25.0,
+            "step": 25.0
+          },
+          "slider-forms-demo-vertical-continuous": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 25.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-vertical-discrete": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          },
+          "slider-forms-demo-vertical-disabled": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          }
+        },
+        "rest": {
+          "geometry": {
+            "slider-forms-demo-centered-negative": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 22.0,
+                "y": 263.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 34.0,
+                "y": 263.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 86.5,
+                "x": 138.5,
+                "y": 275.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 88.5,
+                "x": 34.0,
+                "y": 275.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 191.0,
+                "x": 229.0,
+                "y": 275.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 128.5,
+                "y": 265.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 123.5,
+                "y": 260.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 38.0,
+                "y": 285.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 412.0,
+                "y": 285.0
+              }
+            },
+            "slider-forms-demo-centered-neutral": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 456.0,
+                "y": 263.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 468.0,
+                "y": 263.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 0.0,
+                "x": 663.0,
+                "y": 275.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 185.0,
+                "x": 468.0,
+                "y": 275.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 185.0,
+                "x": 669.0,
+                "y": 275.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 659.0,
+                "y": 265.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 654.0,
+                "y": 260.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 472.0,
+                "y": 285.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 846.0,
+                "y": 285.0
+              }
+            },
+            "slider-forms-demo-centered-positive": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 22.0,
+                "y": 400.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 34.0,
+                "y": 400.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 86.5,
+                "x": 229.0,
+                "y": 412.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 191.0,
+                "x": 34.0,
+                "y": 412.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 88.5,
+                "x": 331.5,
+                "y": 412.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 321.5,
+                "y": 402.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 316.5,
+                "y": 397.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 38.0,
+                "y": 422.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 412.0,
+                "y": 422.0
+              }
+            },
+            "slider-forms-demo-centered-discrete": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 456.0,
+                "y": 400.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 468.0,
+                "y": 400.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 38.25,
+                "x": 620.75,
+                "y": 412.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 136.75,
+                "x": 468.0,
+                "y": 412.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 191.0,
+                "x": 663.0,
+                "y": 412.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 610.75,
+                "y": 402.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 605.75,
+                "y": 397.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 472.0,
+                "y": 422.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 846.0,
+                "y": 422.0
+              }
+            },
+            "slider-forms-demo-vertical-continuous": {
+              "hit": {
+                "height": 240.0,
+                "width": 48.0,
+                "x": 75.0,
+                "y": 548.0
+              },
+              "rail": {
+                "height": 216.0,
+                "width": 48.0,
+                "x": 75.0,
+                "y": 560.0
+              },
+              "active": {
+                "height": 46.0,
+                "width": 24.0,
+                "x": 87.0,
+                "y": 730.0
+              },
+              "inactive": {
+                "height": 154.0,
+                "width": 24.0,
+                "x": 87.0,
+                "y": 560.0
+              },
+              "handle": {
+                "height": 4.0,
+                "width": 44.0,
+                "x": 77.0,
+                "y": 720.0
+              },
+              "focus": {
+                "height": 14.0,
+                "width": 54.0,
+                "x": 72.0,
+                "y": 715.0
+              },
+              "stop": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 97.0,
+                "y": 564.0
+              }
+            },
+            "slider-forms-demo-vertical-discrete": {
+              "hit": {
+                "height": 240.0,
+                "width": 48.0,
+                "x": 364.0,
+                "y": 548.0
+              },
+              "rail": {
+                "height": 216.0,
+                "width": 48.0,
+                "x": 364.0,
+                "y": 560.0
+              },
+              "active": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 376.0,
+                "y": 676.0
+              },
+              "inactive": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 376.0,
+                "y": 560.0
+              },
+              "handle": {
+                "height": 4.0,
+                "width": 44.0,
+                "x": 366.0,
+                "y": 666.0
+              },
+              "focus": {
+                "height": 14.0,
+                "width": 54.0,
+                "x": 361.0,
+                "y": 661.0
+              },
+              "stop": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 564.0
+              }
+            },
+            "slider-forms-demo-vertical-disabled": {
+              "hit": {
+                "height": 240.0,
+                "width": 48.0,
+                "x": 654.0,
+                "y": 548.0
+              },
+              "rail": {
+                "height": 216.0,
+                "width": 48.0,
+                "x": 654.0,
+                "y": 560.0
+              },
+              "active": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 666.0,
+                "y": 676.0
+              },
+              "inactive": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 666.0,
+                "y": 560.0
+              },
+              "handle": {
+                "height": 4.0,
+                "width": 44.0,
+                "x": 656.0,
+                "y": 666.0
+              },
+              "focus": {
+                "height": 14.0,
+                "width": 54.0,
+                "x": 651.0,
+                "y": 661.0
+              },
+              "stop": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 676.0,
+                "y": 564.0
+              }
+            }
+          },
+          "png": {
+            "name": "wide-light-rest.png",
+            "sha256": "52c90d5dd9d4ae0b70189ca18b3ec1b158621001a6fe12f5bd21cca19ff0c973",
+            "format": "png",
+            "width": 960,
+            "height": 1040,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-centered-negative": {
+                "active": {
+                  "point": [
+                    181,
+                    282
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    78,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    324,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    130,
+                    287
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    40,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    414,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    227,
+                    282
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-centered-neutral": {
+                "inactive-min": {
+                  "point": [
+                    560,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    761,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    661,
+                    287
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    474,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    848,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-centered-positive": {
+                "active": {
+                  "point": [
+                    272,
+                    419
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    129,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    375,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    323,
+                    424
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    40,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    414,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    227,
+                    419
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-centered-discrete": {
+                "active": {
+                  "point": [
+                    639,
+                    419
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    536,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    758,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    612,
+                    424
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    474,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    848,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    661,
+                    419
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                },
+                "ticks": [
+                  {
+                    "index": 1,
+                    "point": [
+                      516,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 2,
+                    "point": [
+                      564,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 5,
+                    "point": [
+                      709,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 6,
+                    "point": [
+                      757,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 7,
+                    "point": [
+                      805,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  }
+                ]
+              },
+              "slider-forms-demo-vertical-continuous": {
+                "active": {
+                  "point": [
+                    94,
+                    753
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    94,
+                    637
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    99,
+                    722
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    99,
+                    566
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-vertical-discrete": {
+                "active": {
+                  "point": [
+                    383,
+                    726
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    383,
+                    610
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    388,
+                    668
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    388,
+                    566
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "ticks": [
+                  {
+                    "index": 0,
+                    "point": [
+                      388,
+                      770
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 1,
+                    "point": [
+                      388,
+                      749
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 2,
+                    "point": [
+                      388,
+                      722
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 3,
+                    "point": [
+                      388,
+                      695
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 5,
+                    "point": [
+                      388,
+                      641
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 6,
+                    "point": [
+                      388,
+                      614
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 7,
+                    "point": [
+                      388,
+                      587
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  }
+                ]
+              },
+              "slider-forms-demo-vertical-disabled": {
+                "active": {
+                  "point": [
+                    673,
+                    726
+                  ],
+                  "rgba": [
+                    168,
+                    163,
+                    170,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    97
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    673,
+                    610
+                  ],
+                  "rgba": [
+                    226,
+                    220,
+                    228,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    31
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    678,
+                    668
+                  ],
+                  "rgba": [
+                    168,
+                    163,
+                    170,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    97
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    678,
+                    566
+                  ],
+                  "rgba": [
+                    151,
+                    147,
+                    153,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    97
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "centered": {
+          "keys": [
+            {
+              "key": "right",
+              "value": -45.0
+            },
+            {
+              "key": "left",
+              "value": -50.0
+            },
+            {
+              "key": "up",
+              "value": -45.0
+            },
+            {
+              "key": "down",
+              "value": -50.0
+            },
+            {
+              "key": "page_up",
+              "value": -30.0
+            },
+            {
+              "key": "page_down",
+              "value": -50.0
+            },
+            {
+              "key": "home",
+              "value": -100.0
+            },
+            {
+              "key": "left",
+              "value": -100.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "right",
+              "value": 100.0
+            }
+          ],
+          "set_value": [
+            {
+              "request": 0.0,
+              "value": 0.0
+            },
+            {
+              "request": -37.25,
+              "value": -37.25
+            }
+          ],
+          "zero_geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 410.0,
+              "x": 22.0,
+              "y": 263.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 386.0,
+              "x": 34.0,
+              "y": 263.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 0.0,
+              "x": 229.0,
+              "y": 275.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 186.0,
+              "x": 34.0,
+              "y": 275.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 186.0,
+              "x": 234.0,
+              "y": 275.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 226.0,
+              "y": 265.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 221.0,
+              "y": 260.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 285.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 412.0,
+              "y": 285.0
+            }
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 410.0,
+              "x": 22.0,
+              "y": 263.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 386.0,
+              "x": 34.0,
+              "y": 263.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 62.89250183105469,
+              "x": 162.1074981689453,
+              "y": 275.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 114.10749816894531,
+              "x": 34.0,
+              "y": 275.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 191.0,
+              "x": 229.0,
+              "y": 275.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 154.1074981689453,
+              "y": 265.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 149.1074981689453,
+              "y": 260.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 285.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 412.0,
+              "y": 285.0
+            }
+          },
+          "png": {
+            "name": "wide-light-centered-focus.png",
+            "sha256": "8ec1bc7d311216fbb08d28b4282ff494d2458a24882432a31dba1d3546aee5dd",
+            "format": "png",
+            "width": 960,
+            "height": 1040,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-centered-negative": {
+                "active": {
+                  "point": [
+                    193,
+                    282
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    91,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    324,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    155,
+                    287
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    40,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    414,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    227,
+                    282
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 54.0,
+                    "width": 12.0,
+                    "x": 149.1074981689453,
+                    "y": 260.0
+                  },
+                  "focus_pixels": 222,
+                  "focus_rgba": [
+                    98,
+                    91,
+                    113,
+                    255
+                  ],
+                  "label": {
+                    "height": 44.0,
+                    "width": 81.0,
+                    "x": 114.60749816894531,
+                    "y": 212.0
+                  },
+                  "label_fill_rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "text": "−37.3％",
+                  "bounds": {
+                    "height": 20.0,
+                    "width": 49.0,
+                    "x": 130.6074981689453,
+                    "y": 224.0
+                  },
+                  "ink_bounds": [
+                    131,
+                    229,
+                    47,
+                    12
+                  ],
+                  "rgba": [
+                    245,
+                    239,
+                    247,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 92
+                }
+              }
+            }
+          }
+        },
+        "centered_discrete": {
+          "set_value": {
+            "request": 37.5,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 410.0,
+              "x": 456.0,
+              "y": 400.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 386.0,
+              "x": 468.0,
+              "y": 400.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 87.5,
+              "x": 663.0,
+              "y": 412.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 191.0,
+              "x": 468.0,
+              "y": 412.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 89.5,
+              "x": 764.5,
+              "y": 412.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 756.5,
+              "y": 402.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 751.5,
+              "y": 397.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 472.0,
+              "y": 422.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 846.0,
+              "y": 422.0
+            }
+          },
+          "ticks": [
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 514.25,
+                "y": 422.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 562.5,
+                "y": 422.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 610.75,
+                "y": 422.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 707.25,
+                "y": 422.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 803.75,
+                "y": 422.0
+              }
+            ]
+          ]
+        },
+        "vertical": {
+          "keys": [
+            {
+              "key": "right",
+              "value": 30.0
+            },
+            {
+              "key": "left",
+              "value": 25.0
+            },
+            {
+              "key": "up",
+              "value": 30.0
+            },
+            {
+              "key": "down",
+              "value": 25.0
+            },
+            {
+              "key": "page_up",
+              "value": 35.0
+            },
+            {
+              "key": "page_down",
+              "value": 25.0
+            },
+            {
+              "key": "home",
+              "value": 0.0
+            },
+            {
+              "key": "left",
+              "value": 0.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "right",
+              "value": 100.0
+            }
+          ],
+          "set_value": {
+            "request": 37.25,
+            "value": 37.25
+          },
+          "scroll_y": 0.0,
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 75.0,
+              "y": 548.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 75.0,
+              "y": 560.0
+            },
+            "active": {
+              "height": 73.45999908447266,
+              "width": 24.0,
+              "x": 87.0,
+              "y": 702.5400390625
+            },
+            "inactive": {
+              "height": 128.54000854492188,
+              "width": 24.0,
+              "x": 87.0,
+              "y": 560.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 77.0,
+              "y": 694.5400390625
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 72.0,
+              "y": 689.5400390625
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 97.0,
+              "y": 564.0
+            }
+          },
+          "png": {
+            "name": "wide-light-vertical-focus.png",
+            "sha256": "79394cb61fc72a6e24c2a4536aae32b586682207f0b0426676d734736311e2f8",
+            "format": "png",
+            "width": 960,
+            "height": 1040,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-vertical-continuous": {
+                "active": {
+                  "point": [
+                    94,
+                    739
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    94,
+                    624
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    99,
+                    695
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    99,
+                    566
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 12.0,
+                    "width": 54.0,
+                    "x": 72.0,
+                    "y": 689.5400390625
+                  },
+                  "focus_pixels": 218,
+                  "focus_rgba": [
+                    98,
+                    91,
+                    113,
+                    255
+                  ],
+                  "label": {
+                    "height": 44.0,
+                    "width": 74.0,
+                    "x": 130.0,
+                    "y": 673.5400390625
+                  },
+                  "label_fill_rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "text": "37.3％",
+                  "bounds": {
+                    "height": 20.0,
+                    "width": 42.0,
+                    "x": 146.0,
+                    "y": 685.5400390625
+                  },
+                  "ink_bounds": [
+                    147,
+                    690,
+                    39,
+                    12
+                  ],
+                  "rgba": [
+                    245,
+                    239,
+                    247,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 77
+                }
+              }
+            }
+          }
+        },
+        "vertical_discrete": {
+          "up_value": 62.5,
+          "set_value": {
+            "request": 43.75,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 364.0,
+              "y": 548.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 364.0,
+              "y": 560.0
+            },
+            "active": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 376.0,
+              "y": 675.0
+            },
+            "inactive": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 376.0,
+              "y": 560.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 366.0,
+              "y": 667.0
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 361.0,
+              "y": 662.0
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 386.0,
+              "y": 564.0
+            }
+          },
+          "ticks": [
+            [
+              0,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 768.0
+              }
+            ],
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 747.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 720.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 693.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 639.0
+              }
+            ],
+            [
+              6,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 612.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 585.0
+              }
+            ]
+          ]
+        },
+        "disabled_set_value": "disabled",
+        "disabled_value": 50.0,
+        "disabled_skipped_by_tab": true,
+        "closed_focus": "slider-forms-demo-show",
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "gallery_reaped": true
+      },
+      "compact": {
+        "viewport": [
+          320,
+          880
+        ],
+        "rtl": true,
+        "text_scale": 2,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show"
+        ],
+        "initial_ranges": {
+          "slider-forms-demo-centered-negative": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-neutral": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 0.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-positive": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-discrete": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -25.0,
+            "step": 25.0
+          },
+          "slider-forms-demo-vertical-continuous": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 25.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-vertical-discrete": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          },
+          "slider-forms-demo-vertical-disabled": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          }
+        },
+        "centered": {
+          "keys": [
+            {
+              "key": "left",
+              "value": -45.0
+            },
+            {
+              "key": "right",
+              "value": -50.0
+            },
+            {
+              "key": "up",
+              "value": -45.0
+            },
+            {
+              "key": "down",
+              "value": -50.0
+            },
+            {
+              "key": "page_up",
+              "value": -30.0
+            },
+            {
+              "key": "page_down",
+              "value": -50.0
+            },
+            {
+              "key": "home",
+              "value": -100.0
+            },
+            {
+              "key": "right",
+              "value": -100.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "left",
+              "value": 100.0
+            }
+          ],
+          "set_value": [
+            {
+              "request": 0.0,
+              "value": 0.0
+            },
+            {
+              "request": -37.25,
+              "value": -37.25
+            }
+          ],
+          "zero_geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 276.0,
+              "x": 22.0,
+              "y": 523.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 252.0,
+              "x": 34.0,
+              "y": 523.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 0.0,
+              "x": 158.0,
+              "y": 535.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 119.0,
+              "x": 167.0,
+              "y": 535.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 119.0,
+              "x": 34.0,
+              "y": 535.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 159.0,
+              "y": 525.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 154.0,
+              "y": 520.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 278.0,
+              "y": 545.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 545.0
+            }
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 276.0,
+              "x": 22.0,
+              "y": 523.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 252.0,
+              "x": 34.0,
+              "y": 523.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 37.93499755859375,
+              "x": 162.0,
+              "y": 535.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 72.06500244140625,
+              "x": 213.93499755859375,
+              "y": 535.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 124.0,
+              "x": 34.0,
+              "y": 535.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 205.93499755859375,
+              "y": 525.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 200.93499755859375,
+              "y": 520.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 278.0,
+              "y": 545.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 545.0
+            }
+          },
+          "png": {
+            "name": "compact-dark-rtl-200-centered-focus.png",
+            "sha256": "2561a5c4e8e6f8511bc08b4adcfa233646e5eed7d3f7d99175a336d0af158d72",
+            "format": "png",
+            "width": 320,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-centered-negative": {
+                "active": {
+                  "point": [
+                    180,
+                    542
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    249,
+                    542
+                  ],
+                  "rgba": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ],
+                  "authored": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    96,
+                    542
+                  ],
+                  "rgba": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ],
+                  "authored": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    206,
+                    547
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    280,
+                    547
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    40,
+                    547
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    160,
+                    542
+                  ],
+                  "rgba": [
+                    20,
+                    18,
+                    24,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 54.0,
+                    "width": 12.0,
+                    "x": 200.93499755859375,
+                    "y": 520.0
+                  },
+                  "focus_pixels": 220,
+                  "focus_rgba": [
+                    203,
+                    194,
+                    219,
+                    255
+                  ],
+                  "label": {
+                    "height": 64.0,
+                    "width": 130.0,
+                    "x": 141.93499755859375,
+                    "y": 452.0
+                  },
+                  "label_fill_rgba": [
+                    230,
+                    224,
+                    233,
+                    255
+                  ],
+                  "text": "−37.3％",
+                  "bounds": {
+                    "height": 40.0,
+                    "width": 98.0,
+                    "x": 157.93499755859375,
+                    "y": 464.0
+                  },
+                  "ink_bounds": [
+                    159,
+                    474,
+                    95,
+                    22
+                  ],
+                  "rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 389
+                }
+              }
+            }
+          }
+        },
+        "centered_discrete": {
+          "set_value": {
+            "request": 37.5,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 276.0,
+              "x": 22.0,
+              "y": 810.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 252.0,
+              "x": 34.0,
+              "y": 810.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 54.0,
+              "x": 104.0,
+              "y": 822.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 124.0,
+              "x": 162.0,
+              "y": 822.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 56.0,
+              "x": 34.0,
+              "y": 822.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 96.0,
+              "y": 812.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 91.0,
+              "y": 807.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 278.0,
+              "y": 832.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 832.0
+            }
+          },
+          "ticks": [
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 252.5,
+                "y": 832.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 221.0,
+                "y": 832.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 189.5,
+                "y": 832.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 126.5,
+                "y": 832.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 63.5,
+                "y": 832.0
+              }
+            ]
+          ]
+        },
+        "vertical": {
+          "keys": [
+            {
+              "key": "right",
+              "value": 30.0
+            },
+            {
+              "key": "left",
+              "value": 25.0
+            },
+            {
+              "key": "up",
+              "value": 30.0
+            },
+            {
+              "key": "down",
+              "value": 25.0
+            },
+            {
+              "key": "page_up",
+              "value": 35.0
+            },
+            {
+              "key": "page_down",
+              "value": 25.0
+            },
+            {
+              "key": "home",
+              "value": 0.0
+            },
+            {
+              "key": "left",
+              "value": 0.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "right",
+              "value": 100.0
+            }
+          ],
+          "set_value": {
+            "request": 37.25,
+            "value": 37.25
+          },
+          "scroll_y": 660.0,
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 618.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 630.0
+            },
+            "active": {
+              "height": 73.45999908447266,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 772.5400390625
+            },
+            "inactive": {
+              "height": 128.54000854492188,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 630.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 194.0,
+              "y": 764.5400390625
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 189.0,
+              "y": 759.5400390625
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 214.0,
+              "y": 634.0
+            }
+          },
+          "png": {
+            "name": "compact-dark-rtl-200-vertical-focus.png",
+            "sha256": "fdcfee2823df9fb17f187d5d8b8fb17b2ce49eaeeef19618f41a6a37432dbc2d",
+            "format": "png",
+            "width": 320,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-vertical-continuous": {
+                "active": {
+                  "point": [
+                    211,
+                    809
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    211,
+                    694
+                  ],
+                  "rgba": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ],
+                  "authored": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    216,
+                    765
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    216,
+                    636
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 12.0,
+                    "width": 54.0,
+                    "x": 189.0,
+                    "y": 759.5400390625
+                  },
+                  "focus_pixels": 214,
+                  "focus_rgba": [
+                    203,
+                    194,
+                    219,
+                    255
+                  ],
+                  "label": {
+                    "height": 104.0,
+                    "width": 113.0,
+                    "x": 72.0,
+                    "y": 713.5400390625
+                  },
+                  "label_fill_rgba": [
+                    230,
+                    224,
+                    233,
+                    255
+                  ],
+                  "text": "37.3％",
+                  "bounds": {
+                    "height": 80.0,
+                    "width": 55.0,
+                    "x": 101.0,
+                    "y": 725.5400390625
+                  },
+                  "ink_bounds": [
+                    102,
+                    736,
+                    52,
+                    61
+                  ],
+                  "rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 372
+                }
+              }
+            }
+          }
+        },
+        "vertical_discrete": {
+          "up_value": 62.5,
+          "set_value": {
+            "request": 43.75,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 618.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 630.0
+            },
+            "active": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 745.0
+            },
+            "inactive": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 630.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 194.0,
+              "y": 737.0
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 189.0,
+              "y": 732.0
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 214.0,
+              "y": 634.0
+            }
+          },
+          "ticks": [
+            [
+              0,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 838.0
+              }
+            ],
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 817.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 790.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 763.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 709.0
+              }
+            ],
+            [
+              6,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 682.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 655.0
+              }
+            ]
+          ]
+        },
+        "disabled_set_value": "disabled",
+        "disabled_value": 50.0,
+        "disabled_skipped_by_tab": true,
+        "closed_focus": "slider-forms-demo-show",
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "gallery_reaped": true
+      }
+    },
+    {
+      "wide": {
+        "viewport": [
+          960,
+          1040
+        ],
+        "rtl": false,
+        "text_scale": 1,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show"
+        ],
+        "initial_ranges": {
+          "slider-forms-demo-centered-negative": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-neutral": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 0.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-positive": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-discrete": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -25.0,
+            "step": 25.0
+          },
+          "slider-forms-demo-vertical-continuous": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 25.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-vertical-discrete": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          },
+          "slider-forms-demo-vertical-disabled": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          }
+        },
+        "rest": {
+          "geometry": {
+            "slider-forms-demo-centered-negative": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 22.0,
+                "y": 263.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 34.0,
+                "y": 263.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 86.5,
+                "x": 138.5,
+                "y": 275.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 88.5,
+                "x": 34.0,
+                "y": 275.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 191.0,
+                "x": 229.0,
+                "y": 275.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 128.5,
+                "y": 265.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 123.5,
+                "y": 260.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 38.0,
+                "y": 285.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 412.0,
+                "y": 285.0
+              }
+            },
+            "slider-forms-demo-centered-neutral": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 456.0,
+                "y": 263.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 468.0,
+                "y": 263.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 0.0,
+                "x": 663.0,
+                "y": 275.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 185.0,
+                "x": 468.0,
+                "y": 275.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 185.0,
+                "x": 669.0,
+                "y": 275.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 659.0,
+                "y": 265.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 654.0,
+                "y": 260.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 472.0,
+                "y": 285.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 846.0,
+                "y": 285.0
+              }
+            },
+            "slider-forms-demo-centered-positive": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 22.0,
+                "y": 400.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 34.0,
+                "y": 400.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 86.5,
+                "x": 229.0,
+                "y": 412.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 191.0,
+                "x": 34.0,
+                "y": 412.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 88.5,
+                "x": 331.5,
+                "y": 412.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 321.5,
+                "y": 402.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 316.5,
+                "y": 397.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 38.0,
+                "y": 422.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 412.0,
+                "y": 422.0
+              }
+            },
+            "slider-forms-demo-centered-discrete": {
+              "hit": {
+                "height": 48.0,
+                "width": 410.0,
+                "x": 456.0,
+                "y": 400.0
+              },
+              "rail": {
+                "height": 48.0,
+                "width": 386.0,
+                "x": 468.0,
+                "y": 400.0
+              },
+              "active": {
+                "height": 24.0,
+                "width": 38.25,
+                "x": 620.75,
+                "y": 412.0
+              },
+              "inactive-min": {
+                "height": 24.0,
+                "width": 136.75,
+                "x": 468.0,
+                "y": 412.0
+              },
+              "inactive-max": {
+                "height": 24.0,
+                "width": 191.0,
+                "x": 663.0,
+                "y": 412.0
+              },
+              "handle": {
+                "height": 44.0,
+                "width": 4.0,
+                "x": 610.75,
+                "y": 402.0
+              },
+              "focus": {
+                "height": 54.0,
+                "width": 14.0,
+                "x": 605.75,
+                "y": 397.0
+              },
+              "stop-min": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 472.0,
+                "y": 422.0
+              },
+              "stop-max": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 846.0,
+                "y": 422.0
+              }
+            },
+            "slider-forms-demo-vertical-continuous": {
+              "hit": {
+                "height": 240.0,
+                "width": 48.0,
+                "x": 75.0,
+                "y": 548.0
+              },
+              "rail": {
+                "height": 216.0,
+                "width": 48.0,
+                "x": 75.0,
+                "y": 560.0
+              },
+              "active": {
+                "height": 46.0,
+                "width": 24.0,
+                "x": 87.0,
+                "y": 730.0
+              },
+              "inactive": {
+                "height": 154.0,
+                "width": 24.0,
+                "x": 87.0,
+                "y": 560.0
+              },
+              "handle": {
+                "height": 4.0,
+                "width": 44.0,
+                "x": 77.0,
+                "y": 720.0
+              },
+              "focus": {
+                "height": 14.0,
+                "width": 54.0,
+                "x": 72.0,
+                "y": 715.0
+              },
+              "stop": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 97.0,
+                "y": 564.0
+              }
+            },
+            "slider-forms-demo-vertical-discrete": {
+              "hit": {
+                "height": 240.0,
+                "width": 48.0,
+                "x": 364.0,
+                "y": 548.0
+              },
+              "rail": {
+                "height": 216.0,
+                "width": 48.0,
+                "x": 364.0,
+                "y": 560.0
+              },
+              "active": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 376.0,
+                "y": 676.0
+              },
+              "inactive": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 376.0,
+                "y": 560.0
+              },
+              "handle": {
+                "height": 4.0,
+                "width": 44.0,
+                "x": 366.0,
+                "y": 666.0
+              },
+              "focus": {
+                "height": 14.0,
+                "width": 54.0,
+                "x": 361.0,
+                "y": 661.0
+              },
+              "stop": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 564.0
+              }
+            },
+            "slider-forms-demo-vertical-disabled": {
+              "hit": {
+                "height": 240.0,
+                "width": 48.0,
+                "x": 654.0,
+                "y": 548.0
+              },
+              "rail": {
+                "height": 216.0,
+                "width": 48.0,
+                "x": 654.0,
+                "y": 560.0
+              },
+              "active": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 666.0,
+                "y": 676.0
+              },
+              "inactive": {
+                "height": 100.0,
+                "width": 24.0,
+                "x": 666.0,
+                "y": 560.0
+              },
+              "handle": {
+                "height": 4.0,
+                "width": 44.0,
+                "x": 656.0,
+                "y": 666.0
+              },
+              "focus": {
+                "height": 14.0,
+                "width": 54.0,
+                "x": 651.0,
+                "y": 661.0
+              },
+              "stop": {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 676.0,
+                "y": 564.0
+              }
+            }
+          },
+          "png": {
+            "name": "wide-light-rest.png",
+            "sha256": "52c90d5dd9d4ae0b70189ca18b3ec1b158621001a6fe12f5bd21cca19ff0c973",
+            "format": "png",
+            "width": 960,
+            "height": 1040,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-centered-negative": {
+                "active": {
+                  "point": [
+                    181,
+                    282
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    78,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    324,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    130,
+                    287
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    40,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    414,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    227,
+                    282
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-centered-neutral": {
+                "inactive-min": {
+                  "point": [
+                    560,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    761,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    661,
+                    287
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    474,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    848,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-centered-positive": {
+                "active": {
+                  "point": [
+                    272,
+                    419
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    129,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    375,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    323,
+                    424
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    40,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    414,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    227,
+                    419
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-centered-discrete": {
+                "active": {
+                  "point": [
+                    639,
+                    419
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    536,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    758,
+                    419
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    612,
+                    424
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    474,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    848,
+                    424
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    661,
+                    419
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                },
+                "ticks": [
+                  {
+                    "index": 1,
+                    "point": [
+                      516,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 2,
+                    "point": [
+                      564,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 5,
+                    "point": [
+                      709,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 6,
+                    "point": [
+                      757,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 7,
+                    "point": [
+                      805,
+                      424
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  }
+                ]
+              },
+              "slider-forms-demo-vertical-continuous": {
+                "active": {
+                  "point": [
+                    94,
+                    753
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    94,
+                    637
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    99,
+                    722
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    99,
+                    566
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                }
+              },
+              "slider-forms-demo-vertical-discrete": {
+                "active": {
+                  "point": [
+                    383,
+                    726
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    383,
+                    610
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    388,
+                    668
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    388,
+                    566
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "ticks": [
+                  {
+                    "index": 0,
+                    "point": [
+                      388,
+                      770
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 1,
+                    "point": [
+                      388,
+                      749
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 2,
+                    "point": [
+                      388,
+                      722
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 3,
+                    "point": [
+                      388,
+                      695
+                    ],
+                    "rgba": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ],
+                    "authored": [
+                      255,
+                      255,
+                      255,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 5,
+                    "point": [
+                      388,
+                      641
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 6,
+                    "point": [
+                      388,
+                      614
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  },
+                  {
+                    "index": 7,
+                    "point": [
+                      388,
+                      587
+                    ],
+                    "rgba": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ],
+                    "authored": [
+                      30,
+                      25,
+                      43,
+                      255
+                    ]
+                  }
+                ]
+              },
+              "slider-forms-demo-vertical-disabled": {
+                "active": {
+                  "point": [
+                    673,
+                    726
+                  ],
+                  "rgba": [
+                    168,
+                    163,
+                    170,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    97
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    673,
+                    610
+                  ],
+                  "rgba": [
+                    226,
+                    220,
+                    228,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    31
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    678,
+                    668
+                  ],
+                  "rgba": [
+                    168,
+                    163,
+                    170,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    97
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    678,
+                    566
+                  ],
+                  "rgba": [
+                    151,
+                    147,
+                    153,
+                    255
+                  ],
+                  "authored": [
+                    29,
+                    27,
+                    32,
+                    97
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "centered": {
+          "keys": [
+            {
+              "key": "right",
+              "value": -45.0
+            },
+            {
+              "key": "left",
+              "value": -50.0
+            },
+            {
+              "key": "up",
+              "value": -45.0
+            },
+            {
+              "key": "down",
+              "value": -50.0
+            },
+            {
+              "key": "page_up",
+              "value": -30.0
+            },
+            {
+              "key": "page_down",
+              "value": -50.0
+            },
+            {
+              "key": "home",
+              "value": -100.0
+            },
+            {
+              "key": "left",
+              "value": -100.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "right",
+              "value": 100.0
+            }
+          ],
+          "set_value": [
+            {
+              "request": 0.0,
+              "value": 0.0
+            },
+            {
+              "request": -37.25,
+              "value": -37.25
+            }
+          ],
+          "zero_geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 410.0,
+              "x": 22.0,
+              "y": 263.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 386.0,
+              "x": 34.0,
+              "y": 263.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 0.0,
+              "x": 229.0,
+              "y": 275.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 186.0,
+              "x": 34.0,
+              "y": 275.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 186.0,
+              "x": 234.0,
+              "y": 275.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 226.0,
+              "y": 265.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 221.0,
+              "y": 260.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 285.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 412.0,
+              "y": 285.0
+            }
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 410.0,
+              "x": 22.0,
+              "y": 263.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 386.0,
+              "x": 34.0,
+              "y": 263.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 62.89250183105469,
+              "x": 162.1074981689453,
+              "y": 275.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 114.10749816894531,
+              "x": 34.0,
+              "y": 275.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 191.0,
+              "x": 229.0,
+              "y": 275.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 154.1074981689453,
+              "y": 265.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 149.1074981689453,
+              "y": 260.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 285.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 412.0,
+              "y": 285.0
+            }
+          },
+          "png": {
+            "name": "wide-light-centered-focus.png",
+            "sha256": "8ec1bc7d311216fbb08d28b4282ff494d2458a24882432a31dba1d3546aee5dd",
+            "format": "png",
+            "width": 960,
+            "height": 1040,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-centered-negative": {
+                "active": {
+                  "point": [
+                    193,
+                    282
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    91,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    324,
+                    282
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    155,
+                    287
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    40,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    414,
+                    287
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    227,
+                    282
+                  ],
+                  "rgba": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 54.0,
+                    "width": 12.0,
+                    "x": 149.1074981689453,
+                    "y": 260.0
+                  },
+                  "focus_pixels": 222,
+                  "focus_rgba": [
+                    98,
+                    91,
+                    113,
+                    255
+                  ],
+                  "label": {
+                    "height": 44.0,
+                    "width": 81.0,
+                    "x": 114.60749816894531,
+                    "y": 212.0
+                  },
+                  "label_fill_rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "text": "−37.3％",
+                  "bounds": {
+                    "height": 20.0,
+                    "width": 49.0,
+                    "x": 130.6074981689453,
+                    "y": 224.0
+                  },
+                  "ink_bounds": [
+                    131,
+                    229,
+                    47,
+                    12
+                  ],
+                  "rgba": [
+                    245,
+                    239,
+                    247,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 92
+                }
+              }
+            }
+          }
+        },
+        "centered_discrete": {
+          "set_value": {
+            "request": 37.5,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 410.0,
+              "x": 456.0,
+              "y": 400.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 386.0,
+              "x": 468.0,
+              "y": 400.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 87.5,
+              "x": 663.0,
+              "y": 412.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 191.0,
+              "x": 468.0,
+              "y": 412.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 89.5,
+              "x": 764.5,
+              "y": 412.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 756.5,
+              "y": 402.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 751.5,
+              "y": 397.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 472.0,
+              "y": 422.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 846.0,
+              "y": 422.0
+            }
+          },
+          "ticks": [
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 514.25,
+                "y": 422.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 562.5,
+                "y": 422.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 610.75,
+                "y": 422.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 707.25,
+                "y": 422.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 803.75,
+                "y": 422.0
+              }
+            ]
+          ]
+        },
+        "vertical": {
+          "keys": [
+            {
+              "key": "right",
+              "value": 30.0
+            },
+            {
+              "key": "left",
+              "value": 25.0
+            },
+            {
+              "key": "up",
+              "value": 30.0
+            },
+            {
+              "key": "down",
+              "value": 25.0
+            },
+            {
+              "key": "page_up",
+              "value": 35.0
+            },
+            {
+              "key": "page_down",
+              "value": 25.0
+            },
+            {
+              "key": "home",
+              "value": 0.0
+            },
+            {
+              "key": "left",
+              "value": 0.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "right",
+              "value": 100.0
+            }
+          ],
+          "set_value": {
+            "request": 37.25,
+            "value": 37.25
+          },
+          "scroll_y": 0.0,
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 75.0,
+              "y": 548.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 75.0,
+              "y": 560.0
+            },
+            "active": {
+              "height": 73.45999908447266,
+              "width": 24.0,
+              "x": 87.0,
+              "y": 702.5400390625
+            },
+            "inactive": {
+              "height": 128.54000854492188,
+              "width": 24.0,
+              "x": 87.0,
+              "y": 560.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 77.0,
+              "y": 694.5400390625
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 72.0,
+              "y": 689.5400390625
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 97.0,
+              "y": 564.0
+            }
+          },
+          "png": {
+            "name": "wide-light-vertical-focus.png",
+            "sha256": "79394cb61fc72a6e24c2a4536aae32b586682207f0b0426676d734736311e2f8",
+            "format": "png",
+            "width": 960,
+            "height": 1040,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-vertical-continuous": {
+                "active": {
+                  "point": [
+                    94,
+                    739
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    94,
+                    624
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    99,
+                    695
+                  ],
+                  "rgba": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ],
+                  "authored": [
+                    101,
+                    85,
+                    143,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    99,
+                    566
+                  ],
+                  "rgba": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ],
+                  "authored": [
+                    30,
+                    25,
+                    43,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 12.0,
+                    "width": 54.0,
+                    "x": 72.0,
+                    "y": 689.5400390625
+                  },
+                  "focus_pixels": 218,
+                  "focus_rgba": [
+                    98,
+                    91,
+                    113,
+                    255
+                  ],
+                  "label": {
+                    "height": 44.0,
+                    "width": 74.0,
+                    "x": 130.0,
+                    "y": 673.5400390625
+                  },
+                  "label_fill_rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "text": "37.3％",
+                  "bounds": {
+                    "height": 20.0,
+                    "width": 42.0,
+                    "x": 146.0,
+                    "y": 685.5400390625
+                  },
+                  "ink_bounds": [
+                    147,
+                    690,
+                    39,
+                    12
+                  ],
+                  "rgba": [
+                    245,
+                    239,
+                    247,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 77
+                }
+              }
+            }
+          }
+        },
+        "vertical_discrete": {
+          "up_value": 62.5,
+          "set_value": {
+            "request": 43.75,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 364.0,
+              "y": 548.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 364.0,
+              "y": 560.0
+            },
+            "active": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 376.0,
+              "y": 675.0
+            },
+            "inactive": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 376.0,
+              "y": 560.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 366.0,
+              "y": 667.0
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 361.0,
+              "y": 662.0
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 386.0,
+              "y": 564.0
+            }
+          },
+          "ticks": [
+            [
+              0,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 768.0
+              }
+            ],
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 747.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 720.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 693.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 639.0
+              }
+            ],
+            [
+              6,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 612.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 386.0,
+                "y": 585.0
+              }
+            ]
+          ]
+        },
+        "disabled_set_value": "disabled",
+        "disabled_value": 50.0,
+        "disabled_skipped_by_tab": true,
+        "closed_focus": "slider-forms-demo-show",
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "gallery_reaped": true
+      },
+      "compact": {
+        "viewport": [
+          320,
+          880
+        ],
+        "rtl": true,
+        "text_scale": 2,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show"
+        ],
+        "initial_ranges": {
+          "slider-forms-demo-centered-negative": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-neutral": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 0.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-positive": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-centered-discrete": {
+            "min": -100.0,
+            "max": 100.0,
+            "value": -25.0,
+            "step": 25.0
+          },
+          "slider-forms-demo-vertical-continuous": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 25.0,
+            "step": 5.0
+          },
+          "slider-forms-demo-vertical-discrete": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          },
+          "slider-forms-demo-vertical-disabled": {
+            "min": 0.0,
+            "max": 100.0,
+            "value": 50.0,
+            "step": 12.5
+          }
+        },
+        "centered": {
+          "keys": [
+            {
+              "key": "left",
+              "value": -45.0
+            },
+            {
+              "key": "right",
+              "value": -50.0
+            },
+            {
+              "key": "up",
+              "value": -45.0
+            },
+            {
+              "key": "down",
+              "value": -50.0
+            },
+            {
+              "key": "page_up",
+              "value": -30.0
+            },
+            {
+              "key": "page_down",
+              "value": -50.0
+            },
+            {
+              "key": "home",
+              "value": -100.0
+            },
+            {
+              "key": "right",
+              "value": -100.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "left",
+              "value": 100.0
+            }
+          ],
+          "set_value": [
+            {
+              "request": 0.0,
+              "value": 0.0
+            },
+            {
+              "request": -37.25,
+              "value": -37.25
+            }
+          ],
+          "zero_geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 276.0,
+              "x": 22.0,
+              "y": 523.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 252.0,
+              "x": 34.0,
+              "y": 523.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 0.0,
+              "x": 158.0,
+              "y": 535.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 119.0,
+              "x": 167.0,
+              "y": 535.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 119.0,
+              "x": 34.0,
+              "y": 535.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 159.0,
+              "y": 525.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 154.0,
+              "y": 520.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 278.0,
+              "y": 545.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 545.0
+            }
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 276.0,
+              "x": 22.0,
+              "y": 523.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 252.0,
+              "x": 34.0,
+              "y": 523.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 37.93499755859375,
+              "x": 162.0,
+              "y": 535.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 72.06500244140625,
+              "x": 213.93499755859375,
+              "y": 535.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 124.0,
+              "x": 34.0,
+              "y": 535.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 205.93499755859375,
+              "y": 525.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 200.93499755859375,
+              "y": 520.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 278.0,
+              "y": 545.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 545.0
+            }
+          },
+          "png": {
+            "name": "compact-dark-rtl-200-centered-focus.png",
+            "sha256": "2561a5c4e8e6f8511bc08b4adcfa233646e5eed7d3f7d99175a336d0af158d72",
+            "format": "png",
+            "width": 320,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-centered-negative": {
+                "active": {
+                  "point": [
+                    180,
+                    542
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "inactive-min": {
+                  "point": [
+                    249,
+                    542
+                  ],
+                  "rgba": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ],
+                  "authored": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ]
+                },
+                "inactive-max": {
+                  "point": [
+                    96,
+                    542
+                  ],
+                  "rgba": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ],
+                  "authored": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    206,
+                    547
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "stop-min": {
+                  "point": [
+                    280,
+                    547
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "stop-max": {
+                  "point": [
+                    40,
+                    547
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "neutral_gap": {
+                  "point": [
+                    160,
+                    542
+                  ],
+                  "rgba": [
+                    20,
+                    18,
+                    24,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 54.0,
+                    "width": 12.0,
+                    "x": 200.93499755859375,
+                    "y": 520.0
+                  },
+                  "focus_pixels": 220,
+                  "focus_rgba": [
+                    203,
+                    194,
+                    219,
+                    255
+                  ],
+                  "label": {
+                    "height": 64.0,
+                    "width": 130.0,
+                    "x": 141.93499755859375,
+                    "y": 452.0
+                  },
+                  "label_fill_rgba": [
+                    230,
+                    224,
+                    233,
+                    255
+                  ],
+                  "text": "−37.3％",
+                  "bounds": {
+                    "height": 40.0,
+                    "width": 98.0,
+                    "x": 157.93499755859375,
+                    "y": 464.0
+                  },
+                  "ink_bounds": [
+                    159,
+                    474,
+                    95,
+                    22
+                  ],
+                  "rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 389
+                }
+              }
+            }
+          }
+        },
+        "centered_discrete": {
+          "set_value": {
+            "request": 37.5,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 48.0,
+              "width": 276.0,
+              "x": 22.0,
+              "y": 810.0
+            },
+            "rail": {
+              "height": 48.0,
+              "width": 252.0,
+              "x": 34.0,
+              "y": 810.0
+            },
+            "active": {
+              "height": 24.0,
+              "width": 54.0,
+              "x": 104.0,
+              "y": 822.0
+            },
+            "inactive-min": {
+              "height": 24.0,
+              "width": 124.0,
+              "x": 162.0,
+              "y": 822.0
+            },
+            "inactive-max": {
+              "height": 24.0,
+              "width": 56.0,
+              "x": 34.0,
+              "y": 822.0
+            },
+            "handle": {
+              "height": 44.0,
+              "width": 2.0,
+              "x": 96.0,
+              "y": 812.0
+            },
+            "focus": {
+              "height": 54.0,
+              "width": 12.0,
+              "x": 91.0,
+              "y": 807.0
+            },
+            "stop-min": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 278.0,
+              "y": 832.0
+            },
+            "stop-max": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 38.0,
+              "y": 832.0
+            }
+          },
+          "ticks": [
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 252.5,
+                "y": 832.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 221.0,
+                "y": 832.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 189.5,
+                "y": 832.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 126.5,
+                "y": 832.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 63.5,
+                "y": 832.0
+              }
+            ]
+          ]
+        },
+        "vertical": {
+          "keys": [
+            {
+              "key": "right",
+              "value": 30.0
+            },
+            {
+              "key": "left",
+              "value": 25.0
+            },
+            {
+              "key": "up",
+              "value": 30.0
+            },
+            {
+              "key": "down",
+              "value": 25.0
+            },
+            {
+              "key": "page_up",
+              "value": 35.0
+            },
+            {
+              "key": "page_down",
+              "value": 25.0
+            },
+            {
+              "key": "home",
+              "value": 0.0
+            },
+            {
+              "key": "left",
+              "value": 0.0
+            },
+            {
+              "key": "end",
+              "value": 100.0
+            },
+            {
+              "key": "right",
+              "value": 100.0
+            }
+          ],
+          "set_value": {
+            "request": 37.25,
+            "value": 37.25
+          },
+          "scroll_y": 660.0,
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 618.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 630.0
+            },
+            "active": {
+              "height": 73.45999908447266,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 772.5400390625
+            },
+            "inactive": {
+              "height": 128.54000854492188,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 630.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 194.0,
+              "y": 764.5400390625
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 189.0,
+              "y": 759.5400390625
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 214.0,
+              "y": 634.0
+            }
+          },
+          "png": {
+            "name": "compact-dark-rtl-200-vertical-focus.png",
+            "sha256": "fdcfee2823df9fb17f187d5d8b8fb17b2ce49eaeeef19618f41a6a37432dbc2d",
+            "format": "png",
+            "width": 320,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "paint": {
+              "slider-forms-demo-vertical-continuous": {
+                "active": {
+                  "point": [
+                    211,
+                    809
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "inactive": {
+                  "point": [
+                    211,
+                    694
+                  ],
+                  "rgba": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ],
+                  "authored": [
+                    74,
+                    68,
+                    88,
+                    255
+                  ]
+                },
+                "handle": {
+                  "point": [
+                    216,
+                    765
+                  ],
+                  "rgba": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ],
+                  "authored": [
+                    207,
+                    189,
+                    254,
+                    255
+                  ]
+                },
+                "stop": {
+                  "point": [
+                    216,
+                    636
+                  ],
+                  "rgba": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ],
+                  "authored": [
+                    232,
+                    222,
+                    248,
+                    255
+                  ]
+                },
+                "engaged": {
+                  "ring": {
+                    "height": 12.0,
+                    "width": 54.0,
+                    "x": 189.0,
+                    "y": 759.5400390625
+                  },
+                  "focus_pixels": 214,
+                  "focus_rgba": [
+                    203,
+                    194,
+                    219,
+                    255
+                  ],
+                  "label": {
+                    "height": 104.0,
+                    "width": 113.0,
+                    "x": 72.0,
+                    "y": 713.5400390625
+                  },
+                  "label_fill_rgba": [
+                    230,
+                    224,
+                    233,
+                    255
+                  ],
+                  "text": "37.3％",
+                  "bounds": {
+                    "height": 80.0,
+                    "width": 55.0,
+                    "x": 101.0,
+                    "y": 725.5400390625
+                  },
+                  "ink_bounds": [
+                    102,
+                    736,
+                    52,
+                    61
+                  ],
+                  "rgba": [
+                    50,
+                    47,
+                    53,
+                    255
+                  ],
+                  "rgb_tolerance": 64,
+                  "ink_pixels": 372
+                }
+              }
+            }
+          }
+        },
+        "vertical_discrete": {
+          "up_value": 62.5,
+          "set_value": {
+            "request": 43.75,
+            "value": 50.0
+          },
+          "geometry": {
+            "hit": {
+              "height": 240.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 618.0
+            },
+            "rail": {
+              "height": 216.0,
+              "width": 48.0,
+              "x": 192.0,
+              "y": 630.0
+            },
+            "active": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 745.0
+            },
+            "inactive": {
+              "height": 101.0,
+              "width": 24.0,
+              "x": 204.0,
+              "y": 630.0
+            },
+            "handle": {
+              "height": 2.0,
+              "width": 44.0,
+              "x": 194.0,
+              "y": 737.0
+            },
+            "focus": {
+              "height": 12.0,
+              "width": 54.0,
+              "x": 189.0,
+              "y": 732.0
+            },
+            "stop": {
+              "height": 4.0,
+              "width": 4.0,
+              "x": 214.0,
+              "y": 634.0
+            }
+          },
+          "ticks": [
+            [
+              0,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 838.0
+              }
+            ],
+            [
+              1,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 817.0
+              }
+            ],
+            [
+              2,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 790.0
+              }
+            ],
+            [
+              3,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 763.0
+              }
+            ],
+            [
+              5,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 709.0
+              }
+            ],
+            [
+              6,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 682.0
+              }
+            ],
+            [
+              7,
+              {
+                "height": 4.0,
+                "width": 4.0,
+                "x": 214.0,
+                "y": 655.0
+              }
+            ]
+          ]
+        },
+        "disabled_set_value": "disabled",
+        "disabled_value": 50.0,
+        "disabled_skipped_by_tab": true,
+        "closed_focus": "slider-forms-demo-show",
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "gallery_reaped": true
+      }
+    }
+  ],
+  "byte_identical_pngs": {
+    "compact-dark-rtl-200-centered-focus.png": "2561a5c4e8e6f8511bc08b4adcfa233646e5eed7d3f7d99175a336d0af158d72",
+    "compact-dark-rtl-200-vertical-focus.png": "fdcfee2823df9fb17f187d5d8b8fb17b2ce49eaeeef19618f41a6a37432dbc2d",
+    "wide-light-centered-focus.png": "8ec1bc7d311216fbb08d28b4282ff494d2458a24882432a31dba1d3546aee5dd",
+    "wide-light-rest.png": "52c90d5dd9d4ae0b70189ca18b3ec1b158621001a6fe12f5bd21cca19ff0c973",
+    "wide-light-vertical-focus.png": "79394cb61fc72a6e24c2a4536aae32b586682207f0b0426676d734736311e2f8"
+  }
+}
