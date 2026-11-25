@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4135,
+      "pids": [
+        16145,
+        99322
+      ]
+    },
+    "native_gallery": {
+      "samples": 14,
+      "pids": [
+        17357
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4092,
+      "pids": [
+        99322
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 43,
+      "pids": [
+        16145
+      ],
+      "detached_samples": 36
+    },
+    "native": {
+      "samples": 14,
+      "pids": [
+        17357
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 99322,
+      "ppid": 99314,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=58736",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-icon-buttons-stock.BZHOvArh/run/tmp/.tmpd3BseH",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-icon-buttons-stock.BZHOvArh/run/tmp/.tmpd3BseH"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 16145,
+      "ppid": 16043,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=60292",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-icon-buttons-stock.BZHOvArh/run/tmp/.tmpI4tYun",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-icon-buttons-stock.BZHOvArh/run/tmp/.tmpI4tYun"
+    },
+    {
+      "role": "native",
+      "pid": 17357,
+      "ppid": 99314,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
