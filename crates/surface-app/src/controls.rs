@@ -102,6 +102,7 @@ pub(crate) struct RangeDrag {
     bounds: Rect,
     range: RangeValue,
     input: Option<crate::SliderInputOptions>,
+    vertical: bool,
 }
 
 impl RangeDrag {
@@ -661,11 +662,13 @@ impl<A: Application> Runtime<A> {
             return false;
         }
         !drag.has_input_policy()
-            || (self.bindings.get(&id).is_some_and(|binding| {
-                binding.value.is_some() && binding.slider_input == drag.input
-            }) && node
-                .range_value()
-                .is_some_and(|range| drag.matches_range(range)))
+            || (node.is_vertical_slider() == drag.vertical
+                && self.bindings.get(&id).is_some_and(|binding| {
+                    binding.value.is_some() && binding.slider_input == drag.input
+                })
+                && node
+                    .range_value()
+                    .is_some_and(|range| drag.matches_range(range)))
     }
     pub(crate) fn clear_modal_pointer(&mut self) {
         self.modal_outside = false;
@@ -948,14 +951,20 @@ impl<A: Application> Runtime<A> {
             bounds,
             range: node.range_value().expect("validated range"),
             input,
+            vertical: input.is_some() && node.is_vertical_slider(),
         });
         true
     }
-    pub(crate) fn range_pointer(&mut self, x: f32) -> Result<bool, AppError> {
+    pub(crate) fn range_pointer(&mut self, x: f32, y: f32) -> Result<bool, AppError> {
         let Some(drag) = &self.range_drag else {
             return Ok(false);
         };
-        if !x.is_finite() || drag.bounds.width <= 0. {
+        let (point, start, length) = if drag.vertical {
+            (y, drag.bounds.y, drag.bounds.height)
+        } else {
+            (x, drag.bounds.x, drag.bounds.width)
+        };
+        if !point.is_finite() || length <= 0. {
             return Ok(false);
         }
         let value = if let Some(input) = drag.input {
@@ -968,7 +977,7 @@ impl<A: Application> Runtime<A> {
             }) {
                 return self.cancel_pointer();
             }
-            input.pointer_value(drag.range, drag.bounds, x)
+            input.pointer_value(drag.range, point, start, length, drag.vertical)
         } else {
             drag.range.min
                 + ((x - drag.bounds.x) / drag.bounds.width).clamp(0., 1.) as f64

@@ -484,6 +484,20 @@ impl<M> View<M> {
     /// rail spans the node's bounds inside its padding.
     pub fn with_slider_input(mut self, options: SliderInputOptions) -> Self {
         self.slider_input = Some(options);
+        self.node = self.node.with_slider_vertical(false);
+        self
+    }
+    /// Use vertical slider input, with the minimum at the bottom. The
+    /// rail spans the node's vertical bounds inside its padding.
+    ///
+    /// Pair this with a vertical view. Up and Right increase the value.
+    /// Down and Left decrease it. Locale does not reverse these keys.
+    pub fn with_vertical_slider_input(mut self, scale: SliderScale) -> Self {
+        self.slider_input = Some(SliderInputOptions {
+            scale,
+            reverse_horizontal: false,
+        });
+        self.node = self.node.with_slider_vertical(true);
         self
     }
     /// Handle native Increment (`true`) or Decrement (`false`) directly.
@@ -2175,7 +2189,7 @@ impl<A: Application> Runtime<A> {
                         self.focused = self.pressed.clone();
                     }
                     if self.start_range_drag() {
-                        return self.range_pointer(x);
+                        return self.range_pointer(x, y);
                     }
                     self.place_text_cursor(x, y, false);
                 }
@@ -2194,7 +2208,7 @@ impl<A: Application> Runtime<A> {
                 }
                 if self.range_drag.is_some() {
                     self.press_observation.release();
-                    let result = self.range_pointer(x);
+                    let result = self.range_pointer(x, y);
                     self.range_drag = None;
                     self.pressed = None;
                     return result;
@@ -2311,7 +2325,7 @@ impl<A: Application> Runtime<A> {
                 let changed = self.hovered != hover;
                 self.hovered = hover;
                 if self.range_drag.is_some() {
-                    return self.range_pointer(x);
+                    return self.range_pointer(x, y);
                 }
                 self.place_text_cursor(x, y, true);
                 Ok(changed || self.text_drag.is_some())

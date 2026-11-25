@@ -84,6 +84,8 @@ mod material_scroll_popup_fields;
 mod material_search_overlay;
 #[path = "material_side_sheet.rs"]
 mod material_side_sheet;
+#[path = "material_slider_forms.rs"]
+mod material_slider_forms;
 #[path = "material_snackbar.rs"]
 mod material_snackbar;
 #[path = "material_split_button.rs"]
@@ -143,7 +145,7 @@ pub const STEPS: &[&str] = &[
     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
-    "M299", "M300", "M301",
+    "M299", "M300", "M301", "M302", "M303", "M304", "M305",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -269,7 +271,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_tabs::run(env, chrome, &url).await?;
     material_chips::run(env, chrome, &url).await?;
     material_icon_buttons::run(env, chrome, &url).await?;
-    material_standard_slider::run(env, chrome, &url).await
+    material_standard_slider::run(env, chrome, &url).await?;
+    material_slider_forms::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

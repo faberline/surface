@@ -1,7 +1,7 @@
 //! Project the current application scope into the macOS accessibility tree.
 use accesskit::{
-    Action, ActionData, ActionRequest, AriaCurrent, HasPopup, Invalid, Live, Node, NodeId, Rect,
-    Role, ScrollUnit, Toggled, TreeId, TreeInfo, TreeUpdate,
+    Action, ActionData, ActionRequest, AriaCurrent, HasPopup, Invalid, Live, Node, NodeId,
+    Orientation, Rect, Role, ScrollUnit, Toggled, TreeId, TreeInfo, TreeUpdate,
 };
 use std::collections::BTreeMap;
 use surface::{GridRole, NodeId as SurfaceId, Role as SurfaceRole};
@@ -423,6 +423,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
         },
     };
     let mut node = Node::new(role);
+    if role == Role::Slider && authored.is_vertical_slider() {
+        node.set_orientation(Orientation::Vertical);
+    }
     let label = match authored.role() {
         SurfaceRole::Text | SurfaceRole::Heading | SurfaceRole::Status | SurfaceRole::Tooltip => {
             authored.text_value().unwrap_or(authored.name())
@@ -1602,6 +1605,79 @@ mod tests {
             .action(&mut runtime, request(id, Action::Increment, None))
             .unwrap());
         assert_eq!(runtime.app().value, 4.);
+    }
+
+    #[test]
+    fn vertical_orientation_is_descriptive_only_for_explicit_sliders() {
+        struct Sliders;
+
+        impl Application for Sliders {
+            type Message = f64;
+
+            fn update(&mut self, _: f64) {}
+
+            fn view(&self) -> View<f64> {
+                use surface_app::{SliderInputOptions, SliderScale};
+
+                let node = |role, id| {
+                    SurfaceNode::new(role, id)
+                        .id(id)
+                        .range(surface::RangeValue {
+                            min: 0.,
+                            max: 10.,
+                            value: 4.,
+                            step: 2.,
+                        })
+                        .styled(Style::row().width(Length::Px(48.)).height(Length::Px(120.)))
+                };
+                let scale = SliderScale::Continuous;
+                let vertical = View::new(node(SurfaceRole::Slider, "vertical"))
+                    .on_value(|value| value)
+                    .with_vertical_slider_input(scale)
+                    .accessible_slider_adjustment();
+                let disabled = View::new(node(SurfaceRole::Slider, "disabled").disabled(true))
+                    .with_vertical_slider_input(scale)
+                    .accessible_slider_adjustment();
+                let horizontal = View::new(node(SurfaceRole::Slider, "horizontal"))
+                    .on_value(|value| value)
+                    .with_slider_input(SliderInputOptions {
+                        scale,
+                        reverse_horizontal: true,
+                    });
+                let legacy = View::new(node(SurfaceRole::Slider, "legacy")).on_value(|value| value);
+                let progress = View::new(node(SurfaceRole::Progress, "progress"))
+                    .with_vertical_slider_input(scale);
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Sliders").styled(Style::row()))
+                    .children([vertical, disabled, horizontal, legacy, progress])
+            }
+        }
+
+        let mut runtime = Runtime::new(Sliders).unwrap();
+        let mut tree = Tree::default();
+        let projection = update(&mut runtime, &mut tree);
+        for (name, role, orientation) in [
+            ("vertical", Role::Slider, Some(Orientation::Vertical)),
+            ("disabled", Role::Slider, Some(Orientation::Vertical)),
+            ("horizontal", Role::Slider, None),
+            ("legacy", Role::Slider, None),
+            ("progress", Role::ProgressIndicator, None),
+        ] {
+            let (_, node) = named(&projection, name);
+            assert_eq!(node.role(), role);
+            assert_eq!(node.orientation(), orientation);
+            assert_eq!(node.numeric_value(), Some(4.));
+            assert_eq!(node.is_disabled(), name == "disabled");
+            for action in [
+                Action::Focus,
+                Action::SetValue,
+                Action::Increment,
+                Action::Decrement,
+            ] {
+                let expected = name == "vertical"
+                    || (matches!(name, "horizontal" | "legacy") && action == Action::Focus);
+                assert_eq!(node.supports_action(action), expected, "{name}: {action:?}");
+            }
+        }
     }
 
     #[test]

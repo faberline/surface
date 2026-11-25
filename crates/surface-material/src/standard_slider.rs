@@ -7,10 +7,16 @@ use surface_app::{CursorStyle, SliderInputOptions, SliderScale, View};
 
 use crate::{shape::LayoutDirection, typography, Elevation, Theme};
 
+mod vertical;
+pub use vertical::VerticalStandardSliderPlacement;
+
 const RAIL_INSET: f32 = 12.;
 const MIN_TARGET: f32 = 48.;
 const HANDLE_GAP: f32 = 6.;
 const INNER_RADIUS: f32 = 2.;
+// The published centered-slider illustration leaves this space on either
+// side of the neutral position.
+const NEUTRAL_HALF_GAP: f32 = 2.;
 const STOP_SIZE: f32 = 4.;
 const STOP_INSET: f32 = 4.;
 const TICK_SPACING: f32 = 8.;
@@ -76,10 +82,39 @@ impl Theme {
         options: StandardSliderOptions<'_>,
         handler: impl Fn(f64) -> M + 'static,
     ) -> Option<View<M>> {
+        self.horizontal_slider(options, None, handler)
+    }
+
+    /// Build a horizontal slider that fills between its handle and a fixed
+    /// neutral value. The caller still handles one controlled value.
+    ///
+    /// The neutral value must be finite and strictly inside the range. For
+    /// a discrete slider it must name one of the existing stops. The
+    /// neutral position adds no input stop of its own.
+    pub fn centered_slider<M>(
+        &self,
+        options: StandardSliderOptions<'_>,
+        neutral: f64,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.horizontal_slider(options, Some(neutral), handler)
+    }
+
+    fn horizontal_slider<M>(
+        &self,
+        options: StandardSliderOptions<'_>,
+        neutral: Option<f64>,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> Option<View<M>> {
         if options.id.trim().is_empty() || options.name.trim().is_empty() {
             return None;
         }
         let (range, intervals, input) = range(options)?;
+        let neutral = match neutral {
+            Some(value) => Some(neutral_fraction(range, input, value)?),
+            None => None,
+        };
+        let centered = neutral.is_some();
         let size = options.size.tokens();
         let engaged = options.engaged && !options.disabled;
         let label = options
@@ -87,7 +122,11 @@ impl Theme {
             .filter(|label| engaged && !label.trim().is_empty());
         let reverse = input.reverse_horizontal;
         let fraction = input.value_fraction(range)? as f32;
-        let ticks = ticks(intervals);
+        let mut ticks = ticks(intervals);
+        if centered {
+            // Centered has a dedicated stop at each end of the rail.
+            ticks.retain(|tick| tick.index != 0);
+        }
         let palette = Palette::new(self, options.disabled);
         let handle_width = if engaged { 2. } else { 4. };
         let (leading, trailing) = if reverse {
@@ -131,16 +170,44 @@ impl Theme {
                 .focus_color(self.colors.secondary),
         )
         .without_interaction(None);
-        let mut parts = vec![
+        let (active_left, active_right) = if centered {
+            (INNER_RADIUS, INNER_RADIUS)
+        } else {
+            (leading, trailing)
+        };
+        let mut parts = Vec::with_capacity(
+            6 + 2 * usize::from(centered) + ticks.len() + 2 * usize::from(label.is_some()),
+        );
+        parts.extend([
             part("rail", Style::default()),
-            part("active", track(palette.active, leading, trailing)),
-            part("inactive", track(palette.inactive, trailing, leading)),
+            part("active", track(palette.active, active_left, active_right)),
+        ]);
+        if centered {
+            parts.push(part(
+                "inactive-min",
+                track(palette.inactive, leading, trailing),
+            ));
+        }
+        parts.extend([
+            part(
+                if centered { "inactive-max" } else { "inactive" },
+                track(palette.inactive, trailing, leading),
+            ),
             handle,
             focus,
-            part("stop", pill(palette.inactive_stop)),
-        ];
+        ]);
+        if centered {
+            parts.push(part("stop-min", pill(palette.inactive_stop)));
+        }
+        parts.push(part(
+            if centered { "stop-max" } else { "stop" },
+            pill(palette.inactive_stop),
+        ));
         for tick in &ticks {
-            let ink = if tick.fraction <= fraction {
+            let active = neutral.map_or(tick.fraction <= fraction, |neutral| {
+                (neutral.min(fraction)..neutral.max(fraction)).contains(&tick.fraction)
+            });
+            let ink = if active {
                 palette.active_stop
             } else {
                 palette.inactive_stop
@@ -188,6 +255,7 @@ impl Theme {
                 size,
                 reverse,
                 fraction,
+                neutral,
                 handle_width,
                 ticks,
                 has_label: label.is_some(),
@@ -208,6 +276,29 @@ impl Theme {
                 .cursor(CursorStyle::Pointer),
         )
     }
+}
+
+fn neutral_fraction(range: RangeValue, input: SliderInputOptions, neutral: f64) -> Option<f32> {
+    if !neutral.is_finite() || neutral <= range.min || neutral >= range.max {
+        return None;
+    }
+    let resolved = input.resolve_value(range, neutral)?;
+    let fraction = input.value_fraction(RangeValue {
+        value: resolved,
+        ..range
+    })?;
+    if matches!(input.scale, SliderScale::Discrete(_)) {
+        // Use normalized space for the round-off allowance. Comparing raw
+        // values near zero after a signed range subtraction is not reliable.
+        let authored = (neutral - range.min) / (range.max - range.min);
+        if resolved <= range.min
+            || resolved >= range.max
+            || (resolved != neutral && (authored - fraction).abs() > 8. * f64::EPSILON)
+        {
+            return None;
+        }
+    }
+    Some(fraction as f32)
 }
 
 fn range(
@@ -347,11 +438,76 @@ fn ticks(intervals: Option<u16>) -> Vec<Tick> {
         .collect()
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+struct Span {
+    start: f32,
+    end: f32,
+}
+
+impl Span {
+    fn clipped(start: f32, end: f32, rail: f32) -> Self {
+        let start = start.clamp(0., rail);
+        Self {
+            start,
+            end: end.clamp(start, rail),
+        }
+    }
+
+    fn width(self) -> f32 {
+        self.end - self.start
+    }
+
+    fn fits_tick(self, start: f32) -> bool {
+        start >= self.start && start + STOP_SIZE <= self.end
+    }
+
+    fn has_stop(self) -> bool {
+        self.width() >= STOP_INSET + STOP_SIZE
+    }
+}
+
+struct Track {
+    active: Span,
+    minimum: Span,
+    maximum: Span,
+}
+
+impl Track {
+    fn new(rail: f32, thumb: f32, gap: f32, neutral: Option<f32>) -> Self {
+        let span = |start, end| Span::clipped(start, end, rail);
+        let before = thumb - gap;
+        let after = thumb + gap;
+        if let Some(neutral) = neutral {
+            let left = neutral - NEUTRAL_HALF_GAP;
+            let right = neutral + NEUTRAL_HALF_GAP;
+            // The two cuts meet when the handle approaches neutral. In
+            // that case clipping an inverted active interval empties it.
+            let active = if thumb < neutral {
+                span(after, left)
+            } else {
+                span(right, before)
+            };
+            Self {
+                active,
+                minimum: span(0., before.min(left)),
+                maximum: span(after.max(right), rail),
+            }
+        } else {
+            Self {
+                active: span(0., before),
+                minimum: Span::default(),
+                maximum: span(after, rail),
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 struct Artwork {
     size: SizeTokens,
     reverse: bool,
     fraction: f32,
+    neutral: Option<f32>,
     handle_width: f32,
     ticks: Vec<Tick>,
     has_label: bool,
@@ -382,9 +538,12 @@ impl MeasuredGroupLayout for Artwork {
         };
         let center = rail * self.fraction;
         let half_gap = HANDLE_GAP + self.handle_width / 2.;
-        let active_end = (center - half_gap).max(0.);
-        let inactive_start = (center + half_gap).min(rail);
-        let inactive_width = rail - inactive_start;
+        let track = Track::new(
+            rail,
+            center,
+            half_gap,
+            self.neutral.map(|fraction| rail * fraction),
+        );
         let track_height = self.size.track_height;
         let track_y = (height - track_height) / 2.;
         let handle_y = (height - self.size.handle_height) / 2.;
@@ -403,20 +562,33 @@ impl MeasuredGroupLayout for Artwork {
             )
         };
         let max_stop_start = rail - STOP_INSET - STOP_SIZE;
-        let show_stop = inactive_width >= STOP_INSET + STOP_SIZE;
-        let mut placements = vec![
-            Rect::new(RAIL_INSET, 0., rail, height),
-            Rect::new(x_at(0., active_end), track_y, active_end, track_height),
-            if show_stop {
-                Rect::new(
-                    x_at(inactive_start, inactive_width),
-                    track_y,
-                    inactive_width,
-                    track_height,
-                )
+        let track_rect = |span: Span| {
+            Rect::new(
+                x_at(span.start, span.width()),
+                track_y,
+                span.width(),
+                track_height,
+            )
+        };
+        let anchored_rect = |span: Span| {
+            if span.has_stop() {
+                track_rect(span)
             } else {
                 Rect::default()
-            },
+            }
+        };
+        let min_stop = track.minimum.has_stop();
+        let max_stop = track.maximum.has_stop();
+        let mut placements = Vec::with_capacity(children.len());
+        placements.extend([
+            Rect::new(RAIL_INSET, 0., rail, height),
+            track_rect(track.active),
+        ]);
+        if self.neutral.is_some() {
+            placements.push(anchored_rect(track.minimum));
+        }
+        placements.extend([
+            anchored_rect(track.maximum),
             handle,
             Rect::new(
                 handle.x - FOCUS_OUTSET,
@@ -424,12 +596,19 @@ impl MeasuredGroupLayout for Artwork {
                 handle.width + 2. * FOCUS_OUTSET,
                 handle.height + 2. * FOCUS_OUTSET,
             ),
-            if show_stop {
-                stop(max_stop_start)
+        ]);
+        if self.neutral.is_some() {
+            placements.push(if min_stop {
+                stop(STOP_INSET)
             } else {
                 Rect::default()
-            },
-        ];
+            });
+        }
+        placements.push(if max_stop {
+            stop(max_stop_start)
+        } else {
+            Rect::default()
+        });
         let mut previous = f32::NEG_INFINITY;
         for tick in &self.ticks {
             let start = if tick.index == 0 {
@@ -437,10 +616,14 @@ impl MeasuredGroupLayout for Artwork {
             } else {
                 rail * tick.fraction - STOP_SIZE / 2.
             };
-            let fits_active = start + STOP_SIZE <= active_end;
-            let fits_inactive =
-                show_stop && start >= inactive_start && start <= max_stop_start - TICK_SPACING;
-            if start >= 0. && start >= previous + TICK_SPACING && (fits_active || fits_inactive) {
+            let fits_minimum =
+                min_stop && start >= STOP_INSET + TICK_SPACING && track.minimum.fits_tick(start);
+            let fits_maximum = max_stop
+                && start <= max_stop_start - TICK_SPACING
+                && track.maximum.fits_tick(start);
+            if start >= previous + TICK_SPACING
+                && (track.active.fits_tick(start) || fits_minimum || fits_maximum)
+            {
                 placements.push(stop(start));
                 previous = start;
             } else {

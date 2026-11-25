@@ -36,6 +36,7 @@ mod scroll_popup_demo;
 mod search_overlay_demo;
 mod side_sheet_demo;
 mod slider_demo;
+mod slider_forms_demo;
 mod snackbar_demo;
 mod split_demo;
 mod switch_demo;
@@ -84,6 +85,7 @@ use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
 use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
 use slider_demo::{SliderDemo, SliderDemoEvent};
+use slider_forms_demo::{SliderFormsDemo, SliderFormsEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use split_demo::{SplitDemo, SplitEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
@@ -137,6 +139,7 @@ pub struct Gallery {
     chip_demo: ChipDemo,
     icon_button_demo: IconButtonDemo,
     slider_demo: SliderDemo,
+    slider_forms_demo: SliderFormsDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -209,6 +212,7 @@ impl Default for Gallery {
             chip_demo: ChipDemo::default(),
             icon_button_demo: IconButtonDemo::default(),
             slider_demo: SliderDemo::default(),
+            slider_forms_demo: SliderFormsDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -326,6 +330,7 @@ pub enum Message {
     ChipDemo(ChipDemoEvent),
     IconButtonDemo(IconButtonDemoEvent),
     SliderDemo(SliderDemoEvent),
+    SliderForms(SliderFormsEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -508,6 +513,9 @@ impl Application for Gallery {
         if self.slider_demo.visible() {
             return self.slider_demo.text_scale();
         }
+        if self.slider_forms_demo.visible() {
+            return self.slider_forms_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -522,6 +530,7 @@ impl Application for Gallery {
         let chips = self.chip_demo.viewport_changed(width);
         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
         let sliders = self.slider_demo.viewport_changed(width, height);
+        let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
@@ -584,6 +593,7 @@ impl Application for Gallery {
             || chips
             || icon_buttons
             || sliders
+            || slider_forms
             || list_actions
             || list_media
             || list_reorder
@@ -599,6 +609,7 @@ impl Application for Gallery {
             || self.switch_demo.visible()
             || self.icon_button_demo.visible()
             || self.slider_demo.visible()
+            || self.slider_forms_demo.visible()
             || self.tooltip_demo.visible()
             || self.scroll_popup_demo.visible()
             || self.button_group_demo.visible()
@@ -686,6 +697,7 @@ impl Application for Gallery {
         let radio = self.radio_demo.frame(&frame, &input, press, hovered);
         let icons = self.icon_button_demo.frame(&frame, input, pressed, hovered);
         let sliders = self.slider_demo.observe_frame(input, pressed);
+        let slider_forms = self.slider_forms_demo.observe_frame(input, pressed);
         let tabs = self
             .tabs_demo
             .observe_interaction(&frame, input, pressed, hovered);
@@ -697,7 +709,8 @@ impl Application for Gallery {
             || radio.rebuild
             || tabs
             || icons.animation.rebuild
-            || sliders;
+            || sliders
+            || slider_forms;
         update.animation.request_next |= fab.animation.request_next
             || menu.request_next
             || switch.request_next
@@ -907,6 +920,7 @@ impl Application for Gallery {
                 }
                 if i != slider_demo::SECTION {
                     self.slider_demo.leave();
+                    self.slider_forms_demo.leave();
                 }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
@@ -926,6 +940,7 @@ impl Application for Gallery {
             Message::ChipDemo(event) => self.chip_demo.update(event),
             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
             Message::SliderDemo(event) => self.slider_demo.update(event),
+            Message::SliderForms(event) => self.slider_forms_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1138,6 +1153,9 @@ impl Application for Gallery {
         if self.slider_demo.visible() {
             return self.slider_demo.view(&t, self.dark);
         }
+        if self.slider_forms_demo.visible() {
+            return self.slider_forms_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1243,6 +1261,7 @@ impl Application for Gallery {
                             ChipDemo::show_button(&t),
                             IconButtonDemo::show_button(&t),
                             SliderDemo::show_button(&t),
+                            SliderFormsDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1875,6 +1894,7 @@ mod web {
         state["chip_demo"] = s.chip_demo.inspect(&theme);
         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
         state["slider_demo"] = s.slider_demo.inspect(&theme);
+        state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

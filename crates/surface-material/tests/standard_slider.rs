@@ -1,7 +1,9 @@
 use surface::{
     Color, Corners, DisplayList, Node, NodeId, PaintOp, RangeValue, Rect, Role, Style, TextMeasurer,
 };
-use surface_app::{Application, Event, Runtime, View};
+use surface_app::{
+    AccessibilityAdjustment, AccessibilityAdjustmentResult, Application, Event, Runtime, View,
+};
 use surface_material::{
     shape::LayoutDirection, StandardSliderMode, StandardSliderOptions, StandardSliderSize, Theme,
 };
@@ -29,6 +31,7 @@ enum Message {
 
 struct Model {
     options: StandardSliderOptions<'static>,
+    neutral: Option<f64>,
     dark: bool,
     scale: f32,
     requests: Vec<f64>,
@@ -58,10 +61,12 @@ impl Application for Model {
     }
 
     fn view(&self) -> View<Message> {
-        let slider = self
-            .theme()
-            .standard_slider(self.options, Message::Value)
-            .expect("valid test slider");
+        let theme = self.theme();
+        let slider = match self.neutral {
+            Some(value) => theme.centered_slider(self.options, value, Message::Value),
+            None => theme.standard_slider(self.options, Message::Value),
+        }
+        .expect("valid test slider");
         View::new(Node::new(Role::Window, "").styled(Style::column().padding(18.).gap(8.)))
             .children([
                 // Leave room above the fixed cross-axis slider hit target.
@@ -96,6 +101,23 @@ impl TextMeasurer for Metrics {
 fn runtime(options: StandardSliderOptions<'static>, dark: bool, scale: f32) -> Runtime<Model> {
     Runtime::new(Model {
         options,
+        neutral: None,
+        dark,
+        scale,
+        requests: Vec::new(),
+    })
+    .unwrap()
+}
+
+fn centered_runtime(
+    options: StandardSliderOptions<'static>,
+    neutral: f64,
+    dark: bool,
+    scale: f32,
+) -> Runtime<Model> {
+    Runtime::new(Model {
+        options,
+        neutral: Some(neutral),
         dark,
         scale,
         requests: Vec::new(),
@@ -565,4 +587,301 @@ fn invalid_ranges_or_names_never_build_a_slider() {
             "{invalid:?}"
         );
     }
+}
+
+const SIGNED: StandardSliderOptions<'static> = StandardSliderOptions {
+    min: -100.,
+    max: 100.,
+    value: 0.,
+    ..OPTIONS
+};
+
+#[test]
+fn centered_spans_merge_near_neutral_and_remain_mirrored_at_both_endpoints() {
+    // The 300 dp viewport leaves a 240 dp rail after page and slider padding.
+    let cases = [
+        (-100., [(0., 0.), (8., 118.), (122., 240.)]),
+        (-50., [(0., 52.), (68., 118.), (122., 240.)]),
+        (-5., [(0., 106.), (0., 0.), (122., 240.)]),
+        (0., [(0., 112.), (0., 0.), (128., 240.)]),
+        (5., [(0., 118.), (0., 0.), (134., 240.)]),
+        (50., [(0., 118.), (122., 172.), (188., 240.)]),
+        (100., [(0., 118.), (122., 232.), (0., 0.)]),
+    ];
+    let sizes = [
+        (StandardSliderSize::ExtraSmall, 16., 44., 8.),
+        (StandardSliderSize::Small, 24., 44., 8.),
+        (StandardSliderSize::Medium, 40., 52., 12.),
+        (StandardSliderSize::Large, 56., 68., 16.),
+        (StandardSliderSize::ExtraLarge, 96., 108., 28.),
+    ];
+    for (direction, dark) in [
+        (LayoutDirection::LeftToRight, false),
+        (LayoutDirection::RightToLeft, true),
+    ] {
+        let rtl = direction == LayoutDirection::RightToLeft;
+        for (size, thickness, handle_height, outer) in sizes {
+            for (value, spans) in cases {
+                let mut runtime = centered_runtime(
+                    StandardSliderOptions {
+                        value,
+                        direction,
+                        size,
+                        ..SIGNED
+                    },
+                    0.,
+                    dark,
+                    1.,
+                );
+                let colors = runtime.app().theme().colors;
+                let list = paint(&mut runtime, 300.);
+                let rail = bounds(&runtime, "volume-rail");
+                assert_eq!(rail.width, 240.);
+                let caps = |left, right| {
+                    if rtl {
+                        Corners::new(right, left, left, right)
+                    } else {
+                        Corners::new(left, right, right, left)
+                    }
+                };
+                let parts = [
+                    (
+                        "volume-inactive-min",
+                        colors.secondary_container,
+                        caps(outer, 2.),
+                    ),
+                    ("volume-active", colors.primary, Corners::all(2.)),
+                    (
+                        "volume-inactive-max",
+                        colors.secondary_container,
+                        caps(2., outer),
+                    ),
+                ];
+                for ((part, color, corners), (start, end)) in parts.into_iter().zip(spans) {
+                    let area = bounds(&runtime, part);
+                    assert!(
+                        (area.width - (end - start)).abs() < 0.001,
+                        "{part} at {value}"
+                    );
+                    if end > start {
+                        let left = rail.x + if rtl { rail.width - end } else { start };
+                        assert!((area.x - left).abs() < 0.001, "{part} at {value}");
+                        assert_eq!(area.height, thickness);
+                        assert!(
+                            has_fill(&list, area, color, corners.resolve(area.width, area.height)),
+                            "{part} at {value}"
+                        );
+                    }
+                }
+                for (index, name) in ["volume-stop-min", "volume-stop-max"]
+                    .into_iter()
+                    .enumerate()
+                {
+                    let logical_minimum = index == 0;
+                    let stop = bounds(&runtime, name);
+                    let endpoint = if logical_minimum { -100. } else { 100. };
+                    if value == endpoint {
+                        assert_eq!(stop.width, 0.);
+                    } else {
+                        let physical_left = logical_minimum != rtl;
+                        let x = if physical_left {
+                            rail.x + 4.
+                        } else {
+                            right(rail) - 8.
+                        };
+                        assert_eq!((stop.x, stop.width, stop.height), (x, 4., 4.));
+                        assert!(has_fill(
+                            &list,
+                            stop,
+                            colors.on_secondary_container,
+                            Corners::all(2.)
+                        ));
+                    }
+                }
+                let handle = bounds(&runtime, "volume-handle");
+                assert_eq!((handle.width, handle.height), (4., handle_height));
+                assert!(has_fill(&list, handle, colors.primary, Corners::all(2.)));
+            }
+        }
+    }
+}
+
+#[test]
+fn centered_discrete_dots_take_their_actual_span_color_and_skip_both_cuts() {
+    let options = StandardSliderOptions {
+        mode: StandardSliderMode::Discrete { intervals: 8 },
+        ..SIGNED
+    };
+    for (value, active, inactive) in [(-50., 3, 5), (50., 5, 3)] {
+        for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
+            let mut runtime = centered_runtime(
+                StandardSliderOptions {
+                    value,
+                    direction,
+                    ..options
+                },
+                0.,
+                true,
+                1.,
+            );
+            let list = paint(&mut runtime, 300.);
+            let colors = runtime.app().theme().colors;
+            assert!(runtime.dom().by_id("volume-tick-0").is_none());
+            assert!(runtime.dom().by_id("volume-tick-8").is_none());
+            assert_eq!(bounds(&runtime, "volume-tick-4").width, 0.);
+            let current = if value < 0. { 2 } else { 6 };
+            assert_eq!(
+                bounds(&runtime, &format!("volume-tick-{current}")).width,
+                0.
+            );
+            let active = bounds(&runtime, &format!("volume-tick-{active}"));
+            let inactive = bounds(&runtime, &format!("volume-tick-{inactive}"));
+            assert_eq!((active.width, inactive.width), (4., 4.));
+            assert!(has_fill(&list, active, colors.on_primary, Corners::all(2.)));
+            assert!(has_fill(
+                &list,
+                inactive,
+                colors.on_secondary_container,
+                Corners::all(2.)
+            ));
+        }
+    }
+}
+
+#[test]
+fn centered_checks_the_neutral_without_changing_the_existing_lattice() {
+    let theme = Theme::light();
+    for invalid in [-100., 100., 101., f64::NAN, f64::INFINITY] {
+        assert!(theme.centered_slider(SIGNED, invalid, |_| ()).is_none());
+    }
+    let signed_steps = StandardSliderOptions {
+        min: -1.,
+        max: 1.,
+        mode: StandardSliderMode::Discrete { intervals: 10 },
+        ..SIGNED
+    };
+    assert!(theme.centered_slider(signed_steps, 0.2, |_| ()).is_some());
+    assert!(theme.centered_slider(signed_steps, 0.19, |_| ()).is_none());
+    let odd = StandardSliderOptions {
+        mode: StandardSliderMode::Discrete { intervals: 3 },
+        ..signed_steps
+    };
+    assert!(theme.centered_slider(odd, 0., |_| ()).is_none());
+
+    let mut runtime = centered_runtime(
+        StandardSliderOptions {
+            value: 25.,
+            ..SIGNED
+        },
+        -25.,
+        false,
+        1.,
+    );
+    paint(&mut runtime, 300.);
+    let rail = bounds(&runtime, "volume-rail");
+    let active = bounds(&runtime, "volume-active");
+    assert_eq!((active.x - rail.x, active.width), (92., 50.));
+
+    let mut narrow = centered_runtime(SIGNED, 0., false, 1.);
+    paint(&mut narrow, 80.);
+    assert_eq!(bounds(&narrow, ID).width, 48.);
+    for part in [
+        "volume-inactive-min",
+        "volume-inactive-max",
+        "volume-active",
+        "volume-stop-min",
+        "volume-stop-max",
+    ] {
+        assert_eq!(bounds(&narrow, part).width, 0.);
+    }
+    assert_eq!(bounds(&narrow, "volume-handle").width, 4.);
+}
+
+#[test]
+fn centered_keeps_one_adjustable_target_and_signed_values_through_the_shared_path() {
+    let mut runtime = centered_runtime(
+        StandardSliderOptions {
+            engaged: true,
+            value_label: Some("−37％"),
+            direction: LayoutDirection::RightToLeft,
+            ..SIGNED
+        },
+        0.,
+        true,
+        2.,
+    );
+    paint(&mut runtime, 320.);
+    let owner = bounds(&runtime, ID);
+    let rail = bounds(&runtime, "volume-rail");
+    runtime
+        .dispatch(Event::FocusNext { reverse: false })
+        .unwrap();
+    assert_eq!(runtime.focused(), Some(ID));
+    assert!(runtime.set_value(ID, -37.25).unwrap());
+    assert!(!runtime.set_value(ID, -37.25).unwrap());
+    paint(&mut runtime, 320.);
+    let frame = runtime.accessibility_frame().unwrap();
+    let slider = id(&runtime, ID);
+    let node = frame.node(slider).unwrap().node;
+    assert_eq!(
+        (node.role(), node.name(), node.slider_value_text()),
+        (Role::Slider, "音量", Some("−37％"))
+    );
+    assert_eq!(
+        node.range_value(),
+        Some(RangeValue {
+            min: -100.,
+            max: 100.,
+            value: -37.25,
+            step: 1.
+        })
+    );
+    assert_eq!(frame.children(slider).count(), 0);
+    let action = frame.adjustment_target(slider).unwrap();
+    assert_eq!(
+        runtime
+            .accessibility_adjust(&action, AccessibilityAdjustment::SetValue(200.))
+            .unwrap(),
+        AccessibilityAdjustmentResult::Adjusted
+    );
+    paint(&mut runtime, 320.);
+    assert_eq!(runtime.app().requests, [-37.25, 100.]);
+    assert_eq!(runtime.focused(), Some(ID));
+    assert_eq!(bounds(&runtime, ID), owner);
+    assert_eq!(bounds(&runtime, "volume-rail"), rail);
+    assert_eq!(center(bounds(&runtime, "volume-handle")), rail.x);
+}
+
+#[test]
+fn disabled_centered_keeps_both_muted_anchors_without_an_action_or_indicator() {
+    let mut runtime = centered_runtime(
+        StandardSliderOptions {
+            disabled: true,
+            engaged: true,
+            value_label: Some("零"),
+            ..SIGNED
+        },
+        0.,
+        true,
+        1.,
+    );
+    let list = paint(&mut runtime, 320.);
+    let colors = runtime.app().theme().colors;
+    for part in ["volume-stop-min", "volume-stop-max"] {
+        assert!(has_fill(
+            &list,
+            bounds(&runtime, part),
+            alpha(colors.on_surface, 97),
+            Corners::all(2.),
+        ));
+    }
+    assert_eq!(bounds(&runtime, "volume-active").width, 0.);
+    assert_eq!(bounds(&runtime, "volume-handle").width, 4.);
+    assert!(runtime.dom().by_id("volume-label").is_none());
+    let frame = runtime.accessibility_frame().unwrap();
+    let slider = id(&runtime, ID);
+    assert!(frame.node(slider).unwrap().node.is_disabled());
+    assert!(frame.focus_target(slider).is_none());
+    assert!(frame.adjustment_target(slider).is_none());
+    assert!(runtime.set_value(ID, 10.).is_err());
 }

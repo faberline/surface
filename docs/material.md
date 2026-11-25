@@ -1004,8 +1004,23 @@ area keeps the same size. If you supply a localized value label,
 reserve at least 53 dp above the handle and more for enlarged text.
 The label also supplies the human-readable accessibility value.
 
+Use `Theme::centered_slider` for one value that moves around a neutral
+point. Supply a finite neutral value inside the bounds. For a discrete
+scale, choose a reachable stop. The active track runs between the thumb
+and neutral. At neutral only the inactive portions remain.
+
+Use `Theme::vertical_standard_slider` with `VerticalStandardSliderPlacement`
+for a vertical control. `height` sets the full hit target height in dp and
+must be at least 48. The minimum stays at the bottom in both directions.
+Up and Right increase the value. Down and Left decrease it.
+Reserve trailing space with `label_room` to show the upright value label
+beside the control. This space includes the outline and gap. It stays
+outside the slider's hit target. The value text remains available to
+accessibility when the label has too little space to paint.
+
 [Material 3 sliders](https://m3.material.io/components/sliders/specs) ·
-[WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
+[WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) ·
+[WAI vertical slider example](https://www.w3.org/WAI/ARIA/apg/patterns/slider/examples/slider-temperature/)
 
 ## Icon buttons
 
