@@ -25,6 +25,7 @@ mod scroll_control;
 mod slider;
 mod slider_pair;
 mod snapshot;
+mod touch_scroll;
 #[cfg(feature = "devtools")]
 pub mod trace;
 pub use accessibility::{
@@ -108,6 +109,7 @@ pub struct View<M> {
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
+    horizontal_touch_scroll: bool,
     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
     horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
     cursor: Option<CursorStyle>,
@@ -198,6 +200,7 @@ impl<M> View<M> {
             focus_navigation: None,
             context: None,
             stick: false,
+            horizontal_touch_scroll: false,
             vertical_scroll: None,
             horizontal_scroll: None,
             cursor: None,
@@ -782,6 +785,17 @@ impl<M> View<M> {
         self.horizontal_scroll = Some(Rc::new(handler));
         self
     }
+    /// Pan a named, clipped viewport with a primary touch when it overflows
+    /// horizontally. A vertical gesture can scroll the nearest ordinary
+    /// outer scroll container. A custom vertical scroll handler reserves
+    /// that route for wheel or trackpad input. Short taps keep their action.
+    ///
+    /// Explicit drags, text editing and sliders have priority. Wheel and
+    /// accessibility scrolling use their ordinary routes.
+    pub fn horizontal_touch_scroll(mut self) -> Self {
+        self.horizontal_touch_scroll = true;
+        self
+    }
     /// The mouse cursor over this node. It does not change the DOM, layout
     /// or display list. Read it with `Runtime::cursor_at`.
     pub fn cursor(mut self, cursor: CursorStyle) -> Self {
@@ -1142,6 +1156,7 @@ struct Binding<M> {
     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
     context: Option<context::ContextHandler<M>>,
     stick: bool,
+    horizontal_touch_scroll: bool,
     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
     horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
     cursor: Option<CursorStyle>,
@@ -1374,6 +1389,7 @@ impl<A: Application> Runtime<A> {
 
     /// Cancel a pointer sequence without invoking a destination or dismissal.
     pub fn cancel_pointer(&mut self) -> Result<bool, AppError> {
+        let rollback = self.cancel_touch_scroll();
         let touch_changed = self.cancel_touch_contact();
         let changed = self.cancel_press_ripple()
             || touch_changed
@@ -1383,7 +1399,9 @@ impl<A: Application> Runtime<A> {
             || self.text_drag.is_some()
             || self.modal_outside;
         self.clear_modal_pointer();
-        self.cancel_drag().map(|drag| changed || drag)
+        let drag = self.cancel_drag();
+        rollback?;
+        drag.map(|drag| changed || drag)
     }
 
     /// Cancel a pending or claimed contact on a paired slider.
@@ -1424,7 +1442,15 @@ impl<A: Application> Runtime<A> {
     }
 
     fn has_captured_drag(&self) -> bool {
-        self.captured_drag.is_some()
+        self.captured_drag.is_some() || self.has_touch_scroll_capture()
+    }
+
+    fn cancel_drag_for_editing(&mut self) -> Result<bool, AppError> {
+        if self.has_touch_scroll_capture() {
+            self.cancel_pointer()
+        } else {
+            self.cancel_drag()
+        }
     }
 
     fn drag_scope(&self) -> Option<&str> {
@@ -1546,6 +1572,7 @@ impl<A: Application> Runtime<A> {
         } else {
             self.cancel_press_ripple();
             self.discard_drag();
+            let _ = self.cancel_touch_scroll();
             if self.cancel_touch_contact()
                 || self.active_scope_root().is_some()
                 || self.has_slider_pair_capture()
@@ -1561,6 +1588,7 @@ impl<A: Application> Runtime<A> {
             },
         );
         result?;
+        self.reconcile_touch_scroll()?;
         self.reconcile_drag_binding()
     }
     fn prepare_view(&self) -> Result<PreparedView<A::Message>, AppError> {
@@ -1585,6 +1613,7 @@ impl<A: Application> Runtime<A> {
                 || view.dismiss.is_some()
                 || view.modal_layer.is_some_and(ModalLayer::is_retiring)
                 || view.stick
+                || view.horizontal_touch_scroll
                 || view.vertical_scroll.is_some()
                 || view.horizontal_scroll.is_some()
                 || view.slider_pair.is_some()
@@ -1658,6 +1687,7 @@ impl<A: Application> Runtime<A> {
                     focus_navigation: view.focus_navigation,
                     context: view.context,
                     stick: view.stick,
+                    horizontal_touch_scroll: view.horizontal_touch_scroll,
                     vertical_scroll: view.vertical_scroll,
                     horizontal_scroll: view.horizontal_scroll,
                     cursor: view.cursor,
@@ -2197,8 +2227,9 @@ impl<A: Application> Runtime<A> {
     fn dispatch_event(
         &mut self,
         event: Event,
-        suppress_touch_activation: bool,
+        policy: frame_input::PointerPolicy,
     ) -> Result<bool, AppError> {
+        let suppress_touch_activation = policy == frame_input::PointerPolicy::SuppressActivation;
         match event {
             Event::PointerDown { x, y } => {
                 if self.has_captured_drag() || self.has_slider_pair_capture() {
@@ -2260,7 +2291,10 @@ impl<A: Application> Runtime<A> {
                 let defer_focus = hit
                     .and_then(|id| self.bindings.get(&id))
                     .is_some_and(|binding| binding.focus_on_pointer_release);
-                if drag.is_none() && !defer_focus {
+                if drag.is_none()
+                    && !defer_focus
+                    && policy != frame_input::PointerPolicy::DeferFocus
+                {
                     // Blank clicks within a modal must not release its focus scope.
                     if self.pressed.is_some() || self.active_scope_root().is_none() {
                         self.focused = self.pressed.clone();
@@ -2421,7 +2455,7 @@ impl<A: Application> Runtime<A> {
                 if self.focused.as_ref() != Some(&id) {
                     return Ok(false);
                 }
-                let cancelled = self.cancel_drag()?;
+                let cancelled = self.cancel_drag_for_editing()?;
                 self.editing_event(Event::Ime(event))
                     .map(|handled| handled || cancelled)
             }
@@ -2446,7 +2480,7 @@ impl<A: Application> Runtime<A> {
             }
             Event::SetValue { id, value } => self.set_value(&id, value),
             event @ Event::Ime(_) => {
-                let cancelled = self.cancel_drag()?;
+                let cancelled = self.cancel_drag_for_editing()?;
                 self.editing_event(event)
                     .map(|handled| handled || cancelled)
             }

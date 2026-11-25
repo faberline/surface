@@ -192,9 +192,17 @@ pub struct InputAnimationUpdate {
     pub suppress_touch_activation: bool,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum PointerPolicy {
+    Normal,
+    DeferFocus,
+    SuppressActivation,
+}
+
 pub(crate) struct ActiveTouch {
     pub(crate) contact: TouchContact,
     pub(crate) suppress_activation: bool,
+    pub(crate) scroll: Option<crate::touch_scroll::TouchScroll>,
 }
 
 impl<A: Application> Runtime<A> {
@@ -229,7 +237,7 @@ impl<A: Application> Runtime<A> {
             Event::PointerLeave | Event::Blur => self.pointer_position.take().is_some(),
             _ => false,
         };
-        let changed = self.dispatch_event(event, false)?;
+        let changed = self.dispatch_event(event, PointerPolicy::Normal)?;
         Ok(changed || cancelled || (pointer_changed && self.app.observes_frame_input()))
     }
 
@@ -254,7 +262,13 @@ impl<A: Application> Runtime<A> {
                     self.cancel_pointer()?;
                 }
                 self.pointer_position = None;
-                let changed = self.dispatch_event(event, false)?;
+                let scroll = self.touch_scroll_at(point);
+                let policy = if scroll.is_some() {
+                    PointerPolicy::DeferFocus
+                } else {
+                    PointerPolicy::Normal
+                };
+                let changed = self.dispatch_event(event, policy)?;
                 self.touch = Some(ActiveTouch {
                     contact: TouchContact {
                         origin: point,
@@ -262,6 +276,7 @@ impl<A: Application> Runtime<A> {
                         started_ms: self.input_time_ms(),
                     },
                     suppress_activation: false,
+                    scroll,
                 });
                 (changed, true)
             }
@@ -270,13 +285,39 @@ impl<A: Application> Runtime<A> {
                     return Ok(false);
                 };
                 let observed = std::mem::replace(&mut touch.contact.position, point) != point;
-                (self.dispatch_event(event, false)?, observed)
+                let origin = touch.contact.origin;
+                let panned = if let Some(mut scroll) = touch.scroll.take() {
+                    let result =
+                        self.advance_touch_scroll(&mut scroll, (x - origin.0, y - origin.1));
+                    self.touch.as_mut().expect("touch remains active").scroll = Some(scroll);
+                    result?
+                } else {
+                    None
+                };
+                let changed = match panned {
+                    Some(changed) => changed,
+                    None => self.dispatch_event(event, PointerPolicy::Normal)?,
+                };
+                (changed, observed)
             }
             Event::PointerUp { .. } => {
-                let Some(touch) = self.touch.take() else {
+                let Some(mut touch) = self.touch.take() else {
                     return Ok(false);
                 };
-                let changed = self.dispatch_event(event, touch.suppress_activation)?;
+                if let Some(scroll) = &mut touch.scroll {
+                    let origin = touch.contact.origin;
+                    if let Some(changed) =
+                        self.advance_touch_scroll(scroll, (x - origin.0, y - origin.1))?
+                    {
+                        return Ok(changed || self.app.observes_frame_input());
+                    }
+                }
+                let policy = if touch.suppress_activation {
+                    PointerPolicy::SuppressActivation
+                } else {
+                    PointerPolicy::Normal
+                };
+                let changed = self.dispatch_event(event, policy)?;
                 (changed, true)
             }
             _ => unreachable!("other events cannot supply touch coordinates"),

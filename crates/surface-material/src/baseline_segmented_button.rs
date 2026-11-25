@@ -70,7 +70,7 @@ impl Theme {
     ///
     /// The default face is 40 dp high and each hit target is at least
     /// 48 × 48 dp. Long labels can wrap within their segment. A viewport
-    /// too narrow for all minimum targets scrolls the single row with wheel,
+    /// too narrow for all minimum targets scrolls the single row with touch, a wheel,
     /// keyboard focus, or accessibility reveal. Provide
     /// the actual available width and unique IDs, including generated
     /// descendant IDs. Unusable geometry, content or selection returns None.
@@ -201,6 +201,7 @@ impl Theme {
         if scroll {
             Some(
                 root.on_horizontal_scroll(|_, _| None)
+                    .horizontal_touch_scroll()
                     .accessibility_scroll_pages(),
             )
         } else {
@@ -441,25 +442,30 @@ impl ContentLayout {
             reserve || self.checked
         };
         let minimum = first.0.min(self.font.font_size.max(ICON));
-        let stacked = second && usable < minimum + GAP + ICON;
-        let label_width = if self.label.is_some() {
-            first
-                .0
-                .min(if second && !stacked {
-                    usable - GAP - ICON
-                } else {
-                    usable
-                })
-                .max(1.)
+        let mut stacked = second && usable < minimum + GAP + ICON;
+        let limit = if second && !stacked {
+            usable - GAP - ICON
         } else {
-            ICON
+            usable
         };
-        let label_height = self.label.as_ref().map_or(ICON, |label| {
-            fonts
-                .measure_text(label, &self.font, Some(label_width))
-                .1
-                .ceil()
-        });
+        let measure_label = |max_width: f32, fonts: &mut dyn TextMeasurer| {
+            self.label.as_ref().map_or((ICON, ICON), |label| {
+                let width = first.0.min(max_width).max(1.);
+                let height = fonts.measure_text(label, &self.font, Some(width)).1.ceil();
+                (width, height)
+            })
+        };
+        let (mut label_width, mut label_height) = measure_label(limit, fonts);
+        if second && !stacked && self.label.is_some() && label_width < first.0 {
+            let (width, height) = measure_label(usable, fonts);
+            // At larger text sizes a leading icon can force extra lines.
+            // Stack the icon where it makes the whole content block shorter.
+            if ICON + GAP + height < label_height {
+                stacked = true;
+                label_width = width;
+                label_height = height;
+            }
+        }
         if stacked {
             return (
                 ICON + GAP + label_height,

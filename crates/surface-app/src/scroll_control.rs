@@ -261,9 +261,9 @@ impl<A: Application> Runtime<A> {
             .iter()
             .rev()
             .copied()
-            .find(|&id| self.wheel_target_at(computed, id, point))?;
+            .find(|&id| self.scroll_region_at(computed, id, point))?;
         let horizontal = self
-            .wheel_ancestors(computed, hit, point)
+            .scroll_ancestors_at(computed, hit, point)
             .find(|id| self.bindings[id].horizontal_scroll.is_some());
         Some(WheelRoute {
             hit,
@@ -302,7 +302,7 @@ impl<A: Application> Runtime<A> {
         let (max_x, max_y) = self.wheel_limits(computed, target);
         let scroll_x = self.dom.get(target)?.style().scroll_x;
         let (y, message) = self.vertical_wheel(target, delta.1, max_y);
-        self.save_wheel_offsets(target, ((scroll_x + delta.0).clamp(0., max_x), y))?;
+        self.save_scroll_offsets(target, ((scroll_x + delta.0).clamp(0., max_x), y))?;
         self.computed = None;
         self.ime_area = None;
         self.message(message)?;
@@ -333,14 +333,14 @@ impl<A: Application> Runtime<A> {
         if let Some((offset, message)) = horizontal_result {
             if let Some(x) = offset {
                 let y = self.dom.get(horizontal)?.style().scroll_y;
-                self.save_wheel_offsets(horizontal, (x, y))?;
+                self.save_scroll_offsets(horizontal, (x, y))?;
             }
             messages[0] = message;
         }
         if let Some((id, y, message)) = vertical_result {
             let style = self.dom.get(id)?.style();
             if y != style.scroll_y {
-                self.save_wheel_offsets(id, (style.scroll_x, y))?;
+                self.save_scroll_offsets(id, (style.scroll_x, y))?;
             }
             messages[1] = message;
         }
@@ -357,7 +357,12 @@ impl<A: Application> Runtime<A> {
         Ok(handled)
     }
 
-    fn wheel_target_at(&self, computed: &ComputedDom, id: NodeId, point: (f32, f32)) -> bool {
+    pub(crate) fn scroll_region_at(
+        &self,
+        computed: &ComputedDom,
+        id: NodeId,
+        point: (f32, f32),
+    ) -> bool {
         let node = self.dom.get(id).expect("valid wheel node");
         let geometry = &computed.nodes[id.index()];
         node.style().clip
@@ -369,28 +374,39 @@ impl<A: Application> Runtime<A> {
                 .contains(point.0, point.1)
     }
 
-    fn wheel_ancestors<'a>(
+    pub(crate) fn scroll_ancestors_at<'a>(
         &'a self,
         computed: &'a ComputedDom,
         start: NodeId,
         point: (f32, f32),
     ) -> impl Iterator<Item = NodeId> + 'a {
         std::iter::successors(Some(start), |id| self.dom.get(*id).ok()?.parent())
-            .filter(move |&id| self.wheel_target_at(computed, id, point))
+            .filter(move |&id| self.scroll_region_at(computed, id, point))
     }
 
-    fn vertical_wheel_target(
+    pub(crate) fn vertical_wheel_target(
         &self,
         computed: &ComputedDom,
         target: NodeId,
         point: (f32, f32),
     ) -> Option<NodeId> {
-        self.wheel_ancestors(computed, target, point).find(|id| {
-            let binding = &self.bindings[id];
-            let enabled = self.dom.get(*id).is_ok_and(|node| !node.is_disabled());
-            (enabled && binding.vertical_scroll.is_some())
-                || (binding.horizontal_scroll.is_none() && self.wheel_limits(computed, *id).1 > 0.)
-        })
+        self.scroll_ancestors_at(computed, target, point)
+            .find(|id| {
+                let binding = &self.bindings[id];
+                self.has_vertical_scroll_owner(*id)
+                    || (binding.horizontal_scroll.is_none()
+                        && self.wheel_limits(computed, *id).1 > 0.)
+            })
+    }
+
+    pub(crate) fn has_vertical_scroll_owner(&self, id: NodeId) -> bool {
+        self.bindings
+            .get(&id)
+            .is_some_and(|binding| binding.vertical_scroll.is_some())
+            && self
+                .dom
+                .get(id)
+                .is_ok_and(|node| node.style().clip && !node.is_disabled())
     }
 
     fn wheel_limits(&self, computed: &ComputedDom, id: NodeId) -> (f32, f32) {
@@ -475,7 +491,11 @@ impl<A: Application> Runtime<A> {
         )
     }
 
-    fn save_wheel_offsets(&mut self, id: NodeId, offset: (f32, f32)) -> Result<(), AppError> {
+    pub(crate) fn save_scroll_offsets(
+        &mut self,
+        id: NodeId,
+        offset: (f32, f32),
+    ) -> Result<(), AppError> {
         let key = self.stable(id).expect("scroll node has ID");
         self.scroll.insert(key, offset);
         let mut style = self.dom.get(id)?.style().clone();

@@ -1228,8 +1228,9 @@ Tab enters on the first enabled item. Left and Right move focus in the
 visual direction and skip disabled items. Space or Enter activates the
 focused choice. The default face is 40 dp tall. The 48 dp minimum target
 stays in place when labels wrap and the row grows. When the targets cannot
-fit, the row scrolls with a wheel, keyboard focus, or an accessibility
-reveal action. Choose a Connected button group for the Expressive style.
+fit, the row scrolls with touch, a wheel, keyboard focus, or an
+accessibility reveal action. A vertical touch drag can scroll the enclosing
+page. The icon moves above a wrapped label when this saves space. Choose a Connected button group for the Expressive style.
 Existing segmented helpers retain their behavior.
 
 In Material Gallery, choose 動作, then 分段按鈕. The example includes left

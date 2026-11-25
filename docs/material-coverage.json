@@ -68,9 +68,9 @@
       "spec": "https://m3.material.io/components/segmented-buttons/overview",
       "status": "partial",
       "variant_review": "audit baseline outlined segment groups and the Expressive Connected successor against Material 3's published catalog",
-      "desktop_evidence": "The native headless Gallery replay covers light, dark, compact RTL at 200%, keyboard selection, and matching Page.screenshot, CLI and MCP PNGs",
-      "web_evidence": "M320–M323 in e2e/src/material_segmented.rs cover shared outline and seams, projected roles and state, keyboard focus, pointer and touch targets, and narrow RTL scroll",
-      "implemented": "Two to five equal-width Baseline choices with a shared outline, one seam, icon or text, caller-owned radio or checkbox selection, disabled state and a 48 dp minimum hit target. The row grows for large labels and scrolls with a wheel, keyboard focus or accessibility reveal. Direct touch panning, live assistive speech and system contrast remain open. The separate Connected button group provides the Expressive successor.",
+      "desktop_evidence": "The native headless Gallery replay covers light, dark, compact RTL at 200%, keyboard selection, and matching Page.screenshot, CLI and MCP PNGs. https://github.com/faberline/surface/tree/8427f13c8f2861744b6e316f76525255521b7341/docs/evidence/md3/segmented-v0159-candidate",
+      "web_evidence": "M320–M324 in e2e/src/material_segmented.rs cover shared outline and seams, projected roles and state, keyboard focus, pointer and touch targets, narrow RTL scroll, and directional touch panning with cancel and capture-loss coverage",
+      "implemented": "Two to five equal-width Baseline choices with a shared outline, one seam, icon or text, caller-owned radio or checkbox selection, disabled state and a 48 dp minimum hit target. The row grows for large labels and scrolls with touch, a wheel, keyboard focus or accessibility reveal. A vertical drag can move a plain enclosing scroll area. Measured labels can put the icon above the text to save space. Live assistive speech and system contrast remain open. The separate Connected button group provides the Expressive successor.",
       "unit_evidence": "crates/surface-material/tests/baseline_segmented_button.rs covers layout, paint, validation, roles, selection, accessible activation and focus"
     },
     {
