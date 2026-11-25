@@ -169,7 +169,8 @@ does not change application state.
 | `flexible_navigation_bar` | Compact Expressive bar with three to five equal destinations, Tab focus and labels that grow with text |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
 | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
-| `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
+| `icon_button_with_options` | Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes, three widths, and two resting shapes. |
+| `icon_button` | Glyph-based Standard, Filled, Tonal, and Outlined buttons. Supports the original 40 dp face and 48 dp target. |
 | `checkbox_with` | Unchecked, checked and mixed; disabled state |
 | `checkbox_with_options` | Controlled Material 3 checkbox with three states, disabled and error, a stable label and RTL |
 | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
@@ -982,6 +983,31 @@ and place the Web anchor near the top or bottom.
 [Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.1a076cec8bc202c2.json) ·
 [FAB Menu accessibility](https://m3.material.io/components/fab-menu/accessibility) ·
 [Pinned Compose FAB Menu](https://github.com/androidx/androidx/blob/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButtonMenu.kt)
+
+## Icon buttons
+
+Use `Theme::icon_button_with_options` for a standalone vector button.
+Set a unique ID and a localized action name. The command takes one
+`VectorIcon`. A toggle takes two icons and the current checked value.
+Keep the action name stable across states. Handle the message to update
+the checked value.
+
+The five sizes each offer Narrow, Default, and Wide faces. Icons keep
+their token size when text grows. Each hit axis is at least 48 dp. Leave
+space around the button for the focus outline. Its 3 dp stroke keeps a
+2 dp gap from the face.
+
+Round and Square specify the resting shape. The checked toggle uses the
+other shape. Accepted pointer presses animate the face and focus outline
+together with the Expressive Fast Spatial spring. The ripple stays in the
+painted face. Reduce Motion uses the exact pressed and resting endpoints.
+Reserve the `-face`, `-icon`, and `-focus` child IDs.
+
+Use an existing plain tooltip for the visible action hint. Pass its
+stable ID as the description when it adds useful information.
+
+[Material 3 Icon buttons](https://m3.material.io/components/icon-buttons/specs) ·
+[WAI Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)
 
 ## Expressive icon floating action buttons
 

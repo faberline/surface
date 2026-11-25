@@ -56,10 +56,11 @@
       "id": "icon-buttons",
       "spec": "https://m3.material.io/components/icon-buttons/overview",
       "status": "partial",
-      "implemented": "Standard, filled, tonal and outlined icon buttons; toggle selection; disabled; hover and press layers. No elevation, ripple or size and width variants",
+      "implemented": "Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes and three widths, round and square shapes, fixed artwork, disabled state, independent hit and focus bounds, clipped ripple and Expressive pressed corner motion. The legacy glyph builder stays available. System contrast and live screen-reader speech remain open.",
       "variant_review": "pending",
-      "desktop_evidence": null,
-      "web_evidence": null
+      "desktop_evidence": "Two native headless Metal replays match wide light, dark 320 dp RTL at 200% text, and compact tooltip PNGs through Page.screenshot, CLI, and MCP. The native replay verifies Space and Enter, disabled rejection, focus return, and separation from the popup.",
+      "web_evidence": "Headless Chrome WebGPU M294–M297 checks button roles and pressed state, keyboard repeat, actual shape and focus paint, pointer slack, cancellation, Reduce Motion, and the compact tooltip description and placement.",
+      "unit_evidence": "Material tests cover all fifteen footprints, light and dark command/toggle colors, disabled input, repeat suppression, accessible activation, face-only ripple, pressed focus geometry, an exact spring sample, cancellation and Reduce Motion."
     },
     {
       "id": "segmented-buttons",

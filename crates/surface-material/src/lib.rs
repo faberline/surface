@@ -38,6 +38,7 @@ mod fab_menu_motion;
 mod fab_motion;
 mod flexible_navigation_bar;
 mod full_screen_dialog;
+mod icon_button;
 mod list;
 mod loading_indicator;
 mod menu_layout;
@@ -150,6 +151,9 @@ pub use flexible_navigation_bar::FlexibleNavigationBarOptions;
 pub use full_screen_dialog::{
     full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
     FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,
+};
+pub use icon_button::{
+    IconButtonOptions, IconButtonShape, IconButtonSize, IconButtonWidth, MaterialIcon,
 };
 pub use list::{
     ExpandableListOptions, ExpandableListRow, ListExpansionMotion, ListItem, ListLines, ListMedia,

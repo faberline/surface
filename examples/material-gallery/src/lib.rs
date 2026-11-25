@@ -15,6 +15,7 @@ mod extended_fab_demo;
 mod fab_demo;
 mod fab_menu_demo;
 mod flexible_navigation_bar_demo;
+mod icon_button_demo;
 mod list_actions_demo;
 mod list_expand_demo;
 mod list_media_demo;
@@ -62,6 +63,7 @@ use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
 use flexible_navigation_bar_demo::{FlexibleNavigationBarDemo, FlexibleNavigationBarDemoEvent};
+use icon_button_demo::{IconButtonDemo, IconButtonDemoEvent};
 use list_actions_demo::{ListActionsDemo, ListActionsEvent};
 use list_expand_demo::{ListExpandDemo, ListExpandEvent};
 use list_media_demo::{ListMediaDemo, ListMediaEvent};
@@ -131,6 +133,7 @@ pub struct Gallery {
     radio_demo: RadioDemo,
     tabs_demo: TabsDemo,
     chip_demo: ChipDemo,
+    icon_button_demo: IconButtonDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -201,6 +204,7 @@ impl Default for Gallery {
             radio_demo: RadioDemo::default(),
             tabs_demo: TabsDemo::default(),
             chip_demo: ChipDemo::default(),
+            icon_button_demo: IconButtonDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -316,6 +320,7 @@ pub enum Message {
     RadioDemo(RadioDemoEvent),
     TabsDemo(TabsDemoEvent),
     ChipDemo(ChipDemoEvent),
+    IconButtonDemo(IconButtonDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -492,6 +497,9 @@ impl Application for Gallery {
         if self.chip_demo.visible() {
             return self.chip_demo.text_scale();
         }
+        if self.icon_button_demo.visible() {
+            return self.icon_button_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -504,6 +512,7 @@ impl Application for Gallery {
     fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
         let tabs = self.tabs_demo.viewport_changed(width);
         let chips = self.chip_demo.viewport_changed(width);
+        let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
@@ -564,6 +573,7 @@ impl Application for Gallery {
             || flexible_navigation_bar
             || tabs
             || chips
+            || icon_buttons
             || list_actions
             || list_media
             || list_reorder
@@ -577,6 +587,7 @@ impl Application for Gallery {
             || self.tabs_demo.visible()
             || self.checkbox_demo.visible()
             || self.switch_demo.visible()
+            || self.icon_button_demo.visible()
             || self.tooltip_demo.visible()
             || self.scroll_popup_demo.visible()
             || self.button_group_demo.visible()
@@ -597,6 +608,7 @@ impl Application for Gallery {
     fn cancel_transient(&mut self) -> bool {
         (self.tooltip_demo.visible() && self.tooltip_demo.dismiss())
             || (self.fab_demo.is_open() && self.fab_demo.dismiss_tooltip())
+            || (self.icon_button_demo.visible() && self.icon_button_demo.dismiss_tooltip())
             || self.list_reorder_demo.cancel()
     }
     fn animation_frame_with_input(
@@ -661,6 +673,7 @@ impl Application for Gallery {
         let switch = self.switch_demo.frame(&frame, &input, press, hovered);
         let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
         let radio = self.radio_demo.frame(&frame, &input, press, hovered);
+        let icons = self.icon_button_demo.frame(&frame, input, pressed, hovered);
         let tabs = self
             .tabs_demo
             .observe_interaction(&frame, input, pressed, hovered);
@@ -670,13 +683,16 @@ impl Application for Gallery {
             || switch.rebuild
             || checkbox.rebuild
             || radio.rebuild
-            || tabs;
+            || tabs
+            || icons.animation.rebuild;
         update.animation.request_next |= fab.animation.request_next
             || menu.request_next
             || switch.request_next
             || checkbox.request_next
-            || radio.request_next;
+            || radio.request_next
+            || icons.animation.request_next;
         update.suppress_touch_activation |= fab.suppress_touch_activation;
+        update.suppress_touch_activation |= icons.suppress_touch_activation;
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
@@ -873,6 +889,9 @@ impl Application for Gallery {
                 if i != chip_demo::SECTION {
                     self.chip_demo.leave();
                 }
+                if i != icon_button_demo::SECTION {
+                    self.icon_button_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -889,6 +908,7 @@ impl Application for Gallery {
             Message::RadioDemo(event) => self.radio_demo.update(event),
             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
             Message::ChipDemo(event) => self.chip_demo.update(event),
+            Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1095,6 +1115,9 @@ impl Application for Gallery {
         if self.chip_demo.visible() {
             return self.chip_demo.view(&t, self.dark);
         }
+        if self.icon_button_demo.visible() {
+            return self.icon_button_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1198,6 +1221,7 @@ impl Application for Gallery {
                             RadioDemo::show_button(&t),
                             TabsDemo::show_button(&t),
                             ChipDemo::show_button(&t),
+                            IconButtonDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1828,6 +1852,7 @@ mod web {
         state["radio_demo"] = s.radio_demo.inspect(&theme);
         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
         state["chip_demo"] = s.chip_demo.inspect(&theme);
+        state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

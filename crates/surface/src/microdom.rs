@@ -134,8 +134,12 @@ pub struct Node {
     interaction_box_shadows_from_parent: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    interaction_corners_from_parent: bool,
     #[serde(skip)]
     animate_interaction_corners: bool,
+    #[serde(skip)]
+    interaction_corner_spring: Option<[f32; 2]>,
     #[serde(skip)]
     pub(crate) press_ripple: Option<Arc<PressRipple>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -247,7 +251,9 @@ impl Node {
             interaction_box_shadows: None,
             interaction_box_shadows_from_parent: false,
             interaction_corners: None,
+            interaction_corners_from_parent: false,
             animate_interaction_corners: false,
+            interaction_corner_spring: None,
             press_ripple: None,
             fill_contour: None,
             raster: None,
@@ -385,6 +391,13 @@ impl Node {
         self
     }
 
+    /// Use the direct parent's interaction state to choose this node's
+    /// painted corners. The child keeps its own outline and layout.
+    pub fn interaction_corners_from_parent(mut self) -> Self {
+        self.interaction_corners_from_parent = true;
+        self
+    }
+
     /// Let the runtime animate changes between the interaction corners and
     /// the style's resting corners using the style's transition.
     ///
@@ -393,7 +406,28 @@ impl Node {
     /// immediate interaction behavior.
     pub fn animate_interaction_corners(mut self) -> Self {
         self.animate_interaction_corners = true;
+        self.interaction_corner_spring = None;
         self
+    }
+
+    /// Animate this node's painted corners with a spring of unit mass.
+    /// Use positive stiffness and a damping ratio in `(0, 1]`. A stable
+    /// node ID and a runtime clock are required, as with timed motion.
+    pub fn animate_interaction_corners_with_spring(
+        mut self,
+        stiffness: f32,
+        damping_ratio: f32,
+    ) -> Self {
+        if stiffness.is_finite() && stiffness > 0. && damping_ratio > 0. && damping_ratio <= 1. {
+            self.animate_interaction_corners = true;
+            self.interaction_corner_spring = Some([stiffness, damping_ratio]);
+        }
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn interaction_corner_spring(&self) -> Option<[f32; 2]> {
+        self.interaction_corner_spring
     }
 
     /// Enable bounded feedback for an accepted pointer press on this node.
@@ -478,6 +512,10 @@ impl Node {
             .interaction_corners
             .as_deref()
             .filter(|_| !self.disabled)?;
+        let id = match (self.interaction_corners_from_parent, self.parent()) {
+            (true, Some(parent)) => parent,
+            _ => id,
+        };
         let active = if interaction.pressed == Some(id) {
             pressed
         } else if focus == Some(id) {
