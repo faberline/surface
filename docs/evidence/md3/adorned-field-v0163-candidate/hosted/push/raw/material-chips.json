@@ -1,0 +1,874 @@
+{
+  "browser": "Chrome/158.0.8127.88",
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "isFallbackAdapter": true
+  },
+  "wide": {
+    "canvas": [
+      960,
+      800
+    ],
+    "palette": {
+      "surface": [
+        253,
+        247,
+        255,
+        255
+      ],
+      "surface_container_low": [
+        248,
+        242,
+        250,
+        255
+      ],
+      "outline_variant": [
+        202,
+        196,
+        207,
+        255
+      ],
+      "secondary_container": [
+        232,
+        222,
+        248,
+        255
+      ],
+      "secondary": [
+        98,
+        91,
+        113,
+        255
+      ]
+    },
+    "variants": [
+      {
+        "id": "chip-demo-assist",
+        "kind": "assist-flat",
+        "hit": [
+          22.0,
+          186.0,
+          78.0,
+          48.0
+        ],
+        "face": [
+          22.0,
+          194.0,
+          78.0,
+          32.0
+        ],
+        "chip": [
+          22.0,
+          186.0,
+          78.0,
+          48.0
+        ],
+        "label": [
+          56.0,
+          200.0,
+          28.0,
+          20.0
+        ]
+      },
+      {
+        "id": "chip-demo-assist-elevated",
+        "kind": "assist-elevated",
+        "hit": [
+          108.0,
+          186.0,
+          106.0,
+          48.0
+        ],
+        "face": [
+          108.0,
+          194.0,
+          106.0,
+          32.0
+        ],
+        "chip": [
+          108.0,
+          186.0,
+          106.0,
+          48.0
+        ],
+        "label": [
+          142.0,
+          200.0,
+          56.0,
+          20.0
+        ]
+      },
+      {
+        "id": "chip-demo-news",
+        "kind": "filter-flat",
+        "hit": [
+          22.0,
+          298.0,
+          78.0,
+          48.0
+        ],
+        "face": [
+          22.0,
+          306.0,
+          78.0,
+          32.0
+        ],
+        "chip": [
+          22.0,
+          298.0,
+          78.0,
+          48.0
+        ],
+        "label": [
+          56.0,
+          312.0,
+          28.0,
+          20.0
+        ]
+      },
+      {
+        "id": "chip-demo-images",
+        "kind": "filter-elevated",
+        "hit": [
+          108.0,
+          298.0,
+          60.0,
+          48.0
+        ],
+        "face": [
+          108.0,
+          306.0,
+          60.0,
+          32.0
+        ],
+        "chip": [
+          108.0,
+          298.0,
+          60.0,
+          48.0
+        ],
+        "label": [
+          124.0,
+          312.0,
+          28.0,
+          20.0
+        ]
+      },
+      {
+        "id": "chip-demo-chen",
+        "kind": "input",
+        "hit": [
+          22.0,
+          410.0,
+          64.0,
+          48.0
+        ],
+        "face": [
+          22.0,
+          418.0,
+          98.0,
+          32.0
+        ],
+        "chip": [
+          22.0,
+          410.0,
+          112.0,
+          48.0
+        ],
+        "label": [
+          58.0,
+          424.0,
+          28.0,
+          20.0
+        ]
+      },
+      {
+        "id": "chip-demo-suggest",
+        "kind": "suggestion-flat",
+        "hit": [
+          222.0,
+          186.0,
+          60.0,
+          48.0
+        ],
+        "face": [
+          222.0,
+          194.0,
+          60.0,
+          32.0
+        ],
+        "chip": [
+          222.0,
+          186.0,
+          60.0,
+          48.0
+        ],
+        "label": [
+          238.0,
+          200.0,
+          28.0,
+          20.0
+        ]
+      },
+      {
+        "id": "chip-demo-suggest-elevated",
+        "kind": "suggestion-elevated",
+        "hit": [
+          290.0,
+          186.0,
+          120.0,
+          48.0
+        ],
+        "face": [
+          290.0,
+          194.0,
+          120.0,
+          32.0
+        ],
+        "chip": [
+          290.0,
+          186.0,
+          120.0,
+          48.0
+        ],
+        "label": [
+          324.0,
+          200.0,
+          70.0,
+          20.0
+        ]
+      }
+    ],
+    "artwork": [
+      [
+        18.0,
+        18.0
+      ],
+      [
+        18.0,
+        18.0
+      ],
+      [
+        18.0,
+        18.0
+      ],
+      [
+        24.0,
+        24.0
+      ]
+    ],
+    "ax": [
+      {
+        "id": "chip-demo-assist",
+        "name": "排程",
+        "role": "button",
+        "grid": "動作與建議",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-assist-elevated",
+        "name": "查看行程",
+        "role": "button",
+        "grid": "動作與建議",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-disabled",
+        "name": "停用",
+        "role": "button",
+        "grid": "動作與建議",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": true
+      },
+      {
+        "id": "chip-demo-news",
+        "name": "新聞",
+        "role": "checkbox",
+        "grid": "搜尋篩選",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": "true",
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-images",
+        "name": "圖片",
+        "role": "checkbox",
+        "grid": "搜尋篩選",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": "false",
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-filter-type",
+        "name": "依檔案類型篩選",
+        "role": "checkbox",
+        "grid": "搜尋篩選",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": "false",
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-filter-type-menu",
+        "name": "開啟檔案類型選單",
+        "role": "button",
+        "grid": "搜尋篩選",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-chen",
+        "name": "小陳",
+        "role": "button",
+        "grid": "收件人",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-chen-remove",
+        "name": "移除小陳",
+        "role": "button",
+        "grid": "收件人",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-mei",
+        "name": "移除小美",
+        "role": "button",
+        "grid": "收件人",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-lin",
+        "name": "林小姐的工作用電子郵件",
+        "role": "button",
+        "grid": "收件人",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      },
+      {
+        "id": "chip-demo-lin-remove",
+        "name": "移除林小姐",
+        "role": "button",
+        "grid": "收件人",
+        "ancestry": [
+          "gridcell",
+          "row",
+          "grid"
+        ],
+        "checked": null,
+        "disabled": false
+      }
+    ],
+    "surface_pixel": [
+      253,
+      247,
+      255
+    ],
+    "elevated_fill_pixels": [
+      [
+        248,
+        242,
+        250
+      ],
+      [
+        248,
+        242,
+        250
+      ],
+      [
+        248,
+        242,
+        250
+      ]
+    ],
+    "selected_fill_pixel": [
+      232,
+      222,
+      248
+    ],
+    "outline_pixel": [
+      202,
+      196,
+      207
+    ],
+    "shadow_samples": [
+      0,
+      1312,
+      576,
+      1536
+    ],
+    "capture": "material-chips-wide-light.png"
+  },
+  "keyboard": {
+    "stops": [
+      "chip-demo-assist",
+      "chip-demo-assist-elevated",
+      "chip-demo-suggest-elevated",
+      "chip-demo-news",
+      "chip-demo-assist",
+      "chip-demo-news",
+      "chip-demo-images",
+      "chip-demo-chen",
+      "chip-demo-chen-remove"
+    ],
+    "multi": [
+      true,
+      true,
+      false
+    ],
+    "single": [
+      false,
+      true,
+      false
+    ],
+    "wide_menu_trigger": "chip-demo-filter-type-menu",
+    "focus": "chip-demo-chen-remove",
+    "focus_rect": [
+      89.0,
+      420.0,
+      28.0,
+      28.0
+    ],
+    "focus_pixels": 762,
+    "capture": "material-chips-wide-focus.png"
+  },
+  "pointer": {
+    "before": [
+      253,
+      247,
+      255
+    ],
+    "held": [
+      230,
+      225,
+      232
+    ],
+    "body_target": [
+      22.0,
+      410.0,
+      64.0,
+      48.0
+    ],
+    "remove_target": [
+      86.0,
+      410.0,
+      48.0,
+      48.0
+    ],
+    "body_point": [
+      24.0,
+      414.0
+    ],
+    "remove_point": [
+      132.0,
+      414.0
+    ],
+    "after_body": {
+      "visible": true,
+      "rtl": false,
+      "text_scale": 1.0,
+      "multi": true,
+      "compact": false,
+      "menu_open": false,
+      "selected": [
+        false,
+        true,
+        false
+      ],
+      "removed": [
+        false,
+        false,
+        false
+      ],
+      "actions": 1,
+      "edits": 1,
+      "removals": 0,
+      "last": "chip-demo-chen",
+      "palette": {
+        "surface": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "surface_container_low": [
+          248,
+          242,
+          250,
+          255
+        ],
+        "outline_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "secondary": [
+          98,
+          91,
+          113,
+          255
+        ]
+      }
+    },
+    "after_canceled_touch": {
+      "visible": true,
+      "rtl": false,
+      "text_scale": 1.0,
+      "multi": true,
+      "compact": false,
+      "menu_open": false,
+      "selected": [
+        false,
+        true,
+        false
+      ],
+      "removed": [
+        false,
+        false,
+        false
+      ],
+      "actions": 1,
+      "edits": 1,
+      "removals": 0,
+      "last": "chip-demo-chen",
+      "palette": {
+        "surface": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "surface_container_low": [
+          248,
+          242,
+          250,
+          255
+        ],
+        "outline_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "secondary": [
+          98,
+          91,
+          113,
+          255
+        ]
+      }
+    },
+    "after_remove": {
+      "visible": true,
+      "rtl": false,
+      "text_scale": 1.0,
+      "multi": true,
+      "compact": false,
+      "menu_open": false,
+      "selected": [
+        false,
+        true,
+        false
+      ],
+      "removed": [
+        true,
+        false,
+        false
+      ],
+      "actions": 1,
+      "edits": 1,
+      "removals": 1,
+      "last": "chip-demo-chen",
+      "palette": {
+        "surface": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "surface_container_low": [
+          248,
+          242,
+          250,
+          255
+        ],
+        "outline_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "secondary": [
+          98,
+          91,
+          113,
+          255
+        ]
+      }
+    },
+    "restored_focus": [
+      "chip-demo-mei",
+      "chip-demo-lin"
+    ],
+    "after_delete": {
+      "visible": true,
+      "rtl": false,
+      "text_scale": 1.0,
+      "multi": true,
+      "compact": false,
+      "menu_open": false,
+      "selected": [
+        false,
+        true,
+        false
+      ],
+      "removed": [
+        true,
+        true,
+        false
+      ],
+      "actions": 1,
+      "edits": 1,
+      "removals": 2,
+      "last": "chip-demo-mei",
+      "palette": {
+        "surface": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "surface_container_low": [
+          248,
+          242,
+          250,
+          255
+        ],
+        "outline_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "secondary": [
+          98,
+          91,
+          113,
+          255
+        ]
+      }
+    },
+    "after_backspace": {
+      "visible": true,
+      "rtl": false,
+      "text_scale": 1.0,
+      "multi": true,
+      "compact": false,
+      "menu_open": false,
+      "selected": [
+        false,
+        true,
+        false
+      ],
+      "removed": [
+        true,
+        true,
+        true
+      ],
+      "actions": 1,
+      "edits": 1,
+      "removals": 3,
+      "last": "chip-demo-lin",
+      "palette": {
+        "surface": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "surface_container_low": [
+          248,
+          242,
+          250,
+          255
+        ],
+        "outline_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "secondary_container": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "secondary": [
+          98,
+          91,
+          113,
+          255
+        ]
+      }
+    },
+    "capture": "material-chips-wide-pressed.png"
+  },
+  "compact": {
+    "canvas": [
+      320,
+      1020
+    ],
+    "rtl": true,
+    "text_scale": 2.0,
+    "first_row": [
+      192.0,
+      402.0,
+      106.0,
+      68.0
+    ],
+    "next_in_row": [
+      22.0,
+      402.0,
+      162.0,
+      68.0
+    ],
+    "following_row": [
+      210.0,
+      478.0,
+      88.0,
+      68.0
+    ],
+    "focus_path": [
+      "chip-demo-assist",
+      "chip-demo-assist-elevated",
+      "chip-demo-suggest",
+      "chip-demo-assist"
+    ],
+    "long_label": [
+      70.0,
+      904.0,
+      192.0,
+      80.0
+    ],
+    "removal": [
+      22.0,
+      890.0,
+      48.0,
+      108.0
+    ],
+    "label_ink": [
+      202,
+      196,
+      207
+    ],
+    "label_line_ink": [
+      3667,
+      3659
+    ],
+    "menu_body": "chip-demo-filter-type",
+    "menu_ax": {
+      "id": "chip-demo-filter-type",
+      "name": "依檔案類型篩選",
+      "role": "button",
+      "grid": "搜尋篩選",
+      "ancestry": [
+        "gridcell",
+        "row",
+        "grid"
+      ],
+      "checked": null,
+      "disabled": false
+    },
+    "selection_after_menu": [
+      true,
+      false,
+      true
+    ],
+    "back_focus": "chip-demo-show",
+    "capture": "material-chips-compact-dark-rtl-200.png"
+  },
+  "page_errors": []
+}

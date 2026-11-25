@@ -1,0 +1,4141 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index b439c78..8839d3c 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.62"
++version = "0.1.63"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index b3cff9b..bbd1aec 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.62"
++version = "0.1.63"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/accessibility.rs b/crates/surface-app/src/accessibility.rs
+index 0ea5cd4..72318fd 100644
+--- a/crates/surface-app/src/accessibility.rs
++++ b/crates/surface-app/src/accessibility.rs
+@@ -439,6 +439,45 @@ impl<M> AccessibilityFrame<'_, M> {
+             .or_else(|| resolve(tooltip?, Role::Tooltip))
+     }
+ 
++    /// Resolve the visible supplementary text in declared order, followed by
++    /// the existing single description or its clipped validation fallback.
++    /// A part with text is the clipped fallback. It contributes text but its
++    /// node is outside the visible accessibility tree.
++    pub fn description_parts(&self, id: NodeId) -> Vec<(NodeId, Option<&str>)> {
++        let Some(source) = self
++            .node(id)
++            .filter(|node| !node.node.is_disabled() && has_visible_bounds(node))
++        else {
++            return Vec::new();
++        };
++        let mut parts = Vec::new();
++        let mut seen = BTreeSet::new();
++        for key in source.node.additional_description_text_targets() {
++            if key.trim().is_empty() {
++                continue;
++            }
++            if let Some((target, description)) = self.description_node(id, key, Role::Text) {
++                if has_visible_bounds(&description)
++                    && self.children(target).next().is_none()
++                    && seen.insert(target)
++                {
++                    parts.push((target, None));
++                }
++            }
++        }
++        let primary = self
++            .description_target(id)
++            .map(|target| (target, None))
++            .or_else(|| {
++                self.clipped_validation_text(id)
++                    .map(|(target, text)| (target, Some(text)))
++            });
++        if let Some(part) = primary.filter(|(target, _)| seen.insert(*target)) {
++            parts.push(part);
++        }
++        parts
++    }
++
+     /// Read an invalid editor's mounted description when it is fully clipped.
+     /// Only a visible editor and a noninteractive text target without children
+     /// in the current accessibility scope can use this fallback. The target
+diff --git a/crates/surface-app/src/editing_runtime.rs b/crates/surface-app/src/editing_runtime.rs
+index 89d35aa..15577b4 100644
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -300,10 +300,35 @@ impl<A: Application> Runtime<A> {
+             } else {
+                 binding.single_line_text_horizontal_inset
+             };
+-            let mut origin = g
+-                .bounds
+-                .inset(node.style().padding)
+-                .inset_horizontal(content_inset);
++            let padded = g.bounds.inset(node.style().padding);
++            let measured_horizontal = binding
++                .single_line_text_horizontal_bounds
++                .as_deref()
++                .filter(|_| !options.multiline)
++                .and_then(|key| display.by_id(key))
++                .filter(|sibling| {
++                    *sibling != id
++                        && node.parent().is_some()
++                        && display.get(*sibling).is_ok_and(|reference| {
++                            reference.role() == Role::Group
++                                && reference.parent() == node.parent()
++                                && !reference.is_focusable()
++                        })
++                        && !self.has_interaction_binding(*sibling)
++                })
++                .map(|sibling| computed.nodes[sibling.index()].bounds)
++                .filter(|bounds| {
++                    bounds.x.is_finite()
++                        && bounds.width.is_finite()
++                        && bounds.width > 0.
++                        && bounds.x >= padded.x
++                        && bounds.x + bounds.width <= padded.x + padded.width
++                });
++            let mut origin = padded.inset_horizontal(content_inset);
++            if let Some(bounds) = measured_horizontal {
++                origin.x = bounds.x;
++                origin.width = bounds.width;
++            }
+             let content_width = origin.width;
+             let text = editor.display_value();
+             let text_style = node.style().text_style();
+@@ -423,7 +448,13 @@ impl<A: Application> Runtime<A> {
+                 },
+             );
+             decorations.insert(id, decoration);
+-            if content_inset > 0. {
++            if let Some(bounds) = measured_horizontal {
++                display.set_presented_text_input_horizontal_bounds(
++                    id,
++                    bounds.x - padded.x,
++                    bounds.width,
++                )?;
++            } else if content_inset > 0. {
+                 display.set_presented_text_input_horizontal_inset(id, content_inset)?;
+             }
+             if top_inset > 0. {
+diff --git a/crates/surface-app/src/editor_paint.rs b/crates/surface-app/src/editor_paint.rs
+index 8f05b74..65020f8 100644
+--- a/crates/surface-app/src/editor_paint.rs
++++ b/crates/surface-app/src/editor_paint.rs
+@@ -16,7 +16,7 @@ pub struct TextInputPaintState {
+ }
+ 
+ pub(crate) type TextInputContour =
+-    Box<dyn Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour>>;
++    Box<dyn Fn(TextInputPaintState, Rect, Option<Rect>) -> Option<FillContour>>;
+ 
+ pub(crate) enum Effect {
+     Visibility(Box<dyn Fn(TextInputPaintState) -> bool>),
+@@ -72,9 +72,30 @@ impl<A: Application> Runtime<A> {
+         let active = !node.is_disabled() && self.in_scope(id);
+         let buffer = self.editor(editor);
+         let geometry = &computed.nodes[id.index()];
++        let action = self
++            .bindings
++            .get(&id)
++            .and_then(|binding| self.dom.by_id(binding.text_input_hover_action.as_deref()?));
++        let is_hovered = active
++            && hovered.is_some_and(|target| {
++                if target == id {
++                    return true;
++                }
++                if action != Some(target) {
++                    return false;
++                }
++                let Ok(peer) = self.dom.get(target) else {
++                    return false;
++                };
++                let rect = computed.nodes[target.index()].bounds;
++                peer.role() == Role::Button
++                    && peer.parent() == Some(shell)
++                    && rect.y >= geometry.bounds.y
++                    && rect.y + rect.height <= geometry.bounds.y + geometry.bounds.height
++            });
+         Some(TextInputPaintState {
+             is_focused: active && self.focused() == Some(editor),
+-            is_hovered: active && hovered == Some(id),
++            is_hovered,
+             is_composing: active && buffer.is_some_and(crate::TextEditor::is_composing),
+             is_empty: buffer.map_or_else(
+                 || node.text_value().unwrap_or_default().is_empty(),
+@@ -127,7 +148,8 @@ impl<A: Application> Runtime<A> {
+                                 == shell
+                         })
+                         .map(|reference| computed.nodes[reference.index()].bounds);
+-                    paint(state, reference).map(ResolvedPaint::Contour)
++                    let decoration = computed.nodes[id.index()].bounds;
++                    paint(state, decoration, reference).map(ResolvedPaint::Contour)
+                 }
+             };
+             if let Some(paint) = paint {
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 870207e..d11d12c 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -99,6 +99,8 @@ pub struct View<M> {
+     single_line_vertical_placement: SingleLineVerticalPlacement,
+     right_align_single_line_text: bool,
+     single_line_text_horizontal_inset: f32,
++    single_line_text_horizontal_bounds: Option<String>,
++    text_input_hover_action: Option<String>,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     focused_placeholder: bool,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+@@ -192,6 +194,8 @@ impl<M> View<M> {
+             single_line_vertical_placement: SingleLineVerticalPlacement::Top,
+             right_align_single_line_text: false,
+             single_line_text_horizontal_inset: 0.,
++            single_line_text_horizontal_bounds: None,
++            text_input_hover_action: None,
+             text_input_placeholder: None,
+             focused_placeholder: false,
+             value: None,
+@@ -275,6 +279,21 @@ impl<M> View<M> {
+         editor_id: impl Into<String>,
+         reference_id: Option<&str>,
+         painter: impl Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour> + 'static,
++    ) -> Self {
++        self.paint_text_input_contour_with_bounds(editor_id, reference_id, move |state, _, rect| {
++            painter(state, rect)
++        })
++    }
++
++    /// Paint a sibling editor's decoration when its own frame differs from the
++    /// editor's frame. The second argument gives the decoration's global
++    /// bounds. The third gives the optional sibling reference's global bounds.
++    /// Return a contour in the decoration's local coordinates.
++    pub fn paint_text_input_contour_with_bounds(
++        self,
++        editor_id: impl Into<String>,
++        reference_id: Option<&str>,
++        painter: impl Fn(TextInputPaintState, Rect, Option<Rect>) -> Option<FillContour> + 'static,
+     ) -> Self {
+         self.with_text_input_paint(
+             editor_id,
+@@ -546,6 +565,26 @@ impl<M> View<M> {
+         self
+     }
+ 
++    /// Set the horizontal text box from a passive sibling's measured bounds.
++    /// The sibling must fit within the padded editor. The normal inset applies
++    /// when the sibling is absent or invalid. The hit target and vertical text
++    /// placement keep their original bounds, and multiline text ignores this.
++    pub fn single_line_text_horizontal_bounds_from(
++        mut self,
++        sibling_id: impl Into<String>,
++    ) -> Self {
++        self.single_line_text_horizontal_bounds = Some(sibling_id.into());
++        self
++    }
++
++    /// Include a sibling Button in this editor's presentation hover while
++    /// the button fits within the editor's vertical span. The action keeps
++    /// its own focus, hit target, and activation behavior.
++    pub fn text_input_hover_with_action(mut self, action_id: impl Into<String>) -> Self {
++        self.text_input_hover_action = Some(action_id.into());
++        self
++    }
++
+     /// Paint a hint while this editor is empty and has no active IME
+     /// composition. The hint keeps the field's geometry, value and
+     /// accessible name. Use the node's name to label the actual text input.
+@@ -1225,6 +1264,8 @@ struct Binding<M> {
+     single_line_vertical_placement: SingleLineVerticalPlacement,
+     right_align_single_line_text: bool,
+     single_line_text_horizontal_inset: f32,
++    single_line_text_horizontal_bounds: Option<String>,
++    text_input_hover_action: Option<String>,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     focused_placeholder: bool,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+@@ -1760,6 +1801,8 @@ impl<A: Application> Runtime<A> {
+                     single_line_vertical_placement: view.single_line_vertical_placement,
+                     right_align_single_line_text: view.right_align_single_line_text,
+                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
++                    single_line_text_horizontal_bounds: view.single_line_text_horizontal_bounds,
++                    text_input_hover_action: view.text_input_hover_action,
+                     text_input_placeholder: view.text_input_placeholder,
+                     focused_placeholder: view.focused_placeholder,
+                     value: view.value,
+diff --git a/crates/surface-app/tests/accessibility_description.rs b/crates/surface-app/tests/accessibility_description.rs
+index 4fc89ab..465eaa2 100644
+--- a/crates/surface-app/tests/accessibility_description.rs
++++ b/crates/surface-app/tests/accessibility_description.rs
+@@ -332,6 +332,171 @@ fn a_clipped_text_parent_with_a_visible_child_is_not_a_validation_target() {
+     assert_eq!(frame.clipped_validation_text(editor), None);
+ }
+ 
++#[test]
++fn supplementary_descriptions_require_passive_visible_unique_targets_in_scope() {
++    #[derive(Clone, Copy)]
++    struct Adorned {
++        modal: bool,
++        disabled: bool,
++        clipped_error: bool,
++    }
++
++    impl Application for Adorned {
++        type Message = Self;
++
++        fn update(&mut self, message: Self) {
++            *self = message;
++        }
++
++        fn view(&self) -> View<Self> {
++            let editor = View::new(
++                Node::new(Role::TextInput, "Amount")
++                    .id("amount")
++                    .text("12")
++                    .disabled(self.disabled)
++                    .invalid(true)
++                    .described_by_texts([
++                        "prefix",
++                        "missing",
++                        "tooltip",
++                        "status",
++                        "button",
++                        "focusable",
++                        "disabled",
++                        "blank",
++                        "suppressed",
++                        "clipped",
++                        "parent",
++                        "suffix",
++                        "prefix",
++                        "amount",
++                        "error",
++                    ])
++                    .described_by_text("error"),
++            )
++            .on_input(|_| Adorned {
++                modal: false,
++                disabled: false,
++                clipped_error: false,
++            });
++            let suffix = View::new(Node::new(Role::Text, "").id("suffix").text("公斤"));
++            let error_style = if self.clipped_error {
++                Style::default().width(Length::Px(100.)).fixed(Insets {
++                    left: Length::Px(-220.),
++                    top: Length::Px(100.),
++                    ..Default::default()
++                })
++            } else {
++                Style::default()
++            };
++            let error = View::new(
++                Node::new(Role::Text, "")
++                    .id("error")
++                    .text("請輸入整數。")
++                    .styled(error_style),
++            );
++            let local = if self.modal {
++                View::new(Node::new(Role::Dialog, "Edit amount").id("modal"))
++                    .children([editor, suffix, error])
++                    .modal(*self)
++            } else {
++                View::new(Node::new(Role::Group, "").styled(Style::column()))
++                    .children([editor, suffix, error])
++            };
++            let text = |id, value| Node::new(Role::Text, "").id(id).text(value);
++            View::new(Node::new(Role::Window, "App").styled(Style::column())).children([
++                local,
++                View::new(text("prefix", "歐元")),
++                View::new(
++                    Node::new(Role::Tooltip, "Tooltip")
++                        .id("tooltip")
++                        .text("Tooltip"),
++                ),
++                View::new(
++                    Node::new(Role::Status, "Status")
++                        .id("status")
++                        .text("Status"),
++                ),
++                View::new(
++                    Node::new(Role::Button, "Button")
++                        .id("button")
++                        .text("Button"),
++                ),
++                View::new(text("focusable", "Focusable").tab_index(0)),
++                View::new(text("disabled", "Disabled").disabled(true)),
++                View::new(text("blank", " ")),
++                View::new(text("suppressed", "Suppressed")).without_interaction(None),
++                View::new(text("clipped", "Clipped").styled(
++                    Style::default().width(Length::Px(100.)).fixed(Insets {
++                        left: Length::Px(-220.),
++                        ..Default::default()
++                    }),
++                )),
++                View::new(text("parent", "Parent")).children([View::new(text("child", "Child"))]),
++            ])
++        }
++    }
++
++    let base = Adorned {
++        modal: false,
++        disabled: false,
++        clipped_error: false,
++    };
++    let mut runtime = Runtime::new(base).unwrap();
++    for (scene, expected) in [
++        (
++            base,
++            vec![("prefix", None), ("suffix", None), ("error", None)],
++        ),
++        (
++            Adorned {
++                modal: true,
++                ..base
++            },
++            vec![("suffix", None), ("error", None)],
++        ),
++        (
++            Adorned {
++                clipped_error: true,
++                ..base
++            },
++            vec![
++                ("prefix", None),
++                ("suffix", None),
++                ("error", Some("請輸入整數。")),
++            ],
++        ),
++        (
++            Adorned {
++                disabled: true,
++                ..base
++            },
++            vec![],
++        ),
++    ] {
++        runtime.apply(scene).unwrap();
++        runtime.render(320., 440., &mut Metrics).unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        let owner = runtime.dom().by_id("amount").unwrap();
++        let parts = frame.description_parts(owner);
++        let observed: Vec<_> = parts
++            .into_iter()
++            .map(|(target, clipped)| {
++                (
++                    frame.node(target).unwrap().node.stable_id().unwrap(),
++                    clipped,
++                )
++            })
++            .collect();
++        assert_eq!(observed, expected);
++        assert_eq!(
++            frame.description_target(owner),
++            (!scene.disabled && !scene.clipped_error)
++                .then(|| runtime.dom().by_id("error").unwrap())
++        );
++    }
++}
++
+ #[cfg(feature = "devtools")]
+ #[test]
+ fn devtools_exposes_grid_state_and_text_reference_through_the_existing_methods() {
+diff --git a/crates/surface-app/tests/editing.rs b/crates/surface-app/tests/editing.rs
+index fd7421b..f34888b 100644
+--- a/crates/surface-app/tests/editing.rs
++++ b/crates/surface-app/tests/editing.rs
+@@ -839,6 +839,90 @@ fn top_inset_keeps_the_whole_editor_target_and_aligns_all_text_geometry() {
+     assert_eq!(input.caret, Some(Rect::new(24., 28., 1., 24.)));
+ }
+ 
++#[test]
++fn measured_sibling_sets_one_text_box_without_shrinking_the_editor_target() {
++    #[derive(Default)]
++    struct Editor(String);
++
++    impl Application for Editor {
++        type Message = String;
++
++        fn update(&mut self, text: String) {
++            self.0 = text;
++        }
++
++        fn view(&self) -> View<String> {
++            View::new(Node::new(Role::Group, "Page")).children([
++                View::new(
++                    Node::new(Role::TextInput, "名稱")
++                        .id("editor")
++                        .text(&self.0)
++                        .styled(
++                            Style::column()
++                                .height(Length::Px(56.))
++                                .font_size(16.)
++                                .line_height(24.),
++                        ),
++                )
++                .center_single_line_text()
++                .inset_single_line_text_horizontally(8.)
++                .single_line_text_horizontal_bounds_from("content")
++                .focused_text_input_placeholder("輸入名稱", Color::rgb(0, 0, 0))
++                .on_input(|text| text),
++                View::new(
++                    Node::new(Role::Group, "").id("content").styled(
++                        Style::column()
++                            .width(Length::Px(90.))
++                            .height(Length::Px(8.))
++                            .absolute(surface::Insets {
++                                left: Length::Px(45.),
++                                top: Length::Px(8.),
++                                ..surface::Insets::default()
++                            }),
++                    ),
++                )
++                .without_interaction(None),
++            ])
++        }
++    }
++
++    let mut runtime = Runtime::new(Editor::default()).unwrap();
++    runtime.render(200., 100., &mut Metrics).unwrap();
++    runtime
++        .dispatch(Event::PointerDown { x: 3., y: 2. })
++        .unwrap();
++    runtime.dispatch(Event::PointerUp { x: 3., y: 2. }).unwrap();
++    assert_eq!(runtime.focused(), Some("editor"));
++    let paint = runtime.render(200., 100., &mut Metrics).unwrap();
++    assert!(paint.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
++        text, clip, editable: true, ..
++    } if text == "輸入名稱" && *clip == Rect::new(45., 0., 90., 56.))));
++    assert_eq!(
++        runtime.input_snapshot().unwrap().caret,
++        Some(Rect::new(45., 16., 1., 24.))
++    );
++
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄨ".into(),
++            selection: Some(("ㄨ".len(), "ㄨ".len())),
++        }))
++        .unwrap();
++    // The sibling now lies partly outside the editor. Use the normal inset
++    // and keep the same preedit and focus through this layout change.
++    let paint = runtime.render(120., 100., &mut Metrics).unwrap();
++    let input = runtime.input_snapshot().unwrap();
++    assert!(input.composing);
++    assert!(input.value.is_empty());
++    assert_eq!(input.caret, Some(Rect::new(24., 16., 1., 24.)));
++    assert!(paint
++        .ops
++        .iter()
++        .any(|op| matches!(op, PaintOp::Quad { rect, clip, .. }
++        if *rect == Rect::new(8., 38., 16., 1.) && *clip == Rect::new(8., 0., 104., 56.))));
++}
++
+ #[test]
+ fn top_inset_preserves_one_measured_line_and_leaves_multiline_unchanged() {
+     struct Editor {
+diff --git a/crates/surface-app/tests/editor_paint.rs b/crates/surface-app/tests/editor_paint.rs
+index a848122..d093d52 100644
+--- a/crates/surface-app/tests/editor_paint.rs
++++ b/crates/surface-app/tests/editor_paint.rs
+@@ -16,7 +16,7 @@ const HOVER: Color = Color::rgb(40, 92, 118);
+ const FOCUSED: Color = Color::rgb(70, 31, 144);
+ const MARKER: Color = Color::rgb(33, 44, 55);
+ 
+-type Observation = Rc<Cell<Option<(TextInputPaintState, Option<Rect>)>>>;
++type Observation = Rc<Cell<Option<(TextInputPaintState, Option<Rect>, Rect)>>>;
+ 
+ #[derive(Clone)]
+ enum Message {
+@@ -82,10 +82,14 @@ impl Application for Model {
+                 .id(OUTLINE)
+                 .styled(Style::column().height(Length::Px(12.))),
+         )
+-        .paint_text_input_contour(EDITOR, Some(reference), move |state, label| {
+-            observation.set(Some((state, label)));
+-            FillContour::new([[0., 0.], [12., 0.], [0., 8.]], ink(state))
+-        });
++        .paint_text_input_contour_with_bounds(
++            EDITOR,
++            Some(reference),
++            move |state, outline, label| {
++                observation.set(Some((state, label, outline)));
++                FillContour::new([[0., 0.], [12., 0.], [0., 8.]], ink(state))
++            },
++        );
+         let conditional = View::new(Node::new(Role::Group, "").id("conditionally-painted"))
+             .children([View::new(
+                 Node::new(Role::Text, "")
+@@ -207,6 +211,8 @@ fn focus_only_changes_paint_and_keeps_one_semantic_editor() {
+     let label = geometry(&runtime, FLOATING);
+     let observation = runtime.app().observation.get().unwrap();
+     assert_eq!(observation.0.bounds, bounds);
++    assert_eq!(observation.2, geometry(&runtime, OUTLINE));
++    assert_ne!(observation.2, bounds);
+     assert_eq!(
+         observation.1,
+         Some(label),
+@@ -339,7 +345,7 @@ fn disabled_value_and_invalid_reference_have_safe_paint_defaults() {
+     })
+     .unwrap();
+     let list = draw(&mut runtime);
+-    let (state, reference) = runtime.app().observation.get().unwrap();
++    let (state, reference, _) = runtime.app().observation.get().unwrap();
+     assert_eq!(reference, None);
+     assert!(!state.is_focused && !state.is_hovered && !state.is_composing && !state.is_empty);
+     assert!(runtime.editor(EDITOR).is_none());
+diff --git a/crates/surface-material/src/icon_button.rs b/crates/surface-material/src/icon_button.rs
+index cf861af..f8f524d 100644
+--- a/crates/surface-material/src/icon_button.rs
++++ b/crates/surface-material/src/icon_button.rs
+@@ -1,4 +1,7 @@
+-use surface::{Align, Color, Corners, Insets, Length, Node, Role, Style};
++use surface::{
++    Align, Color, Corners, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style,
++    TextMeasurer,
++};
+ use surface_app::{CursorStyle, View};
+ 
+ use crate::{IconButtonKind, Theme, VectorIcon};
+@@ -74,15 +77,50 @@ impl Theme {
+         options: IconButtonOptions<'_>,
+         icon: MaterialIcon<'_>,
+         message: M,
++    ) -> Option<View<M>> {
++        self.build_icon_button(options, IconButtonArtwork::Glyph(icon), message)
++    }
++
++    /// A 48 dp trailing action. The field paints the separate passive glyph.
++    pub(crate) fn text_field_trailing_icon_button<M>(
++        &self,
++        id: &str,
++        name: &str,
++        disabled: bool,
++        field_icon_ink: Color,
++        message: M,
++    ) -> Option<View<M>> {
++        self.build_icon_button(
++            IconButtonOptions {
++                id,
++                name,
++                description: None,
++                kind: IconButtonKind::Standard,
++                size: IconButtonSize::Small,
++                width: IconButtonWidth::Narrow,
++                shape: IconButtonShape::Round,
++                disabled,
++            },
++            IconButtonArtwork::FieldAdornment(field_icon_ink),
++            message,
++        )
++    }
++
++    fn build_icon_button<M>(
++        &self,
++        options: IconButtonOptions<'_>,
++        artwork: IconButtonArtwork<'_>,
++        message: M,
+     ) -> Option<View<M>> {
+         if options.id.trim().is_empty() || options.name.trim().is_empty() {
+             return None;
+         }
+-        let (asset, checked) = match icon {
+-            MaterialIcon::Command(asset) => (asset, None),
+-            MaterialIcon::Toggle { checked, off, on } => {
+-                (if checked { on } else { off }, Some(checked))
++        let (asset, checked, field_ink) = match artwork {
++            IconButtonArtwork::Glyph(MaterialIcon::Command(asset)) => (Some(asset), None, None),
++            IconButtonArtwork::Glyph(MaterialIcon::Toggle { checked, off, on }) => {
++                (Some(if checked { on } else { off }), Some(checked), None)
+             }
++            IconButtonArtwork::FieldAdornment(ink) => (None, None, Some(ink)),
+         };
+         let tokens = options.size.tokens();
+         let [narrow, default, wide] = tokens.widths;
+@@ -104,14 +142,8 @@ impl Theme {
+         let pressed_corners =
+             |outset| (!options.disabled).then_some(Corners::all(tokens.pressed_radius + outset));
+ 
+-        let icon_view = View::new(
+-            Node::new(Role::Group, "")
+-                .id(format!("{}-icon", options.id))
+-                .styled(centered_box(tokens.icon, tokens.icon))
+-                .fill_contour(asset.contour_dp(tokens.icon, palette.icon)?),
+-        );
+         let face_id = format!("{}-face", options.id);
+-        let face = View::new(
++        let mut face = View::new(
+             Node::new(Role::Group, "")
+                 .id(&face_id)
+                 .styled(
+@@ -125,7 +157,7 @@ impl Theme {
+                         .state_layer(if options.disabled {
+                             Color::TRANSPARENT
+                         } else {
+-                            palette.icon
++                            field_ink.unwrap_or(palette.icon)
+                         }),
+                 )
+                 // Keep the pressed target with the passive face. The parent
+@@ -135,20 +167,29 @@ impl Theme {
+                 .animate_interaction_corners_with_spring(CORNER_STIFFNESS, CORNER_DAMPING_RATIO)
+                 .state_layer_alphas(20, 26, 26),
+         )
+-        .children([icon_view])
+         .without_interaction(None);
++        if let Some(asset) = asset {
++            let icon_view = View::new(
++                Node::new(Role::Group, "")
++                    .id(format!("{}-icon", options.id))
++                    .styled(centered_box(tokens.icon, tokens.icon))
++                    .fill_contour(asset.contour_dp(tokens.icon, palette.icon)?),
++            );
++            face = face.children([icon_view]);
++        }
++        let mut focus_style = centered_box(width + 2. * FOCUS_OUTSET, height + 2. * FOCUS_OUTSET)
++            .corners(Corners::all(radius + FOCUS_OUTSET));
++        if field_ink.is_none() {
++            focus_style = focus_style.absolute(Insets {
++                left: Length::Px((target_width - width) / 2. - FOCUS_OUTSET),
++                top: Length::Px((target_height - height) / 2. - FOCUS_OUTSET),
++                ..Insets::default()
++            });
++        }
+         let focus = View::new(
+             Node::new(Role::Group, "")
+                 .id(format!("{}-focus", options.id))
+-                .styled(
+-                    centered_box(width + 2. * FOCUS_OUTSET, height + 2. * FOCUS_OUTSET)
+-                        .absolute(Insets {
+-                            left: Length::Px((target_width - width) / 2. - FOCUS_OUTSET),
+-                            top: Length::Px((target_height - height) / 2. - FOCUS_OUTSET),
+-                            ..Insets::default()
+-                        })
+-                        .corners(Corners::all(radius + FOCUS_OUTSET)),
+-                )
++                .styled(focus_style)
+                 // The focus outline uses the same target plus its outset.
+                 .interaction_corners(None, pressed_corners(FOCUS_OUTSET), None)
+                 .interaction_corners_from_parent()
+@@ -171,6 +212,9 @@ impl Theme {
+         if let Some(target) = options.description {
+             action = action.described_by_text(target);
+         }
++        if field_ink.is_some() {
++            action = action.measured_group(FieldActionLayout { width, height });
++        }
+         let mut view = View::new(action).children([face, focus]);
+         if options.disabled {
+             return Some(view);
+@@ -190,6 +234,42 @@ impl Theme {
+     }
+ }
+ 
++enum IconButtonArtwork<'a> {
++    Glyph(MaterialIcon<'a>),
++    FieldAdornment(Color),
++}
++
++#[derive(Debug)]
++struct FieldActionLayout {
++    width: f32,
++    height: f32,
++}
++
++impl MeasuredGroupLayout for FieldActionLayout {
++    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
++        (MIN_TARGET, MIN_TARGET)
++    }
++
++    fn place(
++        &self,
++        _: &[&Node],
++        (width, height): (f32, f32),
++        _: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let x = (width - self.width) / 2.;
++        let y = (height - self.height) / 2.;
++        vec![
++            Rect::new(x, y, self.width, self.height),
++            Rect::new(
++                x - FOCUS_OUTSET,
++                y - FOCUS_OUTSET,
++                self.width + 2. * FOCUS_OUTSET,
++                self.height + 2. * FOCUS_OUTSET,
++            ),
++        ]
++    }
++}
++
+ fn centered_box(width: f32, height: f32) -> Style {
+     let mut style = Style::row()
+         .width(Length::Px(width))
+@@ -271,3 +351,134 @@ impl Palette {
+         }
+     }
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use surface::{Rect, TextMeasurer};
++    use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime};
++
++    const INK: Color = Color(115, 27, 38, 255);
++
++    struct Field {
++        disabled: bool,
++        requests: usize,
++    }
++
++    impl Application for Field {
++        type Message = ();
++
++        fn update(&mut self, (): ()) {
++            self.requests += 1;
++        }
++
++        fn view(&self) -> View<()> {
++            let action = Theme::light()
++                .text_field_trailing_icon_button("trailing", "清除文字", self.disabled, INK, ())
++                .unwrap();
++            View::new(Node::new(Role::Window, "Test").styled(Style::row().align(Align::Center)))
++                .children([
++                    View::new(
++                        Node::new(Role::TextInput, "名稱")
++                            .id("editor")
++                            .styled(centered_box(80., 56.)),
++                    )
++                    .on_input(|_| ()),
++                    action,
++                ])
++        }
++    }
++
++    struct Metrics;
++
++    impl TextMeasurer for Metrics {
++        fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++            (text.chars().count() as f32 * size, size)
++        }
++    }
++
++    #[test]
++    fn trailing_action_retains_the_icon_button_target_without_an_internal_glyph() {
++        assert!(Theme::light()
++            .text_field_trailing_icon_button("trailing", " ", false, INK, ())
++            .is_none());
++        for disabled in [false, true] {
++            let mut rt = Runtime::new(Field {
++                disabled,
++                requests: 0,
++            })
++            .unwrap();
++            rt.activate("editor").unwrap();
++            rt.render(160., 72., &mut Metrics).unwrap();
++            let bounds = |key| {
++                let id = rt.dom().by_id(key).unwrap();
++                rt.computed().unwrap().nodes[id.index()].bounds
++            };
++            let editor = bounds("editor");
++            let target = bounds("trailing");
++            let face = bounds("trailing-face");
++            let focus = bounds("trailing-focus");
++            let id = rt.dom().by_id("trailing").unwrap();
++            let action = rt.dom().get(id).unwrap();
++            assert_eq!(action.role(), Role::Button);
++            assert_eq!(action.name(), "清除文字");
++            assert_eq!(action.is_disabled(), disabled);
++            assert_eq!(action.press_ripple_target_name(), Some("trailing-face"));
++            assert!(rt.dom().by_id("trailing-icon").is_none());
++            assert_eq!(editor.intersect(target).width, 0.);
++            assert_eq!(target, Rect::new(80., 12., 48., 48.));
++            assert_eq!(face, Rect::new(88., 16., 32., 40.));
++            assert_eq!(focus, Rect::new(83., 11., 42., 50.));
++            let face_node = rt
++                .dom()
++                .get(rt.dom().by_id("trailing-face").unwrap())
++                .unwrap();
++            assert_eq!(
++                face_node.style().state_layer,
++                if disabled { Color::TRANSPARENT } else { INK }
++            );
++            assert_eq!(
++                rt.accessibility_frame()
++                    .unwrap()
++                    .activation_target(id)
++                    .is_some(),
++                !disabled
++            );
++
++            let pointer = [
++                Event::PointerDown { x: 104., y: 36. },
++                Event::PointerUp { x: 104., y: 36. },
++            ];
++            if !disabled {
++                rt.dispatch(Event::Ime(ImeEvent::Preedit {
++                    text: "ㄓ".into(),
++                    selection: None,
++                }))
++                .unwrap();
++                for event in pointer.clone() {
++                    rt.dispatch(event).unwrap();
++                }
++                assert!(rt.input_snapshot().unwrap().composing);
++                assert_eq!(rt.app().requests, 0);
++                rt.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
++                rt.render(160., 72., &mut Metrics).unwrap();
++            }
++            for event in pointer {
++                rt.dispatch(event).unwrap();
++            }
++            if disabled {
++                assert_eq!(rt.app().requests, 0);
++            } else {
++                assert_eq!(rt.focused(), Some("trailing"));
++                assert_eq!(rt.app().requests, 1);
++                let space = KeyPress::new(Key::Space, Modifiers::default());
++                assert!(rt.key(&space.clone().with_repeat(true)).unwrap());
++                assert_eq!(rt.app().requests, 1);
++                // An ordinary Space falls through to the platform's activation event.
++                assert!(!rt.key(&space).unwrap());
++                assert!(rt.dispatch(Event::Activate).unwrap());
++                assert_eq!(rt.app().requests, 2);
++            }
++        }
++    }
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 98bd433..6e9deac 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -67,6 +67,7 @@ mod standard_navigation_drawer;
+ mod standard_slider;
+ mod switch;
+ mod tab_bar;
++mod text_field_adornments;
+ mod time_dial;
+ mod time_dial_state;
+ mod time_input;
+@@ -225,6 +226,9 @@ pub use tab_bar::{
+     TabActivation, TabBarInput, TabBarKind, TabBarLayout, TabBarMotion, TabBarOptions, TabItem,
+     TabPanelEntry,
+ };
++pub use text_field_adornments::{
++    TextFieldAdornments, TextFieldAffix, TextFieldAppearance, TextFieldTrailingAction,
++};
+ pub use time_dial::{
+     time_dial_baseline_layout, time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout,
+     TimeDialOptions,
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+index c35f698..45a8618 100644
+--- a/crates/surface-material/src/outlined_text_field.rs
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -10,22 +10,16 @@ use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
+ 
+ use crate::{
+     shape::{self, LayoutDirection},
+-    typography, TextFieldOptions, Theme,
++    text_field_adornments::{physical, AffixText, FieldAdornments, ACTION_SIZE, ICON_SIZE, SIDE},
++    typography, TextFieldAdornments, TextFieldAppearance, TextFieldOptions, Theme,
+ };
+ 
+ const FACE_MIN: f32 = 56.;
+-const SIDE: f32 = 16.;
+ const NOTCH_PAD: f32 = 4.;
+ const DESCRIPTION_GAP: f32 = 4.;
+ const CORNER: f32 = 4.;
+ const FILLED_VERTICAL_PADDING: f32 = 8.;
+ 
+-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+-enum FieldAppearance {
+-    Outlined,
+-    Filled,
+-}
+-
+ /// The actions the field allows. Read-only fields can still select and copy.
+ #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+ pub enum TextFieldEditability {
+@@ -89,7 +83,13 @@ impl Theme {
+         on_input: impl Fn(String) -> M + 'static,
+         on_submit: impl Fn() -> Option<M> + 'static,
+     ) -> Option<View<M>> {
+-        self.material_text_field(FieldAppearance::Outlined, options, on_input, on_submit)
++        self.text_field_with_adornments(
++            TextFieldAppearance::Outlined,
++            options,
++            TextFieldAdornments::default(),
++            on_input,
++            on_submit,
++        )
+     }
+ 
+     /// Build a filled field with a bottom indicator and an inside label.
+@@ -110,13 +110,23 @@ impl Theme {
+         on_input: impl Fn(String) -> M + 'static,
+         on_submit: impl Fn() -> Option<M> + 'static,
+     ) -> Option<View<M>> {
+-        self.material_text_field(FieldAppearance::Filled, options, on_input, on_submit)
++        self.text_field_with_adornments(
++            TextFieldAppearance::Filled,
++            options,
++            TextFieldAdornments::default(),
++            on_input,
++            on_submit,
++        )
+     }
+ 
+-    fn material_text_field<M>(
++    /// Add passive icons or affixes and an independent named trailing action.
++    /// Affixes and the action stay separate from the committed editor value.
++    /// In narrow space the affixes and action can move below the field.
++    pub fn text_field_with_adornments<M>(
+         &self,
+-        appearance: FieldAppearance,
++        appearance: TextFieldAppearance,
+         options: TextFieldOptions<'_>,
++        adornments: TextFieldAdornments<'_, M>,
+         on_input: impl Fn(String) -> M + 'static,
+         on_submit: impl Fn() -> Option<M> + 'static,
+     ) -> Option<View<M>> {
+@@ -135,7 +145,7 @@ impl Theme {
+         let error = visible_text(options.error);
+         let description = error.or_else(|| visible_text(options.supporting_text));
+         let rgba = self.colors;
+-        let filled = appearance == FieldAppearance::Filled;
++        let filled = appearance == TextFieldAppearance::Filled;
+         let tokens = FieldColors {
+             disabled,
+             error: error.is_some(),
+@@ -166,6 +176,20 @@ impl Theme {
+         let id = options.id;
+         let description_id = format!("{id}-description");
+         let floating_id = format!("{id}-floating-label");
++        let action_id = format!("{id}-trailing-action");
++        let value_box_id = format!("{id}-value-box");
++        let affix_text = |affix: crate::TextFieldAffix<'_>| {
++            Some(AffixText {
++                visual: visible_text(Some(affix.visual))?.to_owned(),
++                spoken_name: visible_text(Some(affix.spoken_name))?.to_owned(),
++            })
++        };
++        let field_adornments = FieldAdornments {
++            leading: adornments.leading_icon.is_some(),
++            trailing: adornments.trailing_action.is_some(),
++            prefix: adornments.prefix.and_then(affix_text),
++            suffix: adornments.suffix.and_then(affix_text),
++        };
+         let disabled_value = disabled && !options.value.is_empty();
+         let mut input = Node::new(Role::TextInput, label)
+             .id(id)
+@@ -191,6 +215,15 @@ impl Theme {
+         if description.is_some() {
+             input = input.described_by_text(&description_id);
+         }
++        input = input.described_by_texts(
++            [
++                field_adornments.prefix.as_ref().map(|_| "prefix"),
++                field_adornments.suffix.as_ref().map(|_| "suffix"),
++            ]
++            .into_iter()
++            .flatten()
++            .map(|part| format!("{id}-{part}-description")),
++        );
+         let mut editor = View::new(input)
+             .text_options(TextOptions {
+                 read_only: options.editability == TextFieldEditability::ReadOnly,
+@@ -198,6 +231,12 @@ impl Theme {
+             })
+             .inset_single_line_text_horizontally(SIDE)
+             .accessibility_scroll_into_view();
++        if field_adornments.has_slots() {
++            editor = editor.single_line_text_horizontal_bounds_from(&value_box_id);
++        }
++        if field_adornments.trailing {
++            editor = editor.text_input_hover_with_action(&action_id);
++        }
+         editor = if filled {
+             editor.inset_single_line_text_from_top(FILLED_VERTICAL_PADDING + caption_height)
+         } else {
+@@ -225,12 +264,12 @@ impl Theme {
+         let boundary_part = if filled { "indicator" } else { "outline" };
+         let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
+             .without_interaction(None)
+-            .paint_text_input_contour(
++            .paint_text_input_contour_with_bounds(
+                 id,
+                 (!filled).then_some(floating_id.as_str()),
+-                move |state, floating| {
+-                    let width = state.bounds.width;
+-                    let height = state.bounds.height;
++                move |state, face, floating| {
++                    let width = face.width;
++                    let height = face.height;
+                     let thickness = if state.is_focused && !disabled {
+                         3.
+                     } else {
+@@ -250,12 +289,10 @@ impl Theme {
+                     }
+                     let gap = floating
+                         .filter(|rect| {
+-                            floats(state)
+-                                && rect.width > 0.
+-                                && rect.y + rect.height > state.bounds.y
++                            floats(state) && rect.width > 0. && rect.y + rect.height > face.y
+                         })
+                         .map(|rect| {
+-                            let left = rect.x - state.bounds.x;
++                            let left = rect.x - face.x;
+                             (left - NOTCH_PAD, left + rect.width + NOTCH_PAD)
+                         });
+                     outline_contour(width, height, thickness, gap, ink)
+@@ -325,6 +362,110 @@ impl Theme {
+                 .assertive_live_status()
+                 .styled(Style::default().foreground(Color::TRANSPARENT)),
+         );
++        let mut slots = Vec::new();
++        if field_adornments.has_slots() {
++            slots.push(
++                View::new(Node::new(Role::Group, "").id(value_box_id)).without_interaction(None),
++            );
++        }
++        if let Some(icon) = adornments.leading_icon {
++            let ink = if disabled {
++                tokens.disabled_text
++            } else {
++                tokens.neutral_label
++            };
++            let leading = icon.contour_dp(ICON_SIZE, ink)?;
++            slots.push(
++                View::new(
++                    Node::new(Role::Group, "")
++                        .id(format!("{id}-leading-icon"))
++                        .styled(Style::default().clip(true)),
++                )
++                .paint_text_input_contour_with_bounds(
++                    id,
++                    None,
++                    move |_, bounds, _| {
++                        (bounds.width > 0. && bounds.height > 0.).then(|| leading.clone())
++                    },
++                ),
++            );
++        }
++        if let Some(action) = adornments.trailing_action {
++            let disabled = disabled || action.disabled;
++            let ink = if disabled {
++                tokens.disabled_text
++            } else if tokens.error {
++                tokens.error_ink
++            } else {
++                tokens.neutral_label
++            };
++            let icon = action.icon.contour_dp(ICON_SIZE, ink)?;
++            let icon_hover = if !disabled && tokens.error {
++                action.icon.contour_dp(ICON_SIZE, tokens.error_hover)?
++            } else {
++                icon.clone()
++            };
++            slots.push(
++                self.text_field_trailing_icon_button(
++                    &action_id,
++                    action.name,
++                    disabled,
++                    ink,
++                    action.on_press,
++                )?
++                .restore_focus_on_removal(id)
++                .accessibility_scroll_into_view(),
++            );
++            slots.push(
++                View::new(
++                    Node::new(Role::Group, "")
++                        .id(format!("{id}-trailing-icon"))
++                        .styled(Style::default().clip(true)),
++                )
++                .paint_text_input_contour(id, None, move |state, _| {
++                    Some(if state.is_hovered && !state.is_focused {
++                        icon_hover.clone()
++                    } else {
++                        icon.clone()
++                    })
++                }),
++            );
++        }
++        let affix_ink = if disabled {
++            tokens.disabled_text
++        } else {
++            tokens.neutral_label
++        };
++        for (part, affix) in [
++            ("prefix", field_adornments.prefix.as_ref()),
++            ("suffix", field_adornments.suffix.as_ref()),
++        ] {
++            let Some(affix) = affix else { continue };
++            let text = |kind: &str, value: &str, font: TextStyle, ink| {
++                View::new(
++                    Node::new(Role::Text, "")
++                        .id(format!("{id}-{part}-{kind}"))
++                        .text(value)
++                        .text_alignment(alignment)
++                        .text_scaling(TextScaling::Fixed)
++                        .styled(Style::default().with_text_style(font).foreground(ink)),
++                )
++            };
++            slots.push(
++                text("visual", &affix.visual, body.clone(), affix_ink)
++                    .paint_when_text_input(id, floats),
++            );
++            slots.push(
++                text("wrapped", &affix.spoken_name, caption.clone(), affix_ink)
++                    .without_interaction(None),
++            );
++            slots.push(text(
++                "description",
++                &affix.spoken_name,
++                caption.clone(),
++                Color::TRANSPARENT,
++            ));
++        }
+         let mut shell = Style::column().width(Length::Percent(1.));
+         shell.min_width = FACE_MIN;
+         let layout = FieldLayout {
+@@ -337,6 +478,7 @@ impl Theme {
+             caption_height,
+             rtl,
+             disabled_value,
++            adornments: field_adornments,
+         };
+         let filled_backgrounds = filled.then(|| {
+             let container = if disabled {
+@@ -376,7 +518,8 @@ impl Theme {
+                     .chain([editor, boundary, inline, floating, fallback])
+                     .chain(disabled_ink)
+                     .chain(description_view)
+-                    .chain([validation_status]),
++                    .chain([validation_status])
++                    .chain(slots),
+             ),
+         )
+     }
+@@ -439,7 +582,7 @@ impl FieldColors {
+ 
+ #[derive(Debug)]
+ struct FieldLayout {
+-    appearance: FieldAppearance,
++    appearance: TextFieldAppearance,
+     label: String,
+     description: Option<String>,
+     body: TextStyle,
+@@ -448,15 +591,23 @@ struct FieldLayout {
+     caption_height: f32,
+     rtl: bool,
+     disabled_value: bool,
++    adornments: FieldAdornments,
+ }
+ 
+ impl FieldLayout {
+     fn rects(&self, width: f32, fonts: &mut dyn TextMeasurer) -> Vec<Rect> {
+         let content_width = (width - 2. * SIDE).max(1.);
++        let filled = self.appearance == TextFieldAppearance::Filled;
++        let slots = self
++            .adornments
++            .measure(width, fonts, &self.body, self.line_height);
++        let body_width = slots.body_end - slots.body_start;
++        let floating_start = if filled { slots.body_start } else { SIDE };
++        let floating_width = if filled { body_width } else { content_width };
+         let (inline_width, inline_height) = fonts.measure_text(&self.label, &self.body, None);
+         let (float_width, float_height) = fonts.measure_text(&self.label, &self.caption, None);
+-        let label_fits = inline_width <= content_width
+-            && float_width <= content_width
++        let label_fits = inline_width <= body_width
++            && float_width <= floating_width
+             && inline_height <= self.line_height + 0.5
+             && float_height <= self.caption_height + 0.5;
+         let above_height = if label_fits {
+@@ -468,7 +619,6 @@ impl FieldLayout {
+                 .max(self.caption_height)
+                 .ceil()
+         };
+-        let filled = self.appearance == FieldAppearance::Filled;
+         let (face_padding, label_slot) = if filled {
+             (FILLED_VERTICAL_PADDING, self.caption_height)
+         } else {
+@@ -486,21 +636,34 @@ impl FieldLayout {
+         let face_height = FACE_MIN.max((self.line_height + label_slot + 2. * face_padding).ceil());
+         let face = Rect::new(0., top, width, face_height);
+         let empty = Rect::new(0., 0., 0., 0.);
+-        let content = Rect::new(
+-            SIDE,
+-            top + (face_height - self.line_height) / 2.,
+-            content_width,
++        let physical = |rect| physical(rect, width, self.rtl);
++        let center_line_y = top + (face_height - self.line_height) / 2.;
++        let line_y = if filled {
++            top + face_padding + label_slot
++        } else {
++            center_line_y
++        };
++        let editor = if slots.trailing_inline {
++            physical(Rect::new(0., top, width - ACTION_SIZE, face_height))
++        } else {
++            face
++        };
++        let value = physical(slots.value(line_y, self.line_height));
++        let content = physical(Rect::new(
++            slots.body_start,
++            center_line_y,
++            body_width,
+             self.line_height,
+-        );
++        ));
+         let inline = if label_fits { content } else { empty };
+         let floating = if label_fits {
+-            let x = if self.rtl {
+-                width - SIDE - float_width
+-            } else {
+-                SIDE
+-            };
+             let y = if filled { top + face_padding } else { 0. };
+-            Rect::new(x, y, float_width, self.caption_height)
++            physical(Rect::new(
++                floating_start,
++                y,
++                float_width,
++                self.caption_height,
++            ))
+         } else {
+             empty
+         };
+@@ -509,14 +672,9 @@ impl FieldLayout {
+         if filled {
+             rects.extend([face, face]);
+         }
+-        rects.extend([face, face, inline, floating, above]);
++        rects.extend([editor, face, inline, floating, above]);
+         if self.disabled_value {
+-            let y = if filled {
+-                top + face_padding + label_slot
+-            } else {
+-                content.y
+-            };
+-            rects.push(Rect::new(content.x, y, content.width, content.height));
++            rects.push(value);
+         }
+         if let Some(description) = &self.description {
+             let height = fonts
+@@ -533,11 +691,78 @@ impl FieldLayout {
+         }
+         // The live region needs visible geometry even when it is empty.
+         rects.push(Rect::new(1., 0., 1., 1.));
++        if self.adornments.has_slots() {
++            rects.push(value);
++        }
++        let icon_inset = (ACTION_SIZE - ICON_SIZE) / 2.;
++        if self.adornments.leading {
++            let icon = Rect::new(
++                icon_inset,
++                top + (face_height - ICON_SIZE) / 2.,
++                ICON_SIZE,
++                ICON_SIZE,
++            );
++            rects.push(if slots.leading { physical(icon) } else { empty });
++        }
++        let mut below = rects
++            .iter()
++            .map(|rect| rect.y + rect.height)
++            .fold(0., f32::max)
++            + DESCRIPTION_GAP;
++        if self.adornments.trailing {
++            let y = if slots.trailing_inline {
++                top + (face_height - ACTION_SIZE) / 2.
++            } else {
++                let y = below;
++                below += ACTION_SIZE + DESCRIPTION_GAP;
++                y
++            };
++            let x = width - ACTION_SIZE;
++            rects.push(physical(Rect::new(x, y, ACTION_SIZE, ACTION_SIZE)));
++            rects.push(physical(Rect::new(
++                x + icon_inset,
++                y + icon_inset,
++                ICON_SIZE,
++                ICON_SIZE,
++            )));
++        }
++        for (affix, left, width) in [
++            (
++                self.adornments.prefix.as_ref(),
++                slots.body_start,
++                slots.prefix_width,
++            ),
++            (
++                self.adornments.suffix.as_ref(),
++                slots.body_end - slots.suffix_width,
++                slots.suffix_width,
++            ),
++        ] {
++            let Some(affix) = affix else { continue };
++            if slots.affixes_inline {
++                rects.push(physical(Rect::new(left, line_y, width, self.line_height)));
++                rects.push(empty);
++            } else {
++                let height = fonts
++                    .measure_text(&affix.spoken_name, &self.caption, Some(content_width))
++                    .1
++                    .max(self.caption_height)
++                    .ceil();
++                rects.push(empty);
++                rects.push(Rect::new(SIDE, below, content_width, height));
++                below += height + DESCRIPTION_GAP;
++            }
++            rects.push(physical(Rect::new(SIDE, top + face_height / 2., 1., 1.)));
++        }
+         rects
+     }
+ }
+ 
+ impl MeasuredGroupLayout for FieldLayout {
++    fn places_measured_groups(&self) -> bool {
++        true
++    }
++
+     fn measure(
+         &self,
+         _children: &[&Node],
+diff --git a/crates/surface-material/src/text_field_adornments.rs b/crates/surface-material/src/text_field_adornments.rs
+new file mode 100644
+index 0000000..59e9b23
+--- /dev/null
++++ b/crates/surface-material/src/text_field_adornments.rs
+@@ -0,0 +1,155 @@
++use surface::{Rect, TextMeasurer, TextStyle};
++
++use crate::VectorIcon;
++
++/// The two Material 3 single-line text field appearances.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum TextFieldAppearance {
++    Outlined,
++    Filled,
++}
++
++/// Passive text beside the input value, with a localized spoken form.
++/// The affix stays separate from the value used for editing and submission.
++#[derive(Clone, Copy, Debug)]
++pub struct TextFieldAffix<'a> {
++    pub visual: &'a str,
++    pub spoken_name: &'a str,
++}
++
++/// The optional button at the logical end of a field.
++#[derive(Clone, Debug)]
++pub struct TextFieldTrailingAction<'a, M> {
++    pub icon: &'a VectorIcon,
++    pub name: &'a str,
++    pub disabled: bool,
++    pub on_press: M,
++}
++
++/// Optional content for either Material 3 single-line field appearance.
++#[derive(Clone, Debug)]
++pub struct TextFieldAdornments<'a, M> {
++    pub leading_icon: Option<&'a VectorIcon>,
++    pub trailing_action: Option<TextFieldTrailingAction<'a, M>>,
++    pub prefix: Option<TextFieldAffix<'a>>,
++    pub suffix: Option<TextFieldAffix<'a>>,
++}
++
++impl<M> Default for TextFieldAdornments<'_, M> {
++    fn default() -> Self {
++        Self {
++            leading_icon: None,
++            trailing_action: None,
++            prefix: None,
++            suffix: None,
++        }
++    }
++}
++
++pub(super) const ICON_SIZE: f32 = 24.;
++pub(super) const ACTION_SIZE: f32 = 48.;
++pub(super) const SIDE: f32 = 16.;
++const ICON_INSET: f32 = 52.;
++const AFFIX_GAP: f32 = 2.;
++const MIN_VALUE_WIDTH: f32 = 48.;
++
++#[derive(Debug)]
++pub(super) struct AffixText {
++    pub visual: String,
++    pub spoken_name: String,
++}
++
++#[derive(Debug, Default)]
++pub(super) struct FieldAdornments {
++    pub leading: bool,
++    pub trailing: bool,
++    pub prefix: Option<AffixText>,
++    pub suffix: Option<AffixText>,
++}
++
++pub(super) struct Slots {
++    pub leading: bool,
++    pub trailing_inline: bool,
++    pub body_start: f32,
++    pub body_end: f32,
++    pub prefix_width: f32,
++    pub suffix_width: f32,
++    pub affixes_inline: bool,
++}
++
++impl FieldAdornments {
++    pub(super) fn has_slots(&self) -> bool {
++        self.leading || self.trailing || self.prefix.is_some() || self.suffix.is_some()
++    }
++
++    pub(super) fn measure(
++        &self,
++        width: f32,
++        fonts: &mut dyn TextMeasurer,
++        body: &TextStyle,
++        line_height: f32,
++    ) -> Slots {
++        let single_line = |affix: &AffixText, fonts: &mut dyn TextMeasurer| {
++            let (width, height) = fonts.measure_text(&affix.visual, body, None);
++            (width.is_finite() && width > 0. && height <= line_height + 0.5).then_some(width)
++        };
++        let prefix = self
++            .prefix
++            .as_ref()
++            .map_or(Some(0.), |affix| single_line(affix, fonts));
++        let suffix = self
++            .suffix
++            .as_ref()
++            .map_or(Some(0.), |affix| single_line(affix, fonts));
++        let mut leading = self.leading;
++        let mut trailing_inline = self.trailing;
++        let mut body_start = if leading { ICON_INSET } else { SIDE };
++        let mut body_end = width - if trailing_inline { ICON_INSET } else { SIDE };
++        let affixes_inline = prefix.zip(suffix).is_some_and(|(prefix, suffix)| {
++            let gaps =
++                if prefix > 0. { AFFIX_GAP } else { 0. } + if suffix > 0. { AFFIX_GAP } else { 0. };
++            body_end - body_start - prefix - suffix - gaps >= MIN_VALUE_WIDTH
++        });
++        if leading && body_end - body_start < MIN_VALUE_WIDTH {
++            leading = false;
++            body_start = SIDE;
++        }
++        if trailing_inline && body_end - body_start < MIN_VALUE_WIDTH {
++            trailing_inline = false;
++            body_end = width - SIDE;
++        }
++        Slots {
++            leading,
++            trailing_inline,
++            body_start,
++            body_end,
++            prefix_width: prefix.unwrap_or(0.),
++            suffix_width: suffix.unwrap_or(0.),
++            affixes_inline,
++        }
++    }
++}
++
++impl Slots {
++    pub(super) fn value(&self, y: f32, height: f32) -> Rect {
++        let mut start = self.body_start;
++        let mut end = self.body_end;
++        if self.affixes_inline {
++            if self.prefix_width > 0. {
++                start += self.prefix_width + AFFIX_GAP;
++            }
++            if self.suffix_width > 0. {
++                end -= self.suffix_width + AFFIX_GAP;
++            }
++        }
++        Rect::new(start, y, end - start, height)
++    }
++}
++
++pub(super) fn physical(rect: Rect, width: f32, rtl: bool) -> Rect {
++    if rtl {
++        Rect::new(width - rect.x - rect.width, rect.y, rect.width, rect.height)
++    } else {
++        rect
++    }
++}
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+index d1a53e2..72fb70e 100644
+--- a/crates/surface-material/tests/outlined_text_field.rs
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -6,7 +6,8 @@ use surface::{
+ };
+ use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+ use surface_material::{
+-    shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldEditability, Theme,
++    shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldAdornments, TextFieldAffix,
++    TextFieldAppearance, TextFieldEditability, TextFieldTrailingAction, Theme, VectorIcon,
+ };
+ use surface_wgpu::TextSystem;
+ 
+@@ -22,6 +23,7 @@ const AFTER: &str = "after-field";
+ enum Message {
+     Edit(String),
+     Submit,
++    Action,
+     ChangeAppearance,
+     SetEditability(TextFieldEditability),
+ }
+@@ -36,6 +38,8 @@ struct Form {
+     editability: TextFieldEditability,
+     edits: Vec<String>,
+     submits: Vec<String>,
++    actions: usize,
++    adorned: Option<TextFieldAppearance>,
+     builds: Cell<usize>,
+ }
+ 
+@@ -51,6 +55,8 @@ impl Default for Form {
+             editability: TextFieldEditability::Editable,
+             edits: Vec::new(),
+             submits: Vec::new(),
++            actions: 0,
++            adorned: None,
+             builds: Cell::new(0),
+         }
+     }
+@@ -66,6 +72,7 @@ impl Application for Form {
+                 self.value = value;
+             }
+             Message::Submit => self.submits.push(self.value.clone()),
++            Message::Action => self.actions += 1,
+             Message::ChangeAppearance => {
+                 self.dark = !self.dark;
+                 self.rtl = !self.rtl;
+@@ -98,13 +105,38 @@ impl Application for Form {
+             LayoutDirection::LeftToRight
+         };
+         options.text_scale = self.scale;
++        let on_submit = || Some(Message::Submit);
++        let field = if let Some(appearance) = self.adorned {
++            let icon = VectorIcon::new([[4., 4.], [20., 4.], [12., 20.]]).unwrap();
++            theme.text_field_with_adornments(
++                appearance,
++                options,
++                TextFieldAdornments {
++                    leading_icon: Some(&icon),
++                    trailing_action: Some(TextFieldTrailingAction {
++                        icon: &icon,
++                        name: "套用金額",
++                        disabled: false,
++                        on_press: Message::Action,
++                    }),
++                    prefix: Some(TextFieldAffix {
++                        visual: "€",
++                        spoken_name: "歐元",
++                    }),
++                    suffix: Some(TextFieldAffix {
++                        visual: "/月",
++                        spoken_name: "每月",
++                    }),
++                },
++                Message::Edit,
++                on_submit,
++            )
++        } else {
++            theme.outlined_text_field_with_submit(options, Message::Edit, on_submit)
++        };
+         View::new(Node::new(Role::Window, "Form").styled(Style::column().padding(12.).gap(8.)))
+             .children([
+-                theme
+-                    .outlined_text_field_with_submit(options, Message::Edit, || {
+-                        Some(Message::Submit)
+-                    })
+-                    .expect("valid Material field"),
++                field.expect("valid Material field"),
+                 theme.button(AFTER, "Next", Message::ChangeAppearance),
+             ])
+     }
+@@ -167,6 +199,118 @@ fn enter() -> KeyPress {
+     KeyPress::new(Key::Enter, Modifiers::default())
+ }
+ 
++#[test]
++fn adornments_keep_one_editor_and_a_separate_action_across_both_variants() {
++    const ACTION: &str = "project-name-trailing-action";
++    const PREFIX: &str = "project-name-prefix-visual";
++    const SUFFIX: &str = "project-name-suffix-visual";
++    const VALUE: &str = "project-name-value-box";
++    let mut text = TextSystem::default();
++    for (appearance, border) in [
++        (TextFieldAppearance::Outlined, "project-name-outline"),
++        (TextFieldAppearance::Filled, "project-name-indicator"),
++    ] {
++        let mut runtime = Runtime::new(Form {
++            adorned: Some(appearance),
++            ..Form::default()
++        })
++        .unwrap();
++        let idle = render(&mut runtime, 340., &mut text);
++        let face = bounds(&runtime, border);
++        let editor = bounds(&runtime, ID);
++        let action = bounds(&runtime, ACTION);
++        let leading = bounds(&runtime, "project-name-leading-icon");
++        let trailing = bounds(&runtime, "project-name-trailing-icon");
++        assert_eq!((action.width, action.height), (48., 48.));
++        assert_eq!(action.x, editor.x + editor.width);
++        assert_eq!(action.x + action.width, face.x + face.width);
++        assert_eq!(
++            (leading.x - face.x, leading.width, trailing.width),
++            (12., 24., 24.)
++        );
++        assert_eq!(trailing.x - action.x, 12.);
++        assert!(text_run(&idle, "€").is_none());
++
++        let editor_id = runtime.dom().by_id(ID).unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        let description: Vec<_> = frame
++            .description_parts(editor_id)
++            .into_iter()
++            .map(|(id, _)| frame.node(id).unwrap().node.text_value().unwrap())
++            .collect();
++        assert_eq!(description, ["歐元", "每月", SUPPORT]);
++
++        runtime
++            .dispatch(Event::PointerMove {
++                x: action.x + 24.,
++                y: action.y + 24.,
++            })
++            .unwrap();
++        let hover = render(&mut runtime, 340., &mut text);
++        let stroke_bounds = if appearance == TextFieldAppearance::Filled {
++            Rect::new(face.x, face.y + face.height - 1., face.width, 1.)
++        } else {
++            face
++        };
++        let shape = find_outline(&hover, Theme::light().colors.on_surface, stroke_bounds);
++        assert!(covers(
++            shape,
++            face.x + face.width / 2.,
++            face.y + face.height - 0.5
++        ));
++        runtime
++            .dispatch(Event::PointerDown {
++                x: leading.x + 12.,
++                y: leading.y + 12.,
++            })
++            .unwrap();
++        runtime
++            .dispatch(Event::PointerUp {
++                x: leading.x + 12.,
++                y: leading.y + 12.,
++            })
++            .unwrap();
++        assert_eq!(runtime.focused(), Some(ID));
++        let focused = render(&mut runtime, 340., &mut text);
++        assert!(text_run(&focused, "€").is_some());
++        let prefix = bounds(&runtime, PREFIX);
++        let suffix = bounds(&runtime, SUFFIX);
++        let value = bounds(&runtime, VALUE);
++        assert_eq!(prefix.x - face.x, 52.);
++        assert!((value.x - (prefix.x + prefix.width) - 2.).abs() < 0.1);
++        assert!((suffix.x - (value.x + value.width) - 2.).abs() < 0.1);
++
++        runtime.dispatch(Event::Text("24".into())).unwrap();
++        assert!(runtime.key(&enter()).unwrap());
++        tab(&mut runtime);
++        assert_eq!(runtime.focused(), Some(ACTION));
++        assert!(!runtime.key(&enter()).unwrap());
++        assert!(runtime.dispatch(Event::Activate).unwrap());
++        assert_eq!(runtime.app().submits, ["24"]);
++        assert_eq!(runtime.app().edits, ["24"]);
++        assert_eq!(runtime.app().actions, 1);
++
++        runtime.apply(Message::ChangeAppearance).unwrap();
++        let narrow = render(&mut runtime, 112., &mut text);
++        let face = bounds(&runtime, border);
++        let action = bounds(&runtime, ACTION);
++        assert!(action.y > face.y + face.height);
++        assert_eq!(action.x, face.x);
++        assert_eq!(action.width, 48.);
++        assert_eq!(bounds(&runtime, "project-name-leading-icon").width, 0.);
++        assert!(!narrow.ops().iter().any(|op| matches!(
++            op,
++            ExtendedPaintOp::FillPath(path)
++                if path.color() == Theme::dark().colors.on_surface_variant
++                    && path.rect().width == 16.
++                    && path.rect().height == 16.
++        )));
++        assert!(bounds(&runtime, VALUE).width > 0.);
++        assert!(text_run(&narrow, "每月").is_some());
++        assert_eq!(runtime.focused(), Some(ACTION));
++    }
++}
++
+ #[test]
+ fn focus_repaints_one_semantic_editor_and_cuts_a_transparent_three_dp_outline() {
+     let mut runtime = Runtime::new(Form::default()).unwrap();
+diff --git a/crates/surface-platform/src/key_route.rs b/crates/surface-platform/src/key_route.rs
+index d89f81c..832cc25 100644
+--- a/crates/surface-platform/src/key_route.rs
++++ b/crates/surface-platform/src/key_route.rs
+@@ -303,19 +303,23 @@ pub(crate) fn web_key<A: Application>(
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    use crate::ime_session::ImeSession;
+     use std::{cell::Cell, rc::Rc};
+     use surface::{Node, Role};
+     use surface_app::{ImeEvent, TextAction, TextOptions, View};
++    use winit::event::Ime;
+ 
+     #[derive(Clone)]
+     enum Msg {
+         Text(String),
+         Send,
+     }
++    #[derive(Default)]
+     struct App {
+         draft: String,
+         multiline: bool,
+         handler: bool,
++        edits: u32,
+         sent: u32,
+         calls: Rc<Cell<u32>>,
+     }
+@@ -323,7 +327,10 @@ mod tests {
+         type Message = Msg;
+         fn update(&mut self, message: Msg) {
+             match message {
+-                Msg::Text(text) => self.draft = text,
++                Msg::Text(text) => {
++                    self.draft = text;
++                    self.edits += 1;
++                }
+                 Msg::Send => self.sent += 1,
+             }
+         }
+@@ -350,11 +357,9 @@ mod tests {
+     }
+     fn runtime(multiline: bool, handler: bool) -> Runtime<App> {
+         let mut rt = Runtime::new(App {
+-            draft: String::new(),
+             multiline,
+             handler,
+-            sent: 0,
+-            calls: Rc::default(),
++            ..App::default()
+         })
+         .unwrap();
+         rt.activate("chat").unwrap();
+@@ -439,6 +444,69 @@ mod tests {
+         assert_eq!(rt.app().draft, "hi", "no newline during composition");
+     }
+ 
++    #[test]
++    fn native_ime_session_commits_before_a_separate_enter_and_cancels_without_editing() {
++        let mut rt = Runtime::new(App {
++            draft: "台灣".into(),
++            handler: true,
++            ..App::default()
++        })
++        .unwrap();
++        rt.activate("chat").unwrap();
++        rt.dispatch(Event::Select {
++            anchor: "台".len(),
++            cursor: 0,
++        })
++        .unwrap();
++
++        let mut session = ImeSession::default();
++        assert_eq!(
++            session.focus(rt.input_snapshot().map(|input| input.id)),
++            [true]
++        );
++        // Match the WindowEvent::Ime branch without creating a native window.
++        let mut deliver = |rt: &mut Runtime<App>, event| {
++            if let Some(event) = session.event(event) {
++                rt.dispatch(event).unwrap();
++            }
++        };
++        let calls = |rt: &Runtime<App>| (rt.app().edits, rt.app().sent, rt.app().calls.get());
++
++        deliver(&mut rt, Ime::Enabled);
++        deliver(&mut rt, Ime::Preedit("ㄓㄨㄥ".into(), Some((3, 6))));
++        let editor = rt.editor("chat").unwrap();
++        assert_eq!(editor.display_value(), "ㄓㄨㄥ灣");
++        assert_eq!(editor.display_selection().unwrap().range(), 3..6);
++        assert_eq!(rt.app().draft, "台灣");
++        assert_eq!(calls(&rt), (0, 0, 0));
++        assert_eq!(native_press(&mut rt, &ENTER, Some("\r"), NONE), "Ignore");
++        assert_eq!(calls(&rt), (0, 0, 0));
++        assert!(rt.input_snapshot().unwrap().composing);
++
++        // Winit's macOS insertText queues an empty preedit before the commit.
++        deliver(&mut rt, Ime::Preedit(String::new(), None));
++        assert_eq!(calls(&rt), (0, 0, 0));
++        deliver(&mut rt, Ime::Commit("中".into()));
++        assert_eq!(rt.app().draft, "中灣");
++        assert_eq!(calls(&rt), (1, 0, 0));
++        assert!(!rt.input_snapshot().unwrap().composing);
++        assert_eq!(native_press(&mut rt, &ENTER, Some("\r"), NONE), "Consumed");
++        assert_eq!(calls(&rt), (1, 1, 1));
++
++        let selected = rt.input_snapshot().unwrap().selection;
++        deliver(&mut rt, Ime::Preedit("ㄅ".into(), None));
++        assert!(rt.input_snapshot().unwrap().composing);
++        deliver(&mut rt, Ime::Disabled);
++        deliver(&mut rt, Ime::Commit("誤".into()));
++        let input = rt.input_snapshot().unwrap();
++        assert!(!input.composing);
++        assert_eq!(input.value, "中灣");
++        assert_eq!(input.selection, selected);
++        assert_eq!(rt.editor("chat").unwrap().display_value(), "中灣");
++        assert_eq!(rt.app().draft, "中灣");
++        assert_eq!(calls(&rt), (1, 1, 1));
++    }
++
+     #[test]
+     fn the_host_composition_flag_alone_skips_the_handler() {
+         // The DOM can report a composition that the runtime has not seen
+diff --git a/crates/surface-platform/src/macos_accessibility.rs b/crates/surface-platform/src/macos_accessibility.rs
+index bc16391..99fc9cf 100644
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -219,12 +219,9 @@ impl Tree {
+             }
+ 
+             node.set_children(children);
+-            if let Some(description) = frame.description_target(id) {
+-                descriptions.push((nodes.len(), description));
+-            } else if let Some((_, text)) = frame.clipped_validation_text(id) {
+-                // AXHelp can describe the editor without a reference to an
+-                // unpublished, fully clipped accessibility node.
+-                node.set_description(text);
++            let parts = frame.description_parts(id);
++            if !parts.is_empty() {
++                descriptions.push((nodes.len(), parts));
+             }
+             if let Some(tab) = frame.tab_panel_tab(id) {
+                 node.set_role(Role::TabPanel);
+@@ -259,19 +256,33 @@ impl Tree {
+                 nodes[tab_index].1.set_controls([panel_id]);
+             }
+         }
+-        for (index, description) in descriptions {
+-            if let Some(id) = ids.get(&description) {
+-                let anchor = &mut nodes[index].1;
+-                anchor.set_described_by([*id]);
+-                // The macOS adapter exposes description text as AXHelp.
+-                // It does not derive the text from the ID relation.
+-                if let Some(target) = frame.node(description) {
++        for (index, parts) in descriptions {
++            let mut references = Vec::new();
++            let mut help = Vec::new();
++            for (description, clipped) in parts {
++                if let Some(text) = clipped {
++                    // AXHelp can include the clipped validation without a
++                    // reference to an unpublished accessibility node.
++                    help.push(text);
++                } else if let (Some(id), Some(target)) =
++                    (ids.get(&description), frame.node(description))
++                {
++                    references.push(*id);
+                     let text = target.node.text_value().unwrap_or(target.node.name());
+                     if !text.trim().is_empty() {
+-                        anchor.set_description(text);
++                        help.push(text);
+                     }
+                 }
+             }
++            let anchor = &mut nodes[index].1;
++            if !references.is_empty() {
++                anchor.set_described_by(references);
++            }
++            // The adapter reads AXHelp directly, with no text computed from
++            // the ID references. Keep the authored order here too.
++            if !help.is_empty() {
++                anchor.set_description(help.join(" "));
++            }
+         }
+         if modal.is_some() {
+             let mut window = Node::new(Role::Window);
+@@ -2391,6 +2402,80 @@ mod tests {
+             .any(|(_, node)| node.role() == Role::Tooltip));
+     }
+ 
++    #[test]
++    fn ordered_descriptions_keep_clipped_validation_in_ax_help_without_an_id() {
++        use surface::Insets;
++
++        #[derive(Clone, Copy)]
++        struct Amount {
++            clipped: bool,
++        }
++        impl Application for Amount {
++            type Message = Self;
++            fn update(&mut self, message: Self) {
++                *self = message;
++            }
++            fn view(&self) -> View<Self> {
++                let error_style = if self.clipped {
++                    Style::default().width(Length::Px(100.)).fixed(Insets {
++                        left: Length::Px(-220.),
++                        ..Default::default()
++                    })
++                } else {
++                    Style::default()
++                };
++                let editor = View::new(
++                    SurfaceNode::new(SurfaceRole::TextInput, "Amount")
++                        .id("amount")
++                        .text("12")
++                        .invalid(true)
++                        .described_by_texts(["prefix", "suffix", "prefix", "error"])
++                        .described_by_text("error"),
++                )
++                .on_input(|_| Amount { clipped: false });
++                View::new(SurfaceNode::new(SurfaceRole::Window, "App").styled(Style::column()))
++                    .children([
++                        editor,
++                        View::new(
++                            SurfaceNode::new(SurfaceRole::Text, "")
++                                .id("suffix")
++                                .text("公斤"),
++                        ),
++                        View::new(
++                            SurfaceNode::new(SurfaceRole::Text, "")
++                                .id("prefix")
++                                .text("歐元"),
++                        ),
++                        View::new(
++                            SurfaceNode::new(SurfaceRole::Text, "")
++                                .id("error")
++                                .text("Use an integer.")
++                                .styled(error_style),
++                        ),
++                    ])
++            }
++        }
++
++        let mut runtime = Runtime::new(Amount { clipped: false }).unwrap();
++        let mut tree = Tree::default();
++        for clipped in [false, true] {
++            runtime.apply(Amount { clipped }).unwrap();
++            let view = update(&mut runtime, &mut tree);
++            let (_, editor) = named(&view, "Amount");
++            let mut expected = vec![named(&view, "歐元").0, named(&view, "公斤").0];
++            if clipped {
++                assert!(view
++                    .nodes
++                    .iter()
++                    .all(|(_, node)| node.label() != Some("Use an integer.")));
++            } else {
++                expected.push(named(&view, "Use an integer.").0);
++            }
++            assert_eq!(editor.described_by(), expected);
++            assert_eq!(editor.description(), Some("歐元 公斤 Use an integer."));
++        }
++    }
++
+     #[test]
+     fn live_status_keeps_its_passive_identity_without_retaining_an_action() {
+         let initial = App {
+diff --git a/crates/surface-platform/src/web_accessibility.rs b/crates/surface-platform/src/web_accessibility.rs
+index c5ea82d..e1e8b22 100644
+--- a/crates/surface-platform/src/web_accessibility.rs
++++ b/crates/surface-platform/src/web_accessibility.rs
+@@ -1,9 +1,11 @@
+ //! Publish the canvas's current semantic tree to the browser.
++mod descriptions;
+ mod live_status;
+ mod semantics;
+ mod tabs;
+ 
+ use crate::{key_route, UserEvent};
++use descriptions::DescriptionRelations;
+ use std::{
+     cell::RefCell,
+     collections::{BTreeMap, BTreeSet},
+@@ -45,26 +47,11 @@ struct Target {
+ #[derive(Default, PartialEq, Eq)]
+ struct Relations {
+     headings: BTreeMap<NodeId, NodeId>,
+-    references: BTreeMap<NodeId, NodeId>,
+-    text_targets: BTreeSet<NodeId>,
+-    clipped_text: BTreeMap<NodeId, String>,
++    descriptions: DescriptionRelations,
+     tabs: tabs::TabRelations,
+ }
+ 
+ impl Relations {
+-    fn target_id(&self, id: NodeId) -> String {
+-        let kind = if self.text_targets.contains(&id) {
+-            "text"
+-        } else {
+-            "tooltip"
+-        };
+-        format!("surface-accessibility-{kind}-{}", id.index())
+-    }
+-
+-    fn described_by(&self, source: NodeId) -> Option<String> {
+-        self.references.get(&source).map(|id| self.target_id(*id))
+-    }
+-
+     fn heading_id(id: NodeId) -> String {
+         format!("surface-accessibility-heading-{}", id.index())
+     }
+@@ -227,6 +214,7 @@ impl WebAccessibility {
+             }))
+         })?;
+         let mut relations = Relations {
++            descriptions: DescriptionRelations::collect(frame, &visible),
+             tabs: tab_relations,
+             ..Relations::default()
+         };
+@@ -234,22 +222,6 @@ impl WebAccessibility {
+             if let Some(heading) = frame.dialog_heading_target(*source) {
+                 relations.headings.insert(*source, heading);
+             }
+-            if let Some(target) = frame
+-                .description_target(*source)
+-                .filter(|id| visible.contains(id))
+-            {
+-                relations.references.insert(*source, target);
+-                if frame
+-                    .node(target)
+-                    .is_some_and(|node| node.node.role() == Role::Text)
+-                {
+-                    relations.text_targets.insert(target);
+-                }
+-            } else if let Some((target, text)) = frame.clipped_validation_text(*source) {
+-                relations.references.insert(*source, target);
+-                relations.text_targets.insert(target);
+-                relations.clipped_text.insert(target, text.to_owned());
+-            }
+         }
+         let mut statuses = BTreeMap::new();
+         let mut assertive = BTreeMap::new();
+@@ -291,9 +263,9 @@ impl WebAccessibility {
+             )?;
+             // A referenced hidden element still supplies its description.
+             // Keep it separate from the focusable and readable projection.
+-            for (id, text) in &relations.clipped_text {
++            for (id, text) in &relations.descriptions.clipped_text {
+                 let hidden = self.document.create_element("span")?;
+-                hidden.set_id(&relations.target_id(*id));
++                hidden.set_id(&relations.descriptions.target_id(*id));
+                 hidden.set_attribute("hidden", "")?;
+                 hidden.set_text_content(Some(text));
+                 tree.append_child(&hidden)?;
+@@ -324,7 +296,7 @@ impl WebAccessibility {
+             }
+             *self.targets.borrow_mut() = targets;
+             if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
+-                if let Some(id) = editor.and_then(|id| relations.described_by(id)) {
++                if let Some(id) = editor.and_then(|id| relations.descriptions.described_by(id)) {
+                     textbox.set_attribute("aria-describedby", &id)?;
+                 } else {
+                     textbox.remove_attribute("aria-describedby")?;
+@@ -438,8 +410,8 @@ fn project<M>(
+     if let Some(stable_id) = source.node.stable_id() {
+         element.set_attribute("data-surface-id", stable_id)?;
+     }
+-    if source.node.role() == Role::Tooltip || relations.text_targets.contains(&id) {
+-        element.set_id(&relations.target_id(id));
++    if source.node.role() == Role::Tooltip || relations.descriptions.text_targets.contains(&id) {
++        element.set_id(&relations.descriptions.target_id(id));
+     } else if source.node.role() == Role::Heading
+         && relations.headings.values().any(|target| *target == id)
+     {
+@@ -467,7 +439,7 @@ fn project<M>(
+             element.set_attribute("aria-label", &panel.fallback_label)?;
+         }
+     }
+-    let authored_description = relations.described_by(id);
++    let authored_description = relations.descriptions.described_by(id);
+     let description = if let Some(text) = source.node.web_adjustable_description_text() {
+         // The referenced text stays hidden as a standalone item. Project it
+         // first so the selected value precedes any authored hint.
+diff --git a/crates/surface-platform/src/web_accessibility/descriptions.rs b/crates/surface-platform/src/web_accessibility/descriptions.rs
+new file mode 100644
+index 0000000..6e0d95d
+--- /dev/null
++++ b/crates/surface-platform/src/web_accessibility/descriptions.rs
+@@ -0,0 +1,61 @@
++use std::collections::{BTreeMap, BTreeSet};
++
++use surface::{NodeId, Role};
++use surface_app::AccessibilityFrame;
++
++#[derive(Default, PartialEq, Eq)]
++pub(super) struct DescriptionRelations {
++    references: BTreeMap<NodeId, Vec<NodeId>>,
++    pub(super) text_targets: BTreeSet<NodeId>,
++    pub(super) clipped_text: BTreeMap<NodeId, String>,
++}
++
++impl DescriptionRelations {
++    pub(super) fn collect<M>(
++        frame: &AccessibilityFrame<'_, M>,
++        visible: &BTreeSet<NodeId>,
++    ) -> Self {
++        let mut relations = Self::default();
++        for &source in visible {
++            let mut targets = Vec::new();
++            for (target, clipped) in frame.description_parts(source) {
++                if let Some(text) = clipped {
++                    relations.clipped_text.insert(target, text.to_owned());
++                } else if !visible.contains(&target) {
++                    continue;
++                }
++                if frame
++                    .node(target)
++                    .is_some_and(|node| node.node.role() == Role::Text)
++                {
++                    relations.text_targets.insert(target);
++                }
++                targets.push(target);
++            }
++            if !targets.is_empty() {
++                relations.references.insert(source, targets);
++            }
++        }
++        relations
++    }
++
++    pub(super) fn target_id(&self, id: NodeId) -> String {
++        let kind = if self.text_targets.contains(&id) {
++            "text"
++        } else {
++            "tooltip"
++        };
++        format!("surface-accessibility-{kind}-{}", id.index())
++    }
++
++    pub(super) fn described_by(&self, source: NodeId) -> Option<String> {
++        Some(
++            self.references
++                .get(&source)?
++                .iter()
++                .map(|id| self.target_id(*id))
++                .collect::<Vec<_>>()
++                .join(" "),
++        )
++    }
++}
+diff --git a/crates/surface-platform/tests/web_description_relations.rs b/crates/surface-platform/tests/web_description_relations.rs
+new file mode 100644
+index 0000000..cbfc3bc
+--- /dev/null
++++ b/crates/surface-platform/tests/web_description_relations.rs
+@@ -0,0 +1,133 @@
++#[path = "../src/web_accessibility/descriptions.rs"]
++mod descriptions;
++
++use descriptions::DescriptionRelations;
++use surface::{Insets, Length, Node, Role, Style, TextMeasurer};
++use surface_app::{Application, Runtime, View};
++
++#[derive(Clone, Copy)]
++struct App {
++    clipped: bool,
++    show_prefix: bool,
++    show_suffix: bool,
++}
++
++impl Application for App {
++    type Message = Self;
++
++    fn update(&mut self, message: Self) {
++        *self = message;
++    }
++
++    fn view(&self) -> View<Self> {
++        let editor = View::new(
++            Node::new(Role::TextInput, "Amount")
++                .id("amount")
++                .text("12")
++                .described_by_texts(["prefix", "suffix", "prefix"])
++                .described_by_text("error")
++                .invalid(true),
++        )
++        .on_input(|_| App {
++            clipped: false,
++            show_prefix: true,
++            show_suffix: true,
++        });
++        let prefix = self
++            .show_prefix
++            .then(|| View::new(Node::new(Role::Text, "").id("prefix").text("歐元")));
++        let suffix = self
++            .show_suffix
++            .then(|| View::new(Node::new(Role::Text, "").id("suffix").text("公斤")));
++        let style = if self.clipped {
++            Style::default().width(Length::Px(100.)).fixed(Insets {
++                left: Length::Px(-200.),
++                ..Default::default()
++            })
++        } else {
++            Style::default()
++        };
++        let error = View::new(
++            Node::new(Role::Text, "")
++                .id("error")
++                .text("Use an integer.")
++                .styled(style),
++        );
++        View::new(Node::new(Role::Window, "Application").styled(Style::column()))
++            .children([editor, error].into_iter().chain(suffix).chain(prefix))
++    }
++}
++
++struct Metrics;
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.chars().count() as f32 * size / 2., size)
++    }
++}
++
++#[test]
++fn web_relations_emit_ordered_idrefs_and_keep_the_clipped_error_anchor() {
++    let authored = App {
++        clipped: false,
++        show_prefix: true,
++        show_suffix: true,
++    };
++    let mut runtime = Runtime::new(authored).unwrap();
++    for (state, expected) in [
++        (authored, &["prefix", "suffix", "error"][..]),
++        (
++            App {
++                clipped: true,
++                ..authored
++            },
++            &["prefix", "suffix", "error"],
++        ),
++        (
++            App {
++                show_prefix: false,
++                ..authored
++            },
++            &["suffix", "error"],
++        ),
++        (
++            App {
++                show_prefix: false,
++                show_suffix: false,
++                ..authored
++            },
++            &["error"],
++        ),
++    ] {
++        runtime.apply(state).unwrap();
++        runtime.render(320., 240., &mut Metrics).unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        let visible = runtime
++            .dom()
++            .iter()
++            .filter_map(|(id, _)| {
++                let node = frame.node(id)?;
++                let rect = node.layout.bounds.intersect(node.layout.clip);
++                (rect.width > 0. && rect.height > 0.).then_some(id)
++            })
++            .collect();
++        let relations = DescriptionRelations::collect(&frame, &visible);
++        let editor = runtime.dom().by_id("amount").unwrap();
++        let error = runtime.dom().by_id("error").unwrap();
++        let ids = expected
++            .iter()
++            .map(|key| {
++                let node = runtime.dom().by_id(key).unwrap();
++                assert!(relations.text_targets.contains(&node));
++                format!("surface-accessibility-text-{}", node.index())
++            })
++            .collect::<Vec<_>>();
++        assert_eq!(
++            relations.described_by(editor).as_deref(),
++            Some(ids.join(" ").as_str())
++        );
++        assert_eq!(
++            relations.clipped_text.get(&error).map(String::as_str),
++            state.clipped.then_some("Use an integer.")
++        );
++    }
++}
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index a85bbdc..ba583aa 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -160,6 +160,8 @@ pub struct Node {
+     current_date: bool,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     described_by_text: Option<String>,
++    #[serde(default, skip_serializing_if = "Vec::is_empty")]
++    additional_description_text_targets: Vec<String>,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+     assertive_live_status: bool,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+@@ -211,6 +213,8 @@ pub struct Node {
+     #[serde(skip)]
+     pub(crate) presented_text_input_horizontal_inset: f32,
+     #[serde(skip)]
++    pub(crate) presented_text_input_horizontal_bounds: Option<(f32, f32)>,
++    #[serde(skip)]
+     pub(crate) presented_text_input_top_inset: f32,
+     pub(crate) disabled: bool,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+@@ -274,6 +278,7 @@ impl Node {
+             grid_multiselectable: false,
+             current_date: false,
+             described_by_text: None,
++            additional_description_text_targets: Vec::new(),
+             assertive_live_status: false,
+             alert_dialog: false,
+             dialog_heading: None,
+@@ -300,6 +305,7 @@ impl Node {
+             text_input_caret_color: None,
+             presented_text_input_placeholder: None,
+             presented_text_input_horizontal_inset: 0.,
++            presented_text_input_horizontal_bounds: None,
+             presented_text_input_top_inset: 0.,
+             disabled: false,
+             invalid: false,
+@@ -808,6 +814,21 @@ impl Node {
+     pub fn description_text_target(&self) -> Option<&str> {
+         self.described_by_text.as_deref()
+     }
++    /// Add stable IDs of passive text nodes that describe this node in order.
++    /// Hosts resolve these references before the existing single description.
++    pub fn described_by_texts<I, T>(mut self, targets: I) -> Self
++    where
++        I: IntoIterator<Item = T>,
++        T: Into<String>,
++    {
++        self.additional_description_text_targets
++            .extend(targets.into_iter().map(Into::into));
++        self
++    }
++
++    pub fn additional_description_text_targets(&self) -> &[String] {
++        &self.additional_description_text_targets
++    }
+     /// Request assertive announcements for a passive status in its current
+     /// accessibility scope. Give the status a stable ID and visible bounds
+     /// even when its text is empty. Use this for urgent updates.
+@@ -1270,6 +1291,30 @@ impl MicroDom {
+         Ok(())
+     }
+ 
++    /// Set a local text offset and width after layout. Only the display copy
++    /// uses these horizontal bounds.
++    #[doc(hidden)]
++    pub fn set_presented_text_input_horizontal_bounds(
++        &mut self,
++        id: NodeId,
++        offset: f32,
++        width: f32,
++    ) -> Result<(), DomError> {
++        let node = self
++            .nodes
++            .get_mut(id.index())
++            .ok_or(DomError::InvalidNode(id.index()))?;
++        if node.role() == Role::TextInput
++            && offset.is_finite()
++            && width.is_finite()
++            && offset >= 0.
++            && width > 0.
++        {
++            node.presented_text_input_horizontal_bounds = Some((offset, width));
++        }
++        Ok(())
++    }
++
+     /// Inset the top of the painted editor box on the display copy.
+     #[doc(hidden)]
+     pub fn set_presented_text_input_top_inset(
+diff --git a/crates/surface/src/paint.rs b/crates/surface/src/paint.rs
+index f9ad4a6..1f41c34 100644
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -944,10 +944,13 @@ fn compile_into<Op: CompileOp>(
+         let placeholder = n.text_input_placeholder();
+         let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
+         if let Some((text, text_color)) = text_run {
+-            let mut rect = g
+-                .bounds
+-                .inset(s.padding)
+-                .inset_horizontal(n.presented_text_input_horizontal_inset);
++            let padded = g.bounds.inset(s.padding);
++            let mut rect = padded.inset_horizontal(n.presented_text_input_horizontal_inset);
++            if let Some((offset, width)) = n.presented_text_input_horizontal_bounds {
++                let offset = offset.min(padded.width);
++                rect.x = padded.x + offset;
++                rect.width = width.min(padded.width - offset);
++            }
+             let top_inset = n.presented_text_input_top_inset.min(rect.height);
+             rect.y += top_inset;
+             rect.height -= top_inset;
+diff --git a/crates/surface/tests/microdom_contract.rs b/crates/surface/tests/microdom_contract.rs
+index 824573e..fe56123 100644
+--- a/crates/surface/tests/microdom_contract.rs
++++ b/crates/surface/tests/microdom_contract.rs
+@@ -161,6 +161,33 @@ fn grid_metadata_round_trips_without_changing_base_roles() {
+     );
+ }
+ 
++#[test]
++fn ordered_text_descriptions_are_optional_and_keep_the_singular_wire_field() {
++    let legacy = Node::new(Role::TextInput, "Amount").described_by_text("amount-help");
++    let legacy_wire = serde_json::to_value(&legacy).unwrap();
++    assert_eq!(legacy_wire["described_by_text"], "amount-help");
++    assert!(legacy_wire
++        .get("additional_description_text_targets")
++        .is_none());
++    assert_eq!(serde_json::from_value::<Node>(legacy_wire).unwrap(), legacy);
++
++    let adorned = legacy
++        .described_by_texts(["amount-currency", "amount-unit"])
++        .described_by_text("amount-error");
++    let wire = serde_json::to_value(&adorned).unwrap();
++    assert_eq!(wire["described_by_text"], "amount-error");
++    assert_eq!(
++        wire["additional_description_text_targets"],
++        serde_json::json!(["amount-currency", "amount-unit"])
++    );
++    let restored: Node = serde_json::from_value(wire).unwrap();
++    assert_eq!(restored.description_text_target(), Some("amount-error"));
++    assert_eq!(
++        restored.additional_description_text_targets(),
++        ["amount-currency", "amount-unit"]
++    );
++}
++
+ #[test]
+ fn grid_multiselection_is_opt_in_and_keeps_the_existing_snapshot_version() {
+     let grid = Node::new(Role::Group, "June").grid_role(GridRole::Grid);
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 1124a5e..105479d 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -341,11 +341,11 @@
+       "id": "text-fields",
+       "spec": "https://m3.material.io/components/text-fields/overview",
+       "status": "partial",
+-      "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Optional slots and multiline remain open.",
+-      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, and matching Page.screenshot, CLI and MCP PNGs.",
+-      "web_evidence": "M325–M332 cover outline and filled-container paint, projected description and invalid state, deduplicated assertive errors, read-only and disabled states, composition during reflow, and a separate Enter to submit. Chromium may need a separate CDP commit.",
+-      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. A long label wraps above either variant. The editor retains committed Unicode text, selection and IME across appearance changes. Leading and trailing icons, prefix and suffix, counters, multiline, label motion, system contrast and live speech remain open.",
+-      "unit_evidence": "crates/surface-material/tests/outlined_text_field.rs and surface-app editor presentation tests cover layout, editor identity, accessible relations, preedit and Enter"
++      "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Leading and trailing icons and text affixes checked against both token sets. Counter and multiline remain open.",
++      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow, and matching Page.screenshot, CLI and MCP PNGs.",
++      "web_evidence": "M325–M336 cover the two field appearances and their slots, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, 112 dp action relocation, and separate Enter or Space activation. Chromium may need a separate CDP commit.",
++      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. A long label wraps above either variant. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. A long placeholder can clip within the one-line input area. Counters, multiline, label motion, system contrast and live speech remain open.",
++      "unit_evidence": "crates/surface-material/tests/outlined_text_field.rs and surface-app editor presentation tests cover layout, editor identity, ordered accessible relations, preedit and Enter. The native host test routes constructed Winit input events through the production editor flow."
+     },
+     {
+       "id": "toolbars",
+diff --git a/docs/material.md b/docs/material.md
+index 12ad24f..f9fb8a8 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -205,6 +205,7 @@ does not change application state.
+ | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
+ | `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
+ | `filled_text_field` | One single-line editor with a filled container, inside floating label and bottom indicator |
++| `text_field_with_adornments` | Either single-line appearance with optional visual affixes and a separate named action |
+ | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
+ | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
+ | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
+@@ -1256,6 +1257,26 @@ In Material Gallery, choose 動作 and 填色文字欄位.
+ 
+ [Material 3 text field specifications](https://m3.material.io/components/text-fields/specs)
+ 
++### Text field adornments
++
++Use `Theme::text_field_with_adornments` for either appearance. Pass the
++ordinary `TextFieldOptions` and `TextFieldAdornments`. Each option can be
++omitted. Supply localized spoken text for a prefix or suffix. The
++application receives the input value by itself and handles Enter through
++the optional submit callback.
++
++The trailing button has its own name, focus and 48 dp target. Use its
++message for a separate action. Set the button's disabled flag if the
++action should be unavailable on a read-only field. A disabled field also
++disables the button. A pointer press leaves an active composition in the
++editor. Tab reaches the field before the button in either direction.
++
++If space is tight, affixes wrap below the field in readable text. The
++decorative icon can disappear, and the trailing button can move below
++the field with the same focus identity.
++
++In Material Gallery, choose 動作 and 文字欄位配件 to try both appearances.
++
+ ## Baseline segmented buttons
+ 
+ Use `Theme::baseline_segmented_button` for two to five related choices in
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 4440714..637996b 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -108,6 +108,8 @@ mod material_standard_slider;
+ mod material_switch;
+ #[path = "material_tabs.rs"]
+ mod material_tabs;
++#[path = "material_text_field_adornments.rs"]
++mod material_text_field_adornments;
+ #[path = "material_time_baseline.rs"]
+ mod material_time_baseline;
+ #[path = "material_time_dial.rs"]
+@@ -161,7 +163,8 @@ pub const STEPS: &[&str] = &[
+     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
+     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+-    "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332",
++    "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
++    "M335", "M336",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -295,7 +298,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_buttons::run(env, chrome, &url).await?;
+     material_segmented::run(env, chrome, &url).await?;
+     material_outlined_text_field::run(env, chrome, &url).await?;
+-    material_filled_text_field::run(env, chrome, &url).await
++    material_filled_text_field::run(env, chrome, &url).await?;
++    material_text_field_adornments::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -526,9 +530,17 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn text_field_adornment_steps_are_required_by_the_material_case() {
++        assert!(super::STEPS.ends_with(&super::material_text_field_adornments::STEPS));
++    }
++
+     #[test]
+     fn filled_text_field_steps_are_required_by_the_material_case() {
+-        assert!(super::STEPS.ends_with(&super::material_filled_text_field::STEPS));
++        let filled = super::material_filled_text_field::STEPS;
++        assert!(super::STEPS
++            .windows(filled.len())
++            .any(|steps| steps == filled));
+     }
+ 
+     #[test]
+diff --git a/e2e/src/material_text_field_adornments.rs b/e2e/src/material_text_field_adornments.rs
+new file mode 100644
+index 0000000..619622b
+--- /dev/null
++++ b/e2e/src/material_text_field_adornments.rs
+@@ -0,0 +1,821 @@
++//! Adorned Material fields in headless Chrome and WebGPU.
++
++use anyhow::{Context, Result};
++use serde::Serialize;
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, near, projected, resize, Raster,
++};
++use super::{click, focus, point, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 4] = ["M333", "M334", "M335", "M336"];
++
++const SHOW: &str = "text-field-adornments-demo-show";
++const BACK: &str = "text-field-adornments-demo-back";
++const APPEARANCE: &str = "text-field-adornments-demo-appearance";
++const THEME: &str = "text-field-adornments-demo-theme";
++const RTL: &str = "text-field-adornments-demo-rtl";
++const TEXT: &str = "text-field-adornments-demo-large-text";
++const NARROW: &str = "text-field-adornments-demo-narrow";
++const ERROR: &str = "text-field-adornments-demo-error";
++const EDITABLE: &str = "text-field-adornments-demo-editable";
++const ACTION: &str = "text-field-adornments-demo-editable-trailing-action";
++const READ_ONLY: &str = "text-field-adornments-demo-read-only";
++const READ_ACTION: &str = "text-field-adornments-demo-read-only-trailing-action";
++const DISABLED_ACTION: &str = "text-field-adornments-demo-disabled-trailing-action";
++const EDITABLE_NAME: &str = "方案費用";
++const ACTION_NAME: &str = "套用建議金額";
++const SUPPORT: &str = "請輸入不含單位的金額。";
++const VALIDATION: &str = "請輸入大於零的金額。";
++const TEXTAREA: &str = "document.getElementById('surface-text-input')";
++const HOME: (u32, u32) = (960, 2400);
++const IDLE: &str = "material-text-field-adornments-outlined-idle.png";
++const OUTLINED: &str = "material-text-field-adornments-outlined-focused.png";
++const FILLED: &str = "material-text-field-adornments-filled-focused.png";
++const PREEDIT: &str = "material-text-field-adornments-ime-preedit.png";
++const COMPACT: &str = "material-text-field-adornments-compact-dark-rtl-200.png";
++const FALLBACK: &str = "material-text-field-adornments-fallback-112.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++#[derive(Clone, Copy, Serialize)]
++struct Slots {
++    face: Rect,
++    editor: Rect,
++    action: Rect,
++    leading: Rect,
++    trailing: Rect,
++    prefix: Rect,
++    suffix: Rect,
++    value: Rect,
++    floating: Rect,
++}
++
++async fn model(tab: &Tab, condition: &str) -> Result<Value> {
++    until(
++        tab,
++        &format!("(d => {condition})(s.text_field_adornments_demo)"),
++    )
++    .await?;
++    tab.settle().await?;
++    Ok(state(tab).await?["text_field_adornments_demo"].clone())
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, HOME.0, HOME.1).await?;
++    reduced_motion(tab, true).await?;
++    until(
++        tab,
++        "s.section === 0 && !s.text_field_adornments_demo.visible",
++    )
++    .await?;
++    activate(tab, SHOW).await?;
++    model(tab, "d.visible && d.appearance === 'outlined' && !d.dark && !d.rtl && d.text_scale === 1 &&
++          !d.narrow && !d.show_error && d.value === '' && d.edits === 0 && d.actions === 0 && d.submits === 0").await?;
++    resize(tab, 960, 820).await
++}
++
++async fn editor(tab: &Tab, id: &str) -> Result<()> {
++    focus(tab, id, "surface-text-input").await?;
++    tab.settle().await
++}
++
++async fn focused(tab: &Tab, id: &str) -> Result<()> {
++    until(tab, &format!("s.focused === {}", js(id))).await?;
++    tab.wait_for(&format!(
++        "document.activeElement?.id === 'surface' || document.activeElement === {}",
++        projected(id)
++    ))
++    .await?;
++    tab.settle().await
++}
++
++async fn enter_editor(tab: &Tab) -> Result<()> {
++    let current = state(tab).await?;
++    if current["focused"] == ACTION {
++        tab.press("Shift+Tab").await?;
++    } else {
++        for _ in 0..8 {
++            if state(tab).await?["focused"] == EDITABLE {
++                break;
++            }
++            tab.press("Tab").await?;
++            tab.settle().await?;
++        }
++    }
++    editor(tab, EDITABLE).await
++}
++
++fn editor_state() -> String {
++    format!(
++        "JSON.parse(window.gallery.export_dom()).text_inputs[{}]",
++        js(EDITABLE)
++    )
++}
++
++async fn part(tab: &Tab, suffix: &str) -> Result<Rect> {
++    bounds(tab, &format!("{EDITABLE}-{suffix}")).await
++}
++
++async fn slots(tab: &Tab, boundary: &str) -> Result<Slots> {
++    Ok(Slots {
++        face: part(tab, boundary).await?,
++        editor: bounds(tab, EDITABLE).await?,
++        action: bounds(tab, ACTION).await?,
++        leading: part(tab, "leading-icon").await?,
++        trailing: part(tab, "trailing-icon").await?,
++        prefix: part(tab, "prefix-visual").await?,
++        suffix: part(tab, "suffix-visual").await?,
++        value: part(tab, "value-box").await?,
++        floating: part(tab, "floating-label").await?,
++    })
++}
++
++fn right(rect: Rect) -> f64 {
++    rect[0] + rect[2]
++}
++
++fn bottom(rect: Rect) -> f64 {
++    rect[1] + rect[3]
++}
++
++fn logical_start(face: Rect, rect: Rect, rtl: bool) -> f64 {
++    if rtl {
++        right(face) - right(rect)
++    } else {
++        rect[0] - face[0]
++    }
++}
++
++fn logical_end(face: Rect, rect: Rect, rtl: bool) -> f64 {
++    if rtl {
++        right(face) - rect[0]
++    } else {
++        right(rect) - face[0]
++    }
++}
++
++fn assert_slots(slots: Slots, rtl: bool, face_height: f64) -> Result<()> {
++    let Slots {
++        face,
++        editor,
++        action,
++        leading,
++        trailing,
++        prefix,
++        suffix,
++        value,
++        ..
++    } = slots;
++    check!(
++        near(face[3], face_height)
++            && near(editor[3], face[3])
++            && near(editor[1], face[1])
++            && near(action[2], 48.)
++            && near(action[3], 48.)
++            && near(logical_start(face, editor, rtl), 0.)
++            && near(
++                logical_end(face, editor, rtl),
++                logical_start(face, action, rtl)
++            )
++            && near(logical_end(face, action, rtl), face[2])
++            && near(action[1] + 24., face[1] + face[3] / 2.)
++            && contains(face, action),
++        "the whole face surrounds disjoint editor and 48 dp action bounds"
++    );
++    check!(
++        [leading, trailing]
++            .into_iter()
++            .all(|icon| near(icon[2], 24.)
++                && near(icon[3], 24.)
++                && near(icon[1] + 12., face[1] + face[3] / 2.))
++            && near(logical_start(face, leading, rtl), 12.)
++            && near(face[2] - logical_end(face, trailing, rtl), 12.)
++            && contains(action, trailing)
++            && contains(editor, leading),
++        "two 24 dp glyphs follow logical insets inside their separate targets"
++    );
++    check!(
++        value[2] >= 48.
++            && [prefix, value, suffix]
++                .into_iter()
++                .all(|slot| contains(editor, slot))
++            && near(prefix[1], value[1])
++            && near(suffix[1], value[1])
++            && near(prefix[3], value[3])
++            && near(suffix[3], value[3])
++            && near(logical_start(face, prefix, rtl), 52.)
++            && near(face[2] - logical_end(face, suffix, rtl), 52.)
++            && near(
++                logical_start(face, value, rtl) - logical_end(face, prefix, rtl),
++                2.
++            )
++            && near(
++                logical_start(face, suffix, rtl) - logical_end(face, value, rtl),
++                2.
++            ),
++        "affixes and value share a line with two logical 2 dp gaps"
++    );
++    Ok(())
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++fn rgb(data: &Value, role: &str) -> Result<Rgb> {
++    let [r, g, b, _]: [u8; 4] = serde_json::from_value(data["palette"][role].clone())
++        .with_context(|| format!("field adornment palette role {role}"))?;
++    Ok([r, g, b])
++}
++
++fn ink(raster: &Raster, color: Rgb, rect: Rect) -> Result<usize> {
++    Ok(raster.colors(rect)?.get(&color).copied().unwrap_or(0))
++}
++
++fn sample(raster: &Raster, point: [f64; 2], color: Rgb) -> Result<Value> {
++    let pixels = raster.sample(point[0], point[1])?;
++    check_eq!(pixels, color, format!("text field pixel at {point:?}"));
++    Ok(json!({"point":point,"rgb":pixels}))
++}
++
++fn outline(
++    raster: &Raster,
++    slots: Slots,
++    width: f64,
++    color: Rgb,
++    paper: Rgb,
++    notched: bool,
++) -> Result<Value> {
++    let [x, y, w, h] = slots.face;
++    let mut samples = Vec::new();
++    // The right edge is beyond the editor's own hit rectangle.
++    for d in [0.5, 1.5, 2.5, 3.5] {
++        samples.push(sample(
++            raster,
++            [x + w - d, y + h / 2.],
++            if d < width { color } else { paper },
++        )?);
++    }
++    if notched {
++        let label = slots.floating;
++        for (x, expected) in [
++            (label[0] - 6., color),
++            (label[0] - 2., paper),
++            (right(label) + 2., paper),
++            (right(label) + 6., color),
++        ] {
++            samples.push(sample(raster, [x, y + 0.5], expected)?);
++        }
++    }
++    Ok(json!({"width_dp":width,"samples":samples}))
++}
++
++fn indicator(raster: &Raster, face: Rect, color: Rgb, fill: Rgb) -> Result<Value> {
++    let mut samples = Vec::new();
++    for x in [face[0] + 6.5, right(face) - 6.5] {
++        for d in [0.5, 1.5, 2.5, 3.5] {
++            samples.push(sample(
++                raster,
++                [x, bottom(face) - d],
++                if d < 3. { color } else { fill },
++            )?);
++        }
++    }
++    Ok(json!({"width_dp":3,"samples":samples}))
++}
++
++async fn describe(tab: &Tab, help: &str, invalid: bool) -> Result<Value> {
++    let actual = tab.eval(&format!(
++        r#"(() => {{
++            const field = {TEXTAREA};
++            const ids = field?.getAttribute('aria-describedby')?.trim().split(/\s+/) ?? [];
++            return {{names:ids.map(id => document.getElementById(id)?.textContent),
++                unique:new Set(ids).size === ids.length, invalid:field?.getAttribute('aria-invalid')}};
++        }})()"#,
++    )).await?;
++    check_eq!(
++        actual,
++        json!({"names":["歐元","每月",help],"unique":true,"invalid":invalid.then_some("true")}),
++        "the textarea points to unique ordered affixes and current support or error"
++    );
++    let tree = ax_tree(tab).await?;
++    let textbox = ax(&tree, "textbox", EDITABLE_NAME)?;
++    let action = ax(&tree, "button", ACTION_NAME)?;
++    let spoken = textbox["description"]["value"]
++        .as_str()
++        .context("Chrome AX editor description")?;
++    let (prefix, suffix, help) = (spoken.find("歐元"), spoken.find("每月"), spoken.find(help));
++    check!(
++        matches!((prefix,suffix,help), (Some(p),Some(s),Some(h)) if p < s && s < h),
++        "Chrome reports the ordered description"
++    );
++    check!(
++        textbox["nodeId"] != action["nodeId"]
++            && [("textbox", EDITABLE_NAME), ("button", ACTION_NAME)]
++                .into_iter()
++                .all(|(role, name)| tree
++                    .iter()
++                    .filter(|node| node["ignored"] == false
++                        && node["role"]["value"] == role
++                        && node["name"]["value"] == name)
++                    .count()
++                    == 1),
++        "Chrome exposes exactly one editor and a separate named action"
++    );
++    Ok(
++        json!({"dom":actual,"ax_description":spoken,"action_role":"button","action_name":ACTION_NAME}),
++    )
++}
++
++async fn presentations(tab: &Tab, env: &Env) -> Result<Value> {
++    focused(tab, BACK).await?;
++    let data = model(tab, "d.value === ''").await?;
++    let paper = rgb(&data, "background")?;
++    let neutral = rgb(&data, "on_surface_variant")?;
++    let primary = rgb(&data, "primary")?;
++    let idle_slots = slots(tab, "outline").await?;
++    assert_slots(idle_slots, false, 56.)?;
++    let idle = photo(tab, env, IDLE).await?;
++    let idle_outline = outline(&idle, idle_slots, 1., rgb(&data, "outline")?, paper, false)?;
++    let idle_leading = ink(&idle, neutral, idle_slots.leading)?;
++    let idle_trailing = ink(&idle, neutral, idle_slots.trailing)?;
++    let idle_suffix = ink(&idle, neutral, idle_slots.suffix)?;
++    check!(
++        idle_leading > 20 && idle_trailing > 20 && idle_suffix == 0,
++        "idle paints both icons and keeps the far-side suffix hidden"
++    );
++
++    click(tab, &format!("{EDITABLE}-leading-icon")).await?;
++    editor(tab, EDITABLE).await?;
++    let outlined_slots = slots(tab, "outline").await?;
++    assert_slots(outlined_slots, false, 56.)?;
++    check!(
++        near(outlined_slots.floating[0] - outlined_slots.face[0], 16.),
++        "the Outlined floating caption keeps its own 16 dp inset"
++    );
++    let outlined = photo(tab, env, OUTLINED).await?;
++    let focused_outline = outline(&outlined, outlined_slots, 3., primary, paper, true)?;
++    let prefix_pixels = ink(&outlined, neutral, outlined_slots.prefix)?;
++    let suffix_pixels = ink(&outlined, neutral, outlined_slots.suffix)?;
++    let idle_prefix = ink(&idle, neutral, idle_slots.prefix)?;
++    check!(
++        prefix_pixels > 12 && suffix_pixels > 12 && idle_prefix != prefix_pixels,
++        "focus paints different prefix ink and the newly visible suffix"
++    );
++    let description = describe(tab, SUPPORT, false).await?;
++
++    tab.insert_text("中文42").await?;
++    model(
++        tab,
++        "d.value === '中文42' && d.edits === 1 && d.actions === 0 && d.submits === 0",
++    )
++    .await?;
++    tab.shortcut("a").await?;
++    let state = editor_state();
++    tab.wait_for(&format!(
++        "{state}.selection_anchor === 0 && {state}.selection_cursor === 8"
++    ))
++    .await?;
++    let before = tab.eval(&state).await?;
++    tab.press("Shift+Tab").await?;
++    focused(tab, ERROR).await?;
++    click(tab, APPEARANCE).await?;
++    model(
++        tab,
++        "d.appearance === 'filled' && d.value === '中文42' && d.edits === 1",
++    )
++    .await?;
++    enter_editor(tab).await?;
++    let after = tab.eval(&state).await?;
++    check_eq!(
++        after,
++        before,
++        "the editor and selection survive the appearance rebuild"
++    );
++    let filled_slots = slots(tab, "indicator").await?;
++    assert_slots(filled_slots, false, 56.)?;
++    check!(
++        near(filled_slots.floating[0] - filled_slots.face[0], 52.)
++            && near(filled_slots.floating[1] - filled_slots.face[1], 8.)
++            && near(filled_slots.value[1] - filled_slots.face[1], 24.),
++        "the Filled caption uses the icon inset and the value sits a line below"
++    );
++    let filled = photo(tab, env, FILLED).await?;
++    let fill = rgb(&data, "surface_container_highest")?;
++    let active = indicator(&filled, filled_slots.face, primary, fill)?;
++    let solid_fill = sample(
++        &filled,
++        [filled_slots.face[0] + 6.5, filled_slots.face[1] + 10.5],
++        fill,
++    )?;
++    let filled_prefix = ink(&filled, neutral, filled_slots.prefix)?;
++    let filled_suffix = ink(&filled, neutral, filled_slots.suffix)?;
++    check!(
++        filled_prefix > 12 && filled_suffix > 12,
++        "Filled paints both measured affixes"
++    );
++    Ok(json!({"palette":data["palette"],
++        "idle":{"slots":idle_slots,"outline":idle_outline,"leading_ink":idle_leading,
++            "trailing_ink":idle_trailing,"prefix_region_ink":idle_prefix,"suffix_ink":idle_suffix,"capture":IDLE},
++        "outlined":{"slots":outlined_slots,"outline":focused_outline,"prefix_ink":prefix_pixels,
++            "suffix_ink":suffix_pixels,"description":description,"capture":OUTLINED},
++        "filled":{"slots":filled_slots,"indicator":active,"fill":solid_fill,"prefix_ink":filled_prefix,
++            "suffix_ink":filled_suffix,"capture":FILLED},
++        "retained_editor":{"id":EDITABLE,"before":before,"after":after}}))
++}
++
++async fn actions(tab: &Tab) -> Result<Value> {
++    tab.eval(
++        r#"(() => {
++        const keys = [];
++        const pointer = [];
++        window.adornmentInput = {keys, pointer};
++        window.addEventListener('keydown', e => {
++            if (e.key === 'Enter' || e.key === ' ') keys.push([e.key, e.isTrusted]);
++        }, true);
++        for (const type of ['pointerdown','pointerup']) {
++            window.addEventListener(type, e => {
++                if (e.target.id === 'surface') pointer.push([type,e.isTrusted]);
++            }, true);
++        }
++    })()"#,
++    )
++    .await?;
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Shift+Tab").await?;
++    editor(tab, EDITABLE).await?;
++    tab.press("Enter").await?;
++    let submitted = model(
++        tab,
++        "d.actions === 0 && d.submits === 1 && d.last_submit === '中文42'",
++    )
++    .await?;
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Enter").await?;
++    let applied = model(
++        tab,
++        "d.actions === 1 && d.submits === 1 && d.edits === 1 && d.value === '24'",
++    )
++    .await?;
++    focused(tab, ACTION).await?;
++    tab.press("Space").await?;
++    let spaced = model(tab, "d.actions === 2 && d.submits === 1 && d.edits === 1").await?;
++    let hit = point(tab, ACTION).await?;
++    tab.mouse_move(hit.x, hit.y).await?;
++    tab.mouse_down().await?;
++    let held = model(tab, "d.actions === 2 && d.submits === 1").await?;
++    tab.mouse_up().await?;
++    let released = model(
++        tab,
++        "d.actions === 3 && d.submits === 1 && d.edits === 1 && d.value === '24'",
++    )
++    .await?;
++    let trusted = tab.eval("window.adornmentInput").await?;
++    check_eq!(trusted, json!({"keys":[["Enter",true],["Enter",true],[" ",true]],
++        "pointer":[["pointerdown",true],["pointerup",true]]}),
++        "trusted editor Enter, action Enter, action Space and pointer release each take separate routes");
++    Ok(
++        json!({"editor_submit":submitted,"action_enter":applied,"action_space":spaced,
++        "held":held,"released":released,"trusted_events":trusted}),
++    )
++}
++
++async fn composition(tab: &Tab, env: &Env) -> Result<Value> {
++    // Re-enter by keyboard after the physical click uses canvas focus.
++    enter_editor(tab).await?;
++    tab.shortcut("a").await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.selectionStart === 0 && {TEXTAREA}.selectionEnd === 2"
++    ))
++    .await?;
++    let state = editor_state();
++    let composing = format!("{state}.composing === true");
++    tab.ime_compose("ㄓㄨㄥ", 1, 2).await?;
++    tab.wait_for(&format!("{composing} && {TEXTAREA}.value === 'ㄓㄨㄥ'"))
++        .await?;
++    let before = bounds(tab, EDITABLE).await?;
++    resize(tab, 480, 820).await?;
++    editor(tab, EDITABLE).await?;
++    tab.wait_for(&format!("{composing} && {TEXTAREA}.value === 'ㄓㄨㄥ'"))
++        .await?;
++    let after = bounds(tab, EDITABLE).await?;
++    check!(
++        after[2] < before[2],
++        "a real resize reflows the composing value lane"
++    );
++    let pending = "d.value === '24' && d.edits === 1 && d.actions === 3 && d.submits === 1";
++    click(tab, ACTION).await?;
++    editor(tab, EDITABLE).await?;
++    tab.wait_for(&composing).await?;
++    let staged = model(tab, pending).await?;
++    let preedit = tab.eval(&state).await?;
++    let shaped = part(tab, "value-box").await?;
++    let suffix = part(tab, "suffix-visual").await?;
++    let frame = photo(tab, env, PREEDIT).await?;
++    let preedit_ink = ink(&frame, rgb(&staged, "on_surface")?, shaped)?;
++    let affix_ink = ink(&frame, rgb(&staged, "on_surface_variant")?, suffix)?;
++    check!(
++        preedit_ink > 12 && affix_ink > 12,
++        "Canvas shows composed glyphs inside the value lane and passive affix outside it"
++    );
++
++    tab.press("Escape").await?;
++    let used_cancel = tab.eval(&composing).await? == true;
++    if used_cancel {
++        // Some browser versions need CDP to end their synthetic composition.
++        tab.ime_compose("", 0, 0).await?;
++    }
++    tab.wait_for(&format!("!({composing}) && {TEXTAREA}.value === '24'"))
++        .await?;
++    editor(tab, EDITABLE).await?;
++    let cancelled = model(tab, pending).await?;
++
++    tab.shortcut("a").await?;
++    tab.ime_compose("中文", 2, 2).await?;
++    tab.wait_for(&composing).await?;
++    tab.press("Enter").await?;
++    editor(tab, EDITABLE).await?;
++    let first = model(
++        tab,
++        "d.actions === 3 && d.submits === 1 && (d.value === '24' || d.value === '中文')",
++    )
++    .await?;
++    let used_insert_text = first["value"] == "24";
++    if used_insert_text {
++        tab.insert_text("中文").await?;
++    }
++    tab.wait_for(&format!("!({composing}) && {TEXTAREA}.value === '中文'"))
++        .await?;
++    let committed = model(
++        tab,
++        "d.value === '中文' && d.edits === 2 && d.actions === 3 && d.submits === 1",
++    )
++    .await?;
++    tab.press("Enter").await?;
++    let submitted = model(
++        tab,
++        "d.value === '中文' && d.edits === 2 && d.actions === 3 &&
++        d.submits === 2 && d.last_submit === '中文'",
++    )
++    .await?;
++    Ok(
++        json!({"method":"CDP synthetic composition with trusted click, Escape and Enter",
++        "editor_before":before,"editor_after":after,"preedit":preedit,"value_box":shaped,
++        "suffix_box":suffix,"preedit_ink":preedit_ink,"suffix_ink":affix_ink,
++        "protected":staged,"cancelled":cancelled,"cancel_needed_cdp":used_cancel,
++        "first_enter":first,"commit_needed_insert_text":used_insert_text,"committed":committed,
++        "second_enter":submitted,"capture":PREEDIT}),
++    )
++}
++
++async fn locked_fields(tab: &Tab, viewport: Rect) -> Result<Value> {
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Tab").await?;
++    editor(tab, READ_ONLY).await?;
++    tab.wait_for(&format!("{TEXTAREA}.readOnly && {TEXTAREA}.value === '18'"))
++        .await?;
++    let tree = ax_tree(tab).await?;
++    let readonly = ax(&tree, "textbox", "目前方案費用")?;
++    let disabled = ax(&tree, "button", "套用停用方案金額")?;
++    let disabled_editor = ax(&tree, "textbox", "停用方案費用")?;
++    check!(
++        ax_property(readonly, "readonly") == Some(&json!(true))
++            && ax_property(disabled, "disabled") == Some(&json!(true))
++            && ax_property(disabled_editor, "disabled") == Some(&json!(true)),
++        "Chrome distinguishes read-only text from disabled text and action"
++    );
++    tab.shortcut("a").await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.selectionStart === 0 && {TEXTAREA}.selectionEnd === 2"
++    ))
++    .await?;
++    tab.insert_text("不能改").await?;
++    tab.press("Backspace").await?;
++    tab.wait_for(&format!("{TEXTAREA}.readOnly && {TEXTAREA}.value === '18'"))
++        .await?;
++    model(
++        tab,
++        "d.locked_edit_requests === 0 && d.read_only_actions === 0",
++    )
++    .await?;
++    tab.press("Tab").await?;
++    focused(tab, READ_ACTION).await?;
++    tab.press("Space").await?;
++    model(
++        tab,
++        "d.read_only_actions === 1 && d.locked_edit_requests === 0",
++    )
++    .await?;
++    tab.press("Tab").await?;
++    until(tab, &format!("s.focused !== {}", js(DISABLED_ACTION))).await?;
++    let disabled_bounds = bounds(tab, DISABLED_ACTION).await?;
++    check!(
++        contains(viewport, disabled_bounds)
++            && near(disabled_bounds[2], 48.)
++            && near(disabled_bounds[3], 48.),
++        "the disabled action retains a visible full-size target"
++    );
++    click(tab, DISABLED_ACTION).await?;
++    let data = model(
++        tab,
++        "d.read_only_actions === 1 && d.disabled_action_requests === 0 &&
++        d.actions === 0 && d.edits === 0 && d.submits === 0 && d.locked_edit_requests === 0",
++    )
++    .await?;
++    until(tab, &format!("s.focused !== {}", js(DISABLED_ACTION))).await?;
++    Ok(json!({"model":data,"readonly":true,"disabled":true,
++        "readonly_action":READ_ACTION,"disabled_action":disabled_bounds}))
++}
++
++async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    for toggle in [APPEARANCE, THEME, RTL, TEXT, ERROR] {
++        click(tab, toggle).await?;
++        tab.settle().await?;
++    }
++    resize(tab, 320, 960).await?;
++    let data = model(
++        tab,
++        "d.width === 320 && d.appearance === 'filled' && d.dark && d.rtl &&
++        d.text_scale === 2 && d.show_error && !d.narrow",
++    )
++    .await?;
++    enter_editor(tab).await?;
++    let compact = slots(tab, "indicator").await?;
++    assert_slots(compact, true, 96.)?;
++    let viewport = [0., 0., 320., 960.];
++    check!(
++        contains(viewport, compact.face)
++            && contains(viewport, compact.action)
++            && near(logical_start(compact.face, compact.floating, true), 52.),
++        "the compact large-text label stays inside at logical start"
++    );
++    let described = describe(tab, VALIDATION, true).await?;
++    let frame = photo(tab, env, COMPACT).await?;
++    let error = rgb(&data, "error")?;
++    let fill = rgb(&data, "surface_container_highest")?;
++    let neutral = rgb(&data, "on_surface_variant")?;
++    let compact_indicator = indicator(&frame, compact.face, error, fill)?;
++    let compact_trailing = ink(&frame, error, compact.trailing)?;
++    let compact_affixes = [
++        ink(&frame, neutral, compact.prefix)?,
++        ink(&frame, neutral, compact.suffix)?,
++    ];
++    check!(
++        compact_trailing > 20 && compact_affixes.into_iter().all(|pixels| pixels > 12),
++        "error icon and both enlarged mirrored affixes paint in dark mode"
++    );
++    let compact_capture = json!({"slots":compact,"indicator":compact_indicator,
++        "trailing_error_ink":compact_trailing,"affix_ink":compact_affixes,
++        "description":described,"model":data,"capture":COMPACT});
++    let locked = locked_fields(tab, viewport).await?;
++
++    click(tab, NARROW).await?;
++    model(tab, "d.narrow && d.fixture_width === 112").await?;
++    enter_editor(tab).await?;
++    let narrow = slots(tab, "indicator").await?;
++    let prefix = part(tab, "prefix-wrapped").await?;
++    let suffix = part(tab, "suffix-wrapped").await?;
++    let label = part(tab, "above-label").await?;
++    check!(
++        near(narrow.face[2], 112.)
++            && near(narrow.editor[2], 112.)
++            && narrow.value[2] >= 48.
++            && contains(narrow.editor, narrow.value)
++            && near(narrow.action[2], 48.)
++            && near(narrow.action[3], 48.)
++            && narrow.action[1] > bottom(narrow.face)
++            && near(narrow.action[0], narrow.face[0])
++            && narrow.leading[2] == 0.
++            && narrow.prefix[2] == 0.
++            && narrow.suffix[2] == 0.
++            && narrow.floating[2] == 0.
++            && label[3] > 0.
++            && bottom(label) <= narrow.face[1]
++            && prefix[1] > bottom(narrow.action)
++            && suffix[1] > bottom(prefix)
++            && [narrow.face, narrow.action, label, prefix, suffix]
++                .into_iter()
++                .all(|rect| contains(viewport, rect)),
++        "112 dp fallback leaves a full editor, moves the action and wraps local affixes below"
++    );
++    let fallback = photo(tab, env, FALLBACK).await?;
++    let fallback_description = describe(tab, VALIDATION, true).await?;
++    let fallback_indicator = indicator(&fallback, narrow.face, error, fill)?;
++    // Examine the old 24 dp glyph footprint only in the gutter beside the caption.
++    let icon_gutter = [
++        narrow.leading[0],
++        narrow.leading[1],
++        (label[0] - narrow.leading[0]).min(24.),
++        24.,
++    ];
++    check!(
++        icon_gutter[2] >= 8. && contains(viewport, icon_gutter),
++        "the fallback leaves a visible gutter between the old glyph origin and label ink"
++    );
++    let omitted_icon_ink = ink(&fallback, neutral, icon_gutter)?;
++    check_eq!(
++        omitted_icon_ink,
++        0,
++        "the removed leading vector leaves no ink"
++    );
++    let wrapped_ink = [
++        ink(&fallback, neutral, prefix)?,
++        ink(&fallback, neutral, suffix)?,
++    ];
++    check!(
++        wrapped_ink.into_iter().all(|pixels| pixels > 12),
++        "both fallback captions contain real text ink"
++    );
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Shift+Tab").await?;
++    editor(tab, EDITABLE).await?;
++    resize(tab, HOME.0, HOME.1).await?;
++    tab.press("Shift+Tab").await?;
++    focused(tab, ERROR).await?;
++    click(tab, BACK).await?;
++    model(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(json!({"compact":compact_capture,"locked":locked,
++        "fallback":{"slots":narrow,"above_label":label,"prefix":prefix,"suffix":suffix,
++            "wrapped_ink":wrapped_ink,"indicator":fallback_indicator,
++            "omitted_icon":{"gutter":icon_gutter,"ink":omitted_icon_ink},
++            "description":fallback_description,"capture":FALLBACK},
++        "back_focus":SHOW}))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 864, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(
++            STEPS[0],
++            "Outlined and Filled keep the editor and paint separate passive affixes",
++        );
++        route(&tab, url).await?;
++        let adapter = tab
++            .eval(
++                "(async () => {
++                const {info} = await navigator.gpu.requestAdapter();
++                const {vendor, architecture, isFallbackAdapter} = info;
++                return {vendor, architecture, isFallbackAdapter};
++            })()",
++            )
++            .await?;
++        check!(
++            adapter["vendor"].is_string()
++                && adapter["architecture"].is_string()
++                && adapter["isFallbackAdapter"].is_boolean(),
++            "headless Chrome reports its WebGPU adapter"
++        );
++        report["adapter"] = adapter;
++        report["presentations"] = presentations(&tab, env).await?;
++        step(
++            STEPS[1],
++            "a separate named action takes trusted Enter, Space and pointer release",
++        );
++        report["actions"] = actions(&tab).await?;
++        step(
++            STEPS[2],
++            "composition keeps the value isolated and protects the trailing action",
++        );
++        report["composition"] = composition(&tab, env).await?;
++        step(
++            STEPS[3],
++            "dark RTL at 200 percent keeps locks, affixes and a 112 dp fallback",
++        );
++        report["compact"] = compact(&tab, env, url).await?;
++        check!(tab.errors().is_empty(), "no adorned text field page errors");
++        Ok(())
++    }
++    .await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["failure_state"] = tab
++            .eval("({model: JSON.parse(window.gallery.inspect()), active: document.activeElement?.id})")
++            .await
++            .unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-text-field-adornments-failure.png"))
++            .await;
++    }
++    env.write_json("material-text-field-adornments.json", &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index b148af2..1dac1bd 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -47,6 +47,7 @@ mod snackbar_demo;
+ mod split_demo;
+ mod switch_demo;
+ mod tabs_demo;
++mod text_field_adornments_demo;
+ mod time_dial_demo;
+ mod time_input_demo;
+ mod time_scroll_demo;
+@@ -112,6 +113,7 @@ use surface_material::{
+ };
+ use switch_demo::{SwitchDemo, SwitchDemoEvent};
+ use tabs_demo::{TabsDemo, TabsDemoEvent};
++use text_field_adornments_demo::{TextFieldAdornmentsDemo, TextFieldAdornmentsDemoEvent};
+ use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
+ use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
+ use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
+@@ -155,6 +157,7 @@ pub struct Gallery {
+     button_demo: ButtonDemo,
+     filled_text_field_demo: FilledTextFieldDemo,
+     outlined_text_field_demo: OutlinedTextFieldDemo,
++    text_field_adornments_demo: TextFieldAdornmentsDemo,
+     segmented_demo: SegmentedDemo,
+     slider_demo: SliderDemo,
+     slider_forms_demo: SliderFormsDemo,
+@@ -235,6 +238,7 @@ impl Default for Gallery {
+             button_demo: ButtonDemo::default(),
+             filled_text_field_demo: FilledTextFieldDemo::default(),
+             outlined_text_field_demo: OutlinedTextFieldDemo::default(),
++            text_field_adornments_demo: TextFieldAdornmentsDemo::default(),
+             segmented_demo: SegmentedDemo::default(),
+             slider_demo: SliderDemo::default(),
+             slider_forms_demo: SliderFormsDemo::default(),
+@@ -360,6 +364,7 @@ pub enum Message {
+     ButtonDemo(ButtonDemoEvent),
+     FilledTextFieldDemo(FilledTextFieldDemoEvent),
+     OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
++    TextFieldAdornmentsDemo(TextFieldAdornmentsDemoEvent),
+     SegmentedDemo(SegmentedDemoEvent),
+     SliderDemo(SliderDemoEvent),
+     SliderForms(SliderFormsEvent),
+@@ -554,6 +559,9 @@ impl Application for Gallery {
+         if self.outlined_text_field_demo.visible() {
+             return self.outlined_text_field_demo.text_scale();
+         }
++        if self.text_field_adornments_demo.visible() {
++            return self.text_field_adornments_demo.text_scale();
++        }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.text_scale();
+         }
+@@ -588,6 +596,7 @@ impl Application for Gallery {
+         let buttons = self.button_demo.viewport_changed(width, height);
+         let filled_text_field = self.filled_text_field_demo.viewport_changed(width);
+         let outlined_text_field = self.outlined_text_field_demo.viewport_changed(width);
++        let text_field_adornments = self.text_field_adornments_demo.viewport_changed(width);
+         let segmented = self.segmented_demo.viewport_changed(width);
+         let sliders = self.slider_demo.viewport_changed(width, height);
+         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
+@@ -660,6 +669,7 @@ impl Application for Gallery {
+             || buttons
+             || filled_text_field
+             || outlined_text_field
++            || text_field_adornments
+             || segmented
+             || sliders
+             || slider_forms
+@@ -1010,6 +1020,9 @@ impl Application for Gallery {
+                 if i != outlined_text_field_demo::SECTION {
+                     self.outlined_text_field_demo.leave();
+                 }
++                if i != text_field_adornments_demo::SECTION {
++                    self.text_field_adornments_demo.leave();
++                }
+                 if i != segmented_demo::SECTION {
+                     self.segmented_demo.leave();
+                 }
+@@ -1040,6 +1053,9 @@ impl Application for Gallery {
+             Message::ButtonDemo(event) => self.button_demo.update(event),
+             Message::FilledTextFieldDemo(event) => self.filled_text_field_demo.update(event),
+             Message::OutlinedTextFieldDemo(event) => self.outlined_text_field_demo.update(event),
++            Message::TextFieldAdornmentsDemo(event) => {
++                self.text_field_adornments_demo.update(event)
++            }
+             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
+             Message::SliderDemo(event) => self.slider_demo.update(event),
+             Message::SliderForms(event) => self.slider_forms_demo.update(event),
+@@ -1266,6 +1282,9 @@ impl Application for Gallery {
+         if self.outlined_text_field_demo.visible() {
+             return self.outlined_text_field_demo.view(&t, self.dark);
+         }
++        if self.text_field_adornments_demo.visible() {
++            return self.text_field_adornments_demo.view(&t, self.dark);
++        }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.view(&t, self.dark);
+         }
+@@ -1397,6 +1416,7 @@ impl Application for Gallery {
+                             SegmentedDemo::show_button(&t),
+                             OutlinedTextFieldDemo::show_button(&t),
+                             FilledTextFieldDemo::show_button(&t),
++                            TextFieldAdornmentsDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -2031,6 +2051,7 @@ mod web {
+         state["button_demo"] = s.button_demo.inspect(&theme, s.dark);
+         state["filled_text_field_demo"] = s.filled_text_field_demo.inspect(&theme, s.dark);
+         state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
++        state["text_field_adornments_demo"] = s.text_field_adornments_demo.inspect(&theme, s.dark);
+         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
+         state["slider_demo"] = s.slider_demo.inspect(&theme);
+         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
+diff --git a/examples/material-gallery/src/text_field_adornments_demo.rs b/examples/material-gallery/src/text_field_adornments_demo.rs
+new file mode 100644
+index 0000000..6e1c8c8
+--- /dev/null
++++ b/examples/material-gallery/src/text_field_adornments_demo.rs
+@@ -0,0 +1,451 @@
++use std::sync::OnceLock;
++
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
++    TextFieldAffix, TextFieldAppearance, TextFieldEditability, TextFieldOptions,
++    TextFieldTrailingAction, Theme, VectorIcon,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const TITLE: &str = "文字欄位配件";
++const SHOW: &str = "text-field-adornments-demo-show";
++const BACK: &str = "text-field-adornments-demo-back";
++const APPEARANCE: &str = "text-field-adornments-demo-appearance";
++const THEME: &str = "text-field-adornments-demo-theme";
++const RTL: &str = "text-field-adornments-demo-rtl";
++const LARGE_TEXT: &str = "text-field-adornments-demo-large-text";
++const NARROW: &str = "text-field-adornments-demo-narrow";
++const ERROR: &str = "text-field-adornments-demo-error";
++const EDITABLE: &str = "text-field-adornments-demo-editable";
++const READ_ONLY: &str = "text-field-adornments-demo-read-only";
++const DISABLED: &str = "text-field-adornments-demo-disabled";
++const NARROW_WIDTH: f32 = 112.;
++const SUGGESTED_VALUE: &str = "24";
++
++#[derive(Clone)]
++pub enum TextFieldAdornmentsDemoEvent {
++    Show,
++    Back,
++    ToggleAppearance,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleNarrow,
++    ToggleError,
++    Edit(String),
++    EditLocked,
++    ApplySuggestion,
++    ReviewRate,
++    DisabledAction,
++    Submit,
++}
++
++#[derive(Clone, Copy)]
++enum Feedback {
++    Applied,
++    Reviewed,
++    Submitted,
++}
++
++impl Feedback {
++    fn text(self) -> &'static str {
++        match self {
++            Self::Applied => "已套用 24 歐元的每月費用。",
++            Self::Reviewed => "目前費率為每月 18 歐元。",
++            Self::Submitted => "已送出欄位內的金額。",
++        }
++    }
++}
++
++#[derive(Clone, Copy)]
++enum Sample {
++    Editable,
++    ReadOnly,
++    Disabled,
++}
++
++pub(crate) struct TextFieldAdornmentsDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    narrow: bool,
++    show_error: bool,
++    width: f32,
++    appearance: TextFieldAppearance,
++    value: String,
++    edits: usize,
++    actions: usize,
++    submits: usize,
++    last_submit: Option<String>,
++    read_only_actions: usize,
++    disabled_action_requests: usize,
++    locked_edit_requests: usize,
++    feedback: Option<Feedback>,
++}
++
++impl Default for TextFieldAdornmentsDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            narrow: false,
++            show_error: false,
++            width: 960.,
++            appearance: TextFieldAppearance::Outlined,
++            value: String::new(),
++            edits: 0,
++            actions: 0,
++            submits: 0,
++            last_submit: None,
++            read_only_actions: 0,
++            disabled_action_requests: 0,
++            locked_edit_requests: 0,
++            feedback: None,
++        }
++    }
++}
++
++impl TextFieldAdornmentsDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        if self.width == width {
++            return false;
++        }
++        self.width = width;
++        self.visible
++    }
++
++    pub(crate) fn update(&mut self, event: TextFieldAdornmentsDemoEvent) {
++        use TextFieldAdornmentsDemoEvent::*;
++        if !self.visible && !matches!(event, Show) {
++            return;
++        }
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleAppearance => {
++                self.appearance = match self.appearance {
++                    TextFieldAppearance::Outlined => TextFieldAppearance::Filled,
++                    TextFieldAppearance::Filled => TextFieldAppearance::Outlined,
++                };
++            }
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleNarrow => self.narrow = !self.narrow,
++            ToggleError => self.show_error = !self.show_error,
++            Edit(value) => {
++                self.value = value;
++                self.edits += 1;
++            }
++            EditLocked => self.locked_edit_requests += 1,
++            ApplySuggestion => {
++                self.value = SUGGESTED_VALUE.to_owned();
++                self.actions += 1;
++                self.feedback = Some(Feedback::Applied);
++            }
++            ReviewRate => {
++                self.read_only_actions += 1;
++                self.feedback = Some(Feedback::Reviewed);
++            }
++            DisabledAction => self.disabled_action_requests += 1,
++            Submit => {
++                self.submits += 1;
++                self.last_submit = Some(self.value.clone());
++                self.feedback = Some(Feedback::Submitted);
++            }
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                TITLE,
++                ButtonKind::Outlined,
++                false,
++                Message::TextFieldAdornmentsDemo(TextFieldAdornmentsDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++            .suppress_repeated_activation()
++    }
++
++    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
++        use TextFieldAdornmentsDemoEvent::*;
++        let demo = Message::TextFieldAdornmentsDemo;
++        let (id, label, value, editability, action_name, icon, action) = match sample {
++            Sample::Editable => (
++                EDITABLE,
++                "方案費用",
++                self.value.as_str(),
++                TextFieldEditability::Editable,
++                "套用建議金額",
++                suggestion_icon(),
++                ApplySuggestion,
++            ),
++            Sample::ReadOnly => (
++                READ_ONLY,
++                "目前方案費用",
++                "18",
++                TextFieldEditability::ReadOnly,
++                "查看現有費率",
++                details_icon(),
++                ReviewRate,
++            ),
++            Sample::Disabled => (
++                DISABLED,
++                "停用方案費用",
++                "30",
++                TextFieldEditability::Disabled,
++                "套用停用方案金額",
++                suggestion_icon(),
++                DisabledAction,
++            ),
++        };
++        let mut options = TextFieldOptions::new(id, label, value);
++        options.editability = editability;
++        options.text_scale = self.text_scale();
++        options.direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let editable = matches!(sample, Sample::Editable);
++        if editable {
++            options.placeholder = Some("輸入金額");
++            options.supporting_text = Some("請輸入不含單位的金額。");
++            options.error = self.show_error.then_some("請輸入大於零的金額。");
++        }
++        let adornments = TextFieldAdornments {
++            leading_icon: Some(card_icon()),
++            trailing_action: Some(TextFieldTrailingAction {
++                icon,
++                name: action_name,
++                disabled: false,
++                on_press: demo(action),
++            }),
++            prefix: Some(TextFieldAffix {
++                visual: "€",
++                spoken_name: "歐元",
++            }),
++            suffix: Some(TextFieldAffix {
++                visual: "/月",
++                spoken_name: "每月",
++            }),
++        };
++        let field = theme
++            .text_field_with_adornments(
++                self.appearance,
++                options,
++                adornments,
++                move |value| demo(if editable { Edit(value) } else { EditLocked }),
++                move || editable.then(|| demo(Submit)),
++            )
++            .expect("valid adorned Gallery field");
++        if editable && self.narrow {
++            let mut style = Style::column().width(Length::Px(NARROW_WIDTH));
++            style.max_width = Length::Percent(1.);
++            let wrapper = Node::new(Role::Group, "")
++                .id("text-field-adornments-demo-narrow-specimen")
++                .styled(style);
++            View::new(wrapper).children([field])
++        } else {
++            field
++        }
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use TextFieldAdornmentsDemoEvent::*;
++        let demo = Message::TextFieldAdornmentsDemo;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++                .suppress_repeated_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", demo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation()
++                .suppress_repeated_activation(),
++            toggle(
++                APPEARANCE,
++                "填色",
++                self.appearance == TextFieldAppearance::Filled,
++                demo(ToggleAppearance),
++            ),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(RTL, "右起", self.rtl, demo(ToggleDirection)),
++            toggle(LARGE_TEXT, "大字", self.large_text, demo(ToggleLargeText)),
++            toggle(NARROW, "窄欄", self.narrow, demo(ToggleNarrow)),
++            toggle(ERROR, "錯誤", self.show_error, demo(ToggleError)),
++        ]);
++        let mut feedback_style = Style::column()
++            .width(Length::Percent(1.))
++            .with_text_style(typography::BODY_MEDIUM)
++            .foreground(theme.colors.on_surface);
++        feedback_style.min_height = typography::BODY_MEDIUM.line_height_px();
++        let feedback = View::new(
++            Node::new(Role::Status, "")
++                .id("text-field-adornments-demo-feedback")
++                .text(self.feedback.map_or("", Feedback::text))
++                .styled(feedback_style),
++        );
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .align(Align::Start)
++            .padding(8.)
++            .gap(20.)
++            .clip(true);
++        scroll_style.max_width = Length::Px(520.);
++        let scroll = View::new(
++            Node::new(Role::Group, "附配件的欄位範例")
++                .id("text-field-adornments-demo-scroll")
++                .styled(scroll_style),
++        )
++        .accessibility_scroll_pages()
++        .children([
++            self.field(theme, Sample::Editable),
++            self.field(theme, Sample::ReadOnly),
++            self.field(theme, Sample::Disabled),
++            feedback,
++        ]);
++        View::new(
++            Node::new(Role::Window, TITLE)
++                .id("text-field-adornments-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("text-field-adornments-demo-title", TITLE),
++            controls,
++            scroll,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let colors = theme.colors;
++        let on_surface_alpha = |alpha| {
++            let surface::Color(r, g, b, _) = colors.on_surface;
++            [r, g, b, alpha]
++        };
++        serde_json::json!({
++            "visible": self.visible,
++            "width": self.width,
++            "dark": dark,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "narrow": self.narrow,
++            "fixture_width": self.narrow.then_some(NARROW_WIDTH),
++            "appearance": match self.appearance {
++                TextFieldAppearance::Outlined => "outlined",
++                TextFieldAppearance::Filled => "filled",
++            },
++            "show_error": self.show_error,
++            "value": self.value,
++            "edits": self.edits,
++            "actions": self.actions,
++            "submits": self.submits,
++            "last_submit": self.last_submit,
++            "read_only_actions": self.read_only_actions,
++            "disabled_action_requests": self.disabled_action_requests,
++            "locked_edit_requests": self.locked_edit_requests,
++            "palette": {
++                "background": color(theme.background),
++                "surface": color(colors.surface),
++                "surface_container_highest": color(colors.surface_container_highest),
++                "outline": color(colors.outline),
++                "on_surface": color(colors.on_surface),
++                "on_surface_variant": color(colors.on_surface_variant),
++                "on_surface_alpha_4": on_surface_alpha(10),
++                "on_surface_alpha_8": on_surface_alpha(20),
++                "on_surface_alpha_38": on_surface_alpha(97),
++                "primary": color(colors.primary),
++                "secondary": color(colors.secondary),
++                "error": color(colors.error),
++                "on_error_container": color(colors.on_error_container),
++            },
++        })
++    }
++}
++
++fn card_icon() -> &'static VectorIcon {
++    static CARD: OnceLock<VectorIcon> = OnceLock::new();
++    CARD.get_or_init(|| {
++        VectorIcon::from_contours([
++            [[2., 5.], [22., 5.], [22., 19.], [2., 19.]],
++            [[4., 7.], [20., 7.], [20., 17.], [4., 17.]],
++            [[4., 9.], [20., 9.], [20., 12.], [4., 12.]],
++        ])
++        .expect("valid card glyph")
++    })
++}
++
++fn suggestion_icon() -> &'static VectorIcon {
++    static CHECK: OnceLock<VectorIcon> = OnceLock::new();
++    CHECK.get_or_init(|| {
++        VectorIcon::new([
++            [2., 12.],
++            [4., 10.],
++            [9., 15.],
++            [20., 4.],
++            [22., 6.],
++            [9., 19.],
++        ])
++        .expect("valid check glyph")
++    })
++}
++
++fn details_icon() -> &'static VectorIcon {
++    static INFO: OnceLock<VectorIcon> = OnceLock::new();
++    INFO.get_or_init(|| {
++        VectorIcon::from_contours([
++            [[4., 2.], [20., 2.], [20., 22.], [4., 22.]],
++            [[6., 4.], [18., 4.], [18., 20.], [6., 20.]],
++            [[8., 8.], [16., 8.], [16., 10.], [8., 10.]],
++            [[8., 13.], [16., 13.], [16., 15.], [8., 15.]],
++        ])
++        .expect("valid details glyph")
++    })
++}
