@@ -1,0 +1,74 @@
+{
+  "argv": [
+    "/private/tmp/surface-md3-adaptive-nav-v0174.b8nBXDdY/exact-candidate/web-canonical/debug/surface-e2e",
+    "--chrome",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/guards/chrome",
+    "--chrome-arg",
+    "--disable-updater-scheduler",
+    "--web-root",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/bundle/web/release",
+    "--bridge-web",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/bundle/web/devtools/material-gallery",
+    "--jet-bridge",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/guards/jet",
+    "--devtools-bin",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/bundle/debug/surface-devtools",
+    "--native-bin",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/guards/native",
+    "--compact-bin",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/guards/compact",
+    "--artifacts",
+    "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/artifacts",
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "injected_chrome_flags": [
+    "--disable-updater-scheduler"
+  ],
+  "inputs": {
+    "runner_sha256": "95586e3e5253eef3433d8709eb201dab59be7bdc626852c5891f69901891e186",
+    "app_bundle_seal_sha256": "50f6c2074aeee433941a49cf2003783702b3503586f9934007d45cbd600863db",
+    "focused_proof_sha256": "ea3d238599cab76866e69ad7305a767481083324da2a889ada651666c248729f",
+    "bundle_files_checked": 16,
+    "stock_files": {
+      "debug/jet-bridge": "79edb0bef30e0b7777d65d37ee873124fa38c9d5536a741645577eec325bf5d5",
+      "debug/surface-devtools": "5992ee0c2816ccb55b8260d24bbe76cbf21845095e0d00bb5b7000f548645b75",
+      "debug/surface-e2e": "95586e3e5253eef3433d8709eb201dab59be7bdc626852c5891f69901891e186",
+      "debug/surface-material-gallery": "d8262cf6cc975396a1d4e71a27115357a7c2729cd1f045b4f749172789d7cf07",
+      "web/devtools/material-gallery/index.html": "7a6b02ff6377c274e9253f7a44288d2b7de949d10ab10a9f32bb228ec65fa4fe",
+      "web/devtools/material-gallery/surface-web.json": "ff6ddf948ef7a2774d376d885c8220925e19dca6b3950a8da261d7c4c4c2c257",
+      "web/devtools/material-gallery/surface_material_gallery-3093b550d3fcb38c.js": "3093b550d3fcb38c96e59dae1997c732cf39d859fa93c6a6f5daf004977945f9",
+      "web/devtools/material-gallery/surface_material_gallery_bg-a3c0badda45626b0.wasm": "a3c0badda45626b0b117525e2dbad384ae31d1105ea4051d1ed6ec97c4e6c3b1",
+      "web/release/material-gallery/index.html": "bf1a88774b73f49655032f879ca808f4a58c7ee986bb82a6e94f1b9587c456fb",
+      "web/release/material-gallery/surface-web.json": "b4d8f0d4741e1767b7a751e9145dd8d1bda2562c43b2f6fb6f477e051f00127b",
+      "web/release/material-gallery/surface_material_gallery-5700b4730970d30b.js": "5700b4730970d30b0bc7dfa1e96817accf793d15522f8c5256e7fb1a35b034c6",
+      "web/release/material-gallery/surface_material_gallery_bg-4bfddc05857b89ce.wasm": "4bfddc05857b89cea3f95c3842cce94620acb8bf554c611abfebd96e90c32728",
+      "web/release/showcase/index.html": "224a64c570ec6b3da540f540549f6d397d0b5d983946e397550d24ed3e308817",
+      "web/release/showcase/surface-web.json": "841db4f960be43672b5271254903417f16204facee0b35937e351b638d065330",
+      "web/release/showcase/surface_showcase-832d5b0010b18bd5.js": "832d5b0010b18bd559fd697d5f307b5953040ee9e8d89e0e3826d93802de376f",
+      "web/release/showcase/surface_showcase_bg-51f3b0ff1543eb78.wasm": "51f3b0ff1543eb78b6ed0e1eae863ddb330a8e7d2a2efab5af612231d61f170c"
+    },
+    "source_manifest_sha256": "7aedeb9161baadca46aa6fdd83848b7e9c5498bccfac0e9a0e21e2782ec3f0bd",
+    "source_files_checked_per_origin": 696,
+    "reviewed_pins_sha256": "02e45132c3326256258e83b7f218f3c87179133ed7c650633561a367c0bff7e6",
+    "release": {
+      "version": "0.1.74",
+      "last_material_step": 369,
+      "source_sha256": "7aedeb9161baadca46aa6fdd83848b7e9c5498bccfac0e9a0e21e2782ec3f0bd",
+      "source_tree": "f7a92f77ecc9b37c91d81ace4877cd8038044d5c",
+      "source_files": 696,
+      "wide_canvas_height": 800,
+      "rtl_canvas_height": 1020
+    }
+  }
+}

@@ -1,0 +1,2766 @@
+{
+  "binaries": {
+    "files": {
+      "surface-devtools": "5992ee0c2816ccb55b8260d24bbe76cbf21845095e0d00bb5b7000f548645b75",
+      "surface-material-gallery": "d8262cf6cc975396a1d4e71a27115357a7c2729cd1f045b4f749172789d7cf07"
+    },
+    "manifest_sha256": "bf2732532f164a4b8a050d48da85e9f7291a303e30a4eeacf7eed0b94b7efa57"
+  },
+  "processes": [
+    {
+      "argv": [
+        "--headless",
+        "--width",
+        "320",
+        "--height",
+        "620"
+      ],
+      "pid": 20684,
+      "profile": "compact",
+      "reaped": true,
+      "replay": "1",
+      "visible_windows": {
+        "after_capture": 0,
+        "before_capture": 0,
+        "opened": 0,
+        "ready": 0,
+        "returned": 0
+      }
+    },
+    {
+      "argv": [
+        "--headless",
+        "--width",
+        "600",
+        "--height",
+        "620"
+      ],
+      "pid": 20798,
+      "profile": "medium",
+      "reaped": true,
+      "replay": "1",
+      "visible_windows": {
+        "after_capture": 0,
+        "before_capture": 0,
+        "opened": 0,
+        "ready": 0,
+        "returned": 0
+      }
+    },
+    {
+      "argv": [
+        "--headless",
+        "--width",
+        "840",
+        "--height",
+        "300"
+      ],
+      "pid": 20913,
+      "profile": "rail",
+      "reaped": true,
+      "replay": "1",
+      "visible_windows": {
+        "after_capture": 0,
+        "before_capture": 0,
+        "opened": 0,
+        "ready": 0,
+        "returned": 0
+      }
+    },
+    {
+      "argv": [
+        "--headless",
+        "--width",
+        "320",
+        "--height",
+        "620"
+      ],
+      "pid": 21023,
+      "profile": "compact",
+      "reaped": true,
+      "replay": "2",
+      "visible_windows": {
+        "after_capture": 0,
+        "before_capture": 0,
+        "opened": 0,
+        "ready": 0,
+        "returned": 0
+      }
+    },
+    {
+      "argv": [
+        "--headless",
+        "--width",
+        "600",
+        "--height",
+        "620"
+      ],
+      "pid": 21140,
+      "profile": "medium",
+      "reaped": true,
+      "replay": "2",
+      "visible_windows": {
+        "after_capture": 0,
+        "before_capture": 0,
+        "opened": 0,
+        "ready": 0,
+        "returned": 0
+      }
+    },
+    {
+      "argv": [
+        "--headless",
+        "--width",
+        "840",
+        "--height",
+        "300"
+      ],
+      "pid": 21265,
+      "profile": "rail",
+      "reaped": true,
+      "replay": "2",
+      "visible_windows": {
+        "after_capture": 0,
+        "before_capture": 0,
+        "opened": 0,
+        "ready": 0,
+        "returned": 0
+      }
+    }
+  ],
+  "replays": {
+    "1": {
+      "compact": {
+        "capture_focus": "adaptive-navigation-demo-updates",
+        "disabled_activation": "disabled",
+        "focused_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 64.0,
+            "x": 192.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 212.0,
+            "y": 566.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 56.0,
+            "x": 196.0,
+            "y": 598.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 196.0,
+            "y": 562.0
+          },
+          "text": "最新消息"
+        },
+        "image": {
+          "format": "png",
+          "height": 620,
+          "name": "compact-320-light-vertical-bar.png",
+          "scale": 1.0,
+          "sha256": "6f0e7b991382c2e933b1cfdb1c66ebee57aeebf451840ad7b510a00d046564a4",
+          "width": 320
+        },
+        "initial": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": true,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": false,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-home"
+          ],
+          "title": [
+            "Heading",
+            "首頁"
+          ]
+        },
+        "keys": [
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-home"
+              ],
+              "title": [
+                "Heading",
+                "首頁"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "enter",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-updates",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          }
+        ],
+        "layout": {
+          "content": {
+            "height": 556.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "landmark": {
+            "height": 64.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 556.0
+          },
+          "page": {
+            "height": 556.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "shell": {
+            "height": 620.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        "mode": "vertical",
+        "page_editor": {
+          "after": {
+            "height": 56.0,
+            "width": 288.0,
+            "x": 16.0,
+            "y": 124.0
+          },
+          "before": {
+            "height": 56.0,
+            "width": 288.0,
+            "x": 16.0,
+            "y": 124.0
+          }
+        },
+        "palette": {
+          "focus": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "icon": [
+            30,
+            25,
+            43,
+            255
+          ],
+          "label": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "selected": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "pixels": {
+          "corner_rgba": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "focus_pixels": 33,
+          "icon_pixels": 194,
+          "label_pixels": 111,
+          "pill_rgba": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface_rgba": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "rail_reveal": null,
+        "return_focus": "adaptive-navigation-demo-show",
+        "selected": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": false,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": true,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-saved"
+          ],
+          "title": [
+            "Heading",
+            "收藏"
+          ]
+        },
+        "selected_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 64.0,
+            "x": 128.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 148.0,
+            "y": 566.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 56.0,
+            "x": 132.0,
+            "y": 598.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 132.0,
+            "y": 562.0
+          },
+          "text": "收藏"
+        }
+      },
+      "medium": {
+        "capture_focus": "adaptive-navigation-demo-updates",
+        "disabled_activation": "disabled",
+        "focused_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 112.0,
+            "x": 356.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 374.0,
+            "y": 576.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 48.0,
+            "x": 402.0,
+            "y": 580.0
+          },
+          "pill": {
+            "height": 40.0,
+            "width": 108.0,
+            "x": 358.0,
+            "y": 568.0
+          },
+          "text": "最新消息"
+        },
+        "image": {
+          "format": "png",
+          "height": 620,
+          "name": "medium-light-horizontal-bar.png",
+          "scale": 1.0,
+          "sha256": "c59f021ae247e7570ac9760fb03bf4a8924d10280178245a77e0d89c2c2f2b13",
+          "width": 600
+        },
+        "initial": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": true,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": false,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-home"
+          ],
+          "title": [
+            "Heading",
+            "首頁"
+          ]
+        },
+        "keys": [
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-home"
+              ],
+              "title": [
+                "Heading",
+                "首頁"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "enter",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-updates",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          }
+        ],
+        "layout": {
+          "content": {
+            "height": 556.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "landmark": {
+            "height": 64.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 556.0
+          },
+          "page": {
+            "height": 556.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "shell": {
+            "height": 620.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        "mode": "horizontal",
+        "page_editor": {
+          "after": {
+            "height": 56.0,
+            "width": 568.0,
+            "x": 16.0,
+            "y": 124.0
+          },
+          "before": {
+            "height": 56.0,
+            "width": 568.0,
+            "x": 16.0,
+            "y": 124.0
+          }
+        },
+        "palette": {
+          "focus": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "icon": [
+            30,
+            25,
+            43,
+            255
+          ],
+          "label": [
+            30,
+            25,
+            43,
+            255
+          ],
+          "selected": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "pixels": {
+          "corner_rgba": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "focus_pixels": 33,
+          "icon_pixels": 194,
+          "label_pixels": 111,
+          "pill_rgba": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface_rgba": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "rail_reveal": null,
+        "return_focus": "adaptive-navigation-demo-show",
+        "selected": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": false,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": true,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-saved"
+          ],
+          "title": [
+            "Heading",
+            "收藏"
+          ]
+        },
+        "selected_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 112.0,
+            "x": 244.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 274.0,
+            "y": 576.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 24.0,
+            "x": 302.0,
+            "y": 580.0
+          },
+          "pill": {
+            "height": 40.0,
+            "width": 84.0,
+            "x": 258.0,
+            "y": 568.0
+          },
+          "text": "收藏"
+        }
+      },
+      "rail": {
+        "capture_focus": "adaptive-navigation-demo-settings",
+        "disabled_activation": "disabled",
+        "focused_art": {
+          "hit": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 232.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 780.0,
+            "y": 236.0
+          },
+          "label": {
+            "height": 32.0,
+            "width": 48.0,
+            "x": 768.0,
+            "y": 268.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 764.0,
+            "y": 232.0
+          },
+          "text": "設定"
+        },
+        "image": {
+          "format": "png",
+          "height": 300,
+          "name": "wide-dark-rtl-200-short-rail.png",
+          "scale": 1.0,
+          "sha256": "dcf75ee285c1fa71f91b44f84def161b5f0796fa1a8545089d6b23dcf68bc1af",
+          "width": 840
+        },
+        "initial": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": true,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": false,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-home"
+          ],
+          "title": [
+            "Heading",
+            "首頁"
+          ]
+        },
+        "keys": [
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "down",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-home"
+              ],
+              "title": [
+                "Heading",
+                "首頁"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "space",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-updates",
+            "key": "down",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-settings",
+            "key": "down",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          }
+        ],
+        "layout": {
+          "content": {
+            "height": 300.0,
+            "width": 744.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "landmark": {
+            "height": 300.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 0.0
+          },
+          "page": {
+            "height": 300.0,
+            "width": 744.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "scroll": {
+            "height": 300.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 0.0
+          },
+          "shell": {
+            "height": 300.0,
+            "width": 840.0,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        "mode": "rail",
+        "page_editor": {
+          "after": {
+            "height": 80.0,
+            "width": 712.0,
+            "x": 16.0,
+            "y": 160.0
+          },
+          "before": {
+            "height": 80.0,
+            "width": 712.0,
+            "x": 16.0,
+            "y": 160.0
+          }
+        },
+        "palette": {
+          "focus": [
+            203,
+            194,
+            219,
+            255
+          ],
+          "icon": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "label": [
+            203,
+            194,
+            219,
+            255
+          ],
+          "selected": [
+            74,
+            68,
+            88,
+            255
+          ],
+          "surface": [
+            20,
+            18,
+            24,
+            255
+          ]
+        },
+        "pixels": {
+          "corner_rgba": [
+            20,
+            18,
+            24,
+            255
+          ],
+          "focus_pixels": 22,
+          "icon_pixels": 190,
+          "label_pixels": 418,
+          "pill_rgba": [
+            74,
+            68,
+            88,
+            255
+          ],
+          "surface_rgba": [
+            20,
+            18,
+            24,
+            255
+          ]
+        },
+        "rail_reveal": {
+          "after": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 232.0
+          },
+          "before": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 332.0
+          }
+        },
+        "return_focus": "adaptive-navigation-demo-show",
+        "selected": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": false,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": true,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-saved"
+          ],
+          "title": [
+            "Heading",
+            "收藏"
+          ]
+        },
+        "selected_art": {
+          "hit": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 88.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 780.0,
+            "y": 92.0
+          },
+          "label": {
+            "height": 32.0,
+            "width": 48.0,
+            "x": 768.0,
+            "y": 124.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 764.0,
+            "y": 88.0
+          },
+          "text": "收藏"
+        }
+      }
+    },
+    "2": {
+      "compact": {
+        "capture_focus": "adaptive-navigation-demo-updates",
+        "disabled_activation": "disabled",
+        "focused_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 64.0,
+            "x": 192.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 212.0,
+            "y": 566.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 56.0,
+            "x": 196.0,
+            "y": 598.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 196.0,
+            "y": 562.0
+          },
+          "text": "最新消息"
+        },
+        "image": {
+          "format": "png",
+          "height": 620,
+          "name": "compact-320-light-vertical-bar.png",
+          "scale": 1.0,
+          "sha256": "6f0e7b991382c2e933b1cfdb1c66ebee57aeebf451840ad7b510a00d046564a4",
+          "width": 320
+        },
+        "initial": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": true,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": false,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-home"
+          ],
+          "title": [
+            "Heading",
+            "首頁"
+          ]
+        },
+        "keys": [
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-home"
+              ],
+              "title": [
+                "Heading",
+                "首頁"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "enter",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-updates",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          }
+        ],
+        "layout": {
+          "content": {
+            "height": 556.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "landmark": {
+            "height": 64.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 556.0
+          },
+          "page": {
+            "height": 556.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "shell": {
+            "height": 620.0,
+            "width": 320.0,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        "mode": "vertical",
+        "page_editor": {
+          "after": {
+            "height": 56.0,
+            "width": 288.0,
+            "x": 16.0,
+            "y": 124.0
+          },
+          "before": {
+            "height": 56.0,
+            "width": 288.0,
+            "x": 16.0,
+            "y": 124.0
+          }
+        },
+        "palette": {
+          "focus": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "icon": [
+            30,
+            25,
+            43,
+            255
+          ],
+          "label": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "selected": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "pixels": {
+          "corner_rgba": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "focus_pixels": 33,
+          "icon_pixels": 194,
+          "label_pixels": 111,
+          "pill_rgba": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface_rgba": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "rail_reveal": null,
+        "return_focus": "adaptive-navigation-demo-show",
+        "selected": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": false,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": true,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-saved"
+          ],
+          "title": [
+            "Heading",
+            "收藏"
+          ]
+        },
+        "selected_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 64.0,
+            "x": 128.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 148.0,
+            "y": 566.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 56.0,
+            "x": 132.0,
+            "y": 598.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 132.0,
+            "y": 562.0
+          },
+          "text": "收藏"
+        }
+      },
+      "medium": {
+        "capture_focus": "adaptive-navigation-demo-updates",
+        "disabled_activation": "disabled",
+        "focused_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 112.0,
+            "x": 356.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 374.0,
+            "y": 576.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 48.0,
+            "x": 402.0,
+            "y": 580.0
+          },
+          "pill": {
+            "height": 40.0,
+            "width": 108.0,
+            "x": 358.0,
+            "y": 568.0
+          },
+          "text": "最新消息"
+        },
+        "image": {
+          "format": "png",
+          "height": 620,
+          "name": "medium-light-horizontal-bar.png",
+          "scale": 1.0,
+          "sha256": "c59f021ae247e7570ac9760fb03bf4a8924d10280178245a77e0d89c2c2f2b13",
+          "width": 600
+        },
+        "initial": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": true,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": false,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-home"
+          ],
+          "title": [
+            "Heading",
+            "首頁"
+          ]
+        },
+        "keys": [
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-home"
+              ],
+              "title": [
+                "Heading",
+                "首頁"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "enter",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-updates",
+            "key": "tab",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          }
+        ],
+        "layout": {
+          "content": {
+            "height": 556.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "landmark": {
+            "height": 64.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 556.0
+          },
+          "page": {
+            "height": 556.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "shell": {
+            "height": 620.0,
+            "width": 600.0,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        "mode": "horizontal",
+        "page_editor": {
+          "after": {
+            "height": 56.0,
+            "width": 568.0,
+            "x": 16.0,
+            "y": 124.0
+          },
+          "before": {
+            "height": 56.0,
+            "width": 568.0,
+            "x": 16.0,
+            "y": 124.0
+          }
+        },
+        "palette": {
+          "focus": [
+            98,
+            91,
+            113,
+            255
+          ],
+          "icon": [
+            30,
+            25,
+            43,
+            255
+          ],
+          "label": [
+            30,
+            25,
+            43,
+            255
+          ],
+          "selected": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "pixels": {
+          "corner_rgba": [
+            242,
+            236,
+            244,
+            255
+          ],
+          "focus_pixels": 33,
+          "icon_pixels": 194,
+          "label_pixels": 111,
+          "pill_rgba": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "surface_rgba": [
+            242,
+            236,
+            244,
+            255
+          ]
+        },
+        "rail_reveal": null,
+        "return_focus": "adaptive-navigation-demo-show",
+        "selected": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": false,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": true,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-saved"
+          ],
+          "title": [
+            "Heading",
+            "收藏"
+          ]
+        },
+        "selected_art": {
+          "hit": {
+            "height": 64.0,
+            "width": 112.0,
+            "x": 244.0,
+            "y": 556.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 274.0,
+            "y": 576.0
+          },
+          "label": {
+            "height": 16.0,
+            "width": 24.0,
+            "x": 302.0,
+            "y": 580.0
+          },
+          "pill": {
+            "height": 40.0,
+            "width": 84.0,
+            "x": 258.0,
+            "y": 568.0
+          },
+          "text": "收藏"
+        }
+      },
+      "rail": {
+        "capture_focus": "adaptive-navigation-demo-settings",
+        "disabled_activation": "disabled",
+        "focused_art": {
+          "hit": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 232.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 780.0,
+            "y": 236.0
+          },
+          "label": {
+            "height": 32.0,
+            "width": 48.0,
+            "x": 768.0,
+            "y": 268.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 764.0,
+            "y": 232.0
+          },
+          "text": "設定"
+        },
+        "image": {
+          "format": "png",
+          "height": 300,
+          "name": "wide-dark-rtl-200-short-rail.png",
+          "scale": 1.0,
+          "sha256": "dcf75ee285c1fa71f91b44f84def161b5f0796fa1a8545089d6b23dcf68bc1af",
+          "width": 840
+        },
+        "initial": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": true,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": false,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-home"
+          ],
+          "title": [
+            "Heading",
+            "首頁"
+          ]
+        },
+        "keys": [
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "down",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-home"
+              ],
+              "title": [
+                "Heading",
+                "首頁"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-saved",
+            "key": "space",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-updates",
+            "key": "down",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          },
+          {
+            "focus": "adaptive-navigation-demo-settings",
+            "key": "down",
+            "semantics": {
+              "destinations": {
+                "adaptive-navigation-demo-explore": {
+                  "current_page": false,
+                  "disabled": true,
+                  "name": "探索路線",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-home": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "首頁",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-saved": {
+                  "current_page": true,
+                  "disabled": false,
+                  "name": "收藏",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-settings": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "設定",
+                  "role": "Button"
+                },
+                "adaptive-navigation-demo-updates": {
+                  "current_page": false,
+                  "disabled": false,
+                  "name": "最新消息",
+                  "role": "Button"
+                }
+              },
+              "landmarks": [
+                [
+                  "adaptive-navigation-demo-bar",
+                  "主要導覽"
+                ]
+              ],
+              "marked_current_pages": [
+                "adaptive-navigation-demo-saved"
+              ],
+              "title": [
+                "Heading",
+                "收藏"
+              ]
+            }
+          }
+        ],
+        "layout": {
+          "content": {
+            "height": 300.0,
+            "width": 744.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "landmark": {
+            "height": 300.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 0.0
+          },
+          "page": {
+            "height": 300.0,
+            "width": 744.0,
+            "x": 0.0,
+            "y": 0.0
+          },
+          "scroll": {
+            "height": 300.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 0.0
+          },
+          "shell": {
+            "height": 300.0,
+            "width": 840.0,
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        "mode": "rail",
+        "page_editor": {
+          "after": {
+            "height": 80.0,
+            "width": 712.0,
+            "x": 16.0,
+            "y": 160.0
+          },
+          "before": {
+            "height": 80.0,
+            "width": 712.0,
+            "x": 16.0,
+            "y": 160.0
+          }
+        },
+        "palette": {
+          "focus": [
+            203,
+            194,
+            219,
+            255
+          ],
+          "icon": [
+            232,
+            222,
+            248,
+            255
+          ],
+          "label": [
+            203,
+            194,
+            219,
+            255
+          ],
+          "selected": [
+            74,
+            68,
+            88,
+            255
+          ],
+          "surface": [
+            20,
+            18,
+            24,
+            255
+          ]
+        },
+        "pixels": {
+          "corner_rgba": [
+            20,
+            18,
+            24,
+            255
+          ],
+          "focus_pixels": 22,
+          "icon_pixels": 190,
+          "label_pixels": 418,
+          "pill_rgba": [
+            74,
+            68,
+            88,
+            255
+          ],
+          "surface_rgba": [
+            20,
+            18,
+            24,
+            255
+          ]
+        },
+        "rail_reveal": {
+          "after": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 232.0
+          },
+          "before": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 332.0
+          }
+        },
+        "return_focus": "adaptive-navigation-demo-show",
+        "selected": {
+          "destinations": {
+            "adaptive-navigation-demo-explore": {
+              "current_page": false,
+              "disabled": true,
+              "name": "探索路線",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-home": {
+              "current_page": false,
+              "disabled": false,
+              "name": "首頁",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-saved": {
+              "current_page": true,
+              "disabled": false,
+              "name": "收藏",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-settings": {
+              "current_page": false,
+              "disabled": false,
+              "name": "設定",
+              "role": "Button"
+            },
+            "adaptive-navigation-demo-updates": {
+              "current_page": false,
+              "disabled": false,
+              "name": "最新消息",
+              "role": "Button"
+            }
+          },
+          "landmarks": [
+            [
+              "adaptive-navigation-demo-bar",
+              "主要導覽"
+            ]
+          ],
+          "marked_current_pages": [
+            "adaptive-navigation-demo-saved"
+          ],
+          "title": [
+            "Heading",
+            "收藏"
+          ]
+        },
+        "selected_art": {
+          "hit": {
+            "height": 68.0,
+            "width": 96.0,
+            "x": 744.0,
+            "y": 88.0
+          },
+          "icon": {
+            "height": 24.0,
+            "width": 24.0,
+            "x": 780.0,
+            "y": 92.0
+          },
+          "label": {
+            "height": 32.0,
+            "width": 48.0,
+            "x": 768.0,
+            "y": 124.0
+          },
+          "pill": {
+            "height": 32.0,
+            "width": 56.0,
+            "x": 764.0,
+            "y": 88.0
+          },
+          "text": "收藏"
+        }
+      }
+    }
+  },
+  "schema": "surface.test.adaptive-navigation-scaffold.native.v1",
+  "source": {
+    "file_count": 696,
+    "manifest_sha256": "7aedeb9161baadca46aa6fdd83848b7e9c5498bccfac0e9a0e21e2782ec3f0bd",
+    "version": "0.1.74"
+  },
+  "transports": [
+    "Page.screenshot",
+    "surface-devtools page screenshot",
+    "MCP page_screenshot"
+  ]
+}

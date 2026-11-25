@@ -1,0 +1,49 @@
+{
+  "argv": [
+    "/private/tmp/surface-md3-adaptive-nav-focused-v0174-r3.Ko7vpLbe/pins/surface-e2e",
+    "--chrome",
+    "/private/tmp/surface-md3-adaptive-nav-focused-v0174-r3.Ko7vpLbe/development-r3/guards/chrome",
+    "--chrome-arg",
+    "--disable-updater-scheduler",
+    "--web-root",
+    "/private/tmp/surface-md3-adaptive-nav-focused-v0174-r3.Ko7vpLbe/web",
+    "--artifacts",
+    "/private/tmp/surface-md3-adaptive-nav-focused-v0174-r3.Ko7vpLbe/development-r3/artifacts",
+    "material"
+  ],
+  "scope": "v0.1.74 adaptive navigation M366–M369",
+  "suite_arguments": [
+    "material"
+  ],
+  "injected_chrome_flags": [
+    "--disable-updater-scheduler"
+  ],
+  "inputs": {
+    "scope": "v0.1.74 adaptive navigation M366–M369",
+    "steps": [
+      "M366",
+      "M367",
+      "M368",
+      "M369"
+    ],
+    "product_tree": "899753ce17eca5903ea1b33fcd8b563995a29cab",
+    "product_source_manifest_sha256": "e2972502840e3e55a606f7b3cd4fe3b4bd1dea8dd62f44b876e7154535749157",
+    "registry_delta": [
+      "e2e/src/material.rs"
+    ],
+    "focused_source_manifest_sha256": "546f3c91819fc1860e611ce67cff2c57479babf874ce95c7d95a367b7dc16029",
+    "web_manifest_sha256": "b55cb95697b45fe40a5d937eeb5976c288aed4c1d3716a35d7681d3766768897",
+    "web_files": {
+      "index.html": "bf1a88774b73f49655032f879ca808f4a58c7ee986bb82a6e94f1b9587c456fb",
+      "surface-web.json": "b4d8f0d4741e1767b7a751e9145dd8d1bda2562c43b2f6fb6f477e051f00127b",
+      "surface_material_gallery-5700b4730970d30b.js": "5700b4730970d30b0bc7dfa1e96817accf793d15522f8c5256e7fb1a35b034c6",
+      "surface_material_gallery_bg-4bfddc05857b89ce.wasm": "4bfddc05857b89cea3f95c3842cce94620acb8bf554c611abfebd96e90c32728"
+    },
+    "web_producer_manifest_sha256": "8e3accebefb67a07449011ff637f76e8a717f629bd9e595e526cadac3833e160",
+    "tested_product_source_manifest_sha256": "e2972502840e3e55a606f7b3cd4fe3b4bd1dea8dd62f44b876e7154535749157",
+    "web_test_only_delta": [
+      "e2e/src/material_adaptive_navigation_scaffold.rs"
+    ],
+    "runner_sha256": "5b14334c4b06f2fc4bdd1fd356e4511376557598eac495fca31fa8a6396032a4"
+  }
+}

@@ -1,0 +1,1593 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index beb25442f77aaef64b57dfffdfad6c1997aaaa68..ff61849129e21add86d3a92bc45bc84d239be67c 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.73"
++version = "0.1.74"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 4335f095f8710f8662f828dd4abb7444f3f63d4b..30af21643e2c2ac34adb52e4183913902dc9be33 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.73"
++version = "0.1.74"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/adaptive_navigation_scaffold.rs b/crates/surface-material/src/adaptive_navigation_scaffold.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5d45b150e1fa4537c0decc70657721e41d7a44a2
+--- /dev/null
++++ b/crates/surface-material/src/adaptive_navigation_scaffold.rs
+@@ -0,0 +1,110 @@
++//! A shared page and persistent navigation for width-based Material layouts.
++
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++
++use crate::{
++    adaptive::WindowWidthSizeClass, shape::LayoutDirection, FlexibleNavigationBarOptions,
++    NavigationRailItem, Theme, WideNavigationRailMode,
++};
++
++/// Stable identities and exact logical size of an adaptive navigation scaffold.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct AdaptiveNavigationScaffoldOptions<'a> {
++    /// Stable ID of the scaffold.
++    pub id: &'a str,
++    /// Stable ID of the navigation landmark in every presentation.
++    pub navigation_id: &'a str,
++    /// Accessible name of the navigation landmark.
++    pub name: &'a str,
++    pub available_width: f32,
++    pub available_height: f32,
++    pub direction: LayoutDirection,
++}
++
++impl Theme {
++    /// Place one caller-owned page beside a leading rail or above a bottom bar.
++    ///
++    /// This width-only policy uses the vertical bar below 600 dp, the horizontal
++    /// bar from 600 dp to below 840 dp, and the collapsed wide rail at 840 dp and
++    /// above. The rail scrolls independently when its destinations do not fit.
++    /// The rail uses one Tab stop with Up and Down to move focus. In a bar,
++    /// Tab visits each enabled destination.
++    ///
++    /// Supply three to five destinations in reading order. Reuse their IDs and
++    /// the page's IDs across resizes. The caller chooses the current page and
++    /// handles activation. Each destination keeps its name and current-page
++    /// state in every presentation.
++    ///
++    /// This reserves `{id}-content`, `{navigation_id}-scroll`, and
++    /// `{navigation_id}-destinations`. Returns `None` for invalid dimensions,
++    /// a height below the minimum 64 dp bar, or when the Compact bar cannot
++    /// fit the requested count. Allow extra height for wrapped labels.
++    pub fn adaptive_navigation_scaffold<'a, M: 'a>(
++        &self,
++        options: AdaptiveNavigationScaffoldOptions<'_>,
++        page: View<M>,
++        items: impl IntoIterator<Item = NavigationRailItem<'a, M>>,
++    ) -> Option<View<M>> {
++        let width_class = WindowWidthSizeClass::from_dp(options.available_width)?;
++        if !options.available_height.is_finite() || options.available_height < 64. {
++            return None;
++        }
++        let items: Vec<_> = items.into_iter().take(6).collect();
++        if !(3..=5).contains(&items.len()) {
++            return None;
++        }
++
++        let rail = width_class >= WindowWidthSizeClass::Expanded;
++        let bar_options = FlexibleNavigationBarOptions {
++            id: options.navigation_id,
++            name: options.name,
++            available_width: options.available_width,
++            direction: options.direction,
++        };
++        let navigation = match width_class {
++            WindowWidthSizeClass::Compact => self.flexible_navigation_bar(bar_options, items)?,
++            WindowWidthSizeClass::Medium => {
++                self.horizontal_flexible_navigation_bar(bar_options, items)?
++            }
++            _ => self.scaffold_wide_navigation_rail(
++                options.navigation_id,
++                options.name,
++                items.into_iter().map(|item| {
++                    self.wide_navigation_rail_item_with_icon(
++                        WideNavigationRailMode::Collapsed,
++                        options.direction,
++                        item,
++                    )
++                    .suppress_repeated_activation()
++                    .accessibility_scroll_into_view()
++                }),
++            ),
++        };
++        let style = if rail { Style::row() } else { Style::column() }
++            .width(Length::Px(options.available_width))
++            .height(Length::Px(options.available_height))
++            .align(Align::Stretch);
++        let mut shell = Node::new(Role::Group, "").id(options.id).styled(style);
++        if rail && options.direction == LayoutDirection::RightToLeft {
++            shell = shell.reverse_row();
++        }
++        let content_style = if rail {
++            Style::column().width(Length::Px(0.))
++        } else {
++            Style::column().height(Length::Px(0.))
++        };
++        let content = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-content", options.id))
++                .styled(content_style.grow(1.).clip(true)),
++        )
++        .children([page]);
++        let children = if rail {
++            [navigation, content]
++        } else {
++            [content, navigation]
++        };
++        Some(View::new(shell).children(children))
++    }
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index db04b462e45861cf29f457ba31f746a42b6e6137..7707d92ac5116f0000e7ea39b4947295bbde1261 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -2,6 +2,7 @@
+ use surface::{Align, Color, Length, Node, Role, Style};
+ use surface_app::{CursorStyle, View};
+ pub mod adaptive;
++mod adaptive_navigation_scaffold;
+ mod app_bar;
+ mod app_bar_scroll;
+ mod app_bar_search;
+@@ -84,6 +85,7 @@ mod tooltip_state;
+ pub mod typography;
+ mod vector_icon;
+ mod wide_navigation_rail;
++pub use adaptive_navigation_scaffold::AdaptiveNavigationScaffoldOptions;
+ pub use app_bar::{AppBarContent, AppBarKind, AppBarOptions};
+ pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
+ pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
+diff --git a/crates/surface-material/src/wide_navigation_rail.rs b/crates/surface-material/src/wide_navigation_rail.rs
+index b5ae7d81b01a50079f0ca289ccdad17299eac742..4b494dac6e41f4e48ba475509877163aa56e467d 100644
+--- a/crates/surface-material/src/wide_navigation_rail.rs
++++ b/crates/surface-material/src/wide_navigation_rail.rs
+@@ -136,6 +136,34 @@ impl Theme {
+         frame: WideNavigationRailMotionFrame,
+         header: Option<View<M>>,
+         items: impl IntoIterator<Item = View<M>>,
++    ) -> View<M> {
++        self.inline_wide_navigation_rail(id, name, frame, header, items, false)
++    }
++
++    pub(crate) fn scaffold_wide_navigation_rail<M>(
++        &self,
++        id: &str,
++        name: &str,
++        items: impl IntoIterator<Item = View<M>>,
++    ) -> View<M> {
++        self.inline_wide_navigation_rail(
++            id,
++            name,
++            WideNavigationRailMotionFrame::default(),
++            None,
++            items,
++            true,
++        )
++    }
++
++    fn inline_wide_navigation_rail<M>(
++        &self,
++        id: &str,
++        name: &str,
++        frame: WideNavigationRailMotionFrame,
++        header: Option<View<M>>,
++        items: impl IntoIterator<Item = View<M>>,
++        scroll_destinations: bool,
+     ) -> View<M> {
+         let progress = unit_fraction(frame.rail);
+         let moving = progress > 0. && progress < 1.;
+@@ -152,8 +180,13 @@ impl Theme {
+                 .id(format!("{id}-destinations"))
+                 .styled(destinations_style),
+         )
+-        .children(items)
+-        .roving(Roving::vertical(false));
++        .children(items);
++        let roving = Roving::vertical(false);
++        let destinations = if scroll_destinations {
++            destinations.roving_retained_layout(roving)
++        } else {
++            destinations.roving(roving)
++        };
+         let mut children = vec![space(Style::column().height(Length::Px(TOP_SPACE)))];
+         if let Some(header) = header {
+             children.extend([
+@@ -162,7 +195,19 @@ impl Theme {
+             ]);
+         }
+         children.push(destinations);
+-        View::new(Node::new(Role::Navigation, name).id(id).styled(style)).children(children)
++        let rail = View::new(Node::new(Role::Navigation, name).id(id).styled(style));
++        if scroll_destinations {
++            let viewport = View::new(
++                Node::new(Role::Group, "")
++                    .id(format!("{id}-scroll"))
++                    .styled(Style::column().height(Length::Px(0.)).grow(1.).clip(true)),
++            )
++            .children(children)
++            .accessibility_scroll_pages();
++            rail.children([viewport])
++        } else {
++            rail.children(children)
++        }
+     }
+ 
+     /// Build the expanded modal wide navigation rail at the logical start.
+diff --git a/crates/surface-material/tests/adaptive_navigation_scaffold.rs b/crates/surface-material/tests/adaptive_navigation_scaffold.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4b5469a15abb0e2678a08d43f90db98106a90e9
+--- /dev/null
++++ b/crates/surface-material/tests/adaptive_navigation_scaffold.rs
+@@ -0,0 +1,389 @@
++use surface::{Length, Node, NodeId, Rect, Role, Style};
++use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection, AdaptiveNavigationScaffoldOptions, ChoiceState, NavigationRailItem,
++    Theme, VectorIcon,
++};
++use surface_wgpu::TextSystem;
++
++const SHELL: &str = "adaptive";
++const NAV: &str = "adaptive-nav";
++const SCROLL: &str = "adaptive-nav-scroll";
++const CONTENT: &str = "adaptive-content";
++const PAGE: &str = "page";
++const EDITOR: &str = "page-editor";
++const ITEMS: [&str; 6] = ["home", "explore", "saved", "alerts", "settings", "extra"];
++const LABELS: [&str; 6] = ["首頁", "探索", "收藏", "通知", "閱讀清單與個人設定", "更多"];
++
++#[derive(Clone)]
++enum Message {
++    Select(usize),
++    Edit(String),
++}
++
++struct Page {
++    width: f32,
++    height: f32,
++    direction: LayoutDirection,
++    enlarged: bool,
++    selected: usize,
++    calls: Vec<usize>,
++    draft: String,
++    icon: VectorIcon,
++}
++
++impl Default for Page {
++    fn default() -> Self {
++        Self {
++            width: 839.,
++            height: 720.,
++            direction: LayoutDirection::LeftToRight,
++            enlarged: false,
++            selected: 0,
++            calls: Vec::new(),
++            draft: "先走後".into(),
++            icon: VectorIcon::new([[2., 2.], [22., 2.], [22., 22.], [2., 22.]]).unwrap(),
++        }
++    }
++}
++
++impl Page {
++    fn scaffold(&self, count: usize) -> Option<View<Message>> {
++        let theme = if self.enlarged {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let editor = View::new(
++            Node::new(Role::TextInput, "備註")
++                .id(EDITOR)
++                .text(&self.draft)
++                .styled(Style::column().height(Length::Px(48.))),
++        )
++        .on_input(Message::Edit);
++        let page = View::new(
++            Node::new(Role::Group, "")
++                .id(PAGE)
++                .styled(Style::column().height(Length::Percent(1.)).clip(true)),
++        )
++        .children([
++            editor,
++            View::new(
++                Node::new(Role::Group, "")
++                    .id("page-tail")
++                    .styled(Style::column().height(Length::Px(1400.))),
++            ),
++        ])
++        .accessibility_scroll_pages();
++        theme.adaptive_navigation_scaffold(
++            AdaptiveNavigationScaffoldOptions {
++                id: SHELL,
++                navigation_id: NAV,
++                name: "主要導覽",
++                available_width: self.width,
++                available_height: self.height,
++                direction: self.direction,
++            },
++            page,
++            ITEMS[..count]
++                .iter()
++                .enumerate()
++                .map(|(index, id)| NavigationRailItem {
++                    id,
++                    label: if index == 4 && !self.enlarged {
++                        "設定"
++                    } else {
++                        LABELS[index]
++                    },
++                    accessible_name: if index == 4 { "個人設定" } else { "" },
++                    icon: &self.icon,
++                    state: ChoiceState {
++                        selected: self.selected == index,
++                        disabled: index == 1,
++                    },
++                    message: Message::Select(index),
++                }),
++        )
++    }
++}
++
++impl Application for Page {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Select(index) => {
++                self.calls.push(index);
++                self.selected = index;
++            }
++            Message::Edit(value) => self.draft = value,
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        View::new(Node::new(Role::Window, "Workspace")).children(self.scaffold(5))
++    }
++
++    fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let changed = (width, height) != (self.width, self.height);
++        (self.width, self.height) = (width, height);
++        changed
++    }
++
++    fn text_scale(&self) -> f32 {
++        if self.enlarged {
++            2.
++        } else {
++            1.
++        }
++    }
++}
++
++fn id(runtime: &Runtime<Page>, key: &str) -> NodeId {
++    runtime.dom().by_id(key).unwrap()
++}
++
++fn rect(runtime: &Runtime<Page>, key: &str) -> Rect {
++    runtime.computed().unwrap().nodes[id(runtime, key).index()].bounds
++}
++
++fn render(runtime: &mut Runtime<Page>, fonts: &mut TextSystem, width: f32, height: f32) {
++    runtime.render(width, height, fonts).unwrap();
++}
++
++fn tap(runtime: &mut Runtime<Page>, key: &str) {
++    let bounds = rect(runtime, key);
++    let (x, y) = (
++        bounds.x + bounds.width * 0.5,
++        bounds.y + bounds.height * 0.5,
++    );
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++}
++
++fn arrow_down(runtime: &mut Runtime<Page>) {
++    assert!(runtime
++        .dispatch(Event::Edit {
++            key: EditKey::Down,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap());
++}
++
++#[test]
++fn rejects_invalid_size_or_destination_count_without_losing_supported_breakpoints() {
++    for (width, height, count, valid) in [
++        (f32::NAN, 720., 5, false),
++        (840., f32::INFINITY, 5, false),
++        (840., 63., 5, false),
++        (840., 720., 2, false),
++        (840., 720., 6, false),
++        (279., 720., 5, false),
++        (280., 720., 5, true),
++        (599., 720., 3, true),
++        (600., 720., 5, true),
++        (839., 720., 5, true),
++        (840., 720., 5, true),
++        (1600., 720., 4, true),
++    ] {
++        assert_eq!(
++            Page {
++                width,
++                height,
++                ..Page::default()
++            }
++            .scaffold(count)
++            .is_some(),
++            valid,
++            "{width} × {height} with {count} destinations"
++        );
++    }
++}
++
++#[test]
++fn one_shell_keeps_exact_page_and_navigation_slots_in_both_directions() {
++    let mut fonts = TextSystem::default();
++    for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++        let mut runtime = Runtime::new(Page {
++            direction,
++            selected: 4,
++            ..Page::default()
++        })
++        .unwrap();
++        for width in [599., 600., 839., 840., 1024., 839., 599.] {
++            render(&mut runtime, &mut fonts, width, 720.);
++            assert_eq!(rect(&runtime, SHELL), Rect::new(0., 0., width, 720.));
++            let nav = rect(&runtime, NAV);
++            let content = rect(&runtime, CONTENT);
++            assert_eq!(rect(&runtime, PAGE), content);
++            let home = rect(&runtime, ITEMS[0]);
++            let settings = rect(&runtime, ITEMS[4]);
++            let visible_rail = width >= 840.;
++            assert_eq!(runtime.dom().by_id(SCROLL).is_some(), visible_rail);
++            if visible_rail {
++                assert_eq!(rect(&runtime, SCROLL), nav);
++                assert_eq!((nav.width, nav.height), (96., 720.));
++                assert_eq!((content.width, content.height), (width - 96., 720.));
++                let rtl = direction == LayoutDirection::RightToLeft;
++                assert_eq!(nav.x, if rtl { width - 96. } else { 0. });
++                assert_eq!(content.x, if rtl { 0. } else { 96. });
++                assert!(settings.y > home.y);
++            } else {
++                assert_eq!((nav.width, nav.height), (width, 64.));
++                assert_eq!(nav.y, 720. - 64.);
++                assert_eq!(content, Rect::new(0., 0., width, nav.y));
++                assert_eq!(
++                    home.x > settings.x,
++                    direction == LayoutDirection::RightToLeft
++                );
++                let expected = if width >= 600. { 112. } else { width / 5. };
++                assert!((home.width - expected).abs() < 1.);
++            }
++            assert!(home.width >= 48. && home.height >= 48.);
++            let dom = runtime.dom();
++            let nav_id = id(&runtime, NAV);
++            assert_eq!(
++                dom.iter()
++                    .filter(|(_, node)| node.role() == Role::Navigation)
++                    .count(),
++                1
++            );
++            let projection = runtime.accessibility_frame().unwrap();
++            let landmark = projection.node(nav_id).unwrap().node;
++            assert_eq!(
++                (landmark.role(), landmark.name()),
++                (Role::Navigation, "主要導覽")
++            );
++            let current = projection.node(id(&runtime, ITEMS[4])).unwrap().node;
++            assert_eq!(current.name(), "個人設定");
++            assert_eq!(current.role(), Role::Button);
++            assert_eq!(current.is_current_page(), Some(true));
++            let disabled = projection.node(id(&runtime, ITEMS[1])).unwrap().node;
++            assert!(disabled.is_disabled());
++            assert_eq!(runtime.app().selected, 4);
++            assert!(runtime.app().calls.is_empty());
++        }
++    }
++}
++
++#[test]
++fn resize_retains_distinct_current_page_and_focus_and_never_activates_on_its_own() {
++    let mut fonts = TextSystem::default();
++    let mut runtime = Runtime::new(Page::default()).unwrap();
++    render(&mut runtime, &mut fonts, 839., 720.);
++    tap(&mut runtime, "explore");
++    assert!(runtime.app().calls.is_empty());
++    tap(&mut runtime, "saved");
++    assert_eq!(runtime.focused(), Some("saved"));
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("alerts"));
++    assert_eq!(runtime.app().calls, [2]);
++    for width in [840., 839., 599., 600., 840.] {
++        render(&mut runtime, &mut fonts, width, 720.);
++        assert_eq!(runtime.focused(), Some("alerts"));
++        assert_eq!(runtime.app().selected, 2);
++        assert_eq!(runtime.app().calls, [2]);
++    }
++    arrow_down(&mut runtime);
++    assert_eq!(runtime.focused(), Some("settings"));
++    assert_eq!(runtime.app().calls, [2]);
++    render(&mut runtime, &mut fonts, 840., 720.);
++    let frame = runtime.accessibility_frame().unwrap();
++    let focus = frame.focus_target(id(&runtime, "settings")).unwrap();
++    let enter = KeyPress::new(Key::Enter, Modifiers::default());
++    assert!(runtime
++        .accessibility_key(&focus, &enter, Event::Activate)
++        .unwrap());
++    render(&mut runtime, &mut fonts, 840., 720.);
++    let repeated = runtime.accessibility_frame().unwrap();
++    let focus = repeated.focus_target(id(&runtime, "settings")).unwrap();
++    assert!(runtime
++        .accessibility_key(&focus, &enter.with_repeat(true), Event::Activate)
++        .unwrap());
++    assert_eq!(runtime.app().calls, [2, 4]);
++    assert_eq!(runtime.app().selected, 4);
++}
++
++#[test]
++fn short_rtl_rail_scrolls_to_focused_destinations_without_moving_the_page() {
++    let mut fonts = TextSystem::default();
++    let mut runtime = Runtime::new(Page {
++        direction: LayoutDirection::RightToLeft,
++        enlarged: true,
++        ..Page::default()
++    })
++    .unwrap();
++    render(&mut runtime, &mut fonts, 840., 310.);
++    let nav = rect(&runtime, NAV);
++    let page = rect(&runtime, PAGE);
++    let original = rect(&runtime, "settings");
++    assert_eq!(nav, Rect::new(744., 0., 96., 310.));
++    assert_ne!(nav.intersect(original), original);
++    let page_tail = rect(&runtime, "page-tail");
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("home"));
++    arrow_down(&mut runtime);
++    assert_eq!(runtime.focused(), Some("saved"));
++    arrow_down(&mut runtime);
++    arrow_down(&mut runtime);
++    assert_eq!(runtime.focused(), Some("settings"));
++    render(&mut runtime, &mut fonts, 840., 310.);
++    let settings = rect(&runtime, "settings");
++    assert!(settings.height > 64. && settings.y < original.y);
++    assert_eq!(settings.intersect(nav), settings);
++    assert_eq!(rect(&runtime, PAGE), page);
++    assert_eq!(rect(&runtime, "page-tail"), page_tail);
++    assert!(runtime.app().calls.is_empty());
++    runtime
++        .dispatch(Event::Scroll {
++            x: page.x + 20.,
++            y: page.y + 150.,
++            delta_x: 0.,
++            delta_y: 300.,
++        })
++        .unwrap();
++    render(&mut runtime, &mut fonts, 840., 310.);
++    assert!(rect(&runtime, "page-tail").y < page_tail.y);
++    assert_eq!(rect(&runtime, "settings"), settings);
++}
++
++#[test]
++fn resizing_during_editor_composition_keeps_the_same_focused_page_and_draft() {
++    let mut fonts = TextSystem::default();
++    let mut runtime = Runtime::new(Page::default()).unwrap();
++    render(&mut runtime, &mut fonts, 839., 720.);
++    tap(&mut runtime, EDITOR);
++    runtime
++        .dispatch(Event::Select {
++            anchor: 6,
++            cursor: 3,
++        })
++        .unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄓ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    for width in [840., 839., 599.] {
++        render(&mut runtime, &mut fonts, width, 720.);
++        let editor = runtime.input_snapshot().unwrap();
++        assert_eq!(editor.id, EDITOR);
++        assert_eq!(editor.label, "備註");
++        assert!(editor.composing);
++        assert!(rect(&runtime, PAGE).intersect(rect(&runtime, EDITOR)) == rect(&runtime, EDITOR));
++        assert_eq!(runtime.app().draft, "先走後");
++        assert!(runtime.app().calls.is_empty());
++    }
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("中".into())))
++        .unwrap();
++    assert_eq!(runtime.app().draft, "先中後");
++    assert_eq!(runtime.focused(), Some(EDITOR));
++}
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 595ec8683f0d71fc99c775a653d8a4ed3374ebf5..29d923d781d2dc03bc2b86f355647bd3bb977dba 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -128,10 +128,10 @@
+       "spec": "https://m3.material.io/components/navigation-bar/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Native headless Metal checks light and dark, controlled selection, Tab and focus return, and 320 dp dark RTL with 200% text. Two replays reproduce two PNGs through Page.screenshot, CLI and MCP. The Medium Gallery also repeats wide Light and dark RTL at 200%. Four original PNGs match through Page.screenshot, CLI and MCP. They verify separate selected paint and an adjacent 3 dp focus ring.",
+-      "web_evidence": "Chrome WebGPU M270–M273 cover equal 3/4/5 destination layouts, light and dark pixels, named landmark and current-page semantics, trusted Tab/Enter/Space, disabled pointer input, and 320 dp RTL at 200%. The bar, page title, and focus stay in place as the separate page scrolls. M363–M365 check genuine Medium pixels, fixed cells from 600 to 839 dp, the named landmark and disabled item, trusted keys and touch, focus across 599/600 dp, and a pinned dark RTL bar with wrapped labels as the page scrolls.",
+-      "implemented": "Baseline 80 dp bar with a 64 × 32 dp indicator, arrow focus, and optional vector icons and badges. Compact Expressive bar with three to five equal vertical destinations, 64 dp minimum height, a 56 × 32 dp indicator, controlled selection, individual Tab focus, disabled behavior, RTL and labels that wrap to 200% text. Medium Expressive bar starts at 600 dp and ends before 840 dp. It has fixed 112 dp hit cells, centered outer margins, a logical-leading icon with adjoining label inside its pill, and retained current page and focus across the Compact handoff. Wrapped large labels grow the bar.",
+-      "unit_evidence": "Material and Runtime tests check exact token geometry, selected and inactive colors, real CJK label wrapping, fixed icon size, current-page state, repeated activation and disabled input. Existing navigation and consumer contract tests cover the Baseline APIs. Medium cases check 3/4/5 fixed cells, width limits, color roles and stable geometry across selection, plus RTL and 200% measured Chinese labels."
++      "desktop_evidence": "Native headless Metal checks light and dark, controlled selection, Tab and focus return, and 320 dp dark RTL with 200% text. Two replays reproduce two PNGs through Page.screenshot, CLI and MCP. The Medium Gallery also repeats wide Light and dark RTL at 200%. Four original PNGs match through Page.screenshot, CLI and MCP. They verify separate selected paint and an adjacent 3 dp focus ring. The adaptive Gallery repeats fixed 320 and 600 dp light viewports with three matching screenshot transports.",
++      "web_evidence": "Chrome WebGPU M270–M273 cover equal 3/4/5 destination layouts, light and dark pixels, named landmark and current-page semantics, trusted Tab/Enter/Space, disabled pointer input, and 320 dp RTL at 200%. The bar, page title, and focus stay in place as the separate page scrolls. M363–M365 check genuine Medium pixels, fixed cells from 600 to 839 dp, the named landmark and disabled item, trusted keys and touch, focus across 599/600 dp, and a pinned dark RTL bar with wrapped labels as the page scrolls. M366–M368 check both bottom-bar forms, the 839/840 dp handoff, a single named navigation landmark, disabled Tab skip, and the same focused draft and backward selection during resize through 320 dp.",
++      "implemented": "Baseline 80 dp bar with a 64 × 32 dp indicator, arrow focus, and optional vector icons and badges. Compact Expressive bar with three to five equal vertical destinations, 64 dp minimum height, a 56 × 32 dp indicator, controlled selection, individual Tab focus, disabled behavior, RTL and labels that wrap to 200% text. Medium Expressive bar starts at 600 dp and ends before 840 dp. It has fixed 112 dp hit cells, centered outer margins, a logical-leading icon with adjoining label inside its pill, and retained current page and focus across the Compact handoff. Wrapped large labels grow the bar. The adaptive scaffold places one caller-owned page above either bar and beside the leading rail. It keeps the page, navigation landmark and destination IDs stable across its width breakpoints.",
++      "unit_evidence": "Material and Runtime tests check exact token geometry, selected and inactive colors, real CJK label wrapping, fixed icon size, current-page state, repeated activation and disabled input. Existing navigation and consumer contract tests cover the Baseline APIs. Medium cases check 3/4/5 fixed cells, width limits, color roles and stable geometry across selection, plus RTL and 200% measured Chinese labels. Adaptive scaffold tests cover 599/600 and 839/840 dp in both directions, preserve the page's focused editor and composition, and keep focus separate from selection."
+     },
+     {
+       "id": "navigation-drawer",
+@@ -145,12 +145,13 @@
+     },
+     {
+       "id": "navigation-rail",
++      "unit_evidence": "Adaptive scaffold tests cover 96 dp leading placement in both directions, the rail handoff, one retained focus target and independent rail and page scroll in a short viewport.",
+       "spec": "https://m3.material.io/components/navigation-rail/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "The Gallery exercises classic, wide and modal rails. Prior Metal and AppKit evidence is at https://github.com/faberline/surface/tree/0755876dde5e682c160d5da9bf9f58e5f4556526/docs/evidence/md3/modal-wide-navigation-rail-swipe.",
+-      "web_evidence": "The Material browser journey exercises the rail with real Chrome events. Prior WebGPU replay and measurements are in the same checkpoint.",
+-      "implemented": "Classic 80 dp rail with vector destinations, current-page semantics and controlled selection. Inline wide and modal wide modes mirror in RTL and animate the panel and its items. The standalone modal swipes to dismiss. The compact Gallery changes to a bottom bar and preserves selection and focus. Predictive back, direct vertical touch scrolling and live VoiceOver speech remain open."
++      "desktop_evidence": "The Gallery exercises classic, wide and modal rails. Prior Metal and AppKit evidence is at https://github.com/faberline/surface/tree/0755876dde5e682c160d5da9bf9f58e5f4556526/docs/evidence/md3/modal-wide-navigation-rail-swipe. The adaptive Gallery verifies the short 840 × 300 dp dark RTL rail at 200% text. Native keys move focus and reveal Settings inside the rail. Two replays captured six PNGs across all three layouts with zero visible windows.",
++      "web_evidence": "The Material browser journey exercises the rail with real Chrome events. Prior WebGPU replay and measurements are in the same checkpoint. M367 and M369 use real keys to move without selecting, activate with Space, and reveal the bottom destination at 840 × 300 dp in dark RTL at 200% text. They verify selected pixels, disabled semantics, scroll offset and the unchanged page editor.",
++      "implemented": "Classic 80 dp rail with vector destinations, current-page semantics and controlled selection. Inline wide and modal wide modes mirror in RTL and animate the panel and its items. The standalone modal swipes to dismiss. The compact Gallery changes to a bottom bar and preserves selection and focus. Predictive back, direct vertical touch scrolling and live VoiceOver speech remain open. The adaptive scaffold mounts the 96 dp collapsed Expressive rail at the leading edge from 840 dp. The rail has its own scroll area. Up and Down reveal enabled destinations without choosing a page."
+     },
+     {
+       "id": "bottom-sheets",
+diff --git a/docs/material.md b/docs/material.md
+index e399ee9aecf7e6389d02ca1286f3f53bd70decd1..240a72069649eec3bd2732cc2c7ddee2598235ad 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -399,6 +399,27 @@ layout switch while the current page and destination IDs stay the same.
+ [Material 3 Navigation Bar guidelines](https://m3.material.io/components/navigation-bar/guidelines) ·
+ [Accessibility](https://m3.material.io/components/navigation-bar/accessibility)
+ 
++## Adaptive navigation scaffold
++
++Use `Theme::adaptive_navigation_scaffold` to place one page beside or
++above its navigation. Set the logical width, height, reading direction,
++stable scaffold and navigation IDs, and localized landmark name in
++`AdaptiveNavigationScaffoldOptions`. Pass three to five destinations.
++Keep the page key and destination IDs stable when the window resizes.
++
++Surface puts a compact bar at the bottom below 600 dp. It uses a
++horizontal bar at the bottom from 600 dp to less than 840 dp. At 840 dp
++and wider, a 96 dp rail sits at the leading edge. The rail has its own
++scroll area. In the rail, Up and Down move focus. In the bars, Tab moves
++through enabled destinations. Enter, Space and pointer input select a
++destination. The application owns the current destination and page.
++
++The shortest supported viewport is 64 dp. Give the bars more height
++when labels wrap. The compact bar needs at least 56 dp per destination.
++
++Open **自適應導覽** in the Gallery's **色彩** tab. Resize the window with
++focus in the draft field to try all three layouts.
++
+ ## Navigation drawers
+ 
+ Build destinations with `Theme::navigation_drawer_item_with_icon`. Give
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 5cce869a6fe5193586829a6c9e52cc46644b1c1b..6479144862401592a05a6ef60e384d2a644bb39c 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -2,6 +2,8 @@
+ //! menus, Tab cycles and mobile sizing.
+ //! Port of `scripts/browser-material.mjs` (M1–M23 in issue #62).
+ 
++#[path = "material_adaptive_navigation_scaffold.rs"]
++mod material_adaptive_navigation_scaffold;
+ #[path = "material_app_bar.rs"]
+ mod material_app_bar;
+ #[path = "material_badge.rs"]
+@@ -182,7 +184,7 @@ pub const STEPS: &[&str] = &[
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+-    "M359", "M360", "M361", "M362", "M363", "M364", "M365",
++    "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -325,7 +327,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_text_field_boundary_motion::run(env, chrome, &url).await?;
+     material_text_field_disabled_contrast::run(env, chrome, &url).await?;
+     material_text_field_system_pair::run(env, chrome, &url).await?;
+-    material_horizontal_navigation_bar::run(env, chrome, &url).await
++    material_horizontal_navigation_bar::run(env, chrome, &url).await?;
++    material_adaptive_navigation_scaffold::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -583,13 +586,15 @@ mod tests {
+         let disabled_contrast = super::material_text_field_disabled_contrast::STEPS;
+         let system_field_pair = super::material_text_field_system_pair::STEPS;
+         let horizontal_bar = super::material_horizontal_navigation_bar::STEPS;
++        let adaptive_navigation = super::material_adaptive_navigation_scaffold::STEPS;
+         assert!(super::STEPS.ends_with(
+             &[
+-                placeholder,
+-                boundary,
+-                disabled_contrast,
+-                system_field_pair,
+-                horizontal_bar
++                placeholder.as_slice(),
++                boundary.as_slice(),
++                disabled_contrast.as_slice(),
++                system_field_pair.as_slice(),
++                horizontal_bar.as_slice(),
++                adaptive_navigation.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_adaptive_navigation_scaffold.rs b/e2e/src/material_adaptive_navigation_scaffold.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4eb7b70f5bf8eb1c9fb1ec7f22df21bbf19a47a8
+--- /dev/null
++++ b/e2e/src/material_adaptive_navigation_scaffold.rs
+@@ -0,0 +1,341 @@
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::{
++    click, focus,
++    material_time_input::{
++        activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++        projected, resize, Raster,
++    },
++    state, until,
++};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 4] = ["M366", "M367", "M368", "M369"];
++const SHOW: &str = "adaptive-navigation-demo-show";
++const BACK: &str = "adaptive-navigation-demo-back";
++const NAV: &str = "adaptive-navigation-demo-bar";
++const SCROLL: &str = "adaptive-navigation-demo-bar-scroll";
++const PAGE: &str = "adaptive-navigation-demo-page";
++const EDITOR: &str = "adaptive-navigation-demo-draft";
++const HOME: &str = "adaptive-navigation-demo-home";
++const SAVED: &str = "adaptive-navigation-demo-saved";
++const UPDATES: &str = "adaptive-navigation-demo-updates";
++const SETTINGS: &str = "adaptive-navigation-demo-settings";
++const STEM: &str = "material-adaptive-navigation";
++const TEXT: &str = "draft";
++type Rect = [f64; 4];
++
++fn right([x, _, width, _]: Rect) -> f64 {
++    x + width
++}
++fn bottom([_, y, _, height]: Rect) -> f64 {
++    y + height
++}
++
++async fn current(tab: &Tab, id: &str, activations: usize) -> Result<()> {
++    until(tab, &format!(
++        "s.adaptive_navigation.selected === {id:?} && s.adaptive_navigation.activations === {activations}"
++    )).await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-current') === 'page' &&
++         document.querySelectorAll('#surface-accessibility [aria-current=page]').length === 1",
++        projected(id)
++    ))
++    .await
++}
++
++async fn layout(tab: &Tab, width: u32, height: u32, rtl: bool) -> Result<(Rect, Rect)> {
++    resize(tab, width, height).await?;
++    until(tab, &format!(
++        "s.adaptive_navigation.viewport[0] === {width} && s.adaptive_navigation.viewport[1] === {height}"
++    )).await?;
++    let nav = bounds(tab, NAV).await?;
++    let page = bounds(tab, PAGE).await?;
++    if width < 840 {
++        check!(
++            near(nav[0], 0.)
++                && near(nav[2], f64::from(width))
++                && near(bottom(nav), f64::from(height))
++                && near(page[2], f64::from(width))
++                && near(bottom(page), nav[1]),
++            "page occupies the full space above the bottom bar: {page:?}, {nav:?}"
++        );
++    } else {
++        check!(
++            near(nav[1], 0.) && near(nav[2], 96.) && near(nav[3], f64::from(height))
++                && near(page[1], 0.) && near(page[3], f64::from(height))
++                && if rtl {
++                    near(page[0], 0.) && near(right(page), nav[0]) && near(right(nav), f64::from(width))
++                } else {
++                    near(nav[0], 0.) && near(right(nav), page[0]) && near(right(page), f64::from(width))
++                },
++            "the 96 dp rail stays at logical start with an independent full-height page: {page:?}, {nav:?}"
++        );
++    }
++    let tree = ax_tree(tab).await?;
++    let _ = ax(&tree, "navigation", "主要導覽")?;
++    let disabled = ax(&tree, "button", "探索路線")?;
++    check_eq!(
++        ax_property(disabled, "disabled"),
++        Some(&json!(true)),
++        "the browser accessibility tree exposes the disabled destination"
++    );
++    check_eq!(
++        tab.eval("document.querySelectorAll('#surface-accessibility [role=navigation]').length")
++            .await?,
++        json!(1),
++        "the page has one navigation landmark after replacement"
++    );
++    Ok((nav, page))
++}
++
++async fn screenshot(env: &Env, tab: &Tab, name: &str, nav: Rect, rail: bool) -> Result<Value> {
++    tab.settle().await?;
++    let state = state(tab).await?;
++    let fixture = &state["adaptive_navigation"];
++    let colors = &fixture["palette"];
++    let current = fixture["selected"]
++        .as_str()
++        .context("read current destination")?;
++    let current_box = bounds(tab, current).await?;
++    check!(
++        contains(nav, current_box),
++        "the current destination is fully visible for pixel sampling"
++    );
++    let color = |key| -> Result<[u8; 3]> {
++        let [r, g, b, a]: [u8; 4] = serde_json::from_value(colors[key].clone())
++            .context("the Gallery palette supplies an RGBA color")?;
++        check_eq!(a, 255, "the sampled navigation token is opaque");
++        Ok([r, g, b])
++    };
++    let path = env.artifact(&format!("{STEM}-{name}.png"));
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    let fill = color(if rail { "rail" } else { "bar" })?;
++    let selected = color("selected")?;
++    check_eq!(
++        raster.sample(nav[0] + 3., nav[1] + 2.)?,
++        fill,
++        "navigation surface paints its token"
++    );
++    let selected_pixels = raster
++        .colors(current_box)?
++        .get(&selected)
++        .copied()
++        .unwrap_or_default();
++    check!(
++        selected_pixels > 20,
++        "the visible current page has its selected indicator"
++    );
++    Ok(
++        json!({"image":format!("{STEM}-{name}.png"),"bounds":nav,"surface":fill,
++              "selected":selected,"selected_pixels":selected_pixels,"current_bounds":current_box}),
++    )
++}
++
++async fn bars(env: &Env, tab: &Tab) -> Result<Value> {
++    let (compact, _) = layout(tab, 599, 620, false).await?;
++    focus_projected(tab, HOME).await?;
++    tab.press("Tab").await?;
++    focused(tab, SAVED).await?;
++    current(tab, HOME, 0).await?;
++    tab.press("Enter").await?;
++    current(tab, SAVED, 1).await?;
++    focused(tab, SAVED).await?;
++    let [_, _, width, height] = bounds(tab, &format!("{SAVED}-indicator")).await?;
++    check_eq!(
++        [width, height],
++        [56., 32.],
++        "the original vertical active pill is present"
++    );
++    focus_projected(tab, UPDATES).await?;
++    let compact = screenshot(env, tab, "compact", compact, false).await?;
++    focus_projected(tab, SAVED).await?;
++    let (medium, _) = layout(tab, 600, 620, false).await?;
++    focused(tab, SAVED).await?;
++    current(tab, SAVED, 1).await?;
++    let hit = bounds(tab, SAVED).await?;
++    let pill = bounds(tab, &format!("{SAVED}-indicator")).await?;
++    check!(
++        near(hit[2], 112.) && near(pill[3], 40.) && pill[2] > 56.,
++        "the same destination uses the horizontal pill"
++    );
++    focus_projected(tab, UPDATES).await?;
++    let medium = screenshot(env, tab, "medium", medium, false).await?;
++    focus_projected(tab, SAVED).await?;
++    Ok(json!({"compact":compact,"medium":medium,"current":SAVED,"focus":SAVED}))
++}
++
++async fn rail(env: &Env, tab: &Tab) -> Result<Value> {
++    layout(tab, 839, 620, false).await?;
++    focused(tab, SAVED).await?;
++    let (rail, page) = layout(tab, 840, 620, false).await?;
++    focused(tab, SAVED).await?;
++    current(tab, SAVED, 1).await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, UPDATES).await?;
++    current(tab, SAVED, 1).await?;
++    tab.press("Space").await?;
++    current(tab, UPDATES, 2).await?;
++    focused(tab, UPDATES).await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, SETTINGS).await?;
++    current(tab, UPDATES, 2).await?;
++    let paint = screenshot(env, tab, "rail", rail, true).await?;
++    Ok(json!({"paint":paint,"page":page,"current":UPDATES,"focus":SETTINGS}))
++}
++
++async fn editor(tab: &Tab) -> Result<Value> {
++    focus(tab, EDITOR, "surface-text-input").await?;
++    let read = format!(
++        r#"(() => {{
++        const s=JSON.parse(window.gallery.export_dom()).text_inputs[{EDITOR:?}];
++        const t=document.getElementById('surface-text-input');
++        return {{browser:[t?.value,t?.selectionStart,t?.selectionEnd,t?.selectionDirection],
++                 runtime:[s?.selection_anchor,s?.selection_cursor], value:s?.value}};
++    }})()"#
++    );
++    let browser = json!([TEXT, 3, 5, "backward"]);
++    let runtime = json!([5, 3]);
++    let retained = format!(
++        "(() => {{ const editor = {read};
++            return editor.value === {TEXT:?}
++                && JSON.stringify(editor.browser) === JSON.stringify({browser})
++                && JSON.stringify(editor.runtime) === JSON.stringify({runtime});
++        }})()"
++    );
++    if let Err(error) = tab.wait_for(&retained).await {
++        let actual = tab.eval(&read).await?;
++        return Err(error.context(format!("observed editor value and selection: {actual}")));
++    }
++    tab.eval(&read).await
++}
++
++async fn draft(tab: &Tab) -> Result<Value> {
++    click(tab, EDITOR).await?;
++    focus(tab, EDITOR, "surface-text-input").await?;
++    tab.insert_text(TEXT).await?;
++    until(tab, &format!("s.adaptive_navigation.draft === {TEXT:?}")).await?;
++    for _ in 0..2 {
++        tab.press("Shift+ArrowLeft").await?;
++    }
++    let before = editor(tab).await?;
++    for width in [839, 320, 840] {
++        layout(tab, width, 620, false).await?;
++        check_eq!(
++            editor(tab).await?,
++            before,
++            "the same focused draft and backward range survive resize"
++        );
++        current(tab, UPDATES, 2).await?;
++    }
++    Ok(before)
++}
++
++async fn compact_height(env: &Env, tab: &Tab) -> Result<Value> {
++    for control in ["theme", "rtl", "large"] {
++        activate(tab, &format!("adaptive-navigation-demo-{control}")).await?;
++    }
++    until(
++        tab,
++        "s.dark && s.adaptive_navigation.rtl && s.adaptive_navigation.text_scale === 2",
++    )
++    .await?;
++    let (rail, page) = layout(tab, 840, 300, true).await?;
++    let clip = bounds(tab, SCROLL).await?;
++    let last = bounds(tab, SETTINGS).await?;
++    check!(
++        !contains(clip, last),
++        "the last destination initially needs scroll reveal"
++    );
++    focus_projected(tab, HOME).await?;
++    let scroll_y = |id| {
++        format!(
++            "JSON.parse(window.gallery.export_dom()).dom.nodes
++                .find(node => node.stable_id === {id:?})?.style.scroll_y"
++        )
++    };
++    let page_scroll = scroll_y(PAGE);
++    let rail_scroll = scroll_y(SCROLL);
++    let page_before = tab.eval(&page_scroll).await?;
++    let rail_before = tab
++        .eval(&rail_scroll)
++        .await?
++        .as_f64()
++        .context("read the rail's initial scroll offset")?;
++    let editor_before = bounds(tab, EDITOR).await?;
++    for target in [SAVED, UPDATES, SETTINGS] {
++        tab.press("ArrowDown").await?;
++        focused(tab, target).await?;
++        current(tab, UPDATES, 2).await?;
++    }
++    let revealed = bounds(tab, SETTINGS).await?;
++    let rail_after = tab
++        .eval(&rail_scroll)
++        .await?
++        .as_f64()
++        .context("read the rail's final scroll offset")?;
++    check!(
++        contains(clip, revealed) && revealed[1] < last[1] && rail_after > rail_before,
++        "keyboard focus reveals the bottom inside the rail clip"
++    );
++    check_eq!(
++        (
++            bounds(tab, PAGE).await?,
++            bounds(tab, EDITOR).await?,
++            tab.eval(&page_scroll).await?
++        ),
++        (page, editor_before, page_before.clone()),
++        "rail scrolling preserves the page position, its editor and its scroll offset"
++    );
++    until(tab, &format!("s.adaptive_navigation.draft === {TEXT:?}")).await?;
++    let image = screenshot(env, tab, "dark-rtl-short-rail", rail, true).await?;
++    Ok(json!({
++        "paint":image, "before":last, "revealed":revealed, "clip":clip, "focus":SETTINGS,
++        "rail_scroll":[rail_before,rail_after], "page":page, "page_scroll":page_before,
++        "editor":editor_before
++    }))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 2444, 2.).await?;
++    tab.cdp(
++        "Emulation.setEmulatedMedia",
++        json!({"features":[{"name":"prefers-reduced-motion","value":"reduce"}]}),
++    )
++    .await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(&tab, "gallery").await?;
++    resize(&tab, 960, 2400).await?;
++    activate(&tab, "section-3").await?;
++    until(&tab, "s.section === 3").await?;
++    activate(&tab, SHOW).await?;
++    focused(&tab, BACK).await?;
++    step(
++        STEPS[0],
++        "real keys and the current page survive the compact to medium bar",
++    );
++    let bars = bars(env, &tab).await?;
++    step(
++        STEPS[1],
++        "839 to 840 dp moves navigation to a leading rail with arrow focus",
++    );
++    let rail = rail(env, &tab).await?;
++    step(
++        STEPS[2],
++        "the same live draft, keyboard focus and backward selection survive all three layouts",
++    );
++    let draft = draft(&tab).await?;
++    step(
++        STEPS[3],
++        "dark RTL short rail reveals focused destinations without scrolling the page",
++    );
++    let dark = compact_height(env, &tab).await?;
++    env.write_json(
++        &format!("{STEM}.json"),
++        &json!({"bars":bars,"rail":rail,"draft":draft,"dark":dark}),
++    )
++}
+diff --git a/examples/material-gallery/src/adaptive_navigation_demo.rs b/examples/material-gallery/src/adaptive_navigation_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..830dbc5fe9e1cf600197c0f81dc79658d0b6f9dd
+--- /dev/null
++++ b/examples/material-gallery/src/adaptive_navigation_demo.rs
+@@ -0,0 +1,261 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, typography, AdaptiveNavigationScaffoldOptions, ButtonKind, ChoiceState,
++    NavigationRailItem, TextFieldOptions, Theme,
++};
++
++use crate::{flexible_navigation_bar_demo::icon, scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 3;
++const SHOW: &str = "adaptive-navigation-demo-show";
++const BACK: &str = "adaptive-navigation-demo-back";
++const SCAFFOLD: &str = "adaptive-navigation-demo-scaffold";
++const NAVIGATION: &str = "adaptive-navigation-demo-bar";
++const PAGE: &str = "adaptive-navigation-demo-page";
++const EDITOR: &str = "adaptive-navigation-demo-draft";
++const IDS: [&str; 5] = [
++    "adaptive-navigation-demo-home",
++    "adaptive-navigation-demo-explore",
++    "adaptive-navigation-demo-saved",
++    "adaptive-navigation-demo-updates",
++    "adaptive-navigation-demo-settings",
++];
++const LABELS: [&str; 5] = ["首頁", "探索路線", "收藏", "最新消息", "設定"];
++const CONTENT: [[&str; 3]; 5] = [
++    ["今日行程", "河畔散步", "閱讀清單"],
++    ["城市散步", "山徑", "河岸路線"],
++    ["河岸步道", "城市圖書館", "公園地圖"],
++    ["步道已開放", "新展覽", "週末活動"],
++    ["通知", "語言", "隱私"],
++];
++const DISABLED: usize = 1;
++
++#[derive(Clone)]
++pub enum AdaptiveNavigationDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Choose(usize),
++    Edit(String),
++}
++
++pub(crate) struct AdaptiveNavigationDemo {
++    visible: bool,
++    viewport: (f32, f32),
++    rtl: bool,
++    large_text: bool,
++    selected: usize,
++    activations: usize,
++    draft: String,
++}
++
++impl Default for AdaptiveNavigationDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            viewport: (960., 640.),
++            rtl: false,
++            large_text: false,
++            selected: 0,
++            activations: 0,
++            draft: String::new(),
++        }
++    }
++}
++
++impl AdaptiveNavigationDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let previous = std::mem::replace(&mut self.viewport, (width, height));
++        self.visible && previous != self.viewport
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn update(&mut self, event: AdaptiveNavigationDemoEvent) {
++        use AdaptiveNavigationDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            Choose(index) if index < IDS.len() && index != DISABLED => {
++                self.selected = index;
++                self.activations += 1;
++            }
++            Choose(_) => {}
++            Edit(value) => self.draft = value,
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "自適應導覽",
++                ButtonKind::Outlined,
++                false,
++                Message::AdaptiveNavigationDemo(AdaptiveNavigationDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use AdaptiveNavigationDemoEvent::*;
++        let event = Message::AdaptiveNavigationDemo;
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", event(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            theme
++                .segmented_button(
++                    "adaptive-navigation-demo-theme",
++                    "深色",
++                    choice(dark),
++                    Message::Theme,
++                )
++                .accessible_activation(),
++            theme
++                .segmented_button(
++                    "adaptive-navigation-demo-rtl",
++                    "右起",
++                    choice(self.rtl),
++                    event(ToggleDirection),
++                )
++                .accessible_activation(),
++            theme
++                .segmented_button(
++                    "adaptive-navigation-demo-large",
++                    "大字",
++                    choice(self.large_text),
++                    event(ToggleLargeText),
++                )
++                .accessible_activation(),
++        ]);
++        let title = LABELS[self.selected];
++        let heading = View::new(
++            Node::new(Role::Heading, title)
++                .id("adaptive-navigation-demo-title")
++                .text(title)
++                .styled(
++                    Style::row()
++                        .with_text_style(typography::TITLE_LARGE)
++                        .foreground(theme.on_background),
++                ),
++        );
++        let mut field = TextFieldOptions::new(EDITOR, "草稿", &self.draft);
++        field.direction = direction;
++        field.text_scale = self.text_scale();
++        let editor = theme.outlined_text_field(field, move |text| event(Edit(text)));
++        let content = View::new(Node::new(Role::Group, "").styled(Style::column().gap(8.)))
++            .children(
++                CONTENT[self.selected]
++                    .into_iter()
++                    .enumerate()
++                    .map(|(index, title)| {
++                        theme.text(&format!("adaptive-navigation-demo-line-{index}"), title)
++                    }),
++            );
++        let page = View::new(
++            Node::new(Role::Group, "頁面內容").id(PAGE).styled(
++                Style::column()
++                    .width(Length::Percent(1.))
++                    .height(Length::Percent(1.))
++                    .align(Align::Stretch)
++                    .padding(16.)
++                    .gap(12.)
++                    .clip(true),
++            ),
++        )
++        .accessibility_scroll_pages()
++        .children(
++            [controls, heading]
++                .into_iter()
++                .chain(editor)
++                .chain([content]),
++        );
++        let options = AdaptiveNavigationScaffoldOptions {
++            id: SCAFFOLD,
++            navigation_id: NAVIGATION,
++            name: "主要導覽",
++            available_width: self.viewport.0,
++            available_height: self.viewport.1,
++            direction,
++        };
++        let items = IDS
++            .into_iter()
++            .enumerate()
++            .map(|(index, id)| NavigationRailItem {
++                id,
++                label: LABELS[index],
++                accessible_name: LABELS[index],
++                icon: icon(index, self.selected == index),
++                state: ChoiceState {
++                    selected: self.selected == index,
++                    disabled: index == DISABLED,
++                },
++                message: event(Choose(index)),
++            });
++        let scaffold = theme.adaptive_navigation_scaffold(options, page, items);
++        View::new(
++            Node::new(Role::Window, "自適應導覽")
++                .id("adaptive-navigation-demo")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children(scaffold)
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++        serde_json::json!({
++            "visible": self.visible,
++            "viewport": self.viewport,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "selected": IDS[self.selected],
++            "activations": self.activations,
++            "draft": self.draft,
++            "palette": {
++                "bar": theme.colors.surface_container,
++                "rail": theme.colors.surface,
++                "selected": theme.colors.secondary_container,
++            },
++        })
++    }
++}
++
++fn choice(selected: bool) -> ChoiceState {
++    ChoiceState {
++        selected,
++        disabled: false,
++    }
++}
+diff --git a/examples/material-gallery/src/flexible_navigation_bar_demo.rs b/examples/material-gallery/src/flexible_navigation_bar_demo.rs
+index 82444d111bdce8868fcbe4101c8eeb86bd1159d7..8138728ce9b08697bfa8174e3c6e8437991bc828 100644
+--- a/examples/material-gallery/src/flexible_navigation_bar_demo.rs
++++ b/examples/material-gallery/src/flexible_navigation_bar_demo.rs
+@@ -349,7 +349,7 @@ fn choice(selected: bool) -> ChoiceState {
+     }
+ }
+ 
+-fn icon(index: usize, selected: bool) -> &'static VectorIcon {
++pub(crate) fn icon(index: usize, selected: bool) -> &'static VectorIcon {
+     static ICONS: OnceLock<[[VectorIcon; 2]; 5]> = OnceLock::new();
+     let icons = ICONS.get_or_init(|| {
+         [
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 6fd10d29e984b3aa33bd920a90d66562e9224515..fa25ece49d15c74ff73988d28d740edcb25faf46 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1,3 +1,4 @@
++mod adaptive_navigation_demo;
+ mod app_bar_demo;
+ mod badge_demo;
+ mod bottom_sheet_demo;
+@@ -59,6 +60,7 @@ mod tooltip_demo;
+ mod vertical_centered_slider_demo;
+ mod wide_navigation_rail_demo;
+ 
++use adaptive_navigation_demo::{AdaptiveNavigationDemo, AdaptiveNavigationDemoEvent};
+ use app_bar_demo::{AppBarDemo, AppBarEvent};
+ use badge_demo::{BadgeDemo, BadgeEvent};
+ use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
+@@ -194,6 +196,7 @@ pub struct Gallery {
+     dialog_demo: DialogDemo,
+     menu_demo: MenuDemo,
+     flexible_navigation_bar_demo: FlexibleNavigationBarDemo,
++    adaptive_navigation_demo: AdaptiveNavigationDemo,
+     lists_demo: ListsDemo,
+     list_actions_demo: ListActionsDemo,
+     list_expand_demo: ListExpandDemo,
+@@ -278,6 +281,7 @@ impl Default for Gallery {
+             dialog_demo: DialogDemo::default(),
+             menu_demo: MenuDemo::default(),
+             flexible_navigation_bar_demo: FlexibleNavigationBarDemo::default(),
++            adaptive_navigation_demo: AdaptiveNavigationDemo::default(),
+             lists_demo: ListsDemo::default(),
+             list_actions_demo: ListActionsDemo::default(),
+             list_expand_demo: ListExpandDemo::default(),
+@@ -394,6 +398,7 @@ pub enum Message {
+     DialogDemo(DialogDemoEvent),
+     MenuDemo(MenuDemoEvent),
+     FlexibleNavigationBarDemo(FlexibleNavigationBarDemoEvent),
++    AdaptiveNavigationDemo(AdaptiveNavigationDemoEvent),
+     Lists(ListsEvent),
+     ListActions(ListActionsEvent),
+     ListExpand(ListExpandEvent),
+@@ -514,6 +519,9 @@ impl Application for Gallery {
+         if self.flexible_navigation_bar_demo.visible() {
+             return self.flexible_navigation_bar_demo.text_scale();
+         }
++        if self.adaptive_navigation_demo.visible() {
++            return self.adaptive_navigation_demo.text_scale();
++        }
+         if self.lists_demo.visible() {
+             return self.lists_demo.text_scale();
+         }
+@@ -654,6 +662,9 @@ impl Application for Gallery {
+         let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
+         let dialog = self.dialog_demo.viewport_changed(width, height);
+         let flexible_navigation_bar = self.flexible_navigation_bar_demo.viewport_changed(width);
++        let adaptive_navigation = self
++            .adaptive_navigation_demo
++            .viewport_changed(width, height);
+         let list_actions = self.list_actions_demo.viewport_changed(width);
+         let list_media = self.list_media_demo.viewport_changed(width, height);
+         let list_reorder = self.list_reorder_demo.viewport_changed(width);
+@@ -689,6 +700,7 @@ impl Application for Gallery {
+             || search_overlay
+             || dialog
+             || flexible_navigation_bar
++            || adaptive_navigation
+             || tabs
+             || chips
+             || icon_buttons
+@@ -1015,6 +1027,9 @@ impl Application for Gallery {
+                 if i != flexible_navigation_bar_demo::SECTION {
+                     self.flexible_navigation_bar_demo.leave();
+                 }
++                if i != adaptive_navigation_demo::SECTION {
++                    self.adaptive_navigation_demo.leave();
++                }
+                 if i != toolbar_demo::SECTION {
+                     self.toolbar_demo.leave();
+                 }
+@@ -1149,6 +1164,7 @@ impl Application for Gallery {
+             Message::FlexibleNavigationBarDemo(event) => {
+                 self.flexible_navigation_bar_demo.update(event)
+             }
++            Message::AdaptiveNavigationDemo(event) => self.adaptive_navigation_demo.update(event),
+             Message::Toolbar(event) => self.toolbar_demo.update(event),
+             Message::Tooltip(event) => self.tooltip_demo.update(event),
+             Message::Nav(i) => self.nav = i,
+@@ -1288,6 +1304,9 @@ impl Application for Gallery {
+         if self.flexible_navigation_bar_demo.visible() {
+             return self.flexible_navigation_bar_demo.view(&t, self.dark);
+         }
++        if self.adaptive_navigation_demo.visible() {
++            return self.adaptive_navigation_demo.view(&t, self.dark);
++        }
+         if self.toolbar_demo.visible() {
+             return self.toolbar_demo.view(&t, self.dark);
+         }
+@@ -1928,6 +1947,7 @@ impl Application for Gallery {
+                 ]);
+                 children.push(FlexibleNavigationBarDemo::show_button(&t));
+                 children.push(FlexibleNavigationBarDemo::show_medium_button(&t));
++                children.push(AdaptiveNavigationDemo::show_button(&t));
+             }
+         }
+         children.extend(self.snackbar_demo.layer(&t));
+@@ -2123,6 +2143,7 @@ mod web {
+         state["dialog_demo"] = s.dialog_demo.inspect();
+         state["menu_demo"] = s.menu_demo.inspect();
+         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
++        state["adaptive_navigation"] = s.adaptive_navigation_demo.inspect(&theme);
+         state["switch_demo"] = s.switch_demo.inspect(&theme);
+         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
+         state["radio_demo"] = s.radio_demo.inspect(&theme);

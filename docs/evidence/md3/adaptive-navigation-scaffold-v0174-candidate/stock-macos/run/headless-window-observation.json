@@ -1,0 +1,113 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 5077,
+      "pids": [
+        22825,
+        41784
+      ]
+    },
+    "native_gallery": {
+      "samples": 2,
+      "pids": [
+        42566
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 5023,
+      "pids": [
+        22825
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 54,
+      "pids": [
+        41784
+      ],
+      "detached_samples": 49
+    },
+    "native": {
+      "samples": 2,
+      "pids": [
+        42566
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 22825,
+      "ppid": 22817,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=49782",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/tmp/.tmpqesN1L",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new",
+        "--disable-updater-scheduler"
+      ],
+      "profile": "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/tmp/.tmpqesN1L"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 41784,
+      "ppid": 41770,
+      "allowed": true,
+      "argv": [
+        "--disable-updater-scheduler",
+        "--remote-debugging-port=51731",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/tmp/.tmpfbABiL",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-adaptive-nav-stock-v0174.j8xout6u/run/tmp/.tmpfbABiL"
+    },
+    {
+      "role": "native",
+      "pid": 42566,
+      "ppid": 22817,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
