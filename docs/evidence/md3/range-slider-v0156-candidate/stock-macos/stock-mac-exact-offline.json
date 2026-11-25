@@ -1,0 +1,2057 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "cases": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 308,
+      "checks": 21835
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 22116,
+  "page_errors": 0,
+  "headless_transport_pngs": {
+    "bridge-web.png": {
+      "size": [
+        756,
+        469
+      ],
+      "sha256": "fe083f9371717ce631436af4a581b2fccc0654d3352a7d94f83a326eec047fdc"
+    },
+    "devtools-headless-screenshot.png": {
+      "size": [
+        720,
+        640
+      ],
+      "sha256": "21f5950edf4757f5bc836638407ea620b371961d4de8de61073feebfbd9d2ff5"
+    }
+  },
+  "chips_pngs": {
+    "material-chips-wide-light.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "890c6608b470b79e0f45b17f46aaf8ee7bebcaa15d231c3ca9c83852adced16f"
+    },
+    "material-chips-wide-focus.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "1cc8780e65beeb1da705c42035ebceb41a471b5debf5f3d33ca56f0192a1c85a"
+    },
+    "material-chips-wide-pressed.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "4ebe375cfc2aee382acbaeba4d48e1e69ab79df3e74fbd2ad62f1a733889219c"
+    },
+    "material-chips-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        2128
+      ],
+      "sha256": "9addb856b293d043030ea78ccf8e822cacb704cfacacb30cecd4e64f4798a0c3"
+    }
+  },
+  "chips_report_sha256": "145bae449ae359392a31992363d64c7d8bd36ac5cf82e265c5919f22e51304db",
+  "icons_pngs": {
+    "material-icon-buttons-wide-light.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "6ea72c50868a596c6dfe8811e2b8a070f603a7db79b42f71edb48d7824df6355"
+    },
+    "material-icon-buttons-selected-focus.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "6f06cd45943e8161e77bb8b356e533f76137191385d1f36970a89c3a6ebcee7f"
+    },
+    "material-icon-buttons-pressed.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "088cdab41fae850ec26beba34c33172dec63467ef6a668bff36537b0c2560591"
+    },
+    "material-icon-buttons-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        1608
+      ],
+      "sha256": "e2bd5f7e024bc9edf6777b0e39e7bf154428b0343fc968d1bddf06ff8cbe9cf7"
+    }
+  },
+  "icons_report_sha256": "0b81b42e88e2b9e41976a91094a414e256bf3ce5347231c5588b023b8059c90e",
+  "sliders_pngs": {
+    "material-standard-slider-wide-light.png": {
+      "size": [
+        1920,
+        2168
+      ],
+      "sha256": "c0d39586f628cecf8721b80029d26b263eb2fc7cbaed431b76a3db302acadb78"
+    },
+    "material-standard-slider-keyboard.png": {
+      "size": [
+        1920,
+        2168
+      ],
+      "sha256": "e1f1c99e0fafe176f0d5d1f8b1dd847ca16e41b065e1c425061c9cd1acb0f30e"
+    },
+    "material-standard-slider-live-drag.png": {
+      "size": [
+        1920,
+        2168
+      ],
+      "sha256": "f5604e84a441f700ba3ab7bf83fe07797cec70ac461af21f398cbb85295b3096"
+    },
+    "material-standard-slider-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        1848
+      ],
+      "sha256": "ca0156b2beb62c6d954f9fe29138077b8258f7151a87a080d76d833f37e869c9"
+    }
+  },
+  "sliders_report_sha256": "5f1dd1d021ac04cee4113090d8b6fa677992d0ff508009f2a3ee55992a050ca2",
+  "slider_forms": {
+    "report_sha256": "2f899b43a965d04c11e3b3986e2a644ad8de066f4a1b905e227cadb7bf679d74",
+    "captures": {
+      "material-slider-forms-centered-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "8f2eb33477b6808b93264242f148088c39afdcd047572f38e9bae6aa6a2e5f7b",
+        "decoded_rgb_sha256": "c434405db9f8f9517165f8dcdd628e815b87bb23ccc4e9e0f5d7f2c9fc03efa8"
+      },
+      "material-slider-forms-centered-keys.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "2526473de7584f964f7cda04a547aa1bd66bd25f854b5fae20474e866dbfe052",
+        "decoded_rgb_sha256": "98f50770d8d3b45aa9668d71f94a662b3e6bb5a7f49069a997c2589b86c6386f"
+      },
+      "material-slider-forms-vertical-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "5ad89e599fd8389611649737f05db24424b1cd042b5e18e64e15bb3985d83c2c",
+        "decoded_rgb_sha256": "82e8e870c6a1b8c8d8b91e0bf9006b66c77d0495de5cc242819eac1fafdd31b4"
+      },
+      "material-slider-forms-vertical-compact-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "39d111c0238238a5fc1c8b814377fe894eefbe82e44a077c1ed804379600e4b8",
+        "decoded_rgb_sha256": "314f5a9c943f9de449319f84083928c452ebf0dfb2bc1eaf3e156509d599b073"
+      }
+    },
+    "centered_stops": 8,
+    "centered_ring_pixels": 1272,
+    "centered_label_pixels": 189,
+    "wide_vertical_value": 72.99999660915799,
+    "compact_dark_label_ink": 1008,
+    "compact_dark_label_fill": 18032,
+    "compact_dark_focus_ink": 1268
+  },
+  "range_slider": {
+    "report_sha256": "dc8441e86d5f537f9037b4b211599df16915549ee6dfde79e116c818980ccb42",
+    "captures": {
+      "material-range-slider-wide-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "2c59d2c8f80a965ed53f857197b844ea1e386724a2f5f60b426c10d9dd5ddcbb",
+        "decoded_rgb_sha256": "571941acc0c7bf7a16c49f5d21a7aa362f5171292fa06b4e6fba4fcf0eaf7fab"
+      },
+      "material-range-slider-overlap-focus.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "66a9812b0c998f90d478ed2e4cef4fa931bd94a446cd98953fbad94e67ef75ff",
+        "decoded_rgb_sha256": "87f22f2e3656e732b3bacef8589966c0a043de49ebf880414073e29d79622981"
+      },
+      "material-range-slider-held-loss.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "03a4de7c1f292b036157d10c75eb342a7b15e281736976e64cfe191e4d5a3f63",
+        "decoded_rgb_sha256": "d37bcc6490bdde83eed544c7160416ddbe41459ae8ac2e042dd9e5218f3c5234"
+      },
+      "material-range-slider-compact-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "88153a27f888466040346d4c0bbfbdbe100fdb04c48530ea762d8556657fd575",
+        "decoded_rgb_sha256": "719091ab1a54070aa66370a1fb9475f89e445e8288f629ebe44a6f002c9e98a3"
+      }
+    },
+    "wide": {
+      "fixture_count": 4,
+      "handle_count": 8,
+      "active_colors": [
+        [
+          101,
+          85,
+          143
+        ],
+        [
+          101,
+          85,
+          143
+        ],
+        null,
+        [
+          168,
+          163,
+          170
+        ]
+      ]
+    },
+    "indicators": {
+      "overlap": {
+        "text": 167,
+        "fill": 8526,
+        "focus": 1268
+      },
+      "capture_loss": {
+        "text": 149,
+        "fill": 8495,
+        "focus": 1114
+      },
+      "compact": {
+        "text": 1421,
+        "fill": 27113,
+        "focus": 1272
+      }
+    },
+    "events": {
+      "mouse_owner": 1,
+      "foreign_touch": 2,
+      "held": [
+        39.99999923322668,
+        85.99999969329068
+      ],
+      "after": [
+        39.99999923322668,
+        85.99999969329068
+      ],
+      "fresh": [
+        39.99999923322668,
+        90.00000306709327
+      ]
+    }
+  },
+  "guard_and_window_checks": "passed",
+  "release": {
+    "version": "0.1.56",
+    "last_material_step": 309,
+    "source_sha256": "de92395ee2ab7b8d7d49760adb2722d5b44ca270c2002deb6fefbecd809e8647",
+    "source_files": 646,
+    "wide_canvas_height": 800,
+    "rtl_canvas_height": 1020
+  },
+  "retained": {
+    "browser": "Chrome/158.0.8127.37",
+    "adapter": {
+      "vendor": "apple",
+      "architecture": "metal-3",
+      "isFallbackAdapter": false
+    },
+    "checks": 22116,
+    "retained": {
+      "radio": {
+        "version": 1,
+        "source": {
+          "manifest_sha256": "de92395ee2ab7b8d7d49760adb2722d5b44ca270c2002deb6fefbecd809e8647",
+          "files": 646,
+          "source_bytes_checked": false,
+          "radio_inputs": {
+            "crates/surface-app/src/controls.rs": "80bc6bfebd77c564f7d14f786943123e22800188c54c42da7212f1fc1b06fe8d",
+            "crates/surface-app/src/lib.rs": "3e02b497624a09ac76d51b7c395b0fd172ed2e83838256c9da2368377e571816",
+            "crates/surface-material/src/radio.rs": "ba94da621a925b8ee70a3de8fc56f280c8012d9f55e1c9d2b0725e6a21f5ba39",
+            "e2e/src/material.rs": "356deaf882ef922d5aa2938c8d865556285eb979d9e406fcce4cc3222698b24f",
+            "e2e/src/material_radio.rs": "fae83bb23126d186c48a3a54e352f539e6827554f7b07b7c1dd4a521aaee46e1",
+            "examples/material-gallery/src/radio_demo.rs": "270fb18f6147ea0909782827592efd8a7b564d72b75670d2d726aabf7f4c738b",
+            "examples/material-gallery/web/index.html": "cfe715b3c29ea45e3ee482578f99d40685052d9297c9168a7adae31e06b9ad15"
+          }
+        },
+        "runner": {
+          "profile": "stock-macos",
+          "browser": "Chrome/158.0.8127.37",
+          "cases": {
+            "smoke": {
+              "steps": 19,
+              "checks": 34
+            },
+            "ime": {
+              "steps": 20,
+              "checks": 77
+            },
+            "material": {
+              "steps": 308,
+              "checks": 21835
+            },
+            "bridge-web": {
+              "steps": 24,
+              "checks": 94
+            },
+            "devtools-headless": {
+              "steps": 3,
+              "checks": 76
+            }
+          },
+          "material_steps": 308,
+          "radio_steps": [
+            "M282",
+            "M283",
+            "M284",
+            "M285"
+          ],
+          "total_checks": 22116,
+          "sha256": "21d0a0a5adc82a0a8db1bb41444eb97ab102058f89429a520c216604b6ed5265"
+        },
+        "adapter": {
+          "isFallbackAdapter": false,
+          "vendor": "apple",
+          "architecture": "metal-3"
+        },
+        "report_sha256": "08f8e575c39d98c60d99dc986e59b371267218d0e39be410b42fbfeb30913c76",
+        "page_errors": 0,
+        "reduced_motion": true,
+        "pngs": {
+          "material-radio-wide-focused.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "655ad2c4302b3329640e391bce724164eba51092ba4598171d2983fd7e407c8d",
+            "decoded_rgb_sha256": "f18d998653773a2df0102adf7937c5f23d4910c86c0e0258119bbdc5fc1ba067"
+          },
+          "material-radio-wide-horizontal.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "c4268077c47e92e52569257470f1e07323119cfb682bf5c835547519a2885f99",
+            "decoded_rgb_sha256": "02bae8132606ca47fc43fd631291382fa3cfbff061b3caac9f767af6773e3d58"
+          },
+          "material-radio-wide-held.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "82b105d39439d1b6895cec5715650488e4497b96b6227750800c6c15710743a7",
+            "decoded_rgb_sha256": "eb2c83cfe6dd4b4265f0a0bef89b8c5062d6a36e7b9b76d22164f0203c619531"
+          },
+          "material-radio-compact-dark-rtl-200.png": {
+            "size": [
+              640,
+              1368
+            ],
+            "sha256": "a7ecd187c860c9901acb3fb90a55ac4d8896adc41af064dce0614a8468c8a549",
+            "decoded_rgb_sha256": "438d23eb52c2ac62b13f70988425eda310396ca225bcfa5c9582c087b5569356"
+          }
+        },
+        "radio": {
+          "role": "radio",
+          "group": "通知頻率",
+          "names": [
+            "每天",
+            "即時通知",
+            "每週一通知",
+            "每月"
+          ],
+          "keyboard_focused_chrome_ax": "radio-demo-weekly",
+          "tab_order": [
+            "radio-demo-theme",
+            "radio-demo-rtl",
+            "radio-demo-large-text",
+            "radio-demo-layout",
+            "radio-demo-weekly",
+            "radio-demo-clear"
+          ],
+          "empty_entry": {
+            "forward": "radio-demo-daily",
+            "reverse": "radio-demo-monthly"
+          },
+          "disabled": "radio-demo-locked",
+          "target_min_dp": 48,
+          "ring_dp": 20,
+          "dot_dp": 10,
+          "state_layer_dp": 40,
+          "focus_dp": 30,
+          "trusted_space_events": [
+            {
+              "trusted": true,
+              "repeat": true
+            },
+            {
+              "trusted": true,
+              "repeat": false
+            },
+            {
+              "trusted": true,
+              "repeat": true
+            }
+          ],
+          "final_request_count": 11,
+          "pointer": {
+            "hosts": {
+              "radio-demo-weekly": "surface",
+              "radio-demo-monthly": "surface",
+              "radio-demo-daily": "surface"
+            },
+            "gap_contact_canvas": [
+              76.0,
+              348.0
+            ],
+            "held_layer": [
+              238,
+              230,
+              244
+            ],
+            "outside_requests": 8,
+            "touch_cancel_requests": 8,
+            "disabled_requests": 8
+          },
+          "compact": {
+            "viewport": [
+              320,
+              640
+            ],
+            "label_height": 144.0,
+            "label_pixels": [
+              6305,
+              5320
+            ],
+            "focus_restored": "radio-demo-show",
+            "arrows": [
+              [
+                "ArrowRight",
+                "radio-demo-weekly"
+              ],
+              [
+                "ArrowLeft",
+                "radio-demo-monthly"
+              ],
+              [
+                "ArrowUp",
+                "radio-demo-weekly"
+              ]
+            ]
+          }
+        }
+      },
+      "checkbox": {
+        "version": 1,
+        "evidence_scope": "stock-macos",
+        "source": {
+          "manifest_sha256": "de92395ee2ab7b8d7d49760adb2722d5b44ca270c2002deb6fefbecd809e8647",
+          "files": 646,
+          "source_bytes_checked": false,
+          "switch_inputs": {
+            "crates/surface-material/src/checkbox.rs": "1e91f8c443e9083a9cef8a4133356846636b95647561df7b74c7494d547e32a9",
+            "e2e/src/material.rs": "356deaf882ef922d5aa2938c8d865556285eb979d9e406fcce4cc3222698b24f",
+            "e2e/src/material_checkbox.rs": "cdfa61b840c886340bfab5c6559f239057bf902b5240a564dc79503ec803b43f",
+            "examples/material-gallery/src/checkbox_demo.rs": "601c01b8127efe0b86189e87a4353e010f648533a270469c33633a9d6235724a",
+            "examples/material-gallery/web/index.html": "cfe715b3c29ea45e3ee482578f99d40685052d9297c9168a7adae31e06b9ad15"
+          }
+        },
+        "runner": {
+          "profile": "stock-macos",
+          "checkbox_steps": [
+            "M278",
+            "M279",
+            "M280",
+            "M281"
+          ],
+          "cases": {
+            "smoke": {
+              "steps": 19,
+              "checks": 34
+            },
+            "ime": {
+              "steps": 20,
+              "checks": 77
+            },
+            "material": {
+              "steps": 308,
+              "checks": 21835
+            },
+            "bridge-web": {
+              "steps": 24,
+              "checks": 94
+            },
+            "devtools-headless": {
+              "steps": 3,
+              "checks": 76
+            }
+          },
+          "total_checks": 22116,
+          "browser": "Chrome/158.0.8127.37",
+          "sha256": "21d0a0a5adc82a0a8db1bb41444eb97ab102058f89429a520c216604b6ed5265"
+        },
+        "observed_adapter": {
+          "isFallbackAdapter": false,
+          "vendor": "apple",
+          "architecture": "metal-3"
+        },
+        "report_sha256": "fc32e70b945b9bb377b9ef14a7ba969bf239a8a66fb966b61ee726f78fd2b6d0",
+        "page_errors": 0,
+        "screenshots": {
+          "material-checkbox-wide-focused.png": {
+            "pixels": [
+              1920,
+              1688
+            ],
+            "sha256": "3048231c337d844cbf3349d94065644f22160065947b752778745b9593e1c8ec",
+            "decoded_rgb_sha256": "b96cb0261a2380c0f9e0f6520dc0e8a26da10e716839a2e5d9e903d2439e5f5d"
+          },
+          "material-checkbox-wide-held.png": {
+            "pixels": [
+              1920,
+              1688
+            ],
+            "sha256": "10bcb4c4dbf346cc2b1a624432bcaea90c0f017625fc9ecd42ba4ae94be75ce5",
+            "decoded_rgb_sha256": "7dfe70b2594134aede1c799113e23a182eeed599e5e7436df4177facdbdd2970"
+          },
+          "material-checkbox-compact-invalid.png": {
+            "pixels": [
+              640,
+              1368
+            ],
+            "sha256": "fec3006e8bf4f3e0b9ef6d3311c4f5aebe76c71228f0e3a28db0faa830fb8d71",
+            "decoded_rgb_sha256": "df12869fdeae7f149c5ed0ab58353eb4ef94b665fb6352e86c71050b33ba3fe3"
+          },
+          "material-checkbox-compact-resolved.png": {
+            "pixels": [
+              640,
+              1368
+            ],
+            "sha256": "18b6729d49c6e7559f0326fd3af5074a65d9d59b6e5ebb136e2f5daf3bf79819",
+            "decoded_rgb_sha256": "05b70f33c5d9ffa93221b8e155cb2c37c930fb58c9e47340e0793f7e7f120e08"
+          }
+        },
+        "checkbox": {
+          "role": "checkbox",
+          "ax_names": [
+            "同步全部",
+            "筆記",
+            "附件",
+            "已鎖定的專案",
+            "允許在行動網路上同步大型附件"
+          ],
+          "wide": {
+            "values": {
+              "initial": [
+                "mixed",
+                "checked",
+                "unchecked",
+                "mixed",
+                "unchecked"
+              ],
+              "space": [
+                "checked",
+                "checked",
+                "checked",
+                "mixed",
+                "unchecked"
+              ],
+              "enter": [
+                "mixed",
+                "unchecked",
+                "checked",
+                "mixed",
+                "unchecked"
+              ],
+              "pointer_box": [
+                "unchecked",
+                "unchecked",
+                "unchecked",
+                "mixed",
+                "unchecked"
+              ]
+            },
+            "locked": "checkbox-demo-locked",
+            "initial_consent": {
+              "invalid": true,
+              "description": "請勾選後再繼續。"
+            },
+            "wide_check_ink": 102,
+            "mixed_mark_rgb": [
+              255,
+              255,
+              255
+            ],
+            "focus_ring_rgb": [
+              98,
+              91,
+              113
+            ],
+            "focused_layer_rgb": [
+              238,
+              230,
+              244
+            ],
+            "pressed_layer_rgb": [
+              230,
+              225,
+              232
+            ],
+            "callback_counts": {
+              "initial": 0,
+              "space": 1,
+              "enter": 2,
+              "label": 3,
+              "held": 3,
+              "outside": 3,
+              "canceled": 3,
+              "box": 4
+            }
+          },
+          "compact": {
+            "viewport": [
+              320,
+              640
+            ],
+            "text_scale": 2,
+            "rtl": true,
+            "label_height": 144.0,
+            "scrolled_to_help": true,
+            "invalid": {
+              "invalid": true,
+              "description": "請勾選後再繼續。"
+            },
+            "resolved": {
+              "invalid": false,
+              "description": ""
+            },
+            "compact_values": [
+              "unchecked",
+              "unchecked",
+              "unchecked",
+              "mixed",
+              "checked"
+            ],
+            "callbacks_before": 4,
+            "callbacks_after": 5,
+            "error_outline": [
+              255,
+              180,
+              171
+            ],
+            "resolved_fill": [
+              207,
+              189,
+              254
+            ],
+            "help_ink": 5692,
+            "wrapped_line_ink": [
+              5539,
+              5322
+            ],
+            "resolved_check_ink": 102
+          }
+        }
+      },
+      "switch": {
+        "version": 1,
+        "source": {
+          "manifest_sha256": "de92395ee2ab7b8d7d49760adb2722d5b44ca270c2002deb6fefbecd809e8647",
+          "files": 646,
+          "source_bytes_checked": false,
+          "switch_inputs": {
+            "crates/surface-material/src/switch.rs": "5768634b64685453e980d57a853900827b581668b4e4387afdd2c5838edd3a90",
+            "e2e/src/material_switch.rs": "34e0c3813c9ca0bb617feb831c1f403b9a974c66c190ed00a967c5be1e06fe9b",
+            "examples/material-gallery/src/switch_demo.rs": "47817c11f228068b79c0dc95f12cc2089cc92ab6e64db5828ac7bbbeab7ec106",
+            "examples/material-gallery/web/index.html": "cfe715b3c29ea45e3ee482578f99d40685052d9297c9168a7adae31e06b9ad15"
+          }
+        },
+        "runner": {
+          "profile": "stock-macos",
+          "switch_steps": [
+            "M274",
+            "M275",
+            "M276",
+            "M277"
+          ],
+          "cases": {
+            "smoke": {
+              "steps": 19,
+              "checks": 34
+            },
+            "ime": {
+              "steps": 20,
+              "checks": 77
+            },
+            "material": {
+              "steps": 308,
+              "checks": 21835
+            },
+            "bridge-web": {
+              "steps": 24,
+              "checks": 94
+            },
+            "devtools-headless": {
+              "steps": 3,
+              "checks": 76
+            }
+          },
+          "total_checks": 22116,
+          "browser": "Chrome/158.0.8127.37",
+          "sha256": "21d0a0a5adc82a0a8db1bb41444eb97ab102058f89429a520c216604b6ed5265"
+        },
+        "observed_adapter": {
+          "isFallbackAdapter": false,
+          "vendor": "apple",
+          "architecture": "metal-3"
+        },
+        "report_sha256": "cb9bc292584214a67003292be80d45a348e40c324b3d90d9af2f94f4894d58a7",
+        "page_errors": 0,
+        "screenshots": {
+          "material-switch-wide-settled.png": {
+            "pixels": [
+              1920,
+              1688
+            ],
+            "sha256": "0b1d97357ebc818724ed0fb4982a3ced70d4c758942f0cc5769dd6a48d16adf3",
+            "decoded_rgb_sha256": "50c4c348258bd8e892e2b306d3425fb5107b25842c4d29ee3893523a74e73f5a"
+          },
+          "material-switch-hovered.png": {
+            "pixels": [
+              1920,
+              1688
+            ],
+            "sha256": "e6da5f355eabfefdad09d26fdb0607b5a0668d40ec9514af3cfe58f8032d8bed",
+            "decoded_rgb_sha256": "5ac68a873fc9bc7239577480833346aa94284aca64dd2f823429d2f30f3029a3"
+          },
+          "material-switch-held.png": {
+            "pixels": [
+              1920,
+              1688
+            ],
+            "sha256": "ba37f92cc90d4bb1a6857f5897b346fe92fb1b168a447cd647b367e2725592ab",
+            "decoded_rgb_sha256": "13376f64216955b901d69439a90d4fed5200f3042336cf8a6073230ac2c5c8a1"
+          },
+          "material-switch-compact-dark-rtl-200.png": {
+            "pixels": [
+              640,
+              1368
+            ],
+            "sha256": "c00dd520c428b15f7b99e5e57094e38c46fa8dd149b86fd4e4ee8e633fb69ad0",
+            "decoded_rgb_sha256": "aedc052413ec92fec4ccb938f040dee5a256a43867622eb0525811b1d2bb3ea8"
+          }
+        },
+        "switch": {
+          "role": "switch",
+          "ax_names": [
+            "通知",
+            "相機",
+            "行動網路同步",
+            "位置存取",
+            "自動備份"
+          ],
+          "disabled": [
+            "switch-demo-disabled-off",
+            "switch-demo-disabled-on"
+          ],
+          "tab_order": [
+            "switch-demo-theme",
+            "switch-demo-rtl",
+            "switch-demo-large-text",
+            "switch-demo-plain",
+            "switch-demo-selected-icon",
+            "switch-demo-both-icons",
+            "switch-demo-back"
+          ],
+          "initial": [
+            false,
+            true,
+            false,
+            false,
+            true
+          ],
+          "after_space": [
+            true,
+            true,
+            false,
+            false,
+            true
+          ],
+          "after_click": [
+            true,
+            false,
+            false,
+            false,
+            true
+          ],
+          "after_label": [
+            true,
+            false,
+            true,
+            false,
+            true
+          ],
+          "effective_changes": 3,
+          "resting_diameters": [
+            16,
+            24
+          ],
+          "held_diameter": 28,
+          "rgba_source": "authored theme tokens",
+          "compact_label_height": 144.0,
+          "wide_icon_ink_pixels": 136,
+          "compact_icon_ink_pixels": 136,
+          "press_pixels": {
+            "hover_center": [
+              75,
+              71,
+              80
+            ],
+            "hover_edge": [
+              213,
+              208,
+              216
+            ],
+            "held_center": [
+              73,
+              69,
+              78
+            ],
+            "held_edge": [
+              73,
+              69,
+              78
+            ]
+          }
+        }
+      },
+      "navigation": {
+        "material_steps": 308,
+        "geometry": {
+          "wide": [
+            {
+              "preview": [
+                240.0,
+                0.0,
+                480.0,
+                800.0
+              ],
+              "bar": [
+                240.0,
+                736.0,
+                480.0,
+                64.0
+              ],
+              "scroll": [
+                240.0,
+                80.0,
+                480.0,
+                656.0
+              ],
+              "destinations": [
+                {
+                  "id": "navigation-bar-demo-home",
+                  "hit": [
+                    240.0,
+                    736.0,
+                    160.0,
+                    64.0
+                  ],
+                  "pill": [
+                    292.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    244.0,
+                    778.0,
+                    152.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-explore",
+                  "hit": [
+                    400.0,
+                    736.0,
+                    160.0,
+                    64.0
+                  ],
+                  "pill": [
+                    452.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    404.0,
+                    778.0,
+                    152.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-saved",
+                  "hit": [
+                    560.0,
+                    736.0,
+                    160.0,
+                    64.0
+                  ],
+                  "pill": [
+                    612.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    564.0,
+                    778.0,
+                    152.0,
+                    16.0
+                  ]
+                }
+              ]
+            },
+            {
+              "preview": [
+                240.0,
+                0.0,
+                480.0,
+                800.0
+              ],
+              "bar": [
+                240.0,
+                736.0,
+                480.0,
+                64.0
+              ],
+              "scroll": [
+                240.0,
+                80.0,
+                480.0,
+                656.0
+              ],
+              "destinations": [
+                {
+                  "id": "navigation-bar-demo-home",
+                  "hit": [
+                    240.0,
+                    736.0,
+                    120.0,
+                    64.0
+                  ],
+                  "pill": [
+                    272.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    244.0,
+                    778.0,
+                    112.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-explore",
+                  "hit": [
+                    360.0,
+                    736.0,
+                    120.0,
+                    64.0
+                  ],
+                  "pill": [
+                    392.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    364.0,
+                    778.0,
+                    112.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-saved",
+                  "hit": [
+                    480.0,
+                    736.0,
+                    120.0,
+                    64.0
+                  ],
+                  "pill": [
+                    512.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    484.0,
+                    778.0,
+                    112.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-updates",
+                  "hit": [
+                    600.0,
+                    736.0,
+                    120.0,
+                    64.0
+                  ],
+                  "pill": [
+                    632.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    604.0,
+                    778.0,
+                    112.0,
+                    16.0
+                  ]
+                }
+              ]
+            },
+            {
+              "preview": [
+                240.0,
+                0.0,
+                480.0,
+                800.0
+              ],
+              "bar": [
+                240.0,
+                736.0,
+                480.0,
+                64.0
+              ],
+              "scroll": [
+                240.0,
+                80.0,
+                480.0,
+                656.0
+              ],
+              "destinations": [
+                {
+                  "id": "navigation-bar-demo-home",
+                  "hit": [
+                    240.0,
+                    736.0,
+                    96.0,
+                    64.0
+                  ],
+                  "pill": [
+                    260.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    244.0,
+                    778.0,
+                    88.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-explore",
+                  "hit": [
+                    336.0,
+                    736.0,
+                    96.0,
+                    64.0
+                  ],
+                  "pill": [
+                    356.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    340.0,
+                    778.0,
+                    88.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-saved",
+                  "hit": [
+                    432.0,
+                    736.0,
+                    96.0,
+                    64.0
+                  ],
+                  "pill": [
+                    452.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    436.0,
+                    778.0,
+                    88.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-updates",
+                  "hit": [
+                    528.0,
+                    736.0,
+                    96.0,
+                    64.0
+                  ],
+                  "pill": [
+                    548.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    532.0,
+                    778.0,
+                    88.0,
+                    16.0
+                  ]
+                },
+                {
+                  "id": "navigation-bar-demo-settings",
+                  "hit": [
+                    624.0,
+                    736.0,
+                    96.0,
+                    64.0
+                  ],
+                  "pill": [
+                    644.0,
+                    742.0,
+                    56.0,
+                    32.0
+                  ],
+                  "label": [
+                    628.0,
+                    778.0,
+                    88.0,
+                    16.0
+                  ]
+                }
+              ]
+            }
+          ],
+          "compact": {
+            "preview": [
+              0.0,
+              0.0,
+              320.0,
+              480.0
+            ],
+            "bar": [
+              0.0,
+              368.0,
+              320.0,
+              112.0
+            ],
+            "scroll": [
+              0.0,
+              80.0,
+              320.0,
+              288.0
+            ],
+            "destinations": [
+              {
+                "id": "navigation-bar-demo-home",
+                "hit": [
+                  256.0,
+                  368.0,
+                  64.0,
+                  112.0
+                ],
+                "pill": [
+                  260.0,
+                  374.0,
+                  56.0,
+                  32.0
+                ],
+                "label": [
+                  260.0,
+                  410.0,
+                  56.0,
+                  32.0
+                ]
+              },
+              {
+                "id": "navigation-bar-demo-explore",
+                "hit": [
+                  192.0,
+                  368.0,
+                  64.0,
+                  112.0
+                ],
+                "pill": [
+                  196.0,
+                  374.0,
+                  56.0,
+                  32.0
+                ],
+                "label": [
+                  196.0,
+                  410.0,
+                  56.0,
+                  64.0
+                ]
+              },
+              {
+                "id": "navigation-bar-demo-saved",
+                "hit": [
+                  128.0,
+                  368.0,
+                  64.0,
+                  112.0
+                ],
+                "pill": [
+                  132.0,
+                  374.0,
+                  56.0,
+                  32.0
+                ],
+                "label": [
+                  132.0,
+                  410.0,
+                  56.0,
+                  32.0
+                ]
+              },
+              {
+                "id": "navigation-bar-demo-updates",
+                "hit": [
+                  64.0,
+                  368.0,
+                  64.0,
+                  112.0
+                ],
+                "pill": [
+                  68.0,
+                  374.0,
+                  56.0,
+                  32.0
+                ],
+                "label": [
+                  68.0,
+                  410.0,
+                  56.0,
+                  64.0
+                ]
+              },
+              {
+                "id": "navigation-bar-demo-settings",
+                "hit": [
+                  0.0,
+                  368.0,
+                  64.0,
+                  112.0
+                ],
+                "pill": [
+                  4.0,
+                  374.0,
+                  56.0,
+                  32.0
+                ],
+                "label": [
+                  4.0,
+                  410.0,
+                  56.0,
+                  32.0
+                ]
+              }
+            ]
+          }
+        },
+        "accessibility": {
+          "landmark": "主要導覽",
+          "roles": [
+            "首頁",
+            "探索路線",
+            "收藏的地點",
+            "最新消息",
+            "設定"
+          ],
+          "disabled": "navigation-bar-demo-explore",
+          "current": "navigation-bar-demo-home",
+          "tab_order": [
+            "navigation-bar-demo-home",
+            "navigation-bar-demo-saved",
+            "navigation-bar-demo-updates",
+            "navigation-bar-demo-settings"
+          ],
+          "shift_tab_order": [
+            "navigation-bar-demo-updates",
+            "navigation-bar-demo-saved",
+            "navigation-bar-demo-home"
+          ],
+          "preactivations": 0
+        },
+        "actions": {
+          "enter": "navigation-bar-demo-saved",
+          "space": "navigation-bar-demo-updates",
+          "disabled_pointer": "navigation-bar-demo-explore",
+          "contact_target": "navigation-bar-demo-settings",
+          "activations": 3,
+          "visible_titles": [
+            [
+              348.0,
+              28.0,
+              32.0,
+              24.0
+            ],
+            [
+              348.0,
+              28.0,
+              64.0,
+              24.0
+            ],
+            [
+              348.0,
+              28.0,
+              32.0,
+              24.0
+            ]
+          ]
+        },
+        "wheel": {
+          "before": [
+            16.0,
+            344.0,
+            288.0,
+            48.0
+          ],
+          "after": [
+            16.0,
+            304.0,
+            288.0,
+            48.0
+          ],
+          "scroll_dp": 40.0,
+          "bar_and_title_pixels_unchanged": true,
+          "focus_after": "navigation-bar-demo-settings",
+          "focus_restored": "navigation-bar-demo-show",
+          "line_pixels": [
+            1158,
+            904
+          ]
+        },
+        "pngs": {
+          "light": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "0b43e391a8d87ebb6ca3569baae4a42b752f2efedb6ea05a915945ad8e6b065d",
+            "surface_rgb": [
+              242,
+              236,
+              244
+            ],
+            "pill_rgb": [
+              232,
+              222,
+              248
+            ],
+            "corner_rgb": [
+              242,
+              236,
+              244
+            ],
+            "icon_rgb": [
+              30,
+              25,
+              43
+            ],
+            "icon_pixels": 944
+          },
+          "dark": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "df03f4f3729bdd3c3fef0ee1f99b259f0863605930a4de18fd85e26e68ba054b",
+            "surface_rgb": [
+              33,
+              31,
+              36
+            ],
+            "pill_rgb": [
+              74,
+              68,
+              88
+            ],
+            "corner_rgb": [
+              33,
+              31,
+              36
+            ],
+            "icon_rgb": [
+              232,
+              222,
+              248
+            ],
+            "icon_pixels": 944
+          },
+          "rtl-large": {
+            "size": [
+              640,
+              1048
+            ],
+            "sha256": "19011d41cdfe43fe1151b6ca726dd9a4a7cbd4b8807e08fdde00c5adc7f605c9",
+            "surface_rgb": [
+              33,
+              31,
+              36
+            ],
+            "pill_rgb": [
+              74,
+              68,
+              88
+            ],
+            "corner_rgb": [
+              33,
+              31,
+              36
+            ],
+            "icon_rgb": [
+              232,
+              222,
+              248
+            ],
+            "icon_pixels": 692
+          },
+          "rtl-large-scrolled": {
+            "size": [
+              640,
+              1048
+            ],
+            "sha256": "ec69512d41db8c0ce67ffabac8a06ad0396d4536ea0287f644d98f12ae16ada1",
+            "surface_rgb": [
+              33,
+              31,
+              36
+            ],
+            "pill_rgb": [
+              74,
+              68,
+              88
+            ],
+            "corner_rgb": [
+              33,
+              31,
+              36
+            ],
+            "icon_rgb": [
+              232,
+              222,
+              248
+            ],
+            "icon_pixels": 692
+          }
+        }
+      },
+      "menu": {
+        "mode": "final Menu footer required",
+        "platform": "macos",
+        "case_scope": "stock",
+        "menu_steps": [
+          "M267",
+          "M268",
+          "M269"
+        ],
+        "material_steps": 308,
+        "material_checks": 21835,
+        "page_errors": 0,
+        "report_sha256": "c07f72297b4b126a1bc4f2fd1d5483830282bc4488e0d372366261fa71d57f21",
+        "runner_log_sha256": "21d0a0a5adc82a0a8db1bb41444eb97ab102058f89429a520c216604b6ed5265",
+        "browser": "Chrome/158.0.8127.37",
+        "adapter": {
+          "isFallbackAdapter": false,
+          "vendor": "apple",
+          "architecture": "metal-3"
+        },
+        "window_observation": {
+          "chrome_process_samples": 4215,
+          "native_process_samples": 14,
+          "visible_windows": 0,
+          "remaining_observed_processes": 0,
+          "receipt_sha256": "b375d0f2ffec85577f87f96a41e04a08a36003bbe8a1fe4598f422e54d028e66"
+        },
+        "wide_canvas_samples": {
+          "center": [
+            242,
+            236,
+            244
+          ],
+          "corner": [
+            236,
+            231,
+            238
+          ]
+        },
+        "footer": {
+          "scroller": [
+            28.0,
+            28.0,
+            264.0,
+            368.0
+          ],
+          "status_before": [
+            28.0,
+            412.0,
+            264.0,
+            96.0
+          ],
+          "status_after": [
+            28.0,
+            300.0,
+            264.0,
+            96.0
+          ],
+          "clearance_dp": 8.0,
+          "scroll_dp": 112.0,
+          "status_backdrop_rgb": [
+            20,
+            18,
+            24
+          ],
+          "contrasting_status_pixels": 10572
+        },
+        "pngs": {
+          "wide": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "bb92246b1e06df4c8270e661e328e0d7b07b4ed16ae06e8877b276955c16b7a7"
+          },
+          "compact": {
+            "size": [
+              640,
+              1048
+            ],
+            "sha256": "ee5682a2ac7f17e0002edae3f19346152d332f11df95a28be1cfddc0985e2175"
+          },
+          "compact-footer": {
+            "size": [
+              640,
+              1048
+            ],
+            "sha256": "05a64c5c9d3135b0e92230f5a0cc1ec807fdbfa195951ce781c6ff74f1657d94"
+          }
+        }
+      },
+      "divider": {
+        "browser": "Chrome/158.0.8127.37",
+        "adapter": {
+          "vendor": "apple",
+          "architecture": "metal-3",
+          "isFallbackAdapter": false
+        },
+        "steps": [
+          "M264",
+          "M265",
+          "M266"
+        ],
+        "page_errors": 0,
+        "focus_restored": true,
+        "profiles": {
+          "wide": {
+            "file": "material-divider-wide-light-ltr.png",
+            "sha256": "28000c129caa006afc86ed1146dbb2a215f8eba1c521edd5858d3545b83ba1e7",
+            "lines": {
+              "full": {
+                "bounds_dp": [
+                  28.0,
+                  200.0,
+                  904.0,
+                  1.0
+                ],
+                "solid_pixels_checked": 3608,
+                "physical_thickness_px": 2
+              },
+              "inset": {
+                "bounds_dp": [
+                  44.0,
+                  253.0,
+                  888.0,
+                  1.0
+                ],
+                "solid_pixels_checked": 3544,
+                "physical_thickness_px": 2
+              },
+              "middle": {
+                "bounds_dp": [
+                  44.0,
+                  306.0,
+                  872.0,
+                  1.0
+                ],
+                "solid_pixels_checked": 3480,
+                "physical_thickness_px": 2
+              },
+              "vertical": {
+                "bounds_dp": [
+                  76.0,
+                  359.0,
+                  1.0,
+                  64.0
+                ],
+                "solid_pixels_checked": 248,
+                "physical_thickness_px": 2
+              }
+            }
+          },
+          "compact": {
+            "file": "material-divider-compact-dark-rtl-200.png",
+            "sha256": "75b22a821586ff220620085aca6aa80ec1aafe0894f53517f59cf13f6c084bb9",
+            "lines": {
+              "full": {
+                "bounds_dp": [
+                  28.0,
+                  336.0,
+                  264.0,
+                  1.0
+                ],
+                "solid_pixels_checked": 1048,
+                "physical_thickness_px": 2
+              },
+              "inset": {
+                "bounds_dp": [
+                  28.0,
+                  413.0,
+                  248.0,
+                  1.0
+                ],
+                "solid_pixels_checked": 984,
+                "physical_thickness_px": 2
+              },
+              "middle": {
+                "bounds_dp": [
+                  44.0,
+                  490.0,
+                  232.0,
+                  1.0
+                ],
+                "solid_pixels_checked": 920,
+                "physical_thickness_px": 2
+              },
+              "vertical": {
+                "bounds_dp": [
+                  108.0,
+                  567.0,
+                  1.0,
+                  64.0
+                ],
+                "solid_pixels_checked": 248,
+                "physical_thickness_px": 2
+              }
+            }
+          },
+          "wide_heavy": {
+            "file": "material-divider-wide-light-ltr-heavy.png",
+            "sha256": "de9c9334945c3aa9411f156c6706139903904c80d6a22bf4eb17d0ae5dc80814",
+            "lines": {
+              "full": {
+                "bounds_dp": [
+                  28.0,
+                  200.0,
+                  904.0,
+                  8.0
+                ],
+                "solid_pixels_checked": 28864,
+                "physical_thickness_px": 16
+              },
+              "inset": {
+                "bounds_dp": [
+                  44.0,
+                  260.0,
+                  888.0,
+                  8.0
+                ],
+                "solid_pixels_checked": 28352,
+                "physical_thickness_px": 16
+              },
+              "middle": {
+                "bounds_dp": [
+                  44.0,
+                  320.0,
+                  872.0,
+                  8.0
+                ],
+                "solid_pixels_checked": 27840,
+                "physical_thickness_px": 16
+              },
+              "vertical": {
+                "bounds_dp": [
+                  76.0,
+                  380.0,
+                  8.0,
+                  64.0
+                ],
+                "solid_pixels_checked": 1984,
+                "physical_thickness_px": 16
+              }
+            }
+          },
+          "compact_heavy": {
+            "file": "material-divider-compact-dark-rtl-200-heavy.png",
+            "sha256": "d4b74aefb314848050320e509f01ac4cad19b62ee3f807e85997e3bb56ac0058",
+            "lines": {
+              "full": {
+                "bounds_dp": [
+                  28.0,
+                  336.0,
+                  264.0,
+                  8.0
+                ],
+                "solid_pixels_checked": 8384,
+                "physical_thickness_px": 16
+              },
+              "inset": {
+                "bounds_dp": [
+                  28.0,
+                  420.0,
+                  248.0,
+                  8.0
+                ],
+                "solid_pixels_checked": 7872,
+                "physical_thickness_px": 16
+              },
+              "middle": {
+                "bounds_dp": [
+                  44.0,
+                  504.0,
+                  232.0,
+                  8.0
+                ],
+                "solid_pixels_checked": 7360,
+                "physical_thickness_px": 16
+              },
+              "vertical": {
+                "bounds_dp": [
+                  108.0,
+                  588.0,
+                  8.0,
+                  64.0
+                ],
+                "solid_pixels_checked": 1984,
+                "physical_thickness_px": 16
+              }
+            }
+          }
+        }
+      },
+      "ime_cancellation": {
+        "select_all_after_cancel_redraw": {
+          "before": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "none",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 6
+          },
+          "after": {
+            "browser": [
+              0,
+              2
+            ],
+            "value": "台文",
+            "direction": "none",
+            "runtime": [
+              "台文",
+              "台文",
+              "0",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": true,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "redraw_width": 1001,
+          "replacement": [
+            "中👨‍👩‍👧‍👦é",
+            "中👨‍👩‍👧‍👦é",
+            "31",
+            "31",
+            "false"
+          ]
+        },
+        "backward_cancel_before_redraw": {
+          "canceled": {
+            "browser": [
+              1,
+              2
+            ],
+            "value": "台文",
+            "direction": "backward",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "3",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": false,
+            "frames": 7
+          },
+          "moved": {
+            "browser": [
+              2,
+              2
+            ],
+            "value": "台文",
+            "direction": "none",
+            "runtime": [
+              "台文",
+              "台文",
+              "6",
+              "6",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "unpainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "none",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 7
+          },
+          "repainted": {
+            "browser": [
+              3,
+              3
+            ],
+            "value": "台文X",
+            "direction": "none",
+            "runtime": [
+              "台文X",
+              "台文X",
+              "7",
+              "7",
+              "false"
+            ],
+            "trustedSelectAll": false,
+            "trustedRight": true,
+            "frames": 8
+          }
+        }
+      },
+      "tabs": {
+        "report_sha256": "8f8d26a181485419aac53a8979424b912c416513fd0d0659a063be08f2813eed",
+        "images": {
+          "fixed-light": "6f1d07e0bb51f81db9c8147ce87048cb7ac63900184ea4bb53b44ae21a18d23a",
+          "fixed-dark": "1338cd96922a4d7d5c15108d75dd365fd5cda0a2a3cb30e652a8c6e362892a07",
+          "dark-pressed": "b48de278fda87dae5cb4ea387ba15d47671ed4ba7f1f1ad90477f9d0157e95d9",
+          "rtl-320": "4b88bf2f874e5c5df94cf983f4dda61b0249f54bb79b314b285751db6742f743"
+        }
+      },
+      "chips": {
+        "report_sha256": "145bae449ae359392a31992363d64c7d8bd36ac5cf82e265c5919f22e51304db",
+        "images": {
+          "material-chips-wide-light.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "890c6608b470b79e0f45b17f46aaf8ee7bebcaa15d231c3ca9c83852adced16f",
+            "decoded_rgb_sha256": "ea2a3d20b44704344ecc8d94625bdab20cb5a357a9e41b6842e4547167b6df60"
+          },
+          "material-chips-wide-focus.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "1cc8780e65beeb1da705c42035ebceb41a471b5debf5f3d33ca56f0192a1c85a",
+            "decoded_rgb_sha256": "a4e319b632607cee9f47c3d2e3ee9df5c6940e0bccec7893db57a9fdec9b1cf0"
+          },
+          "material-chips-wide-pressed.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "4ebe375cfc2aee382acbaeba4d48e1e69ab79df3e74fbd2ad62f1a733889219c",
+            "decoded_rgb_sha256": "4ac40577c5de65d1f7ecaa1a248b00668d7800c95ef5cff40c57ad30ce4e5bfe"
+          },
+          "material-chips-compact-dark-rtl-200.png": {
+            "size": [
+              640,
+              2128
+            ],
+            "sha256": "9addb856b293d043030ea78ccf8e822cacb704cfacacb30cecd4e64f4798a0c3",
+            "decoded_rgb_sha256": "b16dc9ac60fa6e9537bce84e6ce6ab204b65d5c8f2141e0f774ac437bb477812"
+          }
+        }
+      },
+      "icons": {
+        "report_sha256": "0b81b42e88e2b9e41976a91094a414e256bf3ce5347231c5588b023b8059c90e",
+        "images": {
+          "material-icon-buttons-wide-light.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "6ea72c50868a596c6dfe8811e2b8a070f603a7db79b42f71edb48d7824df6355",
+            "decoded_rgb_sha256": "c95d3d830a93594b6c9aeec7a64be2878abc23fc4a613014c39e6f5917de274b"
+          },
+          "material-icon-buttons-selected-focus.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "6f06cd45943e8161e77bb8b356e533f76137191385d1f36970a89c3a6ebcee7f",
+            "decoded_rgb_sha256": "293cf02b6949af086e34e5fd99fbba2cc43d609bae9af73dc7e2b01abd920e70"
+          },
+          "material-icon-buttons-pressed.png": {
+            "size": [
+              1920,
+              1688
+            ],
+            "sha256": "088cdab41fae850ec26beba34c33172dec63467ef6a668bff36537b0c2560591",
+            "decoded_rgb_sha256": "7fd0294e3b9e07befc3f28ab4ebf674cd17559c1b5d702888e63bf0927ca0549"
+          },
+          "material-icon-buttons-compact-dark-rtl-200.png": {
+            "size": [
+              640,
+              1608
+            ],
+            "sha256": "e2bd5f7e024bc9edf6777b0e39e7bf154428b0343fc968d1bddf06ff8cbe9cf7",
+            "decoded_rgb_sha256": "acf84629d96af4f95b5c2d1c4e6b813bba9a7e2b529c633c8633834b08696183"
+          }
+        },
+        "pixels": {
+          "focus_pixels": 1880,
+          "light_command_ink": 672,
+          "dark_command_ink": 672,
+          "pressed_corner_pixels": 190
+        }
+      }
+    },
+    "window_observation": {
+      "chrome_process_samples": 4215,
+      "native_gallery_process_samples": 14,
+      "visible_windows": 0,
+      "remaining_owned_processes": 0,
+      "sha256": "b375d0f2ffec85577f87f96a41e04a08a36003bbe8a1fe4598f422e54d028e66"
+    }
+  },
+  "standard_pixels": {
+    "track_and_handle_rgb": [
+      [
+        101,
+        85,
+        143
+      ],
+      [
+        232,
+        222,
+        248
+      ],
+      [
+        101,
+        85,
+        143
+      ]
+    ],
+    "held_handle_rgb": [
+      101,
+      85,
+      143
+    ],
+    "stop_rgb": [
+      30,
+      25,
+      43
+    ],
+    "tick_pixels": 38,
+    "focus_pixels": 1114,
+    "key_label_ink": 144,
+    "key_label_fill": 8570,
+    "compact_label_ink": 1023,
+    "compact_label_fill": 17944
+  },
+  "window_receipt_sha256": "b375d0f2ffec85577f87f96a41e04a08a36003bbe8a1fe4598f422e54d028e66",
+  "runner_log_sha256": "21d0a0a5adc82a0a8db1bb41444eb97ab102058f89429a520c216604b6ed5265"
+}

@@ -1,0 +1,66 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 115,
+      "pids": [
+        46933
+      ]
+    },
+    "native_gallery": {
+      "samples": 0,
+      "pids": [],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 115,
+      "pids": [
+        46933
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 0,
+      "pids": [],
+      "detached_samples": 0
+    },
+    "native": {
+      "samples": 0,
+      "pids": [],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 46933,
+      "ppid": 46925,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=59503",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-range-slider-focused.dg4gJf1Q/run-2/tmp/.tmp1E0bvR",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-range-slider-focused.dg4gJf1Q/run-2/tmp/.tmp1E0bvR"
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
