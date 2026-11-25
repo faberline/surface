@@ -1,0 +1,43 @@
+--- a/verify_radio_report.py
++++ b/verify_radio_report.py
+@@ -83,7 +83,7 @@
+             "radio_inputs": {name: entries[name] for name in SOURCE_FILES}}
+ 
+ 
+-def runner_record(log, profile):
++def runner_record(log, profile, stock_last_material=285):
+     raw = log.read_text()
+     raw = re.sub(r"^(?:(?:[^\t\n]+\t){2})?\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z ",
+                  "", raw, flags=re.M)
+@@ -95,7 +95,7 @@
+     require(started == [row[0] for row in passed] == SUITES[profile]
+             and not re.search(r"^case \S+ \.\.\. FAILED", raw, re.M), "wrong suite sequence or a failed suite")
+     cases = {suite: {"steps": int(step), "checks": int(count)} for suite, step, count in passed}
+-    expected_steps = RADIO_STEPS if profile == "focused" else STOCK_STEPS
++    expected_steps = RADIO_STEPS if profile == "focused" else [f"M{i}" for i in range(1, stock_last_material + 1) if i != 23]
+     require(steps == expected_steps and cases["material"]["steps"] == len(expected_steps),
+             "missing, extra or out-of-order Material step")
+     require(all(item["checks"] >= item["steps"] > 0 for item in cases.values()), "impossible check or step count")
+@@ -104,7 +104,7 @@
+     require(summary == [(str(len(cases)), "0", str(total))], "runner summary disagrees with suite totals")
+     require(len(versions) == 1, "missing or ambiguous Chrome version")
+     return {"profile": profile, "browser": versions[0], "cases": cases, "material_steps": len(steps),
+-            "radio_steps": steps[-4:], "total_checks": total, "sha256": digest(log)}
++            "radio_steps": [step for step in steps if step in RADIO_STEPS], "total_checks": total, "sha256": digest(log)}
+ 
+ 
+ def adapter_record(report, runner, expected):
+@@ -395,11 +395,11 @@
+             "focus_restored": data["focus_restored"], "arrows": [list(row) for row in RTL_ARROWS]}
+ 
+ 
+-def validate(artifacts, log, profile, adapter, manifest, expected_sha, source_root=None):
++def validate(artifacts, log, profile, adapter, manifest, expected_sha, source_root=None, *, stock_last_material=285):
+     required_adapter = DEFAULT_ADAPTER.get(profile, adapter or "observed")
+     require(adapter is None or adapter == required_adapter, "stock profile adapter cannot be overridden")
+     source = manifest_record(manifest, expected_sha, source_root)
+-    runner = runner_record(log, profile)
++    runner = runner_record(log, profile, stock_last_material)
+     path = artifacts / REPORT
+     report = json.loads(path.read_text())
+     observed_adapter = adapter_record(report, runner, required_adapter)

@@ -1,0 +1,2181 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 8839d3c..e1ca55f 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,17 +3895,18 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "material-colors",
+  "surface",
+  "surface-app",
+  "surface-wgpu",
++ "unicode-segmentation",
+ ]
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.63"
++version = "0.1.64"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index bbd1aec..89a2165 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.63"
++version = "0.1.64"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/Cargo.toml b/crates/surface-material/Cargo.toml
+index e87c725..5364e39 100644
+--- a/crates/surface-material/Cargo.toml
++++ b/crates/surface-material/Cargo.toml
+@@ -8,6 +8,7 @@ repository.workspace = true
+ [dependencies]
+ surface.workspace = true
+ surface-app.workspace = true
++unicode-segmentation.workspace = true
+ material-colors = { version = "=0.4.2", default-features = false, features = ["libm"] }
+ 
+ [dev-dependencies]
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 6e9deac..34a7282 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -68,6 +68,7 @@ mod standard_slider;
+ mod switch;
+ mod tab_bar;
+ mod text_field_adornments;
++mod text_field_counter;
+ mod time_dial;
+ mod time_dial_state;
+ mod time_input;
+@@ -229,6 +230,7 @@ pub use tab_bar::{
+ pub use text_field_adornments::{
+     TextFieldAdornments, TextFieldAffix, TextFieldAppearance, TextFieldTrailingAction,
+ };
++pub use text_field_counter::TextFieldCounterOptions;
+ pub use time_dial::{
+     time_dial_baseline_layout, time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout,
+     TimeDialOptions,
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+index 45a8618..01f4d7d 100644
+--- a/crates/surface-material/src/outlined_text_field.rs
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -7,11 +7,14 @@ use surface::{
+     TextMeasurer, TextScaling, TextStyle,
+ };
+ use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
++use unicode_segmentation::UnicodeSegmentation;
+ 
+ use crate::{
+     shape::{self, LayoutDirection},
+     text_field_adornments::{physical, AffixText, FieldAdornments, ACTION_SIZE, ICON_SIZE, SIDE},
+-    typography, TextFieldAdornments, TextFieldAppearance, TextFieldOptions, Theme,
++    text_field_counter::supporting_row,
++    typography, TextFieldAdornments, TextFieldAppearance, TextFieldCounterOptions,
++    TextFieldOptions, Theme,
+ };
+ 
+ const FACE_MIN: f32 = 56.;
+@@ -129,6 +132,41 @@ impl Theme {
+         adornments: TextFieldAdornments<'_, M>,
+         on_input: impl Fn(String) -> M + 'static,
+         on_submit: impl Fn() -> Option<M> + 'static,
++    ) -> Option<View<M>> {
++        self.build_text_field(appearance, options, adornments, None, on_input, on_submit)
++    }
++
++    /// Add a character count and soft limit to either field appearance.
++    /// A blank localized message or count description returns `None`.
++    /// An explicit validation error takes precedence. The count uses
++    /// passive text semantics.
++    pub fn text_field_with_counter<M>(
++        &self,
++        appearance: TextFieldAppearance,
++        options: TextFieldOptions<'_>,
++        adornments: TextFieldAdornments<'_, M>,
++        counter: TextFieldCounterOptions<'_>,
++        on_input: impl Fn(String) -> M + 'static,
++        on_submit: impl Fn() -> Option<M> + 'static,
++    ) -> Option<View<M>> {
++        self.build_text_field(
++            appearance,
++            options,
++            adornments,
++            Some(counter),
++            on_input,
++            on_submit,
++        )
++    }
++
++    fn build_text_field<M>(
++        &self,
++        appearance: TextFieldAppearance,
++        options: TextFieldOptions<'_>,
++        adornments: TextFieldAdornments<'_, M>,
++        counter: Option<TextFieldCounterOptions<'_>>,
++        on_input: impl Fn(String) -> M + 'static,
++        on_submit: impl Fn() -> Option<M> + 'static,
+     ) -> Option<View<M>> {
+         let label = visible_text(Some(options.label))?;
+         if options.id.trim().is_empty()
+@@ -142,7 +180,22 @@ impl Theme {
+         let line_height = body.line_height.filter(|height| height.is_finite())?;
+         let caption_height = caption.line_height.filter(|height| height.is_finite())?;
+         let disabled = options.editability == TextFieldEditability::Disabled;
+-        let error = visible_text(options.error);
++        let counted = counter.map(|counter| (counter, options.value.graphemes(true).count()));
++        let (limit_error, counter) = match counted {
++            Some((options, count)) => {
++                let message = visible_text(Some(options.over_limit_error))?;
++                let spoken = (options.describe)(count, options.max_graphemes);
++                visible_text(Some(&spoken))?;
++                let ratio = format!("{count}/{}", options.max_graphemes);
++                let exceeded = count > options.max_graphemes;
++                (
++                    (!disabled && exceeded).then_some(message),
++                    Some((ratio, spoken, exceeded)),
++                )
++            }
++            None => (None, None),
++        };
++        let error = visible_text(options.error).or(limit_error);
+         let description = error.or_else(|| visible_text(options.supporting_text));
+         let rgba = self.colors;
+         let filled = appearance == TextFieldAppearance::Filled;
+@@ -175,6 +228,7 @@ impl Theme {
+         };
+         let id = options.id;
+         let description_id = format!("{id}-description");
++        let counter_id = format!("{id}-counter-description");
+         let floating_id = format!("{id}-floating-label");
+         let action_id = format!("{id}-trailing-action");
+         let value_box_id = format!("{id}-value-box");
+@@ -222,7 +276,8 @@ impl Theme {
+             ]
+             .into_iter()
+             .flatten()
+-            .map(|part| format!("{id}-{part}-description")),
++            .map(|part| format!("{id}-{part}-description"))
++            .chain(counter.as_ref().map(|_| counter_id.clone())),
+         );
+         let mut editor = View::new(input)
+             .text_options(TextOptions {
+@@ -335,6 +390,13 @@ impl Theme {
+             )
+             .without_interaction(None)
+         });
++        let supporting_color = if disabled {
++            tokens.disabled_text
++        } else if error.is_some() {
++            tokens.error_ink
++        } else {
++            tokens.neutral_label
++        };
+         let description_view = description.map(|description| {
+             View::new(
+                 Node::new(Role::Text, "")
+@@ -345,16 +407,42 @@ impl Theme {
+                     .styled(
+                         Style::default()
+                             .with_text_style(caption.clone())
+-                            .foreground(if disabled {
+-                                tokens.disabled_text
+-                            } else if error.is_some() {
+-                                tokens.error_ink
+-                            } else {
+-                                tokens.neutral_label
+-                            }),
++                            .foreground(supporting_color),
+                     ),
+             )
+         });
++        let counter_views = counter.as_ref().map(|(visible, spoken, exceeded)| {
++            let counter_color = if disabled {
++                tokens.disabled_text
++            } else if *exceeded {
++                tokens.error_ink
++            } else {
++                tokens.neutral_label
++            };
++            let alignment = if rtl {
++                TextAlignment::Left
++            } else {
++                TextAlignment::Right
++            };
++            let counter = |id, text: &str, color| {
++                View::new(
++                    Node::new(Role::Text, "")
++                        .id(id)
++                        .text(text)
++                        .text_alignment(alignment)
++                        .text_scaling(TextScaling::Fixed)
++                        .styled(
++                            Style::default()
++                                .with_text_style(caption.clone())
++                                .foreground(color),
++                        ),
++                )
++            };
++            [
++                counter(format!("{id}-counter"), visible, counter_color).without_interaction(None),
++                counter(counter_id, spoken, Color::TRANSPARENT),
++            ]
++        });
+         let validation_status = View::new(
+             Node::new(Role::Status, "")
+                 .id(format!("{id}-validation-status"))
+@@ -472,6 +560,7 @@ impl Theme {
+             appearance,
+             label: label.to_owned(),
+             description: description.map(str::to_owned),
++            counter: counter.map(|(visible, _, _)| visible),
+             body,
+             caption,
+             line_height,
+@@ -518,6 +607,7 @@ impl Theme {
+                     .chain([editor, boundary, inline, floating, fallback])
+                     .chain(disabled_ink)
+                     .chain(description_view)
++                    .chain(counter_views.into_iter().flatten())
+                     .chain([validation_status])
+                     .chain(slots),
+             ),
+@@ -585,6 +675,7 @@ struct FieldLayout {
+     appearance: TextFieldAppearance,
+     label: String,
+     description: Option<String>,
++    counter: Option<String>,
+     body: TextStyle,
+     caption: TextStyle,
+     line_height: f32,
+@@ -676,18 +767,21 @@ impl FieldLayout {
+         if self.disabled_value {
+             rects.push(value);
+         }
+-        if let Some(description) = &self.description {
+-            let height = fonts
+-                .measure_text(description, &self.caption, Some(content_width))
+-                .1
+-                .max(self.caption_height)
+-                .ceil();
+-            rects.push(Rect::new(
++        let (description, count) = supporting_row(
++            fonts,
++            &self.caption,
++            (self.description.as_deref(), self.counter.as_deref()),
++            Rect::new(
+                 SIDE,
+                 top + face_height + DESCRIPTION_GAP,
+                 content_width,
+-                height,
+-            ));
++                self.caption_height,
++            ),
++            self.rtl,
++        );
++        rects.extend(description);
++        if let Some(count) = count {
++            rects.extend([count, count]);
+         }
+         // The live region needs visible geometry even when it is empty.
+         rects.push(Rect::new(1., 0., 1., 1.));
+diff --git a/crates/surface-material/src/text_field_counter.rs b/crates/surface-material/src/text_field_counter.rs
+new file mode 100644
+index 0000000..42ea7bf
+--- /dev/null
++++ b/crates/surface-material/src/text_field_counter.rs
+@@ -0,0 +1,77 @@
++use surface::{Rect, TextMeasurer, TextStyle};
++
++use crate::text_field_adornments::physical;
++
++const ROW_GAP: f32 = 4.;
++const COLUMN_GAP: f32 = 16.;
++const MIN_HELP_WIDTH: f32 = 48.;
++
++/// A character counter with a soft limit for a single-line Material field.
++///
++/// The count measures extended grapheme clusters in the application-owned
++/// value. It excludes preedit and field affixes. The field keeps text over the
++/// limit and uses the localized error to mark it invalid. The caller owns
++/// submission policy.
++#[derive(Clone, Copy)]
++pub struct TextFieldCounterOptions<'a> {
++    pub max_graphemes: usize,
++    /// A stable, nonempty localized message shown when the value is too long.
++    pub over_limit_error: &'a str,
++    /// Provide a nonempty description of the count and limit in the user's language.
++    pub describe: &'a dyn Fn(usize, usize) -> String,
++}
++
++pub(super) fn supporting_row(
++    fonts: &mut dyn TextMeasurer,
++    style: &TextStyle,
++    (description, count): (Option<&str>, Option<&str>),
++    bounds: Rect,
++    rtl: bool,
++) -> (Option<Rect>, Option<Rect>) {
++    let line_height = bounds.height;
++    let measured_height = |fonts: &mut dyn TextMeasurer, text: &str, width: f32| {
++        fonts
++            .measure_text(text, style, Some(width))
++            .1
++            .max(line_height)
++            .ceil()
++    };
++    let width = bounds.width;
++    let Some(count) = count else {
++        return (
++            description.map(|text| {
++                Rect::new(
++                    bounds.x,
++                    bounds.y,
++                    width,
++                    measured_height(fonts, text, width),
++                )
++            }),
++            None,
++        );
++    };
++
++    let (natural_count, _) = fonts.measure_text(count, style, None);
++    let count_width = natural_count.ceil().clamp(1., width);
++    let remaining = width - count_width - COLUMN_GAP;
++    let fits_row = description.is_some() && remaining >= MIN_HELP_WIDTH;
++
++    let help_width = if fits_row { remaining } else { width };
++    let help = description.map(|text| {
++        let height = measured_height(fonts, text, help_width);
++        let local = physical(Rect::new(0., 0., help_width, height), width, rtl);
++        Rect::new(bounds.x + local.x, bounds.y, local.width, local.height)
++    });
++    let count_y = match help {
++        Some(help) if !fits_row => help.y + help.height + ROW_GAP,
++        _ => bounds.y,
++    };
++    let count_height = measured_height(fonts, count, count_width);
++    let local = physical(
++        Rect::new(width - count_width, 0., count_width, count_height),
++        width,
++        rtl,
++    );
++    let count = Rect::new(bounds.x + local.x, count_y, local.width, local.height);
++    (help, Some(count))
++}
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+index 72fb70e..a44664c 100644
+--- a/crates/surface-material/tests/outlined_text_field.rs
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -4,10 +4,11 @@ use surface::{
+     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
+     TextAlignment,
+ };
+-use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
++use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+ use surface_material::{
+     shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldAdornments, TextFieldAffix,
+-    TextFieldAppearance, TextFieldEditability, TextFieldTrailingAction, Theme, VectorIcon,
++    TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability, TextFieldTrailingAction,
++    Theme, VectorIcon,
+ };
+ use surface_wgpu::TextSystem;
+ 
+@@ -17,6 +18,8 @@ const LONG_LABEL: &str = "輸入團隊成員在共用專案清單中容易辨認
+ const HINT: &str = "輸入名稱";
+ const SUPPORT: &str = "請輸入中文或英文名稱。";
+ const ERROR: &str = "請輸入有效的專案名稱。";
++const COUNT_ERROR: &str = "名稱超過字數上限。";
++const COUNTER: &str = "project-name-counter";
+ const AFTER: &str = "after-field";
+ 
+ #[derive(Clone)]
+@@ -40,6 +43,7 @@ struct Form {
+     submits: Vec<String>,
+     actions: usize,
+     adorned: Option<TextFieldAppearance>,
++    character_limit: Option<usize>,
+     builds: Cell<usize>,
+ }
+ 
+@@ -57,6 +61,7 @@ impl Default for Form {
+             submits: Vec::new(),
+             actions: 0,
+             adorned: None,
++            character_limit: None,
+             builds: Cell::new(0),
+         }
+     }
+@@ -108,29 +113,44 @@ impl Application for Form {
+         let on_submit = || Some(Message::Submit);
+         let field = if let Some(appearance) = self.adorned {
+             let icon = VectorIcon::new([[4., 4.], [20., 4.], [12., 20.]]).unwrap();
+-            theme.text_field_with_adornments(
+-                appearance,
+-                options,
+-                TextFieldAdornments {
+-                    leading_icon: Some(&icon),
+-                    trailing_action: Some(TextFieldTrailingAction {
+-                        icon: &icon,
+-                        name: "套用金額",
+-                        disabled: false,
+-                        on_press: Message::Action,
+-                    }),
+-                    prefix: Some(TextFieldAffix {
+-                        visual: "€",
+-                        spoken_name: "歐元",
+-                    }),
+-                    suffix: Some(TextFieldAffix {
+-                        visual: "/月",
+-                        spoken_name: "每月",
+-                    }),
+-                },
+-                Message::Edit,
+-                on_submit,
+-            )
++            let adornments = TextFieldAdornments {
++                leading_icon: Some(&icon),
++                trailing_action: Some(TextFieldTrailingAction {
++                    icon: &icon,
++                    name: "套用金額",
++                    disabled: false,
++                    on_press: Message::Action,
++                }),
++                prefix: Some(TextFieldAffix {
++                    visual: "€",
++                    spoken_name: "歐元",
++                }),
++                suffix: Some(TextFieldAffix {
++                    visual: "/月",
++                    spoken_name: "每月",
++                }),
++            };
++            match self.character_limit {
++                Some(max_graphemes) => theme.text_field_with_counter(
++                    appearance,
++                    options,
++                    adornments,
++                    TextFieldCounterOptions {
++                        max_graphemes,
++                        over_limit_error: COUNT_ERROR,
++                        describe: &|count, max| format!("已輸入{count}個字元，上限{max}個。"),
++                    },
++                    Message::Edit,
++                    on_submit,
++                ),
++                None => theme.text_field_with_adornments(
++                    appearance,
++                    options,
++                    adornments,
++                    Message::Edit,
++                    on_submit,
++                ),
++            }
+         } else {
+             theme.outlined_text_field_with_submit(options, Message::Edit, on_submit)
+         };
+@@ -199,6 +219,136 @@ fn enter() -> KeyPress {
+     KeyPress::new(Key::Enter, Modifiers::default())
+ }
+ 
++#[test]
++fn counter_counts_committed_graphemes_and_exposes_one_soft_limit_error() {
++    let initial = "e\u{301}👩‍💻";
++    let mut runtime = Runtime::new(Form {
++        value: initial.into(),
++        adorned: Some(TextFieldAppearance::Outlined),
++        character_limit: Some(2),
++        ..Form::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    let idle = render(&mut runtime, 400., &mut text);
++    assert!(text_run(&idle, "2/2").is_some());
++    let editor_id = runtime.dom().by_id(ID).unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(!frame.node(editor_id).unwrap().node.is_invalid());
++    let descriptions: Vec<_> = frame
++        .description_parts(editor_id)
++        .into_iter()
++        .map(|(target, _)| {
++            let node = frame.node(target).unwrap().node;
++            assert_eq!(node.role(), Role::Text);
++            assert!(frame.focus_target(target).is_none());
++            node.text_value().unwrap()
++        })
++        .collect();
++    assert_eq!(
++        descriptions,
++        ["歐元", "每月", "已輸入2個字元，上限2個。", SUPPORT]
++    );
++
++    tab(&mut runtime);
++    runtime
++        .dispatch(Event::Edit {
++            key: EditKey::End,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄓㄨㄥ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    let composing = render(&mut runtime, 400., &mut text);
++    assert!(text_run(&composing, "2/2").is_some());
++    assert!(!runtime.key(&enter()).unwrap());
++    assert!(runtime.app().edits.is_empty() && runtime.app().submits.is_empty());
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("中".into())))
++        .unwrap();
++    let overflow = render(&mut runtime, 400., &mut text);
++    assert!(text_run(&overflow, "3/2").is_some());
++    assert_eq!(runtime.app().value, format!("{initial}中"));
++    assert_eq!(runtime.app().edits, [format!("{initial}中")]);
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.node(editor_id).unwrap().node.is_invalid());
++    let status_id = runtime
++        .dom()
++        .by_id("project-name-validation-status")
++        .unwrap();
++    assert_eq!(
++        frame.node(status_id).unwrap().node.text_value(),
++        Some(COUNT_ERROR)
++    );
++    assert!(runtime.key(&enter()).unwrap());
++    assert_eq!(runtime.app().submits, [format!("{initial}中")]);
++
++    runtime.apply(Message::ChangeAppearance).unwrap();
++    render(&mut runtime, 400., &mut text);
++    let frame = runtime.accessibility_frame().unwrap();
++    assert_eq!(
++        frame.node(status_id).unwrap().node.text_value(),
++        Some(ERROR)
++    );
++    assert_eq!(runtime.focused(), Some(ID));
++}
++
++#[test]
++fn counter_and_support_share_wide_rows_and_stack_in_compact_rtl() {
++    let mut text = TextSystem::default();
++    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
++        let mut runtime = Runtime::new(Form {
++            adorned: Some(appearance),
++            character_limit: Some(0),
++            ..Form::default()
++        })
++        .unwrap();
++        let wide = render(&mut runtime, 400., &mut text);
++        assert!(text_run(&wide, "0/0").is_some());
++        let counter = bounds(&runtime, COUNTER);
++        let support = bounds(&runtime, "project-name-description");
++        assert_eq!(support.y, counter.y);
++        assert_eq!(counter.x - support.x - support.width, 16.);
++        assert_eq!(counter.x + counter.width, 372.);
++
++        runtime.apply(Message::ChangeAppearance).unwrap();
++        let manual_error = render(&mut runtime, 320., &mut text);
++        assert!(matches!(
++            text_run(&manual_error, "0/0"),
++            Some((PaintOp::StyledText { color, .. }, _))
++                if *color == Theme::dark().colors.on_surface_variant
++        ));
++        runtime.apply(Message::Edit("中".into())).unwrap();
++        let compact = render(&mut runtime, 112., &mut text);
++        let counter = bounds(&runtime, COUNTER);
++        let support = bounds(&runtime, "project-name-description");
++        assert_eq!(counter.y, support.y + support.height + 4.);
++        assert_eq!(counter.x, support.x);
++        assert!(counter.x + counter.width <= support.x + support.width);
++        assert!(matches!(
++            text_run(&compact, "1/0"),
++            Some((PaintOp::StyledText { color, .. }, TextAlignment::Left))
++                if *color == Theme::dark().colors.error
++        ));
++
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Disabled))
++            .unwrap();
++        let disabled = render(&mut runtime, 112., &mut text);
++        let Color(r, g, b, _) = Theme::dark().colors.on_surface;
++        assert!(matches!(
++            text_run(&disabled, "1/0"),
++            Some((PaintOp::StyledText { color, .. }, _)) if *color == Color(r, g, b, 97)
++        ));
++    }
++}
++
+ #[test]
+ fn adornments_keep_one_editor_and_a_separate_action_across_both_variants() {
+     const ACTION: &str = "project-name-trailing-action";
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 105479d..9d20d06 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -341,11 +341,11 @@
+       "id": "text-fields",
+       "spec": "https://m3.material.io/components/text-fields/overview",
+       "status": "partial",
+-      "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Leading and trailing icons and text affixes checked against both token sets. Counter and multiline remain open.",
+-      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow, and matching Page.screenshot, CLI and MCP PNGs.",
+-      "web_evidence": "M325–M336 cover the two field appearances and their slots, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, 112 dp action relocation, and separate Enter or Space activation. Chromium may need a separate CDP commit.",
+-      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. A long label wraps above either variant. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. A long placeholder can clip within the one-line input area. Counters, multiline, label motion, system contrast and live speech remain open.",
+-      "unit_evidence": "crates/surface-material/tests/outlined_text_field.rs and surface-app editor presentation tests cover layout, editor identity, ordered accessible relations, preedit and Enter. The native host test routes constructed Winit input events through the production editor flow."
++      "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Leading and trailing icons and text affixes checked against both token sets. The counter follows the supporting-row dimensions for both appearances. Multiline remains open.",
++      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking, and matching Page.screenshot, CLI and MCP PNGs.",
++      "web_evidence": "M325–M340 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking, and separate Enter or Space activation. Chromium may need a separate CDP commit.",
++      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. A long label wraps above either variant. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. A long placeholder can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Some emoji still use fallback boxes in the bundled font. Multiline, label motion, system contrast and live speech remain open.",
++      "unit_evidence": "crates/surface-material/tests/outlined_text_field.rs and surface-app editor presentation tests cover layout, editor identity, ordered accessible relations, grapheme limits, preedit and Enter. The native host test routes constructed Winit input events through the production editor flow."
+     },
+     {
+       "id": "toolbars",
+diff --git a/docs/material.md b/docs/material.md
+index f9fb8a8..40ec1ff 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -206,6 +206,7 @@ does not change application state.
+ | `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
+ | `filled_text_field` | One single-line editor with a filled container, inside floating label and bottom indicator |
+ | `text_field_with_adornments` | Either single-line appearance with optional visual affixes and a separate named action |
++| `text_field_with_counter` | Either single-line appearance with a count and a soft limit |
+ | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
+ | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
+ | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
+@@ -1277,6 +1278,23 @@ the field with the same focus identity.
+ 
+ In Material Gallery, choose 動作 and 文字欄位配件 to try both appearances.
+ 
++### Character counter
++
++Use `Theme::text_field_with_counter` with `TextFieldCounterOptions`.
++Set the grapheme limit, the localized error and the spoken count format.
++An accented letter, a single emoji or a joined emoji counts as one
++character when it forms one grapheme. The counter reads the app's
++committed value. It excludes active IME text, prefixes and suffixes.
++
++The counter appears at the end of the supporting row. In narrow layouts
++it moves below the help or error. It remains passive as the count changes.
++When the value exceeds the limit, the field retains the full text and
++shows the localized limit error and an error-colored count. An explicit
++validation error takes precedence. The count uses its normal color while
++the value is within the limit. The app decides when to submit the value.
++
++In Material Gallery, choose 動作 and 文字欄位字數 to try both appearances.
++
+ ## Baseline segmented buttons
+ 
+ Use `Theme::baseline_segmented_button` for two to five related choices in
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 637996b..ec1dabf 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -110,6 +110,8 @@ mod material_switch;
+ mod material_tabs;
+ #[path = "material_text_field_adornments.rs"]
+ mod material_text_field_adornments;
++#[path = "material_text_field_counter.rs"]
++mod material_text_field_counter;
+ #[path = "material_time_baseline.rs"]
+ mod material_time_baseline;
+ #[path = "material_time_dial.rs"]
+@@ -164,7 +166,7 @@ pub const STEPS: &[&str] = &[
+     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+-    "M335", "M336",
++    "M335", "M336", "M337", "M338", "M339", "M340",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -299,7 +301,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_segmented::run(env, chrome, &url).await?;
+     material_outlined_text_field::run(env, chrome, &url).await?;
+     material_filled_text_field::run(env, chrome, &url).await?;
+-    material_text_field_adornments::run(env, chrome, &url).await
++    material_text_field_adornments::run(env, chrome, &url).await?;
++    material_text_field_counter::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -530,9 +533,17 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn text_field_counter_steps_are_required_by_the_material_case() {
++        assert!(super::STEPS.ends_with(&super::material_text_field_counter::STEPS));
++    }
++
+     #[test]
+     fn text_field_adornment_steps_are_required_by_the_material_case() {
+-        assert!(super::STEPS.ends_with(&super::material_text_field_adornments::STEPS));
++        let adornments = super::material_text_field_adornments::STEPS;
++        assert!(super::STEPS
++            .windows(adornments.len())
++            .any(|steps| steps == adornments));
+     }
+ 
+     #[test]
+diff --git a/e2e/src/material_text_field_counter.rs b/e2e/src/material_text_field_counter.rs
+new file mode 100644
+index 0000000..b4552bb
+--- /dev/null
++++ b/e2e/src/material_text_field_counter.rs
+@@ -0,0 +1,815 @@
++//! Material character counter, browser editing, accessibility and Canvas pixels.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, near, projected, resize, Raster,
++};
++use super::{click, focus, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 4] = ["M337", "M338", "M339", "M340"];
++
++const SHOW: &str = "text-field-counter-demo-show";
++const BACK: &str = "text-field-counter-demo-back";
++const APPEARANCE: &str = "text-field-counter-demo-appearance";
++const THEME: &str = "text-field-counter-demo-theme";
++const RTL: &str = "text-field-counter-demo-rtl";
++const TEXT: &str = "text-field-counter-demo-large-text";
++const NARROW: &str = "text-field-counter-demo-narrow";
++const ERROR: &str = "text-field-counter-demo-error";
++const EDITABLE: &str = "text-field-counter-demo-editable";
++const ACTION: &str = "text-field-counter-demo-editable-trailing-action";
++const READ_ONLY: &str = "text-field-counter-demo-read-only";
++const DISABLED: &str = "text-field-counter-demo-disabled";
++const EDITABLE_NAME: &str = "標籤名稱";
++const ACTION_NAME: &str = "清除標籤";
++const INITIAL: &str = "中a\u{301}👍🏽";
++const AT_LIMIT: &str = "中a\u{301}👍🏽🇹🇼👩‍💻";
++const OVER_LIMIT: &str = "中a\u{301}👍🏽🇹🇼👩‍💻文";
++const LONGER: &str = "中a\u{301}👍🏽🇹🇼👩‍💻文字";
++const HELP: &str = "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。";
++const OVERFLOW: &str = "請輸入最多 5 個字。";
++const MANUAL: &str = "這個標籤已存在。";
++const TEXTAREA: &str = "document.getElementById('surface-text-input')";
++const LIVE: &str = "window.fieldCounterLive";
++const HOME: (u32, u32) = (960, 2400);
++const WIDE: Rect = [0., 0., 960., 820.];
++const IME: Rect = [0., 0., 480., 820.];
++const SMALL: Rect = [0., 0., 320., 1240.];
++
++const WIDE_NORMAL: &str = "material-text-field-counter-wide-outlined-normal.png";
++const WIDE_OVERFLOW: &str = "material-text-field-counter-wide-outlined-overflow.png";
++const WIDE_MANUAL: &str = "material-text-field-counter-wide-filled-manual.png";
++const PREEDIT: &str = "material-text-field-counter-ime-preedit.png";
++const COMPACT: &str = "material-text-field-counter-compact-rtl-200.png";
++const NARROW_OUTLINED: &str = "material-text-field-counter-fallback-outlined-112.png";
++const NARROW_FILLED: &str = "material-text-field-counter-fallback-filled-112.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++fn part(id: &str, suffix: &str) -> String {
++    format!("{id}-{suffix}")
++}
++
++fn node_text(id: &str) -> String {
++    format!(
++        "JSON.parse(window.gallery.export_dom()).dom.nodes.find(n => n.stable_id === {})?.text",
++        js(id)
++    )
++}
++
++fn editor_state() -> String {
++    format!(
++        "JSON.parse(window.gallery.export_dom()).text_inputs[{}]",
++        js(EDITABLE)
++    )
++}
++
++async fn model(tab: &Tab, condition: &str) -> Result<Value> {
++    until(
++        tab,
++        &format!("(d => {condition})(s.text_field_counter_demo)"),
++    )
++    .await?;
++    tab.settle().await?;
++    Ok(state(tab).await?["text_field_counter_demo"].clone())
++}
++
++async fn value(tab: &Tab, text: &str, edits: u32, submits: u32, actions: u32) -> Result<Value> {
++    model(
++        tab,
++        &format!(
++            "d.value === {} && d.limit === 5 && d.edits === {edits} &&
++        d.submits === {submits} && d.actions === {actions}",
++            js(text)
++        ),
++    )
++    .await
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, HOME.0, HOME.1).await?;
++    reduced_motion(tab, true).await?;
++    until(tab, "s.section === 0 && !s.text_field_counter_demo.visible").await?;
++    activate(tab, SHOW).await?;
++    model(
++        tab,
++        "d.visible && d.appearance === 'outlined' && !d.dark && !d.rtl &&
++        d.text_scale === 1 && !d.narrow && !d.show_error",
++    )
++    .await?;
++    value(tab, INITIAL, 0, 0, 0).await?;
++    resize(tab, 960, 820).await
++}
++
++async fn focused(tab: &Tab, id: &str) -> Result<()> {
++    until(tab, &format!("s.focused === {}", js(id))).await?;
++    tab.wait_for(&format!(
++        "document.activeElement?.id === 'surface' ||
++        document.activeElement === {}",
++        projected(id)
++    ))
++    .await?;
++    tab.settle().await
++}
++
++async fn editor(tab: &Tab, id: &str) -> Result<()> {
++    focus(tab, id, "surface-text-input").await?;
++    tab.settle().await
++}
++
++async fn enter_editor(tab: &Tab) -> Result<()> {
++    if state(tab).await?["focused"] == ACTION {
++        tab.press("Shift+Tab").await?;
++    } else {
++        for _ in 0..8 {
++            if state(tab).await?["focused"] == EDITABLE {
++                break;
++            }
++            tab.press("Tab").await?;
++            tab.settle().await?;
++        }
++    }
++    editor(tab, EDITABLE).await
++}
++
++async fn raw(tab: &Tab, text: &str) -> Result<()> {
++    tab.wait_for(&format!("{TEXTAREA}?.value === {}", js(text)))
++        .await
++}
++
++async fn ratio(tab: &Tab, id: &str, count: usize) -> Result<()> {
++    tab.wait_for(&format!(
++        "{} === {}",
++        node_text(&part(id, "counter")),
++        js(format!("{count}/5"))
++    ))
++    .await
++}
++
++async fn describe(tab: &Tab, count: usize, help: &str, invalid: bool) -> Result<Value> {
++    ratio(tab, EDITABLE, count).await?;
++    let count_id = part(EDITABLE, "counter-description");
++    let spoken_count = format!("字數，已輸入 {count} 個字，上限 5 個字。");
++    let actual = tab.eval(&format!(
++        r#"(() => {{
++            const field = {TEXTAREA};
++            const ids = field?.getAttribute('aria-describedby')?.trim().split(/\s+/) ?? [];
++            const items = ids.map(id => document.getElementById(id));
++            const counter = items.find(item => item?.dataset.surfaceId === {});
++            return {{names:items.map(item => item?.textContent), unique:new Set(ids).size === ids.length,
++                invalid:field?.getAttribute('aria-invalid'),
++                passive:!!counter && counter.tabIndex < 0 &&
++                    !counter.closest('[aria-live]:not([aria-live="off"])')}};
++        }})()"#, js(&count_id)
++    )).await?;
++    check_eq!(
++        actual,
++        json!({"names":["井字號",spoken_count,help],"unique":true,
++        "invalid":invalid.then_some("true"),"passive":true}),
++        "the real editor names the passive count before its help"
++    );
++    let tree = ax_tree(tab).await?;
++    let textbox = ax(&tree, "textbox", EDITABLE_NAME)?;
++    let clear = ax(&tree, "button", ACTION_NAME)?;
++    check!(
++        ax_property(clear, "disabled") != Some(&json!(true)),
++        "the named clear action stays enabled and separate from the editor"
++    );
++    let spoken = textbox["description"]["value"]
++        .as_str()
++        .context("Chrome textbox description")?;
++    let expected = format!("井字號 {spoken_count} {help}");
++    check_eq!(
++        spoken,
++        expected.as_str(),
++        "Chrome AX reads the count and help in order"
++    );
++    check!(
++        tree.iter()
++            .filter(|node| node["ignored"] == false
++                && node["role"]["value"] == "textbox"
++                && node["name"]["value"] == EDITABLE_NAME)
++            .count()
++            == 1,
++        "the counter keeps one named editor"
++    );
++    Ok(json!({"ratio":format!("{count}/5"),"dom":actual,"ax_description":spoken}))
++}
++
++async fn start_live_trace(tab: &Tab) -> Result<()> {
++    tab.eval(&format!(r#"(() => {{
++        const regions = document.querySelectorAll('#surface-accessibility [aria-live=assertive]');
++        const region = regions[0];
++        if (regions.length !== 1 || region.getAttribute('aria-atomic') !== 'true' || region.textContent)
++            throw new Error('expected one primed blank validation region');
++        const messages = [];
++        const observer = new MutationObserver(() => {{
++            if (region.textContent) messages.push(region.textContent);
++        }});
++        observer.observe(region, {{childList:true,characterData:true,subtree:true}});
++        {LIVE} = {{region,messages,observer}};
++    }})()"#)).await?;
++    Ok(())
++}
++
++async fn live(tab: &Tab, messages: &[&str]) -> Result<Value> {
++    tab.settle().await?;
++    let actual = tab.eval(&format!("{LIVE}.messages")).await?;
++    check_eq!(
++        actual,
++        json!(messages),
++        "only each new validation message writes to the live region"
++    );
++    check!(
++        tab.eval(&format!("{LIVE}.region === document.querySelector('#surface-accessibility [aria-live=assertive]')")).await? == true,
++        "the same assertive region receives those writes"
++    );
++    Ok(actual)
++}
++
++fn right(rect: Rect) -> f64 {
++    rect[0] + rect[2]
++}
++
++fn bottom(rect: Rect) -> f64 {
++    rect[1] + rect[3]
++}
++
++fn rgba(data: &Value, role: &str) -> Result<[u8; 4]> {
++    serde_json::from_value(data["palette"][role].clone())
++        .with_context(|| format!("counter palette role {role}"))
++}
++
++fn rgb(data: &Value, role: &str) -> Result<Rgb> {
++    let [r, g, b, _] = rgba(data, role)?;
++    Ok([r, g, b])
++}
++
++fn ink(frame: &Raster, rect: Rect, token: Rgb) -> Result<usize> {
++    Ok(frame.colors(rect)?.get(&token).copied().unwrap_or(0))
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let file = env.artifact(name);
++    tab.screenshot(&file).await?;
++    Raster::read(tab, file).await
++}
++
++fn checked_pixel(frame: &Raster, point: [f64; 2], token: Rgb) -> Result<Value> {
++    let measured = frame.sample(point[0], point[1])?;
++    check_eq!(measured, token, format!("appearance pixel at {point:?}"));
++    Ok(json!({"point":point,"rgb":measured}))
++}
++
++async fn capture(
++    tab: &Tab,
++    env: &Env,
++    name: &str,
++    data: &Value,
++    viewport: Rect,
++    stacked: bool,
++    overflow: bool,
++) -> Result<Value> {
++    let filled = data["appearance"] == "filled";
++    let rtl = data["rtl"] == true;
++    let scale = data["text_scale"].as_f64().context("counter text scale")?;
++    let manual = data["show_error"] == true;
++    let invalid = manual || overflow;
++    let face = bounds(
++        tab,
++        &part(EDITABLE, if filled { "indicator" } else { "outline" }),
++    )
++    .await?;
++    let helper = bounds(tab, &part(EDITABLE, "description")).await?;
++    let count = bounds(tab, &part(EDITABLE, "counter")).await?;
++    let count_description = bounds(tab, &part(EDITABLE, "counter-description")).await?;
++    let action = bounds(tab, ACTION).await?;
++    let editor_rect = bounds(tab, EDITABLE).await?;
++    let line = 16. * scale;
++    check!(
++        [face, helper, count, action, editor_rect]
++            .into_iter()
++            .all(|r| contains(viewport, r))
++            && near(helper[1] - bottom(face), 4.)
++            && near(count[3], line)
++            && count_description == count
++            && near(
++                if rtl {
++                    right(face) - right(helper)
++                } else {
++                    helper[0] - face[0]
++                },
++                16.
++            )
++            && near(
++                if rtl {
++                    count[0] - face[0]
++                } else {
++                    right(face) - right(count)
++                },
++                16.
++            )
++            && near(action[2], 48.)
++            && near(action[3], 48.),
++        "help and count stay below the face with 4 dp top gap, 16 dp insets and a full action"
++    );
++    if stacked {
++        check!(
++            near(face[2], 112.) && editor_rect == face && near(helper[2], 80.)
++                && helper[3] >= 2. * line && near(count[1] - bottom(helper), 4.) && action[1] > bottom(count),
++            "the narrow 112 dp editor stays full width with help, count and relocated action in order"
++        );
++    } else {
++        check!(
++            near(helper[1], count[1])
++                && helper[2] >= 48.
++                && near(
++                    if rtl {
++                        helper[0] - right(count)
++                    } else {
++                        count[0] - right(helper)
++                    },
++                    16.
++                )
++                && contains(face, action),
++            "the parallel row leaves a 16 dp gap to a trailing count"
++        );
++    }
++    let image = photo(tab, env, name).await?;
++    let neutral = rgb(data, "on_surface_variant")?;
++    let error = rgb(data, "error")?;
++    let help_ink = ink(&image, helper, if invalid { error } else { neutral })?;
++    let count_ink = ink(&image, count, if overflow { error } else { neutral })?;
++    let wrong_count_ink = ink(&image, count, if overflow { neutral } else { error })?;
++    check!(
++        help_ink > 12 && count_ink > 12 && wrong_count_ink == 0,
++        "help and ratio use the actual expected Canvas colors"
++    );
++    let stroke = rgb(data, if invalid { "error" } else { "primary" })?;
++    let boundary = if filled {
++        vec![
++            checked_pixel(&image, [face[0] + 6.5, bottom(face) - 0.5], stroke)?,
++            checked_pixel(&image, [right(face) - 6.5, bottom(face) - 0.5], stroke)?,
++            checked_pixel(
++                &image,
++                [face[0] + 6.5, face[1] + 10.5],
++                rgb(data, "surface_container_highest")?,
++            )?,
++        ]
++    } else {
++        vec![checked_pixel(
++            &image,
++            [right(face) - 0.5, face[1] + face[3] / 2.],
++            stroke,
++        )?]
++    };
++    Ok(
++        json!({"capture":name,"model":data,"face":face,"editor":editor_rect,"helper":helper,
++        "count":count,"count_description":count_description,"action":action,"stacked":stacked,
++        "help_ink":help_ink,"count_ink":count_ink,"wrong_count_ink":wrong_count_ink,"boundary":boundary}),
++    )
++}
++
++async fn authored(tab: &Tab, env: &Env) -> Result<Value> {
++    focused(tab, BACK).await?;
++    enter_editor(tab).await?;
++    raw(tab, INITIAL).await?;
++    let initial = value(tab, INITIAL, 0, 0, 0).await?;
++    let description = describe(tab, 3, HELP, false).await?;
++    start_live_trace(tab).await?;
++    let paint = capture(tab, env, WIDE_NORMAL, &initial, WIDE, false, false).await?;
++    tab.press("End").await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.selectionEnd === {TEXTAREA}.value.length"
++    ))
++    .await?;
++    tab.insert_text("🇹🇼👩‍💻").await?;
++    let limit = value(tab, AT_LIMIT, 1, 0, 0).await?;
++    raw(tab, AT_LIMIT).await?;
++    let at_limit = describe(tab, 5, HELP, false).await?;
++    let no_announcement = live(tab, &[]).await?;
++    Ok(
++        json!({"initial":initial,"paint":paint,"description":description,"at_limit":at_limit,
++        "limit_model":limit,"ordinary_live_messages":no_announcement}),
++    )
++}
++
++async fn limits(tab: &Tab, env: &Env) -> Result<Value> {
++    tab.insert_text("文").await?;
++    let over = value(tab, OVER_LIMIT, 2, 0, 0).await?;
++    raw(tab, OVER_LIMIT).await?;
++    let description = describe(tab, 6, OVERFLOW, true).await?;
++    let overflow_live = live(tab, &[OVERFLOW]).await?;
++    let overflow_paint = capture(tab, env, WIDE_OVERFLOW, &over, WIDE, false, true).await?;
++
++    tab.insert_text("字").await?;
++    let longer = value(tab, LONGER, 3, 0, 0).await?;
++    let continued = describe(tab, 7, OVERFLOW, true).await?;
++    let continued_live = live(tab, &[OVERFLOW]).await?;
++    tab.press("Enter").await?;
++    let submitted = value(tab, LONGER, 3, 1, 0).await?;
++    check_eq!(
++        submitted["last_submit"],
++        LONGER,
++        "the caller receives over-limit content unchanged"
++    );
++
++    click(tab, ERROR).await?;
++    model(tab, "d.show_error").await?;
++    enter_editor(tab).await?;
++    let precedence = describe(tab, 7, MANUAL, true).await?;
++    let manual_live = live(tab, &[OVERFLOW, MANUAL]).await?;
++    tab.press("End").await?;
++    for _ in 0..2 {
++        tab.press("Backspace").await?;
++    }
++    value(tab, AT_LIMIT, 5, 1, 0).await?;
++    describe(tab, 5, MANUAL, true).await?;
++    let at_limit_live = live(tab, &[OVERFLOW, MANUAL]).await?;
++
++    let stable_editor = editor_state();
++    let before = tab.eval(&stable_editor).await?;
++    click(tab, APPEARANCE).await?;
++    let manual = model(tab, "d.appearance === 'filled' && d.show_error").await?;
++    enter_editor(tab).await?;
++    raw(tab, AT_LIMIT).await?;
++    let after = tab.eval(&stable_editor).await?;
++    check_eq!(
++        after,
++        before,
++        "appearance keeps the same committed editor snapshot"
++    );
++    let manual_description = describe(tab, 5, MANUAL, true).await?;
++    let manual_paint = capture(tab, env, WIDE_MANUAL, &manual, WIDE, false, false).await?;
++    click(tab, ERROR).await?;
++    model(tab, "!d.show_error").await?;
++    enter_editor(tab).await?;
++    let cleared_error = describe(tab, 5, HELP, false).await?;
++    let final_live = live(tab, &[OVERFLOW, MANUAL]).await?;
++    Ok(
++        json!({"overflow":over,"overflow_description":description,"overflow_paint":overflow_paint,
++        "longer":longer,"longer_description":continued,"submitted":submitted,"precedence":precedence,
++        "manual_description":manual_description,"manual_paint":manual_paint,"restored_help":cleared_error,
++        "presentations":{"editor":EDITABLE,"before":before,"after":after},"live":{"overflow":overflow_live,
++            "continued":continued_live,"manual":manual_live,"at_limit":at_limit_live,"final":final_live}}),
++    )
++}
++
++async fn composition(tab: &Tab, env: &Env) -> Result<Value> {
++    editor(tab, EDITABLE).await?;
++    tab.eval(
++        r#"(() => {
++        window.counterImeKeys = [];
++        window.addEventListener('keydown', e => {
++            if (e.key === 'Escape' || e.key === 'Enter')
++                window.counterImeKeys.push([e.key,e.isTrusted,e.target.id]);
++        }, true);
++    })()"#,
++    )
++    .await?;
++    tab.shortcut("a").await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.selectionStart === 0 && {TEXTAREA}.selectionEnd === {TEXTAREA}.value.length"
++    ))
++    .await?;
++    let exported = editor_state();
++    let composing = format!("{exported}.composing === true");
++    tab.ime_compose("ㄓㄨㄥ", 1, 2).await?;
++    tab.wait_for(&composing).await?;
++    raw(tab, "ㄓㄨㄥ").await?;
++    let before = bounds(tab, EDITABLE).await?;
++    resize(tab, 480, 820).await?;
++    editor(tab, EDITABLE).await?;
++    let after = bounds(tab, EDITABLE).await?;
++    check!(
++        after[2] < before[2],
++        "resizing reflows the same composing editor"
++    );
++    click(tab, ACTION).await?;
++    editor(tab, EDITABLE).await?;
++    tab.wait_for(&composing).await?;
++    raw(tab, "ㄓㄨㄥ").await?;
++    let pending = value(tab, AT_LIMIT, 5, 1, 0).await?;
++    let preedit = tab.eval(&exported).await?;
++    check_eq!(
++        preedit["value"],
++        AT_LIMIT,
++        "the real editor keeps its original value during preedit"
++    );
++    check_eq!(
++        preedit["display_value"],
++        "ㄓㄨㄥ",
++        "only the display value contains the preedit"
++    );
++    let pending_description = describe(tab, 5, HELP, false).await?;
++    let pending_live = live(tab, &[OVERFLOW, MANUAL]).await?;
++    let pending_paint = capture(tab, env, PREEDIT, &pending, IME, false, false).await?;
++    let box_rect = bounds(tab, &part(EDITABLE, "value-box")).await?;
++    let frame = Raster::read(tab, env.artifact(PREEDIT)).await?;
++    let preedit_ink = ink(&frame, box_rect, rgb(&pending, "on_surface")?)?;
++    check!(
++        preedit_ink > 12,
++        "the preedit has real glyphs while the count stays at 5/5"
++    );
++
++    tab.press("Escape").await?;
++    let used_cancel = tab.eval(&composing).await? == true;
++    if used_cancel {
++        tab.ime_compose("", 0, 0).await?;
++    }
++    tab.wait_for(&format!("!({composing})")).await?;
++    raw(tab, AT_LIMIT).await?;
++    let cancelled = value(tab, AT_LIMIT, 5, 1, 0).await?;
++    ratio(tab, EDITABLE, 5).await?;
++
++    tab.shortcut("a").await?;
++    tab.ime_compose("中文", 2, 2).await?;
++    tab.wait_for(&composing).await?;
++    tab.press("Enter").await?;
++    editor(tab, EDITABLE).await?;
++    let first = model(
++        tab,
++        &format!(
++            "d.submits === 1 && d.actions === 0 &&
++        (d.value === {} || d.value === '中文')",
++            js(AT_LIMIT)
++        ),
++    )
++    .await?;
++    let used_insert_text = first["value"] == AT_LIMIT;
++    if used_insert_text {
++        tab.insert_text("中文").await?;
++    }
++    tab.wait_for(&format!("!({composing})")).await?;
++    raw(tab, "中文").await?;
++    let committed = value(tab, "中文", 6, 1, 0).await?;
++    let committed_description = describe(tab, 2, HELP, false).await?;
++    tab.press("Enter").await?;
++    let submitted = value(tab, "中文", 6, 2, 0).await?;
++    check_eq!(
++        submitted["last_submit"],
++        "中文",
++        "a later Enter submits the committed value once"
++    );
++    let trusted = tab.eval("window.counterImeKeys").await?;
++    check_eq!(
++        trusted,
++        json!([
++            ["Escape", true, "surface-text-input"],
++            ["Enter", true, "surface-text-input"],
++            ["Enter", true, "surface-text-input"]
++        ]),
++        "separate trusted Escape and Enter events reach the editing owner"
++    );
++
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Space").await?;
++    let cleared = value(tab, "", 6, 2, 1).await?;
++    ratio(tab, EDITABLE, 0).await?;
++    let final_live = live(tab, &[OVERFLOW, MANUAL]).await?;
++    Ok(
++        json!({"method":"CDP synthetic composition and trusted keyboard/pointer","editor_before":before,
++        "editor_after":after,"preedit":preedit,"value_box":box_rect,"preedit_ink":preedit_ink,
++        "pending":pending,"pending_description":pending_description,"paint":pending_paint,
++        "pending_live":pending_live,"cancelled":cancelled,"cancel_needed_cdp":used_cancel,
++        "first_enter":first,"commit_needed_insert_text":used_insert_text,"committed":committed,
++        "committed_description":committed_description,"second_enter":submitted,"cleared":cleared,
++        "trusted_keys":trusted,"final_live":final_live}),
++    )
++}
++
++fn blend(base: Rgb, ink: [u8; 4], linear: bool) -> Rgb {
++    let decode = |channel: u8| {
++        let normalized = f64::from(channel) / 255.;
++        if !linear {
++            normalized
++        } else if normalized <= 0.04045 {
++            normalized / 12.92
++        } else {
++            ((normalized + 0.055) / 1.055).powf(2.4)
++        }
++    };
++    let alpha = f64::from(ink[3]) / 255.;
++    std::array::from_fn(|i| {
++        let mixed = decode(base[i]) * (1. - alpha) + decode(ink[i]) * alpha;
++        let channel = if !linear {
++            mixed
++        } else if mixed <= 0.0031308 {
++            mixed * 12.92
++        } else {
++            1.055 * mixed.powf(1. / 2.4) - 0.055
++        };
++        (channel * 255.).round() as u8
++    })
++}
++
++async fn locked(tab: &Tab, env: &Env, data: &Value) -> Result<Value> {
++    let read_rect = bounds(tab, &part(READ_ONLY, "counter")).await?;
++    let disabled_rect = bounds(tab, &part(DISABLED, "counter")).await?;
++    check!(
++        [read_rect, disabled_rect]
++            .into_iter()
++            .all(|rect| contains(SMALL, rect)),
++        "both locked count areas fit inside the same compact screenshot"
++    );
++    ratio(tab, READ_ONLY, 2).await?;
++    ratio(tab, DISABLED, 6).await?;
++    let frame = Raster::read(tab, env.artifact(COMPACT)).await?;
++    let paper = rgb(data, "background")?;
++    let neutral = rgb(data, "on_surface_variant")?;
++    let muted_source = rgba(data, "on_surface_alpha_38")?;
++    check_eq!(
++        muted_source[3],
++        97,
++        "disabled count uses 38 percent foreground"
++    );
++    let muted_candidates = [
++        blend(paper, muted_source, false),
++        blend(paper, muted_source, true),
++    ];
++    let disabled_colors = frame.colors(disabled_rect)?;
++    let muted_ink: usize = disabled_colors
++        .iter()
++        .filter(|(pixel, _)| {
++            muted_candidates
++                .iter()
++                .any(|expected| pixel.iter().zip(expected).all(|(a, b)| a.abs_diff(*b) <= 2))
++        })
++        .map(|(_, pixels)| *pixels)
++        .sum();
++    let read_ink = ink(&frame, read_rect, neutral)?;
++    let disabled_error_ink = ink(&frame, disabled_rect, rgb(data, "error")?)?;
++    check!(
++        read_ink > 12 && muted_ink > 12 && disabled_error_ink == 0,
++        "read-only ratio remains readable and disabled overflow paints muted ratio ink"
++    );
++
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Tab").await?;
++    editor(tab, READ_ONLY).await?;
++    raw(tab, "🇹🇼a\u{301}").await?;
++    tab.wait_for(&format!("{TEXTAREA}.readOnly")).await?;
++    let tree = ax_tree(tab).await?;
++    let read = ax(&tree, "textbox", "唯讀標籤")?;
++    let disabled = ax(&tree, "textbox", "停用標籤")?;
++    let read_description = read["description"]["value"]
++        .as_str()
++        .context("read-only AX description")?;
++    check!(
++        ax_property(read, "readonly") == Some(&json!(true))
++            && ax_property(disabled, "disabled") == Some(&json!(true))
++            && read_description.contains("字數，已輸入 2 個字，上限 5 個字。"),
++        "actual Chrome AX keeps the read-only count and separate disabled editor"
++    );
++    tab.shortcut("a").await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.selectionStart === 0 && {TEXTAREA}.selectionEnd === 6"
++    ))
++    .await?;
++    tab.insert_text("不能改").await?;
++    tab.press("Backspace").await?;
++    raw(tab, "🇹🇼a\u{301}").await?;
++    ratio(tab, READ_ONLY, 2).await?;
++    tab.press("Tab").await?;
++    tab.settle().await?;
++    check!(
++        state(tab).await?["focused"] != DISABLED,
++        "Tab skips the disabled editor"
++    );
++    let unchanged = model(
++        tab,
++        "d.locked_edit_requests === 0 && d.edits === 0 && d.submits === 0 && d.actions === 0",
++    )
++    .await?;
++    Ok(
++        json!({"model":unchanged,"read_bounds":read_rect,"disabled_bounds":disabled_rect,
++        "read_ratio":"2/5","disabled_ratio":"6/5","readonly":true,"disabled":true,
++        "read_description":read_description,"read_ink":read_ink,"muted_candidates":muted_candidates,
++        "muted_ink":muted_ink,"disabled_error_ink":disabled_error_ink}),
++    )
++}
++
++async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    for control in [THEME, RTL, TEXT] {
++        click(tab, control).await?;
++        tab.settle().await?;
++    }
++    resize(tab, 320, 1240).await?;
++    let base = model(
++        tab,
++        "d.width === 320 && d.appearance === 'outlined' && d.dark && d.rtl
++        && d.text_scale === 2 && !d.narrow && !d.show_error",
++    )
++    .await?;
++    enter_editor(tab).await?;
++    raw(tab, INITIAL).await?;
++    let description = describe(tab, 3, HELP, false).await?;
++    let normal = capture(tab, env, COMPACT, &base, SMALL, false, false).await?;
++    check!(
++        normal["helper"][3]
++            .as_f64()
++            .context("compact helper height")?
++            > 32.,
++        "the normal 320 dp helper wraps without colliding with the ratio"
++    );
++    let locks = locked(tab, env, &base).await?;
++
++    click(tab, NARROW).await?;
++    let narrowed = model(tab, "d.narrow && d.fixture_width === 112").await?;
++    enter_editor(tab).await?;
++    raw(tab, INITIAL).await?;
++    let outlined_description = describe(tab, 3, HELP, false).await?;
++    let outlined = capture(tab, env, NARROW_OUTLINED, &narrowed, SMALL, true, false).await?;
++    tab.press("Tab").await?;
++    focused(tab, ACTION).await?;
++    tab.press("Shift+Tab").await?;
++    editor(tab, EDITABLE).await?;
++
++    click(tab, APPEARANCE).await?;
++    model(tab, "d.appearance === 'filled'").await?;
++    click(tab, ERROR).await?;
++    let filled_state = model(tab, "d.appearance === 'filled' && d.show_error && d.narrow").await?;
++    enter_editor(tab).await?;
++    raw(tab, INITIAL).await?;
++    let filled_description = describe(tab, 3, MANUAL, true).await?;
++    let filled = capture(tab, env, NARROW_FILLED, &filled_state, SMALL, true, false).await?;
++    resize(tab, HOME.0, HOME.1).await?;
++    click(tab, BACK).await?;
++    model(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"normal":normal,"normal_description":description,"locks":locks,
++        "fallback_outlined":outlined,"fallback_outlined_description":outlined_description,
++        "fallback_filled":filled,"fallback_filled_description":filled_description,
++        "back_focus":SHOW}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 864, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(
++            STEPS[0],
++            "authored Unicode and combined emoji count once with passive descriptions",
++        );
++        route(&tab, url).await?;
++        let adapter = tab
++            .eval(
++                "(async () => {
++            const {info} = await navigator.gpu.requestAdapter();
++            const {vendor, architecture, isFallbackAdapter} = info;
++            return {vendor, architecture, isFallbackAdapter};
++        })()",
++            )
++            .await?;
++        check!(
++            adapter["vendor"].is_string()
++                && adapter["architecture"].is_string()
++                && adapter["isFallbackAdapter"].is_boolean(),
++            "headless Chrome reports its WebGPU adapter"
++        );
++        report["adapter"] = adapter;
++        report["authored"] = authored(&tab, env).await?;
++        step(
++            STEPS[1],
++            "the advisory limit keeps overflow and explicit errors take precedence",
++        );
++        report["limits"] = limits(&tab, env).await?;
++        step(
++            STEPS[2],
++            "synthetic preedit stays outside the count and Enter stays independent",
++        );
++        report["composition"] = composition(&tab, env).await?;
++        step(
++            STEPS[3],
++            "dark RTL at double text size keeps readable locked and stacked counts",
++        );
++        report["compact"] = compact(&tab, env, url).await?;
++        check!(tab.errors().is_empty(), "no character counter page errors");
++        Ok(())
++    }
++    .await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact("material-text-field-counter-failure.png"))
++            .await;
++    }
++    env.write_json("material-text-field-counter.json", &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 1dac1bd..ed53199 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -48,6 +48,7 @@ mod split_demo;
+ mod switch_demo;
+ mod tabs_demo;
+ mod text_field_adornments_demo;
++mod text_field_counter_demo;
+ mod time_dial_demo;
+ mod time_input_demo;
+ mod time_scroll_demo;
+@@ -114,6 +115,7 @@ use surface_material::{
+ use switch_demo::{SwitchDemo, SwitchDemoEvent};
+ use tabs_demo::{TabsDemo, TabsDemoEvent};
+ use text_field_adornments_demo::{TextFieldAdornmentsDemo, TextFieldAdornmentsDemoEvent};
++use text_field_counter_demo::{TextFieldCounterDemo, TextFieldCounterDemoEvent};
+ use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
+ use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
+ use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
+@@ -158,6 +160,7 @@ pub struct Gallery {
+     filled_text_field_demo: FilledTextFieldDemo,
+     outlined_text_field_demo: OutlinedTextFieldDemo,
+     text_field_adornments_demo: TextFieldAdornmentsDemo,
++    text_field_counter_demo: TextFieldCounterDemo,
+     segmented_demo: SegmentedDemo,
+     slider_demo: SliderDemo,
+     slider_forms_demo: SliderFormsDemo,
+@@ -239,6 +242,7 @@ impl Default for Gallery {
+             filled_text_field_demo: FilledTextFieldDemo::default(),
+             outlined_text_field_demo: OutlinedTextFieldDemo::default(),
+             text_field_adornments_demo: TextFieldAdornmentsDemo::default(),
++            text_field_counter_demo: TextFieldCounterDemo::default(),
+             segmented_demo: SegmentedDemo::default(),
+             slider_demo: SliderDemo::default(),
+             slider_forms_demo: SliderFormsDemo::default(),
+@@ -365,6 +369,7 @@ pub enum Message {
+     FilledTextFieldDemo(FilledTextFieldDemoEvent),
+     OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
+     TextFieldAdornmentsDemo(TextFieldAdornmentsDemoEvent),
++    TextFieldCounterDemo(TextFieldCounterDemoEvent),
+     SegmentedDemo(SegmentedDemoEvent),
+     SliderDemo(SliderDemoEvent),
+     SliderForms(SliderFormsEvent),
+@@ -562,6 +567,9 @@ impl Application for Gallery {
+         if self.text_field_adornments_demo.visible() {
+             return self.text_field_adornments_demo.text_scale();
+         }
++        if self.text_field_counter_demo.visible() {
++            return self.text_field_counter_demo.text_scale();
++        }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.text_scale();
+         }
+@@ -597,6 +605,7 @@ impl Application for Gallery {
+         let filled_text_field = self.filled_text_field_demo.viewport_changed(width);
+         let outlined_text_field = self.outlined_text_field_demo.viewport_changed(width);
+         let text_field_adornments = self.text_field_adornments_demo.viewport_changed(width);
++        let text_field_counter = self.text_field_counter_demo.viewport_changed(width);
+         let segmented = self.segmented_demo.viewport_changed(width);
+         let sliders = self.slider_demo.viewport_changed(width, height);
+         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
+@@ -670,6 +679,7 @@ impl Application for Gallery {
+             || filled_text_field
+             || outlined_text_field
+             || text_field_adornments
++            || text_field_counter
+             || segmented
+             || sliders
+             || slider_forms
+@@ -1023,6 +1033,9 @@ impl Application for Gallery {
+                 if i != text_field_adornments_demo::SECTION {
+                     self.text_field_adornments_demo.leave();
+                 }
++                if i != text_field_counter_demo::SECTION {
++                    self.text_field_counter_demo.leave();
++                }
+                 if i != segmented_demo::SECTION {
+                     self.segmented_demo.leave();
+                 }
+@@ -1056,6 +1069,7 @@ impl Application for Gallery {
+             Message::TextFieldAdornmentsDemo(event) => {
+                 self.text_field_adornments_demo.update(event)
+             }
++            Message::TextFieldCounterDemo(event) => self.text_field_counter_demo.update(event),
+             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
+             Message::SliderDemo(event) => self.slider_demo.update(event),
+             Message::SliderForms(event) => self.slider_forms_demo.update(event),
+@@ -1285,6 +1299,9 @@ impl Application for Gallery {
+         if self.text_field_adornments_demo.visible() {
+             return self.text_field_adornments_demo.view(&t, self.dark);
+         }
++        if self.text_field_counter_demo.visible() {
++            return self.text_field_counter_demo.view(&t, self.dark);
++        }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.view(&t, self.dark);
+         }
+@@ -1417,6 +1434,7 @@ impl Application for Gallery {
+                             OutlinedTextFieldDemo::show_button(&t),
+                             FilledTextFieldDemo::show_button(&t),
+                             TextFieldAdornmentsDemo::show_button(&t),
++                            TextFieldCounterDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -2052,6 +2070,7 @@ mod web {
+         state["filled_text_field_demo"] = s.filled_text_field_demo.inspect(&theme, s.dark);
+         state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
+         state["text_field_adornments_demo"] = s.text_field_adornments_demo.inspect(&theme, s.dark);
++        state["text_field_counter_demo"] = s.text_field_counter_demo.inspect(&theme, s.dark);
+         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
+         state["slider_demo"] = s.slider_demo.inspect(&theme);
+         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
+diff --git a/examples/material-gallery/src/text_field_counter_demo.rs b/examples/material-gallery/src/text_field_counter_demo.rs
+new file mode 100644
+index 0000000..14ae740
+--- /dev/null
++++ b/examples/material-gallery/src/text_field_counter_demo.rs
+@@ -0,0 +1,418 @@
++use std::sync::OnceLock;
++
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
++    TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability,
++    TextFieldOptions, TextFieldTrailingAction, Theme, VectorIcon,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const TITLE: &str = "文字欄位字數";
++const SHOW: &str = "text-field-counter-demo-show";
++const BACK: &str = "text-field-counter-demo-back";
++const APPEARANCE: &str = "text-field-counter-demo-appearance";
++const THEME: &str = "text-field-counter-demo-theme";
++const RTL: &str = "text-field-counter-demo-rtl";
++const LARGE_TEXT: &str = "text-field-counter-demo-large-text";
++const NARROW: &str = "text-field-counter-demo-narrow";
++const ERROR: &str = "text-field-counter-demo-error";
++const EDITABLE: &str = "text-field-counter-demo-editable";
++const READ_ONLY: &str = "text-field-counter-demo-read-only";
++const DISABLED: &str = "text-field-counter-demo-disabled";
++const NARROW_WIDTH: f32 = 112.;
++const LIMIT: usize = 5;
++
++#[derive(Clone)]
++pub enum TextFieldCounterDemoEvent {
++    Show,
++    Back,
++    ToggleAppearance,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleNarrow,
++    ToggleError,
++    Edit(String),
++    EditLocked,
++    Clear,
++    Submit,
++}
++
++#[derive(Clone, Copy)]
++enum Feedback {
++    Cleared,
++    Submitted,
++}
++
++impl Feedback {
++    fn text(self) -> &'static str {
++        match self {
++            Self::Cleared => "已清除標籤。",
++            Self::Submitted => "已送出標籤。",
++        }
++    }
++}
++
++#[derive(Clone, Copy)]
++enum Sample {
++    Editable,
++    ReadOnly,
++    Disabled,
++}
++
++pub(crate) struct TextFieldCounterDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    narrow: bool,
++    show_error: bool,
++    width: f32,
++    appearance: TextFieldAppearance,
++    value: String,
++    edits: usize,
++    actions: usize,
++    submits: usize,
++    last_submit: Option<String>,
++    locked_edit_requests: usize,
++    feedback: Option<Feedback>,
++}
++
++impl Default for TextFieldCounterDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            narrow: false,
++            show_error: false,
++            width: 960.,
++            appearance: TextFieldAppearance::Outlined,
++            value: "中a\u{301}👍🏽".to_owned(),
++            edits: 0,
++            actions: 0,
++            submits: 0,
++            last_submit: None,
++            locked_edit_requests: 0,
++            feedback: None,
++        }
++    }
++}
++
++impl TextFieldCounterDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        if self.width == width {
++            return false;
++        }
++        self.width = width;
++        self.visible
++    }
++
++    pub(crate) fn update(&mut self, event: TextFieldCounterDemoEvent) {
++        use TextFieldCounterDemoEvent::*;
++        if !self.visible && !matches!(event, Show) {
++            return;
++        }
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleAppearance => {
++                self.appearance = match self.appearance {
++                    TextFieldAppearance::Outlined => TextFieldAppearance::Filled,
++                    TextFieldAppearance::Filled => TextFieldAppearance::Outlined,
++                };
++            }
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleNarrow => self.narrow = !self.narrow,
++            ToggleError => self.show_error = !self.show_error,
++            Edit(value) => {
++                self.value = value;
++                self.edits += 1;
++            }
++            EditLocked => self.locked_edit_requests += 1,
++            Clear => {
++                self.value.clear();
++                self.actions += 1;
++                self.feedback = Some(Feedback::Cleared);
++            }
++            Submit => {
++                self.submits += 1;
++                self.last_submit = Some(self.value.clone());
++                self.feedback = Some(Feedback::Submitted);
++            }
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                TITLE,
++                ButtonKind::Outlined,
++                false,
++                Message::TextFieldCounterDemo(TextFieldCounterDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++            .suppress_repeated_activation()
++    }
++
++    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
++        use TextFieldCounterDemoEvent::*;
++        let demo = Message::TextFieldCounterDemo;
++        let (id, label, value, editability) = match sample {
++            Sample::Editable => (
++                EDITABLE,
++                "標籤名稱",
++                self.value.as_str(),
++                TextFieldEditability::Editable,
++            ),
++            Sample::ReadOnly => (
++                READ_ONLY,
++                "唯讀標籤",
++                "🇹🇼a\u{301}",
++                TextFieldEditability::ReadOnly,
++            ),
++            Sample::Disabled => (
++                DISABLED,
++                "停用標籤",
++                "停用標籤內容",
++                TextFieldEditability::Disabled,
++            ),
++        };
++        let mut options = TextFieldOptions::new(id, label, value);
++        options.editability = editability;
++        options.text_scale = self.text_scale();
++        options.direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let editable = matches!(sample, Sample::Editable);
++        options.supporting_text = match sample {
++            Sample::Editable => {
++                Some("請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。")
++            }
++            Sample::ReadOnly => Some("已儲存的標籤。"),
++            Sample::Disabled => None,
++        };
++        let mut adornments = TextFieldAdornments::default();
++        if editable {
++            options.placeholder = Some("輸入標籤名稱");
++            options.error = self.show_error.then_some("這個標籤已存在。");
++            adornments.prefix = Some(TextFieldAffix {
++                visual: "#",
++                spoken_name: "井字號",
++            });
++            adornments.trailing_action = Some(TextFieldTrailingAction {
++                icon: clear_icon(),
++                name: "清除標籤",
++                disabled: self.value.is_empty(),
++                on_press: demo(Clear),
++            });
++        }
++        let field = theme
++            .text_field_with_counter(
++                self.appearance,
++                options,
++                adornments,
++                TextFieldCounterOptions {
++                    max_graphemes: LIMIT,
++                    over_limit_error: "請輸入最多 5 個字。",
++                    describe: &|count, limit| {
++                        format!("字數，已輸入 {count} 個字，上限 {limit} 個字。")
++                    },
++                },
++                move |value| demo(if editable { Edit(value) } else { EditLocked }),
++                move || editable.then(|| demo(Submit)),
++            )
++            .expect("valid Gallery field with character count");
++        if editable && self.narrow {
++            let mut style = Style::column().width(Length::Px(NARROW_WIDTH));
++            style.max_width = Length::Percent(1.);
++            let wrapper = Node::new(Role::Group, "")
++                .id("text-field-counter-demo-narrow-specimen")
++                .styled(style);
++            View::new(wrapper).children([field])
++        } else {
++            field
++        }
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use TextFieldCounterDemoEvent::*;
++        let demo = Message::TextFieldCounterDemo;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++                .suppress_repeated_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", demo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation()
++                .suppress_repeated_activation(),
++            toggle(
++                APPEARANCE,
++                "填色",
++                self.appearance == TextFieldAppearance::Filled,
++                demo(ToggleAppearance),
++            ),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(RTL, "右起", self.rtl, demo(ToggleDirection)),
++            toggle(LARGE_TEXT, "大字", self.large_text, demo(ToggleLargeText)),
++            toggle(NARROW, "窄欄", self.narrow, demo(ToggleNarrow)),
++            toggle(ERROR, "錯誤", self.show_error, demo(ToggleError)),
++        ]);
++
++        let mut feedback_style = Style::column()
++            .width(Length::Percent(1.))
++            .with_text_style(typography::BODY_MEDIUM)
++            .foreground(theme.colors.on_surface);
++        feedback_style.min_height = typography::BODY_MEDIUM.line_height_px();
++        let feedback = View::new(
++            Node::new(Role::Status, "")
++                .id("text-field-counter-demo-feedback")
++                .text(self.feedback.map_or("", Feedback::text))
++                .styled(feedback_style),
++        );
++
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .align(Align::Start)
++            .padding(8.)
++            .gap(20.)
++            .clip(true);
++        scroll_style.max_width = Length::Px(520.);
++        let scroll = View::new(
++            Node::new(Role::Group, "附字數的欄位範例")
++                .id("text-field-counter-demo-scroll")
++                .styled(scroll_style),
++        )
++        .accessibility_scroll_pages()
++        .children([
++            self.field(theme, Sample::Editable),
++            self.field(theme, Sample::ReadOnly),
++            self.field(theme, Sample::Disabled),
++            feedback,
++        ]);
++        View::new(
++            Node::new(Role::Window, TITLE)
++                .id("text-field-counter-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("text-field-counter-demo-title", TITLE),
++            controls,
++            scroll,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let colors = theme.colors;
++        let on_surface_alpha = |alpha| {
++            let surface::Color(r, g, b, _) = colors.on_surface;
++            [r, g, b, alpha]
++        };
++        serde_json::json!({
++            "visible": self.visible,
++            "width": self.width,
++            "dark": dark,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "narrow": self.narrow,
++            "fixture_width": self.narrow.then_some(NARROW_WIDTH),
++            "appearance": match self.appearance {
++                TextFieldAppearance::Outlined => "outlined",
++                TextFieldAppearance::Filled => "filled",
++            },
++            "show_error": self.show_error,
++            "value": self.value,
++            "limit": LIMIT,
++            "edits": self.edits,
++            "actions": self.actions,
++            "submits": self.submits,
++            "last_submit": self.last_submit,
++            "locked_edit_requests": self.locked_edit_requests,
++            "palette": {
++                "background": color(theme.background),
++                "surface": color(colors.surface),
++                "surface_container_highest": color(colors.surface_container_highest),
++                "outline": color(colors.outline),
++                "on_surface": color(colors.on_surface),
++                "on_surface_variant": color(colors.on_surface_variant),
++                "on_surface_alpha_4": on_surface_alpha(10),
++                "on_surface_alpha_8": on_surface_alpha(20),
++                "on_surface_alpha_38": on_surface_alpha(97),
++                "primary": color(colors.primary),
++                "secondary": color(colors.secondary),
++                "error": color(colors.error),
++                "on_error_container": color(colors.on_error_container),
++            },
++        })
++    }
++}
++
++fn clear_icon() -> &'static VectorIcon {
++    static CLEAR: OnceLock<VectorIcon> = OnceLock::new();
++    CLEAR.get_or_init(|| {
++        VectorIcon::new([
++            [6., 4.],
++            [12., 10.],
++            [18., 4.],
++            [20., 6.],
++            [14., 12.],
++            [20., 18.],
++            [18., 20.],
++            [12., 14.],
++            [6., 20.],
++            [4., 18.],
++            [10., 12.],
++            [4., 6.],
++        ])
++        .expect("valid clear glyph")
++    })
++}
