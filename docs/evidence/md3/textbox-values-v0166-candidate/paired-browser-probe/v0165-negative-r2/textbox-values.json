@@ -1,0 +1,360 @@
+{
+  "scope": "independent focused Gallery development pack",
+  "expectation": "missing",
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "actual_served_assets": {
+    "index.html": "46d7c909c9e2ec69156c4879166832f6b5d32c34f9869b550f545fe7cc8fc06d",
+    "surface_material_gallery-3638a79dfc26e1a7.js": "3638a79dfc26e1a72d8855babfad7cbab55005a45e04409dc01091b035e356ce",
+    "surface_material_gallery_bg-432ff25b724a5132.wasm": "432ff25b724a51323f8003efc8cde18fcb4e4eb4d475a71032181c5e35840542"
+  },
+  "inactive": [
+    {
+      "id": "multiline-text-field-demo-grow",
+      "value": null,
+      "expected": "第一行",
+      "proxyText": "",
+      "whiteSpace": "nowrap",
+      "hiddenCarrier": null
+    },
+    {
+      "id": "multiline-text-field-demo-fixed",
+      "value": null,
+      "expected": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "proxyText": "",
+      "whiteSpace": "nowrap",
+      "hiddenCarrier": null
+    },
+    {
+      "id": "multiline-text-field-demo-grow",
+      "value": null,
+      "expected": "  甲  \n乙 á\n",
+      "proxyText": "",
+      "whiteSpace": "nowrap",
+      "hiddenCarrier": null
+    },
+    {
+      "id": "multiline-text-field-demo-fixed",
+      "value": null,
+      "expected": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "proxyText": "",
+      "whiteSpace": "nowrap",
+      "hiddenCarrier": null
+    },
+    {
+      "id": "multiline-text-field-demo-read-only",
+      "value": null,
+      "expected": "已儲存的第一行\n已儲存的第二行\n",
+      "proxyText": "",
+      "whiteSpace": "nowrap",
+      "hiddenCarrier": null
+    },
+    {
+      "id": "multiline-text-field-demo-disabled",
+      "value": null,
+      "expected": "停用的第一行\n停用的第二行",
+      "proxyText": "",
+      "whiteSpace": "nowrap",
+      "hiddenCarrier": null
+    }
+  ],
+  "phases": {
+    "before": {
+      "dom": {
+        "focus": "multiline-text-field-demo-back",
+        "active": "",
+        "host": {
+          "hidden": true,
+          "readOnly": false,
+          "value": null,
+          "label": null
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          },
+          "multiline-text-field-demo-fixed": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 194,
+          "value": null,
+          "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        },
+        "multiline-text-field-demo-fixed": {
+          "name": "詳細說明",
+          "backend": 195,
+          "value": null,
+          "description": "內容會在固定高度內捲動。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "active": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow",
+        "active": "surface-text-input",
+        "host": {
+          "hidden": false,
+          "readOnly": false,
+          "value": "第一行",
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": null,
+          "multiline-text-field-demo-fixed": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 13,
+          "value": "第一行",
+          "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        },
+        "multiline-text-field-demo-fixed": {
+          "name": "詳細說明",
+          "backend": 243,
+          "value": null,
+          "description": "內容會在固定高度內捲動。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "edited": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow",
+        "active": "surface-text-input",
+        "host": {
+          "hidden": false,
+          "readOnly": false,
+          "value": "  甲  \n乙 á\n",
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": null
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 13,
+          "value": "  甲  \n乙 á\n",
+          "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "after": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow-trailing-action",
+        "active": "",
+        "host": {
+          "hidden": true,
+          "readOnly": false,
+          "value": null,
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          },
+          "multiline-text-field-demo-fixed": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 340,
+          "value": null,
+          "description": "井字號 字數，已輸入 10 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        },
+        "multiline-text-field-demo-fixed": {
+          "name": "詳細說明",
+          "backend": 341,
+          "value": null,
+          "description": "內容會在固定高度內捲動。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "locked": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow-trailing-action",
+        "active": "surface",
+        "host": {
+          "hidden": true,
+          "readOnly": false,
+          "value": null,
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-read-only": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          },
+          "multiline-text-field-demo-disabled": {
+            "text": "",
+            "whiteSpace": "nowrap",
+            "hiddenCarrier": null
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-read-only": {
+          "name": "唯讀內容",
+          "backend": 386,
+          "value": null,
+          "description": "這段文字可以選取和複製。",
+          "disabled": false,
+          "readonly": true,
+          "multiline": true
+        },
+        "multiline-text-field-demo-disabled": {
+          "name": "停用內容",
+          "backend": 421,
+          "value": null,
+          "description": null,
+          "disabled": true,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "read": {
+      "dom": {
+        "focus": "multiline-text-field-demo-read-only",
+        "active": "surface-text-input",
+        "host": {
+          "hidden": false,
+          "readOnly": true,
+          "value": "已儲存的第一行\n已儲存的第二行\n",
+          "label": "唯讀內容"
+        },
+        "proxies": {
+          "multiline-text-field-demo-read-only": null
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-read-only": {
+          "name": "唯讀內容",
+          "backend": 13,
+          "value": "已儲存的第一行\n已儲存的第二行\n",
+          "description": "這段文字可以選取和複製。",
+          "disabled": false,
+          "readonly": true,
+          "multiline": true
+        }
+      }
+    }
+  },
+  "trusted": [
+    {
+      "event": "keydown",
+      "id": "",
+      "key": "Enter",
+      "input": null
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "Meta",
+      "input": null
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "a",
+      "input": null
+    },
+    {
+      "event": "beforeinput",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "Tab",
+      "input": null
+    },
+    {
+      "event": "wheel",
+      "id": "surface",
+      "key": null,
+      "input": null
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "Tab",
+      "input": null
+    }
+  ],
+  "pageErrors": []
+}

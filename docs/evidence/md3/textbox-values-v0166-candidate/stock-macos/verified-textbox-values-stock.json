@@ -1,0 +1,1388 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "cases": {
+    "smoke": {
+      "steps": 19,
+      "checks": 34
+    },
+    "ime": {
+      "steps": 20,
+      "checks": 77
+    },
+    "material": {
+      "steps": 345,
+      "checks": 24469
+    },
+    "bridge-web": {
+      "steps": 24,
+      "checks": 94
+    },
+    "devtools-headless": {
+      "steps": 3,
+      "checks": 76
+    }
+  },
+  "total_checks": 24750,
+  "page_errors": 0,
+  "headless_transport_pngs": {
+    "bridge-web.png": {
+      "size": [
+        756,
+        469
+      ],
+      "sha256": "fe083f9371717ce631436af4a581b2fccc0654d3352a7d94f83a326eec047fdc"
+    },
+    "devtools-headless-screenshot.png": {
+      "size": [
+        720,
+        640
+      ],
+      "sha256": "21f5950edf4757f5bc836638407ea620b371961d4de8de61073feebfbd9d2ff5"
+    }
+  },
+  "chips_pngs": {
+    "material-chips-wide-light.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "890c6608b470b79e0f45b17f46aaf8ee7bebcaa15d231c3ca9c83852adced16f"
+    },
+    "material-chips-wide-focus.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "1cc8780e65beeb1da705c42035ebceb41a471b5debf5f3d33ca56f0192a1c85a"
+    },
+    "material-chips-wide-pressed.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "4ebe375cfc2aee382acbaeba4d48e1e69ab79df3e74fbd2ad62f1a733889219c"
+    },
+    "material-chips-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        2128
+      ],
+      "sha256": "9addb856b293d043030ea78ccf8e822cacb704cfacacb30cecd4e64f4798a0c3"
+    }
+  },
+  "chips_report_sha256": "145bae449ae359392a31992363d64c7d8bd36ac5cf82e265c5919f22e51304db",
+  "icons_pngs": {
+    "material-icon-buttons-wide-light.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "6ea72c50868a596c6dfe8811e2b8a070f603a7db79b42f71edb48d7824df6355"
+    },
+    "material-icon-buttons-selected-focus.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "6f06cd45943e8161e77bb8b356e533f76137191385d1f36970a89c3a6ebcee7f"
+    },
+    "material-icon-buttons-pressed.png": {
+      "size": [
+        1920,
+        1688
+      ],
+      "sha256": "088cdab41fae850ec26beba34c33172dec63467ef6a668bff36537b0c2560591"
+    },
+    "material-icon-buttons-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        1608
+      ],
+      "sha256": "e2bd5f7e024bc9edf6777b0e39e7bf154428b0343fc968d1bddf06ff8cbe9cf7"
+    }
+  },
+  "icons_report_sha256": "0b81b42e88e2b9e41976a91094a414e256bf3ce5347231c5588b023b8059c90e",
+  "sliders_pngs": {
+    "material-standard-slider-wide-light.png": {
+      "size": [
+        1920,
+        2168
+      ],
+      "sha256": "c0d39586f628cecf8721b80029d26b263eb2fc7cbaed431b76a3db302acadb78"
+    },
+    "material-standard-slider-keyboard.png": {
+      "size": [
+        1920,
+        2168
+      ],
+      "sha256": "e1f1c99e0fafe176f0d5d1f8b1dd847ca16e41b065e1c425061c9cd1acb0f30e"
+    },
+    "material-standard-slider-live-drag.png": {
+      "size": [
+        1920,
+        2168
+      ],
+      "sha256": "f5604e84a441f700ba3ab7bf83fe07797cec70ac461af21f398cbb85295b3096"
+    },
+    "material-standard-slider-compact-dark-rtl-200.png": {
+      "size": [
+        640,
+        1848
+      ],
+      "sha256": "ca0156b2beb62c6d954f9fe29138077b8258f7151a87a080d76d833f37e869c9"
+    }
+  },
+  "sliders_report_sha256": "5f1dd1d021ac04cee4113090d8b6fa677992d0ff508009f2a3ee55992a050ca2",
+  "slider_forms": {
+    "report_sha256": "2f899b43a965d04c11e3b3986e2a644ad8de066f4a1b905e227cadb7bf679d74",
+    "captures": {
+      "material-slider-forms-centered-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "8f2eb33477b6808b93264242f148088c39afdcd047572f38e9bae6aa6a2e5f7b",
+        "decoded_rgb_sha256": "c434405db9f8f9517165f8dcdd628e815b87bb23ccc4e9e0f5d7f2c9fc03efa8"
+      },
+      "material-slider-forms-centered-keys.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "2526473de7584f964f7cda04a547aa1bd66bd25f854b5fae20474e866dbfe052",
+        "decoded_rgb_sha256": "98f50770d8d3b45aa9668d71f94a662b3e6bb5a7f49069a997c2589b86c6386f"
+      },
+      "material-slider-forms-vertical-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "5ad89e599fd8389611649737f05db24424b1cd042b5e18e64e15bb3985d83c2c",
+        "decoded_rgb_sha256": "82e8e870c6a1b8c8d8b91e0bf9006b66c77d0495de5cc242819eac1fafdd31b4"
+      },
+      "material-slider-forms-vertical-compact-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "39d111c0238238a5fc1c8b814377fe894eefbe82e44a077c1ed804379600e4b8",
+        "decoded_rgb_sha256": "314f5a9c943f9de449319f84083928c452ebf0dfb2bc1eaf3e156509d599b073"
+      }
+    },
+    "centered_stops": 8,
+    "centered_ring_pixels": 1272,
+    "centered_label_pixels": 189,
+    "wide_vertical_value": 72.99999660915799,
+    "compact_dark_label_ink": 1008,
+    "compact_dark_label_fill": 18032,
+    "compact_dark_focus_ink": 1268
+  },
+  "range_slider": {
+    "report_sha256": "1a1eca91861511b3e3c0447117a2fdb9f3273e52962b9164ea994c5e310e57f6",
+    "captures": {
+      "material-range-slider-wide-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "2c59d2c8f80a965ed53f857197b844ea1e386724a2f5f60b426c10d9dd5ddcbb",
+        "decoded_rgb_sha256": "571941acc0c7bf7a16c49f5d21a7aa362f5171292fa06b4e6fba4fcf0eaf7fab"
+      },
+      "material-range-slider-overlap-focus.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "66a9812b0c998f90d478ed2e4cef4fa931bd94a446cd98953fbad94e67ef75ff",
+        "decoded_rgb_sha256": "87f22f2e3656e732b3bacef8589966c0a043de49ebf880414073e29d79622981"
+      },
+      "material-range-slider-held-loss.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "03a4de7c1f292b036157d10c75eb342a7b15e281736976e64cfe191e4d5a3f63",
+        "decoded_rgb_sha256": "d37bcc6490bdde83eed544c7160416ddbe41459ae8ac2e042dd9e5218f3c5234"
+      },
+      "material-range-slider-compact-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "88153a27f888466040346d4c0bbfbdbe100fdb04c48530ea762d8556657fd575",
+        "decoded_rgb_sha256": "719091ab1a54070aa66370a1fb9475f89e445e8288f629ebe44a6f002c9e98a3"
+      }
+    },
+    "wide": {
+      "fixture_count": 4,
+      "handle_count": 8,
+      "active_colors": [
+        [
+          101,
+          85,
+          143
+        ],
+        [
+          101,
+          85,
+          143
+        ],
+        null,
+        [
+          168,
+          163,
+          170
+        ]
+      ]
+    },
+    "indicators": {
+      "overlap": {
+        "text": 167,
+        "fill": 8526,
+        "focus": 1268
+      },
+      "capture_loss": {
+        "text": 149,
+        "fill": 8495,
+        "focus": 1114
+      },
+      "compact": {
+        "text": 1421,
+        "fill": 27113,
+        "focus": 1272
+      }
+    },
+    "events": {
+      "mouse_owner": 1,
+      "foreign_touch": 2,
+      "held": [
+        39.99999923322668,
+        85.99999969329068
+      ],
+      "after": [
+        39.99999923322668,
+        85.99999969329068
+      ],
+      "fresh": [
+        39.99999923322668,
+        90.00000306709327
+      ]
+    }
+  },
+  "slider_refinements": {
+    "report_sha256": {
+      "material-vertical-centered-slider.json": "24311e81a02072b9a73a385e3544f64c25fd94e9c278916a888abcd154fcccae",
+      "material-slider-inset.json": "0a2f4ae152b5f806b3a693ab2c54061f920693b80dae95a31e7e200ee15beeb5"
+    },
+    "captures": {
+      "material-vertical-centered-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "fa4d51bda6b52a54e53503c9be13b727ccc74b557d017ead20f5181bfd9d9820",
+        "decoded_rgb_sha256": "19605d3a401e431e1acd2eec6189f65be181a52fd7ca7d7d4dfbf58023000e46"
+      },
+      "material-vertical-centered-keyboard.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "474630f445e45eb246b0568f24499ea9aff4e3b527a21cb903294f1a73440670",
+        "decoded_rgb_sha256": "e8edb9fc176588c44f476a30d8d8478447d80ea591205dbd4517d182ff2b7871"
+      },
+      "material-vertical-centered-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "03edce5b9d225d819281341e5b416cadd63f793854064aa7f42d4f432c0c9880",
+        "decoded_rgb_sha256": "7c93917612d8a0c18a6865008219279f0fd3d588b36e600a8e5a966a9df93a09"
+      },
+      "material-slider-inset-light.png": {
+        "size": [
+          1920,
+          2168
+        ],
+        "sha256": "0689890db54be1f1d44d104a4106798033dc8d4b94a49f738699e73cfa8d941c",
+        "decoded_rgb_sha256": "f3de5ad68abfc57c141a035e62107dbac77e977c1e200486850ee3d5d660eeb6"
+      },
+      "material-slider-inset-muted.png": {
+        "size": [
+          1920,
+          2168
+        ],
+        "sha256": "0d5f99efe067d75080ea70919a6f1ab1cc3aa5137d653934873f54759284d3f6",
+        "decoded_rgb_sha256": "d88b8e73ff2e456fbeefaaec4bb9cc7cf0ae4b243022fb2c6de6a15f09d99fb6"
+      },
+      "material-slider-inset-quiet.png": {
+        "size": [
+          1920,
+          2168
+        ],
+        "sha256": "99a9a34b0a5b509ae28902b40eb9f6b48e5d4b7c63fef4574f59d45da5cab1fe",
+        "decoded_rgb_sha256": "baa3211c769d274ac6267a18cddb13fab93826730912d68f744cfdb297f1784e"
+      },
+      "material-slider-inset-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "3f8b1c62afae63db14d72103438e5d1c392b50b8698ebcecc688df0e5e8f569f",
+        "decoded_rgb_sha256": "b7d9c91051addb798deff5e4c7708e4b6097c6268229cc4508f07c4ee3e57999"
+      }
+    },
+    "vertical_centered": {
+      "signed_active_pixels": [
+        4192,
+        0,
+        4192,
+        1600
+      ],
+      "indicators": {
+        "keys": {
+          "text_ink": 186,
+          "label_fill": 9887,
+          "focus_ink": 1268
+        },
+        "compact": {
+          "text_ink": 1160,
+          "label_fill": 21633,
+          "focus_ink": 1268
+        }
+      }
+    },
+    "inset": {
+      "enabled_wide_glyph_pixels": {
+        "horizontal-medium": 460,
+        "horizontal-large": 484,
+        "horizontal-xl": 790,
+        "vertical-medium": 460,
+        "vertical-large": 484,
+        "vertical-xl": 790
+      },
+      "contours": {
+        "muted": 484,
+        "quiet": 460
+      },
+      "compact": {
+        "glyph_ink": 460,
+        "label_ink": 1043,
+        "ring_ink": 1274
+      }
+    }
+  },
+  "common_buttons": {
+    "scope": "stock-feature",
+    "report_sha256": "f5de67e681f57fb675c34a21fa2675ecd7f0fc7bc92e21b721418d86d6bb899d",
+    "steps": [
+      "M316",
+      "M317",
+      "M318",
+      "M319"
+    ],
+    "captures": {
+      "material-buttons-light.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "ea364bfc1c76a22cea0ca2849e27d5cee247db877659fdd3a8e2b61980a49069",
+        "decoded_rgb_sha256": "ba75e30b28a54a9f5391489e54a2e930103100e7327935df9710198c5bc0ea3b"
+      },
+      "material-buttons-checked.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "0c7ed90b5f3ff954892633501c36856a52a2059b54650d982dea5e55249a58f8",
+        "decoded_rgb_sha256": "4aedd64750b5f60781ef62ccbf2cf490c46de00555744b17b7f05506cb4a8fb0"
+      },
+      "material-buttons-motion-rest.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "e00c79877de93c8236658bb68fe296f69a4a35930a0153a1ee0a72d978a20605",
+        "decoded_rgb_sha256": "08b911bfbcb56af019b1d777a0f96cafbd8a263100cf978a18f37d65a9aaa435"
+      },
+      "material-buttons-motion-early.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "d78c1231a7a3f0638dba53c4250cc6482d302c1a036b653221046c4edfc42f79",
+        "decoded_rgb_sha256": "df8c44c29e8242b3ca3dff1ce6de4f1e576da22e562085f1a4e167eda6eb1c3b"
+      },
+      "material-buttons-held.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "692bd63a3ba3c21f81c6f09601230b67fbd2985f725ed2c3ee362b23a6d3f3fc",
+        "decoded_rgb_sha256": "0d13f2903be1a8b6cfeb420f644c9e9eb4b4e5525a0d59a4f76f359d9b6f497d"
+      },
+      "material-buttons-motion-reduced.png": {
+        "size": [
+          1920,
+          2408
+        ],
+        "sha256": "d85261e29cb76279edafc106f433637e5c6def589436b3be781b13c2d94e7a1c",
+        "decoded_rgb_sha256": "09ac73ed8413fc128441777ef9eeb4987153a5162b4268db633e9b712068d483"
+      },
+      "material-buttons-dark-rtl-200.png": {
+        "size": [
+          640,
+          1848
+        ],
+        "sha256": "aec1c85fcabfbbf6cd8db5371195d5c8370bcfc3305d1278ecd4d84b2cd2f6b4",
+        "decoded_rgb_sha256": "a537af260b6157124020a6d990b6baf4e36c2e0f7d1c1a44fdbe74c1a2918c9f"
+      }
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "page_errors": 0,
+    "size_icon_pixels": [
+      324,
+      324,
+      512,
+      860,
+      1300
+    ],
+    "command_pixels": {
+      "button-demo-command-elevated": {
+        "fill": [
+          248,
+          242,
+          250
+        ],
+        "label_ink": 273
+      },
+      "button-demo-command-filled": {
+        "fill": [
+          101,
+          85,
+          143
+        ],
+        "label_ink": 247
+      },
+      "button-demo-command-tonal": {
+        "fill": [
+          232,
+          222,
+          248
+        ],
+        "label_ink": 222
+      },
+      "button-demo-command-outlined": {
+        "fill": [
+          253,
+          247,
+          255
+        ],
+        "label_ink": 483
+      },
+      "button-demo-command-text": {
+        "fill": [
+          253,
+          247,
+          255
+        ],
+        "label_ink": 273
+      }
+    },
+    "checked_pixels": {
+      "button-demo-toggle-elevated": {
+        "fill": [
+          101,
+          85,
+          143
+        ],
+        "label_ink": 279
+      },
+      "button-demo-toggle-filled": {
+        "fill": [
+          101,
+          85,
+          143
+        ],
+        "label_ink": 260
+      },
+      "button-demo-toggle-tonal": {
+        "fill": [
+          98,
+          91,
+          113
+        ],
+        "label_ink": 239
+      },
+      "button-demo-toggle-outlined": {
+        "fill": [
+          50,
+          47,
+          53
+        ],
+        "label_ink": 307
+      }
+    },
+    "corner_pixels": [
+      466,
+      504,
+      623,
+      623
+    ],
+    "compact": {
+      "ring_pixels": 5280,
+      "label_pixels": 12643,
+      "back_focus": "button-demo-show",
+      "tab_order": [
+        "button-demo-size-xs",
+        "button-demo-size-s",
+        "button-demo-size-m",
+        "button-demo-size-l",
+        "button-demo-size-xl",
+        "button-demo-command-elevated",
+        "button-demo-command-filled",
+        "button-demo-command-tonal",
+        "button-demo-command-outlined",
+        "button-demo-command-text",
+        "button-demo-toggle-elevated",
+        "button-demo-toggle-filled",
+        "button-demo-toggle-tonal",
+        "button-demo-toggle-outlined",
+        "button-demo-leading",
+        "button-demo-trailing",
+        "button-demo-wrapped"
+      ]
+    }
+  },
+  "segmented": {
+    "scope": "stock-feature",
+    "report_sha256": "bc2c77ba828c05de0d216281b9eca1f181be37ce44417c3604a9cbd0b52bba2c",
+    "steps": [
+      "M320",
+      "M321",
+      "M322",
+      "M323",
+      "M324"
+    ],
+    "browser": "Chrome/158.0.8127.37",
+    "page_errors": 0,
+    "captures": {
+      "material-segmented-wide.png": {
+        "sha256": "3533a153ee99d3fe1104f7c59b6acaf4c477821f4800c72adacbce8989aaf065",
+        "size": [
+          1920,
+          1848
+        ],
+        "decoded_rgb_sha256": "577aca58834669183d1ef9d7c2faf1676014e1cf5f66c275be9ac0e27b4af45f"
+      },
+      "material-segmented-selection.png": {
+        "sha256": "a6dc61aae7371c2448f0d8471ac111ee2ea9f5c9a15ddd4b8112249b48599be0",
+        "size": [
+          1920,
+          1848
+        ],
+        "decoded_rgb_sha256": "6fb8e0e4f91a3d0040d5b005a19bc40104ed046442df3fe56026b7d345ea6d4a"
+      },
+      "material-segmented-pressed.png": {
+        "sha256": "46d69262c7b43792fdae99e5e5a91a41c4e06ff77123a7e3aeab7420b5e6ebb9",
+        "size": [
+          1920,
+          1848
+        ],
+        "decoded_rgb_sha256": "6766847849c087c257035f02c84179f1a54832416c3dfe01b7b209c27bd924a4"
+      },
+      "material-segmented-rtl-200.png": {
+        "sha256": "f115ef1ca953fb219a3b5dbee3d52d1d88ca41238b5f851ae3e0b27018b95a31",
+        "size": [
+          640,
+          1848
+        ],
+        "decoded_rgb_sha256": "0e8dd58d2f5b9f40a59ee995f6a1b4db84b5c55e6628f61ad902926b6f9381a1"
+      },
+      "material-segmented-scroll-rtl.png": {
+        "sha256": "32b1fde84f3b8aa4bf0d78302d0ffe03847daae07fdeaf811255b7c8b4a02c58",
+        "size": [
+          480,
+          1848
+        ],
+        "decoded_rgb_sha256": "f74cb0592acbf0a9e11cf3caec4b21d457487ed4ba228d9232f7dd562a63d3aa"
+      },
+      "material-segmented-touch-ltr.png": {
+        "sha256": "1196abef45a5ff7efdfe8e847f06f5c4926dd1582d01593eaa7b66c735f4f91b",
+        "size": [
+          480,
+          1848
+        ],
+        "decoded_rgb_sha256": "b7093bf42af50d8e1749fa32698728497f3a4b32fcc79804fef1e676f2791cb9"
+      },
+      "material-segmented-touch-rtl.png": {
+        "sha256": "15c08b21b9f5a34263ad658ae10e19ce500d220d54f24e864de1f078f6e9d359",
+        "size": [
+          480,
+          1848
+        ],
+        "decoded_rgb_sha256": "e2042d34b19c7d1275d8ac66e287d5b6e128aee2389da1e959f158cf10158fb4"
+      }
+    },
+    "wide": {
+      "rows": {
+        "comparison": {
+          "slots": 2,
+          "width": 78.0
+        },
+        "view": {
+          "slots": 3,
+          "width": 106.0
+        },
+        "filters": {
+          "slots": 5,
+          "width": 92.0
+        }
+      },
+      "painted_seams": 7,
+      "check_and_artwork_pixels": [
+        115,
+        400
+      ]
+    },
+    "keyboard_focus_pixels": 3500,
+    "touch": {
+      "target": "segment-saved",
+      "point": [
+        159.0,
+        398.0
+      ],
+      "held_rgb": [
+        230,
+        225,
+        232
+      ],
+      "rest_rgb": [
+        253,
+        247,
+        255
+      ]
+    },
+    "rtl": {
+      "focus_pixels": [
+        4758,
+        5067
+      ],
+      "track_delta": 62.0,
+      "returned_focus": "segmented-demo-show"
+    },
+    "touch_scroll": {
+      "directions": [
+        {
+          "rtl": false,
+          "preview_dp": 30.0,
+          "release_dp": 62.0,
+          "trailing_hit": [
+            167.0,
+            690.0,
+            52.0,
+            174.0
+          ],
+          "text_ink_pixels": 1313,
+          "outline_pixels": 1140,
+          "activations": 1
+        },
+        {
+          "rtl": true,
+          "preview_dp": 30.0,
+          "release_dp": 62.0,
+          "trailing_hit": [
+            21.0,
+            690.0,
+            52.0,
+            174.0
+          ],
+          "text_ink_pixels": 1313,
+          "outline_pixels": 1140,
+          "activations": 1
+        }
+      ],
+      "vertical_dp": {
+        "preview": 28.0,
+        "release": 42.0
+      },
+      "capture_loss": {
+        "owner": 2,
+        "events": [
+          {
+            "kind": "gotpointercapture",
+            "id": 2
+          },
+          {
+            "kind": "lostpointercapture",
+            "id": 2
+          }
+        ],
+        "restored": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "after_up": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "browser_focus": "surface",
+        "keyboard_resumed_at": "segment-saved"
+      }
+    }
+  },
+  "outlined_text_field": {
+    "report_sha256": "9db1280cfcf50bc39639d5bee20c18ffbd6b3530a142b7b7ddbe072b98779782",
+    "browser": "Chrome/158.0.8127.37",
+    "pngs": {
+      "material-outlined-text-field-idle.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "f09c900784f9ef67546953afd44ddf77504e8fb57808a5ebda9b1869f178e1ec"
+      },
+      "material-outlined-text-field-focused.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "f0d740384c5e757159789130a3c33d02aa4c753158b413758ca40f0c7379a57a"
+      },
+      "material-outlined-text-field-ime-preedit.png": {
+        "size": [
+          960,
+          1728
+        ],
+        "sha256": "80fe052d33d3c8c5cedaa03ae8c6528ee9ef2c318c516d9c4b4167bee869bdee"
+      },
+      "material-outlined-text-field-error.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "5328b8b3bb46d5d65c19cd35df007c700c7a0e605347532e69050e87baf46d6d"
+      },
+      "material-outlined-text-field-compact-dark-rtl-200.png": {
+        "size": [
+          640,
+          2008
+        ],
+        "sha256": "db416ad7c8a32711f9895eb75df55e8a16e72101470014f1c0cc78b1ac1eb33d"
+      }
+    },
+    "outline_dp": {
+      "idle": 1,
+      "focused": 3,
+      "invalid_focused": 3
+    },
+    "synthetic_composition": {
+      "first_enter_submits": 0,
+      "insert_text_needed": true,
+      "second_enter_submits": 1,
+      "selection_preserved": true
+    },
+    "assertive_messages": [
+      "請輸入有效的專案名稱。",
+      "請輸入有效的專案名稱。"
+    ],
+    "disabled_skipped": true,
+    "readonly_preserved": true,
+    "compact_back_focus": "outlined-text-field-demo-show"
+  },
+  "filled_text_field": {
+    "report_sha256": "b38fb649cf9882ee06dfa64b36ca3f603598020da9f50f6edb6f63cf8dc25002",
+    "browser": "Chrome/158.0.8127.37",
+    "pngs": {
+      "material-filled-text-field-idle.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "2c19c1450754ac4cb066249bfec496968bae94405c3462df0ddf9d589fcd19a9"
+      },
+      "material-filled-text-field-hover.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "32daffb01a27b28c4e2f2585b759444140e760158317d30967f1a9be86a94222"
+      },
+      "material-filled-text-field-focused.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "204df2161145f2e3a4139e878a33dafc7041d9b3cf5d94b77b7026f040d0681a"
+      },
+      "material-filled-text-field-ime-preedit.png": {
+        "size": [
+          960,
+          1728
+        ],
+        "sha256": "2e5bd8749c59862791e638ea89ef375e831569a713c25dba7d750b69f4fa22d0"
+      },
+      "material-filled-text-field-error.png": {
+        "size": [
+          1920,
+          1728
+        ],
+        "sha256": "50f262939a64f2b1ae3952daea6e2d1c0f7f1c82c670cd7e28e4f9c3a47be124"
+      },
+      "material-filled-text-field-compact-dark-rtl-200.png": {
+        "size": [
+          640,
+          2008
+        ],
+        "sha256": "2839fa74ed90dda56fa1ef9dd26fe11570f8038762a87ef7e06973b558132f05"
+      }
+    },
+    "indicator_dp": {
+      "idle": 1,
+      "hover": 1,
+      "focused": 3,
+      "invalid_focused": 3
+    },
+    "blend_spaces": [
+      "encoded"
+    ],
+    "compact": {
+      "face_height_dp": 96.0,
+      "above_label_height_dp": 96.0,
+      "lower_right_value_pixels": 3180,
+      "back_focus": "filled-text-field-demo-show"
+    },
+    "synthetic_composition": {
+      "first_enter_submits": 0,
+      "second_enter_submits": 1,
+      "insert_text_needed": true,
+      "selection_preserved": true,
+      "enter_keys": [
+        {
+          "trusted": true,
+          "dom_composing": true
+        },
+        {
+          "trusted": true,
+          "dom_composing": false
+        }
+      ]
+    },
+    "assertive_messages": [
+      "請輸入有效的專案名稱。",
+      "請輸入有效的專案名稱。"
+    ],
+    "readonly_preserved": true,
+    "disabled_skipped": true
+  },
+  "text_field_adornments": {
+    "report_sha256": "98c6c072563ad1b91f4f669fcaf5c3e86bdb4fba8231b35b07d35fde6f103884",
+    "pngs": {
+      "material-text-field-adornments-outlined-idle.png": {
+        "sha256": "4f12772f87d282eb41dc1c137868291ee5ff75227bb1690ae4228cced31435d0",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-adornments-outlined-focused.png": {
+        "sha256": "2992e6f0969a42c95dd7a626370ee8c9e6083664fd6c32bcb4653f98f4793ab7",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-adornments-filled-focused.png": {
+        "sha256": "285c5d42c3dc85f4f8a84a9eb5b23051be8397382b5897e1bf955d355b3925d6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-adornments-ime-preedit.png": {
+        "sha256": "1616b4886464b9798640eed4a1f66f66fe70c82fdeb62a34350c9223f5557a44",
+        "size": [
+          960,
+          1728
+        ]
+      },
+      "material-text-field-adornments-compact-dark-rtl-200.png": {
+        "sha256": "bcc0dc4667c3b713f55688e1fc84cc0eae09fc1c61fdeec2b57330f9da0e54b9",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-adornments-fallback-112.png": {
+        "sha256": "eed16151801f1c978a46fb1d67993698da218750b0d1bc2edc110d0a939ff3ff",
+        "size": [
+          640,
+          2008
+        ]
+      }
+    },
+    "description_cases": 3,
+    "ghost_icon_pixels": 0,
+    "trusted_action_events": 5,
+    "synthetic_composition": {
+      "cancel_needed_cdp": true,
+      "commit_needed_insert_text": true
+    }
+  },
+  "text_field_counter": {
+    "report_sha256": "bbb4a44e64a972e8638af5b6ef22aa4bfe6e8856823875bd55339195975eeafc",
+    "pngs": {
+      "material-text-field-counter-wide-outlined-normal.png": {
+        "sha256": "6e8a567b5b88fbe6ac530eac73fe4f43a0557270bb1c17dcacf213802d720529",
+        "size": [
+          1920,
+          1728
+        ],
+        "help_height": 16.0,
+        "count": [
+          493.0,
+          204.0,
+          19.0,
+          16.0
+        ],
+        "help_ink": 2249,
+        "count_ink": 62,
+        "stacked": false
+      },
+      "material-text-field-counter-wide-outlined-overflow.png": {
+        "sha256": "bec147873d10f5091740f8a031c01b6379c18064bc7313bcbf25e8c266fa4cd9",
+        "size": [
+          1920,
+          1728
+        ],
+        "help_height": 16.0,
+        "count": [
+          493.0,
+          204.0,
+          19.0,
+          16.0
+        ],
+        "help_ink": 629,
+        "count_ink": 65,
+        "stacked": false
+      },
+      "material-text-field-counter-wide-filled-manual.png": {
+        "sha256": "583455965c4e9ea91ac8033fa9c6f7d3e5074a93d0165b14aa89c47ac4bb99aa",
+        "size": [
+          1920,
+          1728
+        ],
+        "help_height": 16.0,
+        "count": [
+          493.0,
+          196.0,
+          19.0,
+          16.0
+        ],
+        "help_ink": 598,
+        "count_ink": 71,
+        "stacked": false
+      },
+      "material-text-field-counter-ime-preedit.png": {
+        "sha256": "2540a3887aab580140c26bc7c89c32457ed23b04087d937e14a2bd18fd48e67e",
+        "size": [
+          960,
+          1728
+        ],
+        "help_height": 32.0,
+        "count": [
+          421.0,
+          196.0,
+          19.0,
+          16.0
+        ],
+        "help_ink": 2249,
+        "count_ink": 71,
+        "stacked": false
+      },
+      "material-text-field-counter-compact-rtl-200.png": {
+        "sha256": "c9a599a763f18db0429447446ed7e7622ff278e0207eabffb855bbdb757fc1a5",
+        "size": [
+          640,
+          2568
+        ],
+        "help_height": 160.0,
+        "count": [
+          40.0,
+          468.0,
+          37.0,
+          32.0
+        ],
+        "help_ink": 14129,
+        "count_ink": 492,
+        "stacked": false
+      },
+      "material-text-field-counter-fallback-outlined-112.png": {
+        "sha256": "bc4d65a05c757c91e55556350d652fc3ee62063c4a52e8fe77a45162a7209415",
+        "size": [
+          640,
+          2568
+        ],
+        "help_height": 352.0,
+        "count": [
+          40.0,
+          876.0,
+          37.0,
+          32.0
+        ],
+        "help_ink": 14164,
+        "count_ink": 492,
+        "stacked": true
+      },
+      "material-text-field-counter-fallback-filled-112.png": {
+        "sha256": "05c72dbfd9b5e17ae8a34a63fbf11a4bb6ee9eedd2db296275ea84611e509e61",
+        "size": [
+          640,
+          2568
+        ],
+        "help_height": 96.0,
+        "count": [
+          40.0,
+          636.0,
+          37.0,
+          32.0
+        ],
+        "help_ink": 3632,
+        "count_ink": 492,
+        "stacked": true
+      }
+    },
+    "validation_messages": [
+      "請輸入最多 5 個字。",
+      "這個標籤已存在。"
+    ],
+    "synthetic_composition": {
+      "cancel_needed_cdp": true,
+      "commit_needed_insert_text": true
+    }
+  },
+  "multiline_text_field": {
+    "report_sha256": "16328d2119ca5c243c6a707de9001ea04b59030b653b33322a37312aefaf7b08",
+    "editing": {
+      "paint": {
+        "wide_outlined": {
+          "body": [
+            40.0,
+            284.0,
+            472.0,
+            72.0
+          ],
+          "help": [
+            40.0,
+            376.0,
+            472.0,
+            16.0
+          ],
+          "surface": [
+            253,
+            247,
+            255
+          ],
+          "glyph_pixels": 2347,
+          "help_glyph_pixels": 925
+        },
+        "wide_filled_preedit": {
+          "body": [
+            40.0,
+            252.0,
+            472.0,
+            72.0
+          ],
+          "help": [
+            40.0,
+            336.0,
+            472.0,
+            16.0
+          ],
+          "surface": [
+            230,
+            224,
+            233
+          ],
+          "glyph_pixels": 2347,
+          "help_glyph_pixels": 925
+        }
+      },
+      "new_row_dp": 24.0,
+      "separate_submits": 1,
+      "marked_grow_pixels": 724,
+      "used_cdp_cancel": true
+    },
+    "wheel": {
+      "logical_deltas": [
+        48,
+        160,
+        -208
+      ],
+      "cdp_deltas": [
+        96.0,
+        320.0,
+        -416.0
+      ],
+      "offsets": [
+        0.0,
+        0.0,
+        64.0,
+        0.0
+      ],
+      "overlap_pixel_changes": 0,
+      "pixel_changes": [
+        311,
+        242,
+        0
+      ]
+    },
+    "page_keys": {
+      "fourth_row_utf8_byte": 55,
+      "fourth_row_utf16_unit": 26,
+      "backward": [
+        0,
+        26,
+        "backward"
+      ],
+      "body": [
+        40.0,
+        260.0,
+        472.0,
+        72.0
+      ],
+      "pixel_changes": 339,
+      "overlap_pixel_changes": 0
+    },
+    "touch": {
+      "id": 2,
+      "events": [
+        "pointerdown",
+        "gotpointercapture",
+        "pointermove",
+        "pointermove",
+        "lostpointercapture",
+        "pointermove",
+        "pointerup"
+      ],
+      "offsets": [
+        0.0,
+        56.0,
+        0.0
+      ],
+      "pixel_changes": [
+        238,
+        0
+      ]
+    },
+    "locked_ax": {
+      "readonly": true,
+      "disabled": true,
+      "active_textarea": true,
+      "skipped_disabled": true
+    },
+    "compact": {
+      "outlined": {
+        "body": [
+          40.0,
+          524.0,
+          240.0,
+          144.0
+        ],
+        "help": [
+          40.0,
+          688.0,
+          240.0,
+          64.0
+        ],
+        "surface": [
+          20,
+          18,
+          24
+        ],
+        "glyph_pixels": 10137,
+        "help_glyph_pixels": 5898
+      },
+      "filled": {
+        "body": [
+          40.0,
+          532.0,
+          240.0,
+          144.0
+        ],
+        "help": [
+          40.0,
+          688.0,
+          240.0,
+          64.0
+        ],
+        "surface": [
+          54,
+          52,
+          58
+        ],
+        "glyph_pixels": 10137,
+        "help_glyph_pixels": 5898
+      },
+      "clear_action": [
+        24.0,
+        336.0,
+        48.0,
+        48.0
+      ]
+    },
+    "pngs": {
+      "material-multiline-text-field-wide-outlined.png": {
+        "sha256": "90992621a9accb9024e4d4c46460b01f6a641dfe2325f9790b24c3897d847dea",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wide-filled-preedit.png": {
+        "sha256": "18c135370555b517e6cc2cb6a009ec604c0bb710de2317c2bd8242ff605028b2",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-compact-outlined.png": {
+        "sha256": "5b7319dff1a04d834e70e12ef0cd4c2b96bebba86fbbd2661ddfb8e235d4bf7a",
+        "size": [
+          640,
+          1888
+        ]
+      },
+      "material-multiline-text-field-compact-filled.png": {
+        "sha256": "fae677b6094e442945066761d56c233eb7c34bd07a34be206b0b6c9454813fb6",
+        "size": [
+          640,
+          1888
+        ]
+      },
+      "material-multiline-text-field-page-down.png": {
+        "sha256": "8f4a6675bf65fcc5611505f9e7d14c19987c8e8105c23f4f1cba3fb6e4584d68",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-before.png": {
+        "sha256": "597b687b1f4da522e3b073c7764b940d5d53345b445cfa758a45b391f38afd28",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-inner.png": {
+        "sha256": "e32f91b5dabc8e1e03c35c44bacd61cf7bed17f7874c1a9657c5d87d1a384023",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-residual.png": {
+        "sha256": "678c884d6b8ecfb6d971f773e5d9b0367cdc1ce9b1c0d83bc667a46b5da5302a",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-restored.png": {
+        "sha256": "597b687b1f4da522e3b073c7764b940d5d53345b445cfa758a45b391f38afd28",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-before.png": {
+        "sha256": "c30afbf36c751aaefdbc31a330a9061c8af7e768dbaa1cd4e6bbc783015d64bd",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-held.png": {
+        "sha256": "90eeb1ce42b85a0b3d2ce245f94b2a1d699c99dc08beb69a3212a073cc52fd8b",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-restored.png": {
+        "sha256": "c30afbf36c751aaefdbc31a330a9061c8af7e768dbaa1cd4e6bbc783015d64bd",
+        "size": [
+          1920,
+          1768
+        ]
+      }
+    }
+  },
+  "textbox_values": {
+    "inactive_ax": {
+      "before": {
+        "label": "多行備註",
+        "value": "第一行",
+        "multiline": true
+      },
+      "fixed": {
+        "label": "詳細說明",
+        "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+        "multiline": true
+      },
+      "after": {
+        "label": "多行備註",
+        "value": "第一行\n修訂 á",
+        "multiline": true
+      },
+      "readonly": {
+        "label": "唯讀內容",
+        "value": "已儲存的第一行\n已儲存的第二行\n",
+        "multiline": true
+      },
+      "disabled": {
+        "label": "停用內容",
+        "value": "停用的第一行\n停用的第二行",
+        "multiline": true
+      },
+      "single_line": {
+        "label": "標籤名稱",
+        "value": "中á👍🏽",
+        "multiline": false
+      }
+    },
+    "active_handoff": {
+      "label": "多行備註",
+      "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+      "backend_dom_node": 870,
+      "multiline": true
+    },
+    "no_ax_children": {
+      "before": true,
+      "fixed": true,
+      "after": true,
+      "readonly": true,
+      "disabled": true,
+      "single_line": true
+    },
+    "report_sha256": "16328d2119ca5c243c6a707de9001ea04b59030b653b33322a37312aefaf7b08"
+  },
+  "guard_and_window_checks": "passed"
+}

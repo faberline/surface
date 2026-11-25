@@ -1,0 +1,63 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 9,
+      "pids": [
+        45786
+      ]
+    },
+    "native_gallery": {
+      "samples": 0,
+      "pids": [],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 9,
+      "pids": [
+        45786
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 0,
+      "pids": [],
+      "detached_samples": 0
+    },
+    "native": {
+      "samples": 0,
+      "pids": [],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 45786,
+      "ppid": 45782,
+      "allowed": true,
+      "argv": [
+        "--headless=new",
+        "--remote-debugging-address=127.0.0.1",
+        "--remote-debugging-port=0",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-default-apps",
+        "--mute-audio",
+        "--user-data-dir=/private/tmp/surface-md3-textbox-values-proof.n472jbhl/v0166-positive/tmp/profile",
+        "about:blank"
+      ],
+      "profile": "/private/tmp/surface-md3-textbox-values-proof.n472jbhl/v0166-positive/tmp/profile"
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}

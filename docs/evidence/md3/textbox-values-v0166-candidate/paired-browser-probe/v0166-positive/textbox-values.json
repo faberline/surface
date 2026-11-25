@@ -1,0 +1,360 @@
+{
+  "scope": "independent focused Gallery development pack",
+  "expectation": "present",
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "actual_served_assets": {
+    "index.html": "1f37385c1c4c43cddc82e760d1381d941ca418bacec33e1a82a9fedbbca2b346",
+    "surface_material_gallery-f9bcafe507a65f5d.js": "f9bcafe507a65f5d49b5b658ee6ff9261dc55a650a993b1e1880bd2b22c8947d",
+    "surface_material_gallery_bg-f9fee22e81d9c522.wasm": "f9fee22e81d9c52219dddf0e85aa3da4570e5e54ab360f2e64c933152e504fe3"
+  },
+  "inactive": [
+    {
+      "id": "multiline-text-field-demo-grow",
+      "value": "第一行",
+      "expected": "第一行",
+      "proxyText": "第一行",
+      "whiteSpace": "pre",
+      "hiddenCarrier": "第一行"
+    },
+    {
+      "id": "multiline-text-field-demo-fixed",
+      "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "expected": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "proxyText": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "whiteSpace": "pre",
+      "hiddenCarrier": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n"
+    },
+    {
+      "id": "multiline-text-field-demo-grow",
+      "value": "  甲  \n乙 á\n",
+      "expected": "  甲  \n乙 á\n",
+      "proxyText": "  甲  \n乙 á\n",
+      "whiteSpace": "pre",
+      "hiddenCarrier": "  甲  \n乙 á\n"
+    },
+    {
+      "id": "multiline-text-field-demo-fixed",
+      "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "expected": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "proxyText": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "whiteSpace": "pre",
+      "hiddenCarrier": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n"
+    },
+    {
+      "id": "multiline-text-field-demo-read-only",
+      "value": "已儲存的第一行\n已儲存的第二行\n",
+      "expected": "已儲存的第一行\n已儲存的第二行\n",
+      "proxyText": "已儲存的第一行\n已儲存的第二行\n",
+      "whiteSpace": "pre",
+      "hiddenCarrier": "已儲存的第一行\n已儲存的第二行\n"
+    },
+    {
+      "id": "multiline-text-field-demo-disabled",
+      "value": "停用的第一行\n停用的第二行",
+      "expected": "停用的第一行\n停用的第二行",
+      "proxyText": "停用的第一行\n停用的第二行",
+      "whiteSpace": "pre",
+      "hiddenCarrier": "停用的第一行\n停用的第二行"
+    }
+  ],
+  "phases": {
+    "before": {
+      "dom": {
+        "focus": "multiline-text-field-demo-back",
+        "active": "",
+        "host": {
+          "hidden": true,
+          "readOnly": false,
+          "value": null,
+          "label": null
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": {
+            "text": "第一行",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "第一行"
+          },
+          "multiline-text-field-demo-fixed": {
+            "text": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n"
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 194,
+          "value": "第一行",
+          "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        },
+        "multiline-text-field-demo-fixed": {
+          "name": "詳細說明",
+          "backend": 195,
+          "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+          "description": "內容會在固定高度內捲動。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "active": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow",
+        "active": "surface-text-input",
+        "host": {
+          "hidden": false,
+          "readOnly": false,
+          "value": "第一行",
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": null,
+          "multiline-text-field-demo-fixed": {
+            "text": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n"
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 13,
+          "value": "第一行",
+          "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        },
+        "multiline-text-field-demo-fixed": {
+          "name": "詳細說明",
+          "backend": 251,
+          "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+          "description": "內容會在固定高度內捲動。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "edited": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow",
+        "active": "surface-text-input",
+        "host": {
+          "hidden": false,
+          "readOnly": false,
+          "value": "  甲  \n乙 á\n",
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": null
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 13,
+          "value": "  甲  \n乙 á\n",
+          "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "after": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow-trailing-action",
+        "active": "",
+        "host": {
+          "hidden": true,
+          "readOnly": false,
+          "value": null,
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-grow": {
+            "text": "  甲  \n乙 á\n",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "  甲  \n乙 á\n"
+          },
+          "multiline-text-field-demo-fixed": {
+            "text": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n"
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-grow": {
+          "name": "多行備註",
+          "backend": 358,
+          "value": "  甲  \n乙 á\n",
+          "description": "井字號 字數，已輸入 10 個字，上限 12 個字。 請簡短記錄這次的變更。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        },
+        "multiline-text-field-demo-fixed": {
+          "name": "詳細說明",
+          "backend": 359,
+          "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+          "description": "內容會在固定高度內捲動。",
+          "disabled": false,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "locked": {
+      "dom": {
+        "focus": "multiline-text-field-demo-grow-trailing-action",
+        "active": "surface",
+        "host": {
+          "hidden": true,
+          "readOnly": false,
+          "value": null,
+          "label": "多行備註"
+        },
+        "proxies": {
+          "multiline-text-field-demo-read-only": {
+            "text": "已儲存的第一行\n已儲存的第二行\n",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "已儲存的第一行\n已儲存的第二行\n"
+          },
+          "multiline-text-field-demo-disabled": {
+            "text": "停用的第一行\n停用的第二行",
+            "whiteSpace": "pre",
+            "hiddenCarrier": "停用的第一行\n停用的第二行"
+          }
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-read-only": {
+          "name": "唯讀內容",
+          "backend": 410,
+          "value": "已儲存的第一行\n已儲存的第二行\n",
+          "description": "這段文字可以選取和複製。",
+          "disabled": false,
+          "readonly": true,
+          "multiline": true
+        },
+        "multiline-text-field-demo-disabled": {
+          "name": "停用內容",
+          "backend": 449,
+          "value": "停用的第一行\n停用的第二行",
+          "description": null,
+          "disabled": true,
+          "readonly": false,
+          "multiline": true
+        }
+      }
+    },
+    "read": {
+      "dom": {
+        "focus": "multiline-text-field-demo-read-only",
+        "active": "surface-text-input",
+        "host": {
+          "hidden": false,
+          "readOnly": true,
+          "value": "已儲存的第一行\n已儲存的第二行\n",
+          "label": "唯讀內容"
+        },
+        "proxies": {
+          "multiline-text-field-demo-read-only": null
+        }
+      },
+      "fields": {
+        "multiline-text-field-demo-read-only": {
+          "name": "唯讀內容",
+          "backend": 13,
+          "value": "已儲存的第一行\n已儲存的第二行\n",
+          "description": "這段文字可以選取和複製。",
+          "disabled": false,
+          "readonly": true,
+          "multiline": true
+        }
+      }
+    }
+  },
+  "trusted": [
+    {
+      "event": "keydown",
+      "id": "",
+      "key": "Enter",
+      "input": null
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "Meta",
+      "input": null
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "a",
+      "input": null
+    },
+    {
+      "event": "beforeinput",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "input",
+      "id": "surface-text-input",
+      "key": null,
+      "input": "insertText"
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "Tab",
+      "input": null
+    },
+    {
+      "event": "wheel",
+      "id": "surface",
+      "key": null,
+      "input": null
+    },
+    {
+      "event": "keydown",
+      "id": "surface-text-input",
+      "key": "Tab",
+      "input": null
+    }
+  ],
+  "pageErrors": []
+}

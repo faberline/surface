@@ -1,0 +1,313 @@
+{
+  "scope": "q66 M341–M346 development",
+  "steps": [
+    "M341",
+    "M342",
+    "M343",
+    "M344",
+    "M345",
+    "M346"
+  ],
+  "checks": 308,
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "window_samples": 65,
+  "visible_windows": 0,
+  "survivors": 0,
+  "report_sha256": "7bb3bf8c5054e24df9d8da8c63870a72187e0120dcd9f7c24b4426c77a89826f",
+  "window_receipt_sha256": "1daa9b749158a3d9ca515d7b7fcef432be61a46ba00c388c7913d70e76b6d7b2",
+  "runner_sha256": "3f6ffe6bb0b809c0894b2d3be113c9777fb733a3b510bd9089bf1ed8b3e585cf",
+  "web_manifest_sha256": "d37470c46d9b81fed27eab062b137633039bcbbf0712afee3d7047dd9b86a797",
+  "inactive_ax": {
+    "before": {
+      "label": "多行備註",
+      "value": "第一行",
+      "multiline": true
+    },
+    "fixed": {
+      "label": "詳細說明",
+      "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+      "multiline": true
+    },
+    "after": {
+      "label": "多行備註",
+      "value": "第一行\n修訂 á",
+      "multiline": true
+    },
+    "readonly": {
+      "label": "唯讀內容",
+      "value": "已儲存的第一行\n已儲存的第二行\n",
+      "multiline": true
+    },
+    "disabled": {
+      "label": "停用內容",
+      "value": "停用的第一行\n停用的第二行",
+      "multiline": true
+    },
+    "single_line": {
+      "label": "標籤名稱",
+      "value": "中á👍🏽",
+      "multiline": false
+    }
+  },
+  "retained_m341_to_m345": {
+    "editing": {
+      "paint": {
+        "wide_outlined": {
+          "body": [
+            40.0,
+            284.0,
+            472.0,
+            72.0
+          ],
+          "help": [
+            40.0,
+            376.0,
+            472.0,
+            16.0
+          ],
+          "surface": [
+            253,
+            247,
+            255
+          ],
+          "glyph_pixels": 2347,
+          "help_glyph_pixels": 925
+        },
+        "wide_filled_preedit": {
+          "body": [
+            40.0,
+            252.0,
+            472.0,
+            72.0
+          ],
+          "help": [
+            40.0,
+            336.0,
+            472.0,
+            16.0
+          ],
+          "surface": [
+            230,
+            224,
+            233
+          ],
+          "glyph_pixels": 2347,
+          "help_glyph_pixels": 925
+        }
+      },
+      "new_row_dp": 24.0,
+      "separate_submits": 1,
+      "marked_grow_pixels": 724,
+      "used_cdp_cancel": true
+    },
+    "wheel": {
+      "logical_deltas": [
+        48,
+        160,
+        -208
+      ],
+      "cdp_deltas": [
+        96.0,
+        320.0,
+        -416.0
+      ],
+      "offsets": [
+        0.0,
+        0.0,
+        64.0,
+        0.0
+      ],
+      "overlap_pixel_changes": 0,
+      "pixel_changes": [
+        311,
+        242,
+        0
+      ]
+    },
+    "page_keys": {
+      "fourth_row_utf8_byte": 55,
+      "fourth_row_utf16_unit": 26,
+      "backward": [
+        0,
+        26,
+        "backward"
+      ],
+      "body": [
+        40.0,
+        260.0,
+        472.0,
+        72.0
+      ],
+      "pixel_changes": 339,
+      "overlap_pixel_changes": 0
+    },
+    "touch": {
+      "id": 2,
+      "events": [
+        "pointerdown",
+        "gotpointercapture",
+        "pointermove",
+        "pointermove",
+        "lostpointercapture",
+        "pointermove",
+        "pointerup"
+      ],
+      "offsets": [
+        0.0,
+        56.0,
+        0.0
+      ],
+      "pixel_changes": [
+        238,
+        0
+      ]
+    },
+    "locked_ax": {
+      "readonly": true,
+      "disabled": true,
+      "active_textarea": true,
+      "skipped_disabled": true
+    },
+    "compact": {
+      "outlined": {
+        "body": [
+          40.0,
+          524.0,
+          240.0,
+          144.0
+        ],
+        "help": [
+          40.0,
+          688.0,
+          240.0,
+          64.0
+        ],
+        "surface": [
+          20,
+          18,
+          24
+        ],
+        "glyph_pixels": 10137,
+        "help_glyph_pixels": 5898
+      },
+      "filled": {
+        "body": [
+          40.0,
+          532.0,
+          240.0,
+          144.0
+        ],
+        "help": [
+          40.0,
+          688.0,
+          240.0,
+          64.0
+        ],
+        "surface": [
+          54,
+          52,
+          58
+        ],
+        "glyph_pixels": 10137,
+        "help_glyph_pixels": 5898
+      },
+      "clear_action": [
+        24.0,
+        336.0,
+        48.0,
+        48.0
+      ]
+    },
+    "pngs": {
+      "material-multiline-text-field-wide-outlined.png": {
+        "sha256": "90992621a9accb9024e4d4c46460b01f6a641dfe2325f9790b24c3897d847dea",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wide-filled-preedit.png": {
+        "sha256": "18c135370555b517e6cc2cb6a009ec604c0bb710de2317c2bd8242ff605028b2",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-compact-outlined.png": {
+        "sha256": "5b7319dff1a04d834e70e12ef0cd4c2b96bebba86fbbd2661ddfb8e235d4bf7a",
+        "size": [
+          640,
+          1888
+        ]
+      },
+      "material-multiline-text-field-compact-filled.png": {
+        "sha256": "fae677b6094e442945066761d56c233eb7c34bd07a34be206b0b6c9454813fb6",
+        "size": [
+          640,
+          1888
+        ]
+      },
+      "material-multiline-text-field-page-down.png": {
+        "sha256": "8f4a6675bf65fcc5611505f9e7d14c19987c8e8105c23f4f1cba3fb6e4584d68",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-before.png": {
+        "sha256": "597b687b1f4da522e3b073c7764b940d5d53345b445cfa758a45b391f38afd28",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-inner.png": {
+        "sha256": "e32f91b5dabc8e1e03c35c44bacd61cf7bed17f7874c1a9657c5d87d1a384023",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-residual.png": {
+        "sha256": "678c884d6b8ecfb6d971f773e5d9b0367cdc1ce9b1c0d83bc667a46b5da5302a",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-restored.png": {
+        "sha256": "597b687b1f4da522e3b073c7764b940d5d53345b445cfa758a45b391f38afd28",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-before.png": {
+        "sha256": "c30afbf36c751aaefdbc31a330a9061c8af7e768dbaa1cd4e6bbc783015d64bd",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-held.png": {
+        "sha256": "90eeb1ce42b85a0b3d2ce245f94b2a1d699c99dc08beb69a3212a073cc52fd8b",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-restored.png": {
+        "sha256": "c30afbf36c751aaefdbc31a330a9061c8af7e768dbaa1cd4e6bbc783015d64bd",
+        "size": [
+          1920,
+          1768
+        ]
+      }
+    }
+  }
+}

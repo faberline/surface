@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4609,
+      "pids": [
+        76792,
+        86698
+      ]
+    },
+    "native_gallery": {
+      "samples": 8,
+      "pids": [
+        87453
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4558,
+      "pids": [
+        76792
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 51,
+      "pids": [
+        86698
+      ],
+      "detached_samples": 46
+    },
+    "native": {
+      "samples": 8,
+      "pids": [
+        87453
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 76792,
+      "ppid": 76786,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=51166",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-textbox-values-stock-v0166.z81UZBVd/run/tmp/.tmppFt6PH",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-textbox-values-stock-v0166.z81UZBVd/run/tmp/.tmppFt6PH"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 86698,
+      "ppid": 86686,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=52813",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-textbox-values-stock-v0166.z81UZBVd/run/tmp/.tmp31ZE8Y",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-textbox-values-stock-v0166.z81UZBVd/run/tmp/.tmp31ZE8Y"
+    },
+    {
+      "role": "native",
+      "pid": 87453,
+      "ppid": 76786,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
