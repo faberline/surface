@@ -110,6 +110,8 @@ mod material_switch;
 mod material_tabs;
 #[path = "material_text_field_adornments.rs"]
 mod material_text_field_adornments;
+#[path = "material_text_field_counter.rs"]
+mod material_text_field_counter;
 #[path = "material_time_baseline.rs"]
 mod material_time_baseline;
 #[path = "material_time_dial.rs"]
@@ -164,7 +166,7 @@ pub const STEPS: &[&str] = &[
     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
-    "M335", "M336",
+    "M335", "M336", "M337", "M338", "M339", "M340",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -299,7 +301,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_segmented::run(env, chrome, &url).await?;
     material_outlined_text_field::run(env, chrome, &url).await?;
     material_filled_text_field::run(env, chrome, &url).await?;
-    material_text_field_adornments::run(env, chrome, &url).await
+    material_text_field_adornments::run(env, chrome, &url).await?;
+    material_text_field_counter::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -531,8 +534,16 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn text_field_counter_steps_are_required_by_the_material_case() {
+        assert!(super::STEPS.ends_with(&super::material_text_field_counter::STEPS));
+    }
+
+    #[test]
     fn text_field_adornment_steps_are_required_by_the_material_case() {
-        assert!(super::STEPS.ends_with(&super::material_text_field_adornments::STEPS));
+        let adornments = super::material_text_field_adornments::STEPS;
+        assert!(super::STEPS
+            .windows(adornments.len())
+            .any(|steps| steps == adornments));
     }
 
     #[test]

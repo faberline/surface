@@ -4,10 +4,11 @@ use surface::{
     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
     TextAlignment,
 };
-use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
 use surface_material::{
     shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldAdornments, TextFieldAffix,
-    TextFieldAppearance, TextFieldEditability, TextFieldTrailingAction, Theme, VectorIcon,
+    TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability, TextFieldTrailingAction,
+    Theme, VectorIcon,
 };
 use surface_wgpu::TextSystem;
 
@@ -17,6 +18,8 @@ const LONG_LABEL: &str = "輸入團隊成員在共用專案清單中容易辨認
 const HINT: &str = "輸入名稱";
 const SUPPORT: &str = "請輸入中文或英文名稱。";
 const ERROR: &str = "請輸入有效的專案名稱。";
+const COUNT_ERROR: &str = "名稱超過字數上限。";
+const COUNTER: &str = "project-name-counter";
 const AFTER: &str = "after-field";
 
 #[derive(Clone)]
@@ -40,6 +43,7 @@ struct Form {
     submits: Vec<String>,
     actions: usize,
     adorned: Option<TextFieldAppearance>,
+    character_limit: Option<usize>,
     builds: Cell<usize>,
 }
 
@@ -57,6 +61,7 @@ impl Default for Form {
             submits: Vec::new(),
             actions: 0,
             adorned: None,
+            character_limit: None,
             builds: Cell::new(0),
         }
     }
@@ -108,29 +113,44 @@ impl Application for Form {
         let on_submit = || Some(Message::Submit);
         let field = if let Some(appearance) = self.adorned {
             let icon = VectorIcon::new([[4., 4.], [20., 4.], [12., 20.]]).unwrap();
-            theme.text_field_with_adornments(
-                appearance,
-                options,
-                TextFieldAdornments {
-                    leading_icon: Some(&icon),
-                    trailing_action: Some(TextFieldTrailingAction {
-                        icon: &icon,
-                        name: "套用金額",
-                        disabled: false,
-                        on_press: Message::Action,
-                    }),
-                    prefix: Some(TextFieldAffix {
-                        visual: "€",
-                        spoken_name: "歐元",
-                    }),
-                    suffix: Some(TextFieldAffix {
-                        visual: "/月",
-                        spoken_name: "每月",
-                    }),
-                },
-                Message::Edit,
-                on_submit,
-            )
+            let adornments = TextFieldAdornments {
+                leading_icon: Some(&icon),
+                trailing_action: Some(TextFieldTrailingAction {
+                    icon: &icon,
+                    name: "套用金額",
+                    disabled: false,
+                    on_press: Message::Action,
+                }),
+                prefix: Some(TextFieldAffix {
+                    visual: "€",
+                    spoken_name: "歐元",
+                }),
+                suffix: Some(TextFieldAffix {
+                    visual: "/月",
+                    spoken_name: "每月",
+                }),
+            };
+            match self.character_limit {
+                Some(max_graphemes) => theme.text_field_with_counter(
+                    appearance,
+                    options,
+                    adornments,
+                    TextFieldCounterOptions {
+                        max_graphemes,
+                        over_limit_error: COUNT_ERROR,
+                        describe: &|count, max| format!("已輸入{count}個字元，上限{max}個。"),
+                    },
+                    Message::Edit,
+                    on_submit,
+                ),
+                None => theme.text_field_with_adornments(
+                    appearance,
+                    options,
+                    adornments,
+                    Message::Edit,
+                    on_submit,
+                ),
+            }
         } else {
             theme.outlined_text_field_with_submit(options, Message::Edit, on_submit)
         };
@@ -197,6 +217,136 @@ fn tab(runtime: &mut Runtime<Form>) {
 
 fn enter() -> KeyPress {
     KeyPress::new(Key::Enter, Modifiers::default())
+}
+
+#[test]
+fn counter_counts_committed_graphemes_and_exposes_one_soft_limit_error() {
+    let initial = "e\u{301}👩‍💻";
+    let mut runtime = Runtime::new(Form {
+        value: initial.into(),
+        adorned: Some(TextFieldAppearance::Outlined),
+        character_limit: Some(2),
+        ..Form::default()
+    })
+    .unwrap();
+    let mut text = TextSystem::default();
+    let idle = render(&mut runtime, 400., &mut text);
+    assert!(text_run(&idle, "2/2").is_some());
+    let editor_id = runtime.dom().by_id(ID).unwrap();
+    let frame = runtime.accessibility_frame().unwrap();
+    assert!(!frame.node(editor_id).unwrap().node.is_invalid());
+    let descriptions: Vec<_> = frame
+        .description_parts(editor_id)
+        .into_iter()
+        .map(|(target, _)| {
+            let node = frame.node(target).unwrap().node;
+            assert_eq!(node.role(), Role::Text);
+            assert!(frame.focus_target(target).is_none());
+            node.text_value().unwrap()
+        })
+        .collect();
+    assert_eq!(
+        descriptions,
+        ["歐元", "每月", "已輸入2個字元，上限2個。", SUPPORT]
+    );
+
+    tab(&mut runtime);
+    runtime
+        .dispatch(Event::Edit {
+            key: EditKey::End,
+            extend: false,
+            by_word: false,
+        })
+        .unwrap();
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄓㄨㄥ".into(),
+            selection: None,
+        }))
+        .unwrap();
+    let composing = render(&mut runtime, 400., &mut text);
+    assert!(text_run(&composing, "2/2").is_some());
+    assert!(!runtime.key(&enter()).unwrap());
+    assert!(runtime.app().edits.is_empty() && runtime.app().submits.is_empty());
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Commit("中".into())))
+        .unwrap();
+    let overflow = render(&mut runtime, 400., &mut text);
+    assert!(text_run(&overflow, "3/2").is_some());
+    assert_eq!(runtime.app().value, format!("{initial}中"));
+    assert_eq!(runtime.app().edits, [format!("{initial}中")]);
+    let frame = runtime.accessibility_frame().unwrap();
+    assert!(frame.node(editor_id).unwrap().node.is_invalid());
+    let status_id = runtime
+        .dom()
+        .by_id("project-name-validation-status")
+        .unwrap();
+    assert_eq!(
+        frame.node(status_id).unwrap().node.text_value(),
+        Some(COUNT_ERROR)
+    );
+    assert!(runtime.key(&enter()).unwrap());
+    assert_eq!(runtime.app().submits, [format!("{initial}中")]);
+
+    runtime.apply(Message::ChangeAppearance).unwrap();
+    render(&mut runtime, 400., &mut text);
+    let frame = runtime.accessibility_frame().unwrap();
+    assert_eq!(
+        frame.node(status_id).unwrap().node.text_value(),
+        Some(ERROR)
+    );
+    assert_eq!(runtime.focused(), Some(ID));
+}
+
+#[test]
+fn counter_and_support_share_wide_rows_and_stack_in_compact_rtl() {
+    let mut text = TextSystem::default();
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            character_limit: Some(0),
+            ..Form::default()
+        })
+        .unwrap();
+        let wide = render(&mut runtime, 400., &mut text);
+        assert!(text_run(&wide, "0/0").is_some());
+        let counter = bounds(&runtime, COUNTER);
+        let support = bounds(&runtime, "project-name-description");
+        assert_eq!(support.y, counter.y);
+        assert_eq!(counter.x - support.x - support.width, 16.);
+        assert_eq!(counter.x + counter.width, 372.);
+
+        runtime.apply(Message::ChangeAppearance).unwrap();
+        let manual_error = render(&mut runtime, 320., &mut text);
+        assert!(matches!(
+            text_run(&manual_error, "0/0"),
+            Some((PaintOp::StyledText { color, .. }, _))
+                if *color == Theme::dark().colors.on_surface_variant
+        ));
+        runtime.apply(Message::Edit("中".into())).unwrap();
+        let compact = render(&mut runtime, 112., &mut text);
+        let counter = bounds(&runtime, COUNTER);
+        let support = bounds(&runtime, "project-name-description");
+        assert_eq!(counter.y, support.y + support.height + 4.);
+        assert_eq!(counter.x, support.x);
+        assert!(counter.x + counter.width <= support.x + support.width);
+        assert!(matches!(
+            text_run(&compact, "1/0"),
+            Some((PaintOp::StyledText { color, .. }, TextAlignment::Left))
+                if *color == Theme::dark().colors.error
+        ));
+
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Disabled))
+            .unwrap();
+        let disabled = render(&mut runtime, 112., &mut text);
+        let Color(r, g, b, _) = Theme::dark().colors.on_surface;
+        assert!(matches!(
+            text_run(&disabled, "1/0"),
+            Some((PaintOp::StyledText { color, .. }, _)) if *color == Color(r, g, b, 97)
+        ));
+    }
 }
 
 #[test]

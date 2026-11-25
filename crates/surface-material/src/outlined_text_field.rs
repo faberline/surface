@@ -7,11 +7,14 @@ use surface::{
     TextMeasurer, TextScaling, TextStyle,
 };
 use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
+use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
     shape::{self, LayoutDirection},
     text_field_adornments::{physical, AffixText, FieldAdornments, ACTION_SIZE, ICON_SIZE, SIDE},
-    typography, TextFieldAdornments, TextFieldAppearance, TextFieldOptions, Theme,
+    text_field_counter::supporting_row,
+    typography, TextFieldAdornments, TextFieldAppearance, TextFieldCounterOptions,
+    TextFieldOptions, Theme,
 };
 
 const FACE_MIN: f32 = 56.;
@@ -130,6 +133,41 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
+        self.build_text_field(appearance, options, adornments, None, on_input, on_submit)
+    }
+
+    /// Add a character count and soft limit to either field appearance.
+    /// A blank localized message or count description returns `None`.
+    /// An explicit validation error takes precedence. The count uses
+    /// passive text semantics.
+    pub fn text_field_with_counter<M>(
+        &self,
+        appearance: TextFieldAppearance,
+        options: TextFieldOptions<'_>,
+        adornments: TextFieldAdornments<'_, M>,
+        counter: TextFieldCounterOptions<'_>,
+        on_input: impl Fn(String) -> M + 'static,
+        on_submit: impl Fn() -> Option<M> + 'static,
+    ) -> Option<View<M>> {
+        self.build_text_field(
+            appearance,
+            options,
+            adornments,
+            Some(counter),
+            on_input,
+            on_submit,
+        )
+    }
+
+    fn build_text_field<M>(
+        &self,
+        appearance: TextFieldAppearance,
+        options: TextFieldOptions<'_>,
+        adornments: TextFieldAdornments<'_, M>,
+        counter: Option<TextFieldCounterOptions<'_>>,
+        on_input: impl Fn(String) -> M + 'static,
+        on_submit: impl Fn() -> Option<M> + 'static,
+    ) -> Option<View<M>> {
         let label = visible_text(Some(options.label))?;
         if options.id.trim().is_empty()
             || !options.text_scale.is_finite()
@@ -142,7 +180,22 @@ impl Theme {
         let line_height = body.line_height.filter(|height| height.is_finite())?;
         let caption_height = caption.line_height.filter(|height| height.is_finite())?;
         let disabled = options.editability == TextFieldEditability::Disabled;
-        let error = visible_text(options.error);
+        let counted = counter.map(|counter| (counter, options.value.graphemes(true).count()));
+        let (limit_error, counter) = match counted {
+            Some((options, count)) => {
+                let message = visible_text(Some(options.over_limit_error))?;
+                let spoken = (options.describe)(count, options.max_graphemes);
+                visible_text(Some(&spoken))?;
+                let ratio = format!("{count}/{}", options.max_graphemes);
+                let exceeded = count > options.max_graphemes;
+                (
+                    (!disabled && exceeded).then_some(message),
+                    Some((ratio, spoken, exceeded)),
+                )
+            }
+            None => (None, None),
+        };
+        let error = visible_text(options.error).or(limit_error);
         let description = error.or_else(|| visible_text(options.supporting_text));
         let rgba = self.colors;
         let filled = appearance == TextFieldAppearance::Filled;
@@ -175,6 +228,7 @@ impl Theme {
         };
         let id = options.id;
         let description_id = format!("{id}-description");
+        let counter_id = format!("{id}-counter-description");
         let floating_id = format!("{id}-floating-label");
         let action_id = format!("{id}-trailing-action");
         let value_box_id = format!("{id}-value-box");
@@ -222,7 +276,8 @@ impl Theme {
             ]
             .into_iter()
             .flatten()
-            .map(|part| format!("{id}-{part}-description")),
+            .map(|part| format!("{id}-{part}-description"))
+            .chain(counter.as_ref().map(|_| counter_id.clone())),
         );
         let mut editor = View::new(input)
             .text_options(TextOptions {
@@ -335,6 +390,13 @@ impl Theme {
             )
             .without_interaction(None)
         });
+        let supporting_color = if disabled {
+            tokens.disabled_text
+        } else if error.is_some() {
+            tokens.error_ink
+        } else {
+            tokens.neutral_label
+        };
         let description_view = description.map(|description| {
             View::new(
                 Node::new(Role::Text, "")
@@ -345,15 +407,41 @@ impl Theme {
                     .styled(
                         Style::default()
                             .with_text_style(caption.clone())
-                            .foreground(if disabled {
-                                tokens.disabled_text
-                            } else if error.is_some() {
-                                tokens.error_ink
-                            } else {
-                                tokens.neutral_label
-                            }),
+                            .foreground(supporting_color),
                     ),
             )
+        });
+        let counter_views = counter.as_ref().map(|(visible, spoken, exceeded)| {
+            let counter_color = if disabled {
+                tokens.disabled_text
+            } else if *exceeded {
+                tokens.error_ink
+            } else {
+                tokens.neutral_label
+            };
+            let alignment = if rtl {
+                TextAlignment::Left
+            } else {
+                TextAlignment::Right
+            };
+            let counter = |id, text: &str, color| {
+                View::new(
+                    Node::new(Role::Text, "")
+                        .id(id)
+                        .text(text)
+                        .text_alignment(alignment)
+                        .text_scaling(TextScaling::Fixed)
+                        .styled(
+                            Style::default()
+                                .with_text_style(caption.clone())
+                                .foreground(color),
+                        ),
+                )
+            };
+            [
+                counter(format!("{id}-counter"), visible, counter_color).without_interaction(None),
+                counter(counter_id, spoken, Color::TRANSPARENT),
+            ]
         });
         let validation_status = View::new(
             Node::new(Role::Status, "")
@@ -472,6 +560,7 @@ impl Theme {
             appearance,
             label: label.to_owned(),
             description: description.map(str::to_owned),
+            counter: counter.map(|(visible, _, _)| visible),
             body,
             caption,
             line_height,
@@ -518,6 +607,7 @@ impl Theme {
                     .chain([editor, boundary, inline, floating, fallback])
                     .chain(disabled_ink)
                     .chain(description_view)
+                    .chain(counter_views.into_iter().flatten())
                     .chain([validation_status])
                     .chain(slots),
             ),
@@ -585,6 +675,7 @@ struct FieldLayout {
     appearance: TextFieldAppearance,
     label: String,
     description: Option<String>,
+    counter: Option<String>,
     body: TextStyle,
     caption: TextStyle,
     line_height: f32,
@@ -676,18 +767,21 @@ impl FieldLayout {
         if self.disabled_value {
             rects.push(value);
         }
-        if let Some(description) = &self.description {
-            let height = fonts
-                .measure_text(description, &self.caption, Some(content_width))
-                .1
-                .max(self.caption_height)
-                .ceil();
-            rects.push(Rect::new(
+        let (description, count) = supporting_row(
+            fonts,
+            &self.caption,
+            (self.description.as_deref(), self.counter.as_deref()),
+            Rect::new(
                 SIDE,
                 top + face_height + DESCRIPTION_GAP,
                 content_width,
-                height,
-            ));
+                self.caption_height,
+            ),
+            self.rtl,
+        );
+        rects.extend(description);
+        if let Some(count) = count {
+            rects.extend([count, count]);
         }
         // The live region needs visible geometry even when it is empty.
         rects.push(Rect::new(1., 0., 1., 1.));
