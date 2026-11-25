@@ -12,6 +12,7 @@ struct App {
     volume: f64,
     dialog: bool,
     submit_on_enter: bool,
+    handle_delete: bool,
     submissions: usize,
 }
 #[derive(Clone)]
@@ -77,11 +78,21 @@ impl Application for App {
             View::new(Node::new(Role::Button, "Open").id("open")).on_press(Message::Dialog(true)),
         ];
         if self.dialog {
+            let close = View::new(Node::new(Role::Button, "Close").id("close"))
+                .on_press(Message::Dialog(false));
+            let close = if self.handle_delete {
+                close.on_key(|press| {
+                    (matches!(press.key, Key::Backspace | Key::Delete)
+                        && press.modifiers.is_empty())
+                    .then_some(Message::Submit)
+                })
+            } else {
+                close
+            };
             children.push(
                 View::new(Node::new(Role::Dialog, "Dialog").id("dialog"))
                     .modal(Message::Dialog(false))
-                    .children([View::new(Node::new(Role::Button, "Close").id("close"))
-                        .on_press(Message::Dialog(false))]),
+                    .children([close]),
             );
         }
         View::new(
@@ -447,6 +458,27 @@ fn action_enter_routes_to_single_line_key_handler_after_composition() {
     ok(&mut runtime, "Action.key", json!({"key":"enter"}));
     assert_eq!(runtime.app().submissions, 1);
     assert!(!runtime.app().dialog);
+}
+#[test]
+fn action_delete_and_backspace_reach_a_focused_control_handler() {
+    let mut runtime = Runtime::new(App {
+        handle_delete: true,
+        ..App::default()
+    })
+    .unwrap();
+    runtime.render(320., 240., &mut Metrics).unwrap();
+    open_dialog(&mut runtime);
+    for key in ["delete", "backspace"] {
+        let result = ok(&mut runtime, "Action.key", json!({ "key": key }));
+        assert_eq!(result, json!({ "changed": true, "focused": "close" }));
+    }
+    let modified = ok(
+        &mut runtime,
+        "Action.key",
+        json!({ "key": "delete", "extend": true }),
+    );
+    assert_eq!(modified, json!({ "changed": false, "focused": "close" }));
+    assert_eq!(runtime.app().submissions, 2);
 }
 #[test]
 fn action_key_rejects_no_focus_read_only_and_unknown_keys() {

@@ -432,6 +432,18 @@ impl<A: Application> Runtime<A> {
                         return Ok(json!({"changed":true,"focused":self.focused}));
                     }
                 }
+                if input.is_none() && !extend && !by_word {
+                    let deletion = match key {
+                        Key::Backspace => Some(crate::Key::Backspace),
+                        Key::Delete => Some(crate::Key::Delete),
+                        _ => None,
+                    };
+                    if let Some(key) = deletion {
+                        if self.key(&KeyPress::new(key, Modifiers::default()))? {
+                            return Ok(json!({"changed":true,"focused":self.focused}));
+                        }
+                    }
+                }
                 let event = match key {
                     Key::Tab => Event::FocusNext { reverse: extend },
                     Key::Escape => Event::Cancel,

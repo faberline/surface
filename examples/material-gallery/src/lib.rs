@@ -5,6 +5,7 @@ mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
 mod checkbox_demo;
+mod chip_demo;
 mod date_picker_demo;
 mod date_range_picker_demo;
 mod dialog_demo;
@@ -51,6 +52,7 @@ use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
 use checkbox_demo::{CheckboxDemo, CheckboxDemoEvent};
+use chip_demo::{ChipDemo, ChipDemoEvent};
 use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
 use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
 use dialog_demo::{DialogDemo, DialogDemoEvent};
@@ -128,6 +130,7 @@ pub struct Gallery {
     checkbox_demo: CheckboxDemo,
     radio_demo: RadioDemo,
     tabs_demo: TabsDemo,
+    chip_demo: ChipDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -197,6 +200,7 @@ impl Default for Gallery {
             checkbox_demo: CheckboxDemo::default(),
             radio_demo: RadioDemo::default(),
             tabs_demo: TabsDemo::default(),
+            chip_demo: ChipDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -311,6 +315,7 @@ pub enum Message {
     CheckboxDemo(CheckboxDemoEvent),
     RadioDemo(RadioDemoEvent),
     TabsDemo(TabsDemoEvent),
+    ChipDemo(ChipDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -484,6 +489,9 @@ impl Application for Gallery {
         if self.tabs_demo.visible() {
             return self.tabs_demo.text_scale();
         }
+        if self.chip_demo.visible() {
+            return self.chip_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -495,6 +503,7 @@ impl Application for Gallery {
     }
     fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
         let tabs = self.tabs_demo.viewport_changed(width);
+        let chips = self.chip_demo.viewport_changed(width);
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
@@ -554,6 +563,7 @@ impl Application for Gallery {
             || dialog
             || flexible_navigation_bar
             || tabs
+            || chips
             || list_actions
             || list_media
             || list_reorder
@@ -671,6 +681,7 @@ impl Application for Gallery {
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
         let tabs = self.tabs_demo.frame(&frame, self.queue.as_ref());
+        let chips = self.chip_demo.frame(&frame);
         self.card_demo.frame(&frame);
         let inline = self.wide_rail_demo.frame(&frame);
         let modal = self.modal_wide_rail_demo.frame(&frame);
@@ -695,7 +706,8 @@ impl Application for Gallery {
         let list_expand = self.list_expand_demo.frame(&frame);
         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
         AnimationUpdate {
-            rebuild: tabs.rebuild
+            rebuild: chips.rebuild
+                || tabs.rebuild
                 || inline.rebuild
                 || modal.rebuild
                 || snackbar.rebuild
@@ -718,7 +730,8 @@ impl Application for Gallery {
                 || menu.rebuild
                 || list_expand.rebuild
                 || list_reorder.rebuild,
-            request_next: tabs.request_next
+            request_next: chips.request_next
+                || tabs.request_next
                 || inline.request_next
                 || modal.request_next
                 || snackbar.request_next
@@ -857,6 +870,9 @@ impl Application for Gallery {
                 if i != tabs_demo::SECTION {
                     self.tabs_demo.leave();
                 }
+                if i != chip_demo::SECTION {
+                    self.chip_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -872,6 +888,7 @@ impl Application for Gallery {
             Message::CheckboxDemo(event) => self.checkbox_demo.update(event),
             Message::RadioDemo(event) => self.radio_demo.update(event),
             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
+            Message::ChipDemo(event) => self.chip_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1075,6 +1092,9 @@ impl Application for Gallery {
         if self.tabs_demo.visible() {
             return self.tabs_demo.view(&t, self.dark);
         }
+        if self.chip_demo.visible() {
+            return self.chip_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1177,6 +1197,7 @@ impl Application for Gallery {
                             CheckboxDemo::show_button(&t),
                             RadioDemo::show_button(&t),
                             TabsDemo::show_button(&t),
+                            ChipDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1806,6 +1827,7 @@ mod web {
         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
         state["radio_demo"] = s.radio_demo.inspect(&theme);
         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
+        state["chip_demo"] = s.chip_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

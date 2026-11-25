@@ -183,6 +183,8 @@ does not change application state.
 | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
 | `tab_bar` / `tab_panel` | Primary and Secondary bars, fixed and scrollable layouts, controlled selection, a measured indicator and named panels |
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
+| `chip_with_options` | Flat and elevated Assist, Filter and Suggestion, plus Input with one or two named actions |
+| `chip_in_grid` / `chip_grid` | Measured rows and one Tab entry, with arrows between the individual actions |
 | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
 | `dialog_with` | Static Basic dialog with optional icon, headline, supporting text and actions |
@@ -1804,6 +1806,31 @@ that its panel uses when mounted.
 
 [Material 3 Tabs](https://m3.material.io/components/tabs/specs) ·
 [WAI Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
+
+## Chips
+
+Use `Theme::chip_with_options` for a standalone chip. Use
+`ChipContent` to supply the actions for its type. The app owns Filter
+selection and Input removal. For a split Input chip, supply a body
+action and a localized Remove action. Leave the body action empty to
+make the whole chip remove the token.
+
+Use `Theme::chip_in_grid` for chips in a named `Theme::chip_grid`.
+Each split action gets its own cell and keeps its action role. Keep a
+`ChipGridLayout` for each set. Give the chips their available width as
+a cap. Call `advance` from the frame hook and pass the resulting row
+ranges to the grid. This keeps the rows used by arrow navigation in sync
+with the rows that fit on the screen. Pass the same text scale to the
+chips and the layout.
+
+Each action keeps a 48 dp minimum target. The 32 dp face grows with
+larger text. A split chip shares that face but gives Remove its own
+focus ring and press paint. At narrow widths, a Filter menu can use
+`MenuOnBody` for a single action. The Gallery makes every row available
+in one vertical viewport.
+
+[Material 3 Chips](https://m3.material.io/components/chips/specs) ·
+[WAI layout grids](https://www.w3.org/WAI/ARIA/apg/patterns/grid/#layoutGrid)
 
 ## Gallery and evidence
 

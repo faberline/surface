@@ -223,9 +223,10 @@
       "spec": "https://m3.material.io/components/chips/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Assist, suggestion, filter and input; separate input removal action"
+      "desktop_evidence": "The dedicated headless Gallery route tests wide and dark 320 dp RTL chips, separate body and Remove targets, menu focus, deletion and PNG parity through Page.screenshot, CLI and MCP.",
+      "web_evidence": "Material Gallery M290 through M293 exercise real Chrome grid and action roles, the seven appearances, keyboard and pointer input, and compact 200% text.",
+      "implemented": "Additive flat and elevated Assist, Filter and Suggestion, and flat Input with an optional avatar. Covers controlled selection and Remove, measured reflow, named grid cells, 48 dp hit areas, face-bounded ripples, separate focus rings, and compact single-action Filter menus. Drag to reorder, system high contrast and live screen-reader speech remain open.",
+      "unit_evidence": "Material and Runtime tests cover the seven appearances, measured text in both directions, independent action cells, focus and elevation paint, contained pointer ripple, Reduce Motion, grid navigation and focus recovery, and the DevTools deletion route."
     },
     {
       "id": "dialogs",

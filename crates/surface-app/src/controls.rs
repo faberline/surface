@@ -1,6 +1,12 @@
-use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalDismissal, Runtime};
+use crate::{
+    focus_scroll::can_reveal, grid_navigation, AccessibilityAdjustment, AppError, Application,
+    EditKey, ModalDismissal, Runtime,
+};
 use std::{collections::BTreeSet, rc::Rc};
-use surface::{ComputedDom, Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
+use surface::{
+    scroll_extent, ComputedDom, Direction, GridRole, MicroDom, Node, NodeId, Position, RangeValue,
+    Rect, Role,
+};
 
 /// Mount or update a named control, then focus it without activating it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -49,11 +55,16 @@ pub(crate) enum RovingArrows {
     Axis,
     All,
     Radio { reverse_horizontal: bool },
+    Grid,
 }
 
 impl RovingGroup {
     fn is_radio(self) -> bool {
         matches!(self.arrows, RovingArrows::Radio { .. })
+    }
+
+    fn is_grid(self) -> bool {
+        matches!(self.arrows, RovingArrows::Grid)
     }
 }
 
@@ -61,6 +72,12 @@ pub(crate) struct RetainedRovingFocus {
     group: String,
     visible_predecessors: Option<Vec<String>>,
     fully_visible: bool,
+    grid_center: Option<grid_navigation::Center>,
+}
+
+pub(crate) struct PendingRovingFocus {
+    group: String,
+    grid_center: Option<grid_navigation::Center>,
 }
 
 pub(crate) struct FocusScope {
@@ -157,12 +174,16 @@ impl<A: Application> Runtime<A> {
     fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
         let member = self.dom.get(id).ok()?;
         let mut parent = member.parent();
+        let mut crossed_grid = member.accessibility_grid_role() == Some(GridRole::Grid);
         while let Some(id) = parent {
             if let Some(options) = self.bindings.get(&id).and_then(|b| b.roving) {
-                return (!options.is_radio() || member.role() == Role::Radio)
+                return ((!options.is_radio() || member.role() == Role::Radio)
+                    && (!options.is_grid() || !crossed_grid))
                     .then_some((id, options));
             }
-            parent = self.dom.get(id).ok()?.parent();
+            let node = self.dom.get(id).ok()?;
+            crossed_grid |= node.accessibility_grid_role() == Some(GridRole::Grid);
+            parent = node.parent();
         }
         None
     }
@@ -172,9 +193,10 @@ impl<A: Application> Runtime<A> {
         collapsed: Option<&BTreeSet<String>>,
         layout: Option<&ComputedDom>,
     ) -> Vec<NodeId> {
-        let measure_members = self.bindings[&group]
+        let roving = self.bindings[&group]
             .roving
-            .is_some_and(|group| group.first_enabled_on_entry || group.is_radio());
+            .expect("group has roving behavior");
+        let measure_members = roving.first_enabled_on_entry || roving.is_radio();
         self.dom
             .iter()
             .filter(|(id, node)| {
@@ -183,10 +205,60 @@ impl<A: Application> Runtime<A> {
                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
                     && collapsed
                         .is_none_or(|ids| node.stable_id().is_none_or(|key| !ids.contains(key)))
-                    && (!measure_members || layout.is_none_or(|layout| has_extent(layout, *id)))
+                    && if roving.is_grid() {
+                        !node.is_disabled()
+                            && layout.is_none_or(|layout| self.grid_member_visible(layout, *id))
+                    } else {
+                        !measure_members || layout.is_none_or(|layout| has_extent(layout, *id))
+                    }
             })
             .map(|(id, _)| id)
             .collect()
+    }
+
+    fn grid_member_visible(&self, layout: &ComputedDom, id: NodeId) -> bool {
+        if !has_extent(layout, id) {
+            return false;
+        }
+        let geometry = &layout.nodes[id.index()];
+        let rect = geometry.bounds;
+        if ![
+            rect.x,
+            rect.y,
+            rect.width,
+            rect.height,
+            rect.x + rect.width,
+            rect.y + rect.height,
+        ]
+        .into_iter()
+        .all(f32::is_finite)
+        {
+            return false;
+        }
+        let portion = rect.intersect(geometry.clip);
+        (portion.width > 0. && portion.height > 0.)
+            || can_reveal(
+                &self.dom,
+                layout,
+                id,
+                self.active_scope_root(),
+                |ancestor, _| {
+                    let view = layout.nodes[ancestor.index()].bounds;
+                    let (width, height) = scroll_extent(&self.dom, layout, ancestor)?;
+                    Some(((width - view.width).max(0.), (height - view.height).max(0.)))
+                },
+            )
+    }
+
+    fn grid_center(
+        &self,
+        layout: &ComputedDom,
+        group: NodeId,
+        member: NodeId,
+    ) -> grid_navigation::Center {
+        let (x, y) = grid_navigation::center(layout.nodes[member.index()].bounds);
+        let group = layout.nodes[group.index()].bounds;
+        (x - f64::from(group.x), y - f64::from(group.y))
     }
 
     fn roving_entry(
@@ -243,6 +315,11 @@ impl<A: Application> Runtime<A> {
                     .collect()
             }),
             fully_visible,
+            grid_center: self
+                .computed
+                .as_ref()
+                .filter(|layout| options.is_grid() && self.grid_member_visible(layout, focused))
+                .map(|layout| self.grid_center(layout, group, focused)),
         })
     }
 
@@ -276,7 +353,10 @@ impl<A: Application> Runtime<A> {
         } else if !matches!(options.arrows, RovingArrows::Axis) {
             // This group uses measured eligibility. Wait for the replacement
             // tree to lay out before picking a fallback.
-            self.pending_roving_focus = Some(retained.group);
+            self.pending_roving_focus = Some(PendingRovingFocus {
+                group: retained.group,
+                grid_center: retained.grid_center,
+            });
         } else if let Some(target) = self
             .roving_entry(
                 &self.members(group, None, self.computed.as_ref()),
@@ -291,16 +371,31 @@ impl<A: Application> Runtime<A> {
     }
 
     pub(crate) fn resolve_pending_roving_focus(&mut self, layout: &ComputedDom) -> bool {
-        let Some(key) = self.pending_roving_focus.take() else {
+        let Some(pending) = self.pending_roving_focus.take() else {
             return false;
         };
         if self.focused.is_some() {
             return false;
         }
         self.focused = self
-            .measured_roving_group(&key)
+            .measured_roving_group(&pending.group)
             .and_then(|(id, options)| {
                 let members = self.members(id, None, Some(layout));
+                if let Some((x, y)) = pending.grid_center.filter(|_| options.is_grid()) {
+                    return members
+                        .iter()
+                        .copied()
+                        .min_by(|a, b| {
+                            let distance = |member| {
+                                let (mx, my) = self.grid_center(layout, id, member);
+                                (mx - x).hypot(my - y)
+                            };
+                            distance(*a)
+                                .total_cmp(&distance(*b))
+                                .then_with(|| a.index().cmp(&b.index()))
+                        })
+                        .and_then(|member| self.stable(member));
+                }
                 self.stable(self.roving_entry(&members, options, false)?)
             })
             .or_else(|| {
@@ -497,8 +592,8 @@ impl<A: Application> Runtime<A> {
         }
         if self
             .pending_roving_focus
-            .as_deref()
-            .is_some_and(|key| self.measured_roving_group(key).is_none())
+            .as_ref()
+            .is_some_and(|pending| self.measured_roving_group(&pending.group).is_none())
         {
             self.pending_roving_focus = None;
         }
@@ -682,6 +777,19 @@ impl<A: Application> Runtime<A> {
         };
         let options = roving.options;
         let members = self.members(group, None, self.computed.as_ref());
+        if roving.is_grid() {
+            if !self.in_scope(id) || !self.in_scope(group) || !grid_navigation::is_navigation(key) {
+                return Ok(false);
+            }
+            if let Some(next) = self
+                .computed
+                .as_ref()
+                .and_then(|layout| grid_navigation::target(key, id, &members, layout))
+            {
+                self.focused = self.stable(next);
+            }
+            return Ok(true);
+        }
         if members.is_empty() {
             return Ok(false);
         }
@@ -694,6 +802,7 @@ impl<A: Application> Runtime<A> {
                 _ => key,
             },
             RovingArrows::Axis => key,
+            RovingArrows::Grid => unreachable!("grid navigation uses measured rows"),
             RovingArrows::All | RovingArrows::Radio { .. } => {
                 let mirrored = matches!(
                     roving.arrows,

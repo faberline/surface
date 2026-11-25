@@ -1,5 +1,6 @@
+use crate::press_ripple::PressRippleContact;
 use crate::{AnimationUpdate, AppError, Application, Event, Runtime};
-use surface::{Rect, Role};
+use surface::Rect;
 
 /// A held primary touch contact in logical window coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -62,7 +63,20 @@ struct ObservedPress {
     started_ms: Option<f64>,
     phase: FramePressPhase,
     application: bool,
-    ripple_role: Option<Role>,
+    ripple: Option<PressRippleContact>,
+}
+
+impl ObservedPress {
+    fn frame(&self, sequence: u64) -> FramePress<'_> {
+        FramePress {
+            id: &self.id,
+            position: self.position,
+            bounds: self.bounds,
+            started_ms: self.started_ms,
+            sequence,
+            phase: self.phase,
+        }
+    }
 }
 
 impl PressObservation {
@@ -75,7 +89,7 @@ impl PressObservation {
 
     pub(crate) fn clear_ripple(&mut self) {
         if let Some(press) = &mut self.current {
-            press.ripple_role = None;
+            press.ripple = None;
         }
         self.discard_if_unused();
     }
@@ -84,7 +98,7 @@ impl PressObservation {
         if self
             .current
             .as_ref()
-            .is_some_and(|p| !p.application && p.ripple_role.is_none())
+            .is_some_and(|p| !p.application && p.ripple.is_none())
         {
             self.current = None;
         }
@@ -97,7 +111,7 @@ impl PressObservation {
         bounds: Rect,
         started_ms: Option<f64>,
         application: bool,
-        ripple_role: Option<Role>,
+        ripple: Option<PressRippleContact>,
     ) {
         self.sequence = self.sequence.wrapping_add(1);
         self.current = Some(ObservedPress {
@@ -107,7 +121,7 @@ impl PressObservation {
             started_ms,
             phase: FramePressPhase::Held,
             application,
-            ripple_role,
+            ripple,
         });
     }
 
@@ -121,34 +135,33 @@ impl PressObservation {
         }
     }
 
-    fn frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
+    fn observe(&mut self, pressed: Option<&str>) -> Option<&ObservedPress> {
         let press = self.current.as_mut()?;
         if press.phase == FramePressPhase::Held && pressed != Some(press.id.as_str()) {
             press.phase = FramePressPhase::Cancelled;
         }
-        Some(FramePress {
-            id: &press.id,
-            position: press.position,
-            bounds: press.bounds,
-            started_ms: press.started_ms,
-            sequence: self.sequence,
-            phase: press.phase,
-        })
+        Some(press)
     }
 
     pub(crate) fn application_frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
         self.current.as_ref().filter(|press| press.application)?;
-        self.frame(pressed)
+        let sequence = self.sequence;
+        Some(self.observe(pressed)?.frame(sequence))
     }
 
-    pub(crate) fn ripple_frame(&mut self, pressed: Option<&str>) -> Option<(FramePress<'_>, Role)> {
-        let role = self.current.as_ref()?.ripple_role?;
-        Some((self.frame(pressed)?, role))
+    pub(crate) fn ripple_frame(
+        &mut self,
+        pressed: Option<&str>,
+    ) -> Option<(FramePress<'_>, &PressRippleContact)> {
+        self.current.as_ref()?.ripple.as_ref()?;
+        let sequence = self.sequence;
+        let press = self.observe(pressed)?;
+        Some((press.frame(sequence), press.ripple.as_ref()?))
     }
 
-    pub(crate) fn ripple_owner(&self) -> Option<(&str, Role)> {
+    pub(crate) fn ripple_owner(&self) -> Option<(&str, &PressRippleContact)> {
         let press = self.current.as_ref()?;
-        Some((&press.id, press.ripple_role?))
+        Some((&press.id, press.ripple.as_ref()?))
     }
 
     pub(crate) fn finish_application_frame(&mut self) {
