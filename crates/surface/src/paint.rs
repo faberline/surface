@@ -944,10 +944,13 @@ fn compile_into<Op: CompileOp>(
         let placeholder = n.text_input_placeholder();
         let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
         if let Some((text, text_color)) = text_run {
-            let mut rect = g
-                .bounds
-                .inset(s.padding)
-                .inset_horizontal(n.presented_text_input_horizontal_inset);
+            let padded = g.bounds.inset(s.padding);
+            let mut rect = padded.inset_horizontal(n.presented_text_input_horizontal_inset);
+            if let Some((offset, width)) = n.presented_text_input_horizontal_bounds {
+                let offset = offset.min(padded.width);
+                rect.x = padded.x + offset;
+                rect.width = width.min(padded.width - offset);
+            }
             let top_inset = n.presented_text_input_top_inset.min(rect.height);
             rect.y += top_inset;
             rect.height -= top_inset;

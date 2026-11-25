@@ -439,6 +439,45 @@ impl<M> AccessibilityFrame<'_, M> {
             .or_else(|| resolve(tooltip?, Role::Tooltip))
     }
 
+    /// Resolve the visible supplementary text in declared order, followed by
+    /// the existing single description or its clipped validation fallback.
+    /// A part with text is the clipped fallback. It contributes text but its
+    /// node is outside the visible accessibility tree.
+    pub fn description_parts(&self, id: NodeId) -> Vec<(NodeId, Option<&str>)> {
+        let Some(source) = self
+            .node(id)
+            .filter(|node| !node.node.is_disabled() && has_visible_bounds(node))
+        else {
+            return Vec::new();
+        };
+        let mut parts = Vec::new();
+        let mut seen = BTreeSet::new();
+        for key in source.node.additional_description_text_targets() {
+            if key.trim().is_empty() {
+                continue;
+            }
+            if let Some((target, description)) = self.description_node(id, key, Role::Text) {
+                if has_visible_bounds(&description)
+                    && self.children(target).next().is_none()
+                    && seen.insert(target)
+                {
+                    parts.push((target, None));
+                }
+            }
+        }
+        let primary = self
+            .description_target(id)
+            .map(|target| (target, None))
+            .or_else(|| {
+                self.clipped_validation_text(id)
+                    .map(|(target, text)| (target, Some(text)))
+            });
+        if let Some(part) = primary.filter(|(target, _)| seen.insert(*target)) {
+            parts.push(part);
+        }
+        parts
+    }
+
     /// Read an invalid editor's mounted description when it is fully clipped.
     /// Only a visible editor and a noninteractive text target without children
     /// in the current accessibility scope can use this fallback. The target

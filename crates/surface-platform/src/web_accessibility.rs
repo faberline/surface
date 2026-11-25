@@ -1,9 +1,11 @@
 //! Publish the canvas's current semantic tree to the browser.
+mod descriptions;
 mod live_status;
 mod semantics;
 mod tabs;
 
 use crate::{key_route, UserEvent};
+use descriptions::DescriptionRelations;
 use std::{
     cell::RefCell,
     collections::{BTreeMap, BTreeSet},
@@ -45,26 +47,11 @@ struct Target {
 #[derive(Default, PartialEq, Eq)]
 struct Relations {
     headings: BTreeMap<NodeId, NodeId>,
-    references: BTreeMap<NodeId, NodeId>,
-    text_targets: BTreeSet<NodeId>,
-    clipped_text: BTreeMap<NodeId, String>,
+    descriptions: DescriptionRelations,
     tabs: tabs::TabRelations,
 }
 
 impl Relations {
-    fn target_id(&self, id: NodeId) -> String {
-        let kind = if self.text_targets.contains(&id) {
-            "text"
-        } else {
-            "tooltip"
-        };
-        format!("surface-accessibility-{kind}-{}", id.index())
-    }
-
-    fn described_by(&self, source: NodeId) -> Option<String> {
-        self.references.get(&source).map(|id| self.target_id(*id))
-    }
-
     fn heading_id(id: NodeId) -> String {
         format!("surface-accessibility-heading-{}", id.index())
     }
@@ -227,28 +214,13 @@ impl WebAccessibility {
             }))
         })?;
         let mut relations = Relations {
+            descriptions: DescriptionRelations::collect(frame, &visible),
             tabs: tab_relations,
             ..Relations::default()
         };
         for source in &visible {
             if let Some(heading) = frame.dialog_heading_target(*source) {
                 relations.headings.insert(*source, heading);
-            }
-            if let Some(target) = frame
-                .description_target(*source)
-                .filter(|id| visible.contains(id))
-            {
-                relations.references.insert(*source, target);
-                if frame
-                    .node(target)
-                    .is_some_and(|node| node.node.role() == Role::Text)
-                {
-                    relations.text_targets.insert(target);
-                }
-            } else if let Some((target, text)) = frame.clipped_validation_text(*source) {
-                relations.references.insert(*source, target);
-                relations.text_targets.insert(target);
-                relations.clipped_text.insert(target, text.to_owned());
             }
         }
         let mut statuses = BTreeMap::new();
@@ -291,9 +263,9 @@ impl WebAccessibility {
             )?;
             // A referenced hidden element still supplies its description.
             // Keep it separate from the focusable and readable projection.
-            for (id, text) in &relations.clipped_text {
+            for (id, text) in &relations.descriptions.clipped_text {
                 let hidden = self.document.create_element("span")?;
-                hidden.set_id(&relations.target_id(*id));
+                hidden.set_id(&relations.descriptions.target_id(*id));
                 hidden.set_attribute("hidden", "")?;
                 hidden.set_text_content(Some(text));
                 tree.append_child(&hidden)?;
@@ -324,7 +296,7 @@ impl WebAccessibility {
             }
             *self.targets.borrow_mut() = targets;
             if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
-                if let Some(id) = editor.and_then(|id| relations.described_by(id)) {
+                if let Some(id) = editor.and_then(|id| relations.descriptions.described_by(id)) {
                     textbox.set_attribute("aria-describedby", &id)?;
                 } else {
                     textbox.remove_attribute("aria-describedby")?;
@@ -438,8 +410,8 @@ fn project<M>(
     if let Some(stable_id) = source.node.stable_id() {
         element.set_attribute("data-surface-id", stable_id)?;
     }
-    if source.node.role() == Role::Tooltip || relations.text_targets.contains(&id) {
-        element.set_id(&relations.target_id(id));
+    if source.node.role() == Role::Tooltip || relations.descriptions.text_targets.contains(&id) {
+        element.set_id(&relations.descriptions.target_id(id));
     } else if source.node.role() == Role::Heading
         && relations.headings.values().any(|target| *target == id)
     {
@@ -467,7 +439,7 @@ fn project<M>(
             element.set_attribute("aria-label", &panel.fallback_label)?;
         }
     }
-    let authored_description = relations.described_by(id);
+    let authored_description = relations.descriptions.described_by(id);
     let description = if let Some(text) = source.node.web_adjustable_description_text() {
         // The referenced text stays hidden as a standalone item. Project it
         // first so the selected value precedes any authored hint.

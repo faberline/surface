@@ -99,6 +99,8 @@ pub struct View<M> {
     single_line_vertical_placement: SingleLineVerticalPlacement,
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
+    single_line_text_horizontal_bounds: Option<String>,
+    text_input_hover_action: Option<String>,
     text_input_placeholder: Option<Arc<(String, Color)>>,
     focused_placeholder: bool,
     value: Option<Rc<dyn Fn(f64) -> M>>,
@@ -192,6 +194,8 @@ impl<M> View<M> {
             single_line_vertical_placement: SingleLineVerticalPlacement::Top,
             right_align_single_line_text: false,
             single_line_text_horizontal_inset: 0.,
+            single_line_text_horizontal_bounds: None,
+            text_input_hover_action: None,
             text_input_placeholder: None,
             focused_placeholder: false,
             value: None,
@@ -275,6 +279,21 @@ impl<M> View<M> {
         editor_id: impl Into<String>,
         reference_id: Option<&str>,
         painter: impl Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour> + 'static,
+    ) -> Self {
+        self.paint_text_input_contour_with_bounds(editor_id, reference_id, move |state, _, rect| {
+            painter(state, rect)
+        })
+    }
+
+    /// Paint a sibling editor's decoration when its own frame differs from the
+    /// editor's frame. The second argument gives the decoration's global
+    /// bounds. The third gives the optional sibling reference's global bounds.
+    /// Return a contour in the decoration's local coordinates.
+    pub fn paint_text_input_contour_with_bounds(
+        self,
+        editor_id: impl Into<String>,
+        reference_id: Option<&str>,
+        painter: impl Fn(TextInputPaintState, Rect, Option<Rect>) -> Option<FillContour> + 'static,
     ) -> Self {
         self.with_text_input_paint(
             editor_id,
@@ -543,6 +562,26 @@ impl<M> View<M> {
     /// outline, hit target, and vertical placement keep their original bounds.
     pub fn inset_single_line_text_horizontally(mut self, inset: f32) -> Self {
         self.single_line_text_horizontal_inset = if inset.is_finite() { inset.max(0.) } else { 0. };
+        self
+    }
+
+    /// Set the horizontal text box from a passive sibling's measured bounds.
+    /// The sibling must fit within the padded editor. The normal inset applies
+    /// when the sibling is absent or invalid. The hit target and vertical text
+    /// placement keep their original bounds, and multiline text ignores this.
+    pub fn single_line_text_horizontal_bounds_from(
+        mut self,
+        sibling_id: impl Into<String>,
+    ) -> Self {
+        self.single_line_text_horizontal_bounds = Some(sibling_id.into());
+        self
+    }
+
+    /// Include a sibling Button in this editor's presentation hover while
+    /// the button fits within the editor's vertical span. The action keeps
+    /// its own focus, hit target, and activation behavior.
+    pub fn text_input_hover_with_action(mut self, action_id: impl Into<String>) -> Self {
+        self.text_input_hover_action = Some(action_id.into());
         self
     }
 
@@ -1225,6 +1264,8 @@ struct Binding<M> {
     single_line_vertical_placement: SingleLineVerticalPlacement,
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
+    single_line_text_horizontal_bounds: Option<String>,
+    text_input_hover_action: Option<String>,
     text_input_placeholder: Option<Arc<(String, Color)>>,
     focused_placeholder: bool,
     value: Option<Rc<dyn Fn(f64) -> M>>,
@@ -1760,6 +1801,8 @@ impl<A: Application> Runtime<A> {
                     single_line_vertical_placement: view.single_line_vertical_placement,
                     right_align_single_line_text: view.right_align_single_line_text,
                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
+                    single_line_text_horizontal_bounds: view.single_line_text_horizontal_bounds,
+                    text_input_hover_action: view.text_input_hover_action,
                     text_input_placeholder: view.text_input_placeholder,
                     focused_placeholder: view.focused_placeholder,
                     value: view.value,

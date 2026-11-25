@@ -67,6 +67,7 @@ mod standard_navigation_drawer;
 mod standard_slider;
 mod switch;
 mod tab_bar;
+mod text_field_adornments;
 mod time_dial;
 mod time_dial_state;
 mod time_input;
@@ -224,6 +225,9 @@ pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
 pub use tab_bar::{
     TabActivation, TabBarInput, TabBarKind, TabBarLayout, TabBarMotion, TabBarOptions, TabItem,
     TabPanelEntry,
+};
+pub use text_field_adornments::{
+    TextFieldAdornments, TextFieldAffix, TextFieldAppearance, TextFieldTrailingAction,
 };
 pub use time_dial::{
     time_dial_baseline_layout, time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout,

@@ -162,6 +162,33 @@ fn grid_metadata_round_trips_without_changing_base_roles() {
 }
 
 #[test]
+fn ordered_text_descriptions_are_optional_and_keep_the_singular_wire_field() {
+    let legacy = Node::new(Role::TextInput, "Amount").described_by_text("amount-help");
+    let legacy_wire = serde_json::to_value(&legacy).unwrap();
+    assert_eq!(legacy_wire["described_by_text"], "amount-help");
+    assert!(legacy_wire
+        .get("additional_description_text_targets")
+        .is_none());
+    assert_eq!(serde_json::from_value::<Node>(legacy_wire).unwrap(), legacy);
+
+    let adorned = legacy
+        .described_by_texts(["amount-currency", "amount-unit"])
+        .described_by_text("amount-error");
+    let wire = serde_json::to_value(&adorned).unwrap();
+    assert_eq!(wire["described_by_text"], "amount-error");
+    assert_eq!(
+        wire["additional_description_text_targets"],
+        serde_json::json!(["amount-currency", "amount-unit"])
+    );
+    let restored: Node = serde_json::from_value(wire).unwrap();
+    assert_eq!(restored.description_text_target(), Some("amount-error"));
+    assert_eq!(
+        restored.additional_description_text_targets(),
+        ["amount-currency", "amount-unit"]
+    );
+}
+
+#[test]
 fn grid_multiselection_is_opt_in_and_keeps_the_existing_snapshot_version() {
     let grid = Node::new(Role::Group, "June").grid_role(GridRole::Grid);
     let ordinary = serde_json::to_value(MicroDom::new(grid.clone()).snapshot()).unwrap();

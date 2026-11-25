@@ -219,12 +219,9 @@ impl Tree {
             }
 
             node.set_children(children);
-            if let Some(description) = frame.description_target(id) {
-                descriptions.push((nodes.len(), description));
-            } else if let Some((_, text)) = frame.clipped_validation_text(id) {
-                // AXHelp can describe the editor without a reference to an
-                // unpublished, fully clipped accessibility node.
-                node.set_description(text);
+            let parts = frame.description_parts(id);
+            if !parts.is_empty() {
+                descriptions.push((nodes.len(), parts));
             }
             if let Some(tab) = frame.tab_panel_tab(id) {
                 node.set_role(Role::TabPanel);
@@ -259,18 +256,32 @@ impl Tree {
                 nodes[tab_index].1.set_controls([panel_id]);
             }
         }
-        for (index, description) in descriptions {
-            if let Some(id) = ids.get(&description) {
-                let anchor = &mut nodes[index].1;
-                anchor.set_described_by([*id]);
-                // The macOS adapter exposes description text as AXHelp.
-                // It does not derive the text from the ID relation.
-                if let Some(target) = frame.node(description) {
+        for (index, parts) in descriptions {
+            let mut references = Vec::new();
+            let mut help = Vec::new();
+            for (description, clipped) in parts {
+                if let Some(text) = clipped {
+                    // AXHelp can include the clipped validation without a
+                    // reference to an unpublished accessibility node.
+                    help.push(text);
+                } else if let (Some(id), Some(target)) =
+                    (ids.get(&description), frame.node(description))
+                {
+                    references.push(*id);
                     let text = target.node.text_value().unwrap_or(target.node.name());
                     if !text.trim().is_empty() {
-                        anchor.set_description(text);
+                        help.push(text);
                     }
                 }
+            }
+            let anchor = &mut nodes[index].1;
+            if !references.is_empty() {
+                anchor.set_described_by(references);
+            }
+            // The adapter reads AXHelp directly, with no text computed from
+            // the ID references. Keep the authored order here too.
+            if !help.is_empty() {
+                anchor.set_description(help.join(" "));
             }
         }
         if modal.is_some() {
@@ -2389,6 +2400,80 @@ mod tests {
             .nodes
             .iter()
             .any(|(_, node)| node.role() == Role::Tooltip));
+    }
+
+    #[test]
+    fn ordered_descriptions_keep_clipped_validation_in_ax_help_without_an_id() {
+        use surface::Insets;
+
+        #[derive(Clone, Copy)]
+        struct Amount {
+            clipped: bool,
+        }
+        impl Application for Amount {
+            type Message = Self;
+            fn update(&mut self, message: Self) {
+                *self = message;
+            }
+            fn view(&self) -> View<Self> {
+                let error_style = if self.clipped {
+                    Style::default().width(Length::Px(100.)).fixed(Insets {
+                        left: Length::Px(-220.),
+                        ..Default::default()
+                    })
+                } else {
+                    Style::default()
+                };
+                let editor = View::new(
+                    SurfaceNode::new(SurfaceRole::TextInput, "Amount")
+                        .id("amount")
+                        .text("12")
+                        .invalid(true)
+                        .described_by_texts(["prefix", "suffix", "prefix", "error"])
+                        .described_by_text("error"),
+                )
+                .on_input(|_| Amount { clipped: false });
+                View::new(SurfaceNode::new(SurfaceRole::Window, "App").styled(Style::column()))
+                    .children([
+                        editor,
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Text, "")
+                                .id("suffix")
+                                .text("公斤"),
+                        ),
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Text, "")
+                                .id("prefix")
+                                .text("歐元"),
+                        ),
+                        View::new(
+                            SurfaceNode::new(SurfaceRole::Text, "")
+                                .id("error")
+                                .text("Use an integer.")
+                                .styled(error_style),
+                        ),
+                    ])
+            }
+        }
+
+        let mut runtime = Runtime::new(Amount { clipped: false }).unwrap();
+        let mut tree = Tree::default();
+        for clipped in [false, true] {
+            runtime.apply(Amount { clipped }).unwrap();
+            let view = update(&mut runtime, &mut tree);
+            let (_, editor) = named(&view, "Amount");
+            let mut expected = vec![named(&view, "歐元").0, named(&view, "公斤").0];
+            if clipped {
+                assert!(view
+                    .nodes
+                    .iter()
+                    .all(|(_, node)| node.label() != Some("Use an integer.")));
+            } else {
+                expected.push(named(&view, "Use an integer.").0);
+            }
+            assert_eq!(editor.described_by(), expected);
+            assert_eq!(editor.description(), Some("歐元 公斤 Use an integer."));
+        }
     }
 
     #[test]

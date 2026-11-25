@@ -16,7 +16,7 @@ pub struct TextInputPaintState {
 }
 
 pub(crate) type TextInputContour =
-    Box<dyn Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour>>;
+    Box<dyn Fn(TextInputPaintState, Rect, Option<Rect>) -> Option<FillContour>>;
 
 pub(crate) enum Effect {
     Visibility(Box<dyn Fn(TextInputPaintState) -> bool>),
@@ -72,9 +72,30 @@ impl<A: Application> Runtime<A> {
         let active = !node.is_disabled() && self.in_scope(id);
         let buffer = self.editor(editor);
         let geometry = &computed.nodes[id.index()];
+        let action = self
+            .bindings
+            .get(&id)
+            .and_then(|binding| self.dom.by_id(binding.text_input_hover_action.as_deref()?));
+        let is_hovered = active
+            && hovered.is_some_and(|target| {
+                if target == id {
+                    return true;
+                }
+                if action != Some(target) {
+                    return false;
+                }
+                let Ok(peer) = self.dom.get(target) else {
+                    return false;
+                };
+                let rect = computed.nodes[target.index()].bounds;
+                peer.role() == Role::Button
+                    && peer.parent() == Some(shell)
+                    && rect.y >= geometry.bounds.y
+                    && rect.y + rect.height <= geometry.bounds.y + geometry.bounds.height
+            });
         Some(TextInputPaintState {
             is_focused: active && self.focused() == Some(editor),
-            is_hovered: active && hovered == Some(id),
+            is_hovered,
             is_composing: active && buffer.is_some_and(crate::TextEditor::is_composing),
             is_empty: buffer.map_or_else(
                 || node.text_value().unwrap_or_default().is_empty(),
@@ -127,7 +148,8 @@ impl<A: Application> Runtime<A> {
                                 == shell
                         })
                         .map(|reference| computed.nodes[reference.index()].bounds);
-                    paint(state, reference).map(ResolvedPaint::Contour)
+                    let decoration = computed.nodes[id.index()].bounds;
+                    paint(state, decoration, reference).map(ResolvedPaint::Contour)
                 }
             };
             if let Some(paint) = paint {
