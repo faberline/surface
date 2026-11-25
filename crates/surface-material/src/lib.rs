@@ -68,6 +68,7 @@ mod standard_slider;
 mod switch;
 mod tab_bar;
 mod text_field_adornments;
+mod text_field_counter;
 mod time_dial;
 mod time_dial_state;
 mod time_input;
@@ -229,6 +230,7 @@ pub use tab_bar::{
 pub use text_field_adornments::{
     TextFieldAdornments, TextFieldAffix, TextFieldAppearance, TextFieldTrailingAction,
 };
+pub use text_field_counter::TextFieldCounterOptions;
 pub use time_dial::{
     time_dial_baseline_layout, time_dial_layout, DialHandMotion, TimeDialLabels, TimeDialLayout,
     TimeDialOptions,

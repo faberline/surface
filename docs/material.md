@@ -206,6 +206,7 @@ does not change application state.
 | `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
 | `filled_text_field` | One single-line editor with a filled container, inside floating label and bottom indicator |
 | `text_field_with_adornments` | Either single-line appearance with optional visual affixes and a separate named action |
+| `text_field_with_counter` | Either single-line appearance with a count and a soft limit |
 | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
 | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
@@ -1276,6 +1277,23 @@ decorative icon can disappear, and the trailing button can move below
 the field with the same focus identity.
 
 In Material Gallery, choose 動作 and 文字欄位配件 to try both appearances.
+
+### Character counter
+
+Use `Theme::text_field_with_counter` with `TextFieldCounterOptions`.
+Set the grapheme limit, the localized error and the spoken count format.
+An accented letter, a single emoji or a joined emoji counts as one
+character when it forms one grapheme. The counter reads the app's
+committed value. It excludes active IME text, prefixes and suffixes.
+
+The counter appears at the end of the supporting row. In narrow layouts
+it moves below the help or error. It remains passive as the count changes.
+When the value exceeds the limit, the field retains the full text and
+shows the localized limit error and an error-colored count. An explicit
+validation error takes precedence. The count uses its normal color while
+the value is within the limit. The app decides when to submit the value.
+
+In Material Gallery, choose 動作 and 文字欄位字數 to try both appearances.
 
 ## Baseline segmented buttons
 
