@@ -134,7 +134,11 @@ impl Tree {
                     .copied()
                     .filter(|_| same_status_scope)
                     .unwrap_or_else(|| self.allocate());
-                node.set_live(Live::Polite);
+                node.set_live(if source.node.is_assertive_live_status() {
+                    Live::Assertive
+                } else {
+                    Live::Polite
+                });
                 status_ids.insert(key.to_owned(), native_id);
                 native_id
             } else if same_generation
@@ -432,7 +436,7 @@ fn describe(source: &AccessibilityNode<'_>, slider_limits: Option<(f64, f64)>) -
         }
         _ => authored.name(),
     };
-    if !label.is_empty() {
+    if !label.is_empty() && (!authored.is_assertive_live_status() || !label.trim().is_empty()) {
         node.set_label(label);
     }
     if authored.role() == SurfaceRole::TextInput {
@@ -509,6 +513,7 @@ mod tests {
     #[derive(Clone, Copy, Default)]
     struct App {
         notice: Option<&'static str>,
+        assertive_notice: bool,
         tooltip: bool,
         modal: bool,
         focusable_notice: bool,
@@ -552,6 +557,11 @@ mod tests {
                 let mut node = SurfaceNode::new(SurfaceRole::Status, message)
                     .id("status")
                     .text(message);
+                if self.assertive_notice {
+                    node = node
+                        .assertive_live_status()
+                        .styled(Style::column().height(Length::Px(20.)));
+                }
                 if self.focusable_notice {
                     node = node.tab_index(0);
                 }
@@ -2441,6 +2451,69 @@ mod tests {
         assert_ne!(active_id, status_id);
         assert!(active_node.supports_action(Action::Focus));
         assert_eq!(active_node.live(), None);
+    }
+
+    #[test]
+    fn assertive_status_keeps_the_blank_region_and_only_updates_current_scope() {
+        let blank = App {
+            notice: Some(""),
+            assertive_notice: true,
+            ..App::default()
+        };
+        let mut runtime = Runtime::new(blank).unwrap();
+        let mut tree = Tree::default();
+        let initial = update(&mut runtime, &mut tree);
+        let (id, status) = initial
+            .nodes
+            .iter()
+            .find(|(_, node)| node.role() == Role::Status)
+            .expect("the blank live status has a stable identity");
+        let id = *id;
+        assert_eq!(status.live(), Some(Live::Assertive));
+        assert_eq!(status.label(), None);
+        assert!(!status.supports_action(Action::Focus));
+        assert!(!status.supports_action(Action::Click));
+
+        for notice in ["請輸入有效的專案名稱。", "Enter a valid project name."] {
+            let show = App {
+                notice: Some(notice),
+                ..blank
+            };
+            runtime.apply(show).unwrap();
+            let first = update(&mut runtime, &mut tree);
+            let (changed_id, changed) = named(&first, notice);
+            assert_eq!(changed_id, id);
+            assert_eq!(changed.live(), Some(Live::Assertive));
+            runtime.apply(show).unwrap();
+            let rebuilt = update(&mut runtime, &mut tree);
+            let (rebuilt_id, rebuilt_node) = named(&rebuilt, notice);
+            assert_eq!(rebuilt_id, id);
+            assert_eq!(rebuilt_node, changed);
+        }
+
+        runtime.apply(blank).unwrap();
+        let cleared = update(&mut runtime, &mut tree);
+        let cleared_status = &cleared.nodes.iter().find(|(key, _)| *key == id).unwrap().1;
+        assert_eq!(cleared_status.live(), Some(Live::Assertive));
+        assert_eq!(cleared_status.label(), None);
+
+        let show = App {
+            notice: Some("請輸入名稱。"),
+            ..blank
+        };
+        runtime
+            .apply(App {
+                modal: true,
+                ..show
+            })
+            .unwrap();
+        let scoped = update(&mut runtime, &mut tree);
+        assert!(scoped.nodes.iter().all(|(_, node)| node.live().is_none()));
+        runtime.apply(show).unwrap();
+        let restored = update(&mut runtime, &mut tree);
+        let (restored_id, restored_status) = named(&restored, "請輸入名稱。");
+        assert_ne!(restored_id, id);
+        assert_eq!(restored_status.live(), Some(Live::Assertive));
     }
 
     #[test]

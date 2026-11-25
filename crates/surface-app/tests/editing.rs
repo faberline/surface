@@ -2,8 +2,8 @@ use surface::{
     Color, DisplayList, ExtendedPaintOp, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer,
 };
 use surface_app::{
-    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Runtime, TextEditor,
-    TextOptions, View,
+    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers,
+    Runtime, TextEditor, TextOptions, View,
 };
 
 #[test]
@@ -82,6 +82,128 @@ struct Metrics;
 impl TextMeasurer for Metrics {
     fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
         (text.chars().count() as f32 * size, size * 1.5)
+    }
+}
+
+#[test]
+fn stable_editor_read_only_transition_cancels_preedit_before_the_next_key() {
+    #[derive(Clone)]
+    enum Update {
+        ReadOnly,
+        Enter,
+        Value(String),
+    }
+
+    struct Editor {
+        value: String,
+        read_only: bool,
+        enters: usize,
+        inputs: usize,
+    }
+
+    impl Application for Editor {
+        type Message = Update;
+
+        fn update(&mut self, message: Update) {
+            match message {
+                Update::ReadOnly => self.read_only = true,
+                Update::Enter => self.enters += 1,
+                Update::Value(value) => {
+                    self.value = value;
+                    self.inputs += 1;
+                }
+            }
+        }
+
+        fn view(&self) -> View<Update> {
+            View::new(Node::new(Role::Window, "")).children([
+                View::new(
+                    Node::new(Role::TextInput, "Field")
+                        .id("field")
+                        .text(&self.value),
+                )
+                .text_options(TextOptions {
+                    read_only: self.read_only,
+                    ..TextOptions::default()
+                })
+                .on_input(Update::Value)
+                .on_key(|press| (press.key == Key::Enter).then_some(Update::Enter)),
+                View::new(Node::new(Role::Button, "Next").id("next"))
+                    .protect_composition_on_press(),
+            ])
+        }
+    }
+
+    for clear_native_preedit in [false, true] {
+        let initial = "台灣文";
+        let mut runtime = Runtime::new(Editor {
+            value: initial.into(),
+            read_only: false,
+            enters: 0,
+            inputs: 0,
+        })
+        .unwrap();
+        runtime.activate("field").unwrap();
+        runtime.render(240., 160., &mut Metrics).unwrap();
+        runtime
+            .dispatch(Event::Select {
+                anchor: 6,
+                cursor: 3,
+            })
+            .unwrap();
+        runtime
+            .dispatch(Event::Ime(ImeEvent::Preedit {
+                text: "ㄅ".into(),
+                selection: Some((3, 3)),
+            }))
+            .unwrap();
+        if clear_native_preedit {
+            runtime
+                .dispatch(Event::Ime(ImeEvent::Preedit {
+                    text: String::new(),
+                    selection: None,
+                }))
+                .unwrap();
+        }
+        runtime.render(240., 160., &mut Metrics).unwrap();
+        let editor = runtime.editor("field").unwrap();
+        assert!(editor.composition().is_some());
+        assert_eq!(editor.is_composing(), !clear_native_preedit);
+        let selection = editor.selection().clone();
+        let id = runtime.dom().by_id("field").unwrap();
+
+        runtime.apply(Update::ReadOnly).unwrap();
+        let editor = runtime.editor("field").unwrap();
+        assert!(!editor.is_composing() && editor.composition().is_none());
+        assert_eq!(editor.value(), initial);
+        assert_eq!(editor.selection(), &selection);
+        assert_eq!(runtime.dom().by_id("field"), Some(id));
+        assert_eq!(runtime.focused(), Some("field"));
+        assert!(runtime.input_snapshot().unwrap().read_only);
+        assert!(
+            runtime.input_snapshot().unwrap().caret.is_none(),
+            "stale preedit caret was invalidated"
+        );
+        assert_eq!(runtime.app().inputs, 0);
+
+        // The exact next key works without waiting for a stale IME event.
+        assert!(runtime
+            .key(&KeyPress::new(Key::Enter, Modifiers::default()))
+            .unwrap());
+        assert_eq!(runtime.app().enters, 1);
+        runtime
+            .dispatch(Event::ImeFor {
+                id: "field".into(),
+                event: ImeEvent::Commit("誤".into()),
+            })
+            .unwrap();
+        assert_eq!(runtime.editor("field").unwrap().value(), initial);
+        assert_eq!(runtime.editor("field").unwrap().selection(), &selection);
+        assert_eq!(runtime.app().inputs, 0);
+        runtime
+            .dispatch(Event::FocusNext { reverse: false })
+            .unwrap();
+        assert_eq!(runtime.focused(), Some("next"));
     }
 }
 

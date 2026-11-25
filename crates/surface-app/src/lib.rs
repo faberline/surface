@@ -12,6 +12,7 @@ mod display_contrast;
 mod drag_motion;
 mod editing;
 mod editing_runtime;
+mod editor_paint;
 mod focus_scroll;
 mod frame_input;
 mod frame_paint;
@@ -75,11 +76,14 @@ use surface::{
 type ContourPainter = Box<dyn Fn() -> FillContour>;
 type ModalTransformPainter = Box<dyn Fn() -> Option<PaintTransform>>;
 
+pub use editor_paint::TextInputPaintState;
+
 /// One view of application state. Messages return through `Application::update`.
 pub struct View<M> {
     node: Node,
     children: Vec<Self>,
     paint_contour: Option<ContourPainter>,
+    text_input_paint: Option<editor_paint::Binding>,
     activate: Option<M>,
     suppress_repeated_activation: bool,
     focus_disabled_menu_item: bool,
@@ -89,6 +93,7 @@ pub struct View<M> {
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
     text_input_placeholder: Option<Arc<(String, Color)>>,
+    focused_placeholder: bool,
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_slider_adjustment: bool,
     slider_input: Option<SliderInputOptions>,
@@ -171,6 +176,7 @@ impl<M> View<M> {
             node,
             children: Vec::new(),
             paint_contour: None,
+            text_input_paint: None,
             activate: None,
             suppress_repeated_activation: false,
             focus_disabled_menu_item: false,
@@ -180,6 +186,7 @@ impl<M> View<M> {
             right_align_single_line_text: false,
             single_line_text_horizontal_inset: 0.,
             text_input_placeholder: None,
+            focused_placeholder: false,
             value: None,
             accessible_slider_adjustment: false,
             slider_input: None,
@@ -227,6 +234,64 @@ impl<M> View<M> {
     pub fn paint_fill_contour(mut self, paint: impl Fn() -> FillContour + 'static) -> Self {
         self.paint_contour = Some(Box::new(paint));
         self
+    }
+
+    /// Paint this passive subtree only when its sibling text input matches.
+    /// The editor and decoration must share an immediate parent. The rule
+    /// keeps the decoration allocated at its measured size in both phases.
+    pub fn paint_when_text_input(
+        self,
+        editor_id: impl Into<String>,
+        predicate: impl Fn(TextInputPaintState) -> bool + 'static,
+    ) -> Self {
+        self.with_text_input_paint(
+            editor_id,
+            editor_paint::Effect::Visibility(Box::new(predicate)),
+        )
+    }
+
+    /// Paint a passive label in a color derived from its sibling editor.
+    /// Returning `None` omits the branch while preserving its layout.
+    pub fn paint_text_input_foreground(
+        self,
+        editor_id: impl Into<String>,
+        color: impl Fn(TextInputPaintState) -> Option<Color> + 'static,
+    ) -> Self {
+        self.with_text_input_paint(editor_id, editor_paint::Effect::Foreground(Box::new(color)))
+    }
+
+    /// Paint a node-local contour using the sibling editor's rendered state.
+    /// The optional reference supplies its global bounds when it shares the
+    /// same immediate parent, including when its paint is hidden.
+    pub fn paint_text_input_contour(
+        self,
+        editor_id: impl Into<String>,
+        reference_id: Option<&str>,
+        painter: impl Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour> + 'static,
+    ) -> Self {
+        self.with_text_input_paint(
+            editor_id,
+            editor_paint::Effect::Contour {
+                reference: reference_id.map(str::to_owned),
+                paint: Box::new(painter),
+            },
+        )
+    }
+
+    fn with_text_input_paint(
+        mut self,
+        editor_id: impl Into<String>,
+        effect: editor_paint::Effect,
+    ) -> Self {
+        self.text_input_paint = Some(editor_paint::Binding {
+            editor: editor_id.into(),
+            effect,
+        });
+        if self.interaction_suppression.is_none() {
+            self.without_interaction(None)
+        } else {
+            self
+        }
     }
 
     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
@@ -470,7 +535,16 @@ impl<M> View<M> {
     pub fn text_input_placeholder(mut self, text: impl Into<String>, color: Color) -> Self {
         let text = text.into();
         self.text_input_placeholder = (!text.is_empty()).then(|| Arc::new((text, color)));
+        self.focused_placeholder = false;
         self
+    }
+
+    /// Paint an empty editor's hint only while that editor has input focus.
+    /// An active composition keeps the hint hidden, even with empty preedit.
+    pub fn focused_text_input_placeholder(self, text: impl Into<String>, color: Color) -> Self {
+        let mut view = self.text_input_placeholder(text, color);
+        view.focused_placeholder = true;
+        view
     }
     /// Bind a slider value or an opted-in adjustable Group.
     pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
@@ -1135,6 +1209,7 @@ struct Binding<M> {
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
     text_input_placeholder: Option<Arc<(String, Color)>>,
+    focused_placeholder: bool,
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_slider_adjustment: bool,
     slider_input: Option<SliderInputOptions>,
@@ -1218,7 +1293,7 @@ impl<M> Queue<M> {
 struct PreparedView<M> {
     dom: MicroDom,
     bindings: BTreeMap<NodeId, Binding<M>>,
-    contour_painters: Vec<(NodeId, ContourPainter)>,
+    paint_bindings: editor_paint::PaintBindings,
 }
 
 pub struct Runtime<A: Application> {
@@ -1226,7 +1301,7 @@ pub struct Runtime<A: Application> {
     app: A,
     dom: MicroDom,
     bindings: BTreeMap<NodeId, Binding<A::Message>>,
-    contour_painters: Vec<(NodeId, ContourPainter)>,
+    paint_bindings: editor_paint::PaintBindings,
     layout: LayoutEngine,
     computed: Option<ComputedDom>,
     focused: Option<String>,
@@ -1275,7 +1350,7 @@ impl<A: Application> Runtime<A> {
             app,
             dom: MicroDom::new(Node::new(Role::Window, "Surface")),
             bindings: BTreeMap::new(),
-            contour_painters: Vec::new(),
+            paint_bindings: editor_paint::PaintBindings::default(),
             layout: LayoutEngine::default(),
             computed: None,
             focused: None,
@@ -1597,7 +1672,7 @@ impl<A: Application> Runtime<A> {
             dom: &mut MicroDom,
             parent: Option<NodeId>,
             bindings: &mut BTreeMap<NodeId, Binding<M>>,
-            contour_painters: &mut Vec<(NodeId, ContourPainter)>,
+            paint_bindings: &mut editor_paint::PaintBindings,
             disabled: bool,
             inherited_suppression: Option<&Rc<InteractionSuppression>>,
         ) -> Result<(), AppError> {
@@ -1652,7 +1727,10 @@ impl<A: Application> Runtime<A> {
                 dom.root()
             };
             if let Some(paint) = view.paint_contour {
-                contour_painters.push((id, paint));
+                paint_bindings.retained_contours.push((id, paint));
+            }
+            if let Some(paint) = view.text_input_paint {
+                paint_bindings.text_inputs.push((id, paint));
             }
             bindings.insert(
                 id,
@@ -1666,6 +1744,7 @@ impl<A: Application> Runtime<A> {
                     right_align_single_line_text: view.right_align_single_line_text,
                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
                     text_input_placeholder: view.text_input_placeholder,
+                    focused_placeholder: view.focused_placeholder,
                     value: view.value,
                     accessible_slider_adjustment: view.accessible_slider_adjustment,
                     slider_input: view.slider_input,
@@ -1713,7 +1792,7 @@ impl<A: Application> Runtime<A> {
                     dom,
                     Some(id),
                     bindings,
-                    contour_painters,
+                    paint_bindings,
                     disabled,
                     suppression,
                 )?;
@@ -1723,13 +1802,13 @@ impl<A: Application> Runtime<A> {
         let view = self.app.view();
         let mut dom = MicroDom::new(view.node.clone());
         let mut bindings = BTreeMap::new();
-        let mut contour_painters = Vec::new();
+        let mut paint_bindings = editor_paint::PaintBindings::default();
         add(
             view,
             &mut dom,
             None,
             &mut bindings,
-            &mut contour_painters,
+            &mut paint_bindings,
             false,
             None,
         )?;
@@ -1745,7 +1824,7 @@ impl<A: Application> Runtime<A> {
         Ok(PreparedView {
             dom,
             bindings,
-            contour_painters,
+            paint_bindings,
         })
     }
 
@@ -1765,7 +1844,7 @@ impl<A: Application> Runtime<A> {
             .map(Node::role);
         self.dom = prepared.dom;
         self.bindings = prepared.bindings;
-        self.contour_painters = prepared.contour_painters;
+        self.paint_bindings = prepared.paint_bindings;
         self.reconcile_editors();
         self.computed = None;
         self.reconcile_controls(focus_after_removal, retained_roving_focus);
@@ -1908,6 +1987,7 @@ impl<A: Application> Runtime<A> {
             (display_dom, decorations, computed) =
                 self.layout_editing(width, height, text_scale, measurer)?;
         }
+        let editor_paint = self.resolve_text_input_paint(&mut computed);
         let mut panel_effects = Vec::new();
         let viewport = computed.viewport;
         self.dom.apply_modal_layers_with_panel_ranges(
@@ -1948,8 +2028,11 @@ impl<A: Application> Runtime<A> {
         };
         self.present_motion(&mut display_dom, &computed, focused, interaction)?;
         self.present_press_ripple(&mut display_dom, &computed)?;
-        for (id, paint) in &self.contour_painters {
+        for (id, paint) in &self.paint_bindings.retained_contours {
             display_dom.set_presented_fill_contour(*id, paint())?;
+        }
+        for (id, paint) in editor_paint {
+            paint.apply(&mut display_dom, id)?;
         }
         let list = P::compile(
             &display_dom,

@@ -203,6 +203,7 @@ does not change application state.
 | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
 | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
+| `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
 | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
 | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
@@ -1210,6 +1211,31 @@ in headless mode to replay it and capture PNGs without opening a window.
 [Material 3 split button specs](https://m3.material.io/components/split-button/specs) ·
 [Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.624e8f2da4007fc8.json) ·
 [Menu button keyboard and semantics](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/)
+
+## Outlined text fields
+
+Use `Theme::outlined_text_field` with `OutlinedTextFieldOptions::new`.
+Pass a stable ID, a visible label and the current value. The field uses
+the width of its parent. It keeps the editor ID while the label floats
+and the border opens around the label. A long label can wrap above the
+closed outline when it needs more room.
+
+Set the layout direction and text scale to match the containing view.
+An empty focused field can show a placeholder. Supporting text has its
+own line and is linked to the accessible editor. An error replaces that
+line and marks the enabled field invalid. The Web and macOS accessibility
+paths expose new errors as assertive updates. A read-only field allows
+selection and copying. A disabled field ignores input.
+
+Use `outlined_text_field_with_submit` to handle an unmodified Enter.
+Input method composition still owns Enter while it is active. Keep the
+committed value in the application and apply the input callback there.
+
+In Material Gallery, choose 動作 and 外框文字欄位. The example shows Chinese
+labels, validation, read-only and disabled fields. It has light and dark
+themes, both directions and a setting for 200% text.
+
+[Material 3 text field specifications](https://m3.material.io/components/text-fields/specs)
 
 ## Baseline segmented buttons
 

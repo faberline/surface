@@ -1063,7 +1063,11 @@ fn compile_into<Op: CompileOp>(
                             rect: caret,
                             clip,
                             radius: 0.,
-                            color: s.foreground,
+                            color: if !editable || selection_colors.is_some() {
+                                s.foreground
+                            } else {
+                                n.resolved_text_input_caret_color()
+                            },
                         },
                     );
                 }

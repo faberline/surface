@@ -46,6 +46,7 @@ mod loading_indicator;
 mod menu_layout;
 pub mod motion;
 mod navigation_drawer;
+mod outlined_text_field;
 mod progress_indicator;
 mod radio;
 mod scroll_choice_catalog;
@@ -176,6 +177,7 @@ pub use menu_layout::{place_menu, MenuAnchor, MenuLayout, MenuPlacement};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
+pub use outlined_text_field::{OutlinedTextFieldOptions, TextFieldEditability};
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
 pub use radio::{RadioGroupLayout, RadioGroupOptions, RadioMotion, RadioOptions, RadioPose};
 pub use scroll_choice_catalog::{

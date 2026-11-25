@@ -341,10 +341,11 @@
       "id": "text-fields",
       "spec": "https://m3.material.io/components/text-fields/overview",
       "status": "partial",
-      "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Controlled field; Unicode selection and IME editor; CJK font"
+      "variant_review": "Baseline single-line Outlined reviewed against Material 3 text fields revision 3cf2 and Outlined token revision d80a. Filled and optional slot variants remain open.",
+      "desktop_evidence": "Native headless Gallery checks outline pixels, keyboard focus and submit, dark RTL at 200%, long-label placement, and matching Page.screenshot, CLI and MCP PNGs",
+      "web_evidence": "M325–M328 in e2e/src/material_outlined_text_field.rs cover outline and label paint, projected description and invalid status, deduplicated assertive errors, composition during reflow, and read-only and disabled states",
+      "implemented": "The single-line Outlined field has a 56 dp target, floating label and a measured opening in the 1/3 dp border. It offers a hint, supporting text, an error, read-only and disabled modes, and scaled labels in both directions. A long label wraps above a closed border. The editor retains committed Unicode text, selection and IME across appearance changes. Leading and trailing icons, prefix and suffix, counters, multiline, label motion, system contrast and live speech remain open.",
+      "unit_evidence": "crates/surface-material/tests/outlined_text_field.rs and surface-app editor presentation tests cover layout, editor identity, accessible relations, preedit and Enter"
     },
     {
       "id": "toolbars",
