@@ -9,6 +9,7 @@ mod badge;
 mod basic_dialog;
 mod bottom_sheet;
 mod bottom_sheet_motion;
+mod button;
 mod button_group;
 mod button_group_layout;
 mod button_group_motion;
@@ -88,6 +89,7 @@ pub use bottom_sheet::{
     BottomSheetState,
 };
 pub use bottom_sheet_motion::BottomSheetMotion;
+pub use button::{ButtonAppearance, ButtonIcon, ButtonOptions, ButtonShape, ButtonSize};
 pub use button_group::{
     ButtonGroupAppearance, ButtonGroupItem, ButtonGroupKind, ButtonGroupOptions,
     ButtonGroupOverflow, ButtonGroupSelection, ButtonGroupShape, ButtonGroupSize, ButtonGroupWidth,

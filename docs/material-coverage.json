@@ -17,10 +17,11 @@
       "id": "buttons",
       "spec": "https://m3.material.io/components/buttons/overview",
       "status": "partial",
-      "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Filled, tonal, outlined and text; disabled; hover and press layers"
+      "variant_review": "Reviewed Google DSDB 41.1.12 Button Size, Color, Motion, and the published Expressive configuration and state drawings. The legacy Baseline appearance and system contrast require separate qualification.",
+      "desktop_evidence": "Rust Runtime and Gallery checks verify measured text, 48 dp targets, focus and activation, disabled buttons, keyboard actions, and pointer press and cancel. The release evidence tracks original native captures.",
+      "web_evidence": "Headless Chrome M316–M319 checks actual WebGPU paint for five command styles and sizes, four toggles, an intermediate pressed shape, mouse and touch cancellation, and 320 dp dark RTL at 200% text.",
+      "implemented": "Additive Expressive commands in Elevated, Filled, Tonal, Outlined, and Text. Controlled toggles for the first four appearances. Five sizes, Round and Square, logical leading and trailing vector art, adaptive wrapped labels, pointer ripple, corner spring, visible exterior focus, accessible activation, and stable hit targets. Live assistive speech and system settings remain open.",
+      "unit_evidence": "Runtime tests cover label-only and icon sizes, enabled and disabled colors, one named action, repeated keys, controlled state, clipped ripple, Reduce Motion, narrow leading and trailing order, and large CJK text."
     },
     {
       "id": "extended-fab",
