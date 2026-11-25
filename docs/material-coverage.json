@@ -327,9 +327,10 @@
       "spec": "https://m3.material.io/components/tabs/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Primary underline; controlled selection; manual keyboard activation"
+      "desktop_evidence": "The dedicated headless Gallery route exercises fixed and scrollable tabs, manual selection, active panel focus, and dark RTL at 320 dp with 200% text. The native replay compares Page.screenshot, CLI and MCP.",
+      "web_evidence": "Material Gallery M286 through M289 exercise stable tab and panel links, hidden inactive content, manual and automatic activation, actual indicator paint and motion, wheel and touch scrolling, and keyboard reveal.",
+      "implemented": "Additive Primary and Secondary builders with fixed and scrollable bars, named controlled tabs and panels, optional vector icons, wrapped labels, disabled and interactive states, and distinct indicators. Includes retained motion with Reduce Motion and accessibility reveal and paging. Optional badges, page-swipe integration, system high contrast and live screen-reader speech remain open.",
+      "unit_evidence": "Material Runtime tests cover fixed size, exact icon and mark geometry, RTL, selection, animation, focus, scrolling and accessibility actions. Frame and host tests exercise scope, stable panel links, lazy targets and macOS enumeration inside a scroll area."
     },
     {
       "id": "text-fields",

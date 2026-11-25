@@ -109,10 +109,11 @@ impl<A: Application> Runtime<A> {
         (node.has_press_ripple()
             && node.is_focusable()
             && self.in_scope(id)
-            && self
-                .bindings
-                .get(&id)
-                .is_some_and(|binding| binding.activate.is_some()))
+            && (node.allows_unbound_press_ripple()
+                || self
+                    .bindings
+                    .get(&id)
+                    .is_some_and(|binding| binding.activate.is_some())))
         .then_some(node.role())
     }
 

@@ -9,6 +9,7 @@ use surface_app::{
 
 const ROW: &str = "row";
 const INK: Color = Color::rgb(26, 44, 77);
+const PRESS_INK: Color = Color::rgb(63, 35, 114);
 
 #[derive(Clone)]
 enum Message {
@@ -22,6 +23,7 @@ enum Message {
 
 struct App {
     observe: bool,
+    passive_tab: bool,
     shown: bool,
     role: Role,
     modal: bool,
@@ -34,6 +36,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             observe: false,
+            passive_tab: false,
             shown: true,
             role: Role::Button,
             modal: false,
@@ -78,20 +81,24 @@ impl Application for App {
 
     fn view(&self) -> View<Message> {
         let row = self.shown.then(|| {
-            let row = View::new(
-                Node::new(self.role, "Row")
-                    .id(ROW)
-                    .styled(
-                        Style::column()
-                            .width(Length::Px(240.))
-                            .height(Length::Px(60.))
-                            .corners(Corners::new(4., 16., 16., 4.))
-                            .state_layer(INK),
-                    )
-                    .state_layer_alphas(20, 26, 26)
-                    .press_ripple(None),
-            )
-            .on_press(Message::Activate);
+            let node = Node::new(self.role, "Row")
+                .id(ROW)
+                .styled(
+                    Style::column()
+                        .width(Length::Px(240.))
+                        .height(Length::Px(60.))
+                        .corners(Corners::new(4., 16., 16., 4.))
+                        .state_layer(INK),
+                )
+                .state_layer_alphas(20, 26, 26);
+            let row = if self.passive_tab {
+                View::new(
+                    node.press_state_layer_ink(PRESS_INK)
+                        .press_ripple_on_focusable(),
+                )
+            } else {
+                View::new(node.press_ripple(None)).on_press(Message::Activate)
+            };
             if let Some(session) = &self.drag {
                 row.on_point_drag_with_bounds(session.clone(), |_, _| None)
             } else {
@@ -166,14 +173,54 @@ fn wave(frame: &ExtendedDisplayList) -> Option<&PathFill> {
 }
 
 fn steady_press(frame: &ExtendedDisplayList) -> bool {
+    has_tint(frame, INK, 26)
+}
+
+fn has_tint(frame: &ExtendedDisplayList, ink: Color, alpha: u8) -> bool {
     frame.ops().iter().any(|op| {
         let color = match op {
             ExtendedPaintOp::Legacy(PaintOp::Quad { color, .. })
             | ExtendedPaintOp::Legacy(PaintOp::Shape { color, .. }) => color,
             _ => return false,
         };
-        *color == Color(INK.0, INK.1, INK.2, 26)
+        *color == Color(ink.0, ink.1, ink.2, alpha)
     })
+}
+
+#[test]
+fn a_selected_tab_can_paint_a_distinct_press_without_an_action() {
+    let mut runtime = Runtime::new(App {
+        role: Role::Tab,
+        passive_tab: true,
+        ..App::default()
+    })
+    .unwrap();
+    frame(&mut runtime, 0.);
+    event(&mut runtime, Event::PointerMove { x: 24., y: 28. });
+    assert!(has_tint(&frame(&mut runtime, 0.), INK, 20));
+
+    down(&mut runtime);
+    frame(&mut runtime, 1000.);
+    let held = frame(&mut runtime, 1075.);
+    let expected = Color(PRESS_INK.0, PRESS_INK.1, PRESS_INK.2, 26);
+    assert_eq!(wave(&held).unwrap().color(), expected);
+    assert!(!has_tint(&held, PRESS_INK, 26));
+    assert!(!steady_press(&held));
+
+    up(&mut runtime);
+    assert_eq!(runtime.focused(), Some(ROW));
+    assert!(!runtime.activate(ROW).unwrap());
+    assert_eq!(runtime.app().taps, 0);
+
+    runtime.set_reduced_motion(true);
+    down(&mut runtime);
+    let reduced = frame(&mut runtime, 1175.);
+    assert!(wave(&reduced).is_none());
+    assert!(has_tint(&reduced, PRESS_INK, 26));
+    assert!(!steady_press(&reduced));
+    up(&mut runtime);
+    assert!(steady_press(&frame(&mut runtime, 1200.)));
+    assert_eq!(runtime.app().taps, 0);
 }
 
 #[test]

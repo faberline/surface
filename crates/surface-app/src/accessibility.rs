@@ -310,6 +310,71 @@ impl<M> AccessibilityFrame<'_, M> {
         .then_some(target)
     }
 
+    /// Resolve the selected Tab that names this mounted panel.
+    ///
+    /// Both controls must use unique, reciprocal stable IDs and share the
+    /// active accessibility scope. The nearest named TabList ancestor of
+    /// the Tab must be a direct sibling of this Group. Projection can omit
+    /// a relationship whose endpoint is clipped and not present in its tree.
+    pub fn tab_panel_tab(&self, panel: NodeId) -> Option<NodeId> {
+        let panel = self.node(panel)?.node;
+        let (list_key, tab_key) = panel.tab_panel_label_target()?;
+        if panel.accessibility_adjustable().is_some()
+            || panel.accessibility_grid_role().is_some()
+            || panel.uses_web_multiselect_listbox_semantics()
+        {
+            return None;
+        }
+        let tab = self.dom.by_id(tab_key)?;
+        let (tab_node, list, panel_key) = self.tab_panel_declaration(tab)?;
+        (tab_node.is_selected() == Some(true)
+            && list.stable_id() == Some(list_key)
+            && list.parent() == panel.parent()
+            && panel.stable_id() == Some(panel_key))
+        .then_some(tab)
+    }
+
+    /// Resolve an unmounted panel declaration for a host with ID references.
+    /// This can only supply an empty, hidden placeholder. A mounted node
+    /// with the same ID always owns that ID, even when the link is invalid.
+    pub fn lazy_tab_panel(&self, tab: NodeId) -> Option<&str> {
+        let (tab, _, panel) = self.tab_panel_declaration(tab)?;
+        (tab.is_selected() == Some(false) && self.dom.by_id(panel).is_none()).then_some(panel)
+    }
+
+    fn tab_panel_declaration(&self, id: NodeId) -> Option<(&Node, &Node, &str)> {
+        let tab = self.node(id)?.node;
+        let panel = tab
+            .tab_controls_target()
+            .filter(|id| !id.trim().is_empty())?;
+        let tab_key = tab.stable_id().filter(|id| !id.trim().is_empty())?;
+        if panel == tab_key || tab.name().trim().is_empty() {
+            return None;
+        }
+        let mut parent = tab.parent();
+        let list = loop {
+            let id = parent?;
+            let node = self.dom.get(id).ok()?;
+            if node.role() == Role::TabList {
+                break self.node(id)?.node;
+            }
+            parent = node.parent();
+        };
+        let list_key = list.stable_id().filter(|id| !id.trim().is_empty())?;
+        if panel == list_key || list.name().trim().is_empty() {
+            return None;
+        }
+        // The panel slot is owned by this list's parent. In a modal frame
+        // that parent must also be in scope, even for a lazy panel.
+        self.node(list.parent()?)?;
+        if self.dom.iter().any(|(other, node)| {
+            other != id && node.tab_controls_target() == Some(panel) && self.node(other).is_some()
+        }) {
+            return None;
+        }
+        Some((tab, list, panel))
+    }
+
     /// Resolve the visible text or tooltip that describes a node in this frame.
     /// Prefer a valid static text reference to a tooltip.
     pub fn description_target(&self, id: NodeId) -> Option<NodeId> {

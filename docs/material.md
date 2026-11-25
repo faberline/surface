@@ -181,6 +181,7 @@ does not change application state.
 | `scroll_choice_field` | Inline finite text choices with stable IDs, qualified labels and direct-entry completion |
 | `segment` | Position-aware segment: round outer ends, square inner edges, check mark when selected; single or multi select owned by the application |
 | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
+| `tab_bar` / `tab_panel` | Primary and Secondary bars, fixed and scrollable layouts, controlled selection, a measured indicator and named panels |
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
@@ -1776,6 +1777,33 @@ Known motion gaps:
 
 Motion does not complete the Material catalog. The coverage file keeps
 the motion foundation at `partial`.
+
+## Tabs
+
+Keep one selected stable ID and one `TabBarMotion` per bar in the app.
+Pass them to `Theme::tab_bar` with a unique bar ID and named items.
+Each item has its own stable tab and panel ID and sends one selection
+message. The app sets the selected ID when it accepts the message.
+Set `TabActivation::Manual` for panels that take time to open. Automatic
+activation loads the panel when arrow navigation moves focus.
+
+Use a fixed bar when each equal cell can keep its 48 dp minimum.
+Supply the width that the caller's layout gives the bar. Choose the
+scrollable layout when the labels need more room. The leading edge
+follows the text direction. Pass drag messages to `TabBarMotion::apply`.
+Call `advance` and return its frame update before drawing. Call
+`observe_interaction` from the app's press-detail frame hook so labels
+and icons use the current hover, focus and press colors.
+
+Place `Theme::tab_panel` just after its tab bar in the same parent.
+Mount the active panel only. `TabPanelEntry::Panel` puts a text-first
+panel in the Tab order. Use `TabPanelEntry::Contents` if its first
+meaningful child can take focus. The hosts name the panel from its tab.
+On Web, each inactive tab has an empty hidden target with the same ID
+that its panel uses when mounted.
+
+[Material 3 Tabs](https://m3.material.io/components/tabs/specs) ·
+[WAI Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
 
 ## Gallery and evidence
 

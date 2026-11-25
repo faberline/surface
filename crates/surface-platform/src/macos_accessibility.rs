@@ -74,6 +74,8 @@ impl Tree {
         let mut targets = BTreeMap::new();
         let mut nodes = Vec::new();
         let mut descriptions = Vec::new();
+        let mut tab_panels = Vec::new();
+        let mut tab_positions = BTreeMap::new();
         let mut stack = vec![(root, false)];
         while let Some((id, visited)) = stack.pop() {
             if !visited {
@@ -220,6 +222,16 @@ impl Tree {
                 // unpublished, fully clipped accessibility node.
                 node.set_description(text);
             }
+            if let Some(tab) = frame.tab_panel_tab(id) {
+                node.set_role(Role::TabPanel);
+                if source.node.name().trim().is_empty() {
+                    node.set_label(frame.node(tab).expect("resolved tab").node.name());
+                }
+                tab_panels.push((nodes.len(), tab));
+            }
+            if source.node.tab_controls_target().is_some() {
+                tab_positions.insert(id, nodes.len());
+            }
             nodes.push((native_id, node));
             ids.insert(id, native_id);
             targets.insert(
@@ -232,6 +244,16 @@ impl Tree {
                     pages: BTreeMap::new(),
                 },
             );
+        }
+        // Both native IDs must exist before linking siblings.
+        for (index, tab) in tab_panels {
+            if let Some(&tab_index) = tab_positions.get(&tab) {
+                let tab_id = nodes[tab_index].0;
+                let panel_id = nodes[index].0;
+                nodes[index].1.set_labelled_by([tab_id]);
+                nodes[index].1.clear_label();
+                nodes[tab_index].1.set_controls([panel_id]);
+            }
         }
         for (index, description) in descriptions {
             if let Some(id) = ids.get(&description) {
@@ -560,6 +582,122 @@ mod tests {
                         .chain(tooltip)
                         .chain(editor),
                 )
+        }
+    }
+
+    #[test]
+    fn native_tabs_link_only_the_mounted_panel_to_the_projected_tab() {
+        #[derive(Clone, Copy)]
+        struct Tabs {
+            other: bool,
+            clipped: bool,
+            reveal: bool,
+        }
+
+        impl Application for Tabs {
+            type Message = Self;
+
+            fn update(&mut self, model: Self) {
+                *self = model;
+            }
+
+            fn view(&self) -> View<Self> {
+                let tab = |key, name, panel, selected| {
+                    let tab = View::new(
+                        SurfaceNode::new(SurfaceRole::Tab, name)
+                            .id(key)
+                            .selected(selected)
+                            .tab_controls(panel)
+                            .styled(Style::column().height(Length::Px(32.))),
+                    );
+                    if self.reveal {
+                        tab.accessibility_scroll_into_view()
+                    } else {
+                        tab
+                    }
+                };
+                let mut style = Style::column();
+                if self.clipped {
+                    style.height = Length::Px(32.);
+                    style.clip = true;
+                }
+                let list = View::new(
+                    SurfaceNode::new(SurfaceRole::TabList, "Destinations")
+                        .id("list")
+                        .styled(style),
+                )
+                .children([
+                    tab("history", "History", "history-panel", self.other),
+                    tab("messages", "Messages", "messages-panel", !self.other),
+                ]);
+                let (panel, label) = if self.other {
+                    ("history-panel", "history")
+                } else {
+                    ("messages-panel", "messages")
+                };
+                let panel = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "")
+                        .id(panel)
+                        .tab_panel_labelled_by("list", label)
+                        .styled(Style::column().height(Length::Px(64.))),
+                );
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Tabs")).children([panel, list])
+            }
+        }
+
+        let initial = Tabs {
+            other: false,
+            clipped: false,
+            reveal: false,
+        };
+        let mut runtime = Runtime::new(initial).unwrap();
+        let mut tree = Tree::default();
+        for other in [false, true] {
+            runtime.apply(Tabs { other, ..initial }).unwrap();
+            let frame = update(&mut runtime, &mut tree);
+            let (chosen, inactive) = if other {
+                ("History", "Messages")
+            } else {
+                ("Messages", "History")
+            };
+            let (tab_id, tab) = named(&frame, chosen);
+            let (_, inactive) = named(&frame, inactive);
+            let mut panels = frame
+                .nodes
+                .iter()
+                .filter(|(_, node)| node.role() == Role::TabPanel);
+            let (panel_id, panel) = panels.next().unwrap();
+            assert!(panels.next().is_none());
+            assert_eq!(tab.role(), Role::Tab);
+            assert_eq!(tab.is_selected(), Some(true));
+            assert_eq!(tab.controls(), [*panel_id]);
+            assert_eq!(panel.labelled_by(), [tab_id]);
+            assert!(inactive.controls().is_empty());
+        }
+        for reveal in [false, true] {
+            runtime
+                .apply(Tabs {
+                    clipped: true,
+                    reveal,
+                    ..initial
+                })
+                .unwrap();
+            let frame = update(&mut runtime, &mut tree);
+            let (panel_id, panel) = frame
+                .nodes
+                .iter()
+                .find(|(_, node)| node.role() == Role::TabPanel)
+                .unwrap();
+            if reveal {
+                let (tab_id, tab) = named(&frame, "Messages");
+                assert!(tab.supports_action(Action::ScrollIntoView));
+                assert!(!tab.supports_action(Action::Focus));
+                assert_eq!(tab.controls(), [*panel_id]);
+                assert_eq!(panel.labelled_by(), [tab_id]);
+            } else {
+                assert_eq!(panel.label(), Some("Messages"));
+                assert!(panel.labelled_by().is_empty());
+            }
         }
     }
 

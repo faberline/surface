@@ -1,6 +1,7 @@
 //! Publish the canvas's current semantic tree to the browser.
 mod live_status;
 mod semantics;
+mod tabs;
 
 use crate::{key_route, UserEvent};
 use std::{
@@ -42,14 +43,15 @@ struct Target {
 }
 
 #[derive(Default, PartialEq, Eq)]
-struct TextRelations {
+struct Relations {
     headings: BTreeMap<NodeId, NodeId>,
     references: BTreeMap<NodeId, NodeId>,
     text_targets: BTreeSet<NodeId>,
     clipped_text: BTreeMap<NodeId, String>,
+    tabs: tabs::TabRelations,
 }
 
-impl TextRelations {
+impl Relations {
     fn target_id(&self, id: NodeId) -> String {
         let kind = if self.text_targets.contains(&id) {
             "text"
@@ -71,7 +73,7 @@ impl TextRelations {
 struct Published {
     generation: AccessibilityFrameId,
     visible: BTreeSet<NodeId>,
-    text_relations: TextRelations,
+    relations: Relations,
     editor: Option<NodeId>,
     tree: Element,
 }
@@ -208,26 +210,41 @@ impl WebAccessibility {
             .is_some_and(|old| old.generation == generation);
         let mut visible = BTreeSet::new();
         collect_visible(frame, frame.root(), &mut visible);
-        let mut text_relations = TextRelations::default();
+        let tab_relations = tabs::TabRelations::collect(frame, &visible, |id| {
+            // IDs inside our previous tree leave with that tree. Exclude
+            // matches elsewhere so references cannot name foreign elements.
+            let matches = self.document.query_selector_all(&format!("#{id}"))?;
+            Ok::<_, JsValue>((0..matches.length()).all(|index| {
+                matches.item(index).is_some_and(|node| {
+                    self.published
+                        .as_ref()
+                        .is_some_and(|old| old.tree.contains(Some(&node)))
+                })
+            }))
+        })?;
+        let mut relations = Relations {
+            tabs: tab_relations,
+            ..Relations::default()
+        };
         for source in &visible {
             if let Some(heading) = frame.dialog_heading_target(*source) {
-                text_relations.headings.insert(*source, heading);
+                relations.headings.insert(*source, heading);
             }
             if let Some(target) = frame
                 .description_target(*source)
                 .filter(|id| visible.contains(id))
             {
-                text_relations.references.insert(*source, target);
+                relations.references.insert(*source, target);
                 if frame
                     .node(target)
                     .is_some_and(|node| node.node.role() == Role::Text)
                 {
-                    text_relations.text_targets.insert(target);
+                    relations.text_targets.insert(target);
                 }
             } else if let Some((target, text)) = frame.clipped_validation_text(*source) {
-                text_relations.references.insert(*source, target);
-                text_relations.text_targets.insert(target);
-                text_relations.clipped_text.insert(target, text.to_owned());
+                relations.references.insert(*source, target);
+                relations.text_targets.insert(target);
+                relations.clipped_text.insert(target, text.to_owned());
             }
         }
         let statuses = visible
@@ -247,7 +264,7 @@ impl WebAccessibility {
         if self.published.as_ref().is_none_or(|old| {
             old.generation != generation
                 || old.visible != visible
-                || old.text_relations != text_relations
+                || old.relations != relations
                 || old.editor != editor
         }) {
             let mut targets = BTreeMap::new();
@@ -257,17 +274,26 @@ impl WebAccessibility {
                 frame.root(),
                 &visible,
                 editor,
-                &text_relations,
+                &relations,
                 &mut targets,
             )?;
             // A referenced hidden element still supplies its description.
             // Keep it separate from the focusable and readable projection.
-            for (id, text) in &text_relations.clipped_text {
+            for (id, text) in &relations.clipped_text {
                 let hidden = self.document.create_element("span")?;
-                hidden.set_id(&text_relations.target_id(*id));
+                hidden.set_id(&relations.target_id(*id));
                 hidden.set_attribute("hidden", "")?;
                 hidden.set_text_content(Some(text));
                 tree.append_child(&hidden)?;
+            }
+            for (panel_id, tab_id) in &relations.tabs.placeholders {
+                let placeholder = self.document.create_element("div")?;
+                placeholder.set_id(panel_id);
+                placeholder.set_attribute("role", "tabpanel")?;
+                placeholder.set_attribute("aria-labelledby", tab_id)?;
+                placeholder.set_attribute("hidden", "")?;
+                placeholder.set_attribute("aria-hidden", "true")?;
+                tree.append_child(&placeholder)?;
             }
             // Put the live region inside the active modal. A browser may
             // prune accessibility content outside an aria-modal dialog.
@@ -284,7 +310,7 @@ impl WebAccessibility {
             }
             *self.targets.borrow_mut() = targets;
             if let Some(textbox) = self.document.get_element_by_id(TEXT_INPUT) {
-                if let Some(id) = editor.and_then(|id| text_relations.described_by(id)) {
+                if let Some(id) = editor.and_then(|id| relations.described_by(id)) {
                     textbox.set_attribute("aria-describedby", &id)?;
                 } else {
                     textbox.remove_attribute("aria-describedby")?;
@@ -301,7 +327,7 @@ impl WebAccessibility {
             self.published = Some(Published {
                 generation,
                 visible,
-                text_relations,
+                relations,
                 editor,
                 tree,
             });
@@ -373,7 +399,7 @@ fn project<M>(
     id: NodeId,
     visible: &BTreeSet<NodeId>,
     editor: Option<NodeId>,
-    text_relations: &TextRelations,
+    relations: &Relations,
     targets: &mut BTreeMap<usize, Target>,
 ) -> Result<Element, JsValue> {
     let source = frame.node(id).expect("visible nodes belong to the frame");
@@ -395,18 +421,36 @@ fn project<M>(
     if let Some(stable_id) = source.node.stable_id() {
         element.set_attribute("data-surface-id", stable_id)?;
     }
-    if source.node.role() == Role::Tooltip || text_relations.text_targets.contains(&id) {
-        element.set_id(&text_relations.target_id(id));
+    if source.node.role() == Role::Tooltip || relations.text_targets.contains(&id) {
+        element.set_id(&relations.target_id(id));
     } else if source.node.role() == Role::Heading
-        && text_relations.headings.values().any(|target| *target == id)
+        && relations.headings.values().any(|target| *target == id)
     {
-        element.set_id(&TextRelations::heading_id(id));
+        element.set_id(&Relations::heading_id(id));
     }
-    if let Some(heading) = text_relations.headings.get(&id) {
-        element.set_attribute("aria-labelledby", &TextRelations::heading_id(*heading))?;
+    if let Some(heading) = relations.headings.get(&id) {
+        element.set_attribute("aria-labelledby", &Relations::heading_id(*heading))?;
         element.remove_attribute("aria-label")?;
     }
-    let authored_description = text_relations.described_by(id);
+    if let Some(tab_id) = relations.tabs.tab_ids.get(&id) {
+        element.set_id(tab_id);
+    }
+    if let Some(panel_id) = relations.tabs.controls.get(&id) {
+        element.set_attribute("aria-controls", panel_id)?;
+    }
+    if let Some(panel) = relations.tabs.panels.get(&id) {
+        element.set_attribute("role", "tabpanel")?;
+        if let Some(panel_id) = &panel.dom_id {
+            element.set_id(panel_id);
+        }
+        if let Some(label) = &panel.labelled_by {
+            element.set_attribute("aria-labelledby", label)?;
+            element.remove_attribute("aria-label")?;
+        } else if source.node.name().trim().is_empty() {
+            element.set_attribute("aria-label", &panel.fallback_label)?;
+        }
+    }
+    let authored_description = relations.described_by(id);
     let description = if let Some(text) = source.node.web_adjustable_description_text() {
         // The referenced text stays hidden as a standalone item. Project it
         // first so the selected value precedes any authored hint.
@@ -447,15 +491,7 @@ fn project<M>(
             element.set_attribute("aria-owns", TEXT_INPUT)?;
             continue;
         }
-        let child_element = project(
-            document,
-            frame,
-            child,
-            visible,
-            editor,
-            text_relations,
-            targets,
-        )?;
+        let child_element = project(document, frame, child, visible, editor, relations, targets)?;
         element.append_child(&child_element)?;
     }
     Ok(element)

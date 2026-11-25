@@ -36,6 +36,7 @@ mod side_sheet_demo;
 mod snackbar_demo;
 mod split_demo;
 mod switch_demo;
+mod tabs_demo;
 mod time_dial_demo;
 mod time_input_demo;
 mod time_scroll_demo;
@@ -89,6 +90,7 @@ use surface_material::{
     IconButtonKind, NavigationRailItem, SegmentPosition, Theme,
 };
 use switch_demo::{SwitchDemo, SwitchDemoEvent};
+use tabs_demo::{TabsDemo, TabsDemoEvent};
 use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
 use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
 use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
@@ -125,6 +127,7 @@ pub struct Gallery {
     switch_demo: SwitchDemo,
     checkbox_demo: CheckboxDemo,
     radio_demo: RadioDemo,
+    tabs_demo: TabsDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -193,6 +196,7 @@ impl Default for Gallery {
             switch_demo: SwitchDemo::default(),
             checkbox_demo: CheckboxDemo::default(),
             radio_demo: RadioDemo::default(),
+            tabs_demo: TabsDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -306,6 +310,7 @@ pub enum Message {
     SwitchDemo(SwitchDemoEvent),
     CheckboxDemo(CheckboxDemoEvent),
     RadioDemo(RadioDemoEvent),
+    TabsDemo(TabsDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -476,6 +481,9 @@ impl Application for Gallery {
         if self.radio_demo.visible() {
             return self.radio_demo.text_scale();
         }
+        if self.tabs_demo.visible() {
+            return self.tabs_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -486,6 +494,7 @@ impl Application for Gallery {
         }
     }
     fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
+        let tabs = self.tabs_demo.viewport_changed(width);
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
@@ -544,6 +553,7 @@ impl Application for Gallery {
             || search_overlay
             || dialog
             || flexible_navigation_bar
+            || tabs
             || list_actions
             || list_media
             || list_reorder
@@ -554,6 +564,7 @@ impl Application for Gallery {
     }
     fn observes_frame_input(&self) -> bool {
         self.radio_demo.visible()
+            || self.tabs_demo.visible()
             || self.checkbox_demo.visible()
             || self.switch_demo.visible()
             || self.tooltip_demo.visible()
@@ -640,12 +651,16 @@ impl Application for Gallery {
         let switch = self.switch_demo.frame(&frame, &input, press, hovered);
         let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
         let radio = self.radio_demo.frame(&frame, &input, press, hovered);
+        let tabs = self
+            .tabs_demo
+            .observe_interaction(&frame, input, pressed, hovered);
         let mut update = self.animation_frame_with_press(frame, input, pressed);
         update.animation.rebuild |= fab.animation.rebuild
             || menu.rebuild
             || switch.rebuild
             || checkbox.rebuild
-            || radio.rebuild;
+            || radio.rebuild
+            || tabs;
         update.animation.request_next |= fab.animation.request_next
             || menu.request_next
             || switch.request_next
@@ -655,6 +670,7 @@ impl Application for Gallery {
         update
     }
     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
+        let tabs = self.tabs_demo.frame(&frame, self.queue.as_ref());
         self.card_demo.frame(&frame);
         let inline = self.wide_rail_demo.frame(&frame);
         let modal = self.modal_wide_rail_demo.frame(&frame);
@@ -679,7 +695,8 @@ impl Application for Gallery {
         let list_expand = self.list_expand_demo.frame(&frame);
         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
         AnimationUpdate {
-            rebuild: inline.rebuild
+            rebuild: tabs.rebuild
+                || inline.rebuild
                 || modal.rebuild
                 || snackbar.rebuild
                 || drawer.rebuild
@@ -701,7 +718,8 @@ impl Application for Gallery {
                 || menu.rebuild
                 || list_expand.rebuild
                 || list_reorder.rebuild,
-            request_next: inline.request_next
+            request_next: tabs.request_next
+                || inline.request_next
                 || modal.request_next
                 || snackbar.request_next
                 || drawer.request_next
@@ -836,6 +854,9 @@ impl Application for Gallery {
                 if i != radio_demo::SECTION {
                     self.radio_demo.leave();
                 }
+                if i != tabs_demo::SECTION {
+                    self.tabs_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -850,6 +871,7 @@ impl Application for Gallery {
             Message::SwitchDemo(event) => self.switch_demo.update(event),
             Message::CheckboxDemo(event) => self.checkbox_demo.update(event),
             Message::RadioDemo(event) => self.radio_demo.update(event),
+            Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1050,6 +1072,9 @@ impl Application for Gallery {
         if self.radio_demo.visible() {
             return self.radio_demo.view(&t, self.dark);
         }
+        if self.tabs_demo.visible() {
+            return self.tabs_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1151,6 +1176,7 @@ impl Application for Gallery {
                             SwitchDemo::show_button(&t),
                             CheckboxDemo::show_button(&t),
                             RadioDemo::show_button(&t),
+                            TabsDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1779,6 +1805,7 @@ mod web {
         state["switch_demo"] = s.switch_demo.inspect(&theme);
         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
         state["radio_demo"] = s.radio_demo.inspect(&theme);
+        state["tabs_demo"] = s.tabs_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
