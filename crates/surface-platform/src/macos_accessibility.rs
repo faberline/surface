@@ -2283,6 +2283,90 @@ mod tests {
     }
 
     #[test]
+    fn multiline_text_projects_value_description_and_focus_by_mode() {
+        use surface_app::TextOptions;
+
+        const VALUE: &str = "第一行\nsecond a\u{301}\n";
+        const NAMES: [&str; 3] = ["多行備註", "唯讀內容", "停用內容"];
+        const PREFIX: &str = "井字號";
+        const HELP: &str = "可輸入多行文字。";
+
+        struct Form;
+
+        impl Application for Form {
+            type Message = ();
+
+            fn update(&mut self, _: ()) {}
+
+            fn view(&self) -> View<()> {
+                let editor = |id, name, read_only, disabled| {
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::TextInput, name)
+                            .id(id)
+                            .text(VALUE)
+                            .disabled(disabled)
+                            .described_by_text("help")
+                            .described_by_texts(["prefix"])
+                            .styled(Style::column().height(Length::Px(44.))),
+                    )
+                    .text_options(TextOptions {
+                        multiline: true,
+                        read_only,
+                        ..Default::default()
+                    })
+                    .on_input(|_| ())
+                    .accessibility_scroll_into_view()
+                };
+                let description = |id, content| {
+                    View::new(SurfaceNode::new(SurfaceRole::Text, "").id(id).text(content))
+                };
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Notes")).children([
+                    editor("notes", NAMES[0], false, false),
+                    editor("readonly", NAMES[1], true, false),
+                    editor("disabled", NAMES[2], false, true),
+                    description("prefix", PREFIX),
+                    description("help", HELP),
+                ])
+            }
+        }
+
+        let mut runtime = Runtime::new(Form).unwrap();
+        let mut tree = Tree::default();
+        let frame = update(&mut runtime, &mut tree);
+        let prefix = named(&frame, PREFIX).0;
+        let help = named(&frame, HELP).0;
+        let fields = NAMES.map(|name| named(&frame, name));
+        assert_eq!(
+            frame
+                .nodes
+                .iter()
+                .filter(|(_, node)| node.role() == Role::MultilineTextInput)
+                .count(),
+            fields.len()
+        );
+        for (_, field) in fields {
+            assert_eq!(field.role(), Role::MultilineTextInput);
+            assert_eq!(field.value(), Some(VALUE));
+        }
+        for (_, field) in &fields[..2] {
+            assert_eq!(field.described_by(), [prefix, help]);
+            assert_eq!(field.description(), Some("井字號 可輸入多行文字。"));
+        }
+        assert!(!fields[0].1.is_read_only());
+        assert!(fields[1].1.is_read_only());
+        assert!(fields[2].1.is_disabled());
+        assert!(fields[2].1.described_by().is_empty());
+        assert!(!fields[2].1.supports_action(Action::Focus));
+
+        for expected in [fields[0].0, fields[1].0, fields[0].0] {
+            runtime
+                .dispatch(Event::FocusNext { reverse: false })
+                .unwrap();
+            assert_eq!(update(&mut runtime, &mut tree).focus, expected);
+        }
+    }
+
+    #[test]
     fn clipped_validation_text_maps_to_accesskit_help_without_a_dangling_relation() {
         use surface_app::ScrollTarget;
 

@@ -1,6 +1,7 @@
-//! Single-line Material 3 fields with a stable Runtime editor.
+//! Material 3 fields with a stable Runtime editor.
 
 use std::f32::consts::FRAC_PI_2;
+use std::num::NonZeroU16;
 
 use surface::{
     Color, FillContour, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
@@ -32,7 +33,7 @@ pub enum TextFieldEditability {
     Disabled,
 }
 
-/// Caller-owned data and presentation for a single-line Material text field.
+/// Caller-owned data and presentation for a Material text field.
 #[derive(Clone, Copy, Debug)]
 pub struct OutlinedTextFieldOptions<'a> {
     pub id: &'a str,
@@ -61,6 +62,20 @@ impl<'a> OutlinedTextFieldOptions<'a> {
             text_scale: 1.,
         }
     }
+}
+
+/// The vertical layout of a Material field that accepts line breaks.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MultilineTextFieldSize {
+    /// Start with one row. Grow and shrink with wrapped and explicit lines.
+    Grow,
+    /// Keep this many visible rows and scroll overflow inside the field.
+    FixedRows(NonZeroU16),
+}
+
+struct FieldEditing<Submit> {
+    multiline: Option<MultilineTextFieldSize>,
+    on_submit: Submit,
 }
 
 impl Theme {
@@ -133,7 +148,17 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
-        self.build_text_field(appearance, options, adornments, None, on_input, on_submit)
+        self.build_text_field(
+            appearance,
+            options,
+            adornments,
+            None,
+            on_input,
+            FieldEditing {
+                multiline: None,
+                on_submit,
+            },
+        )
     }
 
     /// Add a character count and soft limit to either field appearance.
@@ -155,7 +180,37 @@ impl Theme {
             adornments,
             Some(counter),
             on_input,
-            on_submit,
+            FieldEditing {
+                multiline: None,
+                on_submit,
+            },
+        )
+    }
+
+    /// Build a growing multiline field or a fixed text area in either appearance.
+    ///
+    /// The editor's ID, value and selection use the ordinary field contract.
+    /// Enter inserts a line break. An application can submit with a separate
+    /// action. The optional counter counts committed graphemes across all rows.
+    pub fn multiline_text_field<M>(
+        &self,
+        appearance: TextFieldAppearance,
+        options: TextFieldOptions<'_>,
+        size: MultilineTextFieldSize,
+        adornments: TextFieldAdornments<'_, M>,
+        counter: Option<TextFieldCounterOptions<'_>>,
+        on_input: impl Fn(String) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.build_text_field(
+            appearance,
+            options,
+            adornments,
+            counter,
+            on_input,
+            FieldEditing {
+                multiline: Some(size),
+                on_submit: || None,
+            },
         )
     }
 
@@ -166,7 +221,7 @@ impl Theme {
         adornments: TextFieldAdornments<'_, M>,
         counter: Option<TextFieldCounterOptions<'_>>,
         on_input: impl Fn(String) -> M + 'static,
-        on_submit: impl Fn() -> Option<M> + 'static,
+        editing: FieldEditing<impl Fn() -> Option<M> + 'static>,
     ) -> Option<View<M>> {
         let label = visible_text(Some(options.label))?;
         if options.id.trim().is_empty()
@@ -179,6 +234,16 @@ impl Theme {
         let caption = typography::BODY_SMALL.scaled(options.text_scale);
         let line_height = body.line_height.filter(|height| height.is_finite())?;
         let caption_height = caption.line_height.filter(|height| height.is_finite())?;
+        let FieldEditing {
+            multiline,
+            on_submit,
+        } = editing;
+        if let Some(MultilineTextFieldSize::FixedRows(rows)) = multiline {
+            let height = line_height * f32::from(rows.get()) + caption_height;
+            if !height.is_finite() {
+                return None;
+            }
+        }
         let disabled = options.editability == TextFieldEditability::Disabled;
         let counted = counter.map(|counter| (counter, options.value.graphemes(true).count()));
         let (limit_error, counter) = match counted {
@@ -244,6 +309,7 @@ impl Theme {
             prefix: adornments.prefix.and_then(affix_text),
             suffix: adornments.suffix.and_then(affix_text),
         };
+        let has_value_box = multiline.is_some() || field_adornments.has_slots();
         let disabled_value = disabled && !options.value.is_empty();
         let mut input = Node::new(Role::TextInput, label)
             .id(id)
@@ -281,26 +347,34 @@ impl Theme {
         );
         let mut editor = View::new(input)
             .text_options(TextOptions {
+                multiline: multiline.is_some(),
                 read_only: options.editability == TextFieldEditability::ReadOnly,
                 ..TextOptions::default()
             })
-            .inset_single_line_text_horizontally(SIDE)
             .accessibility_scroll_into_view();
-        if field_adornments.has_slots() {
-            editor = editor.single_line_text_horizontal_bounds_from(&value_box_id);
+        if multiline.is_some() {
+            editor = editor.multiline_text_viewport_from(&value_box_id, alignment);
+        } else {
+            editor = editor.inset_single_line_text_horizontally(SIDE);
+            if has_value_box {
+                editor = editor.single_line_text_horizontal_bounds_from(&value_box_id);
+            }
+            editor = if filled {
+                editor.inset_single_line_text_from_top(FILLED_VERTICAL_PADDING + caption_height)
+            } else {
+                editor.center_single_line_text()
+            };
+            if rtl {
+                editor = editor.right_align_single_line_text();
+            }
         }
         if field_adornments.trailing {
             editor = editor.text_input_hover_with_action(&action_id);
         }
-        editor = if filled {
-            editor.inset_single_line_text_from_top(FILLED_VERTICAL_PADDING + caption_height)
-        } else {
-            editor.center_single_line_text()
-        };
         if !disabled {
             editor = editor.on_input(on_input).cursor(CursorStyle::Text);
         }
-        if options.editability == TextFieldEditability::Editable {
+        if multiline.is_none() && options.editability == TextFieldEditability::Editable {
             editor = editor.on_key(move |press| {
                 if press.key == Key::Enter && press.modifiers.is_empty() && !press.repeat {
                     on_submit()
@@ -311,9 +385,6 @@ impl Theme {
         }
         if let Some(hint) = visible_text(options.placeholder) {
             editor = editor.focused_text_input_placeholder(hint, rgba.on_surface_variant);
-        }
-        if rtl {
-            editor = editor.right_align_single_line_text();
         }
 
         let boundary_part = if filled { "indicator" } else { "outline" };
@@ -373,7 +444,7 @@ impl Theme {
         let floating = label_view(floating_id, caption.clone(), floats);
         let fallback = label_view(format!("{id}-above-label"), caption.clone(), |_| true);
         // Disabled peers have an authored value but do not mount an editor.
-        // Draw their value in the same inset as an enabled single line.
+        // Draw their value in the same viewport as an enabled field.
         let disabled_ink = disabled_value.then(|| {
             View::new(
                 Node::new(Role::Text, "")
@@ -451,7 +522,7 @@ impl Theme {
                 .styled(Style::default().foreground(Color::TRANSPARENT)),
         );
         let mut slots = Vec::new();
-        if field_adornments.has_slots() {
+        if has_value_box {
             slots.push(
                 View::new(Node::new(Role::Group, "").id(value_box_id)).without_interaction(None),
             );
@@ -558,6 +629,7 @@ impl Theme {
         shell.min_width = FACE_MIN;
         let layout = FieldLayout {
             appearance,
+            multiline,
             label: label.to_owned(),
             description: description.map(str::to_owned),
             counter: counter.map(|(visible, _, _)| visible),
@@ -673,6 +745,7 @@ impl FieldColors {
 #[derive(Debug)]
 struct FieldLayout {
     appearance: TextFieldAppearance,
+    multiline: Option<MultilineTextFieldSize>,
     label: String,
     description: Option<String>,
     counter: Option<String>,
@@ -686,7 +759,7 @@ struct FieldLayout {
 }
 
 impl FieldLayout {
-    fn rects(&self, width: f32, fonts: &mut dyn TextMeasurer) -> Vec<Rect> {
+    fn rects(&self, children: &[&Node], width: f32, fonts: &mut dyn TextMeasurer) -> Vec<Rect> {
         let content_width = (width - 2. * SIDE).max(1.);
         let filled = self.appearance == TextFieldAppearance::Filled;
         let slots = self
@@ -724,11 +797,33 @@ impl FieldLayout {
         } else {
             above_height + DESCRIPTION_GAP
         };
-        let face_height = FACE_MIN.max((self.line_height + label_slot + 2. * face_padding).ceil());
+        let value_height = match self.multiline {
+            None => self.line_height,
+            Some(MultilineTextFieldSize::FixedRows(rows)) => {
+                self.line_height * f32::from(rows.get())
+            }
+            Some(MultilineTextFieldSize::Grow) => {
+                // Runtime puts the current editor display value on this layout
+                // copy. It includes preedit without committing it to the model.
+                let text = children
+                    .iter()
+                    .find(|node| node.role() == Role::TextInput)
+                    .and_then(|editor| editor.text_value())
+                    .unwrap_or_default();
+                let body_width = slots.value(0., self.line_height).width;
+                fonts
+                    .text_layout_styled(text, &self.body, Some(body_width))
+                    .height
+                    .max(self.line_height)
+            }
+        };
+        let first_face_height =
+            FACE_MIN.max((self.line_height + label_slot + 2. * face_padding).ceil());
+        let face_height = first_face_height + (value_height - self.line_height);
         let face = Rect::new(0., top, width, face_height);
         let empty = Rect::new(0., 0., 0., 0.);
         let physical = |rect| physical(rect, width, self.rtl);
-        let center_line_y = top + (face_height - self.line_height) / 2.;
+        let center_line_y = top + (first_face_height - self.line_height) / 2.;
         let line_y = if filled {
             top + face_padding + label_slot
         } else {
@@ -739,7 +834,7 @@ impl FieldLayout {
         } else {
             face
         };
-        let value = physical(slots.value(line_y, self.line_height));
+        let value = physical(slots.value(line_y, value_height));
         let content = physical(Rect::new(
             slots.body_start,
             center_line_y,
@@ -785,14 +880,14 @@ impl FieldLayout {
         }
         // The live region needs visible geometry even when it is empty.
         rects.push(Rect::new(1., 0., 1., 1.));
-        if self.adornments.has_slots() {
+        if self.multiline.is_some() || self.adornments.has_slots() {
             rects.push(value);
         }
         let icon_inset = (ACTION_SIZE - ICON_SIZE) / 2.;
         if self.adornments.leading {
             let icon = Rect::new(
                 icon_inset,
-                top + (face_height - ICON_SIZE) / 2.,
+                top + (first_face_height - ICON_SIZE) / 2.,
                 ICON_SIZE,
                 ICON_SIZE,
             );
@@ -805,7 +900,7 @@ impl FieldLayout {
             + DESCRIPTION_GAP;
         if self.adornments.trailing {
             let y = if slots.trailing_inline {
-                top + (face_height - ACTION_SIZE) / 2.
+                top + (first_face_height - ACTION_SIZE) / 2.
             } else {
                 let y = below;
                 below += ACTION_SIZE + DESCRIPTION_GAP;
@@ -846,7 +941,12 @@ impl FieldLayout {
                 rects.push(Rect::new(SIDE, below, content_width, height));
                 below += height + DESCRIPTION_GAP;
             }
-            rects.push(physical(Rect::new(SIDE, top + face_height / 2., 1., 1.)));
+            rects.push(physical(Rect::new(
+                SIDE,
+                top + first_face_height / 2.,
+                1.,
+                1.,
+            )));
         }
         rects
     }
@@ -859,13 +959,13 @@ impl MeasuredGroupLayout for FieldLayout {
 
     fn measure(
         &self,
-        _children: &[&Node],
+        children: &[&Node],
         available: Option<f32>,
         fonts: &mut dyn TextMeasurer,
     ) -> (f32, f32) {
         let width = available.unwrap_or(280.).max(FACE_MIN);
         let height = self
-            .rects(width, fonts)
+            .rects(children, width, fonts)
             .iter()
             .map(|rect| rect.y + rect.height)
             .fold(0., f32::max);
@@ -874,11 +974,11 @@ impl MeasuredGroupLayout for FieldLayout {
 
     fn place(
         &self,
-        _children: &[&Node],
+        children: &[&Node],
         (width, _height): (f32, f32),
         fonts: &mut dyn TextMeasurer,
     ) -> Vec<Rect> {
-        self.rects(width, fonts)
+        self.rects(children, width, fonts)
     }
 }
 

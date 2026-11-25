@@ -286,6 +286,11 @@ impl<A: Application> Runtime<A> {
                 };
                 let observed = std::mem::replace(&mut touch.contact.position, point) != point;
                 let origin = touch.contact.origin;
+                let deferred_editor = touch
+                    .scroll
+                    .as_ref()
+                    .and_then(|s| s.deferred_editor())
+                    .is_some();
                 let panned = if let Some(mut scroll) = touch.scroll.take() {
                     let result =
                         self.advance_touch_scroll(&mut scroll, (x - origin.0, y - origin.1));
@@ -296,6 +301,7 @@ impl<A: Application> Runtime<A> {
                 };
                 let changed = match panned {
                     Some(changed) => changed,
+                    None if deferred_editor => false,
                     None => self.dispatch_event(event, PointerPolicy::Normal)?,
                 };
                 (changed, observed)
@@ -317,7 +323,20 @@ impl<A: Application> Runtime<A> {
                 } else {
                     PointerPolicy::Normal
                 };
+                let editor = touch.scroll.as_ref().and_then(|s| s.deferred_editor());
+                let place_caret = !touch.suppress_activation
+                    && editor.is_some_and(|key| self.pressed.as_deref() == Some(key));
                 let changed = self.dispatch_event(event, policy)?;
+                if place_caret && self.focused() == editor && self.computed.is_some() {
+                    // The normal release verifies the hit before focusing. A
+                    // pending editor tap must place its caret only on that hit.
+                    let hit = self.hit(x, y).and_then(|id| self.stable(id));
+                    if hit.as_deref() == editor {
+                        self.place_text_cursor(x, y, false);
+                        self.text_drag = None;
+                        self.ime_area = None;
+                    }
+                }
                 (changed, true)
             }
             _ => unreachable!("other events cannot supply touch coordinates"),

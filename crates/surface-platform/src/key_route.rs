@@ -284,6 +284,30 @@ pub(crate) fn web_key<A: Application>(
             error: None,
         };
     }
+    if !ime && !mods.meta && !mods.control && !mods.alt && runtime.focused_uses_multiline_viewport()
+    {
+        let edit = match key {
+            "ArrowUp" => Some(EditKey::Up),
+            "ArrowDown" => Some(EditKey::Down),
+            "Home" => Some(EditKey::Home),
+            "End" => Some(EditKey::End),
+            "PageUp" => Some(EditKey::PageUp),
+            "PageDown" => Some(EditKey::PageDown),
+            _ => None,
+        };
+        if let Some(edit) = edit {
+            return WebStep {
+                prevent_default: true,
+                dispatch: Some(Event::Edit {
+                    key: edit,
+                    extend: mods.shift,
+                    by_word: false,
+                }),
+                sync: true,
+                error: None,
+            };
+        }
+    }
     let dispatch = match key {
         "Tab" => Some(Event::FocusNext {
             reverse: mods.shift,
@@ -318,6 +342,7 @@ mod tests {
     struct App {
         draft: String,
         multiline: bool,
+        visual_viewport: bool,
         handler: bool,
         edits: u32,
         sent: u32,
@@ -345,6 +370,11 @@ mod tests {
                 ..TextOptions::default()
             })
             .on_input(Msg::Text);
+            let field = if self.visual_viewport {
+                field.multiline_text_viewport_from("viewport", surface::TextAlignment::Left)
+            } else {
+                field
+            };
             if !self.handler {
                 return field;
             }
@@ -377,6 +407,46 @@ mod tests {
         ..NONE
     };
     const ENTER: WinitKey = WinitKey::Named(NamedKey::Enter);
+
+    #[test]
+    fn web_visual_line_keys_opt_in_and_sync_the_editor_selection() {
+        let mut rt = Runtime::new(App {
+            multiline: true,
+            visual_viewport: true,
+            ..App::default()
+        })
+        .unwrap();
+        rt.activate("chat").unwrap();
+        for (key, expected) in [
+            ("ArrowUp", EditKey::Up),
+            ("ArrowDown", EditKey::Down),
+            ("Home", EditKey::Home),
+            ("End", EditKey::End),
+            ("PageUp", EditKey::PageUp),
+            ("PageDown", EditKey::PageDown),
+        ] {
+            let step = web_key(&mut rt, key, 0, false, false, SHIFT, false);
+            assert!(step.prevent_default && step.sync && step.error.is_none());
+            assert!(matches!(
+                step.dispatch,
+                Some(Event::Edit { key, extend: true, by_word: false }) if key == expected
+            ));
+        }
+        let enter = web_key(&mut rt, "Enter", 0, false, false, NONE, false);
+        assert!(!enter.prevent_default && enter.dispatch.is_none());
+        let pending = web_key(&mut rt, "ArrowUp", 229, false, false, NONE, false);
+        assert!(!pending.prevent_default && pending.dispatch.is_none());
+        let legacy = web_key(
+            &mut runtime(true, false),
+            "ArrowUp",
+            0,
+            false,
+            false,
+            NONE,
+            false,
+        );
+        assert!(!legacy.prevent_default && legacy.dispatch.is_none());
+    }
 
     /// Run `native_key` and apply its step, as `key_input` does.
     fn native_press(

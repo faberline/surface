@@ -1,7 +1,7 @@
 //! Retained Taffy layout with renderer-supplied text measurement.
 use crate::{
     microdom::AbsoluteOverlayFit, Align, Direction, Length, MicroDom, Node, NodeId,
-    OverlayBoundary, OverlayHorizontalEdge, Position, Rect, Style, TextStyle,
+    OverlayBoundary, OverlayHorizontalEdge, Position, Rect, Style, TextAlignment, TextStyle,
 };
 use std::sync::Arc;
 use taffy::prelude as t;
@@ -38,6 +38,39 @@ pub trait TextMeasurer {
             }
             layout.line_height *= k;
             layout.height *= k;
+        }
+        layout
+    }
+    /// Wrapped editor geometry with an explicit physical alignment per line.
+    /// Override when the renderer's shaper can align its own glyphs.
+    fn text_layout_aligned_styled(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        width: f32,
+        alignment: TextAlignment,
+    ) -> crate::TextLayout {
+        let mut layout = self.text_layout_styled(text, style, Some(width));
+        for line in layout
+            .clusters
+            .chunk_by_mut(|left, right| left.bounds.y == right.bounds.y)
+        {
+            let (start, end) = line.iter().fold(
+                (f32::INFINITY, f32::NEG_INFINITY),
+                |(start, end), cluster| {
+                    let bounds = cluster.bounds;
+                    (start.min(bounds.x), end.max(bounds.x + bounds.width))
+                },
+            );
+            let space = (width - (end - start).max(1.)).max(0.);
+            let target = match alignment {
+                TextAlignment::Left => 0.,
+                TextAlignment::Center => space / 2.,
+                TextAlignment::Right => space,
+            };
+            for cluster in line {
+                cluster.bounds.x += target - start;
+            }
         }
         layout
     }

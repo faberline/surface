@@ -207,6 +207,7 @@ does not change application state.
 | `filled_text_field` | One single-line editor with a filled container, inside floating label and bottom indicator |
 | `text_field_with_adornments` | Either single-line appearance with optional visual affixes and a separate named action |
 | `text_field_with_counter` | Either single-line appearance with a count and a soft limit |
+| `multiline_text_field` | Either appearance with wrapped lines, automatic height or a fixed number of visible rows |
 | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
 | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
@@ -1294,6 +1295,29 @@ validation error takes precedence. The count uses its normal color while
 the value is within the limit. The app decides when to submit the value.
 
 In Material Gallery, choose 動作 and 文字欄位字數 to try both appearances.
+
+### Multiline text fields
+
+Use `Theme::multiline_text_field` for a multiline Outlined or Filled
+field. Choose `MultilineTextFieldSize::Grow` to start with one visible row
+and change the height as the text wraps. Choose `FixedRows(NonZeroU16)`
+to keep the number of visible rows constant and scroll longer text
+inside the field.
+
+Keep the ID stable across appearance, width and value changes. Pass
+the authored value through `TextFieldOptions`. The app receives text
+updates through `on_input`, including line breaks inserted by Enter.
+Use a separate button with its own action when the user must submit
+the text. The field can also show adornments, descriptions, validation
+and a counter. The count excludes active IME text from the value.
+
+Up and Down follow visual lines. Page Up and Page Down move by the
+number of rows in the editor's viewport. Hold Shift to extend the
+selection. With wheel input over the editor, the field uses the
+available vertical scroll first. The nearest enclosing scroll region
+can use the remaining movement.
+
+In Material Gallery, choose 動作 and 多行文字欄位 to try both appearances.
 
 ## Baseline segmented buttons
 

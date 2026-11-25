@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{Color, PaintOp, Rect};
+use crate::{Color, PaintOp, Rect, TextAlignment};
 
 /// The two colors painted together for an editable text selection.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
@@ -17,6 +17,8 @@ pub struct TextSelectionPaint {
     run: PaintOp,
     colors: TextSelectionColors,
     selected: Vec<Rect>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    alignment: Option<TextAlignment>,
 }
 
 /// One part of the editable run's physical scissor. Regions never share a
@@ -29,11 +31,17 @@ pub struct TextSelectionRegion {
 }
 
 impl TextSelectionPaint {
-    pub(super) fn new(run: PaintOp, colors: TextSelectionColors, selected: Vec<Rect>) -> Self {
+    pub(super) fn new(
+        run: PaintOp,
+        colors: TextSelectionColors,
+        selected: Vec<Rect>,
+        alignment: Option<TextAlignment>,
+    ) -> Self {
         Self {
             run,
             colors,
             selected,
+            alignment,
         }
     }
 
@@ -45,6 +53,11 @@ impl TextSelectionPaint {
 
     pub fn colors(&self) -> TextSelectionColors {
         self.colors
+    }
+
+    /// The alignment of every visual line in the wrapped editable run.
+    pub fn alignment(&self) -> Option<TextAlignment> {
+        self.alignment
     }
 
     /// Partition the run's existing physical clip into disjoint regions.

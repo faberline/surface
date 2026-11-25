@@ -1,5 +1,6 @@
 use surface::{
-    Color, DisplayList, ExtendedPaintOp, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer,
+    Color, DisplayList, ExtendedPaintOp, Length, Node, PaintOp, Rect, Role, Style, TextAlignment,
+    TextMeasurer,
 };
 use surface_app::{
     utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers,
@@ -921,6 +922,256 @@ fn measured_sibling_sets_one_text_box_without_shrinking_the_editor_target() {
         .iter()
         .any(|op| matches!(op, PaintOp::Quad { rect, clip, .. }
         if *rect == Rect::new(8., 38., 16., 1.) && *clip == Rect::new(8., 0., 104., 56.))));
+}
+
+#[test]
+fn multiline_text_uses_one_measured_viewport_for_paint_and_caret() {
+    #[derive(Default)]
+    struct Editor(String);
+
+    impl Application for Editor {
+        type Message = String;
+
+        fn update(&mut self, value: String) {
+            self.0 = value;
+        }
+
+        fn view(&self) -> View<String> {
+            View::new(Node::new(Role::Group, "Page")).children([
+                View::new(
+                    Node::new(Role::TextInput, "備註")
+                        .id("editor")
+                        .text(&self.0)
+                        .styled(
+                            Style::column()
+                                .height(Length::Px(96.))
+                                .font_size(16.)
+                                .line_height(24.),
+                        ),
+                )
+                .text_options(TextOptions {
+                    multiline: true,
+                    ..TextOptions::default()
+                })
+                .multiline_text_viewport_from("viewport", TextAlignment::Left)
+                .on_input(|text| text),
+                View::new(
+                    Node::new(Role::Group, "").id("viewport").styled(
+                        Style::column()
+                            .width(Length::Px(80.))
+                            .height(Length::Px(48.))
+                            .absolute(surface::Insets {
+                                left: Length::Px(40.),
+                                top: Length::Px(24.),
+                                ..surface::Insets::default()
+                            }),
+                    ),
+                )
+                .without_interaction(None),
+            ])
+        }
+    }
+
+    let mut runtime = Runtime::new(Editor::default()).unwrap();
+    runtime.render(200., 160., &mut Metrics).unwrap();
+    runtime
+        .dispatch(Event::PointerDown { x: 6., y: 6. })
+        .unwrap();
+    runtime.dispatch(Event::PointerUp { x: 6., y: 6. }).unwrap();
+    assert_eq!(runtime.focused(), Some("editor"));
+    runtime.dispatch(Event::Text("中".into())).unwrap();
+
+    let viewport = Rect::new(40., 24., 80., 48.);
+    let paint = runtime.render(200., 160., &mut Metrics).unwrap();
+    assert!(paint.ops.iter().any(|op| matches!(
+        op,
+        PaintOp::StyledText { rect, clip, text, multiline: true, editable: true, .. }
+            if *rect == viewport && *clip == viewport && text == "中"
+    )));
+    assert_eq!(
+        runtime.input_snapshot().unwrap().caret,
+        Some(Rect::new(56., 24., 1., 24.))
+    );
+
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄓ".into(),
+            selection: Some(("ㄓ".len(), "ㄓ".len())),
+        }))
+        .unwrap();
+    let paint = runtime.render(100., 160., &mut Metrics).unwrap();
+    let input = runtime.input_snapshot().unwrap();
+    assert!(input.composing);
+    assert_eq!(input.value, "中");
+    assert_eq!(input.caret, Some(Rect::new(32., 0., 1., 24.)));
+    assert!(paint
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, clip, .. }
+        if *rect == Rect::new(16., 22., 16., 1.) && *clip == Rect::new(0., 0., 100., 96.))));
+}
+
+#[test]
+fn fixed_editor_consumes_wheel_before_its_scroll_ancestor() {
+    const VALUE: &str = "aaaa\nb\ncccc\nd\ne\nf";
+
+    struct Editor;
+    impl Application for Editor {
+        type Message = ();
+
+        fn update(&mut self, _: ()) {}
+
+        fn view(&self) -> View<()> {
+            let editor = View::new(
+                Node::new(Role::TextInput, "Notes")
+                    .id("editor")
+                    .text(VALUE)
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(72.))
+                            .font_size(16.)
+                            .line_height(24.),
+                    ),
+            )
+            .text_options(TextOptions {
+                multiline: true,
+                read_only: true,
+                ..Default::default()
+            })
+            .multiline_text_viewport_from("text-viewport", TextAlignment::Left);
+            let viewport = View::new(
+                Node::new(Role::Group, "").id("text-viewport").styled(
+                    Style::column()
+                        .width(Length::Px(100.))
+                        .height(Length::Px(48.))
+                        .absolute(surface::Insets {
+                            left: Length::Px(20.),
+                            top: Length::Px(12.),
+                            ..Default::default()
+                        }),
+                ),
+            )
+            .without_interaction(None);
+            let section = View::new(
+                Node::new(Role::Group, "").styled(Style::column().height(Length::Px(72.))),
+            )
+            .children([editor, viewport]);
+            let space = View::new(
+                Node::new(Role::Group, "").styled(Style::column().height(Length::Px(200.))),
+            );
+            View::new(
+                Node::new(Role::Group, "Form")
+                    .id("form")
+                    .styled(Style::column().height(Length::Px(100.)).clip(true)),
+            )
+            .children([section, space])
+        }
+    }
+
+    fn offset(paint: &DisplayList) -> f32 {
+        paint
+            .ops
+            .iter()
+            .find_map(|op| match op {
+                PaintOp::StyledText { text, scroll, .. } if text == VALUE => Some(scroll.1),
+                _ => None,
+            })
+            .expect("the editor paints its text")
+    }
+
+    let mut runtime = Runtime::new(Editor).unwrap();
+    let wheel = |delta_y| Event::Scroll {
+        x: 24.,
+        y: 18.,
+        delta_x: 0.,
+        delta_y,
+    };
+    let render = |runtime: &mut Runtime<Editor>| runtime.render(180., 160., &mut Metrics).unwrap();
+    render(&mut runtime);
+    runtime
+        .dispatch(Event::PointerDown { x: 21., y: 13. })
+        .unwrap();
+    runtime
+        .dispatch(Event::PointerUp { x: 21., y: 13. })
+        .unwrap();
+    assert_eq!(runtime.focused(), Some("editor"));
+    assert_eq!(offset(&render(&mut runtime)), 0.);
+
+    assert!(runtime.dispatch(wheel(24.)).unwrap());
+    assert_eq!(offset(&render(&mut runtime)), 24.);
+    assert_eq!(runtime.scroll_metrics("form").unwrap().offset.1, 0.);
+    assert_eq!(runtime.input_snapshot().unwrap().caret, None);
+    runtime
+        .dispatch(Event::Select {
+            anchor: 0,
+            cursor: 0,
+        })
+        .unwrap();
+    assert_eq!(offset(&render(&mut runtime)), 24.);
+
+    runtime
+        .dispatch(Event::Edit {
+            key: EditKey::Down,
+            extend: false,
+            by_word: false,
+        })
+        .unwrap();
+    assert_eq!(offset(&render(&mut runtime)), 24.);
+    assert_eq!(
+        runtime.input_snapshot().unwrap().selection.cursor,
+        VALUE.find('b').unwrap()
+    );
+    assert_eq!(runtime.input_snapshot().unwrap().caret.unwrap().y, 12.);
+
+    assert!(runtime.dispatch(wheel(36.)).unwrap());
+    assert!(runtime.dispatch(wheel(60.)).unwrap());
+    assert_eq!(offset(&render(&mut runtime)), 96.);
+    assert_eq!(runtime.scroll_metrics("form").unwrap().offset.1, 24.);
+    assert_eq!(runtime.editor("editor").unwrap().value(), VALUE);
+    assert_eq!(runtime.focused(), Some("editor"));
+
+    let edit = |key| Event::Edit {
+        key,
+        extend: false,
+        by_word: false,
+    };
+    runtime.dispatch(edit(EditKey::PageDown)).unwrap();
+    render(&mut runtime);
+    assert_eq!(
+        runtime.input_snapshot().unwrap().selection.cursor,
+        VALUE.find('d').unwrap()
+    );
+
+    assert!(runtime.scroll_to("form", surface_app::ScrollTarget::Bottom));
+    render(&mut runtime);
+    let bottom = runtime.scroll_metrics("form").unwrap().offset.1;
+    runtime.dispatch(edit(EditKey::PageUp)).unwrap();
+    render(&mut runtime);
+    let visible = runtime.input_snapshot().unwrap();
+    assert_eq!(visible.selection.cursor, VALUE.find('b').unwrap());
+    assert_eq!(visible.caret.unwrap().height, 24.);
+    assert!(runtime.scroll_metrics("form").unwrap().offset.1 < bottom);
+
+    runtime
+        .dispatch(Event::Select {
+            anchor: 3,
+            cursor: 3,
+        })
+        .unwrap();
+    render(&mut runtime);
+    runtime.dispatch(edit(EditKey::Down)).unwrap();
+    render(&mut runtime);
+    assert_eq!(
+        runtime.input_snapshot().unwrap().selection.cursor,
+        VALUE.find('b').unwrap() + 1
+    );
+    runtime.dispatch(edit(EditKey::Down)).unwrap();
+    render(&mut runtime);
+    assert_eq!(
+        runtime.input_snapshot().unwrap().selection.cursor,
+        VALUE.find('c').unwrap() + 3
+    );
 }
 
 #[test]

@@ -396,7 +396,7 @@ impl TextFieldCounterDemo {
     }
 }
 
-fn clear_icon() -> &'static VectorIcon {
+pub(crate) fn clear_icon() -> &'static VectorIcon {
     static CLEAR: OnceLock<VectorIcon> = OnceLock::new();
     CLEAR.get_or_init(|| {
         VectorIcon::new([

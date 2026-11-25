@@ -105,6 +105,7 @@ pub(crate) struct State {
 #[derive(Clone, Copy)]
 struct WheelRoute {
     hit: NodeId,
+    editor: Option<NodeId>,
     horizontal: Option<NodeId>,
     vertical: Option<NodeId>,
 }
@@ -116,6 +117,7 @@ struct WheelOwner {
     enabled: bool,
     observes_horizontal: bool,
     observes_vertical: bool,
+    scrolls_editor: bool,
 }
 
 struct WheelSample {
@@ -256,19 +258,27 @@ impl<A: Application> Runtime<A> {
 
     fn wheel_route(&self, point: (f32, f32)) -> Option<WheelRoute> {
         let computed = self.computed.as_ref()?;
-        let hit = computed
-            .paint_order
-            .iter()
-            .rev()
-            .copied()
-            .find(|&id| self.scroll_region_at(computed, id, point))?;
+        let editor = self.multiline_scroll_at(computed, point);
+        let hit = editor.or_else(|| {
+            computed
+                .paint_order
+                .iter()
+                .rev()
+                .copied()
+                .find(|&id| self.scroll_region_at(computed, id, point))
+        })?;
         let horizontal = self
             .scroll_ancestors_at(computed, hit, point)
             .find(|id| self.bindings[id].horizontal_scroll.is_some());
         Some(WheelRoute {
             hit,
+            editor,
             horizontal,
-            vertical: horizontal.and_then(|_| self.vertical_wheel_target(computed, hit, point)),
+            vertical: if editor.is_some() || horizontal.is_some() {
+                self.vertical_wheel_target(computed, hit, point)
+            } else {
+                None
+            },
         })
     }
 
@@ -283,6 +293,7 @@ impl<A: Application> Runtime<A> {
                 enabled: !node.is_disabled(),
                 observes_horizontal: binding.horizontal_scroll.is_some(),
                 observes_vertical: binding.vertical_scroll.is_some(),
+                scrolls_editor: route.editor == Some(id),
             })
         })
     }
@@ -290,12 +301,21 @@ impl<A: Application> Runtime<A> {
     fn dispatch_wheel_route(
         &mut self,
         route: WheelRoute,
-        sample: WheelSample,
+        mut sample: WheelSample,
     ) -> Result<bool, AppError> {
         let target = route.hit;
         let delta = sample.delta;
-        if let Some(horizontal) = route.horizontal {
-            return self.dispatch_split_wheel(horizontal, route.vertical, sample);
+        if let Some(editor) = route.editor.filter(|_| delta.1 != 0.) {
+            sample.delta.1 = self.scroll_multiline(editor, delta.1);
+        }
+        if route.editor.is_some() || route.horizontal.is_some() {
+            let inner = sample.delta.1 != delta.1;
+            let outer = self.dispatch_split_wheel(route.horizontal, route.vertical, sample)?;
+            if inner {
+                self.computed = None;
+                self.ime_area = None;
+            }
+            return Ok(inner || outer);
         }
 
         let computed = self.computed.as_ref().expect("wheel has current geometry");
@@ -311,14 +331,20 @@ impl<A: Application> Runtime<A> {
 
     fn dispatch_split_wheel(
         &mut self,
-        horizontal: NodeId,
+        horizontal: Option<NodeId>,
         vertical: Option<NodeId>,
         sample: WheelSample,
     ) -> Result<bool, AppError> {
         let computed = self.computed.as_ref().expect("wheel has current geometry");
         let delta = sample.delta;
-        let horizontal_result = (delta.0 != 0. && !self.dom.get(horizontal)?.is_disabled())
-            .then(|| self.horizontal_wheel(computed, horizontal, delta.0, sample.now_ms));
+        let horizontal_result = horizontal
+            .filter(|&id| delta.0 != 0. && self.dom.get(id).is_ok_and(|node| !node.is_disabled()))
+            .map(|id| {
+                (
+                    id,
+                    self.horizontal_wheel(computed, id, delta.0, sample.now_ms),
+                )
+            });
         let vertical_result = if delta.1 != 0. {
             vertical.map(|id| {
                 let (offset, message) =
@@ -330,7 +356,7 @@ impl<A: Application> Runtime<A> {
         };
         let handled = horizontal_result.is_some() || vertical_result.is_some();
         let mut messages = [None, None];
-        if let Some((offset, message)) = horizontal_result {
+        if let Some((horizontal, (offset, message))) = horizontal_result {
             if let Some(x) = offset {
                 let y = self.dom.get(horizontal)?.style().scroll_y;
                 self.save_scroll_offsets(horizontal, (x, y))?;

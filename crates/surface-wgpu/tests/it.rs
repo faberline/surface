@@ -41,6 +41,152 @@ fn heavy_face() -> Vec<u8> {
 }
 
 #[test]
+fn text_system_preserves_empty_rows_and_original_newline_bytes() {
+    let mut text = TextSystem::default();
+    let style = TextStyle {
+        line_height: Some(24.),
+        ..TextStyle::new(16.)
+    };
+    for (value, rows) in [
+        ("", &[0][..]),
+        ("\n", &[0, 1]),
+        ("A\n", &[0, 2]),
+        ("\nA\n\nB\n", &[0, 1, 3, 4, 6]),
+        ("台\r\n\r文\n", &[0, 5, 6, 10]),
+        ("台\r文\r", &[0, 4, 8]),
+        ("A\n\r文", &[0, 3]),
+    ] {
+        let layout = text.text_layout_styled(value, &style, Some(160.));
+        let measured = text.measure_text(value, &style, Some(160.));
+        assert_eq!(layout.height, 24. * rows.len() as f32, "{value:?}");
+        assert_eq!(measured.1, layout.height, "{value:?}");
+        assert_eq!(layout.text_len, value.len());
+        for (row, &offset) in rows.iter().enumerate() {
+            let caret = layout.caret(offset);
+            assert_eq!(caret.y, 24. * row as f32, "{value:?} byte {offset}");
+            assert_eq!(layout.hit(caret.x, caret.y + 12.), offset, "{value:?}");
+        }
+    }
+
+    let mixed = text.text_layout_styled("台\r\n文", &style, None);
+    assert_eq!(mixed.caret("台".len()).y, 0.);
+    assert_eq!(mixed.caret("台\r\n".len()).y, 24.);
+    assert!(mixed.clusters.iter().any(|cluster| cluster.bytes == (5..8)));
+    assert_eq!(mixed.selection(5..8)[0].y, 24.);
+    assert!(
+        mixed.selection(3..5).is_empty(),
+        "newline bytes have no ink"
+    );
+
+    let value = "台灣文字\r\n文\n";
+    let wrapped = text.text_layout_styled(value, &style, Some(19.));
+    let after_crlf = "台灣文字\r\n".len();
+    let line_top = wrapped.caret(after_crlf).y;
+    assert!(
+        line_top > 24.,
+        "the paragraph occupied multiple visual rows"
+    );
+    assert_eq!(wrapped.hit(0., line_top + 12.), after_crlf);
+    assert_eq!(wrapped.caret(value.len()).y, line_top + 24.);
+}
+
+#[test]
+fn multiline_runtime_places_caret_and_preedit_in_the_trailing_row() {
+    use surface::{Length, Node, Role, Style};
+    use surface_app::{Application, EditKey, Event, ImeEvent, Runtime, TextOptions, View};
+
+    const INITIAL: &str = "台\r\n\r";
+    const COMPOSING: &str = "ㄅ\n";
+    const CARET: Color = Color::rgb(133, 41, 65);
+    struct Editor(String);
+
+    impl Application for Editor {
+        type Message = String;
+
+        fn update(&mut self, value: String) {
+            self.0 = value;
+        }
+
+        fn view(&self) -> View<String> {
+            View::new(
+                Node::new(Role::TextInput, "內容")
+                    .id("area")
+                    .text(&self.0)
+                    .text_input_caret_color(CARET)
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(120.))
+                            .padding(12.)
+                            .line_height(24.),
+                    ),
+            )
+            .text_options(TextOptions {
+                multiline: true,
+                ..TextOptions::default()
+            })
+            .on_input(|value| value)
+        }
+    }
+
+    let mut fonts = TextSystem::default();
+    let mut runtime = Runtime::new(Editor(INITIAL.into())).unwrap();
+    runtime.render(160., 120., &mut fonts).unwrap();
+    for event in [
+        Event::PointerDown { x: 14., y: 72. },
+        Event::PointerUp { x: 14., y: 72. },
+    ] {
+        runtime.dispatch(event).unwrap();
+    }
+    let list = runtime.render(160., 120., &mut fonts).unwrap();
+    let input = runtime.input_snapshot().unwrap();
+    assert_eq!(input.value, INITIAL);
+    assert_eq!(input.selection.cursor, INITIAL.len());
+    let caret = Rect::new(12., 60., 1., 24.);
+    assert_eq!(input.caret, Some(caret));
+    assert!(list
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, color, .. }
+        if *rect == caret && *color == CARET)));
+
+    for (key, offset) in [(EditKey::Up, 5), (EditKey::Down, INITIAL.len())] {
+        runtime
+            .dispatch(Event::Edit {
+                key,
+                extend: false,
+                by_word: false,
+            })
+            .unwrap();
+        runtime.render(160., 120., &mut fonts).unwrap();
+        assert_eq!(runtime.input_snapshot().unwrap().selection.cursor, offset);
+    }
+
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: COMPOSING.into(),
+            selection: Some((COMPOSING.len(), COMPOSING.len())),
+        }))
+        .unwrap();
+    let list = runtime.render(160., 120., &mut fonts).unwrap();
+    let input = runtime.input_snapshot().unwrap();
+    assert!(input.composing);
+    assert_eq!(input.value, INITIAL);
+    assert_eq!(input.caret, Some(Rect::new(12., 84., 1., 24.)));
+    let display = format!("{INITIAL}{COMPOSING}");
+    assert!(list.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
+        text, multiline: true, scroll, ..
+    } if text == &display && *scroll == (0., 0.))));
+
+    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+    runtime.render(160., 120., &mut fonts).unwrap();
+    let input = runtime.input_snapshot().unwrap();
+    assert!(!input.composing);
+    assert_eq!(input.value, INITIAL);
+    assert_eq!(input.caret, Some(caret));
+}
+
+#[test]
 fn text_system_applies_line_height_and_weight() {
     let mut text = TextSystem::default();
     let style = |line_height: Option<f32>, weight: u16| TextStyle {

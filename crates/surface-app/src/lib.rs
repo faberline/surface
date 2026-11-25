@@ -70,7 +70,7 @@ use std::{
 };
 use surface::{
     Color, ComputedDom, DisplayList, DomError, ExtendedDisplayList, FillContour, LayoutEngine,
-    LayoutError, MicroDom, Node, NodeId, PaintTransform, Rect, Role, TextMeasurer,
+    LayoutError, MicroDom, Node, NodeId, PaintTransform, Rect, Role, TextAlignment, TextMeasurer,
 };
 
 type ContourPainter = Box<dyn Fn() -> FillContour>;
@@ -100,6 +100,7 @@ pub struct View<M> {
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
     single_line_text_horizontal_bounds: Option<String>,
+    multiline_text_viewport: Option<(String, TextAlignment)>,
     text_input_hover_action: Option<String>,
     text_input_placeholder: Option<Arc<(String, Color)>>,
     focused_placeholder: bool,
@@ -195,6 +196,7 @@ impl<M> View<M> {
             right_align_single_line_text: false,
             single_line_text_horizontal_inset: 0.,
             single_line_text_horizontal_bounds: None,
+            multiline_text_viewport: None,
             text_input_hover_action: None,
             text_input_placeholder: None,
             focused_placeholder: false,
@@ -574,6 +576,19 @@ impl<M> View<M> {
         sibling_id: impl Into<String>,
     ) -> Self {
         self.single_line_text_horizontal_bounds = Some(sibling_id.into());
+        self
+    }
+
+    /// Use a passive sibling's rectangle and alignment for all visual lines
+    /// in a multiline field. Keep the editor's full hit target. If
+    /// the sibling is unavailable or outside the padded editor, use the
+    /// ordinary padded editor rectangle.
+    pub fn multiline_text_viewport_from(
+        mut self,
+        sibling_id: impl Into<String>,
+        alignment: TextAlignment,
+    ) -> Self {
+        self.multiline_text_viewport = Some((sibling_id.into(), alignment));
         self
     }
 
@@ -1265,6 +1280,7 @@ struct Binding<M> {
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
     single_line_text_horizontal_bounds: Option<String>,
+    multiline_text_viewport: Option<(String, TextAlignment)>,
     text_input_hover_action: Option<String>,
     text_input_placeholder: Option<Arc<(String, Color)>>,
     focused_placeholder: bool,
@@ -1375,6 +1391,7 @@ pub struct Runtime<A: Application> {
     scroll_state: scroll_control::State,
     editors: BTreeMap<String, TextEditor>,
     text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
+    pending_multiline_caret_reveal: Option<String>,
     ime_area: Option<surface::Rect>,
     text_drag: Option<String>,
     scopes: Vec<controls::FocusScope>,
@@ -1424,6 +1441,7 @@ impl<A: Application> Runtime<A> {
             scroll_state: scroll_control::State::default(),
             editors: BTreeMap::new(),
             text_geometry: BTreeMap::new(),
+            pending_multiline_caret_reveal: None,
             ime_area: None,
             text_drag: None,
             scopes: Vec::new(),
@@ -1802,6 +1820,7 @@ impl<A: Application> Runtime<A> {
                     right_align_single_line_text: view.right_align_single_line_text,
                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
                     single_line_text_horizontal_bounds: view.single_line_text_horizontal_bounds,
+                    multiline_text_viewport: view.multiline_text_viewport,
                     text_input_hover_action: view.text_input_hover_action,
                     text_input_placeholder: view.text_input_placeholder,
                     focused_placeholder: view.focused_placeholder,
@@ -2019,6 +2038,25 @@ impl<A: Application> Runtime<A> {
             self.layout_focus.clone_from(&self.focused);
             self.layout_viewport = Some((width, height));
             self.layout_text_scale = text_scale;
+        }
+        if let Some(key) = self.pending_multiline_caret_reveal.take() {
+            if let Some(focused) = self
+                .focused_node()
+                .filter(|id| self.focused() == Some(key.as_str()) && self.in_scope(*id))
+            {
+                for ancestor in self.scroll_ancestors(focused) {
+                    if !self.in_scope(ancestor) {
+                        break;
+                    }
+                    let Some(caret) = self.multiline_caret(&key) else {
+                        break;
+                    };
+                    if self.reveal_rect_in(ancestor, &computed, caret)? {
+                        (display_dom, decorations, computed) =
+                            self.layout_editing(width, height, text_scale, measurer)?;
+                    }
+                }
+            }
         }
         if let Some(pending) = self.pending_accessibility_scroll.take() {
             match pending {

@@ -66,6 +66,8 @@ mod material_lists;
 mod material_lists_multi;
 #[path = "material_loading.rs"]
 mod material_loading;
+#[path = "material_multiline_text_field.rs"]
+mod material_multiline_text_field;
 #[path = "material_outlined_text_field.rs"]
 mod material_outlined_text_field;
 #[path = "material_progress.rs"]
@@ -166,7 +168,7 @@ pub const STEPS: &[&str] = &[
     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
-    "M335", "M336", "M337", "M338", "M339", "M340",
+    "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -302,7 +304,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_outlined_text_field::run(env, chrome, &url).await?;
     material_filled_text_field::run(env, chrome, &url).await?;
     material_text_field_adornments::run(env, chrome, &url).await?;
-    material_text_field_counter::run(env, chrome, &url).await
+    material_text_field_counter::run(env, chrome, &url).await?;
+    material_multiline_text_field::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -535,7 +538,15 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
 mod tests {
     #[test]
     fn text_field_counter_steps_are_required_by_the_material_case() {
-        assert!(super::STEPS.ends_with(&super::material_text_field_counter::STEPS));
+        let counter = super::material_text_field_counter::STEPS;
+        assert!(super::STEPS
+            .windows(counter.len())
+            .any(|steps| steps == counter));
+    }
+
+    #[test]
+    fn multiline_text_field_steps_are_required_by_the_material_case() {
+        assert!(super::STEPS.ends_with(&super::material_multiline_text_field::STEPS));
     }
 
     #[test]
