@@ -412,6 +412,7 @@ fn project<M>(
         &source,
         frame.modal_root() == Some(id),
         children.is_empty(),
+        frame.slider_adjustment_bounds(id),
     )?;
     if live_status::message(frame, id).is_some() {
         // Keep this status readable where it was authored. The persistent

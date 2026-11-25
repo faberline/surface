@@ -177,3 +177,127 @@ fn measured_group_has_clone_identity_and_preserves_the_wire_shape() {
     assert_eq!(json, serde_json::to_value(&plain).unwrap());
     assert_eq!(serde_json::from_value::<Node>(json).unwrap(), plain);
 }
+
+#[derive(Debug)]
+struct NestedLayout {
+    permits_nested: bool,
+}
+
+impl MeasuredGroupLayout for NestedLayout {
+    fn places_measured_groups(&self) -> bool {
+        self.permits_nested
+    }
+
+    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
+        (80., 48.)
+    }
+
+    fn place(&self, _: &[&Node], _: (f32, f32), _: &mut dyn TextMeasurer) -> Vec<Rect> {
+        vec![Rect::new(12., 4., 40., 24.), Rect::new(6., 8., 36., 8.)]
+    }
+}
+
+fn nested_scene(
+    allow: bool,
+    child_layout: Option<GroupLayout>,
+    child_position: surface::Position,
+) -> (MicroDom, [NodeId; 6]) {
+    let mut dom = MicroDom::new(
+        Node::new(Role::Window, "Window")
+            .styled(Style::row().align(Align::Start).padding(10.).gap(8.)),
+    );
+    let outer = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Group, "Measured owner")
+                .styled(Style::row().clip(true))
+                .measured_group(NestedLayout {
+                    permits_nested: allow,
+                }),
+        )
+        .unwrap();
+    let mut child_style = Style::row().clip(true);
+    child_style.position = child_position;
+    child_style.z_index = 1;
+    let child = Node::new(Role::Button, "Measured child")
+        .id("measured-child")
+        .styled(child_style)
+        .slide_horizontally(0.25);
+    let child = if let Some(layout) = child_layout {
+        child.measured_group(layout)
+    } else {
+        child
+    };
+    let inner = dom.append(outer, child).unwrap();
+    let art = dom.append(inner, Node::new(Role::Group, "")).unwrap();
+    let label = dom
+        .append(inner, Node::new(Role::Text, "").text("value"))
+        .unwrap();
+    let backdrop = dom.append(outer, Node::new(Role::Group, "")).unwrap();
+    let neighbor = dom
+        .append(
+            dom.root(),
+            Node::new(Role::Group, "")
+                .styled(Style::row().width(Length::Px(30.)).height(Length::Px(20.))),
+        )
+        .unwrap();
+    (dom, [outer, inner, art, label, backdrop, neighbor])
+}
+
+#[test]
+fn opted_in_nested_measured_child_uses_placed_size_transform_clip_and_paint_order() {
+    let (dom, [outer, inner, art, label, backdrop, neighbor]) =
+        nested_scene(true, Some(GroupLayout::Pair), surface::Position::Flow);
+    let computed = LayoutEngine::default()
+        .compute(&dom, 180., 120., &mut Fonts)
+        .unwrap();
+    let bounds = |id: NodeId| computed.nodes[id.index()].bounds;
+    assert_eq!(bounds(outer), Rect::new(10., 10., 80., 48.));
+    assert_eq!(bounds(inner), Rect::new(32., 14., 40., 24.));
+    assert_eq!(bounds(art), Rect::new(28., 16., 12., 12.));
+    assert_eq!(bounds(label), Rect::new(44., 17., 40., 16.));
+    assert_eq!(bounds(backdrop), Rect::new(16., 18., 36., 8.));
+    assert_eq!(bounds(neighbor).x, 98.);
+    assert_eq!(computed.nodes[art.index()].clip, bounds(inner));
+    assert_eq!(computed.nodes[label.index()].clip, bounds(inner));
+    assert_eq!(
+        computed.paint_order,
+        vec![dom.root(), outer, backdrop, inner, art, label, neighbor]
+    );
+    assert_eq!(computed.hit_test(&dom, 29., 19.), None);
+    assert_eq!(computed.hit_test(&dom, 35., 19.), Some(inner));
+}
+
+#[test]
+fn nested_opt_in_preserves_legacy_rejection_and_checks_each_level() {
+    let mut engine = LayoutEngine::default();
+    for (allow, child, position) in [
+        (false, Some(GroupLayout::Pair), surface::Position::Flow),
+        (true, None, surface::Position::Flow),
+        (true, Some(GroupLayout::Pair), surface::Position::Absolute),
+        (true, Some(GroupLayout::Pair), surface::Position::Fixed),
+    ] {
+        let (dom, [outer, ..]) = nested_scene(allow, child, position);
+        assert!(matches!(
+            engine.compute(&dom, 180., 120., &mut Fonts),
+            Err(LayoutError::InvalidStyle(index)) if index == outer.index()
+        ));
+    }
+
+    let (dom, [_, inner, ..]) = nested_scene(
+        true,
+        Some(GroupLayout::InvalidRect),
+        surface::Position::Flow,
+    );
+    assert!(matches!(
+        engine.compute(&dom, 180., 120., &mut Fonts),
+        Err(LayoutError::InvalidStyle(index)) if index == inner.index()
+    ));
+    let (mut dom, [_, inner, art, ..]) =
+        nested_scene(true, Some(GroupLayout::Pair), surface::Position::Flow);
+    dom.append(art, Node::new(Role::Group, "")).unwrap();
+    assert!(matches!(
+        engine.compute(&dom, 180., 120., &mut Fonts),
+        Err(LayoutError::InvalidStyle(index)) if index == inner.index()
+    ));
+}

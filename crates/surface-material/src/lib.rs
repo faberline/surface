@@ -207,7 +207,10 @@ pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
 pub use standard_slider::VerticalStandardSliderPlacement;
-pub use standard_slider::{StandardSliderMode, StandardSliderOptions, StandardSliderSize};
+pub use standard_slider::{
+    RangeSliderChange, RangeSliderOptions, RangeSliderThumb, StandardSliderMode,
+    StandardSliderOptions, StandardSliderSize,
+};
 pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
 pub use tab_bar::{
     TabActivation, TabBarInput, TabBarKind, TabBarLayout, TabBarMotion, TabBarOptions, TabItem,

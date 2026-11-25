@@ -96,7 +96,7 @@ impl Tree {
                 continue;
             }
 
-            let mut node = describe(&source);
+            let mut node = describe(&source, frame.slider_adjustment_bounds(id));
             let focus = frame.focus_target(id);
             let press = frame.activation_target(id);
             let adjustment = frame.adjustment_target(id);
@@ -383,7 +383,7 @@ fn bounds(rect: surface::Rect, scale: f32) -> Option<Rect> {
     ))
 }
 
-fn describe(source: &AccessibilityNode<'_>) -> Node {
+fn describe(source: &AccessibilityNode<'_>, slider_limits: Option<(f64, f64)>) -> Node {
     let authored = source.node;
     let role = match authored.accessibility_grid_role() {
         Some(GridRole::Grid) => Role::Grid,
@@ -485,8 +485,13 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
         }
     } else if let Some(range) = authored.range_value() {
         node.set_numeric_value(range.value);
-        node.set_min_numeric_value(range.min);
-        node.set_max_numeric_value(range.max);
+        let (min, max) = if role == Role::Slider {
+            slider_limits.unwrap_or((range.min, range.max))
+        } else {
+            (range.min, range.max)
+        };
+        node.set_min_numeric_value(min);
+        node.set_max_numeric_value(max);
         node.set_numeric_value_step(range.step);
         if let Some(text) = authored.slider_value_text().filter(|_| range.is_valid()) {
             node.set_value(text);
@@ -1677,6 +1682,153 @@ mod tests {
                     || (matches!(name, "horizontal" | "legacy") && action == Action::Focus);
                 assert_eq!(node.supports_action(action), expected, "{name}: {action:?}");
             }
+        }
+    }
+
+    #[test]
+    fn slider_pair_projects_peer_limits_and_keeps_locked_thumbs_named() {
+        use surface::RangeValue;
+        use surface_app::{SliderInputOptions, SliderScale};
+
+        #[derive(Clone, Copy)]
+        enum Message {
+            Lower(f64),
+            Upper(f64),
+            Collapse,
+            Disable,
+        }
+
+        struct Pair {
+            lower: f64,
+            upper: f64,
+            disabled: bool,
+        }
+
+        impl Application for Pair {
+            type Message = Message;
+
+            fn update(&mut self, message: Message) {
+                match message {
+                    Message::Lower(value) => self.lower = value,
+                    Message::Upper(value) => self.upper = value,
+                    Message::Collapse => {
+                        self.lower = 0.;
+                        self.upper = 0.;
+                    }
+                    Message::Disable => self.disabled = true,
+                }
+            }
+
+            fn view(&self) -> View<Message> {
+                let thumb = |name, id, value, on_value: fn(f64) -> Message| {
+                    let view = View::new(
+                        SurfaceNode::new(SurfaceRole::Slider, name)
+                            .id(id)
+                            .range(RangeValue {
+                                min: 0.,
+                                max: 100.,
+                                value,
+                                step: 5.,
+                            })
+                            .disabled(self.disabled)
+                            .styled(Style::row().width(Length::Px(48.)).height(Length::Px(48.))),
+                    )
+                    .with_slider_input(SliderInputOptions {
+                        scale: SliderScale::Continuous,
+                        reverse_horizontal: false,
+                    })
+                    .accessible_slider_adjustment();
+                    if self.disabled {
+                        view
+                    } else {
+                        view.on_value(on_value)
+                    }
+                };
+                let rail = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "")
+                        .id("rail")
+                        .styled(Style::row().width(Length::Px(180.)).height(Length::Px(48.))),
+                )
+                .without_interaction(None);
+                let pair = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "Price range")
+                        .id("price")
+                        .disabled(self.disabled)
+                        .styled(Style::row()),
+                )
+                .children([
+                    rail,
+                    thumb("Lower price", "lower", self.lower, Message::Lower),
+                    thumb("Upper price", "upper", self.upper, Message::Upper),
+                ])
+                .with_horizontal_slider_pair("rail", "lower", "upper");
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Test").styled(Style::column()))
+                    .children([pair])
+            }
+        }
+
+        let mut runtime = Runtime::new(Pair {
+            lower: 25.,
+            upper: 75.,
+            disabled: false,
+        })
+        .unwrap();
+        let mut tree = Tree::default();
+        let projection = update(&mut runtime, &mut tree);
+        let (lower_id, lower) = named(&projection, "Lower price");
+        let (_, upper) = named(&projection, "Upper price");
+        let range = |node: &Node| {
+            assert_eq!(node.role(), Role::Slider);
+            [
+                node.min_numeric_value().unwrap(),
+                node.numeric_value().unwrap(),
+                node.max_numeric_value().unwrap(),
+            ]
+        };
+        assert_eq!(range(lower), [0., 25., 75.]);
+        assert_eq!(range(upper), [25., 75., 100.]);
+
+        assert!(tree
+            .action(
+                &mut runtime,
+                ActionRequest {
+                    target_tree: TreeId::ROOT,
+                    target_node: lower_id,
+                    action: Action::SetValue,
+                    data: Some(ActionData::NumericValue(100.)),
+                },
+            )
+            .unwrap());
+        let projection = update(&mut runtime, &mut tree);
+        let (_, lower) = named(&projection, "Lower price");
+        let (_, upper) = named(&projection, "Upper price");
+        assert_eq!(range(lower), [0., 75., 75.]);
+        assert_eq!(range(upper), [75., 75., 100.]);
+        assert!(!lower.supports_action(Action::Increment));
+        assert!(!upper.supports_action(Action::Decrement));
+
+        runtime.apply(Message::Collapse).unwrap();
+        let projection = update(&mut runtime, &mut tree);
+        let (_, lower) = named(&projection, "Lower price");
+        let (_, upper) = named(&projection, "Upper price");
+        assert_eq!(range(lower), [0., 0., 0.]);
+        assert_eq!(range(upper), [0., 0., 100.]);
+        assert!(lower.supports_action(Action::Focus));
+        assert!(upper.supports_action(Action::Focus));
+        assert!(!lower.supports_action(Action::Increment));
+        assert!(!lower.supports_action(Action::Decrement));
+        assert!(upper.supports_action(Action::Increment));
+
+        runtime.apply(Message::Disable).unwrap();
+        let projection = update(&mut runtime, &mut tree);
+        let (_, lower) = named(&projection, "Lower price");
+        let (_, upper) = named(&projection, "Upper price");
+        assert_eq!(range(lower), [0., 0., 0.]);
+        assert_eq!(range(upper), [0., 0., 100.]);
+        for node in [lower, upper] {
+            assert!(node.is_disabled());
+            assert!(!node.supports_action(Action::Focus));
+            assert!(!node.supports_action(Action::SetValue));
         }
     }
 

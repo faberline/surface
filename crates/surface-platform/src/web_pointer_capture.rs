@@ -1,4 +1,4 @@
-//! Match browser capture loss to the contact that started a point drag.
+//! Match browser capture loss to the contact that started an opted-in drag.
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum Pointer {
@@ -15,11 +15,23 @@ impl Pointer {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum DragOwner {
+    Point,
+    SliderPair,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct Contact {
+    pub(crate) pointer: Pointer,
+    pub(crate) owner: DragOwner,
+}
+
 #[derive(Default)]
 struct Capture {
     down: Option<Pointer>,
-    held: Option<Pointer>,
-    lost: Option<Pointer>,
+    held: Option<Contact>,
+    lost: Option<Contact>,
 }
 
 impl Capture {
@@ -28,16 +40,19 @@ impl Capture {
     }
 
     /// The capture-phase listener sees the DOM ID first. Winit then tells the
-    /// host whether that down reached the runtime and began a point drag.
-    fn accept_down(&mut self, touch: Option<u64>, point_drag: bool) {
-        self.held = self
+    /// host whether that down reached the runtime and began a tracked drag.
+    fn accept_down(&mut self, touch: Option<u64>, owner: Option<DragOwner>) {
+        let down = self
             .down
             .take()
-            .filter(|pointer| point_drag && pointer.touch_id() == touch);
+            .filter(|pointer| pointer.touch_id() == touch);
+        self.held = down
+            .zip(owner)
+            .map(|(pointer, owner)| Contact { pointer, owner });
     }
 
     fn pointer_end(&mut self, pointer: Pointer) {
-        if self.held == Some(pointer) {
+        if self.held.is_some_and(|contact| contact.pointer == pointer) {
             self.held = None;
         }
         if self.down == Some(pointer) {
@@ -48,20 +63,24 @@ impl Capture {
     fn mouse_up(&mut self) {
         // Winit can report the primary button up during a multi-button chord,
         // before the browser sends pointerup for the last released button.
-        if let Some(pointer @ Pointer::MouseLike(_)) = self.held {
+        if let Some(Contact {
+            pointer: pointer @ Pointer::MouseLike(_),
+            ..
+        }) = self.held
+        {
             self.pointer_end(pointer);
         }
     }
 
     fn capture_lost(&mut self, pointer: Pointer) -> bool {
-        if self.held != Some(pointer) {
+        if self.held.is_none_or(|contact| contact.pointer != pointer) {
             return false;
         }
         self.lost = self.held.take();
         true
     }
 
-    fn take_loss(&mut self) -> Option<Pointer> {
+    fn take_loss(&mut self) -> Option<Contact> {
         self.lost.take()
     }
 }
@@ -71,7 +90,7 @@ pub(crate) use browser::WebPointerCapture;
 
 #[cfg(target_arch = "wasm32")]
 mod browser {
-    use super::{Capture, Pointer};
+    use super::{Capture, Contact, DragOwner, Pointer};
     use crate::UserEvent;
     use std::{cell::RefCell, rc::Rc};
     use wasm_bindgen::{closure::Closure, JsCast, JsValue};
@@ -127,15 +146,15 @@ mod browser {
             })
         }
 
-        pub(crate) fn accept_down(&self, touch: Option<u64>, point_drag: bool) {
-            self.state.borrow_mut().accept_down(touch, point_drag);
+        pub(crate) fn accept_down(&self, touch: Option<u64>, owner: Option<DragOwner>) {
+            self.state.borrow_mut().accept_down(touch, owner);
         }
 
         pub(crate) fn mouse_up(&self) {
             self.state.borrow_mut().mouse_up();
         }
 
-        pub(crate) fn take_loss(&self) -> Option<Pointer> {
+        pub(crate) fn take_loss(&self) -> Option<Contact> {
             self.state.borrow_mut().take_loss()
         }
 
@@ -197,17 +216,19 @@ mod browser {
 
 #[cfg(test)]
 mod tests {
-    use super::{Capture, Pointer};
+    use super::{Capture, Contact, DragOwner, Pointer};
 
     #[test]
     fn normal_up_or_cancel_clears_the_contact_before_loss() {
         let mut capture = Capture::default();
-        for pointer in [Pointer::MouseLike(1), Pointer::Touch(2)] {
-            capture.pointer_down(pointer);
-            capture.accept_down(pointer.touch_id(), true);
-            capture.pointer_end(pointer);
-            assert!(!capture.capture_lost(pointer));
-            assert_eq!(capture.take_loss(), None);
+        for owner in [DragOwner::Point, DragOwner::SliderPair] {
+            for pointer in [Pointer::MouseLike(1), Pointer::Touch(2)] {
+                capture.pointer_down(pointer);
+                capture.accept_down(pointer.touch_id(), Some(owner));
+                capture.pointer_end(pointer);
+                assert!(!capture.capture_lost(pointer));
+                assert_eq!(capture.take_loss(), None);
+            }
         }
     }
 
@@ -216,11 +237,17 @@ mod tests {
         let mut capture = Capture::default();
         let mouse = Pointer::MouseLike(1);
         capture.pointer_down(mouse);
-        capture.accept_down(None, true);
+        capture.accept_down(None, Some(DragOwner::Point));
         assert!(capture.capture_lost(mouse));
         capture.pointer_end(mouse);
         assert!(!capture.capture_lost(mouse));
-        assert_eq!(capture.take_loss(), Some(mouse));
+        assert_eq!(
+            capture.take_loss(),
+            Some(Contact {
+                pointer: mouse,
+                owner: DragOwner::Point
+            })
+        );
         assert_eq!(capture.take_loss(), None);
     }
 
@@ -230,27 +257,34 @@ mod tests {
         let first = Pointer::Touch(2);
         let foreign = Pointer::Touch(3);
         capture.pointer_down(first);
-        capture.accept_down(Some(2), true);
+        capture.accept_down(Some(2), Some(DragOwner::SliderPair));
         capture.pointer_down(foreign);
         assert!(!capture.capture_lost(foreign));
+        assert!(!capture.capture_lost(Pointer::MouseLike(2)));
         capture.pointer_end(foreign);
         assert_eq!(capture.take_loss(), None);
         assert!(capture.capture_lost(first));
-        assert_eq!(capture.take_loss(), Some(first));
+        assert_eq!(
+            capture.take_loss(),
+            Some(Contact {
+                pointer: first,
+                owner: DragOwner::SliderPair
+            })
+        );
     }
 
     #[test]
-    fn only_a_point_drag_arms_the_exact_browser_contact() {
+    fn untracked_drag_or_unmatched_down_does_not_arm_loss() {
         let mut capture = Capture::default();
         let first = Pointer::Touch(2);
         capture.pointer_down(first);
-        capture.accept_down(Some(2), false);
+        capture.accept_down(Some(2), None);
         assert!(!capture.capture_lost(first));
         capture.pointer_down(first);
-        capture.accept_down(Some(3), true);
+        capture.accept_down(Some(3), Some(DragOwner::Point));
         assert!(!capture.capture_lost(first));
         capture.pointer_down(first);
-        capture.accept_down(None, true);
+        capture.accept_down(None, Some(DragOwner::SliderPair));
         assert!(!capture.capture_lost(first));
     }
 
@@ -258,9 +292,39 @@ mod tests {
     fn primary_button_release_ends_tracking_even_during_a_mouse_chord() {
         let mut capture = Capture::default();
         let mouse = Pointer::MouseLike(1);
+        for owner in [DragOwner::Point, DragOwner::SliderPair] {
+            capture.pointer_down(mouse);
+            capture.accept_down(None, Some(owner));
+            capture.mouse_up();
+            assert!(!capture.capture_lost(mouse));
+        }
+    }
+
+    #[test]
+    fn loss_retains_its_owner_kind_before_the_next_contact() {
+        let mut capture = Capture::default();
+        let mouse = Pointer::MouseLike(1);
         capture.pointer_down(mouse);
-        capture.accept_down(None, true);
-        capture.mouse_up();
-        assert!(!capture.capture_lost(mouse));
+        capture.accept_down(None, Some(DragOwner::SliderPair));
+        assert!(capture.capture_lost(mouse));
+        capture.pointer_end(mouse);
+        capture.pointer_down(mouse);
+        assert_eq!(
+            capture.take_loss(),
+            Some(Contact {
+                pointer: mouse,
+                owner: DragOwner::SliderPair
+            })
+        );
+        capture.accept_down(None, Some(DragOwner::Point));
+        assert!(capture.capture_lost(mouse));
+        assert_eq!(
+            capture.take_loss(),
+            Some(Contact {
+                pointer: mouse,
+                owner: DragOwner::Point
+            })
+        );
+        assert_eq!(capture.take_loss(), None);
     }
 }

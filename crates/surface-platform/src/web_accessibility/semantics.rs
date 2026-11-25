@@ -10,6 +10,7 @@ pub(super) fn element(
     source: &AccessibilityNode<'_>,
     modal: bool,
     leaf: bool,
+    slider_limits: Option<(f64, f64)>,
 ) -> Result<Element, JsValue> {
     let node = source.node;
     let role = if modal && node.is_alert_dialog() {
@@ -136,8 +137,13 @@ pub(super) fn element(
         }
         Some("slider" | "progressbar") => {
             if let Some(range) = node.range_value().filter(|range| range.is_valid()) {
-                element.set_attribute("aria-valuemin", &range.min.to_string())?;
-                element.set_attribute("aria-valuemax", &range.max.to_string())?;
+                let (min, max) = if role == Some("slider") {
+                    slider_limits.unwrap_or((range.min, range.max))
+                } else {
+                    (range.min, range.max)
+                };
+                element.set_attribute("aria-valuemin", &min.to_string())?;
+                element.set_attribute("aria-valuemax", &max.to_string())?;
                 element.set_attribute("aria-valuenow", &range.value.to_string())?;
                 if let Some(text) = node.slider_value_text() {
                     element.set_attribute("aria-valuetext", text)?;
