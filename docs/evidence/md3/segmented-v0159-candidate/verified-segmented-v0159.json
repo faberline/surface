@@ -1,0 +1,147 @@
+{
+  "native": {
+    "binaries": {
+      "surface-devtools": "8abe7bce9afd2ecec3fc5b224b086670986c604cde1b194d736b121f42e9dfea",
+      "surface-material-gallery": "2fc5511ffc53276c0255317c92b97b1fbe659b840813811830adb6be205f8ef2"
+    },
+    "captures": {
+      "compact-dark-rtl-200.png": "546e9bdf32d65330bf9fe31aa7c62380c799aef55553c591302659dea5768d95",
+      "scrolled-dark-rtl-200.png": "cd3ab92c6098a52c5b24bd7ef8af699eddddf48cbf06c3ae605c6e6941a49efd",
+      "wide-light-rest.png": "ffbda3dfb2c9879817f6ff38d6429fe25bda5f52c8256b11c18ad86ad6b56230",
+      "wide-light-selected-keyboard.png": "6a370407d1c9e411dda97ed6eeaba1f5d704cb9976dd0d510bfda26381f5f1e1"
+    },
+    "owned_processes_reaped": 6,
+    "report_sha256": "97a783781bcb682d692719846199ed488efcdc1f72c2d686ac487ba95445714e",
+    "runs": 2,
+    "seal": "a2ba60d961887df4f113c7b8431eaf32a72c92ee35d87cd40da240e963646d6b",
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ],
+    "visible_windows": 0,
+    "window_samples": 24
+  },
+  "rust": {
+    "metal": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "2c042cc818344e83a93a364d96f4ca8246f5c82bedb06629e6bc5b70389b2d74",
+      "passed": 16
+    },
+    "source_checks": {},
+    "supplemental": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "1238ebb275a46b992b640b63bf59d5b1831371a287f3a0d1914ca2f7b9129f97",
+      "passed": 2
+    },
+    "workspace": {
+      "ignored": 19,
+      "log_sha256": "77283101372b0629b649e57815211d34d94ac1466000cdedb3ac40e052624580",
+      "passed": 1502,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_source_sha256": "b03623198811629a68a2dfe5620d5705c55ea7744157ff2ac732d174833eedbf",
+    "base_tree": "8ba487496a2816f3bff3363328ba0dc40a059c30",
+    "changed_paths": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/surface-material/src/baseline_segmented_button.rs",
+      "crates/surface-material/src/lib.rs",
+      "crates/surface-material/tests/baseline_segmented_button.rs",
+      "docs/material-coverage.json",
+      "docs/material.md",
+      "e2e/src/material.rs",
+      "e2e/src/material_segmented.rs",
+      "examples/material-gallery/src/lib.rs",
+      "examples/material-gallery/src/segmented_demo.rs"
+    ],
+    "patch_sha256": "c76e282e1b634e597705e5e9306c7dedd2e43dbb7bc6e4aaebb1f672bb8d7766",
+    "source_files": 660,
+    "source_sha256": "9051c16e996c9b310062682765a7d0bc54cf42dfbadbda4c5f63bd457b5d53b8",
+    "tree": "757179e260a331b4488c6be1b49410263097d675",
+    "version": "0.1.59"
+  },
+  "status": "verified",
+  "stock_macos": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "captures": {
+      "material-segmented-pressed.png": {
+        "decoded_rgb_sha256": "6766847849c087c257035f02c84179f1a54832416c3dfe01b7b209c27bd924a4",
+        "sha256": "46d69262c7b43792fdae99e5e5a91a41c4e06ff77123a7e3aeab7420b5e6ebb9",
+        "size": [
+          1920,
+          1848
+        ]
+      },
+      "material-segmented-rtl-200.png": {
+        "decoded_rgb_sha256": "3e2365e02b0bf52152151f76e407da0f8cd642ea4b34030f81e17619e47e40f2",
+        "sha256": "2d3cc2e486da540856b612b0bd1d91b438558823a668598881a95afd36424b98",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-segmented-scroll-rtl.png": {
+        "decoded_rgb_sha256": "21d2bf718179b5c93b5d75fb5f218a67dd04587c521dedc91e05e2088c6062f4",
+        "sha256": "35b918d43f7ff616a22300e0a6e013738c5ebc55e713e74078d693d36695d4ad",
+        "size": [
+          480,
+          1848
+        ]
+      },
+      "material-segmented-selection.png": {
+        "decoded_rgb_sha256": "6fb8e0e4f91a3d0040d5b005a19bc40104ed046442df3fe56026b7d345ea6d4a",
+        "sha256": "a6dc61aae7371c2448f0d8471ac111ee2ea9f5c9a15ddd4b8112249b48599be0",
+        "size": [
+          1920,
+          1848
+        ]
+      },
+      "material-segmented-wide.png": {
+        "decoded_rgb_sha256": "577aca58834669183d1ef9d7c2faf1676014e1cf5f66c275be9ac0e27b4af45f",
+        "sha256": "3533a153ee99d3fe1104f7c59b6acaf4c477821f4800c72adacbce8989aaf065",
+        "size": [
+          1920,
+          1848
+        ]
+      }
+    },
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 23034,
+        "steps": 322
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "page_errors": 0,
+    "receipt_sha256": "eb4594e00836778f8841752eb22a3c545850fb49c125e1e6bf23d614c6c59533",
+    "runner_sha256": "d54232ba518fba53d4ab540de6230afc7911b97b0364c8ce574610e2697d5a0b",
+    "surviving_processes": 0,
+    "total_checks": 23315,
+    "visible_windows": 0
+  }
+}

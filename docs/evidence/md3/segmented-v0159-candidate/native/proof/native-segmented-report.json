@@ -1,0 +1,6499 @@
+{
+  "schema": "surface.test.segmented.native.v1",
+  "source": {
+    "manifest_sha256": "9051c16e996c9b310062682765a7d0bc54cf42dfbadbda4c5f63bd457b5d53b8",
+    "files_verified": 660,
+    "version": "0.1.59"
+  },
+  "native_binary_manifest_sha256": "6a85c0ef5cca613e2b115e4ab0fb3e7f9d8d09fd6bc24463d5257f47bd0de5dd",
+  "binaries": {
+    "surface-material-gallery": "2fc5511ffc53276c0255317c92b97b1fbe659b840813811830adb6be205f8ef2",
+    "surface-devtools": "8abe7bce9afd2ecec3fc5b224b086670986c604cde1b194d736b121f42e9dfea"
+  },
+  "rendering": "headless",
+  "reduce_motion": true,
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "input_scope": [
+    "Action.key",
+    "Action.activate",
+    "DOM.snapshot"
+  ],
+  "window_samples": 24,
+  "owned_processes_reaped": 6,
+  "replays": [
+    {
+      "wide": {
+        "viewport": [
+          960,
+          880
+        ],
+        "rtl": false,
+        "text_scale": 1,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show",
+          "range-slider-demo-show",
+          "vertical-centered-slider-demo-show",
+          "slider-inset-demo-show",
+          "button-demo-show",
+          "segmented-demo-show"
+        ],
+        "disabled_rejections": [
+          "segment-table-view",
+          "segment-local"
+        ],
+        "closed_focus": "segmented-demo-show",
+        "initial": {
+          "groups": {
+            "segments-comparison": [
+              {
+                "id": "segment-left-pane",
+                "role": "Radio",
+                "name": "左側",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-right-pane",
+                "role": "Radio",
+                "name": "右側",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-view": [
+              {
+                "id": "segment-list-view",
+                "role": "Radio",
+                "name": "清單檢視",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-table-view",
+                "role": "Radio",
+                "name": "表格檢視",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-grid-view",
+                "role": "Radio",
+                "name": "格狀檢視",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-filters": [
+              {
+                "id": "segment-new",
+                "role": "Checkbox",
+                "name": "最新",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-saved",
+                "role": "Checkbox",
+                "name": "已儲存",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-local",
+                "role": "Checkbox",
+                "name": "離線",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-shared",
+                "role": "Checkbox",
+                "name": "已分享",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-archived",
+                "role": "Checkbox",
+                "name": "封存",
+                "checked": false,
+                "disabled": false
+              }
+            ]
+          },
+          "status": "未選取篩選條件"
+        },
+        "geometry": {
+          "segments-comparison": {
+            "segment-left-pane": {
+              "face": {
+                "height": 40.0,
+                "width": 78.0,
+                "x": 21.0,
+                "y": 181.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 88.0,
+                "x": 16.0,
+                "y": 176.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 78.0,
+                "x": 21.0,
+                "y": 177.0
+              }
+            },
+            "segment-right-pane": {
+              "face": {
+                "height": 40.0,
+                "width": 78.0,
+                "x": 99.0,
+                "y": 181.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 88.0,
+                "x": 94.0,
+                "y": 176.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 78.0,
+                "x": 99.0,
+                "y": 177.0
+              }
+            }
+          },
+          "segments-view": {
+            "segment-list-view": {
+              "face": {
+                "height": 40.0,
+                "width": 106.0,
+                "x": 21.0,
+                "y": 291.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 116.0,
+                "x": 16.0,
+                "y": 286.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 106.0,
+                "x": 21.0,
+                "y": 287.0
+              }
+            },
+            "segment-table-view": {
+              "face": {
+                "height": 40.0,
+                "width": 106.0,
+                "x": 127.0,
+                "y": 291.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 116.0,
+                "x": 122.0,
+                "y": 286.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 106.0,
+                "x": 127.0,
+                "y": 287.0
+              }
+            },
+            "segment-grid-view": {
+              "face": {
+                "height": 40.0,
+                "width": 106.0,
+                "x": 233.0,
+                "y": 291.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 116.0,
+                "x": 228.0,
+                "y": 286.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 106.0,
+                "x": 233.0,
+                "y": 287.0
+              }
+            }
+          },
+          "segments-filters": {
+            "segment-new": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 21.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 16.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 21.0,
+                "y": 397.0
+              }
+            },
+            "segment-saved": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 113.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 108.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 113.0,
+                "y": 397.0
+              }
+            },
+            "segment-local": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 205.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 200.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 205.0,
+                "y": 397.0
+              }
+            },
+            "segment-shared": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 297.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 292.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 297.0,
+                "y": 397.0
+              }
+            },
+            "segment-archived": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 389.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 384.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 389.0,
+                "y": 397.0
+              }
+            }
+          }
+        },
+        "focus_steps": [
+          {
+            "key": "tab",
+            "id": "segmented-demo-theme",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segmented-demo-rtl",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segmented-demo-large-text",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segment-left-pane",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-right-pane",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-right-pane",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-grid-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "left",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "space",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "space",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-saved",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-shared",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-shared",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 2 項篩選條件"
+          },
+          {
+            "key": "space",
+            "id": "segment-shared",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "left",
+            "id": "segment-saved",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "left",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segmented-demo-after",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          }
+        ],
+        "captures": [
+          {
+            "name": "wide-light-rest.png",
+            "sha256": "ffbda3dfb2c9879817f6ff38d6429fe25bda5f52c8256b11c18ad86ad6b56230",
+            "format": "png",
+            "width": 960,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "label_ink": {
+              "segment-left-pane": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 46.0,
+                  "y": 191.0
+                },
+                "ink_bounds": [
+                  47,
+                  195,
+                  26,
+                  14
+                ],
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 86
+              },
+              "segment-right-pane": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 137.0,
+                  "y": 191.0
+                },
+                "ink_bounds": [
+                  138,
+                  196,
+                  26,
+                  13
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 86
+              },
+              "segment-list-view": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 56.0,
+                  "x": 59.0,
+                  "y": 301.0
+                },
+                "ink_bounds": [
+                  60,
+                  305,
+                  54,
+                  14
+                ],
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 199
+              },
+              "segment-new": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 53.0,
+                  "y": 411.0
+                },
+                "ink_bounds": [
+                  54,
+                  416,
+                  26,
+                  13
+                ],
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 99
+              }
+            },
+            "selected_ink": {
+              "segment-right-pane": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 2443
+              },
+              "segment-grid-view": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 3604
+              }
+            }
+          },
+          {
+            "name": "wide-light-selected-keyboard.png",
+            "sha256": "6a370407d1c9e411dda97ed6eeaba1f5d704cb9976dd0d510bfda26381f5f1e1",
+            "format": "png",
+            "width": 960,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "label_ink": {
+              "segment-list-view": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 56.0,
+                  "x": 59.0,
+                  "y": 301.0
+                },
+                "ink_bounds": [
+                  60,
+                  305,
+                  54,
+                  14
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 220
+              },
+              "segment-new": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 66.0,
+                  "y": 411.0
+                },
+                "ink_bounds": [
+                  67,
+                  416,
+                  26,
+                  13
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 112
+              },
+              "segment-shared": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 42.0,
+                  "x": 335.0,
+                  "y": 411.0
+                },
+                "ink_bounds": [
+                  336,
+                  415,
+                  40,
+                  14
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 136
+              }
+            },
+            "focus": {
+              "parts": {
+                "face": {
+                  "height": 40.0,
+                  "width": 92.0,
+                  "x": 297.0,
+                  "y": 401.0
+                },
+                "focus": {
+                  "height": 50.0,
+                  "width": 102.0,
+                  "x": 292.0,
+                  "y": 396.0
+                },
+                "hit": {
+                  "height": 48.0,
+                  "width": 92.0,
+                  "x": 297.0,
+                  "y": 397.0
+                }
+              },
+              "rgba": [
+                98,
+                91,
+                113,
+                255
+              ],
+              "edges": {
+                "top": {
+                  "bounds": {
+                    "x": 337.0,
+                    "y": 396.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 36
+                },
+                "bottom": {
+                  "bounds": {
+                    "x": 337.0,
+                    "y": 441.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 36
+                },
+                "left": {
+                  "bounds": {
+                    "x": 292.0,
+                    "y": 415.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                },
+                "right": {
+                  "bounds": {
+                    "x": 389.0,
+                    "y": 415.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                }
+              }
+            },
+            "selected_ink": {
+              "segment-list-view": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 3245
+              },
+              "segment-new": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 2938
+              }
+            }
+          }
+        ]
+      },
+      "compact": {
+        "viewport": [
+          320,
+          880
+        ],
+        "rtl": true,
+        "text_scale": 2,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show",
+          "range-slider-demo-show",
+          "vertical-centered-slider-demo-show",
+          "slider-inset-demo-show",
+          "button-demo-show",
+          "segmented-demo-show"
+        ],
+        "disabled_rejections": [
+          "segment-table-view",
+          "segment-local"
+        ],
+        "closed_focus": "segmented-demo-show",
+        "geometry": {
+          "segments-comparison": {
+            "segment-left-pane": {
+              "face": {
+                "height": 60.0,
+                "width": 106.0,
+                "x": 193.0,
+                "y": 234.0
+              },
+              "focus": {
+                "height": 70.0,
+                "width": 116.0,
+                "x": 188.0,
+                "y": 229.0
+              },
+              "hit": {
+                "height": 68.0,
+                "width": 106.0,
+                "x": 193.0,
+                "y": 230.0
+              }
+            },
+            "segment-right-pane": {
+              "face": {
+                "height": 60.0,
+                "width": 106.0,
+                "x": 87.0,
+                "y": 234.0
+              },
+              "focus": {
+                "height": 70.0,
+                "width": 116.0,
+                "x": 82.0,
+                "y": 229.0
+              },
+              "hit": {
+                "height": 68.0,
+                "width": 106.0,
+                "x": 87.0,
+                "y": 230.0
+              }
+            }
+          },
+          "segments-view": {
+            "segment-list-view": {
+              "face": {
+                "height": 180.0,
+                "width": 92.66666412353516,
+                "x": 206.3333282470703,
+                "y": 404.0
+              },
+              "focus": {
+                "height": 190.0,
+                "width": 102.66666412353516,
+                "x": 201.3333282470703,
+                "y": 399.0
+              },
+              "hit": {
+                "height": 188.0,
+                "width": 92.66666412353516,
+                "x": 206.3333282470703,
+                "y": 400.0
+              }
+            },
+            "segment-table-view": {
+              "face": {
+                "height": 180.0,
+                "width": 92.66666412353516,
+                "x": 113.66666412353516,
+                "y": 404.0
+              },
+              "focus": {
+                "height": 190.0,
+                "width": 102.66666412353516,
+                "x": 108.66666412353516,
+                "y": 399.0
+              },
+              "hit": {
+                "height": 188.0,
+                "width": 92.66666412353516,
+                "x": 113.66666412353516,
+                "y": 400.0
+              }
+            },
+            "segment-grid-view": {
+              "face": {
+                "height": 180.0,
+                "width": 92.66666412353516,
+                "x": 21.0,
+                "y": 404.0
+              },
+              "focus": {
+                "height": 190.0,
+                "width": 102.66666412353516,
+                "x": 16.0,
+                "y": 399.0
+              },
+              "hit": {
+                "height": 188.0,
+                "width": 92.66666412353516,
+                "x": 21.0,
+                "y": 400.0
+              }
+            }
+          },
+          "segments-filters": {
+            "segment-new": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 243.39999389648438,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 238.39999389648438,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 243.39999389648438,
+                "y": 690.0
+              }
+            },
+            "segment-saved": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 187.79998779296875,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 182.79998779296875,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 187.79998779296875,
+                "y": 690.0
+              }
+            },
+            "segment-local": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 132.1999969482422,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 127.19999694824219,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 132.1999969482422,
+                "y": 690.0
+              }
+            },
+            "segment-shared": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 76.5999984741211,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 71.5999984741211,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 76.5999984741211,
+                "y": 690.0
+              }
+            },
+            "segment-archived": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 21.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 16.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 21.0,
+                "y": 690.0
+              }
+            }
+          }
+        },
+        "focus_steps": [
+          "segment-left-pane",
+          "segment-list-view",
+          "segment-new"
+        ],
+        "track": {
+          "height": 176.0,
+          "width": 288.0,
+          "x": 16.0,
+          "y": 689.0
+        },
+        "selection": {
+          "groups": {
+            "segments-comparison": [
+              {
+                "id": "segment-left-pane",
+                "role": "Radio",
+                "name": "左側",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-right-pane",
+                "role": "Radio",
+                "name": "右側",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-view": [
+              {
+                "id": "segment-list-view",
+                "role": "Radio",
+                "name": "清單檢視",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-table-view",
+                "role": "Radio",
+                "name": "表格檢視",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-grid-view",
+                "role": "Radio",
+                "name": "格狀檢視",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-filters": [
+              {
+                "id": "segment-new",
+                "role": "Checkbox",
+                "name": "最新",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-saved",
+                "role": "Checkbox",
+                "name": "已儲存",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-local",
+                "role": "Checkbox",
+                "name": "離線",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-shared",
+                "role": "Checkbox",
+                "name": "已分享",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-archived",
+                "role": "Checkbox",
+                "name": "封存",
+                "checked": false,
+                "disabled": false
+              }
+            ]
+          },
+          "status": "未選取篩選條件"
+        },
+        "captures": [
+          {
+            "name": "compact-dark-rtl-200.png",
+            "sha256": "546e9bdf32d65330bf9fe31aa7c62380c799aef55553c591302659dea5768d95",
+            "format": "png",
+            "width": 320,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "label_ink": {
+              "segment-new": {
+                "bounds": {
+                  "height": 80.0,
+                  "width": 31.599998474121094,
+                  "x": 255.39999389648438,
+                  "y": 737.0
+                },
+                "ink_bounds": [
+                  259,
+                  746,
+                  25,
+                  65
+                ],
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 482
+              },
+              "segment-archived": {
+                "bounds": {
+                  "height": 80.0,
+                  "width": 31.599998474121094,
+                  "x": 33.0,
+                  "y": 737.0
+                },
+                "ink_bounds": [
+                  36,
+                  745,
+                  25,
+                  66
+                ],
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 396
+              }
+            },
+            "focus": {
+              "parts": {
+                "face": {
+                  "height": 166.0,
+                  "width": 55.599998474121094,
+                  "x": 243.39999389648438,
+                  "y": 694.0
+                },
+                "focus": {
+                  "height": 176.0,
+                  "width": 65.5999984741211,
+                  "x": 238.39999389648438,
+                  "y": 689.0
+                },
+                "hit": {
+                  "height": 174.0,
+                  "width": 55.599998474121094,
+                  "x": 243.39999389648438,
+                  "y": 690.0
+                }
+              },
+              "rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "edges": {
+                "top": {
+                  "bounds": {
+                    "x": 265.1999931335449,
+                    "y": 689.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 28
+                },
+                "bottom": {
+                  "bounds": {
+                    "x": 265.1999931335449,
+                    "y": 860.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 28
+                },
+                "left": {
+                  "bounds": {
+                    "x": 238.39999389648438,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 24
+                },
+                "right": {
+                  "bounds": {
+                    "x": 298.99999237060547,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 24
+                }
+              }
+            },
+            "selected_ink": {}
+          }
+        ]
+      },
+      "scrolled": {
+        "viewport": {
+          "height": 176.0,
+          "width": 208.0,
+          "x": 16.0,
+          "y": 689.0
+        },
+        "rtl": true,
+        "text_scale": 2,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show",
+          "range-slider-demo-show",
+          "vertical-centered-slider-demo-show",
+          "slider-inset-demo-show",
+          "button-demo-show",
+          "segmented-demo-show"
+        ],
+        "disabled_rejections": [
+          "segment-table-view",
+          "segment-local"
+        ],
+        "closed_focus": "segmented-demo-show",
+        "track_start": {
+          "height": 176.0,
+          "width": 270.0,
+          "x": -46.0,
+          "y": 689.0
+        },
+        "track_end": {
+          "height": 176.0,
+          "width": 270.0,
+          "x": 16.0,
+          "y": 689.0
+        },
+        "first": {
+          "face": {
+            "height": 166.0,
+            "width": 52.0,
+            "x": 167.0,
+            "y": 694.0
+          },
+          "focus": {
+            "height": 176.0,
+            "width": 62.0,
+            "x": 162.0,
+            "y": 689.0
+          },
+          "hit": {
+            "height": 174.0,
+            "width": 52.0,
+            "x": 167.0,
+            "y": 690.0
+          }
+        },
+        "travel": [
+          {
+            "id": "segment-saved",
+            "parts": {
+              "face": {
+                "height": 166.0,
+                "width": 52.0,
+                "x": 115.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 62.0,
+                "x": 110.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 52.0,
+                "x": 115.0,
+                "y": 690.0
+              }
+            },
+            "track": {
+              "height": 176.0,
+              "width": 270.0,
+              "x": -46.0,
+              "y": 689.0
+            }
+          },
+          {
+            "id": "segment-shared",
+            "parts": {
+              "face": {
+                "height": 166.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 62.0,
+                "x": 16.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 690.0
+              }
+            },
+            "track": {
+              "height": 176.0,
+              "width": 270.0,
+              "x": -36.0,
+              "y": 689.0
+            }
+          },
+          {
+            "id": "segment-archived",
+            "parts": {
+              "face": {
+                "height": 166.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 62.0,
+                "x": 16.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 690.0
+              }
+            },
+            "track": {
+              "height": 176.0,
+              "width": 270.0,
+              "x": 16.0,
+              "y": 689.0
+            }
+          }
+        ],
+        "selected": {
+          "groups": {
+            "segments-comparison": [
+              {
+                "id": "segment-left-pane",
+                "role": "Radio",
+                "name": "左側",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-right-pane",
+                "role": "Radio",
+                "name": "右側",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-view": [
+              {
+                "id": "segment-list-view",
+                "role": "Radio",
+                "name": "清單檢視",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-table-view",
+                "role": "Radio",
+                "name": "表格檢視",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-grid-view",
+                "role": "Radio",
+                "name": "格狀檢視",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-filters": [
+              {
+                "id": "segment-new",
+                "role": "Checkbox",
+                "name": "最新",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-saved",
+                "role": "Checkbox",
+                "name": "已儲存",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-local",
+                "role": "Checkbox",
+                "name": "離線",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-shared",
+                "role": "Checkbox",
+                "name": "已分享",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-archived",
+                "role": "Checkbox",
+                "name": "封存",
+                "checked": true,
+                "disabled": false
+              }
+            ]
+          },
+          "status": "已選取 1 項篩選條件"
+        },
+        "captures": [
+          {
+            "name": "scrolled-dark-rtl-200.png",
+            "sha256": "cd3ab92c6098a52c5b24bd7ef8af699eddddf48cbf06c3ae605c6e6941a49efd",
+            "format": "png",
+            "width": 240,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "label_ink": {
+              "segment-archived": {
+                "bounds": {
+                  "height": 80.0,
+                  "width": 28.0,
+                  "x": 33.0,
+                  "y": 750.0
+                },
+                "ink_bounds": [
+                  34,
+                  758,
+                  26,
+                  66
+                ],
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 429
+              }
+            },
+            "focus": {
+              "parts": {
+                "face": {
+                  "height": 166.0,
+                  "width": 52.0,
+                  "x": 21.0,
+                  "y": 694.0
+                },
+                "focus": {
+                  "height": 176.0,
+                  "width": 62.0,
+                  "x": 16.0,
+                  "y": 689.0
+                },
+                "hit": {
+                  "height": 174.0,
+                  "width": 52.0,
+                  "x": 21.0,
+                  "y": 690.0
+                }
+              },
+              "rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "edges": {
+                "top": {
+                  "bounds": {
+                    "x": 41.0,
+                    "y": 689.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 31
+                },
+                "bottom": {
+                  "bounds": {
+                    "x": 41.0,
+                    "y": 860.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 31
+                },
+                "left": {
+                  "bounds": {
+                    "x": 16.0,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                },
+                "right": {
+                  "bounds": {
+                    "x": 73.0,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                }
+              }
+            },
+            "selected_ink": {}
+          }
+        ]
+      }
+    },
+    {
+      "wide": {
+        "viewport": [
+          960,
+          880
+        ],
+        "rtl": false,
+        "text_scale": 1,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show",
+          "range-slider-demo-show",
+          "vertical-centered-slider-demo-show",
+          "slider-inset-demo-show",
+          "button-demo-show",
+          "segmented-demo-show"
+        ],
+        "disabled_rejections": [
+          "segment-table-view",
+          "segment-local"
+        ],
+        "closed_focus": "segmented-demo-show",
+        "initial": {
+          "groups": {
+            "segments-comparison": [
+              {
+                "id": "segment-left-pane",
+                "role": "Radio",
+                "name": "左側",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-right-pane",
+                "role": "Radio",
+                "name": "右側",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-view": [
+              {
+                "id": "segment-list-view",
+                "role": "Radio",
+                "name": "清單檢視",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-table-view",
+                "role": "Radio",
+                "name": "表格檢視",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-grid-view",
+                "role": "Radio",
+                "name": "格狀檢視",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-filters": [
+              {
+                "id": "segment-new",
+                "role": "Checkbox",
+                "name": "最新",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-saved",
+                "role": "Checkbox",
+                "name": "已儲存",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-local",
+                "role": "Checkbox",
+                "name": "離線",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-shared",
+                "role": "Checkbox",
+                "name": "已分享",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-archived",
+                "role": "Checkbox",
+                "name": "封存",
+                "checked": false,
+                "disabled": false
+              }
+            ]
+          },
+          "status": "未選取篩選條件"
+        },
+        "geometry": {
+          "segments-comparison": {
+            "segment-left-pane": {
+              "face": {
+                "height": 40.0,
+                "width": 78.0,
+                "x": 21.0,
+                "y": 181.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 88.0,
+                "x": 16.0,
+                "y": 176.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 78.0,
+                "x": 21.0,
+                "y": 177.0
+              }
+            },
+            "segment-right-pane": {
+              "face": {
+                "height": 40.0,
+                "width": 78.0,
+                "x": 99.0,
+                "y": 181.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 88.0,
+                "x": 94.0,
+                "y": 176.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 78.0,
+                "x": 99.0,
+                "y": 177.0
+              }
+            }
+          },
+          "segments-view": {
+            "segment-list-view": {
+              "face": {
+                "height": 40.0,
+                "width": 106.0,
+                "x": 21.0,
+                "y": 291.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 116.0,
+                "x": 16.0,
+                "y": 286.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 106.0,
+                "x": 21.0,
+                "y": 287.0
+              }
+            },
+            "segment-table-view": {
+              "face": {
+                "height": 40.0,
+                "width": 106.0,
+                "x": 127.0,
+                "y": 291.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 116.0,
+                "x": 122.0,
+                "y": 286.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 106.0,
+                "x": 127.0,
+                "y": 287.0
+              }
+            },
+            "segment-grid-view": {
+              "face": {
+                "height": 40.0,
+                "width": 106.0,
+                "x": 233.0,
+                "y": 291.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 116.0,
+                "x": 228.0,
+                "y": 286.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 106.0,
+                "x": 233.0,
+                "y": 287.0
+              }
+            }
+          },
+          "segments-filters": {
+            "segment-new": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 21.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 16.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 21.0,
+                "y": 397.0
+              }
+            },
+            "segment-saved": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 113.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 108.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 113.0,
+                "y": 397.0
+              }
+            },
+            "segment-local": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 205.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 200.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 205.0,
+                "y": 397.0
+              }
+            },
+            "segment-shared": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 297.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 292.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 297.0,
+                "y": 397.0
+              }
+            },
+            "segment-archived": {
+              "face": {
+                "height": 40.0,
+                "width": 92.0,
+                "x": 389.0,
+                "y": 401.0
+              },
+              "focus": {
+                "height": 50.0,
+                "width": 102.0,
+                "x": 384.0,
+                "y": 396.0
+              },
+              "hit": {
+                "height": 48.0,
+                "width": 92.0,
+                "x": 389.0,
+                "y": 397.0
+              }
+            }
+          }
+        },
+        "focus_steps": [
+          {
+            "key": "tab",
+            "id": "segmented-demo-theme",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segmented-demo-rtl",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segmented-demo-large-text",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segment-left-pane",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-right-pane",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-right-pane",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-grid-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "left",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "space",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-list-view",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "space",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-saved",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "right",
+            "id": "segment-shared",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-shared",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 2 項篩選條件"
+          },
+          {
+            "key": "space",
+            "id": "segment-shared",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "left",
+            "id": "segment-saved",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "left",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "已選取 1 項篩選條件"
+          },
+          {
+            "key": "enter",
+            "id": "segment-new",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          },
+          {
+            "key": "tab",
+            "id": "segmented-demo-after",
+            "groups": {
+              "segments-comparison": [
+                {
+                  "id": "segment-left-pane",
+                  "role": "Radio",
+                  "name": "左側",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-right-pane",
+                  "role": "Radio",
+                  "name": "右側",
+                  "checked": true,
+                  "disabled": false
+                }
+              ],
+              "segments-view": [
+                {
+                  "id": "segment-list-view",
+                  "role": "Radio",
+                  "name": "清單檢視",
+                  "checked": true,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-table-view",
+                  "role": "Radio",
+                  "name": "表格檢視",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-grid-view",
+                  "role": "Radio",
+                  "name": "格狀檢視",
+                  "checked": false,
+                  "disabled": false
+                }
+              ],
+              "segments-filters": [
+                {
+                  "id": "segment-new",
+                  "role": "Checkbox",
+                  "name": "最新",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-saved",
+                  "role": "Checkbox",
+                  "name": "已儲存",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-local",
+                  "role": "Checkbox",
+                  "name": "離線",
+                  "checked": false,
+                  "disabled": true
+                },
+                {
+                  "id": "segment-shared",
+                  "role": "Checkbox",
+                  "name": "已分享",
+                  "checked": false,
+                  "disabled": false
+                },
+                {
+                  "id": "segment-archived",
+                  "role": "Checkbox",
+                  "name": "封存",
+                  "checked": false,
+                  "disabled": false
+                }
+              ]
+            },
+            "status": "未選取篩選條件"
+          }
+        ],
+        "captures": [
+          {
+            "name": "wide-light-rest.png",
+            "sha256": "ffbda3dfb2c9879817f6ff38d6429fe25bda5f52c8256b11c18ad86ad6b56230",
+            "format": "png",
+            "width": 960,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "label_ink": {
+              "segment-left-pane": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 46.0,
+                  "y": 191.0
+                },
+                "ink_bounds": [
+                  47,
+                  195,
+                  26,
+                  14
+                ],
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 86
+              },
+              "segment-right-pane": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 137.0,
+                  "y": 191.0
+                },
+                "ink_bounds": [
+                  138,
+                  196,
+                  26,
+                  13
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 86
+              },
+              "segment-list-view": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 56.0,
+                  "x": 59.0,
+                  "y": 301.0
+                },
+                "ink_bounds": [
+                  60,
+                  305,
+                  54,
+                  14
+                ],
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 199
+              },
+              "segment-new": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 53.0,
+                  "y": 411.0
+                },
+                "ink_bounds": [
+                  54,
+                  416,
+                  26,
+                  13
+                ],
+                "rgba": [
+                  29,
+                  27,
+                  32,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 99
+              }
+            },
+            "selected_ink": {
+              "segment-right-pane": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 2443
+              },
+              "segment-grid-view": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 3604
+              }
+            }
+          },
+          {
+            "name": "wide-light-selected-keyboard.png",
+            "sha256": "6a370407d1c9e411dda97ed6eeaba1f5d704cb9976dd0d510bfda26381f5f1e1",
+            "format": "png",
+            "width": 960,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "label_ink": {
+              "segment-list-view": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 56.0,
+                  "x": 59.0,
+                  "y": 301.0
+                },
+                "ink_bounds": [
+                  60,
+                  305,
+                  54,
+                  14
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 220
+              },
+              "segment-new": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 28.0,
+                  "x": 66.0,
+                  "y": 411.0
+                },
+                "ink_bounds": [
+                  67,
+                  416,
+                  26,
+                  13
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 112
+              },
+              "segment-shared": {
+                "bounds": {
+                  "height": 20.0,
+                  "width": 42.0,
+                  "x": 335.0,
+                  "y": 411.0
+                },
+                "ink_bounds": [
+                  336,
+                  415,
+                  40,
+                  14
+                ],
+                "rgba": [
+                  30,
+                  25,
+                  43,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 136
+              }
+            },
+            "focus": {
+              "parts": {
+                "face": {
+                  "height": 40.0,
+                  "width": 92.0,
+                  "x": 297.0,
+                  "y": 401.0
+                },
+                "focus": {
+                  "height": 50.0,
+                  "width": 102.0,
+                  "x": 292.0,
+                  "y": 396.0
+                },
+                "hit": {
+                  "height": 48.0,
+                  "width": 92.0,
+                  "x": 297.0,
+                  "y": 397.0
+                }
+              },
+              "rgba": [
+                98,
+                91,
+                113,
+                255
+              ],
+              "edges": {
+                "top": {
+                  "bounds": {
+                    "x": 337.0,
+                    "y": 396.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 36
+                },
+                "bottom": {
+                  "bounds": {
+                    "x": 337.0,
+                    "y": 441.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 36
+                },
+                "left": {
+                  "bounds": {
+                    "x": 292.0,
+                    "y": 415.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                },
+                "right": {
+                  "bounds": {
+                    "x": 389.0,
+                    "y": 415.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                }
+              }
+            },
+            "selected_ink": {
+              "segment-list-view": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 3245
+              },
+              "segment-new": {
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "pixels": 2938
+              }
+            }
+          }
+        ]
+      },
+      "compact": {
+        "viewport": [
+          320,
+          880
+        ],
+        "rtl": true,
+        "text_scale": 2,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show",
+          "range-slider-demo-show",
+          "vertical-centered-slider-demo-show",
+          "slider-inset-demo-show",
+          "button-demo-show",
+          "segmented-demo-show"
+        ],
+        "disabled_rejections": [
+          "segment-table-view",
+          "segment-local"
+        ],
+        "closed_focus": "segmented-demo-show",
+        "geometry": {
+          "segments-comparison": {
+            "segment-left-pane": {
+              "face": {
+                "height": 60.0,
+                "width": 106.0,
+                "x": 193.0,
+                "y": 234.0
+              },
+              "focus": {
+                "height": 70.0,
+                "width": 116.0,
+                "x": 188.0,
+                "y": 229.0
+              },
+              "hit": {
+                "height": 68.0,
+                "width": 106.0,
+                "x": 193.0,
+                "y": 230.0
+              }
+            },
+            "segment-right-pane": {
+              "face": {
+                "height": 60.0,
+                "width": 106.0,
+                "x": 87.0,
+                "y": 234.0
+              },
+              "focus": {
+                "height": 70.0,
+                "width": 116.0,
+                "x": 82.0,
+                "y": 229.0
+              },
+              "hit": {
+                "height": 68.0,
+                "width": 106.0,
+                "x": 87.0,
+                "y": 230.0
+              }
+            }
+          },
+          "segments-view": {
+            "segment-list-view": {
+              "face": {
+                "height": 180.0,
+                "width": 92.66666412353516,
+                "x": 206.3333282470703,
+                "y": 404.0
+              },
+              "focus": {
+                "height": 190.0,
+                "width": 102.66666412353516,
+                "x": 201.3333282470703,
+                "y": 399.0
+              },
+              "hit": {
+                "height": 188.0,
+                "width": 92.66666412353516,
+                "x": 206.3333282470703,
+                "y": 400.0
+              }
+            },
+            "segment-table-view": {
+              "face": {
+                "height": 180.0,
+                "width": 92.66666412353516,
+                "x": 113.66666412353516,
+                "y": 404.0
+              },
+              "focus": {
+                "height": 190.0,
+                "width": 102.66666412353516,
+                "x": 108.66666412353516,
+                "y": 399.0
+              },
+              "hit": {
+                "height": 188.0,
+                "width": 92.66666412353516,
+                "x": 113.66666412353516,
+                "y": 400.0
+              }
+            },
+            "segment-grid-view": {
+              "face": {
+                "height": 180.0,
+                "width": 92.66666412353516,
+                "x": 21.0,
+                "y": 404.0
+              },
+              "focus": {
+                "height": 190.0,
+                "width": 102.66666412353516,
+                "x": 16.0,
+                "y": 399.0
+              },
+              "hit": {
+                "height": 188.0,
+                "width": 92.66666412353516,
+                "x": 21.0,
+                "y": 400.0
+              }
+            }
+          },
+          "segments-filters": {
+            "segment-new": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 243.39999389648438,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 238.39999389648438,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 243.39999389648438,
+                "y": 690.0
+              }
+            },
+            "segment-saved": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 187.79998779296875,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 182.79998779296875,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 187.79998779296875,
+                "y": 690.0
+              }
+            },
+            "segment-local": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 132.1999969482422,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 127.19999694824219,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 132.1999969482422,
+                "y": 690.0
+              }
+            },
+            "segment-shared": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 76.5999984741211,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 71.5999984741211,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 76.5999984741211,
+                "y": 690.0
+              }
+            },
+            "segment-archived": {
+              "face": {
+                "height": 166.0,
+                "width": 55.599998474121094,
+                "x": 21.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 65.5999984741211,
+                "x": 16.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 55.599998474121094,
+                "x": 21.0,
+                "y": 690.0
+              }
+            }
+          }
+        },
+        "focus_steps": [
+          "segment-left-pane",
+          "segment-list-view",
+          "segment-new"
+        ],
+        "track": {
+          "height": 176.0,
+          "width": 288.0,
+          "x": 16.0,
+          "y": 689.0
+        },
+        "selection": {
+          "groups": {
+            "segments-comparison": [
+              {
+                "id": "segment-left-pane",
+                "role": "Radio",
+                "name": "左側",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-right-pane",
+                "role": "Radio",
+                "name": "右側",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-view": [
+              {
+                "id": "segment-list-view",
+                "role": "Radio",
+                "name": "清單檢視",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-table-view",
+                "role": "Radio",
+                "name": "表格檢視",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-grid-view",
+                "role": "Radio",
+                "name": "格狀檢視",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-filters": [
+              {
+                "id": "segment-new",
+                "role": "Checkbox",
+                "name": "最新",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-saved",
+                "role": "Checkbox",
+                "name": "已儲存",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-local",
+                "role": "Checkbox",
+                "name": "離線",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-shared",
+                "role": "Checkbox",
+                "name": "已分享",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-archived",
+                "role": "Checkbox",
+                "name": "封存",
+                "checked": false,
+                "disabled": false
+              }
+            ]
+          },
+          "status": "未選取篩選條件"
+        },
+        "captures": [
+          {
+            "name": "compact-dark-rtl-200.png",
+            "sha256": "546e9bdf32d65330bf9fe31aa7c62380c799aef55553c591302659dea5768d95",
+            "format": "png",
+            "width": 320,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "label_ink": {
+              "segment-new": {
+                "bounds": {
+                  "height": 80.0,
+                  "width": 31.599998474121094,
+                  "x": 255.39999389648438,
+                  "y": 737.0
+                },
+                "ink_bounds": [
+                  259,
+                  746,
+                  25,
+                  65
+                ],
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 482
+              },
+              "segment-archived": {
+                "bounds": {
+                  "height": 80.0,
+                  "width": 31.599998474121094,
+                  "x": 33.0,
+                  "y": 737.0
+                },
+                "ink_bounds": [
+                  36,
+                  745,
+                  25,
+                  66
+                ],
+                "rgba": [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 396
+              }
+            },
+            "focus": {
+              "parts": {
+                "face": {
+                  "height": 166.0,
+                  "width": 55.599998474121094,
+                  "x": 243.39999389648438,
+                  "y": 694.0
+                },
+                "focus": {
+                  "height": 176.0,
+                  "width": 65.5999984741211,
+                  "x": 238.39999389648438,
+                  "y": 689.0
+                },
+                "hit": {
+                  "height": 174.0,
+                  "width": 55.599998474121094,
+                  "x": 243.39999389648438,
+                  "y": 690.0
+                }
+              },
+              "rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "edges": {
+                "top": {
+                  "bounds": {
+                    "x": 265.1999931335449,
+                    "y": 689.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 28
+                },
+                "bottom": {
+                  "bounds": {
+                    "x": 265.1999931335449,
+                    "y": 860.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 28
+                },
+                "left": {
+                  "bounds": {
+                    "x": 238.39999389648438,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 24
+                },
+                "right": {
+                  "bounds": {
+                    "x": 298.99999237060547,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 24
+                }
+              }
+            },
+            "selected_ink": {}
+          }
+        ]
+      },
+      "scrolled": {
+        "viewport": {
+          "height": 176.0,
+          "width": 208.0,
+          "x": 16.0,
+          "y": 689.0
+        },
+        "rtl": true,
+        "text_scale": 2,
+        "opening_tabs": [
+          "theme",
+          "section-0",
+          "check",
+          "enabled",
+          "radio-0",
+          "segment-0",
+          "volume",
+          "scroll-field-demo-show",
+          "scroll-choice-demo-show",
+          "scroll-loop-numeric-show",
+          "scroll-loop-choice-show",
+          "scroll-pair-demo-show",
+          "scroll-popup-demo-show",
+          "scroll-modal-demo-show",
+          "switch-demo-show",
+          "checkbox-demo-show",
+          "radio-demo-show",
+          "tabs-demo-show",
+          "chip-demo-show",
+          "icon-button-demo-show",
+          "slider-demo-show",
+          "slider-forms-demo-show",
+          "range-slider-demo-show",
+          "vertical-centered-slider-demo-show",
+          "slider-inset-demo-show",
+          "button-demo-show",
+          "segmented-demo-show"
+        ],
+        "disabled_rejections": [
+          "segment-table-view",
+          "segment-local"
+        ],
+        "closed_focus": "segmented-demo-show",
+        "track_start": {
+          "height": 176.0,
+          "width": 270.0,
+          "x": -46.0,
+          "y": 689.0
+        },
+        "track_end": {
+          "height": 176.0,
+          "width": 270.0,
+          "x": 16.0,
+          "y": 689.0
+        },
+        "first": {
+          "face": {
+            "height": 166.0,
+            "width": 52.0,
+            "x": 167.0,
+            "y": 694.0
+          },
+          "focus": {
+            "height": 176.0,
+            "width": 62.0,
+            "x": 162.0,
+            "y": 689.0
+          },
+          "hit": {
+            "height": 174.0,
+            "width": 52.0,
+            "x": 167.0,
+            "y": 690.0
+          }
+        },
+        "travel": [
+          {
+            "id": "segment-saved",
+            "parts": {
+              "face": {
+                "height": 166.0,
+                "width": 52.0,
+                "x": 115.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 62.0,
+                "x": 110.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 52.0,
+                "x": 115.0,
+                "y": 690.0
+              }
+            },
+            "track": {
+              "height": 176.0,
+              "width": 270.0,
+              "x": -46.0,
+              "y": 689.0
+            }
+          },
+          {
+            "id": "segment-shared",
+            "parts": {
+              "face": {
+                "height": 166.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 62.0,
+                "x": 16.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 690.0
+              }
+            },
+            "track": {
+              "height": 176.0,
+              "width": 270.0,
+              "x": -36.0,
+              "y": 689.0
+            }
+          },
+          {
+            "id": "segment-archived",
+            "parts": {
+              "face": {
+                "height": 166.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 694.0
+              },
+              "focus": {
+                "height": 176.0,
+                "width": 62.0,
+                "x": 16.0,
+                "y": 689.0
+              },
+              "hit": {
+                "height": 174.0,
+                "width": 52.0,
+                "x": 21.0,
+                "y": 690.0
+              }
+            },
+            "track": {
+              "height": 176.0,
+              "width": 270.0,
+              "x": 16.0,
+              "y": 689.0
+            }
+          }
+        ],
+        "selected": {
+          "groups": {
+            "segments-comparison": [
+              {
+                "id": "segment-left-pane",
+                "role": "Radio",
+                "name": "左側",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-right-pane",
+                "role": "Radio",
+                "name": "右側",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-view": [
+              {
+                "id": "segment-list-view",
+                "role": "Radio",
+                "name": "清單檢視",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-table-view",
+                "role": "Radio",
+                "name": "表格檢視",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-grid-view",
+                "role": "Radio",
+                "name": "格狀檢視",
+                "checked": true,
+                "disabled": false
+              }
+            ],
+            "segments-filters": [
+              {
+                "id": "segment-new",
+                "role": "Checkbox",
+                "name": "最新",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-saved",
+                "role": "Checkbox",
+                "name": "已儲存",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-local",
+                "role": "Checkbox",
+                "name": "離線",
+                "checked": false,
+                "disabled": true
+              },
+              {
+                "id": "segment-shared",
+                "role": "Checkbox",
+                "name": "已分享",
+                "checked": false,
+                "disabled": false
+              },
+              {
+                "id": "segment-archived",
+                "role": "Checkbox",
+                "name": "封存",
+                "checked": true,
+                "disabled": false
+              }
+            ]
+          },
+          "status": "已選取 1 項篩選條件"
+        },
+        "captures": [
+          {
+            "name": "scrolled-dark-rtl-200.png",
+            "sha256": "cd3ab92c6098a52c5b24bd7ef8af699eddddf48cbf06c3ae605c6e6941a49efd",
+            "format": "png",
+            "width": 240,
+            "height": 880,
+            "scale": 1.0,
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "label_ink": {
+              "segment-archived": {
+                "bounds": {
+                  "height": 80.0,
+                  "width": 28.0,
+                  "x": 33.0,
+                  "y": 750.0
+                },
+                "ink_bounds": [
+                  34,
+                  758,
+                  26,
+                  66
+                ],
+                "rgba": [
+                  232,
+                  222,
+                  248,
+                  255
+                ],
+                "rgb_tolerance": 64,
+                "ink_pixels": 429
+              }
+            },
+            "focus": {
+              "parts": {
+                "face": {
+                  "height": 166.0,
+                  "width": 52.0,
+                  "x": 21.0,
+                  "y": 694.0
+                },
+                "focus": {
+                  "height": 176.0,
+                  "width": 62.0,
+                  "x": 16.0,
+                  "y": 689.0
+                },
+                "hit": {
+                  "height": 174.0,
+                  "width": 52.0,
+                  "x": 21.0,
+                  "y": 690.0
+                }
+              },
+              "rgba": [
+                203,
+                194,
+                219,
+                255
+              ],
+              "edges": {
+                "top": {
+                  "bounds": {
+                    "x": 41.0,
+                    "y": 689.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 31
+                },
+                "bottom": {
+                  "bounds": {
+                    "x": 41.0,
+                    "y": 860.0,
+                    "width": 12,
+                    "height": 5.0
+                  },
+                  "pixels": 31
+                },
+                "left": {
+                  "bounds": {
+                    "x": 16.0,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                },
+                "right": {
+                  "bounds": {
+                    "x": 73.0,
+                    "y": 771.0,
+                    "width": 5.0,
+                    "height": 12
+                  },
+                  "pixels": 36
+                }
+              }
+            },
+            "selected_ink": {}
+          }
+        ]
+      }
+    }
+  ],
+  "owned_process_observations": [
+    {
+      "wide": {
+        "pid": 71777,
+        "exit_code": -15,
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reaped": true
+      },
+      "compact": {
+        "pid": 72509,
+        "exit_code": -15,
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reaped": true
+      },
+      "scrolled": {
+        "pid": 73213,
+        "exit_code": -15,
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reaped": true
+      }
+    },
+    {
+      "wide": {
+        "pid": 73880,
+        "exit_code": -15,
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reaped": true
+      },
+      "compact": {
+        "pid": 74659,
+        "exit_code": -15,
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reaped": true
+      },
+      "scrolled": {
+        "pid": 75539,
+        "exit_code": -15,
+        "visible_windows": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "reaped": true
+      }
+    }
+  ],
+  "byte_identical_pngs": {
+    "compact-dark-rtl-200.png": "546e9bdf32d65330bf9fe31aa7c62380c799aef55553c591302659dea5768d95",
+    "scrolled-dark-rtl-200.png": "cd3ab92c6098a52c5b24bd7ef8af699eddddf48cbf06c3ae605c6e6941a49efd",
+    "wide-light-rest.png": "ffbda3dfb2c9879817f6ff38d6429fe25bda5f52c8256b11c18ad86ad6b56230",
+    "wide-light-selected-keyboard.png": "6a370407d1c9e411dda97ed6eeaba1f5d704cb9976dd0d510bfda26381f5f1e1"
+  }
+}
