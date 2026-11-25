@@ -1,0 +1,3093 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 39c90fd..1021b91 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.52"
++version = "0.1.53"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index bbaf03b..e4936c1 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.52"
++version = "0.1.53"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/motion.rs b/crates/surface-app/src/motion.rs
+index d29970e..596e755 100644
+--- a/crates/surface-app/src/motion.rs
++++ b/crates/surface-app/src/motion.rs
+@@ -8,9 +8,9 @@
+ //! position under the nearest stable ancestor, so animate only elements that
+ //! have a stable ID. If siblings without IDs are inserted or reordered, a node
+ //! can inherit the track of the node that held its position and fade from its
+-//! values. When no element has a transition and nothing runs, tracks are
++//! values. When no element has motion and nothing runs, tracks are
+ //! dropped. Then `Motion::present` does no allocation or track work. It still
+-//! scans the nodes once per call for a transition. While every track is
++//! scans the nodes once per call for motion. While every track is
+ //! settled and no target has moved, `present` only compares the tree with a
+ //! saved copy and allocates nothing. `render` itself still lays out and clones
+ //! the DOM. Because tracks are dropped then, a transition added in the same
+@@ -108,11 +108,57 @@ impl Channel {
+ /// The corners of one element. `target` is the unresolved style value, so a
+ /// resize of a `FULL` shape is not a change. `shown` is resolved and only
+ /// meaningful while `run` is set.
+-#[derive(Clone, Copy)]
+ struct CornerChannel {
+     target: Corners,
+     shown: Corners,
+-    run: Option<Run>,
++    run: Option<CornerRun>,
++}
++
++enum CornerRun {
++    Timed(Run),
++    Spring(Box<CornerSpringRun>),
++}
++
++#[derive(Clone, Copy, PartialEq)]
++enum CornerAnimation {
++    Timed(Transition),
++    Spring([f32; 2]),
++}
++
++struct CornerSpringRun {
++    target: [f32; 4],
++    parameters: [f32; 2],
++    springs: [ScalarSpring; 4],
++}
++
++impl CornerSpringRun {
++    fn new(target: [f32; 4], parameters: [f32; 2], from: [[f64; 2]; 4], now: f64) -> Self {
++        let [stiffness, damping_ratio] = parameters;
++        let springs = std::array::from_fn(|i| {
++            let [position, velocity] = from[i];
++            let offset = position - f64::from(target[i]);
++            ScalarSpring::new(stiffness, damping_ratio, [1. + offset, velocity], now)
++        });
++        Self {
++            target,
++            parameters,
++            springs,
++        }
++    }
++
++    fn sample(&self, now: f64) -> ([[f64; 2]; 4], bool) {
++        let mut running = false;
++        let pose = std::array::from_fn(|i| {
++            let target = f64::from(self.target[i]);
++            if let Some([position, velocity]) = self.springs[i].sample(now) {
++                running = true;
++                [target + (position - 1.), velocity]
++            } else {
++                [target, 0.]
++            }
++        });
++        (pose, running)
++    }
+ }
+ 
+ fn corner_values(c: Corners) -> [f32; 4] {
+@@ -129,13 +175,31 @@ impl CornerChannel {
+     }
+     /// Follow `target` inside `width` x `height`. Returns true while a run is active.
+     fn update(
++        &mut self,
++        target: Corners,
++        animation: Option<CornerAnimation>,
++        now: f64,
++        size: (f32, f32),
++    ) -> bool {
++        match animation {
++            Some(CornerAnimation::Spring(parameters)) => {
++                self.update_spring(target, parameters, now, size)
++            }
++            Some(CornerAnimation::Timed(transition)) => {
++                self.update_timed(target, Some(transition), now, size)
++            }
++            None => self.update_timed(target, None, now, size),
++        }
++    }
++
++    fn update_timed(
+         &mut self,
+         target: Corners,
+         transition: Option<Transition>,
+         now: f64,
+         (width, height): (f32, f32),
+     ) -> bool {
+-        if self.target != target {
++        if self.target != target || matches!(self.run, Some(CornerRun::Spring(_))) {
+             let from = match self.run {
+                 Some(_) => self.shown,
+                 None => self.target.resolve(width, height),
+@@ -143,14 +207,16 @@ impl CornerChannel {
+             self.target = target;
+             self.run = transition
+                 .filter(|t| t.is_valid() && t.duration_ms > 0.)
+-                .map(|t| Run {
+-                    from: Value(corner_values(from)),
+-                    start: now,
+-                    duration: f64::from(t.duration_ms),
+-                    easing: t.easing,
++                .map(|t| {
++                    CornerRun::Timed(Run {
++                        from: Value(corner_values(from)),
++                        start: now,
++                        duration: f64::from(t.duration_ms),
++                        easing: t.easing,
++                    })
+                 });
+         }
+-        let Some(run) = self.run else {
++        let Some(CornerRun::Timed(run)) = self.run else {
+             return false;
+         };
+         let progress = ((now - run.start) / run.duration).clamp(0., 1.);
+@@ -174,6 +240,47 @@ impl CornerChannel {
+         self.shown = Corners::new(top_left, top_right, bottom_right, bottom_left);
+         true
+     }
++
++    fn update_spring(
++        &mut self,
++        target: Corners,
++        parameters: [f32; 2],
++        now: f64,
++        (width, height): (f32, f32),
++    ) -> bool {
++        let resolved = corner_values(target.resolve(width, height));
++        let changed = match &self.run {
++            Some(CornerRun::Spring(run)) => run.target != resolved || run.parameters != parameters,
++            Some(CornerRun::Timed(_)) => true,
++            None => self.target != target,
++        };
++        let max = f64::from(width.max(0.).min(height.max(0.)) / 2.);
++        if changed {
++            let from = match &self.run {
++                Some(CornerRun::Spring(run)) => run.sample(now).0,
++                Some(CornerRun::Timed(_)) => corner_values(self.shown).map(still),
++                None => corner_values(self.target.resolve(width, height)).map(still),
++            };
++            let from = from.map(|[position, velocity]| {
++                let visible = position.clamp(0., max);
++                [visible, if visible == position { velocity } else { 0. }]
++            });
++            self.run = Some(CornerRun::Spring(Box::new(CornerSpringRun::new(
++                resolved, parameters, from, now,
++            ))));
++        }
++        self.target = target;
++        let Some(CornerRun::Spring(run)) = &self.run else {
++            return false;
++        };
++        let (pose, running) = run.sample(now);
++        let [tl, tr, br, bl] = pose.map(|[position, _]| position.clamp(0., max) as f32);
++        self.shown = Corners::new(tl, tr, br, bl);
++        if !running {
++            self.run = None;
++        }
++        running
++    }
+     /// Jump to `target` and cancel any running transition.
+     fn settle(&mut self, target: Corners) {
+         self.target = target;
+@@ -181,6 +288,10 @@ impl CornerChannel {
+     }
+ }
+ 
++fn still(value: f32) -> [f64; 2] {
++    [f64::from(value), 0.]
++}
++
+ const COLORS: usize = 4;
+ 
+ /// All animated properties of one element.
+@@ -304,7 +415,7 @@ impl Seen {
+ #[derive(Clone, Copy, PartialEq)]
+ struct InteractionCornerTarget {
+     corners: Corners,
+-    transition: Option<Transition>,
++    animation: Option<CornerAnimation>,
+ }
+ 
+ #[derive(Clone, Copy)]
+@@ -332,13 +443,19 @@ impl InteractionCorners {
+         } else {
+             Corners::default()
+         };
+-        let transition = style
+-            .transition
+-            .filter(|t| enabled && t.is_valid() && t.duration_ms > 0.);
+-        Some(InteractionCornerTarget {
+-            corners,
+-            transition,
+-        })
++        let animation = if enabled {
++            node.interaction_corner_spring()
++                .map(CornerAnimation::Spring)
++                .or_else(|| {
++                    style
++                        .transition
++                        .filter(|t| t.is_valid() && t.duration_ms > 0.)
++                        .map(CornerAnimation::Timed)
++                })
++        } else {
++            None
++        };
++        Some(InteractionCornerTarget { corners, animation })
+     }
+ 
+     fn present_endpoints(&self, dom: &MicroDom, display: &mut MicroDom) -> Result<(), DomError> {
+@@ -367,10 +484,9 @@ impl Motion {
+             return inputs.present_endpoints(dom, display);
+         };
+         if !self.running {
+-            if !dom
+-                .iter()
+-                .any(|(_, node)| node.style().transition.is_some())
+-            {
++            if !dom.iter().any(|(_, node)| {
++                node.style().transition.is_some() || node.interaction_corner_spring().is_some()
++            }) {
+                 self.tracks.clear();
+                 self.seen.clear();
+                 return inputs.present_endpoints(dom, display);
+@@ -416,11 +532,14 @@ impl Motion {
+             }
+             let bounds = computed.nodes.get(id.index()).map(|n| n.bounds);
+             let size = bounds.map_or((0., 0.), |b| (b.width, b.height));
+-            if self.reduced || animated.is_some_and(|target| target.transition.is_none()) {
++            if self.reduced || animated.is_some_and(|target| target.animation.is_none()) {
+                 track.corners.settle(corners);
+             } else {
+-                let transition = animated.map_or(style.transition, |target| target.transition);
+-                running |= track.corners.update(corners, transition, now, size);
++                let animation = animated.map_or_else(
++                    || style.transition.map(CornerAnimation::Timed),
++                    |target| target.animation,
++                );
++                running |= track.corners.update(corners, animation, now, size);
+             }
+             if !track.settled() {
+                 let mut presented = style.clone();
+diff --git a/crates/surface-material/src/icon_button.rs b/crates/surface-material/src/icon_button.rs
+new file mode 100644
+index 0000000..cf861af
+--- /dev/null
++++ b/crates/surface-material/src/icon_button.rs
+@@ -0,0 +1,273 @@
++use surface::{Align, Color, Corners, Insets, Length, Node, Role, Style};
++use surface_app::{CursorStyle, View};
++
++use crate::{IconButtonKind, Theme, VectorIcon};
++
++const MIN_TARGET: f32 = 48.;
++const FOCUS_STROKE: f32 = 3.;
++const FOCUS_OUTSET: f32 = 2. + FOCUS_STROKE;
++// Material 3 Expressive Fast Spatial.
++const CORNER_STIFFNESS: f32 = 800.;
++const CORNER_DAMPING_RATIO: f32 = 0.6;
++
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum IconButtonSize {
++    ExtraSmall,
++    #[default]
++    Small,
++    Medium,
++    Large,
++    ExtraLarge,
++}
++
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum IconButtonWidth {
++    Narrow,
++    #[default]
++    Default,
++    Wide,
++}
++
++/// The resting shape of a command or an off toggle. An on toggle inverts it.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum IconButtonShape {
++    #[default]
++    Round,
++    Square,
++}
++
++/// Vector artwork for a command or a caller-controlled toggle.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub enum MaterialIcon<'a> {
++    Command(&'a VectorIcon),
++    Toggle {
++        checked: bool,
++        off: &'a VectorIcon,
++        on: &'a VectorIcon,
++    },
++}
++
++#[derive(Clone, Copy, Debug)]
++pub struct IconButtonOptions<'a> {
++    pub id: &'a str,
++    /// A localized action name that stays the same for both toggle states.
++    pub name: &'a str,
++    /// The stable ID of a visible tooltip or passive text description.
++    pub description: Option<&'a str>,
++    pub kind: IconButtonKind,
++    pub size: IconButtonSize,
++    pub width: IconButtonWidth,
++    pub shape: IconButtonShape,
++    pub disabled: bool,
++}
++
++impl Theme {
++    /// Build a standalone Material 3 icon button with one named action.
++    ///
++    /// Use a unique, stable ID and reserve its `-face`, `-icon` and `-focus`
++    /// child IDs. Leave room around the button for its focus outline. The
++    /// application updates a toggle's checked value when it handles the
++    /// message. Returns `None` for an empty ID or name, or artwork that
++    /// cannot be drawn at the token size.
++    pub fn icon_button_with_options<M>(
++        &self,
++        options: IconButtonOptions<'_>,
++        icon: MaterialIcon<'_>,
++        message: M,
++    ) -> Option<View<M>> {
++        if options.id.trim().is_empty() || options.name.trim().is_empty() {
++            return None;
++        }
++        let (asset, checked) = match icon {
++            MaterialIcon::Command(asset) => (asset, None),
++            MaterialIcon::Toggle { checked, off, on } => {
++                (if checked { on } else { off }, Some(checked))
++            }
++        };
++        let tokens = options.size.tokens();
++        let [narrow, default, wide] = tokens.widths;
++        let width = match options.width {
++            IconButtonWidth::Narrow => narrow,
++            IconButtonWidth::Default => default,
++            IconButtonWidth::Wide => wide,
++        };
++        let height = tokens.height;
++        let target_width = width.max(MIN_TARGET);
++        let target_height = height.max(MIN_TARGET);
++        let palette = Palette::resolve(self, options.kind, checked, options.disabled);
++        let radius = if (options.shape == IconButtonShape::Round) != (checked == Some(true)) {
++            width.min(height) / 2.
++        } else {
++            tokens.square_radius
++        };
++
++        let pressed_corners =
++            |outset| (!options.disabled).then_some(Corners::all(tokens.pressed_radius + outset));
++
++        let icon_view = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-icon", options.id))
++                .styled(centered_box(tokens.icon, tokens.icon))
++                .fill_contour(asset.contour_dp(tokens.icon, palette.icon)?),
++        );
++        let face_id = format!("{}-face", options.id);
++        let face = View::new(
++            Node::new(Role::Group, "")
++                .id(&face_id)
++                .styled(
++                    centered_box(width, height)
++                        .corners(Corners::all(radius))
++                        .background(palette.fill)
++                        .border(
++                            palette.outline.map_or(0., |_| tokens.outline),
++                            palette.outline.unwrap_or(Color::TRANSPARENT),
++                        )
++                        .state_layer(if options.disabled {
++                            Color::TRANSPARENT
++                        } else {
++                            palette.icon
++                        }),
++                )
++                // Keep the pressed target with the passive face. The parent
++                // owns input and will supply its pressed state here.
++                .interaction_corners(None, pressed_corners(0.), None)
++                .interaction_corners_from_parent()
++                .animate_interaction_corners_with_spring(CORNER_STIFFNESS, CORNER_DAMPING_RATIO)
++                .state_layer_alphas(20, 26, 26),
++        )
++        .children([icon_view])
++        .without_interaction(None);
++        let focus = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-focus", options.id))
++                .styled(
++                    centered_box(width + 2. * FOCUS_OUTSET, height + 2. * FOCUS_OUTSET)
++                        .absolute(Insets {
++                            left: Length::Px((target_width - width) / 2. - FOCUS_OUTSET),
++                            top: Length::Px((target_height - height) / 2. - FOCUS_OUTSET),
++                            ..Insets::default()
++                        })
++                        .corners(Corners::all(radius + FOCUS_OUTSET)),
++                )
++                // The focus outline uses the same target plus its outset.
++                .interaction_corners(None, pressed_corners(FOCUS_OUTSET), None)
++                .interaction_corners_from_parent()
++                .animate_interaction_corners_with_spring(CORNER_STIFFNESS, CORNER_DAMPING_RATIO)
++                .focus_outline_from_parent()
++                .focus_color(self.colors.secondary)
++                .focus_outline_width(FOCUS_STROKE),
++        )
++        .without_interaction(None);
++
++        let mut action = Node::new(Role::Button, options.name)
++            .id(options.id)
++            .styled(centered_box(target_width, target_height))
++            .disabled(options.disabled)
++            .focus_color(Color::TRANSPARENT)
++            .press_ripple_to(face_id);
++        if let Some(value) = checked {
++            action = action.checked(value);
++        }
++        if let Some(target) = options.description {
++            action = action.described_by_text(target);
++        }
++        let mut view = View::new(action).children([face, focus]);
++        if options.disabled {
++            return Some(view);
++        }
++        if let Some(target) = options.description {
++            view = view.described_by(target);
++        }
++        Some(
++            view.on_press(message)
++                .accessible_activation()
++                .accessibility_scroll_into_view()
++                .focus_on_pointer_release()
++                .protect_composition_on_press()
++                .suppress_repeated_activation()
++                .cursor(CursorStyle::Pointer),
++        )
++    }
++}
++
++fn centered_box(width: f32, height: f32) -> Style {
++    let mut style = Style::row()
++        .width(Length::Px(width))
++        .height(Length::Px(height))
++        .align(Align::Center)
++        .justify(Align::Center);
++    style.min_width = width;
++    style.min_height = height;
++    style
++}
++
++struct SizeTokens {
++    height: f32,
++    icon: f32,
++    widths: [f32; 3],
++    square_radius: f32,
++    pressed_radius: f32,
++    outline: f32,
++}
++
++impl IconButtonSize {
++    fn tokens(self) -> SizeTokens {
++        let (height, icon, widths, square_radius, pressed_radius, outline) = match self {
++            Self::ExtraSmall => (32., 20., [28., 32., 40.], 12., 8., 1.),
++            Self::Small => (40., 24., [32., 40., 52.], 12., 8., 1.),
++            Self::Medium => (56., 24., [48., 56., 72.], 16., 12., 1.),
++            Self::Large => (96., 32., [64., 96., 128.], 28., 16., 2.),
++            Self::ExtraLarge => (136., 40., [104., 136., 184.], 28., 16., 3.),
++        };
++        SizeTokens {
++            height,
++            icon,
++            widths,
++            square_radius,
++            pressed_radius,
++            outline,
++        }
++    }
++}
++
++struct Palette {
++    fill: Color,
++    icon: Color,
++    outline: Option<Color>,
++}
++
++impl Palette {
++    fn resolve(theme: &Theme, kind: IconButtonKind, checked: Option<bool>, disabled: bool) -> Self {
++        use IconButtonKind::{Filled, Outlined, Standard, Tonal};
++        let colors = theme.colors;
++        let transparent = Color::TRANSPARENT;
++        let (fill, icon) = match (kind, checked) {
++            (Filled, Some(false)) => (colors.surface_container, colors.on_surface_variant),
++            (Filled, _) => (colors.primary, colors.on_primary),
++            (Tonal, Some(true)) => (colors.secondary, colors.on_secondary),
++            (Tonal, _) => (colors.secondary_container, colors.on_secondary_container),
++            (Outlined, Some(true)) => (colors.inverse_surface, colors.inverse_on_surface),
++            (Standard, Some(true)) => (transparent, colors.primary),
++            (Outlined | Standard, _) => (transparent, colors.on_surface_variant),
++        };
++        let outline = (kind == Outlined && checked != Some(true)).then_some(colors.outline_variant);
++        if disabled {
++            let Color(r, g, b, _) = colors.on_surface;
++            Self {
++                fill: if fill == transparent {
++                    transparent
++                } else {
++                    Color(r, g, b, 26)
++                },
++                icon: Color(r, g, b, 97),
++                outline,
++            }
++        } else {
++            Self {
++                fill,
++                icon,
++                outline,
++            }
++        }
++    }
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 1b1d7c7..18d957b 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -38,6 +38,7 @@ mod fab_menu_motion;
+ mod fab_motion;
+ mod flexible_navigation_bar;
+ mod full_screen_dialog;
++mod icon_button;
+ mod list;
+ mod loading_indicator;
+ mod menu_layout;
+@@ -151,6 +152,9 @@ pub use full_screen_dialog::{
+     full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
+     FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,
+ };
++pub use icon_button::{
++    IconButtonOptions, IconButtonShape, IconButtonSize, IconButtonWidth, MaterialIcon,
++};
+ pub use list::{
+     ExpandableListOptions, ExpandableListRow, ListExpansionMotion, ListItem, ListLines, ListMedia,
+     ListMediaKind, ListMode, ListOptions, ListReorderEntry, ListReorderInput, ListReorderRequest,
+diff --git a/crates/surface-material/tests/material_icon_button.rs b/crates/surface-material/tests/material_icon_button.rs
+new file mode 100644
+index 0000000..12f475d
+--- /dev/null
++++ b/crates/surface-material/tests/material_icon_button.rs
+@@ -0,0 +1,758 @@
++use surface::{
++    Align, Color, ExtendedDisplayList, ExtendedPaintOp, Length, Node, NodeId, PaintOp, PathFill,
++    Rect, Role, Style, TextMeasurer,
++};
++use surface_app::{
++    AccessibilityActivationResult, Application, Event, Key, KeyPress, Modifiers, Runtime, View,
++};
++use surface_material::{
++    IconButtonKind, IconButtonOptions, IconButtonShape, IconButtonSize, IconButtonWidth,
++    MaterialIcon, Theme, VectorIcon,
++};
++
++const ID: &str = "star";
++const NAME: &str = "加星號";
++const DESCRIPTION: &str = "star-hint";
++const FACE: &str = "star-face";
++const ICON: &str = "star-icon";
++const FOCUS: &str = "star-focus";
++
++const WIDTHS: [IconButtonWidth; 3] = [
++    IconButtonWidth::Narrow,
++    IconButtonWidth::Default,
++    IconButtonWidth::Wide,
++];
++
++#[derive(Clone, Copy)]
++enum Message {
++    Invoke,
++    Other,
++    Set(bool),
++}
++
++#[derive(Clone, Copy)]
++enum Hint {
++    Tooltip,
++    Text,
++    Missing,
++}
++
++struct Model {
++    kind: IconButtonKind,
++    checked: Option<bool>,
++    disabled: bool,
++    dark: bool,
++    expanded_text: bool,
++    size: IconButtonSize,
++    width: IconButtonWidth,
++    shape: IconButtonShape,
++    hint: Hint,
++    requests: usize,
++    off: VectorIcon,
++    on: VectorIcon,
++}
++
++impl Default for Model {
++    fn default() -> Self {
++        Self {
++            kind: IconButtonKind::Filled,
++            checked: None,
++            disabled: false,
++            dark: false,
++            expanded_text: false,
++            size: IconButtonSize::Small,
++            width: IconButtonWidth::Default,
++            shape: IconButtonShape::Round,
++            hint: Hint::Missing,
++            requests: 0,
++            off: VectorIcon::new([[0., 0.], [24., 12.], [0., 24.]]).unwrap(),
++            on: VectorIcon::new([[0., 0.], [24., 0.], [12., 24.]]).unwrap(),
++        }
++    }
++}
++
++impl Model {
++    fn theme(&self) -> Theme {
++        if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++
++    fn options(&self) -> IconButtonOptions<'static> {
++        IconButtonOptions {
++            id: ID,
++            name: NAME,
++            description: Some(DESCRIPTION),
++            kind: self.kind,
++            size: self.size,
++            width: self.width,
++            shape: self.shape,
++            disabled: self.disabled,
++        }
++    }
++
++    fn artwork(&self) -> MaterialIcon<'_> {
++        match self.checked {
++            Some(checked) => MaterialIcon::Toggle {
++                checked,
++                off: &self.off,
++                on: &self.on,
++            },
++            None => MaterialIcon::Command(&self.off),
++        }
++    }
++}
++
++impl Application for Model {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Invoke => self.requests += 1,
++            Message::Set(value) => self.checked = Some(value),
++            Message::Other => {}
++        }
++    }
++
++    fn text_scale(&self) -> f32 {
++        if self.expanded_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let theme = self.theme();
++        let button = theme
++            .icon_button_with_options(self.options(), self.artwork(), Message::Invoke)
++            .unwrap();
++        let hint = match self.hint {
++            Hint::Tooltip => Some(View::new(
++                Node::new(Role::Tooltip, "收藏對話")
++                    .id(DESCRIPTION)
++                    .styled(Style::row().width(Length::Px(80.)).height(Length::Px(32.))),
++            )),
++            Hint::Text => Some(View::new(
++                Node::new(Role::Text, "收藏對話")
++                    .id(DESCRIPTION)
++                    .text("收藏對話"),
++            )),
++            Hint::Missing => None,
++        };
++        View::new(
++            Node::new(Role::Window, "Icon Buttons")
++                .styled(Style::column().align(Align::Start).gap(12.).padding(20.)),
++        )
++        .children(
++            [button, theme.button("after", "After", Message::Other)]
++                .into_iter()
++                .chain(hint),
++        )
++    }
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.chars().count() as f32 * size * 0.5, size * 1.5)
++    }
++}
++
++fn paint(runtime: &mut Runtime<Model>) -> ExtendedDisplayList {
++    runtime.render_extended(320., 400., &mut Metrics).unwrap()
++}
++
++fn node_id(runtime: &Runtime<Model>, id: &str) -> NodeId {
++    runtime.dom().by_id(id).unwrap()
++}
++
++fn bounds(runtime: &Runtime<Model>, id: &str) -> Rect {
++    runtime.computed().unwrap().nodes[node_id(runtime, id).index()].bounds
++}
++
++fn centered(outer: Rect, width: f32, height: f32) -> Rect {
++    Rect {
++        x: outer.x + (outer.width - width) / 2.,
++        y: outer.y + (outer.height - height) / 2.,
++        width,
++        height,
++    }
++}
++
++fn alpha(color: Color, opacity: u8) -> Color {
++    Color(color.0, color.1, color.2, opacity)
++}
++
++fn quad(paint: &ExtendedDisplayList, area: Rect, ink: Color) -> Option<f32> {
++    paint.ops().iter().find_map(|op| match op {
++        ExtendedPaintOp::Legacy(PaintOp::Quad {
++            rect,
++            radius,
++            color,
++            ..
++        }) if *rect == area && *color == ink => Some(*radius),
++        _ => None,
++    })
++}
++
++fn stroke(paint: &ExtendedDisplayList, area: Rect, ink: Color) -> Option<(f32, f32)> {
++    paint.ops().iter().find_map(|op| match op {
++        ExtendedPaintOp::Legacy(PaintOp::Stroke {
++            rect,
++            radius,
++            width,
++            color,
++            ..
++        }) if *rect == area && *color == ink => Some((*radius, *width)),
++        _ => None,
++    })
++}
++
++fn fills(paint: &ExtendedDisplayList) -> impl Iterator<Item = &PathFill> {
++    paint.ops().iter().filter_map(|op| match op {
++        ExtendedPaintOp::FillPath(path) => Some(path),
++        _ => None,
++    })
++}
++
++fn press(runtime: &mut Runtime<Model>, key: Key, repeat: bool) {
++    paint(runtime);
++    let focus = runtime
++        .accessibility_frame()
++        .unwrap()
++        .focus_target(node_id(runtime, runtime.focused().unwrap()))
++        .unwrap();
++    let press = KeyPress::new(key, Modifiers::default()).with_repeat(repeat);
++    assert!(runtime
++        .accessibility_key(&focus, &press, Event::Activate)
++        .unwrap());
++}
++
++#[test]
++fn all_fifteen_footprints_and_focus_shapes_keep_art_at_token_size() {
++    let tokens = [
++        (IconButtonSize::ExtraSmall, [28., 32., 40.], 32., 20., 12.),
++        (IconButtonSize::Small, [32., 40., 52.], 40., 24., 12.),
++        (IconButtonSize::Medium, [48., 56., 72.], 56., 24., 16.),
++        (IconButtonSize::Large, [64., 96., 128.], 96., 32., 28.),
++        (
++            IconButtonSize::ExtraLarge,
++            [104., 136., 184.],
++            136.,
++            40.,
++            28.,
++        ),
++    ];
++    for (size, widths, height, icon, square) in tokens {
++        for (width, face_width) in WIDTHS.into_iter().zip(widths) {
++            for (shape, checked, is_round) in [
++                (IconButtonShape::Round, None, true),
++                (IconButtonShape::Square, None, false),
++                (IconButtonShape::Round, Some(false), true),
++                (IconButtonShape::Round, Some(true), false),
++                (IconButtonShape::Square, Some(false), false),
++                (IconButtonShape::Square, Some(true), true),
++            ] {
++                let mut runtime = Runtime::new(Model {
++                    size,
++                    width,
++                    shape,
++                    checked,
++                    dark: true,
++                    expanded_text: true,
++                    ..Model::default()
++                })
++                .unwrap();
++                let idle = paint(&mut runtime);
++                let hit = bounds(&runtime, ID);
++                let face = bounds(&runtime, FACE);
++                let art = bounds(&runtime, ICON);
++                let focus = bounds(&runtime, FOCUS);
++                let radius = if is_round {
++                    f32::min(face_width, height) / 2.
++                } else {
++                    square
++                };
++                let colors = runtime.app().theme().colors;
++                let fill = if checked == Some(false) {
++                    colors.surface_container
++                } else {
++                    colors.primary
++                };
++                assert_eq!(
++                    (hit.width, hit.height),
++                    (f32::max(face_width, 48.), f32::max(height, 48.))
++                );
++                assert_eq!(face, centered(hit, face_width, height));
++                assert_eq!(art, centered(face, icon, icon));
++                assert_eq!(focus, centered(face, face_width + 10., height + 10.));
++                assert_eq!(quad(&idle, face, fill), Some(radius));
++                assert_eq!(fills(&idle).next().unwrap().rect(), art);
++                assert_eq!(stroke(&idle, focus, colors.secondary), None);
++
++                runtime
++                    .dispatch(Event::FocusNext { reverse: false })
++                    .unwrap();
++                let focused = paint(&mut runtime);
++                assert_eq!(runtime.focused(), Some(ID));
++                assert_eq!(
++                    stroke(&focused, focus, colors.secondary),
++                    Some((radius + 5., 3.))
++                );
++                assert_eq!(stroke(&focused, hit, colors.secondary), None);
++                assert_eq!(bounds(&runtime, ID), hit);
++            }
++        }
++    }
++}
++
++#[test]
++fn colors_follow_command_off_on_and_disabled_roles_in_light_and_dark() {
++    let transparent = Color::TRANSPARENT;
++    for dark in [false, true] {
++        let colors = Model {
++            dark,
++            ..Model::default()
++        }
++        .theme()
++        .colors;
++        let rows = [
++            (
++                IconButtonKind::Filled,
++                None,
++                colors.primary,
++                colors.on_primary,
++                false,
++            ),
++            (
++                IconButtonKind::Filled,
++                Some(false),
++                colors.surface_container,
++                colors.on_surface_variant,
++                false,
++            ),
++            (
++                IconButtonKind::Filled,
++                Some(true),
++                colors.primary,
++                colors.on_primary,
++                false,
++            ),
++            (
++                IconButtonKind::Tonal,
++                None,
++                colors.secondary_container,
++                colors.on_secondary_container,
++                false,
++            ),
++            (
++                IconButtonKind::Tonal,
++                Some(false),
++                colors.secondary_container,
++                colors.on_secondary_container,
++                false,
++            ),
++            (
++                IconButtonKind::Tonal,
++                Some(true),
++                colors.secondary,
++                colors.on_secondary,
++                false,
++            ),
++            (
++                IconButtonKind::Outlined,
++                None,
++                transparent,
++                colors.on_surface_variant,
++                true,
++            ),
++            (
++                IconButtonKind::Outlined,
++                Some(false),
++                transparent,
++                colors.on_surface_variant,
++                true,
++            ),
++            (
++                IconButtonKind::Outlined,
++                Some(true),
++                colors.inverse_surface,
++                colors.inverse_on_surface,
++                false,
++            ),
++            (
++                IconButtonKind::Standard,
++                None,
++                transparent,
++                colors.on_surface_variant,
++                false,
++            ),
++            (
++                IconButtonKind::Standard,
++                Some(false),
++                transparent,
++                colors.on_surface_variant,
++                false,
++            ),
++            (
++                IconButtonKind::Standard,
++                Some(true),
++                transparent,
++                colors.primary,
++                false,
++            ),
++        ];
++        for (kind, checked, fill, ink, outline) in rows {
++            for disabled in [false, true] {
++                let mut runtime = Runtime::new(Model {
++                    kind,
++                    checked,
++                    dark,
++                    disabled,
++                    ..Model::default()
++                })
++                .unwrap();
++                let list = paint(&mut runtime);
++                let face = bounds(&runtime, FACE);
++                let expected_fill = if disabled && fill != transparent {
++                    alpha(colors.on_surface, 26)
++                } else {
++                    fill
++                };
++                let expected_ink = if disabled {
++                    alpha(colors.on_surface, 97)
++                } else {
++                    ink
++                };
++                let art = fills(&list).next().unwrap();
++                assert_eq!(art.color(), expected_ink);
++                let radius = if checked == Some(true) { 12. } else { 20. };
++                assert_eq!(
++                    quad(&list, face, expected_fill),
++                    (expected_fill != transparent).then_some(radius)
++                );
++                assert_eq!(
++                    stroke(&list, face, colors.outline_variant),
++                    outline.then_some((20., 1.))
++                );
++                assert_eq!(
++                    runtime
++                        .dom()
++                        .get(node_id(&runtime, ID))
++                        .unwrap()
++                        .is_checked(),
++                    checked
++                );
++            }
++        }
++    }
++}
++
++#[test]
++fn outline_thickness_follows_all_five_sizes() {
++    for (size, width) in [
++        (IconButtonSize::ExtraSmall, 1.),
++        (IconButtonSize::Small, 1.),
++        (IconButtonSize::Medium, 1.),
++        (IconButtonSize::Large, 2.),
++        (IconButtonSize::ExtraLarge, 3.),
++    ] {
++        let mut runtime = Runtime::new(Model {
++            size,
++            kind: IconButtonKind::Outlined,
++            ..Model::default()
++        })
++        .unwrap();
++        let list = paint(&mut runtime);
++        let face = bounds(&runtime, FACE);
++        assert_eq!(
++            stroke(&list, face, runtime.app().theme().colors.outline_variant),
++            Some((face.height / 2., width)),
++        );
++    }
++}
++
++#[test]
++fn controlled_toggle_is_one_named_action_with_one_description_and_distinct_art() {
++    let mut runtime = Runtime::new(Model {
++        checked: Some(false),
++        hint: Hint::Tooltip,
++        ..Model::default()
++    })
++    .unwrap();
++    let off = paint(&mut runtime);
++    let button = node_id(&runtime, ID);
++    let frame = runtime.accessibility_frame().unwrap();
++    let projected = frame.node(button).unwrap().node;
++    assert_eq!(
++        (projected.role(), projected.name(), projected.is_checked()),
++        (Role::Button, NAME, Some(false))
++    );
++    assert_eq!(projected.is_selected(), None);
++    assert_eq!(frame.children(button).count(), 0);
++    for art in [FACE, ICON, FOCUS] {
++        assert!(frame.node(node_id(&runtime, art)).is_none());
++    }
++    assert_eq!(
++        frame.description_target(button),
++        Some(node_id(&runtime, DESCRIPTION))
++    );
++
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some(ID));
++    for key in [Key::Space, Key::Enter] {
++        press(&mut runtime, key.clone(), false);
++        press(&mut runtime, key, true);
++    }
++    assert_eq!(runtime.app().requests, 2);
++    paint(&mut runtime);
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(node_id(&runtime, ID))
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_activate(&target).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    assert_eq!(runtime.app().requests, 3);
++    assert_eq!(runtime.app().checked, Some(false));
++
++    runtime.apply(Message::Set(true)).unwrap();
++    let on = paint(&mut runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let checked = frame.node(node_id(&runtime, ID)).unwrap().node;
++    assert_eq!(
++        (checked.role(), checked.name(), checked.is_checked()),
++        (Role::Button, NAME, Some(true))
++    );
++    assert_eq!(runtime.focused(), Some(ID));
++    assert_eq!(bounds(&runtime, ICON), fills(&on).next().unwrap().rect());
++    assert_ne!(
++        fills(&off).next().unwrap().points(),
++        fills(&on).next().unwrap().points()
++    );
++    assert_eq!(runtime.app().requests, 3);
++
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("after"));
++    for (hint, has_description) in [(Hint::Text, true), (Hint::Missing, false)] {
++        let mut runtime = Runtime::new(Model {
++            hint,
++            ..Model::default()
++        })
++        .unwrap();
++        paint(&mut runtime);
++        let frame = runtime.accessibility_frame().unwrap();
++        let button = node_id(&runtime, ID);
++        assert_eq!(frame.description_target(button).is_some(), has_description);
++        assert_eq!(frame.node(button).unwrap().node.is_checked(), None);
++        assert!(frame.activation_target(button).is_some());
++    }
++}
++
++#[test]
++fn disabled_toggle_is_announced_and_rejects_pointer_keyboard_and_host_activation() {
++    let mut runtime = Runtime::new(Model {
++        checked: Some(true),
++        disabled: true,
++        ..Model::default()
++    })
++    .unwrap();
++    paint(&mut runtime);
++    let id = node_id(&runtime, ID);
++    let frame = runtime.accessibility_frame().unwrap();
++    let node = frame.node(id).unwrap().node;
++    assert!(node.is_disabled());
++    assert_eq!(node.is_checked(), Some(true));
++    assert!(frame.activation_target(id).is_none());
++    assert!(frame.focus_target(id).is_none());
++    let hit = bounds(&runtime, ID);
++    let (x, y) = (hit.x + 1., hit.y + 1.);
++    runtime.dispatch(Event::PointerMove { x, y }).unwrap();
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    let list = paint(&mut runtime);
++    let face = bounds(&runtime, FACE);
++    let colors = runtime.app().theme().colors;
++    for opacity in [20, 26] {
++        assert_ne!(
++            quad(&list, face, alpha(colors.on_primary, opacity)),
++            Some(12.)
++        );
++    }
++    assert_eq!(fills(&list).count(), 1);
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("after"));
++    press(&mut runtime, Key::Enter, false);
++    assert_eq!(runtime.app().requests, 0);
++}
++
++#[test]
++fn accepted_pointer_and_touch_use_slack_and_ripple_only_on_the_face() {
++    let mut runtime = Runtime::new(Model {
++        size: IconButtonSize::ExtraSmall,
++        width: IconButtonWidth::Narrow,
++        ..Model::default()
++    })
++    .unwrap();
++    runtime.set_time(0.);
++    paint(&mut runtime);
++    let hit = bounds(&runtime, ID);
++    let face = bounds(&runtime, FACE);
++    let (x, y) = (hit.x + 1., hit.y + 1.);
++    assert!(x < face.x && y < face.y);
++    let ink = runtime.app().theme().colors.on_primary;
++    runtime.dispatch(Event::PointerMove { x, y }).unwrap();
++    let hovered = paint(&mut runtime);
++    assert_eq!(quad(&hovered, face, alpha(ink, 20)), Some(14.));
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    paint(&mut runtime);
++    assert_eq!(runtime.app().requests, 0);
++    runtime.set_time(80.);
++    let held = paint(&mut runtime);
++    let held_radius = quad(&held, face, runtime.app().theme().colors.primary).unwrap();
++    assert!(held_radius < 14.);
++    let wave = fills(&held)
++        .filter(|path| path.color() == alpha(ink, 26))
++        .collect::<Vec<_>>();
++    assert_eq!(wave.len(), 1);
++    let corner_distance = |[x, y]: [f32; 2], radius: f32| {
++        let dx = (face.x + radius - x)
++            .max(x - (face.x + face.width - radius))
++            .max(0.);
++        let dy = (face.y + radius - y)
++            .max(y - (face.y + face.height - radius))
++            .max(0.);
++        dx.hypot(dy)
++    };
++    for &[x, y] in wave[0].points() {
++        assert!(x >= face.x && x <= face.x + face.width);
++        assert!(y >= face.y && y <= face.y + face.height);
++        assert!(corner_distance([x, y], held_radius) <= held_radius + 0.1);
++    }
++    assert!(
++        wave[0]
++            .points()
++            .iter()
++            .any(|&point| corner_distance(point, 14.) > 14.1),
++        "the press wave should reach into the animated corner"
++    );
++    runtime.cancel_pointer().unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().requests, 0);
++
++    paint(&mut runtime);
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime
++        .dispatch(Event::PointerMove { x: 0., y: 0. })
++        .unwrap();
++    runtime.dispatch(Event::PointerUp { x: 0., y: 0. }).unwrap();
++    assert_eq!(runtime.app().requests, 0);
++    runtime.set_reduced_motion(true);
++    paint(&mut runtime);
++    runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
++    let reduced = paint(&mut runtime);
++    assert_eq!(quad(&reduced, face, alpha(ink, 26)), Some(8.));
++    assert!(fills(&reduced).all(|path| path.color() != alpha(ink, 26)));
++    runtime.dispatch_touch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().requests, 1);
++    paint(&mut runtime);
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().requests, 2);
++}
++
++#[test]
++fn pressed_face_and_focus_follow_the_same_spring_through_a_toggle_and_cancel() {
++    let mut runtime = Runtime::new(Model {
++        checked: Some(false),
++        ..Model::default()
++    })
++    .unwrap();
++    runtime.set_time(0.);
++    paint(&mut runtime);
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    let hit = bounds(&runtime, ID);
++    let face = bounds(&runtime, FACE);
++    let focus = bounds(&runtime, FOCUS);
++    let colors = runtime.app().theme().colors;
++    let radius = |list: &ExtendedDisplayList, fill| {
++        let face_radius = quad(list, face, fill).expect("button face");
++        let (focus_radius, focus_width) =
++            stroke(list, focus, colors.secondary).expect("keyboard focus ring");
++        assert_eq!(focus_width, 3.);
++        assert!((focus_radius - face_radius - 5.).abs() < 0.001);
++        face_radius
++    };
++    let (x, y) = (hit.x + 1., hit.y + 1.);
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    let start = paint(&mut runtime);
++    assert_eq!(radius(&start, colors.surface_container), 20.);
++    assert!(runtime.needs_frame());
++
++    runtime.set_time(50.);
++    let mid = paint(&mut runtime);
++    let held = radius(&mid, colors.surface_container);
++    let angular_rate = 800_f32.sqrt();
++    let decay = (-angular_rate * 0.6 * 0.05).exp();
++    let (sin, cos) = (angular_rate * 0.8 * 0.05).sin_cos();
++    let expected = 8. + 12. * decay * (cos + 0.75 * sin);
++    assert!((held - expected).abs() < 0.01);
++    assert_eq!(runtime.app().requests, 0);
++
++    runtime.apply(Message::Set(true)).unwrap();
++    assert_eq!(radius(&paint(&mut runtime), colors.primary), held);
++    let semantic = runtime.dom().get(node_id(&runtime, ID)).unwrap();
++    assert_eq!(semantic.is_checked(), Some(true));
++    assert_eq!(bounds(&runtime, ID), hit);
++
++    runtime.cancel_pointer().unwrap();
++    let retarget = paint(&mut runtime);
++    assert_eq!(radius(&retarget, colors.primary), held);
++    runtime.set_time(60.);
++    let continuing = radius(&paint(&mut runtime), colors.primary);
++    assert!(continuing < held, "retarget retains incoming velocity");
++
++    runtime.set_reduced_motion(true);
++    assert_eq!(radius(&paint(&mut runtime), colors.primary), 12.);
++    assert!(!runtime.needs_frame());
++    runtime.set_reduced_motion(false);
++    runtime.set_time(480.);
++    let settled = paint(&mut runtime);
++    assert_eq!(radius(&settled, colors.primary), 12.);
++    assert!(!runtime.needs_frame());
++    assert_eq!(runtime.focused(), Some(ID));
++    assert_eq!(runtime.app().requests, 0);
++}
++
++#[test]
++fn empty_action_names_and_ids_are_rejected() {
++    let model = Model::default();
++    let theme = model.theme();
++    for (id, name) in [("  ", NAME), (ID, "  ")] {
++        assert!(theme
++            .icon_button_with_options(
++                IconButtonOptions {
++                    id,
++                    name,
++                    ..model.options()
++                },
++                model.artwork(),
++                (),
++            )
++            .is_none());
++    }
++}
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index 01d4aa5..ff6793e 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -134,9 +134,13 @@ pub struct Node {
+     interaction_box_shadows_from_parent: bool,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
++    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
++    interaction_corners_from_parent: bool,
+     #[serde(skip)]
+     animate_interaction_corners: bool,
+     #[serde(skip)]
++    interaction_corner_spring: Option<[f32; 2]>,
++    #[serde(skip)]
+     pub(crate) press_ripple: Option<Arc<PressRipple>>,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     pub(crate) fill_contour: Option<crate::FillContour>,
+@@ -247,7 +251,9 @@ impl Node {
+             interaction_box_shadows: None,
+             interaction_box_shadows_from_parent: false,
+             interaction_corners: None,
++            interaction_corners_from_parent: false,
+             animate_interaction_corners: false,
++            interaction_corner_spring: None,
+             press_ripple: None,
+             fill_contour: None,
+             raster: None,
+@@ -385,6 +391,13 @@ impl Node {
+         self
+     }
+ 
++    /// Use the direct parent's interaction state to choose this node's
++    /// painted corners. The child keeps its own outline and layout.
++    pub fn interaction_corners_from_parent(mut self) -> Self {
++        self.interaction_corners_from_parent = true;
++        self
++    }
++
+     /// Let the runtime animate changes between the interaction corners and
+     /// the style's resting corners using the style's transition.
+     ///
+@@ -393,9 +406,30 @@ impl Node {
+     /// immediate interaction behavior.
+     pub fn animate_interaction_corners(mut self) -> Self {
+         self.animate_interaction_corners = true;
++        self.interaction_corner_spring = None;
+         self
+     }
+ 
++    /// Animate this node's painted corners with a spring of unit mass.
++    /// Use positive stiffness and a damping ratio in `(0, 1]`. A stable
++    /// node ID and a runtime clock are required, as with timed motion.
++    pub fn animate_interaction_corners_with_spring(
++        mut self,
++        stiffness: f32,
++        damping_ratio: f32,
++    ) -> Self {
++        if stiffness.is_finite() && stiffness > 0. && damping_ratio > 0. && damping_ratio <= 1. {
++            self.animate_interaction_corners = true;
++            self.interaction_corner_spring = Some([stiffness, damping_ratio]);
++        }
++        self
++    }
++
++    #[doc(hidden)]
++    pub fn interaction_corner_spring(&self) -> Option<[f32; 2]> {
++        self.interaction_corner_spring
++    }
++
+     /// Enable bounded feedback for an accepted pointer press on this node.
+     ///
+     /// The extended renderer clips the ripple to the node's current outline.
+@@ -478,6 +512,10 @@ impl Node {
+             .interaction_corners
+             .as_deref()
+             .filter(|_| !self.disabled)?;
++        let id = match (self.interaction_corners_from_parent, self.parent()) {
++            (true, Some(parent)) => parent,
++            _ => id,
++        };
+         let active = if interaction.pressed == Some(id) {
+             pressed
+         } else if focus == Some(id) {
+diff --git a/crates/surface/tests/microdom_contract.rs b/crates/surface/tests/microdom_contract.rs
+index 782689d..359ac6d 100644
+--- a/crates/surface/tests/microdom_contract.rs
++++ b/crates/surface/tests/microdom_contract.rs
+@@ -233,6 +233,28 @@ fn web_listbox_round_trip_preserves_checked_radios_and_legacy_json() {
+         .uses_web_listbox_semantics());
+ }
+ 
++#[test]
++fn parent_corners_are_opt_in_and_spring_state_stays_live_only() {
++    let plain = Node::new(Role::Group, "Face");
++    let json = serde_json::to_value(&plain).unwrap();
++    assert!(json.get("interaction_corners_from_parent").is_none());
++    assert!(json.get("interaction_corner_spring").is_none());
++    assert_eq!(serde_json::from_value::<Node>(json).unwrap(), plain);
++
++    let live = plain
++        .id("face")
++        .interaction_corners(None, Some(Corners::all(8.)), None)
++        .interaction_corners_from_parent()
++        .animate_interaction_corners_with_spring(800., 0.6);
++    assert_eq!(live.interaction_corner_spring(), Some([800., 0.6]));
++    let json = serde_json::to_value(&live).unwrap();
++    assert_eq!(json["interaction_corners_from_parent"], true);
++    assert!(json.get("interaction_corner_spring").is_none());
++    let restored: Node = serde_json::from_value(json.clone()).unwrap();
++    assert_eq!(restored.interaction_corner_spring(), None);
++    assert_eq!(serde_json::to_value(restored).unwrap(), json);
++}
++
+ #[test]
+ fn web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values() {
+     let ordinary = Node::new(Role::Checkbox, "Coffee").checked(true);
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 415b9b3..a1b6856 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -56,10 +56,11 @@
+       "id": "icon-buttons",
+       "spec": "https://m3.material.io/components/icon-buttons/overview",
+       "status": "partial",
+-      "implemented": "Standard, filled, tonal and outlined icon buttons; toggle selection; disabled; hover and press layers. No elevation, ripple or size and width variants",
++      "implemented": "Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes and three widths, round and square shapes, fixed artwork, disabled state, independent hit and focus bounds, clipped ripple and Expressive pressed corner motion. The legacy glyph builder stays available. System contrast and live screen-reader speech remain open.",
+       "variant_review": "pending",
+-      "desktop_evidence": null,
+-      "web_evidence": null
++      "desktop_evidence": "Two native headless Metal replays match wide light, dark 320 dp RTL at 200% text, and compact tooltip PNGs through Page.screenshot, CLI, and MCP. The native replay verifies Space and Enter, disabled rejection, focus return, and separation from the popup.",
++      "web_evidence": "Headless Chrome WebGPU M294–M297 checks button roles and pressed state, keyboard repeat, actual shape and focus paint, pointer slack, cancellation, Reduce Motion, and the compact tooltip description and placement.",
++      "unit_evidence": "Material tests cover all fifteen footprints, light and dark command/toggle colors, disabled input, repeat suppression, accessible activation, face-only ripple, pressed focus geometry, an exact spring sample, cancellation and Reduce Motion."
+     },
+     {
+       "id": "segmented-buttons",
+diff --git a/docs/material.md b/docs/material.md
+index e60d5a6..add272f 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -169,7 +169,8 @@ does not change application state.
+ | `flexible_navigation_bar` | Compact Expressive bar with three to five equal destinations, Tab focus and labels that grow with text |
+ | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
+ | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
+-| `icon_button` | Standard, filled, tonal and outlined; optional toggle selection; disabled state; 48-pixel touch area; no elevation or ripple yet |
++| `icon_button_with_options` | Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes, three widths, and two resting shapes. |
++| `icon_button` | Glyph-based Standard, Filled, Tonal, and Outlined buttons. Supports the original 40 dp face and 48 dp target. |
+ | `checkbox_with` | Unchecked, checked and mixed; disabled state |
+ | `checkbox_with_options` | Controlled Material 3 checkbox with three states, disabled and error, a stable label and RTL |
+ | `radio` / `radio_group` | Controlled choice; arrows select and skip disabled choices; ring uses primary when selected, on-surface-variant when unselected, outline when disabled |
+@@ -983,6 +984,31 @@ and place the Web anchor near the top or bottom.
+ [FAB Menu accessibility](https://m3.material.io/components/fab-menu/accessibility) ·
+ [Pinned Compose FAB Menu](https://github.com/androidx/androidx/blob/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButtonMenu.kt)
+ 
++## Icon buttons
++
++Use `Theme::icon_button_with_options` for a standalone vector button.
++Set a unique ID and a localized action name. The command takes one
++`VectorIcon`. A toggle takes two icons and the current checked value.
++Keep the action name stable across states. Handle the message to update
++the checked value.
++
++The five sizes each offer Narrow, Default, and Wide faces. Icons keep
++their token size when text grows. Each hit axis is at least 48 dp. Leave
++space around the button for the focus outline. Its 3 dp stroke keeps a
++2 dp gap from the face.
++
++Round and Square specify the resting shape. The checked toggle uses the
++other shape. Accepted pointer presses animate the face and focus outline
++together with the Expressive Fast Spatial spring. The ripple stays in the
++painted face. Reduce Motion uses the exact pressed and resting endpoints.
++Reserve the `-face`, `-icon`, and `-focus` child IDs.
++
++Use an existing plain tooltip for the visible action hint. Pass its
++stable ID as the description when it adds useful information.
++
++[Material 3 Icon buttons](https://m3.material.io/components/icon-buttons/specs) ·
++[WAI Button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)
++
+ ## Expressive icon floating action buttons
+ 
+ Use `Theme::expressive_fab` with a stable ID, a localized action name,
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 9128dfd..560c8ae 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -42,6 +42,8 @@ mod material_fab;
+ mod material_fab_menu;
+ #[path = "material_flexible_navigation_bar.rs"]
+ mod material_flexible_navigation_bar;
++#[path = "material_icon_buttons.rs"]
++mod material_icon_buttons;
+ #[path = "material_list_actions.rs"]
+ mod material_list_actions;
+ #[path = "material_list_corners.rs"]
+@@ -138,7 +140,7 @@ pub const STEPS: &[&str] = &[
+     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
+     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
+     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
+-    "M287", "M288", "M289", "M290", "M291", "M292", "M293",
++    "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -262,7 +264,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_checkbox::run(env, chrome, &url).await?;
+     material_radio::run(env, chrome, &url).await?;
+     material_tabs::run(env, chrome, &url).await?;
+-    material_chips::run(env, chrome, &url).await
++    material_chips::run(env, chrome, &url).await?;
++    material_icon_buttons::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+diff --git a/e2e/src/material_icon_buttons.rs b/e2e/src/material_icon_buttons.rs
+new file mode 100644
+index 0000000..0e76855
+--- /dev/null
++++ b/e2e/src/material_icon_buttons.rs
+@@ -0,0 +1,767 @@
++//! Material Icon Buttons through trusted browser input and actual WebGPU paint.
++
++use anyhow::{Context, Result};
++use serde::{Deserialize, Serialize};
++use serde_json::{json, Value};
++
++use super::material_list_corners::{freeze, reduced_motion, tick};
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{focus, state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "icon-button-demo-show";
++const BACK: &str = "icon-button-demo-back";
++const THEME: &str = "icon-button-demo-theme";
++const RTL: &str = "icon-button-demo-rtl";
++const LARGE_TEXT: &str = "icon-button-demo-large-text";
++const SCROLL: &str = "icon-button-demo-scroll";
++const COMMAND: &str = "icon-button-demo-command";
++const TOGGLE: &str = "icon-button-demo-toggle";
++const DISABLED: &str = "icon-button-demo-disabled";
++const MEDIUM: &str = "icon-button-demo-medium";
++const LARGE: &str = "icon-button-demo-large";
++const XL: &str = "icon-button-demo-extra-large";
++const TOOLTIP: &str = "icon-button-demo-tooltip";
++const DESCRIPTION: &str = "儲存目前對話";
++const LIGHT: &str = "material-icon-buttons-wide-light.png";
++const SELECTED: &str = "material-icon-buttons-selected-focus.png";
++const HELD: &str = "material-icon-buttons-pressed.png";
++const COMPACT: &str = "material-icon-buttons-compact-dark-rtl-200.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++struct Specimen {
++    id: &'static str,
++    name: &'static str,
++    face: [f64; 2],
++    icon: f64,
++}
++
++const SPECIMENS: [Specimen; 6] = [
++    Specimen {
++        id: COMMAND,
++        name: "儲存",
++        face: [28., 32.],
++        icon: 20.,
++    },
++    Specimen {
++        id: TOGGLE,
++        name: "加星號",
++        face: [52., 40.],
++        icon: 24.,
++    },
++    Specimen {
++        id: DISABLED,
++        name: "鎖定",
++        face: [48., 56.],
++        icon: 24.,
++    },
++    Specimen {
++        id: MEDIUM,
++        name: "搜尋",
++        face: [56., 56.],
++        icon: 24.,
++    },
++    Specimen {
++        id: LARGE,
++        name: "更多選項",
++        face: [64., 96.],
++        icon: 32.,
++    },
++    Specimen {
++        id: XL,
++        name: "收件匣",
++        face: [184., 136.],
++        icon: 40.,
++    },
++];
++
++#[derive(Deserialize, Serialize)]
++#[serde(rename_all = "camelCase")]
++struct Adapter {
++    vendor: String,
++    architecture: String,
++    is_fallback_adapter: bool,
++}
++
++#[derive(Deserialize, Serialize)]
++struct Palette {
++    background: [u8; 4],
++    primary: [u8; 4],
++    on_primary: [u8; 4],
++    secondary: [u8; 4],
++    on_secondary: [u8; 4],
++    secondary_container: [u8; 4],
++    on_secondary_container: [u8; 4],
++    outline_variant: [u8; 4],
++}
++
++#[derive(Deserialize, Serialize)]
++struct Model {
++    visible: bool,
++    rtl: bool,
++    text_scale: f64,
++    checked: bool,
++    requests: u32,
++    last: Option<String>,
++    width: f64,
++    height: f64,
++    reduced_motion: bool,
++    tooltip_shown: bool,
++    palette: Palette,
++}
++
++#[derive(Serialize)]
++struct Geometry {
++    id: &'static str,
++    hit: Rect,
++    face: Rect,
++    icon: Rect,
++    focus: Rect,
++}
++
++#[derive(Serialize)]
++struct AxButton {
++    id: &'static str,
++    name: &'static str,
++    role: String,
++    disabled: bool,
++    pressed: Option<String>,
++}
++
++#[derive(Serialize)]
++struct Wide {
++    viewport: [u32; 2],
++    geometry: Vec<Geometry>,
++    ax: Vec<AxButton>,
++    palette: Palette,
++    command_fill: Rgb,
++    toggle_off_fill: Rgb,
++    toggle_off_corner: Rgb,
++    outline: Rgb,
++    command_icon_pixels: usize,
++    off_ink: Vec<[u8; 2]>,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Keyboard {
++    focus_path: Vec<&'static str>,
++    requests: [u32; 3],
++    repeated_spaces: usize,
++    checked_ax: AxButton,
++    unchecked_ax: AxButton,
++    selected_fill: Rgb,
++    toggle_on_corner: Rgb,
++    on_ink: Vec<[u8; 2]>,
++    focus_pixels: usize,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Pointer {
++    slack_point: [f64; 2],
++    outside_point: [f64; 2],
++    face: Rect,
++    corner_patch: Rect,
++    normal_times_ms: [u16; 4],
++    corner_pixels: [usize; 4],
++    reduced_corner_pixels: usize,
++    requests_after_cancel: u32,
++    requests_after_hit: u32,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Compact {
++    viewport: [u32; 2],
++    rtl: bool,
++    text_scale: f64,
++    scroll: Rect,
++    geometry: Vec<Geometry>,
++    tooltip: Rect,
++    description: &'static str,
++    command_fill: Rgb,
++    command_icon_pixels: usize,
++    palette: Palette,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Report {
++    browser: String,
++    adapter: Option<Adapter>,
++    wide: Option<Wide>,
++    keyboard: Option<Keyboard>,
++    pointer: Option<Pointer>,
++    compact: Option<Compact>,
++    page_errors: Vec<String>,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    failure: Option<String>,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    state_at_failure: Option<Value>,
++}
++
++fn part(id: &str, part: &str) -> String {
++    format!("{id}-{part}")
++}
++
++fn rgb([r, g, b, _]: [u8; 4]) -> Rgb {
++    [r, g, b]
++}
++
++fn focus_fill(pixel: Rgb, base: Rgb, ink: Rgb) -> bool {
++    pixel
++        .into_iter()
++        .zip(base)
++        .zip(ink)
++        .all(|((actual, base), ink)| {
++            let expected = (u16::from(base) * 229 + u16::from(ink) * 26) / 255;
++            u16::from(actual).abs_diff(expected) <= 2
++        })
++}
++
++fn middle(rect: Rect) -> [f64; 2] {
++    [rect[0] + rect[2] / 2., rect[1] + rect[3] / 2.]
++}
++
++async fn ready(tab: &Tab, condition: &str) -> Result<Model> {
++    until(tab, &format!("(d => {condition})(s.icon_button_demo)")).await?;
++    tab.settle().await?;
++    Ok(serde_json::from_value(
++        state(tab).await?["icon_button_demo"].clone(),
++    )?)
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1800).await?;
++    reduced_motion(tab, true).await?;
++    until(tab, "s.section === 0 && !s.icon_button_demo.visible").await?;
++    activate(tab, SHOW).await?;
++    ready(tab, "d.visible && !d.checked && d.requests === 0").await?;
++    resize(tab, 960, 800).await
++}
++
++async fn image(env: &Env, tab: &Tab, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    let bytes = Raster::read(tab, path.clone()).await;
++    if name == "material-icon-buttons-probe.png" {
++        std::fs::remove_file(path)?;
++    }
++    bytes
++}
++
++async fn geom(tab: &Tab, specimen: &Specimen) -> Result<Geometry> {
++    let id = specimen.id;
++    let hit = bounds(tab, id).await?;
++    let face = bounds(tab, &part(id, "face")).await?;
++    let icon = bounds(tab, &part(id, "icon")).await?;
++    let focus = bounds(tab, &part(id, "focus")).await?;
++    for (i, dimension) in specimen.face.into_iter().enumerate() {
++        check!(
++            near(face[i + 2], dimension) && near(hit[i + 2], dimension.max(48.)),
++            format!("{id} face uses its token extent and the target is at least 48 dp")
++        );
++        check!(
++            near(icon[i + 2], specimen.icon) && near(focus[i + 2], dimension + 10.),
++            format!("{id} keeps token icon size and separate focus outset")
++        );
++        check!(
++            near(middle(face)[i], middle(hit)[i]) && near(middle(icon)[i], middle(hit)[i]),
++            format!("{id} centers both art and face inside the hit area")
++        );
++    }
++    Ok(Geometry {
++        id,
++        hit,
++        face,
++        icon,
++        focus,
++    })
++}
++
++fn ax_action(tree: &[Value], specimen: &Specimen, expected: Option<bool>) -> Result<AxButton> {
++    let matching: Vec<_> = tree
++        .iter()
++        .filter(|node| {
++            node["ignored"] == false
++                && node["name"]["value"] == specimen.name
++                && matches!(
++                    node["role"]["value"].as_str(),
++                    Some("button" | "toggleButton")
++                )
++        })
++        .collect();
++    check_eq!(
++        matching.len(),
++        1,
++        format!("{} has one named Chrome action", specimen.id)
++    );
++    let node = matching[0];
++    let role = node["role"]["value"].as_str().context("AX button role")?;
++    let disabled = ax_property(node, "disabled") == Some(&json!(true));
++    let pressed = ax_property(node, "pressed").and_then(Value::as_str);
++    check_eq!(
++        disabled,
++        specimen.id == DISABLED,
++        "actual AX disabled state"
++    );
++    check_eq!(
++        pressed,
++        expected.map(|on| if on { "true" } else { "false" }),
++        "actual AX pressed state"
++    );
++    check!(
++        expected.is_some() || role == "button",
++        "commands remain ordinary buttons"
++    );
++    Ok(AxButton {
++        id: specimen.id,
++        name: specimen.name,
++        role: role.to_owned(),
++        disabled,
++        pressed: pressed.map(str::to_owned),
++    })
++}
++
++fn ink(image: &Raster, at: Rect, color: Rgb) -> Result<usize> {
++    Ok(image.colors(at)?.get(&color).copied().unwrap_or(0))
++}
++
++fn mask(image: &Raster, icon: Rect, color: Rgb) -> Result<Vec<[u8; 2]>> {
++    let mut points = Vec::new();
++    for y in 0..24 {
++        for x in 0..24 {
++            if image.sample(icon[0] + f64::from(x) + 0.5, icon[1] + f64::from(y) + 0.5)? == color {
++                points.push([x, y]);
++            }
++        }
++    }
++    Ok(points)
++}
++
++fn fill(image: &Raster, face: Rect) -> Result<Rgb> {
++    image.sample(middle(face)[0], face[1] + 3.)
++}
++
++async fn wide(env: &Env, tab: &Tab) -> Result<Wide> {
++    let model = ready(
++        tab,
++        "d.visible && !d.rtl && d.text_scale === 1 && d.requests === 0",
++    )
++    .await?;
++    let scroll = bounds(tab, SCROLL).await?;
++    let mut geometry = Vec::new();
++    for specimen in &SPECIMENS {
++        let g = geom(tab, specimen).await?;
++        check!(
++            contains(scroll, g.hit),
++            format!("{} is fully in the wide scroller", specimen.id)
++        );
++        geometry.push(g);
++    }
++    let tree = ax_tree(tab).await?;
++    let ax = SPECIMENS
++        .iter()
++        .map(|specimen| ax_action(&tree, specimen, (specimen.id == TOGGLE).then_some(false)))
++        .collect::<Result<_>>()?;
++    let image = image(env, tab, LIGHT).await?;
++    let command_fill = fill(&image, geometry[0].face)?;
++    let toggle_off_fill = fill(&image, geometry[1].face)?;
++    let toggle_face = geometry[1].face;
++    let toggle_off_corner = image.sample(toggle_face[0] + 2., toggle_face[1] + 8.)?;
++    let outline = image.sample(geometry[3].face[0] + 0.5, middle(geometry[3].face)[1])?;
++    check_eq!(
++        command_fill,
++        rgb(model.palette.primary),
++        "Filled command token paint"
++    );
++    check_eq!(
++        toggle_off_fill,
++        rgb(model.palette.secondary_container),
++        "unchecked Tonal token paint"
++    );
++    check_eq!(
++        toggle_off_corner,
++        rgb(model.palette.background),
++        "the unchecked round corner leaves the background clear"
++    );
++    check_eq!(
++        outline,
++        rgb(model.palette.outline_variant),
++        "Outlined square border token paint"
++    );
++    let command_icon_pixels = ink(&image, geometry[0].icon, rgb(model.palette.on_primary))?;
++    let off_ink = mask(
++        &image,
++        geometry[1].icon,
++        rgb(model.palette.on_secondary_container),
++    )?;
++    check!(
++        command_icon_pixels > 40 && off_ink.len() > 12,
++        "the two actual vector shapes paint their ink tokens"
++    );
++    Ok(Wide {
++        viewport: [960, 800],
++        geometry,
++        ax,
++        palette: model.palette,
++        command_fill,
++        toggle_off_fill,
++        toggle_off_corner,
++        outline,
++        command_icon_pixels,
++        off_ink,
++        capture: LIGHT,
++    })
++}
++
++async fn keyboard(env: &Env, tab: &Tab, wide: &Wide) -> Result<Keyboard> {
++    focus_projected(tab, LARGE_TEXT).await?;
++    tab.press("Tab").await?;
++    focused(tab, COMMAND).await?;
++    tab.press("Enter").await?;
++    let command = ready(
++        tab,
++        "d.requests === 1 && !d.checked && d.last === 'icon-button-demo-command'",
++    )
++    .await?;
++    tab.press("Tab").await?;
++    focused(tab, TOGGLE).await?;
++    tab.eval("window.iconTestKeys=[]; document.addEventListener('keydown', event => {
++        if(event.code==='Space') window.iconTestKeys.push({repeat:event.repeat,trusted:event.isTrusted,id:event.target.dataset?.surfaceId});
++    },true)").await?;
++    for repeat in [false, true, true] {
++        tab.cdp(
++            "Input.dispatchKeyEvent",
++            json!({"type":"keyDown","key":" ","code":"Space",
++            "windowsVirtualKeyCode":32,"text":" ","unmodifiedText":" ","autoRepeat":repeat}),
++        )
++        .await?;
++        ready(
++            tab,
++            "d.requests === 2 && d.checked && d.last === 'icon-button-demo-toggle'",
++        )
++        .await?;
++    }
++    tab.cdp(
++        "Input.dispatchKeyEvent",
++        json!({"type":"keyUp","key":" ","code":"Space","windowsVirtualKeyCode":32}),
++    )
++    .await?;
++    let events = tab.eval("window.iconTestKeys").await?;
++    check_eq!(
++        events,
++        json!([{ "repeat":false,"trusted":true,"id":TOGGLE },
++        { "repeat":true,"trusted":true,"id":TOGGLE }, { "repeat":true,"trusted":true,"id":TOGGLE }]),
++        "repeat keys actually reach the focused Chrome control without activation"
++    );
++    let checked_ax = ax_action(&ax_tree(tab).await?, &SPECIMENS[1], Some(true))?;
++    let g = &wide.geometry[1];
++    let image = image(env, tab, SELECTED).await?;
++    let selected_fill = fill(&image, g.face)?;
++    let toggle_on_corner = image.sample(g.face[0] + 2., g.face[1] + 8.)?;
++    let on_ink = mask(&image, g.icon, rgb(wide.palette.on_secondary))?;
++    let focus_pixels = ink(&image, g.focus, rgb(wide.palette.secondary))?.saturating_sub(ink(
++        &image,
++        g.face,
++        rgb(wide.palette.secondary),
++    )?);
++    check!(
++        focus_fill(
++            selected_fill,
++            rgb(wide.palette.secondary),
++            rgb(wide.palette.on_secondary)
++        ) && toggle_on_corner == selected_fill
++            && toggle_on_corner != wide.toggle_off_corner,
++        "selected Tonal fill, focus ink blend, and square corners paint together"
++    );
++    check!(
++        on_ink.len() > 12 && on_ink != wide.off_ink,
++        "independent checked artwork changes its rendered mask"
++    );
++    check!(
++        focus_pixels > 40,
++        "keyboard focus paints outside the selected face"
++    );
++    tab.press("Tab").await?;
++    focused(tab, MEDIUM).await?;
++    tab.press("Shift+Tab").await?;
++    focused(tab, TOGGLE).await?;
++    tab.press("Enter").await?;
++    let released = ready(
++        tab,
++        "d.requests === 3 && !d.checked && d.last === 'icon-button-demo-toggle'",
++    )
++    .await?;
++    let unchecked_ax = ax_action(&ax_tree(tab).await?, &SPECIMENS[1], Some(false))?;
++    Ok(Keyboard {
++        focus_path: vec![COMMAND, TOGGLE, MEDIUM, TOGGLE],
++        requests: [command.requests, 2, released.requests],
++        repeated_spaces: 2,
++        checked_ax,
++        unchecked_ax,
++        selected_fill,
++        toggle_on_corner,
++        on_ink,
++        focus_pixels,
++        capture: SELECTED,
++    })
++}
++
++async fn point(tab: &Tab, at: [f64; 2]) -> Result<[f64; 2]> {
++    let canvas = tab.canvas_box().await?;
++    Ok([canvas[0] + at[0], canvas[1] + at[1]])
++}
++
++async fn pressed(tab: &Tab, expected: Option<&str>) -> Result<()> {
++    tab.wait_for(&format!(
++        "JSON.parse(window.gallery.export_dom()).interaction.pressed === {}",
++        json!(expected)
++    ))
++    .await?;
++    tab.settle().await
++}
++
++fn corner(image: &Raster, region: Rect, background: Rgb) -> Result<usize> {
++    Ok(image
++        .colors(region)?
++        .iter()
++        .filter(|(color, _)| **color != background)
++        .map(|(_, count)| count)
++        .sum())
++}
++
++async fn pointer(env: &Env, tab: &Tab, url: &str) -> Result<Pointer> {
++    route(tab, url).await?;
++    reduced_motion(tab, false).await?;
++    let model = ready(tab, "!d.reduced_motion && !d.tooltip_shown").await?;
++    let g = geom(tab, &SPECIMENS[0]).await?;
++    let disabled = bounds(tab, DISABLED).await?;
++    let [x, y] = point(tab, middle(disabled)).await?;
++    tab.click(x, y).await?;
++    ready(tab, "d.requests === 0").await?;
++    check!(
++        state(tab).await?["focused"] != DISABLED,
++        "disabled pointer activation and focus stay inert"
++    );
++    let slack_point = [g.hit[0] + 3., middle(g.hit)[1]];
++    let outside_point = [7., 790.];
++    check!(
++        slack_point[0] < g.face[0] && contains(g.hit, [slack_point[0], slack_point[1], 1., 1.]),
++        "physical press is inside the 48 dp target and in the slack outside its face"
++    );
++    let [x, y] = point(tab, slack_point).await?;
++    freeze(tab).await?;
++    tab.mouse_move(x, y).await?;
++    tab.settle().await?;
++    let region = [g.face[0] + 0.5, g.face[1] + 3., 6., 8.];
++    let background = rgb(model.palette.background);
++    let probe = "material-icon-buttons-probe.png";
++    let rest = corner(&image(env, tab, probe).await?, region, background)?;
++    tab.mouse_down().await?;
++    pressed(tab, Some(COMMAND)).await?;
++    let start = corner(&image(env, tab, probe).await?, region, background)?;
++    tick(tab, 28).await?;
++    let early = corner(&image(env, tab, probe).await?, region, background)?;
++    tick(tab, 240).await?;
++    let held = corner(&image(env, tab, HELD).await?, region, background)?;
++    check!(start == rest && rest < early && early < held, "pressed corners start from the rest pose, curve through an intermediate and reach a stronger silhouette");
++    ready(tab, "d.requests === 0").await?;
++    let [out_x, out_y] = point(tab, outside_point).await?;
++    for (kind, buttons) in [("mouseMoved", 1), ("mouseReleased", 0)] {
++        tab.cdp(
++            "Input.dispatchMouseEvent",
++            json!({"type":kind,"x":out_x,"y":out_y,"button":"left",
++            "buttons":buttons,"clickCount":1}),
++        )
++        .await?;
++    }
++    pressed(tab, None).await?;
++    tick(tab, 480).await?;
++    let released = corner(&image(env, tab, probe).await?, region, background)?;
++    let canceled = ready(tab, "d.requests === 0").await?;
++    check_eq!(
++        released,
++        rest,
++        "release outside restores the command contour without activating"
++    );
++
++    reduced_motion(tab, true).await?;
++    ready(tab, "d.reduced_motion").await?;
++    tab.mouse_move(x, y).await?;
++    tab.mouse_down().await?;
++    pressed(tab, Some(COMMAND)).await?;
++    let snapped = corner(&image(env, tab, probe).await?, region, background)?;
++    check!(
++        snapped > early && snapped.abs_diff(held) <= 8,
++        "Reduce Motion renders the pressed silhouette without advancing a frame clock"
++    );
++    ready(tab, "d.requests === 0").await?;
++    tab.mouse_up().await?;
++    let accepted = ready(
++        tab,
++        "d.requests === 1 && d.last === 'icon-button-demo-command'",
++    )
++    .await?;
++    focus(tab, COMMAND, "surface").await?;
++    Ok(Pointer {
++        slack_point,
++        outside_point,
++        face: g.face,
++        corner_patch: region,
++        normal_times_ms: [0, 28, 240, 480],
++        corner_pixels: [rest, early, held, released],
++        reduced_corner_pixels: snapped,
++        requests_after_cancel: canceled.requests,
++        requests_after_hit: accepted.requests,
++        capture: HELD,
++    })
++}
++
++async fn compact(env: &Env, tab: &Tab, url: &str) -> Result<Compact> {
++    route(tab, url).await?;
++    for id in [THEME, RTL, LARGE_TEXT] {
++        activate(tab, id).await?;
++    }
++    resize(tab, 320, 760).await?;
++    until(tab, "s.dark").await?;
++    focus_projected(tab, LARGE_TEXT).await?;
++    tab.press("Tab").await?;
++    focused(tab, COMMAND).await?;
++    let model = ready(
++        tab,
++        "d.rtl && d.text_scale === 2 && d.tooltip_shown && d.requests === 0",
++    )
++    .await?;
++    check!(
++        near(model.width, 320.) && near(model.height, 760.),
++        "compact width and height agree with the actual canvas"
++    );
++    let tip = projected(TOOLTIP);
++    let target = projected(COMMAND);
++    tab.wait_for(&format!(
++        "(() => {{ const tip={tip}; const target={target};
++        return tip?.getAttribute('role')==='tooltip' && !!tip.id
++            && target?.getAttribute('aria-describedby')?.split(' ').includes(tip.id); }})()"
++    ))
++    .await?;
++    let tree = ax_tree(tab).await?;
++    ax(&tree, "tooltip", DESCRIPTION)?;
++    let action = ax(&tree, "button", SPECIMENS[0].name)?;
++    check_eq!(
++        action["description"]["value"],
++        DESCRIPTION,
++        "Chrome exposes the separate tooltip as an action description"
++    );
++    let tooltip = bounds(tab, TOOLTIP).await?;
++    let scroll = bounds(tab, SCROLL).await?;
++    let viewport = [0., 0., 320., 760.];
++    let mut geometry = Vec::new();
++    for specimen in &SPECIMENS {
++        let g = geom(tab, specimen).await?;
++        check!(
++            contains(viewport, g.hit) && contains(scroll, g.hit),
++            format!("{} remains fully reachable in compact", g.id)
++        );
++        geometry.push(g);
++    }
++    check!(
++        geometry[0].hit[0] > geometry[1].hit[0]
++            && near(middle(geometry[0].hit)[1], middle(geometry[1].hit)[1]),
++        "fixture mirrors the first two authored destinations visually without changing focus order"
++    );
++    check!(
++        contains(viewport, tooltip) && tooltip[1] + tooltip[3] <= geometry[0].hit[1] + 0.5,
++        format!("tooltip {tooltip:?} must fit the compact viewport above hit {:?}, face {:?} and focus {:?}",
++            geometry[0].hit, geometry[0].face, geometry[0].focus)
++    );
++    let presented = image(env, tab, COMPACT).await?;
++    let command_fill = fill(&presented, geometry[0].face)?;
++    let command_icon_pixels = ink(&presented, geometry[0].icon, rgb(model.palette.on_primary))?;
++    check!(
++        focus_fill(
++            command_fill,
++            rgb(model.palette.primary),
++            rgb(model.palette.on_primary)
++        ) && command_icon_pixels > 40,
++        "the actual dark icon remains readable with its token palette"
++    );
++    tab.press("Escape").await?;
++    ready(tab, "!d.tooltip_shown && d.requests === 0").await?;
++    focused(tab, COMMAND).await?;
++    activate(tab, BACK).await?;
++    ready(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(Compact {
++        viewport: [320, 760],
++        rtl: model.rtl,
++        text_scale: model.text_scale,
++        scroll,
++        geometry,
++        tooltip,
++        description: DESCRIPTION,
++        command_fill,
++        command_icon_pixels,
++        palette: model.palette,
++        capture: COMPACT,
++    })
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1844, 2.).await?;
++    let mut report = Report {
++        browser: chrome.version.clone(),
++        adapter: None,
++        wide: None,
++        keyboard: None,
++        pointer: None,
++        compact: None,
++        page_errors: vec![],
++        failure: None,
++        state_at_failure: None,
++    };
++    let result: Result<()> = async {
++        step("M294", "Icon Button visual tokens, independent targets, and actual Chrome action states");
++        route(&tab, url).await?;
++        let value = tab.eval("(async()=>{ const a = await navigator.gpu.requestAdapter();
++            const {vendor,architecture,isFallbackAdapter} = a.info; return {vendor,architecture,isFallbackAdapter}; })()").await?;
++        report.adapter = Some(serde_json::from_value(value)?);
++        report.wide = Some(wide(env, &tab).await.context("M294 wide Icon Button fixtures")?);
++        step("M295", "Icon Button keyboard activation, held repeat, checked artwork, and focus outline");
++        report.keyboard = Some(keyboard(env, &tab, report.wide.as_ref().expect("wide proof")).await.context("M295 keyboard Icon Buttons")?);
++        step("M296", "Icon Button pointer hit slack, animated press, cancel, and Reduce Motion");
++        report.pointer = Some(pointer(env, &tab, url).await.context("M296 pointer Icon Buttons")?);
++        step("M297", "Icon Button compact dark RTL at 200 percent, tooltip description, and focus restore");
++        report.compact = Some(compact(env, &tab, url).await.context("M297 compact Icon Buttons")?);
++        Ok(())
++    }.await;
++    report.page_errors = tab.errors();
++    if let Err(error) = &result {
++        report.failure = Some(format!("{error:#}"));
++        report.state_at_failure = state(&tab).await.ok();
++        let _ = tab
++            .screenshot(&env.artifact("material-icon-buttons-failure.png"))
++            .await;
++    }
++    env.write_json(
++        "material-icon-buttons.json",
++        &serde_json::to_value(&report)?,
++    )?;
++    result?;
++    check!(
++        report.page_errors.is_empty(),
++        "Icon Button Chrome page has no errors"
++    );
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/icon_button_demo.rs b/examples/material-gallery/src/icon_button_demo.rs
+new file mode 100644
+index 0000000..40d99d5
+--- /dev/null
++++ b/examples/material-gallery/src/icon_button_demo.rs
+@@ -0,0 +1,494 @@
++use std::sync::OnceLock;
++
++use surface::{Align, Length, Node, Rect, Role, Style};
++use surface_app::{AnimationFrame, FrameInput, InputAnimationUpdate, View};
++use surface_material::{
++    shape::LayoutDirection, ButtonKind, ChoiceState, IconButtonKind, IconButtonOptions,
++    IconButtonShape, IconButtonSize, IconButtonWidth, MaterialIcon, Theme, TooltipInput,
++    TooltipOptions, TooltipSide, TooltipState, VectorIcon,
++};
++
++use crate::{rail_icons, scroll_field_demo::control_row, tooltip_demo::gap_contains, Message};
++
++pub(crate) const SECTION: usize = 0;
++const SHOW: &str = "icon-button-demo-show";
++const BACK: &str = "icon-button-demo-back";
++const COMMAND: &str = "icon-button-demo-command";
++const TOGGLE: &str = "icon-button-demo-toggle";
++const TOOLTIP: &str = "icon-button-demo-tooltip";
++const SCROLL: &str = "icon-button-demo-scroll";
++
++#[derive(Clone)]
++pub enum IconButtonDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Activate(&'static str),
++}
++
++pub(crate) struct IconButtonDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    checked: bool,
++    requests: usize,
++    last: Option<&'static str>,
++    viewport: Rect,
++    tooltip: TooltipState,
++    anchor: Option<Rect>,
++    tooltip_size: Option<(f32, f32)>,
++    reduced_motion: bool,
++}
++
++impl Default for IconButtonDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            checked: false,
++            requests: 0,
++            last: None,
++            viewport: Rect::new(0., 0., 960., 800.),
++            tooltip: TooltipState::default(),
++            anchor: None,
++            tooltip_size: None,
++            reduced_motion: false,
++        }
++    }
++}
++
++impl IconButtonDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.tooltip = TooltipState::default();
++        self.anchor = None;
++        self.tooltip_size = None;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let viewport = Rect::new(0., 0., width, height);
++        if self.viewport == viewport {
++            return false;
++        }
++        self.viewport = viewport;
++        self.tooltip_size = None;
++        self.visible
++    }
++
++    pub(crate) fn dismiss_tooltip(&mut self) -> bool {
++        self.tooltip_size = None;
++        self.tooltip.dismiss()
++    }
++
++    pub(crate) fn update(&mut self, event: IconButtonDemoEvent) {
++        use IconButtonDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => {
++                self.rtl = !self.rtl;
++                self.tooltip_size = None;
++            }
++            ToggleLargeText => {
++                self.large_text = !self.large_text;
++                self.tooltip_size = None;
++            }
++            Activate(id) => {
++                self.requests += 1;
++                self.last = Some(id);
++                if id == TOGGLE {
++                    self.checked = !self.checked;
++                }
++            }
++        }
++    }
++
++    pub(crate) fn frame(
++        &mut self,
++        frame: &AnimationFrame<'_>,
++        input: FrameInput<'_>,
++        pressed: Option<&str>,
++        hovered: Option<&str>,
++    ) -> InputAnimationUpdate {
++        if !self.visible {
++            return InputAnimationUpdate::default();
++        }
++        let geometry = |id| frame.layout?.nodes.get(frame.dom.by_id(id)?.index());
++        self.reduced_motion = frame.reduced_motion;
++        let mut update = InputAnimationUpdate::default();
++        if frame.layout.is_some() {
++            let anchor = geometry(COMMAND)
++                .map(|target| target.bounds.intersect(target.clip))
++                .filter(|rect| rect.width > 0. && rect.height > 0.);
++            update.animation.rebuild = self.tooltip.active().is_some() && anchor != self.anchor;
++            self.anchor = anchor;
++        }
++
++        let active = self.tooltip.active().is_some();
++        let popup = active
++            .then(|| geometry(TOOLTIP).map(|tooltip| tooltip.bounds))
++            .flatten()
++            .filter(|rect| rect.width > 0. && rect.height > 0.);
++        let can_show = self.anchor.is_some() && pressed != Some(COMMAND);
++        let popup_active = self.tooltip_size.is_some()
++            && input.pointer.is_some_and(|point| {
++                popup.is_some_and(|popup| {
++                    popup.contains(point.0, point.1)
++                        || self
++                            .anchor
++                            .is_some_and(|anchor| gap_contains(anchor, popup, point))
++                })
++            });
++        let touch_anchor = input.touch.and_then(|touch| {
++            let dx = touch.position.0 - touch.origin.0;
++            let dy = touch.position.1 - touch.origin.1;
++            let target = geometry(COMMAND)?.bounds;
++            (self.anchor.is_some()
++                && dx * dx + dy * dy <= 64.
++                && target.contains(touch.origin.0, touch.origin.1))
++            .then_some(COMMAND)
++        });
++        let tooltip = self.tooltip.update(TooltipInput {
++            now_ms: frame.now_ms,
++            hovered_anchor: hovered.filter(|id| can_show && *id == COMMAND),
++            focused_anchor: input.focused.filter(|id| can_show && *id == COMMAND),
++            popup_active,
++            touching: input.touch.is_some(),
++            touch_anchor,
++            touch_started_ms: input.touch.and_then(|touch| touch.started_ms),
++            touch_cancelled: input.touch_cancelled,
++        });
++        if tooltip.changed {
++            self.tooltip_size = None;
++            update.animation.rebuild = true;
++        } else if let Some(popup) = popup {
++            let size = (popup.width, popup.height);
++            update.animation.rebuild |= self.tooltip_size.replace(size) != Some(size);
++        }
++        update.animation.request_next = tooltip.request_next
++            || (self.tooltip.active().is_some()
++                && self.anchor.is_some()
++                && self.tooltip_size.is_none());
++        update.suppress_touch_activation = tooltip.suppress_touch_activation;
++        update
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "圖示按鈕範例",
++                ButtonKind::Outlined,
++                false,
++                Message::IconButtonDemo(IconButtonDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn direction(&self) -> LayoutDirection {
++        if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        }
++    }
++
++    fn popup(&self, theme: &Theme) -> Option<View<Message>> {
++        self.tooltip.active()?;
++        Some(theme.plain_tooltip(TooltipOptions {
++            id: TOOLTIP,
++            text: "儲存目前對話",
++            title: None,
++            anchor: self.anchor?,
++            viewport: self.viewport,
++            preferred: TooltipSide::Above,
++            direction: self.direction(),
++            caret: false,
++            restore_focus_to: COMMAND,
++            measured_size: self.tooltip_size,
++        }))
++    }
++
++    fn specimen_row(
++        &self,
++        id: &str,
++        children: impl IntoIterator<Item = View<Message>>,
++    ) -> View<Message> {
++        let node = Node::new(Role::Group, "").id(id).styled(
++            Style::row()
++                .width(Length::Percent(1.))
++                .align(Align::Center)
++                .gap(16.)
++                .wrap(true),
++        );
++        View::new(if self.rtl { node.reverse_row() } else { node }).children(children)
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use IconButtonDemoEvent::*;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::IconButtonDemo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            toggle("icon-button-demo-theme", "深色", dark, Message::Theme),
++            toggle(
++                "icon-button-demo-rtl",
++                "右起",
++                self.rtl,
++                Message::IconButtonDemo(ToggleDirection),
++            ),
++            toggle(
++                "icon-button-demo-large-text",
++                "大字",
++                self.large_text,
++                Message::IconButtonDemo(ToggleLargeText),
++            ),
++        ]);
++
++        let assets = [
++            MaterialIcon::Command(rail_icons::Destination::Archive.icon()),
++            MaterialIcon::Toggle {
++                checked: self.checked,
++                off: star_outline(),
++                on: star_fill(),
++            },
++            MaterialIcon::Command(lock()),
++            MaterialIcon::Command(rail_icons::search()),
++            MaterialIcon::Command(rail_icons::more()),
++            MaterialIcon::Command(rail_icons::Destination::Inbox.icon()),
++        ];
++        let [command, toggle, disabled, medium, large, extra_large] =
++            std::array::from_fn(|index| {
++                let options = SAMPLES[index];
++                theme
++                    .icon_button_with_options(
++                        options,
++                        assets[index],
++                        Message::IconButtonDemo(Activate(options.id)),
++                    )
++                    .expect("valid Gallery icon button")
++            });
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .gap(16.)
++            .padding(6.)
++            .clip(true);
++        scroll_style.max_width = Length::Px(640.);
++        let preview = View::new(Node::new(Role::Group, "").id(SCROLL).styled(scroll_style))
++            .accessibility_scroll_pages()
++            .children([
++                self.specimen_row(
++                    "icon-button-demo-compact",
++                    [command, toggle, disabled, medium],
++                ),
++                self.specimen_row("icon-button-demo-sizes", [large, extra_large]),
++            ]);
++        View::new(
++            Node::new(Role::Window, "Material gallery")
++                .id("icon-button-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children(
++            [
++                theme.heading("icon-button-demo-title", "圖示按鈕"),
++                controls,
++                preview,
++            ]
++            .into_iter()
++            .chain(self.popup(theme)),
++        )
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let c = theme.colors;
++        serde_json::json!({
++            "visible": self.visible,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "checked": self.checked,
++            "requests": self.requests,
++            "last": self.last,
++            "width": self.viewport.width,
++            "height": self.viewport.height,
++            "reduced_motion": self.reduced_motion,
++            "tooltip_shown": self.tooltip.active().is_some() && self.tooltip_size.is_some() && self.anchor.is_some(),
++            "palette": {
++                "background": color(theme.background),
++                "primary": color(c.primary),
++                "on_primary": color(c.on_primary),
++                "secondary": color(c.secondary),
++                "on_secondary": color(c.on_secondary),
++                "secondary_container": color(c.secondary_container),
++                "on_secondary_container": color(c.on_secondary_container),
++                "inverse_surface": color(c.inverse_surface),
++                "inverse_on_surface": color(c.inverse_on_surface),
++                "outline_variant": color(c.outline_variant),
++                "on_surface": color(c.on_surface),
++                "on_surface_variant": color(c.on_surface_variant),
++                "surface_container": color(c.surface_container)
++            }
++        })
++    }
++}
++
++const SAMPLES: [IconButtonOptions<'static>; 6] = [
++    IconButtonOptions {
++        id: COMMAND,
++        name: "儲存",
++        description: Some(TOOLTIP),
++        kind: IconButtonKind::Filled,
++        size: IconButtonSize::ExtraSmall,
++        width: IconButtonWidth::Narrow,
++        shape: IconButtonShape::Round,
++        disabled: false,
++    },
++    IconButtonOptions {
++        id: TOGGLE,
++        name: "加星號",
++        description: None,
++        kind: IconButtonKind::Tonal,
++        size: IconButtonSize::Small,
++        width: IconButtonWidth::Wide,
++        shape: IconButtonShape::Round,
++        disabled: false,
++    },
++    IconButtonOptions {
++        id: "icon-button-demo-disabled",
++        name: "鎖定",
++        description: None,
++        kind: IconButtonKind::Standard,
++        size: IconButtonSize::Medium,
++        width: IconButtonWidth::Narrow,
++        shape: IconButtonShape::Round,
++        disabled: true,
++    },
++    IconButtonOptions {
++        id: "icon-button-demo-medium",
++        name: "搜尋",
++        description: None,
++        kind: IconButtonKind::Outlined,
++        size: IconButtonSize::Medium,
++        width: IconButtonWidth::Default,
++        shape: IconButtonShape::Square,
++        disabled: false,
++    },
++    IconButtonOptions {
++        id: "icon-button-demo-large",
++        name: "更多選項",
++        description: None,
++        kind: IconButtonKind::Standard,
++        size: IconButtonSize::Large,
++        width: IconButtonWidth::Narrow,
++        shape: IconButtonShape::Round,
++        disabled: false,
++    },
++    IconButtonOptions {
++        id: "icon-button-demo-extra-large",
++        name: "收件匣",
++        description: None,
++        kind: IconButtonKind::Outlined,
++        size: IconButtonSize::ExtraLarge,
++        width: IconButtonWidth::Wide,
++        shape: IconButtonShape::Square,
++        disabled: false,
++    },
++];
++
++const STAR: [[f32; 2]; 10] = [
++    [12., 2.],
++    [15., 8.5],
++    [22., 9.5],
++    [17., 14.5],
++    [18.5, 22.],
++    [12., 18.5],
++    [5.5, 22.],
++    [7., 14.5],
++    [2., 9.5],
++    [9., 8.5],
++];
++
++fn star_fill() -> &'static VectorIcon {
++    static ICON: OnceLock<VectorIcon> = OnceLock::new();
++    ICON.get_or_init(|| VectorIcon::new(STAR).expect("valid star contour"))
++}
++
++fn star_outline() -> &'static VectorIcon {
++    static ICON: OnceLock<VectorIcon> = OnceLock::new();
++    ICON.get_or_init(|| {
++        let cutout = STAR.map(|point| point.map(|axis| 12. + (axis - 12.) * 0.58));
++        VectorIcon::from_contours([STAR, cutout]).expect("valid outlined star contours")
++    })
++}
++
++fn lock() -> &'static VectorIcon {
++    static ICON: OnceLock<VectorIcon> = OnceLock::new();
++    ICON.get_or_init(|| {
++        let outline = [
++            [5., 10.],
++            [7., 10.],
++            [7., 5.],
++            [10., 2.],
++            [14., 2.],
++            [17., 5.],
++            [17., 10.],
++            [19., 10.],
++            [19., 21.],
++            [5., 21.],
++        ];
++        let hole = [
++            [9., 10.],
++            [9., 6.],
++            [11., 4.],
++            [13., 4.],
++            [15., 6.],
++            [15., 10.],
++        ];
++        VectorIcon::from_contours(
++            [outline.as_slice(), hole.as_slice()].map(|path| path.iter().copied()),
++        )
++        .expect("valid lock contours")
++    })
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 12cd569..867e546 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -15,6 +15,7 @@ mod extended_fab_demo;
+ mod fab_demo;
+ mod fab_menu_demo;
+ mod flexible_navigation_bar_demo;
++mod icon_button_demo;
+ mod list_actions_demo;
+ mod list_expand_demo;
+ mod list_media_demo;
+@@ -62,6 +63,7 @@ use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
+ use fab_demo::{FabDemo, FabEvent};
+ use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
+ use flexible_navigation_bar_demo::{FlexibleNavigationBarDemo, FlexibleNavigationBarDemoEvent};
++use icon_button_demo::{IconButtonDemo, IconButtonDemoEvent};
+ use list_actions_demo::{ListActionsDemo, ListActionsEvent};
+ use list_expand_demo::{ListExpandDemo, ListExpandEvent};
+ use list_media_demo::{ListMediaDemo, ListMediaEvent};
+@@ -131,6 +133,7 @@ pub struct Gallery {
+     radio_demo: RadioDemo,
+     tabs_demo: TabsDemo,
+     chip_demo: ChipDemo,
++    icon_button_demo: IconButtonDemo,
+     drawer_demo: DrawerDemo,
+     progress_demo: ProgressDemo,
+     loading_demo: LoadingDemo,
+@@ -201,6 +204,7 @@ impl Default for Gallery {
+             radio_demo: RadioDemo::default(),
+             tabs_demo: TabsDemo::default(),
+             chip_demo: ChipDemo::default(),
++            icon_button_demo: IconButtonDemo::default(),
+             drawer_demo: DrawerDemo::default(),
+             progress_demo: ProgressDemo::default(),
+             loading_demo: LoadingDemo::default(),
+@@ -316,6 +320,7 @@ pub enum Message {
+     RadioDemo(RadioDemoEvent),
+     TabsDemo(TabsDemoEvent),
+     ChipDemo(ChipDemoEvent),
++    IconButtonDemo(IconButtonDemoEvent),
+     ScrollChoice(ScrollChoiceDemoEvent),
+     ScrollPair(ScrollPairDemoEvent),
+     ScrollPopup(ScrollPopupDemoEvent),
+@@ -492,6 +497,9 @@ impl Application for Gallery {
+         if self.chip_demo.visible() {
+             return self.chip_demo.text_scale();
+         }
++        if self.icon_button_demo.visible() {
++            return self.icon_button_demo.text_scale();
++        }
+         if self.rail_large_text
+             || self.snackbar_demo.large_text()
+             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
+@@ -504,6 +512,7 @@ impl Application for Gallery {
+     fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
+         let tabs = self.tabs_demo.viewport_changed(width);
+         let chips = self.chip_demo.viewport_changed(width);
++        let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
+         let inline = self.wide_rail_demo.viewport_changed(width);
+         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
+         let drawer = self.drawer_demo.viewport_changed(width, height);
+@@ -564,6 +573,7 @@ impl Application for Gallery {
+             || flexible_navigation_bar
+             || tabs
+             || chips
++            || icon_buttons
+             || list_actions
+             || list_media
+             || list_reorder
+@@ -577,6 +587,7 @@ impl Application for Gallery {
+             || self.tabs_demo.visible()
+             || self.checkbox_demo.visible()
+             || self.switch_demo.visible()
++            || self.icon_button_demo.visible()
+             || self.tooltip_demo.visible()
+             || self.scroll_popup_demo.visible()
+             || self.button_group_demo.visible()
+@@ -597,6 +608,7 @@ impl Application for Gallery {
+     fn cancel_transient(&mut self) -> bool {
+         (self.tooltip_demo.visible() && self.tooltip_demo.dismiss())
+             || (self.fab_demo.is_open() && self.fab_demo.dismiss_tooltip())
++            || (self.icon_button_demo.visible() && self.icon_button_demo.dismiss_tooltip())
+             || self.list_reorder_demo.cancel()
+     }
+     fn animation_frame_with_input(
+@@ -661,6 +673,7 @@ impl Application for Gallery {
+         let switch = self.switch_demo.frame(&frame, &input, press, hovered);
+         let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
+         let radio = self.radio_demo.frame(&frame, &input, press, hovered);
++        let icons = self.icon_button_demo.frame(&frame, input, pressed, hovered);
+         let tabs = self
+             .tabs_demo
+             .observe_interaction(&frame, input, pressed, hovered);
+@@ -670,13 +683,16 @@ impl Application for Gallery {
+             || switch.rebuild
+             || checkbox.rebuild
+             || radio.rebuild
+-            || tabs;
++            || tabs
++            || icons.animation.rebuild;
+         update.animation.request_next |= fab.animation.request_next
+             || menu.request_next
+             || switch.request_next
+             || checkbox.request_next
+-            || radio.request_next;
++            || radio.request_next
++            || icons.animation.request_next;
+         update.suppress_touch_activation |= fab.suppress_touch_activation;
++        update.suppress_touch_activation |= icons.suppress_touch_activation;
+         update
+     }
+     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
+@@ -873,6 +889,9 @@ impl Application for Gallery {
+                 if i != chip_demo::SECTION {
+                     self.chip_demo.leave();
+                 }
++                if i != icon_button_demo::SECTION {
++                    self.icon_button_demo.leave();
++                }
+                 if i != tooltip_demo::SECTION {
+                     self.tooltip_demo.leave();
+                 }
+@@ -889,6 +908,7 @@ impl Application for Gallery {
+             Message::RadioDemo(event) => self.radio_demo.update(event),
+             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
+             Message::ChipDemo(event) => self.chip_demo.update(event),
++            Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
+             Message::Drawer(i) => self.drawer = i,
+             Message::DrawerDemo(event) => self.drawer_demo.update(event),
+             Message::Progress(event) => self.progress_demo.update(event),
+@@ -1095,6 +1115,9 @@ impl Application for Gallery {
+         if self.chip_demo.visible() {
+             return self.chip_demo.view(&t, self.dark);
+         }
++        if self.icon_button_demo.visible() {
++            return self.icon_button_demo.view(&t, self.dark);
++        }
+         let mut children = vec![
+             t.heading("gallery-title", "Material gallery"),
+             t.row([
+@@ -1198,6 +1221,7 @@ impl Application for Gallery {
+                             RadioDemo::show_button(&t),
+                             TabsDemo::show_button(&t),
+                             ChipDemo::show_button(&t),
++                            IconButtonDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -1828,6 +1852,7 @@ mod web {
+         state["radio_demo"] = s.radio_demo.inspect(&theme);
+         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
+         state["chip_demo"] = s.chip_demo.inspect(&theme);
++        state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
