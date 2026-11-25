@@ -17,6 +17,8 @@ mod carousel;
 mod carousel_layout;
 mod carousel_state;
 mod checkbox;
+mod chip;
+mod chip_group;
 mod command_menu;
 mod components;
 mod date_picker;
@@ -94,6 +96,8 @@ pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientat
 pub use carousel_layout::{CarouselLayout, CarouselSlot};
 pub use carousel_state::{CarouselInput, CarouselState};
 pub use checkbox::{CheckboxMotion, CheckboxOptions, CheckboxPose};
+pub use chip::{ChipContent, ChipLeading, ChipOptions, ChipRemove, ChipStyle, ChipTrailing};
+pub use chip_group::ChipGridLayout;
 pub use command_menu::{
     CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
 };

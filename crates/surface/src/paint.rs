@@ -853,7 +853,16 @@ fn compile_into<Op: CompileOp>(
                 outline.stroke(g.bounds, g.clip, s.border_width, s.border_color),
             );
         }
-        let active_wave = n.press_ripple.as_deref().and_then(|ripple| {
+        let ripple = n
+            .press_ripple
+            .as_deref()
+            .filter(|ripple| ripple.target.is_none())
+            .or_else(|| {
+                let parent = n.parent()?;
+                let ripple = dom.get(parent).ok()?.press_ripple.as_deref()?;
+                (dom.press_ripple_paint_target(parent) == Some(*id)).then_some(ripple)
+            });
+        let active_wave = ripple.and_then(|ripple| {
             (Op::PRESS_RIPPLE && !n.is_disabled())
                 .then_some((ripple.presented?, ripple.after.as_deref()))
         });
@@ -869,7 +878,7 @@ fn compile_into<Op: CompileOp>(
                     // its first transparent frame. Avoid doubling it with
                     // the hovered or focused fill during the same contact.
                     ink = press_ink;
-                    opacity = if ancestor == *id && active_wave.is_some() {
+                    opacity = if active_wave.is_some() {
                         0
                     } else {
                         press_alpha

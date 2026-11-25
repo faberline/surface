@@ -15,6 +15,7 @@ mod editing_runtime;
 mod focus_scroll;
 mod frame_input;
 mod frame_paint;
+mod grid_navigation;
 mod keys;
 mod motion;
 #[cfg(feature = "devtools")]
@@ -539,6 +540,27 @@ impl<M> View<M> {
             retain_focus: true,
             arrows: controls::RovingArrows::All,
             reveal_after_rebuild: false,
+        });
+        self
+    }
+    /// Give this named layout grid one Tab stop and manual arrow navigation.
+    ///
+    /// Either Tab direction enters at the first enabled member. Left and Right
+    /// move physically within the measured row. Up and Down go to the nearest
+    /// horizontal center in the neighboring row that has an eligible action.
+    /// Home and End follow the row's authored order. Navigation does not wrap
+    /// or invoke the action. Keep stable IDs on the actions. Use grid, row and
+    /// cell accessibility roles for the authored structure.
+    ///
+    /// When an action is removed, an explicit focus fallback still comes
+    /// first. Otherwise keep focus near the old measured position in this grid.
+    pub fn roving_grid(mut self) -> Self {
+        self.roving = Some(controls::RovingGroup {
+            options: Roving::horizontal(false),
+            first_enabled_on_entry: true,
+            retain_focus: true,
+            arrows: controls::RovingArrows::Grid,
+            reveal_after_rebuild: true,
         });
         self
     }
@@ -1124,7 +1146,7 @@ pub struct Runtime<A: Application> {
     layout: LayoutEngine,
     computed: Option<ComputedDom>,
     focused: Option<String>,
-    pending_roving_focus: Option<String>,
+    pending_roving_focus: Option<controls::PendingRovingFocus>,
     pressed: Option<String>,
     hovered: Option<String>,
     pointer_position: Option<(f32, f32)>,
@@ -2071,8 +2093,8 @@ impl<A: Application> Runtime<A> {
                     return Ok(false);
                 }
                 let observes_application = self.app.observes_frame_input();
-                let ripple_role = hit.and_then(|id| self.press_ripple_role(id));
-                let press_bounds = if observes_application || ripple_role.is_some() {
+                let ripple = hit.and_then(|id| self.press_ripple_contact(id));
+                let press_bounds = if observes_application || ripple.is_some() {
                     hit.and_then(|id| {
                         self.computed
                             .as_ref()?
@@ -2110,7 +2132,7 @@ impl<A: Application> Runtime<A> {
                         bounds,
                         time,
                         observes_application,
-                        ripple_role,
+                        ripple,
                     );
                 }
                 self.hovered = self.pressed.clone();

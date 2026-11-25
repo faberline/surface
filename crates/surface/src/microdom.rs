@@ -112,6 +112,7 @@ pub(crate) struct AbsoluteOverlayFit {
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct PressRipple {
     pub(crate) after: Option<String>,
+    pub(crate) target: Option<String>,
     pub(crate) presented: Option<PresentedPressRipple>,
     requires_activation: bool,
 }
@@ -129,6 +130,8 @@ pub struct Node {
     box_shadows: [BoxShadow; 2],
     #[serde(default, skip_serializing_if = "Option::is_none")]
     interaction_box_shadows: Option<Box<InteractionBoxShadows>>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    interaction_box_shadows_from_parent: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
     #[serde(skip)]
@@ -242,6 +245,7 @@ impl Node {
             stable_id: None,
             box_shadows: [BoxShadow::NONE; 2],
             interaction_box_shadows: None,
+            interaction_box_shadows_from_parent: false,
             interaction_corners: None,
             animate_interaction_corners: false,
             press_ripple: None,
@@ -328,6 +332,13 @@ impl Node {
         self
     }
 
+    /// Choose this node's interaction shadows from its direct parent's
+    /// pointer and focus state. The shadow still uses this node's outline.
+    pub fn interaction_box_shadows_from_parent(mut self) -> Self {
+        self.interaction_box_shadows_from_parent = true;
+        self
+    }
+
     pub(crate) fn presented_box_shadow_layers(
         &self,
         id: NodeId,
@@ -340,6 +351,10 @@ impl Node {
             .filter(|_| !self.disabled)
         else {
             return self.box_shadows;
+        };
+        let id = match (self.interaction_box_shadows_from_parent, self.parent()) {
+            (true, Some(parent)) => parent,
+            _ => id,
         };
         let active = if interaction.pressed == Some(id) {
             layers.pressed
@@ -390,6 +405,7 @@ impl Node {
     pub fn press_ripple(mut self, after: Option<String>) -> Self {
         self.press_ripple = Some(Arc::new(PressRipple {
             after,
+            target: None,
             presented: None,
             requires_activation: true,
         }));
@@ -402,10 +418,29 @@ impl Node {
     pub fn press_ripple_on_focusable(mut self) -> Self {
         self.press_ripple = Some(Arc::new(PressRipple {
             after: None,
+            target: None,
             presented: None,
             requires_activation: false,
         }));
         self
+    }
+
+    /// Paint an accepted pointer ripple on a named, passive direct Group
+    /// child. Its outline, clipping, and press ink define the wave. The
+    /// owner still supplies the hit area, focus and activation binding.
+    pub fn press_ripple_to(mut self, target: impl Into<String>) -> Self {
+        self.press_ripple = Some(Arc::new(PressRipple {
+            after: None,
+            target: Some(target.into()),
+            presented: None,
+            requires_activation: true,
+        }));
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn press_ripple_target_name(&self) -> Option<&str> {
+        self.press_ripple.as_ref()?.target.as_deref()
     }
 
     #[doc(hidden)]
@@ -1040,8 +1075,24 @@ impl MicroDom {
         Ok(())
     }
 
+    /// Resolve the live paint node for the owner's requested ripple.
+    #[doc(hidden)]
+    pub fn press_ripple_paint_target(&self, owner: NodeId) -> Option<NodeId> {
+        let ripple = self.get(owner).ok()?.press_ripple.as_deref()?;
+        let Some(target) = ripple.target.as_deref() else {
+            return Some(owner);
+        };
+        let target = self.by_id(target)?;
+        let node = self.get(target).ok()?;
+        (node.parent() == Some(owner)
+            && node.role() == Role::Group
+            && !node.is_focusable()
+            && !node.is_disabled())
+        .then_some(target)
+    }
+
     /// Set the active ripple on a display copy for the extended renderer.
-    /// The center is in physical logical pixels relative to the node.
+    /// The center is in logical pixels relative to the resolved paint node.
     /// Finite progress and opacity clamp to 0–1. Zero opacity still replaces
     /// the held press fill. An invalid sample clears the copy's wave.
     #[doc(hidden)]

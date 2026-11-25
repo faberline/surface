@@ -1753,6 +1753,104 @@ mod tests {
     }
 
     #[test]
+    fn accesskit_split_chip_keeps_two_named_actions_in_separate_grid_cells() {
+        #[derive(Default)]
+        struct Recipients {
+            edits: usize,
+            removed: bool,
+        }
+        #[derive(Clone)]
+        enum Message {
+            Edit,
+            Remove,
+        }
+        impl Application for Recipients {
+            type Message = Message;
+
+            fn update(&mut self, message: Message) {
+                match message {
+                    Message::Edit => self.edits += 1,
+                    Message::Remove => self.removed = true,
+                }
+            }
+
+            fn view(&self) -> View<Message> {
+                let cell = |id, name, message| {
+                    View::new(
+                        SurfaceNode::new(SurfaceRole::Group, "").grid_role(GridRole::GridCell),
+                    )
+                    .children([View::new(
+                        SurfaceNode::new(SurfaceRole::Button, name)
+                            .id(id)
+                            .styled(Style::row().width(Length::Px(48.)).height(Length::Px(48.))),
+                    )
+                    .on_press(message)
+                    .accessible_activation()])
+                };
+                let chip = (!self.removed).then(|| {
+                    View::new(SurfaceNode::new(SurfaceRole::Group, "").styled(Style::row()))
+                        .children([
+                            cell("edit", "小陳", Message::Edit),
+                            cell("remove", "移除小陳", Message::Remove),
+                        ])
+                });
+                let row =
+                    View::new(SurfaceNode::new(SurfaceRole::Group, "").grid_role(GridRole::Row))
+                        .children(chip);
+                let grid = View::new(
+                    SurfaceNode::new(SurfaceRole::Group, "收件人")
+                        .id("recipients")
+                        .grid_role(GridRole::Grid),
+                )
+                .children([row])
+                .roving_grid();
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Chips")).children([grid])
+            }
+        }
+
+        let mut runtime = Runtime::new(Recipients::default()).unwrap();
+        let mut tree = Tree::default();
+        let frame = update(&mut runtime, &mut tree);
+        let grid = named(&frame, "收件人").1;
+        assert_eq!(grid.role(), Role::Grid);
+        let (edit_id, edit) = named(&frame, "小陳");
+        let (remove_id, remove) = named(&frame, "移除小陳");
+        assert_eq!(edit.role(), Role::Button);
+        assert_eq!(remove.role(), Role::Button);
+        assert!(edit.supports_action(Action::Click));
+        assert!(remove.supports_action(Action::Click));
+        let cells: Vec<_> = frame
+            .nodes
+            .iter()
+            .filter_map(|(_, node)| (node.role() == Role::GridCell).then_some(node.children()))
+            .collect();
+        assert_eq!(cells.len(), 2);
+        assert!(cells.contains(&&[edit_id][..]));
+        assert!(cells.contains(&&[remove_id][..]));
+
+        let click = |target_node| ActionRequest {
+            action: Action::Click,
+            target_tree: TreeId::ROOT,
+            target_node,
+            data: None,
+        };
+        assert!(tree.action(&mut runtime, click(edit_id)).unwrap());
+        assert_eq!(runtime.app().edits, 1);
+        assert!(!runtime.app().removed);
+        let frame = update(&mut runtime, &mut tree);
+        let remove = named(&frame, "移除小陳").0;
+        assert!(tree.action(&mut runtime, click(remove)).unwrap());
+        assert_eq!(runtime.app().edits, 1);
+        assert!(runtime.app().removed);
+        let frame = update(&mut runtime, &mut tree);
+        assert!(frame
+            .nodes
+            .iter()
+            .all(|(_, node)| node.role() != Role::GridCell));
+        assert!(!tree.action(&mut runtime, click(remove)).unwrap());
+    }
+
+    #[test]
     fn an_accesskit_menu_trigger_reports_popup_and_expansion() {
         let mut runtime = Runtime::new(App::default()).unwrap();
         let mut tree = Tree::default();
