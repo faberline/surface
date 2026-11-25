@@ -1,0 +1,41 @@
+--- a/verify_switch_report.py
++++ b/verify_switch_report.py
+@@ -74,7 +74,7 @@
+             "switch_inputs": {name: entries[name] for name in SOURCE_FILES}}
+ 
+ 
+-def runner_record(path, profile):
++def runner_record(path, profile, stock_last_material=277):
+     raw = path.read_text()
+     raw = re.sub(r"^(?:(?:[^\t\n]+\t){2})?\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z ",
+                  "", raw, flags=re.M)
+@@ -87,7 +87,7 @@
+     need(started == [row[0] for row in passed] == SUITES[profile]
+          and not re.search(r"^case \S+ \.\.\. FAILED", raw, re.M), "wrong suite sequence or a failed suite")
+     counts = {suite: {"steps": int(step), "checks": int(check)} for suite, step, check in passed}
+-    expected_steps = SWITCH_STEPS if profile == "focused" else STOCK_STEPS
++    expected_steps = SWITCH_STEPS if profile == "focused" else [f"M{i}" for i in range(1, stock_last_material + 1) if i != 23]
+     need(steps == expected_steps and counts["material"]["steps"] == len(expected_steps),
+          "missing, extra or out-of-order Material step")
+     need(counts["material"]["checks"] >= 300 and all(
+@@ -96,7 +96,7 @@
+     total = sum(row["checks"] for row in counts.values())
+     need(summary == [(str(len(counts)), "0", str(total))], "runner summary disagrees with suite totals")
+     need(len(versions) == 1, "missing or ambiguous runner Chrome version")
+-    return {"profile": profile, "switch_steps": steps[-4:], "cases": counts, "total_checks": total,
++    return {"profile": profile, "switch_steps": [step for step in steps if step in SWITCH_STEPS], "cases": counts, "total_checks": total,
+             "browser": versions[0], "sha256": digest(path)}
+ 
+ 
+@@ -313,9 +313,9 @@
+             "compact_icon_ink_pixels": dark_ink, "press_pixels": pixels}
+ 
+ 
+-def validate(artifacts, log, profile, adapter, manifest, expected_source_sha, source_root=None):
++def validate(artifacts, log, profile, adapter, manifest, expected_source_sha, source_root=None, *, stock_last_material=277):
+     provenance = manifest_record(manifest, expected_source_sha, source_root)
+-    runner = runner_record(log, profile)
++    runner = runner_record(log, profile, stock_last_material)
+     report_path = artifacts / f"browser-{STEM}.json"
+     report = json.loads(report_path.read_text())
+     need(not (artifacts / name("failure")).exists(), "a failure screenshot is present; use a clean run directory")

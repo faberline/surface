@@ -1,0 +1,4049 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 666da51368a18dcecf27651537551c2cafa98633..687ef054165320e8f131a6b65f46fb8f0e176c7d 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.56"
++version = "0.1.57"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 47c2076ad6b6802106dd1b7cef7c7fd795f18ebc..8e7a7968a00da7c9e648e8990ab98fd76dcc50a5 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.56"
++version = "0.1.57"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index f90de1052417bb6036a2441db2edadd254320a08..58e1c59b06514be9b7261a6b35b3cbb1ea73c47a 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -208,7 +208,7 @@ pub use standard_navigation_drawer::{
+ };
+ pub use standard_slider::VerticalStandardSliderPlacement;
+ pub use standard_slider::{
+-    RangeSliderChange, RangeSliderOptions, RangeSliderThumb, StandardSliderMode,
++    RangeSliderChange, RangeSliderOptions, RangeSliderThumb, SliderInsetIcon, StandardSliderMode,
+     StandardSliderOptions, StandardSliderSize,
+ };
+ pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
+diff --git a/crates/surface-material/src/standard_slider.rs b/crates/surface-material/src/standard_slider.rs
+index 383c9cbd01977ff99ff3fbdf82df225ff88cefa6..aeb28f19b91e4930daba76942ca755ea9bf7d3d3 100644
+--- a/crates/surface-material/src/standard_slider.rs
++++ b/crates/surface-material/src/standard_slider.rs
+@@ -7,8 +7,11 @@ use surface_app::{CursorStyle, SliderInputOptions, SliderScale, View};
+ 
+ use crate::{shape::LayoutDirection, typography, Elevation, Theme};
+ 
++mod inset_icon;
+ mod range_slider;
+ mod vertical;
++pub use inset_icon::SliderInsetIcon;
++use inset_icon::{Axis, IconPaint};
+ pub use range_slider::{RangeSliderChange, RangeSliderOptions, RangeSliderThumb};
+ pub use vertical::VerticalStandardSliderPlacement;
+ 
+@@ -84,7 +87,20 @@ impl Theme {
+         options: StandardSliderOptions<'_>,
+         handler: impl Fn(f64) -> M + 'static,
+     ) -> Option<View<M>> {
+-        self.horizontal_slider(options, None, handler)
++        self.horizontal_slider(options, None, None, handler)
++    }
++
++    /// Build a Standard slider with an optional measured track decoration.
++    /// Medium, Large, and ExtraLarge can show the glyph. It prefers the
++    /// active track and moves to the inactive track when only that one fits.
++    /// The glyph is decorative. The slider keeps its name and input target.
++    pub fn standard_slider_with_inset_icon<M>(
++        &self,
++        options: StandardSliderOptions<'_>,
++        icon: SliderInsetIcon<'_>,
++        handler: impl Fn(f64) -> M + 'static,
++    ) -> Option<View<M>> {
++        self.horizontal_slider(options, None, Some(icon), handler)
+     }
+ 
+     /// Build a horizontal slider that fills between its handle and a fixed
+@@ -99,13 +115,14 @@ impl Theme {
+         neutral: f64,
+         handler: impl Fn(f64) -> M + 'static,
+     ) -> Option<View<M>> {
+-        self.horizontal_slider(options, Some(neutral), handler)
++        self.horizontal_slider(options, Some(neutral), None, handler)
+     }
+ 
+     fn horizontal_slider<M>(
+         &self,
+         options: StandardSliderOptions<'_>,
+         neutral: Option<f64>,
++        inset: Option<SliderInsetIcon<'_>>,
+         handler: impl Fn(f64) -> M + 'static,
+     ) -> Option<View<M>> {
+         if options.id.trim().is_empty() || options.name.trim().is_empty() {
+@@ -130,6 +147,7 @@ impl Theme {
+             ticks.retain(|tick| tick.index != 0);
+         }
+         let palette = Palette::new(self, options.disabled);
++        let inset = IconPaint::prepare(inset, options, &palette, range.value == range.min);
+         let handle_width = if engaged { 2. } else { 4. };
+         let (leading, trailing) = if reverse {
+             (INNER_RADIUS, size.outer_radius)
+@@ -247,13 +265,18 @@ impl Theme {
+             .padding(RAIL_INSET);
+         style.min_width = MIN_TARGET;
+         style.min_height = height;
+-        let mut node = Node::new(Role::Slider, options.name)
++        let node = Node::new(Role::Slider, options.name)
+             .id(options.id)
+             .range(range)
+             .disabled(options.disabled)
+             .focus_color(Color::TRANSPARENT)
+-            .styled(style)
+-            .measured_group(Artwork {
++            .styled(style);
++        let mut node = IconPaint::attach(
++            inset,
++            Axis::Horizontal { reverse },
++            node,
++            &mut parts,
++            Artwork {
+                 size,
+                 reverse,
+                 fraction,
+@@ -261,7 +284,8 @@ impl Theme {
+                 handle_width,
+                 ticks,
+                 has_label: label.is_some(),
+-            });
++            },
++        );
+         if let Some(text) = options.value_label {
+             node = node.with_slider_value_text(text);
+         }
+diff --git a/crates/surface-material/src/standard_slider/inset_icon.rs b/crates/surface-material/src/standard_slider/inset_icon.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..3f8929f85cb5893c7b85504ec1a1b2076f5eeaa9
+--- /dev/null
++++ b/crates/surface-material/src/standard_slider/inset_icon.rs
+@@ -0,0 +1,246 @@
++use surface::{FillContour, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer};
++use surface_app::View;
++
++use super::{Palette, StandardSliderOptions, StandardSliderSize};
++use crate::VectorIcon;
++
++/// Decorative icon for a Medium, Large, or ExtraLarge Standard slider.
++#[derive(Clone, Copy, Debug)]
++pub struct SliderInsetIcon<'a> {
++    pub icon: &'a VectorIcon,
++    /// Optional replacement at the accepted minimum value.
++    pub at_minimum: Option<&'a VectorIcon>,
++}
++
++#[derive(Clone, Copy, Debug)]
++pub(super) enum Axis {
++    Horizontal { reverse: bool },
++    Vertical,
++}
++
++impl Axis {
++    fn axes(self, rect: Rect) -> (f32, f32, f32, f32) {
++        match self {
++            Self::Horizontal { .. } => (rect.x, rect.width, rect.y, rect.height),
++            Self::Vertical => (rect.y, rect.height, rect.x, rect.width),
++        }
++    }
++
++    fn square(self, major: f32, cross: f32, size: f32) -> Rect {
++        match self {
++            Self::Horizontal { .. } => Rect::new(major, cross, size, size),
++            Self::Vertical => Rect::new(cross, major, size, size),
++        }
++    }
++
++    fn reversed(self) -> bool {
++        match self {
++            Self::Horizontal { reverse } => reverse,
++            Self::Vertical => true,
++        }
++    }
++}
++
++pub(super) struct IconPaint {
++    id: String,
++    contours: [FillContour; 2],
++    tokens: IconTokens,
++}
++
++impl IconPaint {
++    pub(super) fn prepare(
++        icon: Option<SliderInsetIcon<'_>>,
++        options: StandardSliderOptions<'_>,
++        palette: &Palette,
++        at_minimum: bool,
++    ) -> Option<Self> {
++        let SliderInsetIcon {
++            icon,
++            at_minimum: alternate,
++        } = icon?;
++        let icon = if at_minimum {
++            alternate.unwrap_or(icon)
++        } else {
++            icon
++        };
++        let (size, padding) = match options.size {
++            StandardSliderSize::ExtraSmall | StandardSliderSize::Small => return None,
++            StandardSliderSize::Medium | StandardSliderSize::Large => (24., 6.),
++            StandardSliderSize::ExtraLarge => (32., 8.),
++        };
++        // Pair the glyph ink with the track, using the same state colors as
++        // the other passive marks on that track.
++        Some(Self {
++            id: options.id.to_owned(),
++            contours: [
++                icon.contour_dp(size, palette.active_stop)?,
++                icon.contour_dp(size, palette.inactive_stop)?,
++            ],
++            tokens: IconTokens { size, padding },
++        })
++    }
++
++    pub(super) fn attach<M>(
++        icon: Option<Self>,
++        axis: Axis,
++        node: Node,
++        parts: &mut Vec<View<M>>,
++        inner: impl MeasuredGroupLayout + 'static,
++    ) -> Node {
++        let Some(icon) = icon else {
++            return node.measured_group(inner);
++        };
++        parts.extend(["active", "inactive"].into_iter().zip(icon.contours).map(
++            |(side, contour)| {
++                // A collapsed slot gives the glyph an empty ancestor clip.
++                let id = format!("{}-inset-icon-{side}", icon.id);
++                View::new(
++                    Node::new(Role::Group, "")
++                        .id(id.as_str())
++                        .styled(Style::default().clip(true))
++                        .measured_group(GlyphClip(icon.tokens.size)),
++                )
++                .children([View::new(
++                    Node::new(Role::Group, "")
++                        .id(format!("{id}-glyph"))
++                        .fill_contour(contour),
++                )])
++                .without_interaction(None)
++            },
++        ));
++        node.measured_group(IconLayout {
++            axis,
++            inner,
++            tokens: icon.tokens,
++        })
++    }
++}
++
++#[derive(Clone, Copy, Debug)]
++struct IconTokens {
++    size: f32,
++    padding: f32,
++}
++
++#[derive(Debug)]
++struct IconLayout<L> {
++    axis: Axis,
++    inner: L,
++    tokens: IconTokens,
++}
++
++impl<L: MeasuredGroupLayout> MeasuredGroupLayout for IconLayout<L> {
++    fn places_measured_groups(&self) -> bool {
++        true
++    }
++
++    fn measure(
++        &self,
++        children: &[&Node],
++        available: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        self.inner
++            .measure(base_children(children), available, fonts)
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        size: (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let mut placements = self.inner.place(base_children(children), size, fonts);
++        // Standard artwork starts with the rail, active and inactive tracks.
++        // The remaining measured rectangles are the existing paint marks.
++        let occupied = &placements[3..];
++        let reverse = self.axis.reversed();
++        let active = self
++            .tokens
++            .find(self.axis, placements[1], occupied, reverse);
++        let inactive = if active.is_none() {
++            self.tokens
++                .find(self.axis, placements[2], occupied, !reverse)
++        } else {
++            None
++        };
++        placements.extend([active.unwrap_or_default(), inactive.unwrap_or_default()]);
++        placements
++    }
++}
++
++fn base_children<'a>(children: &'a [&Node]) -> &'a [&'a Node] {
++    &children[..children.len() - 2]
++}
++
++#[derive(Debug)]
++struct GlyphClip(f32);
++
++impl MeasuredGroupLayout for GlyphClip {
++    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
++        (self.0, self.0)
++    }
++
++    fn place(
++        &self,
++        _: &[&Node],
++        (width, height): (f32, f32),
++        _: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        vec![Rect::new(0., 0., width, height)]
++    }
++}
++
++impl IconTokens {
++    fn find(self, axis: Axis, track: Rect, occupied: &[Rect], from_max: bool) -> Option<Rect> {
++        let (edge, length, cross, thickness) = axis.axes(track);
++        let required = self.size + 2. * self.padding;
++        if length < required || thickness < required {
++            return None;
++        }
++        // For M/L/XL the token padding and centered cross-axis margin
++        // keep the entire square inside either rounded track cap.
++        let cross_start = cross + (thickness - self.size) / 2.;
++        let padded_cross_start = cross_start - self.padding;
++        let padded_cross_end = cross_start + self.size + self.padding;
++        let oriented = |position: f32, length: f32| {
++            if from_max {
++                (-position - length, -position)
++            } else {
++                (position, position + length)
++            }
++        };
++        let (start, end) = oriented(edge, length);
++        let mut candidate = start + self.padding;
++        let limit = end - self.padding;
++        while candidate + self.size <= limit {
++            let mut next = candidate;
++            for &mark in occupied {
++                let (major, width, cross, height) = axis.axes(mark);
++                if width <= 0.
++                    || height <= 0.
++                    || cross >= padded_cross_end
++                    || cross + height <= padded_cross_start
++                {
++                    continue;
++                }
++                let (mark_start, mark_end) = oriented(major, width);
++                if candidate < mark_end + self.padding
++                    && candidate + self.size > mark_start - self.padding
++                {
++                    next = next.max(mark_end + self.padding);
++                }
++            }
++            if next == candidate {
++                let major = if from_max {
++                    -candidate - self.size
++                } else {
++                    candidate
++                };
++                return Some(axis.square(major, cross_start, self.size));
++            }
++            candidate = next;
++        }
++        None
++    }
++}
+diff --git a/crates/surface-material/src/standard_slider/vertical.rs b/crates/surface-material/src/standard_slider/vertical.rs
+index eda1d9066927ec18db7fd011a84782a3a23b96e7..6e44701bf24712c67f8a3e0b781a5773ea20eb6e 100644
+--- a/crates/surface-material/src/standard_slider/vertical.rs
++++ b/crates/surface-material/src/standard_slider/vertical.rs
+@@ -1,12 +1,14 @@
++use super::inset_icon::{Axis, IconPaint, SliderInsetIcon};
+ use super::{
+-    range, ticks, Artwork, Palette, FOCUS_OUTSET, FOCUS_STROKE, INNER_RADIUS, LABEL_BLOCK_PADDING,
+-    LABEL_GAP, LABEL_INLINE_PADDING, LABEL_MIN_HEIGHT, LABEL_MIN_WIDTH, MIN_TARGET, RAIL_INSET,
++    neutral_fraction, range, ticks, Artwork, Palette, FOCUS_OUTSET, FOCUS_STROKE, INNER_RADIUS,
++    LABEL_BLOCK_PADDING, LABEL_GAP, LABEL_INLINE_PADDING, LABEL_MIN_HEIGHT, LABEL_MIN_WIDTH,
++    MIN_TARGET, RAIL_INSET,
+ };
+ use crate::{shape::LayoutDirection, typography, Elevation, StandardSliderOptions, Theme};
+ use surface::{Color, Corners, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextMeasurer};
+ use surface_app::{CursorStyle, View};
+ 
+-/// Space allocated to a vertical Standard slider and its optional value label.
++/// Space allocated to a vertical slider and its optional value label.
+ #[derive(Clone, Copy, Debug)]
+ pub struct VerticalStandardSliderPlacement {
+     /// The full slider target height in dp, including 12 dp padding at
+@@ -34,6 +36,47 @@ impl Theme {
+         options: StandardSliderOptions<'_>,
+         placement: VerticalStandardSliderPlacement,
+         handler: impl Fn(f64) -> M + 'static,
++    ) -> Option<View<M>> {
++        self.vertical_slider(options, placement, None, None, handler)
++    }
++
++    /// Build a vertical Standard slider with an upright inset glyph.
++    /// The value grows upward in either layout direction. The glyph uses
++    /// the same size, track priority, and fit rules as the horizontal form.
++    pub fn vertical_standard_slider_with_inset_icon<M>(
++        &self,
++        options: StandardSliderOptions<'_>,
++        placement: VerticalStandardSliderPlacement,
++        icon: SliderInsetIcon<'_>,
++        handler: impl Fn(f64) -> M + 'static,
++    ) -> Option<View<M>> {
++        self.vertical_slider(options, placement, None, Some(icon), handler)
++    }
++
++    /// Build a vertical slider whose active span joins its value to a fixed
++    /// neutral value. The minimum is at the bottom in either layout direction.
++    ///
++    /// The neutral value must be finite and strictly inside the range, and
++    /// must be an existing stop when the scale is discrete. Neutral introduces
++    /// no additional input stop. Placement and label fitting work the same as
++    /// on [Self::vertical_standard_slider].
++    pub fn vertical_centered_slider<M>(
++        &self,
++        options: StandardSliderOptions<'_>,
++        placement: VerticalStandardSliderPlacement,
++        neutral: f64,
++        handler: impl Fn(f64) -> M + 'static,
++    ) -> Option<View<M>> {
++        self.vertical_slider(options, placement, Some(neutral), None, handler)
++    }
++
++    fn vertical_slider<M>(
++        &self,
++        options: StandardSliderOptions<'_>,
++        placement: VerticalStandardSliderPlacement,
++        neutral: Option<f64>,
++        inset: Option<SliderInsetIcon<'_>>,
++        handler: impl Fn(f64) -> M + 'static,
+     ) -> Option<View<M>> {
+         if options.id.trim().is_empty()
+             || options.name.trim().is_empty()
+@@ -45,6 +88,11 @@ impl Theme {
+             return None;
+         }
+         let (range, intervals, input) = range(options)?;
++        let neutral = match neutral {
++            Some(value) => Some(neutral_fraction(range, input, value)?),
++            None => None,
++        };
++        let centered = neutral.is_some();
+         let size = options.size.tokens();
+         let width = size.handle_height.max(MIN_TARGET);
+         let engaged = options.engaged && !options.disabled;
+@@ -54,8 +102,13 @@ impl Theme {
+             .value_label
+             .filter(|label| engaged && label_width >= LABEL_MIN_WIDTH && !label.trim().is_empty());
+         let fraction = input.value_fraction(range)? as f32;
+-        let ticks = ticks(intervals);
++        let mut ticks = ticks(intervals);
++        if centered {
++            // Centered has a dedicated stop at each rail end.
++            ticks.retain(|tick| tick.index != 0);
++        }
+         let palette = Palette::new(self, options.disabled);
++        let inset = IconPaint::prepare(inset, options, &palette, range.value == range.min);
+         let pill = |color| Style::default().background(color).corners(Corners::full());
+         let track = |color, top, bottom| {
+             Style::default()
+@@ -73,14 +126,27 @@ impl Theme {
+         } else {
+             Elevation::Level1
+         });
++        let active_bottom = if centered {
++            INNER_RADIUS
++        } else {
++            size.outer_radius
++        };
+         let mut parts = vec![
+             passive(part("rail", Style::default())),
+             passive(part(
+                 "active",
+-                track(palette.active, INNER_RADIUS, size.outer_radius),
++                track(palette.active, INNER_RADIUS, active_bottom),
+             )),
++        ];
++        if centered {
++            parts.push(passive(part(
++                "inactive-min",
++                track(palette.inactive, INNER_RADIUS, size.outer_radius),
++            )));
++        }
++        parts.extend([
+             passive(part(
+-                "inactive",
++                if centered { "inactive-max" } else { "inactive" },
+                 track(palette.inactive, size.outer_radius, INNER_RADIUS),
+             )),
+             passive(part("handle", pill(palette.active)).box_shadows(handle_shadow)),
+@@ -90,10 +156,19 @@ impl Theme {
+                     .focus_outline_width(FOCUS_STROKE)
+                     .focus_color(self.colors.secondary),
+             ),
+-            passive(part("stop", pill(palette.inactive_stop))),
+-        ];
++        ]);
++        if centered {
++            parts.push(passive(part("stop-min", pill(palette.inactive_stop))));
++        }
++        parts.push(passive(part(
++            if centered { "stop-max" } else { "stop" },
++            pill(palette.inactive_stop),
++        )));
+         for tick in &ticks {
+-            let ink = if tick.fraction <= fraction {
++            let active = neutral.map_or(tick.fraction <= fraction, |neutral| {
++                (neutral.min(fraction)..neutral.max(fraction)).contains(&tick.fraction)
++            });
++            let ink = if active {
+                 palette.active_stop
+             } else {
+                 palette.inactive_stop
+@@ -126,26 +201,32 @@ impl Theme {
+             .padding(RAIL_INSET);
+         style.min_width = width;
+         style.min_height = placement.height;
+-        let mut node = Node::new(Role::Slider, options.name)
++        let node = Node::new(Role::Slider, options.name)
+             .id(options.id)
+             .range(range)
+             .disabled(options.disabled)
+             .focus_color(Color::TRANSPARENT)
+-            .styled(style)
+-            .measured_group(VerticalArtwork {
++            .styled(style);
++        let mut node = IconPaint::attach(
++            inset,
++            Axis::Vertical,
++            node,
++            &mut parts,
++            VerticalArtwork {
+                 width,
+                 height: placement.height,
+                 rail: Artwork {
+                     size,
+                     reverse: true,
+                     fraction,
+-                    neutral: None,
++                    neutral,
+                     handle_width: if engaged { 2. } else { 4. },
+                     ticks,
+                     has_label: false,
+                 },
+                 label: label.map(|_| (options.direction, label_width)),
+-            });
++            },
++        );
+         if let Some(text) = options.value_label {
+             node = node.with_slider_value_text(text);
+         }
+@@ -190,8 +271,8 @@ impl MeasuredGroupLayout for VerticalArtwork {
+             *part = Rect::new(part.y, part.x, part.height, part.width);
+         }
+         if let Some((direction, limit)) = self.label {
+-            // The Standard planner authors the handle after rail and both tracks.
+-            let thumb = parts[3];
++            // Rail, active span, and one or two inactive spans precede the handle.
++            let thumb = parts[3 + usize::from(self.rail.neutral.is_some())];
+             let label = children
+                 .last()
+                 .expect("vertical slider indicator text child");
+diff --git a/crates/surface-material/tests/slider_inset_icon.rs b/crates/surface-material/tests/slider_inset_icon.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..699da41fdd295dc88be9c110c3db79a052573feb
+--- /dev/null
++++ b/crates/surface-material/tests/slider_inset_icon.rs
+@@ -0,0 +1,476 @@
++use surface::{
++    Align, Color, ExtendedDisplayList, ExtendedPaintOp, Length, Node, PathFill, Rect, Role, Style,
++    TextMeasurer,
++};
++use surface_app::{Application, EditKey, Event, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection, SliderInsetIcon, StandardSliderMode, StandardSliderOptions,
++    StandardSliderSize, Theme, VectorIcon, VerticalStandardSliderPlacement,
++};
++
++const ID: &str = "volume";
++const ACTIVE: &str = "volume-inset-icon-active";
++const INACTIVE: &str = "volume-inset-icon-inactive";
++const NORMAL: [[f32; 2]; 3] = [[0., 0.], [24., 4.], [7., 24.]];
++const MUTED: [[f32; 2]; 3] = [[0., 6.], [24., 0.], [24., 24.]];
++const OPTIONS: StandardSliderOptions<'static> = StandardSliderOptions {
++    id: ID,
++    name: "音量",
++    min: 0.,
++    max: 100.,
++    value: 50.,
++    mode: StandardSliderMode::Continuous { keyboard_step: 5. },
++    size: StandardSliderSize::Medium,
++    direction: LayoutDirection::LeftToRight,
++    disabled: false,
++    engaged: false,
++    value_label: None,
++};
++
++struct Fixture {
++    options: StandardSliderOptions<'static>,
++    vertical: bool,
++    height: f32,
++    decorate: bool,
++    dark: bool,
++    alternate: bool,
++    scale: f32,
++    values: Vec<f64>,
++}
++
++impl Default for Fixture {
++    fn default() -> Self {
++        Self {
++            options: OPTIONS,
++            vertical: false,
++            height: 300.,
++            decorate: true,
++            dark: false,
++            alternate: true,
++            scale: 1.,
++            values: Vec::new(),
++        }
++    }
++}
++
++impl Fixture {
++    fn theme(&self) -> Theme {
++        if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++}
++
++impl Application for Fixture {
++    type Message = f64;
++
++    fn update(&mut self, message: f64) {
++        self.options.value = message;
++        self.values.push(message);
++    }
++
++    fn view(&self) -> View<f64> {
++        let theme = self.theme();
++        let normal = VectorIcon::new(NORMAL).unwrap();
++        let muted = VectorIcon::new(MUTED).unwrap();
++        let icon = SliderInsetIcon {
++            icon: &normal,
++            at_minimum: self.alternate.then_some(&muted),
++        };
++        let placement = VerticalStandardSliderPlacement {
++            height: self.height,
++            label_room: 120.,
++        };
++        let field = match (self.vertical, self.decorate) {
++            (false, false) => theme.standard_slider(self.options, |value| value),
++            (false, true) => {
++                theme.standard_slider_with_inset_icon(self.options, icon, |value| value)
++            }
++            (true, false) => theme.vertical_standard_slider(self.options, placement, |value| value),
++            (true, true) => theme.vertical_standard_slider_with_inset_icon(
++                self.options,
++                placement,
++                icon,
++                |value| value,
++            ),
++        }
++        .unwrap();
++        View::new(Node::new(Role::Window, "").styled(Style::column().align(Align::Center)))
++            .children([
++                View::new(Node::new(Role::Group, "").styled(Style::row().height(Length::Px(120.)))),
++                field,
++            ])
++    }
++
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, width: Option<f32>) -> (f32, f32) {
++        let natural = size * text.chars().count() as f32 * 0.6;
++        let width = width.unwrap_or(natural).min(natural);
++        let lines = (natural / width.max(1.)).ceil().max(1.);
++        (width, size * 1.25 * lines)
++    }
++}
++
++fn frame(model: Fixture, width: f32) -> (Runtime<Fixture>, ExtendedDisplayList) {
++    let mut runtime = Runtime::new(model).unwrap();
++    let list = runtime.render_extended(width, 600., &mut Metrics).unwrap();
++    (runtime, list)
++}
++
++fn box_for(runtime: &Runtime<Fixture>, key: &str) -> Rect {
++    let id = runtime.dom().by_id(key).unwrap();
++    runtime.computed().unwrap().nodes[id.index()].bounds
++}
++
++fn icon_box(runtime: &Runtime<Fixture>) -> Rect {
++    let active = box_for(runtime, ACTIVE);
++    let inactive = box_for(runtime, INACTIVE);
++    assert!(!has_area(active) || !has_area(inactive));
++    if has_area(active) {
++        active
++    } else {
++        inactive
++    }
++}
++
++fn paths(paint: &ExtendedDisplayList) -> Vec<&PathFill> {
++    paint
++        .ops()
++        .iter()
++        .filter_map(|op| match op {
++            ExtendedPaintOp::FillPath(path) => Some(path),
++            _ => None,
++        })
++        .collect()
++}
++
++fn close(left: f32, right: f32) {
++    assert!((left - right).abs() < 0.002, "{left} != {right}");
++}
++
++fn has_area(rect: Rect) -> bool {
++    rect.width > 0. && rect.height > 0.
++}
++
++fn glyph(paint: &ExtendedDisplayList, rect: Rect, ink: Color, points: [[f32; 2]; 3]) {
++    let found = paths(paint);
++    assert_eq!(found.len(), 1);
++    let path = found[0];
++    assert_eq!(path.rect(), rect);
++    assert_eq!(path.clip().intersect(rect), rect);
++    assert_eq!(path.color(), ink);
++    for (point, [x, y]) in path.points().iter().zip(points) {
++        close(point[0], rect.x + x * rect.width / 24.);
++        close(point[1], rect.y + y * rect.height / 24.);
++    }
++}
++
++#[test]
++fn token_sizes_mirror_horizontally_with_an_upright_glyph_at_both_track_ends() {
++    use LayoutDirection::{LeftToRight, RightToLeft};
++    use StandardSliderSize::{ExtraLarge, Large, Medium};
++    for (size, side, padding) in [(Medium, 24., 6.), (Large, 24., 6.), (ExtraLarge, 32., 8.)] {
++        for value in [0., 50., 100.] {
++            let active = value > 0.;
++            let mut old = None;
++            for direction in [LeftToRight, RightToLeft] {
++                let (runtime, paint) = frame(
++                    Fixture {
++                        options: StandardSliderOptions {
++                            direction,
++                            size,
++                            value,
++                            ..OPTIONS
++                        },
++                        ..Fixture::default()
++                    },
++                    360.,
++                );
++                let rect = icon_box(&runtime);
++                let colors = runtime.app().theme().colors;
++                let ink = if active {
++                    colors.on_primary
++                } else {
++                    colors.on_secondary_container
++                };
++                assert_eq!((rect.width, rect.height), (side, side));
++                glyph(&paint, rect, ink, if active { NORMAL } else { MUTED });
++                let track = box_for(
++                    &runtime,
++                    if active {
++                        "volume-active"
++                    } else {
++                        "volume-inactive"
++                    },
++                );
++                close(rect.y, track.y + (track.height - side) / 2.);
++                assert_eq!(rect.intersect(track), rect);
++                if direction == LeftToRight {
++                    if active {
++                        close(rect.x - track.x, padding);
++                    } else {
++                        let stop = box_for(&runtime, "volume-stop");
++                        close(stop.x - rect.x - side, padding);
++                    }
++                    old = Some(rect);
++                } else {
++                    close(rect.x, 360. - old.unwrap().x - side);
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn vertical_glyph_stays_upright_and_the_same_size_on_both_layout_directions() {
++    for value in [0., 50.] {
++        let mut old = None;
++        for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++            let (runtime, paint) = frame(
++                Fixture {
++                    options: StandardSliderOptions {
++                        direction,
++                        value,
++                        ..OPTIONS
++                    },
++                    vertical: true,
++                    dark: true,
++                    ..Fixture::default()
++                },
++                320.,
++            );
++            let rect = icon_box(&runtime);
++            if let Some(old) = old {
++                assert_eq!(old, rect);
++            }
++            old = Some(rect);
++            assert_eq!((rect.width, rect.height), (24., 24.));
++            let colors = runtime.app().theme().colors;
++            if value != 0. {
++                let track = box_for(&runtime, "volume-active");
++                close(track.y + track.height - rect.y - rect.height, 6.);
++                glyph(&paint, rect, colors.on_primary, NORMAL);
++            } else {
++                let stop = box_for(&runtime, "volume-stop");
++                close(rect.y - stop.y - stop.height, 6.);
++                glyph(&paint, rect, colors.on_secondary_container, MUTED);
++            }
++        }
++    }
++}
++
++#[test]
++fn measured_clearance_relocates_or_omits_the_icon_without_dropping_any_track_marks() {
++    for (width, mode, drawn) in [
++        (360., StandardSliderMode::Discrete { intervals: 8 }, true),
++        (270., StandardSliderMode::Discrete { intervals: 32 }, false),
++        (70., OPTIONS.mode, false),
++        (360., OPTIONS.mode, true),
++    ] {
++        let options = StandardSliderOptions { mode, ..OPTIONS };
++        let (new, new_paint) = frame(
++            Fixture {
++                options,
++                ..Fixture::default()
++            },
++            width,
++        );
++        let (old, old_paint) = frame(
++            Fixture {
++                options,
++                decorate: false,
++                ..Fixture::default()
++            },
++            width,
++        );
++        let count = usize::from(drawn);
++        assert_eq!(paths(&new_paint).len(), count);
++        assert_eq!(paths(&old_paint).len(), 0);
++        let new_track_ops: Vec<_> = new_paint
++            .ops()
++            .iter()
++            .filter(|op| !matches!(op, ExtendedPaintOp::FillPath(_)))
++            .cloned()
++            .collect();
++        assert_eq!(new_track_ops, old_paint.ops());
++        if drawn {
++            let icon = icon_box(&new);
++            for part in ["volume-stop", "volume-focus", "volume-handle"] {
++                assert!(!has_area(icon.intersect(box_for(&new, part))));
++            }
++            if let StandardSliderMode::Discrete { intervals } = mode {
++                for step in 0..intervals {
++                    let part = format!("volume-tick-{step}");
++                    assert_eq!(box_for(&new, &part), box_for(&old, &part));
++                    assert!(!has_area(icon.intersect(box_for(&new, &part))));
++                }
++            }
++        } else {
++            assert!(!has_area(icon_box(&new)));
++        }
++    }
++
++    let (runtime, paint) = frame(
++        Fixture {
++            options: StandardSliderOptions {
++                value: 8.,
++                ..OPTIONS
++            },
++            alternate: false,
++            ..Fixture::default()
++        },
++        360.,
++    );
++    let icon = icon_box(&runtime);
++    assert_eq!(icon.intersect(box_for(&runtime, "volume-inactive")), icon);
++    glyph(
++        &paint,
++        icon,
++        runtime.app().theme().colors.on_secondary_container,
++        NORMAL,
++    );
++
++    // Layout alone can retire and restore paint without changing the value.
++    let (mut runtime, _) = frame(Fixture::default(), 360.);
++    let icon = runtime.dom().by_id(ACTIVE).unwrap();
++    let narrow = runtime.render_extended(70., 600., &mut Metrics).unwrap();
++    assert!(paths(&narrow).is_empty());
++    let wide = runtime.render_extended(360., 600., &mut Metrics).unwrap();
++    assert_eq!(runtime.dom().by_id(ACTIVE), Some(icon));
++    assert_eq!(paths(&wide).len(), 1);
++}
++
++#[test]
++fn small_sizes_keep_the_standard_display_list_and_disabled_ink_stays_passive() {
++    for size in [StandardSliderSize::ExtraSmall, StandardSliderSize::Small] {
++        for vertical in [false, true] {
++            let options = StandardSliderOptions { size, ..OPTIONS };
++            let (on, decorated) = frame(
++                Fixture {
++                    options,
++                    vertical,
++                    ..Fixture::default()
++                },
++                320.,
++            );
++            let (_, plain) = frame(
++                Fixture {
++                    options,
++                    vertical,
++                    decorate: false,
++                    ..Fixture::default()
++                },
++                320.,
++            );
++            assert_eq!(decorated, plain);
++            assert!(on.dom().by_id(ACTIVE).is_none() && on.dom().by_id(INACTIVE).is_none());
++        }
++    }
++    for value in [0., 50.] {
++        let (runtime, paint) = frame(
++            Fixture {
++                options: StandardSliderOptions {
++                    value,
++                    disabled: true,
++                    ..OPTIONS
++                },
++                dark: true,
++                ..Fixture::default()
++            },
++            320.,
++        );
++        let colors = runtime.app().theme().colors;
++        let (ink, points) = if value == 0. {
++            (colors.on_surface, MUTED)
++        } else {
++            (colors.inverse_on_surface, NORMAL)
++        };
++        glyph(
++            &paint,
++            icon_box(&runtime),
++            Color(ink.0, ink.1, ink.2, 97),
++            points,
++        );
++        let field = runtime.dom().by_id(ID).unwrap();
++        assert!(runtime
++            .accessibility_frame()
++            .unwrap()
++            .adjustment_target(field)
++            .is_none());
++    }
++}
++
++#[test]
++fn the_glyph_has_no_ax_node_and_focus_label_and_input_match_the_existing_slider() {
++    for vertical in [false, true] {
++        let options = StandardSliderOptions {
++            engaged: true,
++            value_label: Some("50％"),
++            direction: LayoutDirection::RightToLeft,
++            ..OPTIONS
++        };
++        let fixture = |decorate| Fixture {
++            options,
++            vertical,
++            decorate,
++            dark: true,
++            scale: 2.,
++            ..Fixture::default()
++        };
++        let (mut decorated, _) = frame(fixture(true), 320.);
++        let (mut plain, _) = frame(fixture(false), 320.);
++        let space = icon_box(&decorated);
++        for part in [
++            ID,
++            "volume-rail",
++            "volume-focus",
++            "volume-label",
++            "volume-label-text",
++        ] {
++            let area = box_for(&decorated, part);
++            assert_eq!(box_for(&plain, part), area);
++            if part.contains("label") || part.contains("focus") {
++                assert!(has_area(area) && !has_area(area.intersect(space)));
++            }
++        }
++        let frame = decorated.accessibility_frame().unwrap();
++        let target = decorated.dom().by_id(ID).unwrap();
++        assert!(frame.adjustment_target(target).is_some());
++        assert_eq!(frame.node(target).unwrap().node.name(), "音量");
++        for id in [
++            ACTIVE,
++            INACTIVE,
++            "volume-inset-icon-active-glyph",
++            "volume-inset-icon-inactive-glyph",
++        ] {
++            assert!(frame.node(decorated.dom().by_id(id).unwrap()).is_none());
++        }
++        let (x, y) = (space.x + space.width / 2., space.y + space.height / 2.);
++        for app in [&mut decorated, &mut plain] {
++            for event in [
++                Event::FocusNext { reverse: false },
++                Event::PointerDown { x, y },
++                Event::PointerUp { x, y },
++                Event::Edit {
++                    key: EditKey::Up,
++                    extend: false,
++                    by_word: false,
++                },
++            ] {
++                assert!(app.dispatch(event).unwrap());
++            }
++            assert_eq!(app.focused(), Some(ID));
++        }
++        assert_eq!(decorated.app().values, plain.app().values);
++        assert_eq!(decorated.app().values.len(), 2);
++    }
++}
+diff --git a/crates/surface-material/tests/vertical_standard_slider.rs b/crates/surface-material/tests/vertical_standard_slider.rs
+index c795ff51f023bbcf7f75c4adbc6e32395826371c..1de540749de5ca7f8a1e451417caa40237f1b9df 100644
+--- a/crates/surface-material/tests/vertical_standard_slider.rs
++++ b/crates/surface-material/tests/vertical_standard_slider.rs
+@@ -38,6 +38,7 @@ enum Message {
+ struct Model {
+     options: StandardSliderOptions<'static>,
+     placement: VerticalStandardSliderPlacement,
++    neutral: Option<f64>,
+     dark: bool,
+     scale: f32,
+     requests: Vec<f64>,
+@@ -67,10 +68,17 @@ impl Application for Model {
+     }
+ 
+     fn view(&self) -> View<Message> {
+-        let slider = self
+-            .theme()
+-            .vertical_standard_slider(self.options, self.placement, Message::Value)
+-            .expect("valid fixture");
++        let theme = self.theme();
++        let slider = match self.neutral {
++            Some(neutral) => theme.vertical_centered_slider(
++                self.options,
++                self.placement,
++                neutral,
++                Message::Value,
++            ),
++            None => theme.vertical_standard_slider(self.options, self.placement, Message::Value),
++        }
++        .expect("valid fixture");
+         View::new(
+             Node::new(Role::Window, "").styled(Style::column().padding(12.).align(Align::Center)),
+         )
+@@ -102,10 +110,21 @@ fn runtime(
+     placement: VerticalStandardSliderPlacement,
+     dark: bool,
+     scale: f32,
++) -> Runtime<Model> {
++    slider_runtime(options, placement, None, dark, scale)
++}
++
++fn slider_runtime(
++    options: StandardSliderOptions<'static>,
++    placement: VerticalStandardSliderPlacement,
++    neutral: Option<f64>,
++    dark: bool,
++    scale: f32,
+ ) -> Runtime<Model> {
+     Runtime::new(Model {
+         options,
+         placement,
++        neutral,
+         dark,
+         scale,
+         requests: Vec::new(),
+@@ -447,3 +466,320 @@ fn ranges_and_target_height_and_room_are_checked() {
+         .vertical_standard_slider(invalid, PLACEMENT, Message::Value)
+         .is_none());
+ }
++
++const SIGNED: StandardSliderOptions<'static> = StandardSliderOptions {
++    min: -100.,
++    max: 100.,
++    mode: StandardSliderMode::Continuous { keyboard_step: 5. },
++    ..OPTIONS
++};
++
++#[test]
++fn centered_vertical_paints_signs_neutral_and_endpoints_with_all_five_presets() {
++    use StandardSliderSize::*;
++    for (size, track, span, radius) in [
++        (ExtraSmall, 16., 44_f32, 8.),
++        (Small, 24., 44., 8.),
++        (Medium, 40., 52., 12.),
++        (Large, 56., 68., 16.),
++        (ExtraLarge, 96., 108., 28.),
++    ] {
++        for (direction, dark) in [
++            (LayoutDirection::LeftToRight, false),
++            (LayoutDirection::RightToLeft, true),
++        ] {
++            for value in [-100., -50., -1., 0., 1., 50., 100.] {
++                let mut runtime = slider_runtime(
++                    StandardSliderOptions {
++                        direction,
++                        size,
++                        value,
++                        ..SIGNED
++                    },
++                    PLACEMENT,
++                    Some(0.),
++                    dark,
++                    1.,
++                );
++                let display = paint(&mut runtime);
++                let colors = runtime.app().theme().colors;
++                let target = bounds(&runtime, ID);
++                let rail = bounds(&runtime, "volume-rail");
++                let handle = bounds(&runtime, "volume-handle");
++                let active = bounds(&runtime, "volume-active");
++                let minimum = bounds(&runtime, "volume-inactive-min");
++                let maximum = bounds(&runtime, "volume-inactive-max");
++                let stop_min = bounds(&runtime, "volume-stop-min");
++                let stop_max = bounds(&runtime, "volume-stop-max");
++                let near = |a: f32, b: f32| assert!((a - b).abs() < 0.001, "{a} != {b}");
++                let neutral = center_y(rail);
++
++                assert_eq!((target.width, target.height), (span.max(48.), 200.));
++                assert_eq!(rail.y, target.y + 12.);
++                assert_eq!(bottom(rail), bottom(target) - 12.);
++                assert_eq!(
++                    (handle.width, handle.height, active.width),
++                    (span, 4., track)
++                );
++                near(
++                    center_y(handle),
++                    bottom(rail) - ((value as f32 + 100.) / 200.) * rail.height,
++                );
++                assert!(has_fill(&display, handle, colors.primary, Corners::all(2.)));
++
++                if value.abs() < 2. {
++                    assert_eq!(active.height, 0.);
++                } else if value < 0. {
++                    near(active.y, neutral + 2.);
++                    near(bottom(active) + 6., handle.y);
++                } else {
++                    near(active.y, bottom(handle) + 6.);
++                    near(bottom(active), neutral - 2.);
++                }
++                if active.height > 0. {
++                    assert!(has_fill(&display, active, colors.primary, Corners::all(2.)));
++                } else {
++                    assert!(!display.ops.iter().any(|op| op.rect() == active));
++                }
++                if value == -100. {
++                    assert_eq!((minimum.height, stop_min.height), (0., 0.));
++                } else {
++                    near(minimum.y, (bottom(handle) + 6.).max(neutral + 2.));
++                    assert_eq!(bottom(minimum), bottom(rail));
++                    assert_eq!(bottom(stop_min), bottom(rail) - 4.);
++                    assert!(has_fill(
++                        &display,
++                        minimum,
++                        colors.secondary_container,
++                        Corners::new(2., 2., radius, radius).resolve(minimum.width, minimum.height),
++                    ));
++                    assert!(has_fill(
++                        &display,
++                        stop_min,
++                        colors.on_secondary_container,
++                        Corners::all(2.)
++                    ));
++                }
++                if value == 100. {
++                    assert_eq!((maximum.height, stop_max.height), (0., 0.));
++                } else {
++                    assert_eq!(maximum.y, rail.y);
++                    near(bottom(maximum), (handle.y - 6.).min(neutral - 2.));
++                    assert_eq!(stop_max.y, rail.y + 4.);
++                    assert!(has_fill(
++                        &display,
++                        maximum,
++                        colors.secondary_container,
++                        Corners::new(radius, radius, 2., 2.).resolve(maximum.width, maximum.height),
++                    ));
++                    assert!(has_fill(
++                        &display,
++                        stop_max,
++                        colors.on_secondary_container,
++                        Corners::all(2.)
++                    ));
++                }
++            }
++        }
++    }
++}
++
++#[test]
++fn centered_vertical_keeps_discrete_paint_and_all_input_on_the_signed_lattice() {
++    let mut runtime = slider_runtime(
++        StandardSliderOptions {
++            value: -50.,
++            direction: LayoutDirection::RightToLeft,
++            mode: StandardSliderMode::Discrete { intervals: 8 },
++            ..SIGNED
++        },
++        PLACEMENT,
++        Some(0.),
++        false,
++        1.,
++    );
++    let list = paint(&mut runtime);
++    let hit = bounds(&runtime, ID);
++    let rail = bounds(&runtime, "volume-rail");
++    let colors = runtime.app().theme().colors;
++    assert!(runtime.dom().by_id("volume-tick-0").is_none());
++    assert_eq!(bounds(&runtime, "volume-tick-4").height, 0.);
++    assert!(has_fill(
++        &list,
++        bounds(&runtime, "volume-tick-3"),
++        colors.on_primary,
++        Corners::all(2.),
++    ));
++    for tick in ["volume-tick-1", "volume-tick-7"] {
++        assert!(has_fill(
++            &list,
++            bounds(&runtime, tick),
++            colors.on_secondary_container,
++            Corners::all(2.)
++        ));
++    }
++    let x = hit.x + hit.width / 2.;
++    let near_bottom = bottom(rail) - rail.height * 0.14;
++    for event in [
++        Event::PointerDown { x, y: near_bottom },
++        Event::PointerMove {
++            x: x + 18.,
++            y: near_bottom,
++        },
++        Event::PointerMove { x, y: rail.y },
++        Event::PointerUp { x, y: rail.y },
++    ] {
++        runtime.dispatch_touch(event).unwrap();
++        paint(&mut runtime);
++    }
++    assert_eq!(runtime.app().requests, [-75., 100.]);
++    for (key, expected) in [
++        (EditKey::Home, -100.),
++        (EditKey::Right, -75.),
++        (EditKey::Up, -50.),
++        (EditKey::Left, -75.),
++        (EditKey::PageUp, -50.),
++        (EditKey::PageDown, -75.),
++        (EditKey::End, 100.),
++    ] {
++        runtime
++            .dispatch(Event::Edit {
++                key,
++                extend: false,
++                by_word: false,
++            })
++            .unwrap();
++        assert_eq!(runtime.app().options.value, expected);
++    }
++    paint(&mut runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let id = id(&runtime, ID);
++    assert!(frame.node(id).unwrap().node.is_vertical_slider());
++    let token = frame.adjustment_target(id).unwrap();
++    assert_eq!(
++        runtime
++            .accessibility_adjust(&token, AccessibilityAdjustment::SetValue(34.))
++            .unwrap(),
++        AccessibilityAdjustmentResult::Adjusted
++    );
++    assert_eq!(runtime.app().options.value, 25.);
++    assert_eq!(runtime.focused(), Some(ID));
++}
++
++#[test]
++fn centered_vertical_uses_the_measured_handle_for_upright_200_percent_value_text() {
++    let placement = VerticalStandardSliderPlacement {
++        label_room: 120.,
++        ..PLACEMENT
++    };
++    for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++        for (value, value_text) in [(-100., "最低平衡 −100％"), (100., "最高平衡 +100％")]
++        {
++            let mut runtime = slider_runtime(
++                StandardSliderOptions {
++                    value,
++                    direction,
++                    value_label: Some(value_text),
++                    ..SIGNED
++                },
++                placement,
++                Some(0.),
++                true,
++                2.,
++            );
++            paint(&mut runtime);
++            let hit = bounds(&runtime, ID);
++            let rail = bounds(&runtime, "volume-rail");
++            runtime
++                .dispatch(Event::FocusNext { reverse: false })
++                .unwrap();
++            runtime.apply(Message::Engage).unwrap();
++            let list = paint(&mut runtime);
++            let handle = bounds(&runtime, "volume-handle");
++            let ring = bounds(&runtime, "volume-focus");
++            let label = bounds(&runtime, "volume-label");
++            let text = bounds(&runtime, "volume-label-text");
++            let colors = runtime.app().theme().colors;
++            assert_eq!(bounds(&runtime, ID), hit);
++            assert_eq!(bounds(&runtime, "volume-rail"), rail);
++            assert_eq!(handle.height, 2.);
++            assert_eq!(ring.height, 12.);
++            assert!(label.height >= 64. && label.x >= 0. && right(label) <= 320.);
++            assert_eq!(label.intersect(text), text);
++            if value < 0. {
++                assert_eq!(bottom(label), bottom(hit));
++            } else {
++                assert_eq!(label.y, hit.y);
++            }
++            match direction {
++                LayoutDirection::LeftToRight => assert_eq!(label.x, right(ring) + 4.),
++                LayoutDirection::RightToLeft => assert_eq!(right(label) + 4., ring.x),
++            }
++            assert!(list.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
++                text, style, color, ..
++            } if text == value_text && style.font_size == 28. && *color == colors.inverse_on_surface)));
++            assert!(list.ops.iter().any(|op| matches!(op, PaintOp::Stroke {
++                rect, width: 3., color, ..
++            } if *rect == ring && *color == colors.secondary)));
++            let frame = runtime.accessibility_frame().unwrap();
++            let id = id(&runtime, ID);
++            let node = frame.node(id).unwrap().node;
++            assert_eq!(node.slider_value_text(), Some(value_text));
++            assert!(node.is_vertical_slider());
++            assert_eq!(frame.children(id).count(), 0);
++        }
++    }
++}
++
++#[test]
++fn centered_vertical_validates_neutral_and_keeps_disabled_orientation_without_actions() {
++    let theme = Theme::light();
++    for neutral in [-101., -100., 100., 101., f64::NAN, f64::INFINITY] {
++        assert!(theme
++            .vertical_centered_slider(SIGNED, PLACEMENT, neutral, Message::Value)
++            .is_none());
++    }
++    let discrete = StandardSliderOptions {
++        min: -10.,
++        max: 90.,
++        value: 15.,
++        mode: StandardSliderMode::Discrete { intervals: 8 },
++        ..SIGNED
++    };
++    for valid in [15., 40., 65.] {
++        assert!(theme
++            .vertical_centered_slider(discrete, PLACEMENT, valid, Message::Value)
++            .is_some());
++    }
++    assert!(theme
++        .vertical_centered_slider(discrete, PLACEMENT, 0., Message::Value)
++        .is_none());
++    let invalid_placement = VerticalStandardSliderPlacement {
++        height: 47.,
++        ..PLACEMENT
++    };
++    assert!(theme
++        .vertical_centered_slider(discrete, invalid_placement, 40., Message::Value)
++        .is_none());
++    let mut runtime = slider_runtime(
++        StandardSliderOptions {
++            disabled: true,
++            engaged: true,
++            value_label: Some("固定平衡 +25％"),
++            ..SIGNED
++        },
++        PLACEMENT,
++        Some(0.),
++        true,
++        2.,
++    );
++    paint(&mut runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let id = id(&runtime, ID);
++    let node = frame.node(id).unwrap().node;
++    assert!(node.is_vertical_slider() && node.is_disabled());
++    assert_eq!(node.slider_value_text(), Some("固定平衡 +25％"));
++    assert!(frame.adjustment_target(id).is_none());
++    assert!(frame.focus_target(id).is_none());
++    assert!(runtime.dom().by_id("volume-label").is_none());
++}
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index d4c0a25cefb8cb273c06dfd426f04aaeaca54896..74f218fa4fae5df4347243551be5171bfbdf085e 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -301,11 +301,11 @@
+       "id": "sliders",
+       "spec": "https://m3.material.io/components/sliders/overview",
+       "status": "partial",
+-      "variant_review": "Reviewed Google's November 19 guidance and artwork for horizontal Standard, horizontal Centered and vertical Standard single-thumb forms. The Centered neutral cut is based on the official illustration. The vertical keyboard and ARIA orientation follow the WAI example. Reviewed the two-thumb Range illustration and WAI guidance on dependent limits and constant Tab order. Additional forms remain open.",
+-      "desktop_evidence": "Two headless native Metal replays check light 960 dp, dark RTL at 320 dp and 200% text, exact keyboard endpoints, disabled and focus restoration, and all five sizes. Four PNGs match through Page.screenshot, CLI and MCP. The macOS AccessKit adapter verifies actual bounded adjustment actions and rejects stale targets. Centered and vertical Standard have separate Metal and no-window receipts. Range headless preflight verifies two Tab stops through equality, signed steps, focus, labels and 320 dp dark RTL at 200% text. Five native PNGs match across two replays and three capture transports.",
+-      "web_evidence": "Headless Chrome WebGPU M298–M301 checks five token sizes and actual paint, numeric and human-readable AX values, arrows and exact endpoints, continuous mouse and discrete touch, resize cancellation, and 320 dp dark RTL at 200% text. Headless Chrome M302–M305 adds signed and neutral paint, centered keyboard and RTL, explicit vertical AX orientation, trusted vertical mouse and touch, cancellation, and 320 dp dark RTL focus reveal with a 200% upright label. M306–M309 adds actual Range paint, separate dependent Chrome AX bounds at locked limits, fixed focus order, trusted mouse capture loss, foreign touch while held, touch cancellation and recovery, and dark RTL at 200% text.",
+-      "implemented": "The horizontal Standard slider supports five sizes, continuous values and discrete stops, LTR and RTL input, fixed hit geometry, a narrow engaged handle, an independent focus outline, localized value text and opt-in native accessibility adjustment. The original slider API remains available. Horizontal Centered adds an interior neutral point and two inactive portions. Vertical Standard supports all five sizes and both scales. It uses a bottom-to-top rail with an upright trailing label and explicit accessibility orientation. Horizontal Range adds a shared scale, dependent peer limits, two fixed Tab stops, one active span, and independent labels. It accepts coincident bounds and keeps the last accepted value after gesture cancellation. Centered vertical, inset icons, and live assistive technology remain open.",
+-      "unit_evidence": "Material and Runtime tests cover all five token rows, the measured rail and track, discrete ties and adjacent representable stops, exact endpoints, RTL, continuous pointer and discrete touch input, disabled rejection, cancellation, and accessible value updates. The additional forms cover signed and neutral spans, discrete neutral validation, horizontal RTL, upright vertical labels, axis-aware pointer cancellation, and explicit AccessKit orientation. Range tests cover both endpoints, exact measured hit geometry, the shared stop lattice, equality, dynamic AccessKit bounds, and pointer ownership and cancellation."
++      "variant_review": "Reviewed Google's November 19 guidance and artwork for horizontal Standard, horizontal Centered and vertical Standard single-thumb forms. The Centered neutral cut is based on the official illustration. The vertical keyboard and ARIA orientation follow the WAI example. Reviewed the two-thumb Range illustration and WAI guidance on dependent limits and constant Tab order. Surface combines the Centered neutral rules with the vertical orientation. Medium, Large and ExtraLarge Standard use inset artwork when the track has room.",
++      "desktop_evidence": "Two headless native Metal replays check light 960 dp, dark RTL at 320 dp and 200% text, exact keyboard endpoints, disabled and focus restoration, and all five sizes. Four PNGs match through Page.screenshot, CLI and MCP. The macOS AccessKit adapter verifies actual bounded adjustment actions and rejects stale targets. Centered and vertical Standard have separate Metal and no-window receipts. Range headless preflight verifies two Tab stops through equality, signed steps, focus, labels and 320 dp dark RTL at 200% text. Five native PNGs match across two replays and three capture transports. https://github.com/faberline/surface/tree/cd7f709d0a1d0d99d37252f797e060890430b03d/docs/evidence/md3/range-slider-v0156-candidate Vertical Centered and Standard inset art each have native Metal replay evidence in the same development candidate.",
++      "web_evidence": "Headless Chrome WebGPU M298–M301 checks five token sizes and actual paint, numeric and human-readable AX values, arrows and exact endpoints, continuous mouse and discrete touch, resize cancellation, and 320 dp dark RTL at 200% text. Headless Chrome M302–M305 adds signed and neutral paint, centered keyboard and RTL, explicit vertical AX orientation, trusted vertical mouse and touch, cancellation, and 320 dp dark RTL focus reveal with a 200% upright label. M306–M309 adds actual Range paint, separate dependent Chrome AX bounds at locked limits, fixed focus order, trusted mouse capture loss, foreign touch while held, touch cancellation and recovery, and dark RTL at 200% text. M310–M315 checks signed vertical paint, keyboard and touch, upright inset icons on both axes, fit, minimum replacement, and compact focus reveal in headless Chrome.",
++      "implemented": "The horizontal Standard slider supports five sizes, continuous values and discrete stops, LTR and RTL input, fixed hit geometry, a narrow engaged handle, an independent focus outline, localized value text and opt-in native accessibility adjustment. The original slider API remains available. Horizontal Centered adds an interior neutral point and two inactive portions. Vertical Standard supports all five sizes and both scales. It uses a bottom-to-top rail with an upright trailing label and explicit accessibility orientation. Horizontal Range adds a shared scale, dependent peer limits, two fixed Tab stops, one active span, and independent labels. It accepts coincident bounds and keeps the last accepted value after gesture cancellation. Vertical Centered joins the value and neutral point on a bottom-to-top scale. Medium, Large and ExtraLarge Standard sliders can show an inset icon on either axis. Live assistive technology and system settings remain open.",
++      "unit_evidence": "Material and Runtime tests cover all five token rows, the measured rail and track, discrete ties and adjacent representable stops, exact endpoints, RTL, continuous pointer and discrete touch input, disabled rejection, cancellation, and accessible value updates. The additional forms cover signed and neutral spans, discrete neutral validation, horizontal RTL, upright vertical labels, axis-aware pointer cancellation, and explicit AccessKit orientation. Range tests cover both endpoints, exact measured hit geometry, the shared stop lattice, equality, dynamic AccessKit bounds, and pointer ownership and cancellation. Vertical Centered and inset icon tests cover measured signed spans, fixed hit geometry, token sizes, icon fit, color, and stable Chrome step registration."
+     },
+     {
+       "id": "snackbar",
+diff --git a/docs/material.md b/docs/material.md
+index d1a5d43d4084bc5ca2d2cbdd5a9a60bc1b7dfdcc..0b70749843744115bcb22d1381503ab5969cff6d 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1018,6 +1018,21 @@ beside the control. This space includes the outline and gap. It stays
+ outside the slider's hit target. The value text remains available to
+ accessibility when the label has too little space to paint.
+ 
++Use `Theme::vertical_centered_slider` for a vertical scale with a
++neutral value. It uses the same placement and label rules as vertical
++Standard. The label stays upright. The active track fills from the
++neutral point to the current value. Choose an existing
++stop for a discrete neutral value.
++
++Use `Theme::standard_slider_with_inset_icon` or
++`Theme::vertical_standard_slider_with_inset_icon` to add a
++decorative `SliderInsetIcon`. Provide a `VectorIcon` and an optional
++`at_minimum` glyph. Medium and Large use a 24 dp icon. ExtraLarge
++uses 32 dp. The icon uses the active track when it fits and the
++inactive track when it is the only one that fits. A short track
++can omit the icon. The icon stays upright in both orientations
++and keeps the slider name, hit target, and keyboard behavior.
++
+ Use `Theme::range_slider` with `RangeSliderOptions` for a horizontal
+ interval. Give the pair and both ends distinct localized names. Store
+ the lower and upper values together and apply both values from each
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index b86cd59b0e41d940d509231100acfd8c5c8ab99d..e97e5a067519ca8b0de5722357429c55ae69e3d8 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -88,6 +88,8 @@ mod material_search_overlay;
+ mod material_side_sheet;
+ #[path = "material_slider_forms.rs"]
+ mod material_slider_forms;
++#[path = "material_slider_inset.rs"]
++mod material_slider_inset;
+ #[path = "material_snackbar.rs"]
+ mod material_snackbar;
+ #[path = "material_split_button.rs"]
+@@ -110,6 +112,8 @@ mod material_time_scroll;
+ mod material_toolbar;
+ #[path = "material_tooltip.rs"]
+ mod material_tooltip;
++#[path = "material_vertical_centered_slider.rs"]
++mod material_vertical_centered_slider;
+ #[path = "material_web_contrast.rs"]
+ mod material_web_contrast;
+ #[path = "material_web_contrast_png.rs"]
+@@ -147,7 +151,8 @@ pub const STEPS: &[&str] = &[
+     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
+     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
+     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
+-    "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309",
++    "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
++    "M311", "M312", "M313", "M314", "M315",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -275,7 +280,9 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_icon_buttons::run(env, chrome, &url).await?;
+     material_standard_slider::run(env, chrome, &url).await?;
+     material_slider_forms::run(env, chrome, &url).await?;
+-    material_range_slider::run(env, chrome, &url).await
++    material_range_slider::run(env, chrome, &url).await?;
++    material_vertical_centered_slider::run(env, chrome, &url).await?;
++    material_slider_inset::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -506,6 +513,22 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn inset_slider_steps_are_required_by_the_material_case() {
++        let inset = super::material_slider_inset::STEPS;
++        assert!(super::STEPS
++            .windows(inset.len())
++            .any(|steps| steps == inset));
++    }
++
++    #[test]
++    fn vertical_centered_steps_are_required_by_the_material_case() {
++        let centered = super::material_vertical_centered_slider::STEPS;
++        assert!(super::STEPS
++            .windows(centered.len())
++            .any(|steps| steps == centered));
++    }
++
+     #[test]
+     fn range_slider_steps_are_required_by_the_material_case() {
+         let range = super::material_range_slider::STEPS;
+diff --git a/e2e/src/material_slider_inset.rs b/e2e/src/material_slider_inset.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..1670f6a70c0b7865f8547f313f78e2c57987ed71
+--- /dev/null
++++ b/e2e/src/material_slider_inset.rs
+@@ -0,0 +1,311 @@
++//! Test Material slider inset icons in the Gallery's actual WebGPU output.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M313", "M314", "M315"];
++
++const SHOW: &str = "slider-inset-demo-show";
++const BACK: &str = "slider-inset-demo-back";
++const SCROLL: &str = "slider-inset-demo-scroll";
++const SETTINGS: [&str; 3] = [
++    "slider-inset-demo-theme",
++    "slider-inset-demo-rtl",
++    "slider-inset-demo-large-text",
++];
++const SAMPLES: [(&str, &str, f64); 8] = [
++    ("slider-inset-demo-horizontal-medium", "中型水平音量", 24.),
++    ("slider-inset-demo-horizontal-large", "大型水平音量", 24.),
++    ("slider-inset-demo-horizontal-xl", "特大水平音量", 32.),
++    ("slider-inset-demo-short", "短軌道音量", 0.),
++    ("slider-inset-demo-vertical-medium", "中型垂直音量", 24.),
++    ("slider-inset-demo-vertical-large", "大型垂直音量", 24.),
++    ("slider-inset-demo-vertical-xl", "特大垂直音量", 32.),
++    ("slider-inset-demo-disabled", "停用垂直音量", 24.),
++];
++const INITIAL: [f64; 8] = [65., 0., 65., 50., 65., 0., 65., 65.];
++const ACTIVE: &str = "inset-icon-active";
++const INACTIVE: &str = "inset-icon-inactive";
++const LIGHT: &str = "material-slider-inset-light.png";
++const MUTED: &str = "material-slider-inset-muted.png";
++const QUIET: &str = "material-slider-inset-quiet.png";
++const COMPACT: &str = "material-slider-inset-dark-rtl-200.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++async fn ready(tab: &Tab, condition: &str) -> Result<Value> {
++    until(tab, &format!("(d => {condition})(s.slider_inset_demo)")).await?;
++    tab.settle().await?;
++    Ok(state(tab).await?["slider_inset_demo"].clone())
++}
++
++async fn part(tab: &Tab, id: &str, suffix: &str) -> Result<Rect> {
++    bounds(tab, &format!("{id}-{suffix}")).await
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    let path = env.artifact(name);
++    tab.settle().await?;
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++fn color(palette: &Value, name: &str) -> Result<Rgb> {
++    let [r, g, b, _]: [u8; 4] =
++        serde_json::from_value(palette[name].clone()).with_context(|| format!("palette {name}"))?;
++    Ok([r, g, b])
++}
++
++fn ink(image: &Raster, rect: Rect, color: Rgb) -> Result<usize> {
++    Ok(image.colors(rect)?.get(&color).copied().unwrap_or(0))
++}
++
++fn area([_, _, w, h]: Rect) -> f64 {
++    w * h
++}
++
++async fn icon(tab: &Tab, id: &str, positive: bool, side: f64) -> Result<Rect> {
++    let active = part(tab, id, ACTIVE).await?;
++    let inactive = part(tab, id, INACTIVE).await?;
++    let (drawn, hidden, track) = if positive {
++        (active, inactive, "active")
++    } else {
++        (inactive, active, "inactive")
++    };
++    check!(area(hidden) < 1., "{id} has only one inset icon");
++    check!(
++        near(drawn[2], side)
++            && near(drawn[3], side)
++            && contains(part(tab, id, track).await?, drawn),
++        "{id} has a {side} dp glyph entirely inside the {track} track"
++    );
++    Ok(drawn)
++}
++
++async fn wide(tab: &Tab, env: &Env) -> Result<Value> {
++    let model = ready(tab, "d.visible && !d.dark && !d.rtl && d.text_scale === 1").await?;
++    let palette = &model["palette"];
++    let image = photo(tab, env, LIGHT).await?;
++    let tree = ax_tree(tab).await?;
++    let mut observations = Vec::new();
++    for (index, (id, name, side)) in SAMPLES.into_iter().enumerate() {
++        let value = INITIAL[index];
++        let vertical = index >= 4;
++        let disabled = index == 7;
++        let node = ax(&tree, "slider", name)?;
++        check_eq!(node["value"]["value"].as_f64(), Some(value), "{id} value");
++        check_eq!(
++            ax_property(node, "orientation").and_then(Value::as_str),
++            Some(if vertical { "vertical" } else { "horizontal" }),
++            "{id} orientation"
++        );
++        check_eq!(
++            ax_property(node, "disabled") == Some(&json!(true)),
++            disabled,
++            "{id} disabled state"
++        );
++        for suffix in [
++            ACTIVE,
++            INACTIVE,
++            "inset-icon-active-glyph",
++            "inset-icon-inactive-glyph",
++        ] {
++            let glyph = projected(&format!("{id}-{suffix}"));
++            check_eq!(
++                tab.eval(&format!("{glyph} === null")).await?,
++                json!(true),
++                "decorative node {suffix} has no accessibility peer"
++            );
++        }
++        let stop = part(tab, id, "stop").await?;
++        check!(
++            near(stop[2], 4.) && near(stop[3], 4.),
++            "{id} keeps the end stop"
++        );
++        if side == 0. {
++            let target = bounds(tab, id).await?;
++            check!(
++                near(target[2], 88.)
++                    && area(part(tab, id, ACTIVE).await?) < 1.
++                    && area(part(tab, id, INACTIVE).await?) < 1.
++                    && contains(part(tab, id, "inactive").await?, stop),
++                "the short rail keeps its stop and omits a glyph that does not fit"
++            );
++            observations.push(json!({"id":id,"stop":stop,"glyph":null}));
++            continue;
++        }
++        let rect = icon(tab, id, value > 0., side).await?;
++        let painted = if disabled {
++            None
++        } else {
++            let lane_color = if value == 0. {
++                "on_secondary_container"
++            } else {
++                "on_primary"
++            };
++            let painted = ink(&image, rect, color(palette, lane_color)?)?;
++            check!(painted > 30, "the {id} icon has actual {lane_color} pixels");
++            Some(painted)
++        };
++        observations.push(json!({"id":id,"stop":stop,"glyph":rect,"ink":painted}));
++    }
++    Ok(json!({"capture":LIGHT,"palette":palette,"samples":observations}))
++}
++
++async fn keys(tab: &Tab, env: &Env) -> Result<Value> {
++    let (id, name, side) = SAMPLES[0];
++    focus_projected(tab, id).await?;
++    let target = bounds(tab, id).await?;
++    let rail = part(tab, id, "rail").await?;
++    let stop = part(tab, id, "stop").await?;
++    tab.press("Home").await?;
++    let model = ready(
++        tab,
++        "d.samples[0].value === 0 && d.samples[0].requests === 1",
++    )
++    .await?;
++    let muted = icon(tab, id, false, side).await?;
++    let palette = &model["palette"];
++    let foreground = color(palette, "on_secondary_container")?;
++    let muted_ink = ink(&photo(tab, env, MUTED).await?, muted, foreground)?;
++    tab.press("ArrowRight").await?;
++    ready(
++        tab,
++        "d.samples[0].value === 5 && !d.samples[0].minimum_glyph && d.samples[0].requests === 2",
++    )
++    .await?;
++    let quiet = icon(tab, id, false, side).await?;
++    let quiet_ink = ink(&photo(tab, env, QUIET).await?, quiet, foreground)?;
++    check_eq!(
++        muted,
++        quiet,
++        "the regular and minimum glyph use the same slot"
++    );
++    check_eq!(
++        part(tab, id, "stop").await?,
++        stop,
++        "the end stop is unchanged"
++    );
++    check!(
++        muted_ink > 30 && quiet_ink > 30 && muted_ink.abs_diff(quiet_ink) >= 8,
++        "the two glyph contours differ in the actual PNG: {muted_ink} versus {quiet_ink}"
++    );
++    tab.press("End").await?;
++    let model = ready(
++        tab,
++        "d.samples[0].value === 100 && d.samples[0].requests === 3",
++    )
++    .await?;
++    let full = icon(tab, id, true, side).await?;
++    check!(
++        full[0] < quiet[0],
++        "keyboard changes which track contains the icon"
++    );
++    check_eq!(
++        bounds(tab, id).await?,
++        target,
++        "the hit region is unchanged"
++    );
++    check_eq!(part(tab, id, "rail").await?, rail, "the rail is unchanged");
++    focused(tab, id).await?;
++    let tree = ax_tree(tab).await?;
++    check_eq!(
++        ax(&tree, "slider", name)?["value"]["value"].as_f64(),
++        Some(100.),
++        "Chrome publishes the new value"
++    );
++    Ok(
++        json!({"values":model["samples"][0],"muted":{"capture":MUTED,"glyph":muted,"ink":muted_ink},"quiet":{"capture":QUIET,"glyph":quiet,"ink":quiet_ink},"full":full}),
++    )
++}
++
++async fn compact(tab: &Tab, env: &Env) -> Result<Value> {
++    resize(tab, 320, 880).await?;
++    for control in SETTINGS {
++        activate(tab, control).await?;
++    }
++    let model = ready(tab, "d.visible && d.dark && d.rtl && d.text_scale === 2").await?;
++    let palette = &model["palette"];
++    let (horizontal, _, side) = SAMPLES[0];
++    focus_projected(tab, horizontal).await?;
++    let h_icon = icon(tab, horizontal, true, side).await?;
++    check!(
++        h_icon[0] > part(tab, horizontal, "handle").await?[0],
++        "RTL mirrors the active horizontal track"
++    );
++    for (id, _, _) in &SAMPLES[1..=4] {
++        tab.press("Tab").await?;
++        focused(tab, id).await?;
++    }
++    let (vertical, _, side) = SAMPLES[4];
++    let v_icon = icon(tab, vertical, true, side).await?;
++    let label = part(tab, vertical, "label").await?;
++    let ring = part(tab, vertical, "focus").await?;
++    let scroll = bounds(tab, SCROLL).await?;
++    check!(
++        v_icon[1] > part(tab, vertical, "handle").await?[1]
++            && contains(scroll, bounds(tab, vertical).await?)
++            && contains(scroll, v_icon)
++            && contains(scroll, ring)
++            && contains(scroll, label)
++            && label[3] >= 63.
++            && label[0] + label[2] < ring[0],
++        "vertical minimum stays at the bottom and Tab reveals the full compact glyph, ring and readout"
++    );
++    let image = photo(tab, env, COMPACT).await?;
++    let glyph_ink = ink(&image, v_icon, color(palette, "on_primary")?)?;
++    let label_ink = ink(&image, label, color(palette, "inverse_on_surface")?)?;
++    let ring_ink = ink(&image, ring, color(palette, "secondary")?)?;
++    check!(
++        glyph_ink > 30 && label_ink > 30 && ring_ink > 30,
++        "the glyph, readout ink and ring all render in the compact PNG"
++    );
++    activate(tab, BACK).await?;
++    ready(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"capture":COMPACT,"palette":palette,"horizontal_icon":h_icon,"vertical_icon":v_icon,"label":label,"ring":ring,"glyph_ink":glyph_ink,"label_ink":label_ink,"ring_ink":ring_ink,"back_focus":SHOW}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1944, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(STEPS[0], "Standard slider inset glyphs paint at both axes and all three sizes with one accessibility peer");
++        tab.goto(url).await?;
++        crate::smoke::ready(&tab, "gallery").await?;
++        resize(&tab, 960, 1900).await?;
++        reduced_motion(&tab, true).await?;
++        activate(&tab, SHOW).await?;
++        resize(&tab, 960, 1040).await?;
++        report["wide"] = wide(&tab, env).await?;
++        step(STEPS[1], "the inset glyph changes contour at the minimum and moves tracks without moving the rail");
++        report["keys"] = keys(&tab, env).await?;
++        step(STEPS[2], "dark 320 dp RTL keeps the upright vertical glyph, focus and large label visible");
++        report["compact"] = compact(&tab, env).await?;
++        Ok(())
++    }.await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact("material-slider-inset-failure.png"))
++            .await;
++    }
++    env.write_json("material-slider-inset.json", &report)?;
++    result?;
++    check!(tab.errors().is_empty(), "no inset slider page errors");
++    Ok(())
++}
+diff --git a/e2e/src/material_vertical_centered_slider.rs b/e2e/src/material_vertical_centered_slider.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..3584d93969517193d713d94c8a441b507283d9e9
+--- /dev/null
++++ b/e2e/src/material_vertical_centered_slider.rs
+@@ -0,0 +1,455 @@
++//! Exercise the vertical Centered Slider through the rendered Gallery.
++
++use anyhow::{Context, Result};
++use serde::Serialize;
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M310", "M311", "M312"];
++
++const SHOW: &str = "vertical-centered-slider-demo-show";
++const BACK: &str = "vertical-centered-slider-demo-back";
++const SCROLL: &str = "vertical-centered-slider-demo-scroll";
++const SETTINGS: [&str; 3] = [
++    "vertical-centered-slider-demo-theme",
++    "vertical-centered-slider-demo-rtl",
++    "vertical-centered-slider-demo-large-text",
++];
++const IDS: [&str; 5] = [
++    "vertical-centered-slider-demo-negative",
++    "vertical-centered-slider-demo-neutral",
++    "vertical-centered-slider-demo-positive",
++    "vertical-centered-slider-demo-discrete",
++    "vertical-centered-slider-demo-disabled",
++];
++const NAMES: [&str; 5] = ["負值平衡", "中立平衡", "正值平衡", "階梯平衡", "停用平衡"];
++const WIDE: [u32; 2] = [960, 1160];
++const COMPACT: [u32; 2] = [320, 880];
++const WIDE_PNG: &str = "material-vertical-centered-light.png";
++const KEYS_PNG: &str = "material-vertical-centered-keyboard.png";
++const COMPACT_PNG: &str = "material-vertical-centered-dark-rtl-200.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++#[derive(Serialize)]
++struct Shape {
++    target: Rect,
++    rail: Rect,
++    handle: Rect,
++    active: Rect,
++    inactive: [Rect; 2],
++    stops: [Rect; 2],
++}
++
++async fn part(tab: &Tab, id: &str, suffix: &str) -> Result<Rect> {
++    bounds(tab, &format!("{id}-{suffix}")).await
++}
++
++async fn shape(tab: &Tab, id: &str) -> Result<Shape> {
++    Ok(Shape {
++        target: bounds(tab, id).await?,
++        rail: part(tab, id, "rail").await?,
++        handle: part(tab, id, "handle").await?,
++        active: part(tab, id, "active").await?,
++        inactive: [
++            part(tab, id, "inactive-min").await?,
++            part(tab, id, "inactive-max").await?,
++        ],
++        stops: [
++            part(tab, id, "stop-min").await?,
++            part(tab, id, "stop-max").await?,
++        ],
++    })
++}
++
++async fn ready(tab: &Tab, condition: &str) -> Result<Value> {
++    until(
++        tab,
++        &format!("(d => {condition})(s.vertical_centered_slider_demo)"),
++    )
++    .await?;
++    tab.settle().await?;
++    Ok(state(tab).await?["vertical_centered_slider_demo"].clone())
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1900).await?;
++    reduced_motion(tab, true).await?;
++    until(
++        tab,
++        "s.section === 0 && !s.vertical_centered_slider_demo.visible",
++    )
++    .await?;
++    activate(tab, SHOW).await?;
++    ready(
++        tab,
++        "d.visible && d.neutral === 0 && d.samples.map(s => s.value).join(',') === '-50,0,50,-25,50'",
++    )
++    .await?;
++    resize(tab, WIDE[0], WIDE[1]).await
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++fn bottom([_, y, _, h]: Rect) -> f64 {
++    y + h
++}
++
++fn middle_y([_, y, _, h]: Rect) -> f64 {
++    y + h / 2.
++}
++
++fn color(palette: &Value, name: &str) -> Result<Rgb> {
++    let [red, green, blue, _]: [u8; 4] =
++        serde_json::from_value(palette[name].clone()).with_context(|| format!("palette {name}"))?;
++    Ok([red, green, blue])
++}
++
++fn sample(image: &Raster, [x, y, w, h]: Rect) -> Result<Rgb> {
++    image.sample(x + w / 2., y + h / 2.)
++}
++
++fn ink(image: &Raster, rect: Rect, color: Rgb) -> Result<usize> {
++    Ok(image.colors(rect)?.get(&color).copied().unwrap_or(0))
++}
++
++fn measured(g: &Shape, value: f64) -> Result<()> {
++    check!(
++        g.target[2] >= 48.
++            && near(g.target[3], 240.)
++            && near(g.rail[1] - g.target[1], 12.)
++            && near(g.target[3] - g.rail[3], 24.),
++        "the 240 dp target and rail have the same axis"
++    );
++    let seam = middle_y(g.rail);
++    let expected = g.rail[1] + g.rail[3] * (100. - value) / 200.;
++    check!(
++        near(middle_y(g.handle), expected),
++        "signed values increase from the physical bottom"
++    );
++    let [low, high] = g.inactive;
++    if value == 0. {
++        check!(
++            g.active[3] <= 0.75 && near(low[1] - bottom(high), g.handle[3] + 12.),
++            "only the handle and its gap interrupt the two inactive sections at neutral"
++        );
++    } else if value < 0. {
++        check!(
++            g.active[3] > 0.
++                && near(g.active[1], seam + 2.)
++                && near(bottom(high), seam - 2.)
++                && near(g.handle[1] - bottom(g.active), 6.)
++                && near(low[1] - bottom(g.handle), 6.),
++            "negative active paint runs from just below neutral down to the handle"
++        );
++    } else {
++        check!(
++            g.active[3] > 0.
++                && near(bottom(g.active), seam - 2.)
++                && near(low[1], seam + 2.)
++                && near(g.active[1] - bottom(g.handle), 6.)
++                && near(g.handle[1] - bottom(high), 6.),
++            "positive active paint runs from just above neutral up to the handle"
++        );
++    }
++    Ok(())
++}
++
++async fn accessibility(tab: &Tab, index: usize, expected: f64, disabled: bool) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let node = ax(&tree, "slider", NAMES[index])?;
++    check_eq!(
++        ax_property(node, "orientation").and_then(Value::as_str),
++        Some("vertical"),
++        "Chrome publishes the vertical orientation"
++    );
++    check_eq!(
++        [
++            ax_property(node, "valuemin").and_then(Value::as_f64),
++            ax_property(node, "valuemax").and_then(Value::as_f64),
++            node["value"]["value"].as_f64(),
++        ],
++        [Some(-100.), Some(100.), Some(expected)],
++        "signed accessible range and current value"
++    );
++    check_eq!(
++        ax_property(node, "disabled") == Some(&json!(true)),
++        disabled,
++        "Chrome publishes the disabled state"
++    );
++    let element = projected(IDS[index]);
++    let values = tab.eval(&format!(
++        "['aria-valuenow','aria-valuetext','aria-orientation'].map(name => {element}.getAttribute(name))"
++    )).await?;
++    let expected_text = expected.to_string();
++    check_eq!(
++        values[0].as_str(),
++        Some(expected_text.as_str()),
++        "ARIA numeric value"
++    );
++    check_eq!(
++        values[2].as_str(),
++        Some("vertical"),
++        "DOM vertical orientation"
++    );
++    check!(
++        values[1].as_str().is_some_and(|value| !value.is_empty()),
++        "localized value text"
++    );
++    Ok(values)
++}
++
++async fn wide(tab: &Tab, env: &Env) -> Result<Value> {
++    let model = ready(tab, "d.visible && !d.dark && !d.rtl && d.text_scale === 1").await?;
++    let palette = &model["palette"];
++    let image = photo(tab, env, WIDE_PNG).await?;
++    let mut samples = Vec::new();
++    for (index, value) in [-50., 0., 50., -25., 50.].into_iter().enumerate() {
++        let g = shape(tab, IDS[index]).await?;
++        measured(&g, value)?;
++        let colors = [
++            sample(&image, g.handle)?,
++            sample(&image, g.inactive[0])?,
++            sample(&image, g.inactive[1])?,
++        ];
++        if index == 4 {
++            let toned = colors[0] != color(palette, "primary")?
++                && colors[0] != color(palette, "background")?;
++            check!(toned, "disabled handle remains visible in muted ink");
++        } else {
++            check_eq!(
++                colors[0],
++                color(palette, "primary")?,
++                "handle primary paint"
++            );
++            check!(
++                g.inactive.iter().all(|&track| near(track[2], 24.)),
++                "both inactive sections preserve Small track thickness"
++            );
++            for (track, stop) in g.inactive.into_iter().zip(g.stops) {
++                check!(
++                    contains(track, stop) && near(stop[2], 4.) && near(stop[3], 4.),
++                    "both physical ends have a four dp stop"
++                );
++                check_eq!(
++                    sample(&image, stop)?,
++                    color(palette, "on_secondary_container")?,
++                    "actual stop paint"
++                );
++                check!(
++                    ink(&image, track, color(palette, "secondary_container")?)? > 80,
++                    "actual inactive paint"
++                );
++            }
++            if value != 0. {
++                check!(
++                    ink(&image, g.active, color(palette, "primary")?)? > 50,
++                    "actual signed active paint"
++                );
++            }
++        }
++        let values = accessibility(tab, index, value, index == 4).await?;
++        samples.push(json!({"geometry":g,"value":value,"colors":colors,"aria":values}));
++    }
++    Ok(json!({"viewport":WIDE,"palette":palette,"samples":samples,"capture":WIDE_PNG}))
++}
++
++async fn paint(
++    tab: &Tab,
++    env: &Env,
++    id: &str,
++    capture: &str,
++    palette: &Value,
++    rtl: bool,
++) -> Result<Value> {
++    let label = part(tab, id, "label").await?;
++    let ring = part(tab, id, "focus").await?;
++    check!(
++        if rtl {
++            label[0] + label[2] < ring[0]
++        } else {
++            label[0] > ring[0] + ring[2]
++        },
++        "the upright label stands beside the trailing side of the focus ring"
++    );
++    let image = photo(tab, env, capture).await?;
++    let text = ink(&image, label, color(palette, "inverse_on_surface")?)?;
++    let fill = ink(&image, label, color(palette, "inverse_surface")?)?;
++    let focus = ink(&image, ring, color(palette, "secondary")?)?;
++    check!(
++        text > 20 && fill > 100 && focus > 20,
++        "actual indicator and focus paint"
++    );
++    Ok(json!({"label":label,"ring":ring,"text_ink":text,"label_fill":fill,"focus_ink":focus}))
++}
++
++async fn keys(tab: &Tab, env: &Env) -> Result<Value> {
++    focus_projected(tab, IDS[0]).await?;
++    tab.press("Home").await?;
++    ready(
++        tab,
++        "d.samples[0].value === -100 && d.samples[0].requests === 1",
++    )
++    .await?;
++    tab.press("End").await?;
++    ready(
++        tab,
++        "d.samples[0].value === 100 && d.samples[0].requests === 2",
++    )
++    .await?;
++    tab.press("ArrowRight").await?;
++    ready(tab, "d.samples[0].requests === 2").await?;
++    focus_projected(tab, IDS[3]).await?;
++    tab.press("ArrowUp").await?;
++    ready(
++        tab,
++        "d.samples[3].value === 0 && d.samples[3].requests === 1",
++    )
++    .await?;
++    measured(&shape(tab, IDS[3]).await?, 0.)?;
++    tab.press("ArrowRight").await?;
++    let model = ready(
++        tab,
++        "d.samples[3].value === 25 && d.samples[3].requests === 2 && d.samples[3].engaged",
++    )
++    .await?;
++    let g = shape(tab, IDS[3]).await?;
++    measured(&g, 25.)?;
++    check!(
++        near(g.handle[3], 2.),
++        "focused handle narrows on its vertical axis"
++    );
++    let paint = paint(tab, env, IDS[3], KEYS_PNG, &model["palette"], false).await?;
++    let aria = accessibility(tab, 3, 25., false).await?;
++    Ok(
++        json!({"viewport":WIDE,"palette":model["palette"],"geometry":g,"paint":paint,
++        "values":model["samples"],"aria":aria,"capture":KEYS_PNG}),
++    )
++}
++
++async fn touch(tab: &Tab, kind: &str, point: Option<[f64; 2]>) -> Result<()> {
++    let points = point.map_or_else(|| json!([]), |[x, y]| json!([{"x":x,"y":y,"id":1}]));
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":kind,"touchPoints":points}),
++    )
++    .await?;
++    tab.settle().await
++}
++
++async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    resize(tab, COMPACT[0], COMPACT[1]).await?;
++    for setting in SETTINGS {
++        activate(tab, setting).await?;
++    }
++    for id in IDS.into_iter().take(4) {
++        tab.press("Tab").await?;
++        focused(tab, id).await?;
++    }
++    tab.press("ArrowRight").await?;
++    ready(tab, "d.dark && d.rtl && d.text_scale === 2 && d.samples[3].value === 0 && d.samples[3].requests === 1")
++        .await?;
++    let g = shape(tab, IDS[3]).await?;
++    measured(&g, 0.)?;
++    let canvas = tab.canvas_box().await?;
++    let point = |value| {
++        [
++            canvas[0] + g.rail[0] + g.rail[2] / 2.,
++            canvas[1] + g.rail[1] + g.rail[3] * (100. - value) / 200.,
++        ]
++    };
++    touch(tab, "touchStart", Some(point(-75.))).await?;
++    ready(
++        tab,
++        "d.samples[3].value === -75 && d.samples[3].requests === 2",
++    )
++    .await?;
++    touch(tab, "touchMove", Some(point(50.))).await?;
++    ready(
++        tab,
++        "d.samples[3].value === 50 && d.samples[3].requests === 3",
++    )
++    .await?;
++    touch(tab, "touchCancel", None).await?;
++    ready(
++        tab,
++        "d.samples[3].value === 50 && d.samples[3].requests === 3",
++    )
++    .await?;
++    touch(tab, "touchStart", Some(point(25.))).await?;
++    touch(tab, "touchEnd", None).await?;
++    ready(
++        tab,
++        "d.samples[3].value === 25 && d.samples[3].requests === 4",
++    )
++    .await?;
++    focus_projected(tab, IDS[3]).await?;
++    let model = ready(tab, "d.samples[3].engaged").await?;
++    let g = shape(tab, IDS[3]).await?;
++    measured(&g, 25.)?;
++    let paint = paint(tab, env, IDS[3], COMPACT_PNG, &model["palette"], true).await?;
++    let label: Rect = serde_json::from_value(paint["label"].clone())?;
++    let ring: Rect = serde_json::from_value(paint["ring"].clone())?;
++    let screen = [0., 0., f64::from(COMPACT[0]), f64::from(COMPACT[1])];
++    check!(
++        contains(bounds(tab, SCROLL).await?, g.target)
++            && contains(screen, label)
++            && contains(screen, ring)
++            && label[3] >= 63.,
++        "Tab reveals the entire vertical target and full 200 percent label"
++    );
++    let aria = accessibility(tab, 3, 25., false).await?;
++    activate(tab, BACK).await?;
++    ready(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"viewport":COMPACT,"rtl":model["rtl"],"dark":model["dark"],
++        "text_scale":model["text_scale"],"palette":model["palette"],"geometry":g,"paint":paint,
++        "values":model["samples"],"aria":aria,"back_focus":SHOW,"capture":COMPACT_PNG}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(WIDE[0], WIDE[1] + 44, 2.).await?;
++    let mut report = json!({"browser":chrome.version,"adapter":null});
++    let result: Result<()> = async {
++        step(STEPS[0], "Vertical Centered paints both signs, neutral and outer stops with separate ARIA values");
++        route(&tab, url).await?;
++        report["adapter"] = tab.eval("(async()=>{ const a=await navigator.gpu.requestAdapter(); const {vendor,architecture,isFallbackAdapter}=a.info; return {vendor,architecture,isFallbackAdapter}; })()").await?;
++        report["wide"] = wide(&tab, env).await.context("M310 vertical centered paint and AX")?;
++        step(STEPS[1], "Vertical Centered reaches neutral and signed endpoints with a localized focused readout");
++        report["keys"] = keys(&tab, env).await.context("M311 vertical centered keys")?;
++        step(STEPS[2], "Vertical Centered keeps bottom-to-top touch and 200 percent labels in compact dark RTL");
++        report["compact"] = compact(&tab, env, url).await.context("M312 compact vertical centered touch")?;
++        Ok(())
++    }.await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact("material-vertical-centered-failure.png"))
++            .await;
++    }
++    env.write_json("material-vertical-centered-slider.json", &report)?;
++    result?;
++    check!(tab.errors().is_empty(), "no Vertical Centered page errors");
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index b142891ee5ccbcf70d315871dd516bc32b24da21..68cf8076e2d63f3f126a5d7332366c5ca4e88875 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -38,6 +38,7 @@ mod search_overlay_demo;
+ mod side_sheet_demo;
+ mod slider_demo;
+ mod slider_forms_demo;
++mod slider_inset_demo;
+ mod snackbar_demo;
+ mod split_demo;
+ mod switch_demo;
+@@ -47,6 +48,7 @@ mod time_input_demo;
+ mod time_scroll_demo;
+ mod toolbar_demo;
+ mod tooltip_demo;
++mod vertical_centered_slider_demo;
+ mod wide_navigation_rail_demo;
+ 
+ use app_bar_demo::{AppBarDemo, AppBarEvent};
+@@ -88,6 +90,7 @@ use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
+ use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
+ use slider_demo::{SliderDemo, SliderDemoEvent};
+ use slider_forms_demo::{SliderFormsDemo, SliderFormsEvent};
++use slider_inset_demo::{SliderInsetDemo, SliderInsetDemoEvent};
+ use snackbar_demo::{SnackbarDemo, SnackbarEvent};
+ use split_demo::{SplitDemo, SplitEvent};
+ use surface::{Color, Node, RangeValue, Role, Style};
+@@ -106,6 +109,7 @@ use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
+ use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
+ use toolbar_demo::{ToolbarDemo, ToolbarEvent};
+ use tooltip_demo::{TooltipDemo, TooltipEvent};
++use vertical_centered_slider_demo::{VerticalCenteredSliderDemo, VerticalCenteredSliderEvent};
+ use wide_navigation_rail_demo::{WideRailDemo, WideRailEvent};
+ 
+ pub struct Gallery {
+@@ -143,6 +147,8 @@ pub struct Gallery {
+     slider_demo: SliderDemo,
+     slider_forms_demo: SliderFormsDemo,
+     range_slider_demo: RangeSliderDemo,
++    vertical_centered_slider_demo: VerticalCenteredSliderDemo,
++    slider_inset_demo: SliderInsetDemo,
+     drawer_demo: DrawerDemo,
+     progress_demo: ProgressDemo,
+     loading_demo: LoadingDemo,
+@@ -217,6 +223,8 @@ impl Default for Gallery {
+             slider_demo: SliderDemo::default(),
+             slider_forms_demo: SliderFormsDemo::default(),
+             range_slider_demo: RangeSliderDemo::default(),
++            vertical_centered_slider_demo: VerticalCenteredSliderDemo::default(),
++            slider_inset_demo: SliderInsetDemo::default(),
+             drawer_demo: DrawerDemo::default(),
+             progress_demo: ProgressDemo::default(),
+             loading_demo: LoadingDemo::default(),
+@@ -336,6 +344,8 @@ pub enum Message {
+     SliderDemo(SliderDemoEvent),
+     SliderForms(SliderFormsEvent),
+     RangeSliderDemo(RangeSliderDemoEvent),
++    VerticalCenteredSlider(VerticalCenteredSliderEvent),
++    SliderInsetDemo(SliderInsetDemoEvent),
+     ScrollChoice(ScrollChoiceDemoEvent),
+     ScrollPair(ScrollPairDemoEvent),
+     ScrollPopup(ScrollPopupDemoEvent),
+@@ -524,6 +534,12 @@ impl Application for Gallery {
+         if self.range_slider_demo.visible() {
+             return self.range_slider_demo.text_scale();
+         }
++        if self.vertical_centered_slider_demo.visible() {
++            return self.vertical_centered_slider_demo.text_scale();
++        }
++        if self.slider_inset_demo.visible() {
++            return self.slider_inset_demo.text_scale();
++        }
+         if self.rail_large_text
+             || self.snackbar_demo.large_text()
+             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
+@@ -540,6 +556,10 @@ impl Application for Gallery {
+         let sliders = self.slider_demo.viewport_changed(width, height);
+         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
+         let range_sliders = self.range_slider_demo.viewport_changed(width, height);
++        let vertical_centered = self
++            .vertical_centered_slider_demo
++            .viewport_changed(width, height);
++        let slider_inset = self.slider_inset_demo.viewport_changed(width, height);
+         let inline = self.wide_rail_demo.viewport_changed(width);
+         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
+         let drawer = self.drawer_demo.viewport_changed(width, height);
+@@ -604,6 +624,8 @@ impl Application for Gallery {
+             || sliders
+             || slider_forms
+             || range_sliders
++            || vertical_centered
++            || slider_inset
+             || list_actions
+             || list_media
+             || list_reorder
+@@ -621,6 +643,8 @@ impl Application for Gallery {
+             || self.slider_demo.visible()
+             || self.slider_forms_demo.visible()
+             || self.range_slider_demo.visible()
++            || self.vertical_centered_slider_demo.visible()
++            || self.slider_inset_demo.visible()
+             || self.tooltip_demo.visible()
+             || self.scroll_popup_demo.visible()
+             || self.button_group_demo.visible()
+@@ -710,6 +734,10 @@ impl Application for Gallery {
+         let sliders = self.slider_demo.observe_frame(input, pressed);
+         let slider_forms = self.slider_forms_demo.observe_frame(input, pressed);
+         let range_sliders = self.range_slider_demo.observe_frame(input, pressed);
++        let vertical_centered = self
++            .vertical_centered_slider_demo
++            .observe_frame(input, pressed);
++        let slider_inset = self.slider_inset_demo.observe_frame(input, pressed);
+         let tabs = self
+             .tabs_demo
+             .observe_interaction(&frame, input, pressed, hovered);
+@@ -723,7 +751,9 @@ impl Application for Gallery {
+             || icons.animation.rebuild
+             || sliders
+             || slider_forms
+-            || range_sliders;
++            || range_sliders
++            || vertical_centered
++            || slider_inset;
+         update.animation.request_next |= fab.animation.request_next
+             || menu.request_next
+             || switch.request_next
+@@ -935,6 +965,8 @@ impl Application for Gallery {
+                     self.slider_demo.leave();
+                     self.slider_forms_demo.leave();
+                     self.range_slider_demo.leave();
++                    self.vertical_centered_slider_demo.leave();
++                    self.slider_inset_demo.leave();
+                 }
+                 if i != tooltip_demo::SECTION {
+                     self.tooltip_demo.leave();
+@@ -956,6 +988,10 @@ impl Application for Gallery {
+             Message::SliderDemo(event) => self.slider_demo.update(event),
+             Message::SliderForms(event) => self.slider_forms_demo.update(event),
+             Message::RangeSliderDemo(event) => self.range_slider_demo.update(event),
++            Message::VerticalCenteredSlider(event) => {
++                self.vertical_centered_slider_demo.update(event)
++            }
++            Message::SliderInsetDemo(event) => self.slider_inset_demo.update(event),
+             Message::Drawer(i) => self.drawer = i,
+             Message::DrawerDemo(event) => self.drawer_demo.update(event),
+             Message::Progress(event) => self.progress_demo.update(event),
+@@ -1174,6 +1210,12 @@ impl Application for Gallery {
+         if self.range_slider_demo.visible() {
+             return self.range_slider_demo.view(&t, self.dark);
+         }
++        if self.vertical_centered_slider_demo.visible() {
++            return self.vertical_centered_slider_demo.view(&t, self.dark);
++        }
++        if self.slider_inset_demo.visible() {
++            return self.slider_inset_demo.view(&t, self.dark);
++        }
+         let mut children = vec![
+             t.heading("gallery-title", "Material gallery"),
+             t.row([
+@@ -1281,6 +1323,8 @@ impl Application for Gallery {
+                             SliderDemo::show_button(&t),
+                             SliderFormsDemo::show_button(&t),
+                             RangeSliderDemo::show_button(&t),
++                            VerticalCenteredSliderDemo::show_button(&t),
++                            SliderInsetDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -1915,6 +1959,8 @@ mod web {
+         state["slider_demo"] = s.slider_demo.inspect(&theme);
+         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
+         state["range_slider_demo"] = s.range_slider_demo.inspect(&theme, s.dark);
++        state["vertical_centered_slider_demo"] = s.vertical_centered_slider_demo.inspect(&theme, s.dark);
++        state["slider_inset_demo"] = s.slider_inset_demo.inspect(&theme, s.dark);
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
+diff --git a/examples/material-gallery/src/slider_inset_demo.rs b/examples/material-gallery/src/slider_inset_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..616a4dd2b2839fb5655f942f64814bc6f62ef916
+--- /dev/null
++++ b/examples/material-gallery/src/slider_inset_demo.rs
+@@ -0,0 +1,798 @@
++use std::sync::OnceLock;
++
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::{FrameInput, View};
++use surface_material::{
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, SliderInsetIcon,
++    StandardSliderMode, StandardSliderOptions, StandardSliderSize, Theme, VectorIcon,
++    VerticalStandardSliderPlacement,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++const SHOW: &str = "slider-inset-demo-show";
++const BACK: &str = "slider-inset-demo-back";
++const THEME: &str = "slider-inset-demo-theme";
++const RTL: &str = "slider-inset-demo-rtl";
++const LARGE_TEXT: &str = "slider-inset-demo-large-text";
++const SCROLL: &str = "slider-inset-demo-scroll";
++const HORIZONTAL_COUNT: usize = 4;
++const ROUTE_PADDING: f32 = 16.;
++const SCROLL_PADDING: f32 = 6.;
++const MAX_SCROLL_WIDTH: f32 = 856.;
++const COLUMN_GAP: f32 = 24.;
++const LEADING_ROOM: f32 = 8.;
++const LABEL_ROOM: f32 = 120.;
++const VERTICAL_HEIGHT: f32 = 240.;
++const SHORT_WIDTH: f32 = 88.;
++
++#[derive(Clone, Copy)]
++enum Axis {
++    Horizontal,
++    Short,
++    Vertical,
++}
++
++struct Sample {
++    id: &'static str,
++    name: &'static str,
++    size: StandardSliderSize,
++    axis: Axis,
++    initially: f64,
++    disabled: bool,
++}
++
++const SAMPLES: [Sample; 8] = [
++    Sample {
++        id: "slider-inset-demo-horizontal-medium",
++        name: "中型水平音量",
++        size: StandardSliderSize::Medium,
++        axis: Axis::Horizontal,
++        initially: 65.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-horizontal-large",
++        name: "大型水平音量",
++        size: StandardSliderSize::Large,
++        axis: Axis::Horizontal,
++        initially: 0.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-horizontal-xl",
++        name: "特大水平音量",
++        size: StandardSliderSize::ExtraLarge,
++        axis: Axis::Horizontal,
++        initially: 65.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-short",
++        name: "短軌道音量",
++        size: StandardSliderSize::Medium,
++        axis: Axis::Short,
++        initially: 50.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-vertical-medium",
++        name: "中型垂直音量",
++        size: StandardSliderSize::Medium,
++        axis: Axis::Vertical,
++        initially: 65.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-vertical-large",
++        name: "大型垂直音量",
++        size: StandardSliderSize::Large,
++        axis: Axis::Vertical,
++        initially: 0.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-vertical-xl",
++        name: "特大垂直音量",
++        size: StandardSliderSize::ExtraLarge,
++        axis: Axis::Vertical,
++        initially: 65.,
++        disabled: false,
++    },
++    Sample {
++        id: "slider-inset-demo-disabled",
++        name: "停用垂直音量",
++        size: StandardSliderSize::Large,
++        axis: Axis::Vertical,
++        initially: 65.,
++        disabled: true,
++    },
++];
++
++impl Sample {
++    fn target_width(&self) -> f32 {
++        match self.size {
++            StandardSliderSize::Medium => 52.,
++            StandardSliderSize::Large => 68.,
++            StandardSliderSize::ExtraLarge => 108.,
++            _ => unreachable!("valid inset slider size"),
++        }
++    }
++}
++
++#[derive(Clone)]
++pub enum SliderInsetDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Change(usize, f64),
++}
++
++pub(crate) struct SliderInsetDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    viewport: (f32, f32),
++    values: [f64; SAMPLES.len()],
++    requests: [usize; SAMPLES.len()],
++    engaged: Option<usize>,
++}
++
++impl Default for SliderInsetDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            viewport: (960., 1040.),
++            values: SAMPLES.each_ref().map(|sample| sample.initially),
++            requests: [0; SAMPLES.len()],
++            engaged: None,
++        }
++    }
++}
++
++impl SliderInsetDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.engaged = None;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let next = (width, height);
++        if self.viewport == next {
++            return false;
++        }
++        self.viewport = next;
++        self.visible
++    }
++
++    pub(crate) fn observe_frame(&mut self, input: FrameInput<'_>, pressed: Option<&str>) -> bool {
++        if !self.visible {
++            return false;
++        }
++        let next = [pressed, input.focused]
++            .into_iter()
++            .flatten()
++            .find_map(|id| {
++                SAMPLES
++                    .iter()
++                    .position(|sample| sample.id == id && !sample.disabled)
++            });
++        if self.engaged == next {
++            return false;
++        }
++        self.engaged = next;
++        true
++    }
++
++    pub(crate) fn update(&mut self, event: SliderInsetDemoEvent) {
++        use SliderInsetDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            Change(index, value)
++                if self.visible
++                    && SAMPLES.get(index).is_some_and(|sample| !sample.disabled)
++                    && (0.0..=100.0).contains(&value)
++                    && self.values[index] != value =>
++            {
++                self.values[index] = value;
++                self.requests[index] += 1;
++            }
++            Change(..) => {}
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "滑桿內嵌圖示",
++                ButtonKind::Outlined,
++                false,
++                Message::SliderInsetDemo(SliderInsetDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn column_width(&self, columns: usize) -> f32 {
++        let route = (self.viewport.0 - 2. * ROUTE_PADDING).min(MAX_SCROLL_WIDTH);
++        (route - 2. * SCROLL_PADDING - (columns - 1) as f32 * COLUMN_GAP) / columns as f32
++    }
++
++    fn sample(&self, theme: &Theme, index: usize, columns: usize) -> View<Message> {
++        let sample = &SAMPLES[index];
++        let label = value_label(self.values[index]);
++        let options = StandardSliderOptions {
++            id: sample.id,
++            name: sample.name,
++            min: 0.,
++            max: 100.,
++            value: self.values[index],
++            mode: StandardSliderMode::Continuous { keyboard_step: 5. },
++            size: sample.size,
++            direction: if self.rtl {
++                LayoutDirection::RightToLeft
++            } else {
++                LayoutDirection::LeftToRight
++            },
++            disabled: sample.disabled,
++            engaged: self.engaged == Some(index),
++            value_label: Some(&label),
++        };
++        let changed =
++            move |value| Message::SliderInsetDemo(SliderInsetDemoEvent::Change(index, value));
++        let icon = SliderInsetIcon {
++            icon: speaker(false),
++            at_minimum: Some(speaker(true)),
++        };
++        let contents = if matches!(sample.axis, Axis::Vertical) {
++            let label_room = (self.column_width(columns) - sample.target_width() - LEADING_ROOM)
++                .clamp(0., LABEL_ROOM);
++            let slider = theme
++                .vertical_standard_slider_with_inset_icon(
++                    options,
++                    VerticalStandardSliderPlacement {
++                        height: VERTICAL_HEIGHT,
++                        label_room,
++                    },
++                    icon,
++                    changed,
++                )
++                .expect("valid Gallery vertical inset slider");
++            let lane = Node::new(Role::Group, "").styled(Style::row());
++            let lane = if self.rtl { lane.reverse_row() } else { lane };
++            let space = |width| {
++                View::new(
++                    Node::new(Role::Group, "").styled(Style::column().width(Length::Px(width))),
++                )
++            };
++            View::new(lane).children([space(LEADING_ROOM), slider, space(label_room)])
++        } else {
++            let slider = theme
++                .standard_slider_with_inset_icon(options, icon, changed)
++                .expect("valid Gallery horizontal inset slider");
++            let width = if matches!(sample.axis, Axis::Short) {
++                Length::Px(SHORT_WIDTH)
++            } else {
++                Length::Percent(1.)
++            };
++            let room = typography::LABEL_LARGE.line_height_px() * self.text_scale() + 24. + 9.;
++            View::new(Node::new(Role::Group, "").styled(Style::column().width(width))).children([
++                View::new(
++                    Node::new(Role::Group, "").styled(Style::column().height(Length::Px(room))),
++                ),
++                slider,
++            ])
++        };
++        let column = Style::column().align(Align::Center).gap(8.);
++        let column = if columns > 1 {
++            column.width(Length::Px(0.)).grow(1.)
++        } else {
++            column.width(Length::Percent(1.))
++        };
++        View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-row", sample.id))
++                .styled(column),
++        )
++        .children([
++            theme
++                .text(&format!("{}-caption", sample.id), sample.name)
++                .without_interaction(None),
++            contents,
++        ])
++    }
++
++    fn sample_row(&self, theme: &Theme, start: usize, columns: usize) -> View<Message> {
++        let row = Node::new(Role::Group, "").styled(
++            Style::row()
++                .width(Length::Percent(1.))
++                .align(Align::Start)
++                .gap(COLUMN_GAP),
++        );
++        let row = if self.rtl { row.reverse_row() } else { row };
++        View::new(row)
++            .children((start..start + columns).map(|index| self.sample(theme, index, columns)))
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use SliderInsetDemoEvent::*;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::SliderInsetDemo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(
++                RTL,
++                "右起",
++                self.rtl,
++                Message::SliderInsetDemo(ToggleDirection),
++            ),
++            toggle(
++                LARGE_TEXT,
++                "大字",
++                self.large_text,
++                Message::SliderInsetDemo(ToggleLargeText),
++            ),
++        ]);
++        let horizontal_columns = if self.viewport.0 >= 720. { 2 } else { 1 };
++        let vertical_columns = if self.viewport.0 >= 900. {
++            4
++        } else {
++            horizontal_columns
++        };
++        let mut samples = vec![theme.heading("slider-inset-demo-horizontal-title", "水平滑桿")];
++        samples.extend(
++            (0..HORIZONTAL_COUNT)
++                .step_by(horizontal_columns)
++                .map(|start| self.sample_row(theme, start, horizontal_columns)),
++        );
++        samples.push(theme.heading("slider-inset-demo-vertical-title", "垂直滑桿"));
++        samples.extend(
++            (HORIZONTAL_COUNT..SAMPLES.len())
++                .step_by(vertical_columns)
++                .map(|start| self.sample_row(theme, start, vertical_columns)),
++        );
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .gap(24.)
++            .padding(SCROLL_PADDING)
++            .clip(true);
++        scroll_style.max_width = Length::Px(MAX_SCROLL_WIDTH);
++        let scroll = View::new(
++            Node::new(Role::Group, "內嵌圖示範例")
++                .id(SCROLL)
++                .styled(scroll_style),
++        )
++        .accessibility_scroll_pages()
++        .children(samples);
++        View::new(
++            Node::new(Role::Window, "Material gallery")
++                .id("slider-inset-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(ROUTE_PADDING)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("slider-inset-demo-title", "滑桿內嵌圖示"),
++            controls,
++            scroll,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let colors = theme.colors;
++        let samples: Vec<_> = SAMPLES.iter().enumerate().map(|(index, sample)| {
++            let size = match sample.size {
++                StandardSliderSize::Medium => "medium",
++                StandardSliderSize::Large => "large",
++                StandardSliderSize::ExtraLarge => "extra_large",
++                _ => unreachable!("valid inset slider size"),
++            };
++            serde_json::json!({
++                "id": sample.id, "value": self.values[index], "label": value_label(self.values[index]),
++                "size": size, "vertical": matches!(sample.axis, Axis::Vertical),
++                "minimum_glyph": self.values[index] == 0., "requests": self.requests[index],
++                "engaged": self.engaged == Some(index), "disabled": sample.disabled,
++            })
++        }).collect();
++        serde_json::json!({
++            "visible": self.visible, "rtl": self.rtl, "text_scale": self.text_scale(),
++            "dark": dark, "width": self.viewport.0, "height": self.viewport.1, "samples": samples,
++            "palette": {
++                "background": color(theme.background), "primary": color(colors.primary),
++                "on_primary": color(colors.on_primary), "secondary_container": color(colors.secondary_container),
++                "on_secondary_container": color(colors.on_secondary_container), "secondary": color(colors.secondary),
++                "on_surface": color(colors.on_surface), "inverse_surface": color(colors.inverse_surface),
++                "inverse_on_surface": color(colors.inverse_on_surface)
++            }
++        })
++    }
++}
++
++fn value_label(value: f64) -> String {
++    let rounded = (value * 10.).round() / 10.;
++    format!("{rounded}％")
++}
++
++fn speaker(muted: bool) -> &'static VectorIcon {
++    const BODY: [[f32; 2]; 6] = [
++        [3., 9.],
++        [7., 9.],
++        [13., 4.],
++        [13., 20.],
++        [7., 15.],
++        [3., 15.],
++    ];
++    const SOUND: [[f32; 2]; 4] = [[16., 7.], [21., 11.], [21., 13.], [16., 17.]];
++    const MUTE: [[f32; 2]; 12] = [
++        [15., 9.],
++        [17., 7.],
++        [19., 9.],
++        [21., 7.],
++        [23., 9.],
++        [21., 11.],
++        [23., 13.],
++        [21., 15.],
++        [19., 13.],
++        [17., 15.],
++        [15., 13.],
++        [17., 11.],
++    ];
++    static SOUND_ICON: OnceLock<VectorIcon> = OnceLock::new();
++    static MUTE_ICON: OnceLock<VectorIcon> = OnceLock::new();
++    let (cache, mark) = if muted {
++        (&MUTE_ICON, MUTE.as_slice())
++    } else {
++        (&SOUND_ICON, SOUND.as_slice())
++    };
++    cache.get_or_init(|| {
++        VectorIcon::from_contours([BODY.as_slice().iter().copied(), mark.iter().copied()])
++            .expect("valid Gallery speaker glyph")
++    })
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::Gallery;
++    use surface::{Color, ExtendedDisplayList, ExtendedPaintOp, PathFill, Rect, TextMeasurer};
++    use surface_app::{EditKey, Event, Runtime};
++
++    const HOME: (f32, f32) = (960., 1900.);
++    const WIDE: (f32, f32) = (960., 1040.);
++    const COMPACT: (f32, f32) = (320., 880.);
++    const ACTIVE: &str = "inset-icon-active";
++    const INACTIVE: &str = "inset-icon-inactive";
++
++    struct Fonts;
++
++    impl TextMeasurer for Fonts {
++        fn measure(&mut self, text: &str, size: f32, max_width: Option<f32>) -> (f32, f32) {
++            let natural = text.chars().count() as f32 * size;
++            let limit = max_width.unwrap_or(natural).max(1.);
++            (natural.min(limit), size * (natural / limit).ceil().max(1.))
++        }
++    }
++
++    fn draw(runtime: &mut Runtime<Gallery>, viewport: (f32, f32)) -> ExtendedDisplayList {
++        runtime
++            .render_extended(viewport.0, viewport.1, &mut Fonts)
++            .unwrap()
++    }
++
++    fn home() -> Runtime<Gallery> {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        runtime
++            .apply(Message::Section(crate::slider_demo::SECTION))
++            .unwrap();
++        draw(&mut runtime, HOME);
++        runtime
++    }
++
++    fn open(runtime: &mut Runtime<Gallery>, viewport: (f32, f32)) -> ExtendedDisplayList {
++        let entry = runtime.dom().by_id(SHOW).unwrap();
++        let geometry = &runtime.computed().unwrap().nodes[entry.index()];
++        assert!(contains(geometry.clip, geometry.bounds), "{geometry:?}");
++        assert!(runtime.activate(SHOW).unwrap());
++        let paint = draw(runtime, viewport);
++        assert_eq!(runtime.focused(), Some(BACK));
++        paint
++    }
++
++    fn bounds(runtime: &Runtime<Gallery>, key: &str) -> Rect {
++        let id = runtime.dom().by_id(key).unwrap();
++        runtime.computed().unwrap().nodes[id.index()].bounds
++    }
++
++    fn part(runtime: &Runtime<Gallery>, sample: &Sample, suffix: &str) -> Rect {
++        bounds(runtime, &format!("{}-{suffix}", sample.id))
++    }
++
++    fn contains(outer: Rect, inner: Rect) -> bool {
++        let clipped = outer.intersect(inner);
++        (clipped.x - inner.x).abs() < 0.001
++            && (clipped.y - inner.y).abs() < 0.001
++            && (clipped.width - inner.width).abs() < 0.001
++            && (clipped.height - inner.height).abs() < 0.001
++    }
++
++    fn has_area(rect: Rect) -> bool {
++        rect.width > 0. && rect.height > 0.
++    }
++
++    fn glyph(list: &ExtendedDisplayList, rect: Rect) -> &PathFill {
++        let mut paths = list.ops().iter().filter_map(|op| match op {
++            ExtendedPaintOp::FillPath(path) if path.clip() == rect => Some(path),
++            _ => None,
++        });
++        let path = paths.next().expect("visible artwork is painted");
++        assert!(paths.next().is_none());
++        assert!(has_area(path.rect()) && contains(rect, path.rect()));
++        path
++    }
++
++    fn tab(runtime: &mut Runtime<Gallery>, viewport: (f32, f32)) -> ExtendedDisplayList {
++        runtime
++            .dispatch(Event::FocusNext { reverse: false })
++            .unwrap();
++        draw(runtime, viewport)
++    }
++
++    fn key(runtime: &mut Runtime<Gallery>, input: EditKey) {
++        assert!(runtime
++            .dispatch(Event::Edit {
++                key: input,
++                extend: false,
++                by_word: false
++            })
++            .unwrap());
++    }
++
++    #[test]
++    fn both_orientations_show_m_l_xl_and_keep_short_track_stop_and_names() {
++        let mut runtime = home();
++        for (show, sample, back) in [
++            ("slider-demo-show", "slider-demo-xs", "slider-demo-back"),
++            (
++                "slider-forms-demo-show",
++                "slider-forms-demo-vertical-discrete",
++                "slider-forms-demo-back",
++            ),
++            (
++                "range-slider-demo-show",
++                "range-slider-demo-continuous-lower",
++                "range-slider-demo-back",
++            ),
++        ] {
++            assert!(runtime.activate(show).unwrap());
++            draw(&mut runtime, WIDE);
++            assert!(runtime.dom().by_id(sample).is_some());
++            assert!(runtime.dom().by_id(SAMPLES[0].id).is_none());
++            assert!(runtime.activate(back).unwrap());
++            draw(&mut runtime, HOME);
++            assert_eq!(runtime.focused(), Some(show));
++        }
++        let list = open(&mut runtime, WIDE);
++        let scroll = bounds(&runtime, SCROLL);
++        let frame = runtime.accessibility_frame().unwrap();
++        let colors = Theme::light().colors;
++        for sample in &SAMPLES {
++            let id = runtime.dom().by_id(sample.id).unwrap();
++            let node = frame.node(id).unwrap().node;
++            assert_eq!(node.name(), sample.name);
++            assert_eq!(
++                node.is_vertical_slider(),
++                matches!(sample.axis, Axis::Vertical)
++            );
++            assert_eq!(node.is_disabled(), sample.disabled);
++            assert_eq!(
++                node.slider_value_text(),
++                Some(value_label(sample.initially).as_str())
++            );
++            assert_eq!(frame.children(id).count(), 0);
++            let target = bounds(&runtime, sample.id);
++            assert!(contains(scroll, target));
++            let active = part(&runtime, sample, ACTIVE);
++            let inactive = part(&runtime, sample, INACTIVE);
++            for suffix in [
++                ACTIVE,
++                INACTIVE,
++                "inset-icon-active-glyph",
++                "inset-icon-inactive-glyph",
++            ] {
++                let key = format!("{}-{suffix}", sample.id);
++                assert!(frame.node(runtime.dom().by_id(&key).unwrap()).is_none());
++            }
++            let stop = part(&runtime, sample, "stop");
++            assert_eq!((stop.width, stop.height), (4., 4.));
++            if matches!(sample.axis, Axis::Short) {
++                assert_eq!(target.width, SHORT_WIDTH);
++                assert_eq!(part(&runtime, sample, "rail").width, SHORT_WIDTH - 24.);
++                assert!(!has_area(active) && !has_area(inactive));
++                assert!(contains(part(&runtime, sample, "inactive"), stop));
++                continue;
++            }
++            let (rect, track, other, ink) = if sample.initially == 0. {
++                (inactive, "inactive", active, colors.on_secondary_container)
++            } else {
++                (active, "active", inactive, colors.on_primary)
++            };
++            assert!(!has_area(other));
++            let side = if sample.size == StandardSliderSize::ExtraLarge {
++                32.
++            } else {
++                24.
++            };
++            assert_eq!((rect.width, rect.height), (side, side));
++            assert!(contains(part(&runtime, sample, track), rect));
++            assert!(!has_area(stop.intersect(rect)));
++            let painted = glyph(&list, rect);
++            if sample.disabled {
++                let Color(r, g, b, _) = colors.inverse_on_surface;
++                assert_eq!(painted.color(), Color(r, g, b, 97));
++                assert!(frame.adjustment_target(id).is_none());
++            } else {
++                assert_eq!(painted.color(), ink);
++                assert!(frame.adjustment_target(id).is_some());
++            }
++        }
++        assert!(runtime.activate(BACK).unwrap());
++        draw(&mut runtime, HOME);
++        assert_eq!(runtime.focused(), Some(SHOW));
++    }
++
++    #[test]
++    fn keyboard_relocates_the_regular_glyph_then_changes_only_the_minimum_contour() {
++        let mut runtime = home();
++        open(&mut runtime, WIDE);
++        let sample = &SAMPLES[0];
++        for expected in [THEME, RTL, LARGE_TEXT, sample.id] {
++            tab(&mut runtime, WIDE);
++            assert_eq!(runtime.focused(), Some(expected));
++        }
++        let hit = bounds(&runtime, sample.id);
++        let rail = part(&runtime, sample, "rail");
++        let stop = part(&runtime, sample, "stop");
++        let positive = draw(&mut runtime, WIDE);
++        let active = part(&runtime, sample, ACTIVE);
++        let original_points = glyph(&positive, active).points().len();
++        assert!(runtime.set_value(sample.id, 5.).unwrap());
++        let relocated = draw(&mut runtime, WIDE);
++        let inactive = part(&runtime, sample, INACTIVE);
++        assert!(!has_area(part(&runtime, sample, ACTIVE)));
++        assert_eq!(glyph(&relocated, inactive).points().len(), original_points);
++        assert_eq!(stop.x - inactive.x - inactive.width, 6.);
++        key(&mut runtime, EditKey::Home);
++        let muted = draw(&mut runtime, WIDE);
++        assert_eq!(runtime.app().slider_inset_demo.values[0], 0.);
++        assert_eq!(runtime.app().slider_inset_demo.requests[0], 2);
++        assert_eq!(part(&runtime, sample, INACTIVE), inactive);
++        assert_ne!(glyph(&muted, inactive).points().len(), original_points);
++        assert_eq!(bounds(&runtime, sample.id), hit);
++        assert_eq!(part(&runtime, sample, "rail"), rail);
++        assert_eq!(part(&runtime, sample, "stop"), stop);
++        key(&mut runtime, EditKey::End);
++        let restored = draw(&mut runtime, WIDE);
++        assert_eq!(runtime.app().slider_inset_demo.values[0], 100.);
++        assert_eq!(runtime.app().slider_inset_demo.requests[0], 3);
++        assert_eq!(
++            glyph(&restored, part(&runtime, sample, ACTIVE))
++                .points()
++                .len(),
++            original_points
++        );
++        assert_eq!(runtime.focused(), Some(sample.id));
++    }
++
++    #[test]
++    fn compact_dark_rtl_scroll_reveals_the_active_vertical_glyph_and_large_focus_label() {
++        let mut runtime = home();
++        open(&mut runtime, COMPACT);
++        for control in [THEME, RTL, LARGE_TEXT] {
++            assert!(runtime.activate(control).unwrap());
++            draw(&mut runtime, COMPACT);
++        }
++        let model = &runtime.app().slider_inset_demo;
++        assert!(runtime.app().dark && model.rtl);
++        assert_eq!(model.text_scale(), 2.);
++        let scroll = bounds(&runtime, SCROLL);
++        let h_medium = &SAMPLES[0];
++        let paint = tab(&mut runtime, COMPACT);
++        assert_eq!(runtime.focused(), Some(h_medium.id));
++        let icon = part(&runtime, h_medium, ACTIVE);
++        let rail = part(&runtime, h_medium, "rail");
++        let handle = part(&runtime, h_medium, "handle");
++        assert!(icon.x > handle.x);
++        assert_eq!(rail.x + rail.width - icon.x - icon.width, 6.);
++        assert_eq!(glyph(&paint, icon).color(), Theme::dark().colors.on_primary);
++        for suffix in ["label", "focus"] {
++            assert!(contains(scroll, part(&runtime, h_medium, suffix)));
++        }
++
++        let v_medium = &SAMPLES[4];
++        let original = bounds(&runtime, v_medium.id);
++        for sample in &SAMPLES[1..=4] {
++            tab(&mut runtime, COMPACT);
++            assert_eq!(runtime.focused(), Some(sample.id));
++        }
++        let visible = draw(&mut runtime, COMPACT);
++        let target = bounds(&runtime, v_medium.id);
++        let focus = part(&runtime, v_medium, "focus");
++        let label = part(&runtime, v_medium, "label");
++        let icon = part(&runtime, v_medium, ACTIVE);
++        let handle = part(&runtime, v_medium, "handle");
++        assert!(target.y < original.y);
++        assert!(icon.y > handle.y);
++        assert_eq!(label.x + label.width + 4., focus.x);
++        assert!(label.height >= 64.);
++        assert!(contains(label, part(&runtime, v_medium, "label-text")));
++        for region in [target, focus, label, icon] {
++            assert!(contains(scroll, region), "{region:?} exceeds {scroll:?}");
++        }
++        assert_eq!(
++            glyph(&visible, icon).color(),
++            Theme::dark().colors.on_primary
++        );
++
++        let disabled = &SAMPLES[7];
++        let original = bounds(&runtime, disabled.id);
++        runtime
++            .dispatch(Event::Scroll {
++                x: scroll.x + scroll.width / 2.,
++                y: scroll.y + scroll.height / 2.,
++                delta_x: 0.,
++                delta_y: 4096.,
++            })
++            .unwrap();
++        draw(&mut runtime, COMPACT);
++        let target = bounds(&runtime, disabled.id);
++        assert!(target.y < original.y && contains(scroll, target));
++        assert!(runtime.set_value(disabled.id, 0.).is_err());
++        assert_eq!(runtime.app().slider_inset_demo.requests[7], 0);
++    }
++}
+diff --git a/examples/material-gallery/src/vertical_centered_slider_demo.rs b/examples/material-gallery/src/vertical_centered_slider_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..e00722ed146882eeff9eaea78199df7686021bf3
+--- /dev/null
++++ b/examples/material-gallery/src/vertical_centered_slider_demo.rs
+@@ -0,0 +1,628 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::{FrameInput, View};
++use surface_material::{
++    shape::LayoutDirection, ButtonKind, ChoiceState, StandardSliderMode, StandardSliderOptions,
++    StandardSliderSize, Theme, VerticalStandardSliderPlacement,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++const SHOW: &str = "vertical-centered-slider-demo-show";
++const BACK: &str = "vertical-centered-slider-demo-back";
++const THEME: &str = "vertical-centered-slider-demo-theme";
++const RTL: &str = "vertical-centered-slider-demo-rtl";
++const LARGE_TEXT: &str = "vertical-centered-slider-demo-large-text";
++const SCROLL: &str = "vertical-centered-slider-demo-scroll";
++
++const WIDE_AT: f32 = 720.;
++const HEIGHT: f32 = 240.;
++const TARGET_WIDTH: f32 = 48.;
++const LEADING_ROOM: f32 = 8.;
++const LABEL_ROOM: f32 = 120.;
++const ROUTE_PADDING: f32 = 16.;
++const SCROLL_PADDING: f32 = 6.;
++const MIN: f64 = -100.;
++const MAX: f64 = 100.;
++const NEUTRAL: f64 = 0.;
++
++struct Sample {
++    id: &'static str,
++    name: &'static str,
++    initially: f64,
++    mode: StandardSliderMode,
++    disabled: bool,
++}
++
++const CONTINUOUS: StandardSliderMode = StandardSliderMode::Continuous { keyboard_step: 5. };
++const DISCRETE: StandardSliderMode = StandardSliderMode::Discrete { intervals: 8 };
++
++const SAMPLES: [Sample; 5] = [
++    Sample {
++        id: "vertical-centered-slider-demo-negative",
++        name: "負值平衡",
++        initially: -50.,
++        mode: CONTINUOUS,
++        disabled: false,
++    },
++    Sample {
++        id: "vertical-centered-slider-demo-neutral",
++        name: "中立平衡",
++        initially: 0.,
++        mode: CONTINUOUS,
++        disabled: false,
++    },
++    Sample {
++        id: "vertical-centered-slider-demo-positive",
++        name: "正值平衡",
++        initially: 50.,
++        mode: CONTINUOUS,
++        disabled: false,
++    },
++    Sample {
++        id: "vertical-centered-slider-demo-discrete",
++        name: "階梯平衡",
++        initially: -25.,
++        mode: DISCRETE,
++        disabled: false,
++    },
++    Sample {
++        id: "vertical-centered-slider-demo-disabled",
++        name: "停用平衡",
++        initially: 50.,
++        mode: DISCRETE,
++        disabled: true,
++    },
++];
++
++#[derive(Clone)]
++pub enum VerticalCenteredSliderEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Change(usize, f64),
++}
++
++pub(crate) struct VerticalCenteredSliderDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    viewport: (f32, f32),
++    values: [f64; SAMPLES.len()],
++    requests: [usize; SAMPLES.len()],
++    engaged: Option<usize>,
++}
++
++impl Default for VerticalCenteredSliderDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            viewport: (960., 1040.),
++            values: SAMPLES.each_ref().map(|sample| sample.initially),
++            requests: [0; SAMPLES.len()],
++            engaged: None,
++        }
++    }
++}
++
++impl VerticalCenteredSliderDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.engaged = None;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let next = (width, height);
++        if self.viewport == next {
++            return false;
++        }
++        self.viewport = next;
++        self.visible
++    }
++
++    pub(crate) fn observe_frame(&mut self, input: FrameInput<'_>, pressed: Option<&str>) -> bool {
++        if !self.visible {
++            return false;
++        }
++        let next = [pressed, input.focused]
++            .into_iter()
++            .flatten()
++            .find_map(|id| {
++                SAMPLES
++                    .iter()
++                    .position(|sample| sample.id == id && !sample.disabled)
++            });
++        if self.engaged == next {
++            return false;
++        }
++        self.engaged = next;
++        true
++    }
++
++    pub(crate) fn update(&mut self, event: VerticalCenteredSliderEvent) {
++        use VerticalCenteredSliderEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            Change(index, value)
++                if self.visible
++                    && SAMPLES.get(index).is_some_and(|sample| !sample.disabled)
++                    && (MIN..=MAX).contains(&value)
++                    && self.values[index] != value =>
++            {
++                self.values[index] = value;
++                self.requests[index] += 1;
++            }
++            Change(..) => {}
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "垂直置中滑桿",
++                ButtonKind::Outlined,
++                false,
++                Message::VerticalCenteredSlider(VerticalCenteredSliderEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn sample(&self, theme: &Theme, index: usize, wide: bool) -> View<Message> {
++        let sample = &SAMPLES[index];
++        let value = self.values[index];
++        let label = signed_value(value);
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let available = self.viewport.0 - 2. * (ROUTE_PADDING + SCROLL_PADDING);
++        let label_room = (available - TARGET_WIDTH - LEADING_ROOM).clamp(0., LABEL_ROOM);
++        let slider = theme
++            .vertical_centered_slider(
++                StandardSliderOptions {
++                    id: sample.id,
++                    name: sample.name,
++                    min: MIN,
++                    max: MAX,
++                    value,
++                    mode: sample.mode,
++                    size: StandardSliderSize::Small,
++                    direction,
++                    disabled: sample.disabled,
++                    engaged: self.engaged == Some(index),
++                    value_label: Some(&label),
++                },
++                VerticalStandardSliderPlacement {
++                    height: HEIGHT,
++                    label_room,
++                },
++                NEUTRAL,
++                move |value| {
++                    Message::VerticalCenteredSlider(VerticalCenteredSliderEvent::Change(
++                        index, value,
++                    ))
++                },
++            )
++            .expect("valid Gallery vertical centered slider");
++        let lane = Node::new(Role::Group, "").styled(Style::row());
++        let lane = if self.rtl { lane.reverse_row() } else { lane };
++        let space = |width| {
++            View::new(Node::new(Role::Group, "").styled(Style::column().width(Length::Px(width))))
++        };
++        let column = Style::column().align(Align::Center).gap(8.);
++        let column = if wide {
++            column.width(Length::Px(0.)).grow(1.)
++        } else {
++            column.width(Length::Percent(1.))
++        };
++        View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-row", sample.id))
++                .styled(column),
++        )
++        .children([
++            theme
++                .text(&format!("{}-caption", sample.id), sample.name)
++                .without_interaction(None),
++            View::new(lane).children([space(LEADING_ROOM), slider, space(label_room)]),
++        ])
++    }
++
++    fn sample_row(&self, theme: &Theme, indices: std::ops::Range<usize>) -> View<Message> {
++        let row = Node::new(Role::Group, "").styled(
++            Style::row()
++                .width(Length::Percent(1.))
++                .align(Align::Start)
++                .gap(24.),
++        );
++        let row = if self.rtl { row.reverse_row() } else { row };
++        View::new(row).children(indices.map(|index| self.sample(theme, index, true)))
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use VerticalCenteredSliderEvent::*;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::VerticalCenteredSlider(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(
++                RTL,
++                "右起",
++                self.rtl,
++                Message::VerticalCenteredSlider(ToggleDirection),
++            ),
++            toggle(
++                LARGE_TEXT,
++                "大字",
++                self.large_text,
++                Message::VerticalCenteredSlider(ToggleLargeText),
++            ),
++        ]);
++
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .gap(24.)
++            .padding(SCROLL_PADDING)
++            .clip(true);
++        scroll_style.max_width = Length::Px(856.);
++        let scroll = View::new(
++            Node::new(Role::Group, "垂直置中滑桿範例")
++                .id(SCROLL)
++                .styled(scroll_style),
++        )
++        .accessibility_scroll_pages();
++        let scroll = if self.viewport.0 >= WIDE_AT {
++            scroll.children([
++                self.sample_row(theme, 0..3),
++                self.sample_row(theme, 3..SAMPLES.len()),
++            ])
++        } else {
++            scroll.children((0..SAMPLES.len()).map(|index| self.sample(theme, index, false)))
++        };
++        View::new(
++            Node::new(Role::Window, "Material gallery")
++                .id("vertical-centered-slider-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(ROUTE_PADDING)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("vertical-centered-slider-demo-title", "垂直置中滑桿"),
++            controls,
++            scroll,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let colors = theme.colors;
++        let samples: Vec<_> = SAMPLES.iter().enumerate().map(|(index, sample)| {
++            let intervals = match sample.mode {
++                StandardSliderMode::Continuous { .. } => None,
++                StandardSliderMode::Discrete { intervals } => Some(intervals),
++            };
++            serde_json::json!({
++                "id": sample.id, "value": self.values[index], "label": signed_value(self.values[index]),
++                "intervals": intervals, "requests": self.requests[index], "engaged": self.engaged == Some(index),
++                "disabled": sample.disabled,
++            })
++        }).collect();
++        serde_json::json!({
++            "visible": self.visible, "rtl": self.rtl, "text_scale": self.text_scale(),
++            "dark": dark, "width": self.viewport.0, "height": self.viewport.1,
++            "min": MIN, "max": MAX, "neutral": NEUTRAL, "samples": samples,
++            "palette": {
++                "background": color(theme.background), "primary": color(colors.primary),
++                "on_primary": color(colors.on_primary), "secondary_container": color(colors.secondary_container),
++                "on_secondary_container": color(colors.on_secondary_container), "secondary": color(colors.secondary),
++                "on_surface": color(colors.on_surface), "inverse_surface": color(colors.inverse_surface),
++                "inverse_on_surface": color(colors.inverse_on_surface)
++            }
++        })
++    }
++}
++
++fn signed_value(value: f64) -> String {
++    let rounded = (value * 10.).round() / 10.;
++    if rounded == 0. {
++        "0％".into()
++    } else if rounded < 0. {
++        format!("−{}％", -rounded)
++    } else {
++        format!("+{rounded}％")
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::Gallery;
++    use surface::{Rect, TextMeasurer};
++    use surface_app::{EditKey, Event, Runtime};
++
++    const HOME: (f32, f32) = (960., 1900.);
++    const WIDE: (f32, f32) = (960., 1040.);
++    const COMPACT: (f32, f32) = (320., 880.);
++
++    struct Fonts;
++
++    impl TextMeasurer for Fonts {
++        fn measure(&mut self, text: &str, size: f32, max_width: Option<f32>) -> (f32, f32) {
++            let natural = text.chars().count() as f32 * size;
++            let limit = max_width.unwrap_or(natural).max(1.);
++            (natural.min(limit), size * (natural / limit).ceil().max(1.))
++        }
++    }
++
++    fn draw(runtime: &mut Runtime<Gallery>, viewport: (f32, f32)) {
++        runtime.render(viewport.0, viewport.1, &mut Fonts).unwrap();
++    }
++
++    fn home() -> Runtime<Gallery> {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        runtime
++            .apply(Message::Section(crate::slider_demo::SECTION))
++            .unwrap();
++        draw(&mut runtime, HOME);
++        runtime
++    }
++
++    fn open(runtime: &mut Runtime<Gallery>, viewport: (f32, f32)) {
++        let entry = runtime.dom().by_id(SHOW).unwrap();
++        let geometry = &runtime.computed().unwrap().nodes[entry.index()];
++        assert!(contains(geometry.clip, geometry.bounds), "{geometry:?}");
++        assert!(runtime.activate(SHOW).unwrap());
++        draw(runtime, viewport);
++        assert_eq!(runtime.focused(), Some(BACK));
++    }
++
++    fn bounds(runtime: &Runtime<Gallery>, key: &str) -> Rect {
++        let id = runtime.dom().by_id(key).unwrap();
++        runtime.computed().unwrap().nodes[id.index()].bounds
++    }
++
++    fn contains(outer: Rect, inner: Rect) -> bool {
++        let clipped = outer.intersect(inner);
++        (clipped.x - inner.x).abs() < 0.001
++            && (clipped.y - inner.y).abs() < 0.001
++            && (clipped.width - inner.width).abs() < 0.001
++            && (clipped.height - inner.height).abs() < 0.001
++    }
++
++    fn tab(runtime: &mut Runtime<Gallery>, viewport: (f32, f32), reverse: bool) {
++        runtime.dispatch(Event::FocusNext { reverse }).unwrap();
++        draw(runtime, viewport);
++    }
++
++    fn key(runtime: &mut Runtime<Gallery>, value: EditKey) {
++        assert!(runtime
++            .dispatch(Event::Edit {
++                key: value,
++                extend: false,
++                by_word: false
++            })
++            .unwrap());
++    }
++
++    #[test]
++    fn wide_route_preserves_old_launchers_and_shows_three_distinct_signed_spans() {
++        let mut runtime = home();
++        for (show, sample, back) in [
++            ("slider-demo-show", "slider-demo-xs", "slider-demo-back"),
++            (
++                "slider-forms-demo-show",
++                "slider-forms-demo-vertical-discrete",
++                "slider-forms-demo-back",
++            ),
++            (
++                "range-slider-demo-show",
++                "range-slider-demo-continuous-lower",
++                "range-slider-demo-back",
++            ),
++        ] {
++            assert!(runtime.activate(show).unwrap());
++            draw(&mut runtime, WIDE);
++            assert!(runtime.dom().by_id(sample).is_some());
++            assert!(runtime.dom().by_id(SAMPLES[0].id).is_none());
++            assert!(runtime.activate(back).unwrap());
++            draw(&mut runtime, HOME);
++            assert_eq!(runtime.focused(), Some(show));
++        }
++        open(&mut runtime, WIDE);
++        let targets = SAMPLES.each_ref().map(|sample| bounds(&runtime, sample.id));
++        assert_eq!(targets[0].y, targets[1].y);
++        assert_eq!(targets[1].y, targets[2].y);
++        assert!(targets[0].x < targets[1].x && targets[1].x < targets[2].x);
++        assert!(targets[3].y > targets[0].y && targets[3].y == targets[4].y);
++        let clip = bounds(&runtime, SCROLL);
++        for (index, sample) in SAMPLES.iter().enumerate() {
++            let id = runtime.dom().by_id(sample.id).unwrap();
++            let node = runtime.dom().get(id).unwrap();
++            assert_eq!(node.name(), sample.name);
++            assert_eq!(node.role(), Role::Slider);
++            assert!(node.is_vertical_slider());
++            assert_eq!(
++                node.slider_value_text(),
++                Some(signed_value(sample.initially).as_str())
++            );
++            assert_eq!(node.is_tab_stop(), !sample.disabled);
++            assert!(contains(clip, targets[index]));
++            assert_eq!((targets[index].width, targets[index].height), (48., 240.));
++        }
++        let rails = SAMPLES
++            .each_ref()
++            .map(|sample| bounds(&runtime, &format!("{}-rail", sample.id)));
++        let negative = bounds(&runtime, "vertical-centered-slider-demo-negative-active");
++        let neutral = bounds(&runtime, "vertical-centered-slider-demo-neutral-active");
++        let positive = bounds(&runtime, "vertical-centered-slider-demo-positive-active");
++        let middle = rails[0].y + rails[0].height / 2.;
++        assert_eq!(negative.y, middle + 2.);
++        assert_eq!(neutral.height, 0.);
++        assert_eq!(positive.y + positive.height, middle - 2.);
++        assert_eq!(negative.height, positive.height);
++        assert!(negative.height > 0.);
++        for expected in [THEME, RTL, LARGE_TEXT]
++            .into_iter()
++            .chain(
++                SAMPLES
++                    .iter()
++                    .filter(|sample| !sample.disabled)
++                    .map(|sample| sample.id),
++            )
++            .chain([BACK])
++        {
++            tab(&mut runtime, WIDE, false);
++            assert_eq!(runtime.focused(), Some(expected));
++        }
++        tab(&mut runtime, WIDE, true);
++        assert_eq!(runtime.focused(), Some(SAMPLES[3].id));
++        assert!(runtime.activate(BACK).unwrap());
++        draw(&mut runtime, WIDE);
++        assert_eq!(runtime.focused(), Some(SHOW));
++        assert!(runtime.dom().by_id(SCROLL).is_none());
++    }
++
++    #[test]
++    fn compact_dark_rtl_scroll_reveals_upright_large_labels_and_visible_focus_rings() {
++        let mut runtime = home();
++        open(&mut runtime, COMPACT);
++        for control in [THEME, RTL, LARGE_TEXT] {
++            assert!(runtime.activate(control).unwrap());
++            draw(&mut runtime, COMPACT);
++        }
++        let model = &runtime.app().vertical_centered_slider_demo;
++        assert!(runtime.app().dark && model.rtl);
++        assert_eq!(model.text_scale(), 2.);
++        assert_eq!(model.viewport, COMPACT);
++        let scroll = bounds(&runtime, SCROLL);
++        for sample in &SAMPLES[..4] {
++            tab(&mut runtime, COMPACT, false);
++            assert_eq!(runtime.focused(), Some(sample.id));
++            let part = |suffix| bounds(&runtime, &format!("{}-{suffix}", sample.id));
++            let target = bounds(&runtime, sample.id);
++            let handle = part("handle");
++            let focus = part("focus");
++            let label = part("label");
++            let text = part("label-text");
++            assert_eq!(handle.height, 2.);
++            assert_eq!(focus.height, 12.);
++            assert_eq!(label.x + label.width + 4., focus.x);
++            assert!(label.height >= 64.);
++            assert!(contains(label, text));
++            for region in [target, focus, label] {
++                assert!(
++                    contains(scroll, region),
++                    "{}: {region:?} exceeds {scroll:?}",
++                    sample.id
++                );
++            }
++        }
++        let id = SAMPLES[4].id;
++        let initial = bounds(&runtime, id);
++        runtime
++            .dispatch(Event::Scroll {
++                x: scroll.x + scroll.width / 2.,
++                y: scroll.y + scroll.height / 2.,
++                delta_x: 0.,
++                delta_y: 1024.,
++            })
++            .unwrap();
++        draw(&mut runtime, COMPACT);
++        let disabled = bounds(&runtime, id);
++        assert!(disabled.y < initial.y && contains(scroll, disabled));
++        assert!(runtime.set_value(id, 75.).is_err());
++        assert_eq!(runtime.app().vertical_centered_slider_demo.requests[4], 0);
++    }
++
++    #[test]
++    fn signed_discrete_drag_and_keys_use_y_and_the_same_authored_stops() {
++        let mut runtime = home();
++        open(&mut runtime, WIDE);
++        assert!(runtime.activate(RTL).unwrap());
++        draw(&mut runtime, WIDE);
++        let id = SAMPLES[3].id;
++        let rail = bounds(&runtime, &format!("{id}-rail"));
++        let x = rail.x + rail.width / 2.;
++        let y = rail.y + rail.height * 0.87;
++        for event in [
++            Event::PointerDown { x, y },
++            Event::PointerMove { x: x + 10., y },
++            Event::PointerMove { x, y: rail.y },
++            Event::PointerUp { x, y: rail.y },
++        ] {
++            runtime.dispatch_touch(event).unwrap();
++            draw(&mut runtime, WIDE);
++        }
++        assert_eq!(runtime.focused(), Some(id));
++        assert_eq!(runtime.app().vertical_centered_slider_demo.values[3], 100.);
++        assert_eq!(runtime.app().vertical_centered_slider_demo.requests[3], 2);
++        for (event, expected) in [
++            (EditKey::Home, -100.),
++            (EditKey::Right, -75.),
++            (EditKey::Up, -50.),
++        ] {
++            key(&mut runtime, event);
++            draw(&mut runtime, WIDE);
++            assert_eq!(
++                runtime.app().vertical_centered_slider_demo.values[3],
++                expected
++            );
++        }
++        assert!(runtime.set_value(id, 34.).unwrap());
++        assert!(!runtime.set_value(id, 27.).unwrap());
++        assert_eq!(
++            runtime.app().vertical_centered_slider_demo.values,
++            [-50., 0., 50., 25., 50.]
++        );
++        assert_eq!(
++            runtime.app().vertical_centered_slider_demo.requests,
++            [0, 0, 0, 6, 0]
++        );
++    }
++}
