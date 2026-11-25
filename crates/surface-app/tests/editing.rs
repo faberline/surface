@@ -737,3 +737,171 @@ fn browser_rejected_value_does_not_create_a_change_or_break_controlled_state() {
     e.key(EditKey::Undo, false, false, &Default::default());
     assert_eq!(e.value(), "hello world");
 }
+
+#[test]
+fn top_inset_keeps_the_whole_editor_target_and_aligns_all_text_geometry() {
+    struct Editor(String);
+
+    impl Application for Editor {
+        type Message = String;
+
+        fn update(&mut self, text: String) {
+            self.0 = text;
+        }
+
+        fn view(&self) -> View<String> {
+            View::new(Node::new(Role::Group, "Page")).children([View::new(
+                Node::new(Role::TextInput, "名稱")
+                    .id("editor")
+                    .text(&self.0)
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(64.))
+                            .padding(4.)
+                            .font_size(16.)
+                            .line_height(24.),
+                    ),
+            )
+            .center_single_line_text()
+            .inset_single_line_text_from_top(24.)
+            .inset_single_line_text_horizontally(4.)
+            .focused_text_input_placeholder("輸入名稱", Color::rgb(80, 82, 84))
+            .on_input(|text| text)])
+        }
+    }
+
+    fn editor_clip(paint: &DisplayList, value: &str, rect: Rect) {
+        assert!(paint.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
+            text, rect: target, clip, scroll, multiline: false, editable: true, ..
+        } if text == value && *target == rect && *clip == rect && *scroll == (0., 0.))));
+    }
+
+    let mut runtime = Runtime::new(Editor(String::new())).unwrap();
+    runtime.render(200., 100., &mut Metrics).unwrap();
+    // A tap above and left of the inset text still targets the same editor.
+    runtime
+        .dispatch(Event::PointerDown { x: 5., y: 1. })
+        .unwrap();
+    runtime.dispatch(Event::PointerUp { x: 5., y: 1. }).unwrap();
+    assert_eq!(runtime.focused(), Some("editor"));
+    let paint = runtime.render(200., 100., &mut Metrics).unwrap();
+    let editor = runtime.dom().by_id("editor").unwrap();
+    assert_eq!(
+        runtime.computed().unwrap().nodes[editor.index()].bounds,
+        Rect::new(0., 0., 200., 64.)
+    );
+    let clip = Rect::new(8., 28., 184., 32.);
+    editor_clip(&paint, "輸入名稱", clip);
+    let input = runtime.input_snapshot().unwrap();
+    assert_eq!(input.value, "");
+    assert_eq!(input.caret, Some(Rect::new(8., 28., 1., 24.)));
+
+    runtime.dispatch(Event::Text("設計".into())).unwrap();
+    editor_clip(
+        &runtime.render(200., 100., &mut Metrics).unwrap(),
+        "設計",
+        clip,
+    );
+    for event in [
+        Event::PointerDown { x: 10., y: 31. },
+        Event::PointerMove { x: 20., y: 31. },
+        Event::PointerUp { x: 20., y: 31. },
+    ] {
+        runtime.dispatch(event).unwrap();
+    }
+    let selection = runtime.input_snapshot().unwrap().selection;
+    assert_eq!((selection.anchor, selection.cursor), (0, "設".len()));
+    let paint = runtime.render(200., 100., &mut Metrics).unwrap();
+    assert!(paint
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, clip: target, .. }
+        if *rect == Rect::new(8., 28., 16., 24.) && *target == clip)));
+
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄕ".into(),
+            selection: Some(("ㄕ".len(), "ㄕ".len())),
+        }))
+        .unwrap();
+    let paint = runtime.render(120., 100., &mut Metrics).unwrap();
+    let narrow_clip = Rect::new(8., 28., 104., 32.);
+    editor_clip(&paint, "ㄕ計", narrow_clip);
+    assert!(paint
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, clip, .. }
+        if *rect == Rect::new(8., 50., 16., 1.) && *clip == narrow_clip)));
+    let input = runtime.input_snapshot().unwrap();
+    assert!(input.composing);
+    assert_eq!(input.value, "設計");
+    assert_eq!(input.caret, Some(Rect::new(24., 28., 1., 24.)));
+}
+
+#[test]
+fn top_inset_preserves_one_measured_line_and_leaves_multiline_unchanged() {
+    struct Editor {
+        inset: f32,
+        centered: bool,
+        multiline: bool,
+    }
+
+    impl Application for Editor {
+        type Message = ();
+
+        fn update(&mut self, _: ()) {}
+
+        fn view(&self) -> View<()> {
+            let editor = View::new(
+                Node::new(Role::TextInput, "Query")
+                    .id("editor")
+                    .text("ab")
+                    .styled(
+                        Style::column()
+                            .height(Length::Px(40.))
+                            .font_size(16.)
+                            .line_height(24.),
+                    ),
+            )
+            .inset_single_line_text_from_top(self.inset)
+            .text_options(TextOptions {
+                multiline: self.multiline,
+                ..TextOptions::default()
+            })
+            .on_input(|_| ());
+            let editor = if self.centered {
+                editor.center_single_line_text()
+            } else {
+                editor
+            };
+            View::new(Node::new(Role::Group, "Page")).children([editor])
+        }
+    }
+
+    for (inset, centered, multiline, clip_top, caret_top) in [
+        (100., false, false, 16., 16.),
+        (f32::NAN, false, false, 0., 0.),
+        (f32::NEG_INFINITY, false, false, 0., 0.),
+        (-7., false, false, 0., 0.),
+        (100., true, false, 0., 8.),
+        (100., false, true, 0., 0.),
+    ] {
+        let mut runtime = Runtime::new(Editor {
+            inset,
+            centered,
+            multiline,
+        })
+        .unwrap();
+        runtime.activate("editor").unwrap();
+        let paint = runtime.render(200., 80., &mut Metrics).unwrap();
+        assert_eq!(
+            runtime.input_snapshot().unwrap().caret.unwrap().y,
+            caret_top
+        );
+        assert!(paint.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
+            rect, clip, scroll, multiline: wraps, editable: true, ..
+        } if *rect == Rect::new(0., clip_top, 200., 40. - clip_top)
+            && *clip == *rect && rect.y - scroll.1 == caret_top && *wraps == multiline)));
+    }
+}

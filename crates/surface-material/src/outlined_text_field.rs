@@ -1,4 +1,4 @@
-//! Single-line Material 3 outlined fields with a stable Runtime editor.
+//! Single-line Material 3 fields with a stable Runtime editor.
 
 use std::f32::consts::FRAC_PI_2;
 
@@ -8,13 +8,23 @@ use surface::{
 };
 use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
 
-use crate::{shape::LayoutDirection, typography, Theme};
+use crate::{
+    shape::{self, LayoutDirection},
+    typography, TextFieldOptions, Theme,
+};
 
 const FACE_MIN: f32 = 56.;
 const SIDE: f32 = 16.;
 const NOTCH_PAD: f32 = 4.;
 const DESCRIPTION_GAP: f32 = 4.;
 const CORNER: f32 = 4.;
+const FILLED_VERTICAL_PADDING: f32 = 8.;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum FieldAppearance {
+    Outlined,
+    Filled,
+}
 
 /// The actions the field allows. Read-only fields can still select and copy.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -25,7 +35,7 @@ pub enum TextFieldEditability {
     Disabled,
 }
 
-/// Caller-owned data and presentation for an outlined text field.
+/// Caller-owned data and presentation for a single-line Material text field.
 #[derive(Clone, Copy, Debug)]
 pub struct OutlinedTextFieldOptions<'a> {
     pub id: &'a str,
@@ -79,6 +89,37 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
+        self.material_text_field(FieldAppearance::Outlined, options, on_input, on_submit)
+    }
+
+    /// Build a filled field with a bottom indicator and an inside label.
+    /// Keep the ID stable to retain the editor through appearance or layout changes.
+    pub fn filled_text_field<M>(
+        &self,
+        options: TextFieldOptions<'_>,
+        on_input: impl Fn(String) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.filled_text_field_with_submit(options, on_input, || None)
+    }
+
+    /// Also handle a plain, first Enter while the editable field has focus.
+    /// The Runtime gives an active IME composition its keys before submission.
+    pub fn filled_text_field_with_submit<M>(
+        &self,
+        options: TextFieldOptions<'_>,
+        on_input: impl Fn(String) -> M + 'static,
+        on_submit: impl Fn() -> Option<M> + 'static,
+    ) -> Option<View<M>> {
+        self.material_text_field(FieldAppearance::Filled, options, on_input, on_submit)
+    }
+
+    fn material_text_field<M>(
+        &self,
+        appearance: FieldAppearance,
+        options: TextFieldOptions<'_>,
+        on_input: impl Fn(String) -> M + 'static,
+        on_submit: impl Fn() -> Option<M> + 'static,
+    ) -> Option<View<M>> {
         let label = visible_text(Some(options.label))?;
         if options.id.trim().is_empty()
             || !options.text_scale.is_finite()
@@ -94,16 +135,26 @@ impl Theme {
         let error = visible_text(options.error);
         let description = error.or_else(|| visible_text(options.supporting_text));
         let rgba = self.colors;
+        let filled = appearance == FieldAppearance::Filled;
         let tokens = FieldColors {
             disabled,
             error: error.is_some(),
-            outline: rgba.outline,
+            boundary: if filled {
+                rgba.on_surface_variant
+            } else {
+                rgba.outline
+            },
             neutral_label: rgba.on_surface_variant,
-            hover: rgba.on_surface,
+            boundary_hover: rgba.on_surface,
+            label_hover: if filled {
+                rgba.on_surface_variant
+            } else {
+                rgba.on_surface
+            },
             primary: rgba.primary,
             error_ink: rgba.error,
             error_hover: rgba.on_error_container,
-            disabled_outline: translucent(rgba.on_surface, 31),
+            disabled_boundary: translucent(rgba.on_surface, if filled { 97 } else { 31 }),
             disabled_text: translucent(rgba.on_surface, 97),
         };
         let rtl = options.direction == LayoutDirection::RightToLeft;
@@ -145,9 +196,13 @@ impl Theme {
                 read_only: options.editability == TextFieldEditability::ReadOnly,
                 ..TextOptions::default()
             })
-            .center_single_line_text()
             .inset_single_line_text_horizontally(SIDE)
             .accessibility_scroll_into_view();
+        editor = if filled {
+            editor.inset_single_line_text_from_top(FILLED_VERTICAL_PADDING + caption_height)
+        } else {
+            editor.center_single_line_text()
+        };
         if !disabled {
             editor = editor.on_input(on_input).cursor(CursorStyle::Text);
         }
@@ -167,26 +222,45 @@ impl Theme {
             editor = editor.right_align_single_line_text();
         }
 
-        let outline = View::new(Node::new(Role::Group, "").id(format!("{id}-outline")))
+        let boundary_part = if filled { "indicator" } else { "outline" };
+        let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
             .without_interaction(None)
-            .paint_text_input_contour(id, Some(&floating_id), move |state, floating| {
-                let width = state.bounds.width;
-                let height = state.bounds.height;
-                let thickness = if state.is_focused && !disabled {
-                    3.
-                } else {
-                    1.
-                };
-                let gap = floating
-                    .filter(|rect| {
-                        floats(state) && rect.width > 0. && rect.y + rect.height > state.bounds.y
-                    })
-                    .map(|rect| {
-                        let left = rect.x - state.bounds.x;
-                        (left - NOTCH_PAD, left + rect.width + NOTCH_PAD)
-                    });
-                outline_contour(width, height, thickness, gap, tokens.border(state))
-            });
+            .paint_text_input_contour(
+                id,
+                (!filled).then_some(floating_id.as_str()),
+                move |state, floating| {
+                    let width = state.bounds.width;
+                    let height = state.bounds.height;
+                    let thickness = if state.is_focused && !disabled {
+                        3.
+                    } else {
+                        1.
+                    };
+                    let ink = tokens.boundary(state);
+                    if filled {
+                        return FillContour::new(
+                            [
+                                [0., height - thickness],
+                                [width, height - thickness],
+                                [width, height],
+                                [0., height],
+                            ],
+                            ink,
+                        );
+                    }
+                    let gap = floating
+                        .filter(|rect| {
+                            floats(state)
+                                && rect.width > 0.
+                                && rect.y + rect.height > state.bounds.y
+                        })
+                        .map(|rect| {
+                            let left = rect.x - state.bounds.x;
+                            (left - NOTCH_PAD, left + rect.width + NOTCH_PAD)
+                        });
+                    outline_contour(width, height, thickness, gap, ink)
+                },
+            );
         let label_view = |id, font, shown: fn(TextInputPaintState) -> bool| {
             View::new(
                 Node::new(Role::Text, "")
@@ -254,6 +328,7 @@ impl Theme {
         let mut shell = Style::column().width(Length::Percent(1.));
         shell.min_width = FACE_MIN;
         let layout = FieldLayout {
+            appearance,
             label: label.to_owned(),
             description: description.map(str::to_owned),
             body,
@@ -263,6 +338,30 @@ impl Theme {
             rtl,
             disabled_value,
         };
+        let filled_backgrounds = filled.then(|| {
+            let container = if disabled {
+                translucent(rgba.on_surface, 10)
+            } else {
+                rgba.surface_container_highest
+            };
+            let layer = |part, color| {
+                View::new(
+                    Node::new(Role::Group, "")
+                        .id(format!("{id}-{part}"))
+                        .styled(
+                            Style::default()
+                                .corners(shape::EXTRA_SMALL_TOP)
+                                .background(color),
+                        ),
+                )
+                .without_interaction(None)
+            };
+            [
+                layer("container", container),
+                layer("hover-layer", translucent(rgba.on_surface, 20))
+                    .paint_when_text_input(id, |state| state.is_hovered && !state.is_focused),
+            ]
+        });
         Some(
             View::new(
                 Node::new(Role::Group, "")
@@ -271,8 +370,10 @@ impl Theme {
                     .measured_group(layout),
             )
             .children(
-                [editor, outline, inline, floating, fallback]
+                filled_backgrounds
                     .into_iter()
+                    .flatten()
+                    .chain([editor, boundary, inline, floating, fallback])
                     .chain(disabled_ink)
                     .chain(description_view)
                     .chain([validation_status]),
@@ -297,32 +398,33 @@ fn translucent(Color(r, g, b, _): Color, alpha: u8) -> Color {
 struct FieldColors {
     disabled: bool,
     error: bool,
-    outline: Color,
+    boundary: Color,
     neutral_label: Color,
-    hover: Color,
+    boundary_hover: Color,
+    label_hover: Color,
     primary: Color,
     error_ink: Color,
     error_hover: Color,
-    disabled_outline: Color,
+    disabled_boundary: Color,
     disabled_text: Color,
 }
 
 impl FieldColors {
-    fn interaction_ink(self, state: TextInputPaintState, normal: Color) -> Color {
+    fn interaction_ink(self, state: TextInputPaintState, normal: Color, hover: Color) -> Color {
         match (self.error, state.is_focused, state.is_hovered) {
             (true, false, true) => self.error_hover,
             (true, _, _) => self.error_ink,
             (false, true, _) => self.primary,
-            (false, false, true) => self.hover,
+            (false, false, true) => hover,
             (false, false, false) => normal,
         }
     }
 
-    fn border(self, state: TextInputPaintState) -> Color {
+    fn boundary(self, state: TextInputPaintState) -> Color {
         if self.disabled {
-            self.disabled_outline
+            self.disabled_boundary
         } else {
-            self.interaction_ink(state, self.outline)
+            self.interaction_ink(state, self.boundary, self.boundary_hover)
         }
     }
 
@@ -330,13 +432,14 @@ impl FieldColors {
         if self.disabled {
             self.disabled_text
         } else {
-            self.interaction_ink(state, self.neutral_label)
+            self.interaction_ink(state, self.neutral_label, self.label_hover)
         }
     }
 }
 
 #[derive(Debug)]
 struct FieldLayout {
+    appearance: FieldAppearance,
     label: String,
     description: Option<String>,
     body: TextStyle,
@@ -352,11 +455,11 @@ impl FieldLayout {
         let content_width = (width - 2. * SIDE).max(1.);
         let (inline_width, inline_height) = fonts.measure_text(&self.label, &self.body, None);
         let (float_width, float_height) = fonts.measure_text(&self.label, &self.caption, None);
-        let notch_fits = inline_width <= content_width
+        let label_fits = inline_width <= content_width
             && float_width <= content_width
             && inline_height <= self.line_height + 0.5
             && float_height <= self.caption_height + 0.5;
-        let above_height = if notch_fits {
+        let above_height = if label_fits {
             0.
         } else {
             fonts
@@ -365,12 +468,22 @@ impl FieldLayout {
                 .max(self.caption_height)
                 .ceil()
         };
-        let top = if notch_fits {
-            self.caption_height / 2.
+        let filled = self.appearance == FieldAppearance::Filled;
+        let (face_padding, label_slot) = if filled {
+            (FILLED_VERTICAL_PADDING, self.caption_height)
+        } else {
+            (SIDE, 0.)
+        };
+        let top = if label_fits {
+            if filled {
+                0.
+            } else {
+                self.caption_height / 2.
+            }
         } else {
             above_height + DESCRIPTION_GAP
         };
-        let face_height = FACE_MIN.max((self.line_height + 2. * SIDE).ceil());
+        let face_height = FACE_MIN.max((self.line_height + label_slot + 2. * face_padding).ceil());
         let face = Rect::new(0., top, width, face_height);
         let empty = Rect::new(0., 0., 0., 0.);
         let content = Rect::new(
@@ -379,21 +492,31 @@ impl FieldLayout {
             content_width,
             self.line_height,
         );
-        let inline = if notch_fits { content } else { empty };
-        let floating = if notch_fits {
+        let inline = if label_fits { content } else { empty };
+        let floating = if label_fits {
             let x = if self.rtl {
                 width - SIDE - float_width
             } else {
                 SIDE
             };
-            Rect::new(x, 0., float_width, self.caption_height)
+            let y = if filled { top + face_padding } else { 0. };
+            Rect::new(x, y, float_width, self.caption_height)
         } else {
             empty
         };
         let above = Rect::new(SIDE, 0., content_width, above_height);
-        let mut rects = vec![face, face, inline, floating, above];
+        let mut rects = Vec::new();
+        if filled {
+            rects.extend([face, face]);
+        }
+        rects.extend([face, face, inline, floating, above]);
         if self.disabled_value {
-            rects.push(content);
+            let y = if filled {
+                top + face_padding + label_slot
+            } else {
+                content.y
+            };
+            rects.push(Rect::new(content.x, y, content.width, content.height));
         }
         if let Some(description) = &self.description {
             let height = fonts

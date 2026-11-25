@@ -177,6 +177,7 @@ pub use menu_layout::{place_menu, MenuAnchor, MenuLayout, MenuPlacement};
 pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
+pub use outlined_text_field::OutlinedTextFieldOptions as TextFieldOptions;
 pub use outlined_text_field::{OutlinedTextFieldOptions, TextFieldEditability};
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
 pub use radio::{RadioGroupLayout, RadioGroupOptions, RadioMotion, RadioOptions, RadioPose};

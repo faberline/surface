@@ -15,6 +15,7 @@ mod docked_date_picker_demo;
 mod extended_fab_demo;
 mod fab_demo;
 mod fab_menu_demo;
+mod filled_text_field_demo;
 mod flexible_navigation_bar_demo;
 mod icon_button_demo;
 mod list_actions_demo;
@@ -71,6 +72,7 @@ use docked_date_picker_demo::{DockedDateDemo, DockedDateDemoEvent};
 use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
 use fab_demo::{FabDemo, FabEvent};
 use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
+use filled_text_field_demo::{FilledTextFieldDemo, FilledTextFieldDemoEvent};
 use flexible_navigation_bar_demo::{FlexibleNavigationBarDemo, FlexibleNavigationBarDemoEvent};
 use icon_button_demo::{IconButtonDemo, IconButtonDemoEvent};
 use list_actions_demo::{ListActionsDemo, ListActionsEvent};
@@ -151,6 +153,7 @@ pub struct Gallery {
     chip_demo: ChipDemo,
     icon_button_demo: IconButtonDemo,
     button_demo: ButtonDemo,
+    filled_text_field_demo: FilledTextFieldDemo,
     outlined_text_field_demo: OutlinedTextFieldDemo,
     segmented_demo: SegmentedDemo,
     slider_demo: SliderDemo,
@@ -230,6 +233,7 @@ impl Default for Gallery {
             chip_demo: ChipDemo::default(),
             icon_button_demo: IconButtonDemo::default(),
             button_demo: ButtonDemo::default(),
+            filled_text_field_demo: FilledTextFieldDemo::default(),
             outlined_text_field_demo: OutlinedTextFieldDemo::default(),
             segmented_demo: SegmentedDemo::default(),
             slider_demo: SliderDemo::default(),
@@ -354,6 +358,7 @@ pub enum Message {
     ChipDemo(ChipDemoEvent),
     IconButtonDemo(IconButtonDemoEvent),
     ButtonDemo(ButtonDemoEvent),
+    FilledTextFieldDemo(FilledTextFieldDemoEvent),
     OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
     SegmentedDemo(SegmentedDemoEvent),
     SliderDemo(SliderDemoEvent),
@@ -543,6 +548,9 @@ impl Application for Gallery {
         if self.button_demo.visible() {
             return self.button_demo.text_scale();
         }
+        if self.filled_text_field_demo.visible() {
+            return self.filled_text_field_demo.text_scale();
+        }
         if self.outlined_text_field_demo.visible() {
             return self.outlined_text_field_demo.text_scale();
         }
@@ -578,6 +586,7 @@ impl Application for Gallery {
         let chips = self.chip_demo.viewport_changed(width);
         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
         let buttons = self.button_demo.viewport_changed(width, height);
+        let filled_text_field = self.filled_text_field_demo.viewport_changed(width);
         let outlined_text_field = self.outlined_text_field_demo.viewport_changed(width);
         let segmented = self.segmented_demo.viewport_changed(width);
         let sliders = self.slider_demo.viewport_changed(width, height);
@@ -649,6 +658,7 @@ impl Application for Gallery {
             || chips
             || icon_buttons
             || buttons
+            || filled_text_field
             || outlined_text_field
             || segmented
             || sliders
@@ -994,6 +1004,9 @@ impl Application for Gallery {
                 if i != button_demo::SECTION {
                     self.button_demo.leave();
                 }
+                if i != filled_text_field_demo::SECTION {
+                    self.filled_text_field_demo.leave();
+                }
                 if i != outlined_text_field_demo::SECTION {
                     self.outlined_text_field_demo.leave();
                 }
@@ -1025,6 +1038,7 @@ impl Application for Gallery {
             Message::ChipDemo(event) => self.chip_demo.update(event),
             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
             Message::ButtonDemo(event) => self.button_demo.update(event),
+            Message::FilledTextFieldDemo(event) => self.filled_text_field_demo.update(event),
             Message::OutlinedTextFieldDemo(event) => self.outlined_text_field_demo.update(event),
             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
             Message::SliderDemo(event) => self.slider_demo.update(event),
@@ -1246,6 +1260,9 @@ impl Application for Gallery {
         if self.button_demo.visible() {
             return self.button_demo.view(&t, self.dark);
         }
+        if self.filled_text_field_demo.visible() {
+            return self.filled_text_field_demo.view(&t, self.dark);
+        }
         if self.outlined_text_field_demo.visible() {
             return self.outlined_text_field_demo.view(&t, self.dark);
         }
@@ -1379,6 +1396,7 @@ impl Application for Gallery {
                             ButtonDemo::show_button(&t),
                             SegmentedDemo::show_button(&t),
                             OutlinedTextFieldDemo::show_button(&t),
+                            FilledTextFieldDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -2011,6 +2029,7 @@ mod web {
         state["chip_demo"] = s.chip_demo.inspect(&theme);
         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
         state["button_demo"] = s.button_demo.inspect(&theme, s.dark);
+        state["filled_text_field_demo"] = s.filled_text_field_demo.inspect(&theme, s.dark);
         state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
         state["slider_demo"] = s.slider_demo.inspect(&theme);

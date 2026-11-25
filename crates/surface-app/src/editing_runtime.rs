@@ -1,4 +1,7 @@
-use crate::{AppError, Application, EditKey, Event, ImeEvent, Runtime, TextEditor, TextSelection};
+use crate::{
+    AppError, Application, EditKey, Event, ImeEvent, Runtime, SingleLineVerticalPlacement,
+    TextEditor, TextSelection,
+};
 use std::collections::BTreeMap;
 use surface::{
     ComputedDom, Length, MicroDom, NodeId, Rect, Role, TextDecoration, TextLayout, TextMeasurer,
@@ -313,10 +316,16 @@ impl<A: Application> Runtime<A> {
                     None
                 },
             );
-            let vertical_inset = if binding.center_single_line_text && !options.multiline {
-                (origin.height - layout.line_height).max(0.) / 2.
+            let placement = if options.multiline {
+                SingleLineVerticalPlacement::Top
             } else {
-                0.
+                binding.single_line_vertical_placement
+            };
+            let extra_height = (origin.height - layout.line_height).max(0.);
+            let (top_inset, center_inset) = match placement {
+                SingleLineVerticalPlacement::Top => (0., 0.),
+                SingleLineVerticalPlacement::Center => (0., extra_height / 2.),
+                SingleLineVerticalPlacement::Inset(inset) => (inset.min(extra_height), 0.),
             };
             let right_aligned = binding.right_align_single_line_text && !options.multiline;
             let horizontal_space =
@@ -324,8 +333,8 @@ impl<A: Application> Runtime<A> {
             let horizontal_inset = horizontal_space.unwrap_or_default().max(0.);
             origin.x += horizontal_inset;
             origin.width -= horizontal_inset;
-            origin.y += vertical_inset;
-            origin.height -= vertical_inset;
+            origin.y += top_inset + center_inset;
+            origin.height -= top_inset + center_inset;
             let mut scroll = self
                 .text_geometry
                 .get(key)
@@ -334,7 +343,7 @@ impl<A: Application> Runtime<A> {
             if horizontal_space.is_some_and(|space| space >= 0.) {
                 scroll.0 = 0.;
             }
-            if vertical_inset > 0. {
+            if center_inset > 0. || matches!(placement, SingleLineVerticalPlacement::Inset(_)) {
                 scroll.1 = 0.;
             }
             let selection = editor.display_selection();
@@ -376,9 +385,9 @@ impl<A: Application> Runtime<A> {
                 scroll.0 - horizontal_inset
             };
             let mut decoration = TextDecoration {
-                // Paint starts at the original content box. Signed scroll
-                // places its run at the editor or placeholder origin.
-                scroll: (paint_scroll_x, scroll.1 - vertical_inset),
+                // Paint already uses the fixed top inset. Signed scroll
+                // places centered and right-aligned text in that paint box.
+                scroll: (paint_scroll_x, scroll.1 - center_inset),
                 multiline: options.multiline,
                 ..Default::default()
             };
@@ -416,6 +425,9 @@ impl<A: Application> Runtime<A> {
             decorations.insert(id, decoration);
             if content_inset > 0. {
                 display.set_presented_text_input_horizontal_inset(id, content_inset)?;
+            }
+            if top_inset > 0. {
+                display.set_presented_text_input_top_inset(id, top_inset)?;
             }
             if let Some(placeholder) = placeholder {
                 display.set_presented_text_input_placeholder(id, placeholder.clone())?;

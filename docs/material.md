@@ -204,6 +204,7 @@ does not change application state.
 | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 | `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
+| `filled_text_field` | One single-line editor with a filled container, inside floating label and bottom indicator |
 | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
 | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
@@ -1234,6 +1235,24 @@ committed value in the application and apply the input callback there.
 In Material Gallery, choose 動作 and 外框文字欄位. The example shows Chinese
 labels, validation, read-only and disabled fields. It has light and dark
 themes, both directions and a setting for 200% text.
+
+[Material 3 text field specifications](https://m3.material.io/components/text-fields/specs)
+
+## Filled text fields
+
+Use `Theme::filled_text_field` with `TextFieldOptions::new`. The application
+owns the committed value, label and optional error. The editor uses the
+whole container as its input area. It places the text below the floating
+label and keeps the same caret and selection geometry as the label moves.
+An empty focused field can show a hint in the text lane.
+
+The top corners follow the Material Extra Small shape. The bottom
+indicator is 1 dp at rest and 3 dp when focused. Text scale can grow the
+container. Long labels can wrap above it when they need more room.
+Supporting text, errors, read-only and disabled behavior work as they do
+for outlined fields. Use `filled_text_field_with_submit` for Enter.
+
+In Material Gallery, choose 動作 and 填色文字欄位.
 
 [Material 3 text field specifications](https://m3.material.io/components/text-fields/specs)
 
