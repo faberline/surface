@@ -840,6 +840,90 @@ fn top_inset_keeps_the_whole_editor_target_and_aligns_all_text_geometry() {
 }
 
 #[test]
+fn measured_sibling_sets_one_text_box_without_shrinking_the_editor_target() {
+    #[derive(Default)]
+    struct Editor(String);
+
+    impl Application for Editor {
+        type Message = String;
+
+        fn update(&mut self, text: String) {
+            self.0 = text;
+        }
+
+        fn view(&self) -> View<String> {
+            View::new(Node::new(Role::Group, "Page")).children([
+                View::new(
+                    Node::new(Role::TextInput, "名稱")
+                        .id("editor")
+                        .text(&self.0)
+                        .styled(
+                            Style::column()
+                                .height(Length::Px(56.))
+                                .font_size(16.)
+                                .line_height(24.),
+                        ),
+                )
+                .center_single_line_text()
+                .inset_single_line_text_horizontally(8.)
+                .single_line_text_horizontal_bounds_from("content")
+                .focused_text_input_placeholder("輸入名稱", Color::rgb(0, 0, 0))
+                .on_input(|text| text),
+                View::new(
+                    Node::new(Role::Group, "").id("content").styled(
+                        Style::column()
+                            .width(Length::Px(90.))
+                            .height(Length::Px(8.))
+                            .absolute(surface::Insets {
+                                left: Length::Px(45.),
+                                top: Length::Px(8.),
+                                ..surface::Insets::default()
+                            }),
+                    ),
+                )
+                .without_interaction(None),
+            ])
+        }
+    }
+
+    let mut runtime = Runtime::new(Editor::default()).unwrap();
+    runtime.render(200., 100., &mut Metrics).unwrap();
+    runtime
+        .dispatch(Event::PointerDown { x: 3., y: 2. })
+        .unwrap();
+    runtime.dispatch(Event::PointerUp { x: 3., y: 2. }).unwrap();
+    assert_eq!(runtime.focused(), Some("editor"));
+    let paint = runtime.render(200., 100., &mut Metrics).unwrap();
+    assert!(paint.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
+        text, clip, editable: true, ..
+    } if text == "輸入名稱" && *clip == Rect::new(45., 0., 90., 56.))));
+    assert_eq!(
+        runtime.input_snapshot().unwrap().caret,
+        Some(Rect::new(45., 16., 1., 24.))
+    );
+
+    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+    runtime
+        .dispatch(Event::Ime(ImeEvent::Preedit {
+            text: "ㄨ".into(),
+            selection: Some(("ㄨ".len(), "ㄨ".len())),
+        }))
+        .unwrap();
+    // The sibling now lies partly outside the editor. Use the normal inset
+    // and keep the same preedit and focus through this layout change.
+    let paint = runtime.render(120., 100., &mut Metrics).unwrap();
+    let input = runtime.input_snapshot().unwrap();
+    assert!(input.composing);
+    assert!(input.value.is_empty());
+    assert_eq!(input.caret, Some(Rect::new(24., 16., 1., 24.)));
+    assert!(paint
+        .ops
+        .iter()
+        .any(|op| matches!(op, PaintOp::Quad { rect, clip, .. }
+        if *rect == Rect::new(8., 38., 16., 1.) && *clip == Rect::new(8., 0., 104., 56.))));
+}
+
+#[test]
 fn top_inset_preserves_one_measured_line_and_leaves_multiline_unchanged() {
     struct Editor {
         inset: f32,

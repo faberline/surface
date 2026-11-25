@@ -6,7 +6,8 @@ use surface::{
 };
 use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
 use surface_material::{
-    shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldEditability, Theme,
+    shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldAdornments, TextFieldAffix,
+    TextFieldAppearance, TextFieldEditability, TextFieldTrailingAction, Theme, VectorIcon,
 };
 use surface_wgpu::TextSystem;
 
@@ -22,6 +23,7 @@ const AFTER: &str = "after-field";
 enum Message {
     Edit(String),
     Submit,
+    Action,
     ChangeAppearance,
     SetEditability(TextFieldEditability),
 }
@@ -36,6 +38,8 @@ struct Form {
     editability: TextFieldEditability,
     edits: Vec<String>,
     submits: Vec<String>,
+    actions: usize,
+    adorned: Option<TextFieldAppearance>,
     builds: Cell<usize>,
 }
 
@@ -51,6 +55,8 @@ impl Default for Form {
             editability: TextFieldEditability::Editable,
             edits: Vec::new(),
             submits: Vec::new(),
+            actions: 0,
+            adorned: None,
             builds: Cell::new(0),
         }
     }
@@ -66,6 +72,7 @@ impl Application for Form {
                 self.value = value;
             }
             Message::Submit => self.submits.push(self.value.clone()),
+            Message::Action => self.actions += 1,
             Message::ChangeAppearance => {
                 self.dark = !self.dark;
                 self.rtl = !self.rtl;
@@ -98,13 +105,38 @@ impl Application for Form {
             LayoutDirection::LeftToRight
         };
         options.text_scale = self.scale;
+        let on_submit = || Some(Message::Submit);
+        let field = if let Some(appearance) = self.adorned {
+            let icon = VectorIcon::new([[4., 4.], [20., 4.], [12., 20.]]).unwrap();
+            theme.text_field_with_adornments(
+                appearance,
+                options,
+                TextFieldAdornments {
+                    leading_icon: Some(&icon),
+                    trailing_action: Some(TextFieldTrailingAction {
+                        icon: &icon,
+                        name: "套用金額",
+                        disabled: false,
+                        on_press: Message::Action,
+                    }),
+                    prefix: Some(TextFieldAffix {
+                        visual: "€",
+                        spoken_name: "歐元",
+                    }),
+                    suffix: Some(TextFieldAffix {
+                        visual: "/月",
+                        spoken_name: "每月",
+                    }),
+                },
+                Message::Edit,
+                on_submit,
+            )
+        } else {
+            theme.outlined_text_field_with_submit(options, Message::Edit, on_submit)
+        };
         View::new(Node::new(Role::Window, "Form").styled(Style::column().padding(12.).gap(8.)))
             .children([
-                theme
-                    .outlined_text_field_with_submit(options, Message::Edit, || {
-                        Some(Message::Submit)
-                    })
-                    .expect("valid Material field"),
+                field.expect("valid Material field"),
                 theme.button(AFTER, "Next", Message::ChangeAppearance),
             ])
     }
@@ -165,6 +197,118 @@ fn tab(runtime: &mut Runtime<Form>) {
 
 fn enter() -> KeyPress {
     KeyPress::new(Key::Enter, Modifiers::default())
+}
+
+#[test]
+fn adornments_keep_one_editor_and_a_separate_action_across_both_variants() {
+    const ACTION: &str = "project-name-trailing-action";
+    const PREFIX: &str = "project-name-prefix-visual";
+    const SUFFIX: &str = "project-name-suffix-visual";
+    const VALUE: &str = "project-name-value-box";
+    let mut text = TextSystem::default();
+    for (appearance, border) in [
+        (TextFieldAppearance::Outlined, "project-name-outline"),
+        (TextFieldAppearance::Filled, "project-name-indicator"),
+    ] {
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            ..Form::default()
+        })
+        .unwrap();
+        let idle = render(&mut runtime, 340., &mut text);
+        let face = bounds(&runtime, border);
+        let editor = bounds(&runtime, ID);
+        let action = bounds(&runtime, ACTION);
+        let leading = bounds(&runtime, "project-name-leading-icon");
+        let trailing = bounds(&runtime, "project-name-trailing-icon");
+        assert_eq!((action.width, action.height), (48., 48.));
+        assert_eq!(action.x, editor.x + editor.width);
+        assert_eq!(action.x + action.width, face.x + face.width);
+        assert_eq!(
+            (leading.x - face.x, leading.width, trailing.width),
+            (12., 24., 24.)
+        );
+        assert_eq!(trailing.x - action.x, 12.);
+        assert!(text_run(&idle, "€").is_none());
+
+        let editor_id = runtime.dom().by_id(ID).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let description: Vec<_> = frame
+            .description_parts(editor_id)
+            .into_iter()
+            .map(|(id, _)| frame.node(id).unwrap().node.text_value().unwrap())
+            .collect();
+        assert_eq!(description, ["歐元", "每月", SUPPORT]);
+
+        runtime
+            .dispatch(Event::PointerMove {
+                x: action.x + 24.,
+                y: action.y + 24.,
+            })
+            .unwrap();
+        let hover = render(&mut runtime, 340., &mut text);
+        let stroke_bounds = if appearance == TextFieldAppearance::Filled {
+            Rect::new(face.x, face.y + face.height - 1., face.width, 1.)
+        } else {
+            face
+        };
+        let shape = find_outline(&hover, Theme::light().colors.on_surface, stroke_bounds);
+        assert!(covers(
+            shape,
+            face.x + face.width / 2.,
+            face.y + face.height - 0.5
+        ));
+        runtime
+            .dispatch(Event::PointerDown {
+                x: leading.x + 12.,
+                y: leading.y + 12.,
+            })
+            .unwrap();
+        runtime
+            .dispatch(Event::PointerUp {
+                x: leading.x + 12.,
+                y: leading.y + 12.,
+            })
+            .unwrap();
+        assert_eq!(runtime.focused(), Some(ID));
+        let focused = render(&mut runtime, 340., &mut text);
+        assert!(text_run(&focused, "€").is_some());
+        let prefix = bounds(&runtime, PREFIX);
+        let suffix = bounds(&runtime, SUFFIX);
+        let value = bounds(&runtime, VALUE);
+        assert_eq!(prefix.x - face.x, 52.);
+        assert!((value.x - (prefix.x + prefix.width) - 2.).abs() < 0.1);
+        assert!((suffix.x - (value.x + value.width) - 2.).abs() < 0.1);
+
+        runtime.dispatch(Event::Text("24".into())).unwrap();
+        assert!(runtime.key(&enter()).unwrap());
+        tab(&mut runtime);
+        assert_eq!(runtime.focused(), Some(ACTION));
+        assert!(!runtime.key(&enter()).unwrap());
+        assert!(runtime.dispatch(Event::Activate).unwrap());
+        assert_eq!(runtime.app().submits, ["24"]);
+        assert_eq!(runtime.app().edits, ["24"]);
+        assert_eq!(runtime.app().actions, 1);
+
+        runtime.apply(Message::ChangeAppearance).unwrap();
+        let narrow = render(&mut runtime, 112., &mut text);
+        let face = bounds(&runtime, border);
+        let action = bounds(&runtime, ACTION);
+        assert!(action.y > face.y + face.height);
+        assert_eq!(action.x, face.x);
+        assert_eq!(action.width, 48.);
+        assert_eq!(bounds(&runtime, "project-name-leading-icon").width, 0.);
+        assert!(!narrow.ops().iter().any(|op| matches!(
+            op,
+            ExtendedPaintOp::FillPath(path)
+                if path.color() == Theme::dark().colors.on_surface_variant
+                    && path.rect().width == 16.
+                    && path.rect().height == 16.
+        )));
+        assert!(bounds(&runtime, VALUE).width > 0.);
+        assert!(text_run(&narrow, "每月").is_some());
+        assert_eq!(runtime.focused(), Some(ACTION));
+    }
 }
 
 #[test]

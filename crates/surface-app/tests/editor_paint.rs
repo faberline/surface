@@ -16,7 +16,7 @@ const HOVER: Color = Color::rgb(40, 92, 118);
 const FOCUSED: Color = Color::rgb(70, 31, 144);
 const MARKER: Color = Color::rgb(33, 44, 55);
 
-type Observation = Rc<Cell<Option<(TextInputPaintState, Option<Rect>)>>>;
+type Observation = Rc<Cell<Option<(TextInputPaintState, Option<Rect>, Rect)>>>;
 
 #[derive(Clone)]
 enum Message {
@@ -82,10 +82,14 @@ impl Application for Model {
                 .id(OUTLINE)
                 .styled(Style::column().height(Length::Px(12.))),
         )
-        .paint_text_input_contour(EDITOR, Some(reference), move |state, label| {
-            observation.set(Some((state, label)));
-            FillContour::new([[0., 0.], [12., 0.], [0., 8.]], ink(state))
-        });
+        .paint_text_input_contour_with_bounds(
+            EDITOR,
+            Some(reference),
+            move |state, outline, label| {
+                observation.set(Some((state, label, outline)));
+                FillContour::new([[0., 0.], [12., 0.], [0., 8.]], ink(state))
+            },
+        );
         let conditional = View::new(Node::new(Role::Group, "").id("conditionally-painted"))
             .children([View::new(
                 Node::new(Role::Text, "")
@@ -207,6 +211,8 @@ fn focus_only_changes_paint_and_keeps_one_semantic_editor() {
     let label = geometry(&runtime, FLOATING);
     let observation = runtime.app().observation.get().unwrap();
     assert_eq!(observation.0.bounds, bounds);
+    assert_eq!(observation.2, geometry(&runtime, OUTLINE));
+    assert_ne!(observation.2, bounds);
     assert_eq!(
         observation.1,
         Some(label),
@@ -339,7 +345,7 @@ fn disabled_value_and_invalid_reference_have_safe_paint_defaults() {
     })
     .unwrap();
     let list = draw(&mut runtime);
-    let (state, reference) = runtime.app().observation.get().unwrap();
+    let (state, reference, _) = runtime.app().observation.get().unwrap();
     assert_eq!(reference, None);
     assert!(!state.is_focused && !state.is_hovered && !state.is_composing && !state.is_empty);
     assert!(runtime.editor(EDITOR).is_none());

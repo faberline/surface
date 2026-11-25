@@ -10,21 +10,15 @@ use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
 
 use crate::{
     shape::{self, LayoutDirection},
-    typography, TextFieldOptions, Theme,
+    text_field_adornments::{physical, AffixText, FieldAdornments, ACTION_SIZE, ICON_SIZE, SIDE},
+    typography, TextFieldAdornments, TextFieldAppearance, TextFieldOptions, Theme,
 };
 
 const FACE_MIN: f32 = 56.;
-const SIDE: f32 = 16.;
 const NOTCH_PAD: f32 = 4.;
 const DESCRIPTION_GAP: f32 = 4.;
 const CORNER: f32 = 4.;
 const FILLED_VERTICAL_PADDING: f32 = 8.;
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum FieldAppearance {
-    Outlined,
-    Filled,
-}
 
 /// The actions the field allows. Read-only fields can still select and copy.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -89,7 +83,13 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
-        self.material_text_field(FieldAppearance::Outlined, options, on_input, on_submit)
+        self.text_field_with_adornments(
+            TextFieldAppearance::Outlined,
+            options,
+            TextFieldAdornments::default(),
+            on_input,
+            on_submit,
+        )
     }
 
     /// Build a filled field with a bottom indicator and an inside label.
@@ -110,13 +110,23 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
-        self.material_text_field(FieldAppearance::Filled, options, on_input, on_submit)
+        self.text_field_with_adornments(
+            TextFieldAppearance::Filled,
+            options,
+            TextFieldAdornments::default(),
+            on_input,
+            on_submit,
+        )
     }
 
-    fn material_text_field<M>(
+    /// Add passive icons or affixes and an independent named trailing action.
+    /// Affixes and the action stay separate from the committed editor value.
+    /// In narrow space the affixes and action can move below the field.
+    pub fn text_field_with_adornments<M>(
         &self,
-        appearance: FieldAppearance,
+        appearance: TextFieldAppearance,
         options: TextFieldOptions<'_>,
+        adornments: TextFieldAdornments<'_, M>,
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
@@ -135,7 +145,7 @@ impl Theme {
         let error = visible_text(options.error);
         let description = error.or_else(|| visible_text(options.supporting_text));
         let rgba = self.colors;
-        let filled = appearance == FieldAppearance::Filled;
+        let filled = appearance == TextFieldAppearance::Filled;
         let tokens = FieldColors {
             disabled,
             error: error.is_some(),
@@ -166,6 +176,20 @@ impl Theme {
         let id = options.id;
         let description_id = format!("{id}-description");
         let floating_id = format!("{id}-floating-label");
+        let action_id = format!("{id}-trailing-action");
+        let value_box_id = format!("{id}-value-box");
+        let affix_text = |affix: crate::TextFieldAffix<'_>| {
+            Some(AffixText {
+                visual: visible_text(Some(affix.visual))?.to_owned(),
+                spoken_name: visible_text(Some(affix.spoken_name))?.to_owned(),
+            })
+        };
+        let field_adornments = FieldAdornments {
+            leading: adornments.leading_icon.is_some(),
+            trailing: adornments.trailing_action.is_some(),
+            prefix: adornments.prefix.and_then(affix_text),
+            suffix: adornments.suffix.and_then(affix_text),
+        };
         let disabled_value = disabled && !options.value.is_empty();
         let mut input = Node::new(Role::TextInput, label)
             .id(id)
@@ -191,6 +215,15 @@ impl Theme {
         if description.is_some() {
             input = input.described_by_text(&description_id);
         }
+        input = input.described_by_texts(
+            [
+                field_adornments.prefix.as_ref().map(|_| "prefix"),
+                field_adornments.suffix.as_ref().map(|_| "suffix"),
+            ]
+            .into_iter()
+            .flatten()
+            .map(|part| format!("{id}-{part}-description")),
+        );
         let mut editor = View::new(input)
             .text_options(TextOptions {
                 read_only: options.editability == TextFieldEditability::ReadOnly,
@@ -198,6 +231,12 @@ impl Theme {
             })
             .inset_single_line_text_horizontally(SIDE)
             .accessibility_scroll_into_view();
+        if field_adornments.has_slots() {
+            editor = editor.single_line_text_horizontal_bounds_from(&value_box_id);
+        }
+        if field_adornments.trailing {
+            editor = editor.text_input_hover_with_action(&action_id);
+        }
         editor = if filled {
             editor.inset_single_line_text_from_top(FILLED_VERTICAL_PADDING + caption_height)
         } else {
@@ -225,12 +264,12 @@ impl Theme {
         let boundary_part = if filled { "indicator" } else { "outline" };
         let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
             .without_interaction(None)
-            .paint_text_input_contour(
+            .paint_text_input_contour_with_bounds(
                 id,
                 (!filled).then_some(floating_id.as_str()),
-                move |state, floating| {
-                    let width = state.bounds.width;
-                    let height = state.bounds.height;
+                move |state, face, floating| {
+                    let width = face.width;
+                    let height = face.height;
                     let thickness = if state.is_focused && !disabled {
                         3.
                     } else {
@@ -250,12 +289,10 @@ impl Theme {
                     }
                     let gap = floating
                         .filter(|rect| {
-                            floats(state)
-                                && rect.width > 0.
-                                && rect.y + rect.height > state.bounds.y
+                            floats(state) && rect.width > 0. && rect.y + rect.height > face.y
                         })
                         .map(|rect| {
-                            let left = rect.x - state.bounds.x;
+                            let left = rect.x - face.x;
                             (left - NOTCH_PAD, left + rect.width + NOTCH_PAD)
                         });
                     outline_contour(width, height, thickness, gap, ink)
@@ -325,6 +362,110 @@ impl Theme {
                 .assertive_live_status()
                 .styled(Style::default().foreground(Color::TRANSPARENT)),
         );
+        let mut slots = Vec::new();
+        if field_adornments.has_slots() {
+            slots.push(
+                View::new(Node::new(Role::Group, "").id(value_box_id)).without_interaction(None),
+            );
+        }
+        if let Some(icon) = adornments.leading_icon {
+            let ink = if disabled {
+                tokens.disabled_text
+            } else {
+                tokens.neutral_label
+            };
+            let leading = icon.contour_dp(ICON_SIZE, ink)?;
+            slots.push(
+                View::new(
+                    Node::new(Role::Group, "")
+                        .id(format!("{id}-leading-icon"))
+                        .styled(Style::default().clip(true)),
+                )
+                .paint_text_input_contour_with_bounds(
+                    id,
+                    None,
+                    move |_, bounds, _| {
+                        (bounds.width > 0. && bounds.height > 0.).then(|| leading.clone())
+                    },
+                ),
+            );
+        }
+        if let Some(action) = adornments.trailing_action {
+            let disabled = disabled || action.disabled;
+            let ink = if disabled {
+                tokens.disabled_text
+            } else if tokens.error {
+                tokens.error_ink
+            } else {
+                tokens.neutral_label
+            };
+            let icon = action.icon.contour_dp(ICON_SIZE, ink)?;
+            let icon_hover = if !disabled && tokens.error {
+                action.icon.contour_dp(ICON_SIZE, tokens.error_hover)?
+            } else {
+                icon.clone()
+            };
+            slots.push(
+                self.text_field_trailing_icon_button(
+                    &action_id,
+                    action.name,
+                    disabled,
+                    ink,
+                    action.on_press,
+                )?
+                .restore_focus_on_removal(id)
+                .accessibility_scroll_into_view(),
+            );
+            slots.push(
+                View::new(
+                    Node::new(Role::Group, "")
+                        .id(format!("{id}-trailing-icon"))
+                        .styled(Style::default().clip(true)),
+                )
+                .paint_text_input_contour(id, None, move |state, _| {
+                    Some(if state.is_hovered && !state.is_focused {
+                        icon_hover.clone()
+                    } else {
+                        icon.clone()
+                    })
+                }),
+            );
+        }
+        let affix_ink = if disabled {
+            tokens.disabled_text
+        } else {
+            tokens.neutral_label
+        };
+        for (part, affix) in [
+            ("prefix", field_adornments.prefix.as_ref()),
+            ("suffix", field_adornments.suffix.as_ref()),
+        ] {
+            let Some(affix) = affix else { continue };
+            let text = |kind: &str, value: &str, font: TextStyle, ink| {
+                View::new(
+                    Node::new(Role::Text, "")
+                        .id(format!("{id}-{part}-{kind}"))
+                        .text(value)
+                        .text_alignment(alignment)
+                        .text_scaling(TextScaling::Fixed)
+                        .styled(Style::default().with_text_style(font).foreground(ink)),
+                )
+            };
+            slots.push(
+                text("visual", &affix.visual, body.clone(), affix_ink)
+                    .paint_when_text_input(id, floats),
+            );
+            slots.push(
+                text("wrapped", &affix.spoken_name, caption.clone(), affix_ink)
+                    .without_interaction(None),
+            );
+            slots.push(text(
+                "description",
+                &affix.spoken_name,
+                caption.clone(),
+                Color::TRANSPARENT,
+            ));
+        }
         let mut shell = Style::column().width(Length::Percent(1.));
         shell.min_width = FACE_MIN;
         let layout = FieldLayout {
@@ -337,6 +478,7 @@ impl Theme {
             caption_height,
             rtl,
             disabled_value,
+            adornments: field_adornments,
         };
         let filled_backgrounds = filled.then(|| {
             let container = if disabled {
@@ -376,7 +518,8 @@ impl Theme {
                     .chain([editor, boundary, inline, floating, fallback])
                     .chain(disabled_ink)
                     .chain(description_view)
-                    .chain([validation_status]),
+                    .chain([validation_status])
+                    .chain(slots),
             ),
         )
     }
@@ -439,7 +582,7 @@ impl FieldColors {
 
 #[derive(Debug)]
 struct FieldLayout {
-    appearance: FieldAppearance,
+    appearance: TextFieldAppearance,
     label: String,
     description: Option<String>,
     body: TextStyle,
@@ -448,15 +591,23 @@ struct FieldLayout {
     caption_height: f32,
     rtl: bool,
     disabled_value: bool,
+    adornments: FieldAdornments,
 }
 
 impl FieldLayout {
     fn rects(&self, width: f32, fonts: &mut dyn TextMeasurer) -> Vec<Rect> {
         let content_width = (width - 2. * SIDE).max(1.);
+        let filled = self.appearance == TextFieldAppearance::Filled;
+        let slots = self
+            .adornments
+            .measure(width, fonts, &self.body, self.line_height);
+        let body_width = slots.body_end - slots.body_start;
+        let floating_start = if filled { slots.body_start } else { SIDE };
+        let floating_width = if filled { body_width } else { content_width };
         let (inline_width, inline_height) = fonts.measure_text(&self.label, &self.body, None);
         let (float_width, float_height) = fonts.measure_text(&self.label, &self.caption, None);
-        let label_fits = inline_width <= content_width
-            && float_width <= content_width
+        let label_fits = inline_width <= body_width
+            && float_width <= floating_width
             && inline_height <= self.line_height + 0.5
             && float_height <= self.caption_height + 0.5;
         let above_height = if label_fits {
@@ -468,7 +619,6 @@ impl FieldLayout {
                 .max(self.caption_height)
                 .ceil()
         };
-        let filled = self.appearance == FieldAppearance::Filled;
         let (face_padding, label_slot) = if filled {
             (FILLED_VERTICAL_PADDING, self.caption_height)
         } else {
@@ -486,21 +636,34 @@ impl FieldLayout {
         let face_height = FACE_MIN.max((self.line_height + label_slot + 2. * face_padding).ceil());
         let face = Rect::new(0., top, width, face_height);
         let empty = Rect::new(0., 0., 0., 0.);
-        let content = Rect::new(
-            SIDE,
-            top + (face_height - self.line_height) / 2.,
-            content_width,
+        let physical = |rect| physical(rect, width, self.rtl);
+        let center_line_y = top + (face_height - self.line_height) / 2.;
+        let line_y = if filled {
+            top + face_padding + label_slot
+        } else {
+            center_line_y
+        };
+        let editor = if slots.trailing_inline {
+            physical(Rect::new(0., top, width - ACTION_SIZE, face_height))
+        } else {
+            face
+        };
+        let value = physical(slots.value(line_y, self.line_height));
+        let content = physical(Rect::new(
+            slots.body_start,
+            center_line_y,
+            body_width,
             self.line_height,
-        );
+        ));
         let inline = if label_fits { content } else { empty };
         let floating = if label_fits {
-            let x = if self.rtl {
-                width - SIDE - float_width
-            } else {
-                SIDE
-            };
             let y = if filled { top + face_padding } else { 0. };
-            Rect::new(x, y, float_width, self.caption_height)
+            physical(Rect::new(
+                floating_start,
+                y,
+                float_width,
+                self.caption_height,
+            ))
         } else {
             empty
         };
@@ -509,14 +672,9 @@ impl FieldLayout {
         if filled {
             rects.extend([face, face]);
         }
-        rects.extend([face, face, inline, floating, above]);
+        rects.extend([editor, face, inline, floating, above]);
         if self.disabled_value {
-            let y = if filled {
-                top + face_padding + label_slot
-            } else {
-                content.y
-            };
-            rects.push(Rect::new(content.x, y, content.width, content.height));
+            rects.push(value);
         }
         if let Some(description) = &self.description {
             let height = fonts
@@ -533,11 +691,78 @@ impl FieldLayout {
         }
         // The live region needs visible geometry even when it is empty.
         rects.push(Rect::new(1., 0., 1., 1.));
+        if self.adornments.has_slots() {
+            rects.push(value);
+        }
+        let icon_inset = (ACTION_SIZE - ICON_SIZE) / 2.;
+        if self.adornments.leading {
+            let icon = Rect::new(
+                icon_inset,
+                top + (face_height - ICON_SIZE) / 2.,
+                ICON_SIZE,
+                ICON_SIZE,
+            );
+            rects.push(if slots.leading { physical(icon) } else { empty });
+        }
+        let mut below = rects
+            .iter()
+            .map(|rect| rect.y + rect.height)
+            .fold(0., f32::max)
+            + DESCRIPTION_GAP;
+        if self.adornments.trailing {
+            let y = if slots.trailing_inline {
+                top + (face_height - ACTION_SIZE) / 2.
+            } else {
+                let y = below;
+                below += ACTION_SIZE + DESCRIPTION_GAP;
+                y
+            };
+            let x = width - ACTION_SIZE;
+            rects.push(physical(Rect::new(x, y, ACTION_SIZE, ACTION_SIZE)));
+            rects.push(physical(Rect::new(
+                x + icon_inset,
+                y + icon_inset,
+                ICON_SIZE,
+                ICON_SIZE,
+            )));
+        }
+        for (affix, left, width) in [
+            (
+                self.adornments.prefix.as_ref(),
+                slots.body_start,
+                slots.prefix_width,
+            ),
+            (
+                self.adornments.suffix.as_ref(),
+                slots.body_end - slots.suffix_width,
+                slots.suffix_width,
+            ),
+        ] {
+            let Some(affix) = affix else { continue };
+            if slots.affixes_inline {
+                rects.push(physical(Rect::new(left, line_y, width, self.line_height)));
+                rects.push(empty);
+            } else {
+                let height = fonts
+                    .measure_text(&affix.spoken_name, &self.caption, Some(content_width))
+                    .1
+                    .max(self.caption_height)
+                    .ceil();
+                rects.push(empty);
+                rects.push(Rect::new(SIDE, below, content_width, height));
+                below += height + DESCRIPTION_GAP;
+            }
+            rects.push(physical(Rect::new(SIDE, top + face_height / 2., 1., 1.)));
+        }
         rects
     }
 }
 
 impl MeasuredGroupLayout for FieldLayout {
+    fn places_measured_groups(&self) -> bool {
+        true
+    }
+
     fn measure(
         &self,
         _children: &[&Node],

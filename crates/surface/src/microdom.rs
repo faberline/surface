@@ -160,6 +160,8 @@ pub struct Node {
     current_date: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     described_by_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    additional_description_text_targets: Vec<String>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     assertive_live_status: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
@@ -210,6 +212,8 @@ pub struct Node {
     presented_text_input_placeholder: Option<Arc<(String, Color)>>,
     #[serde(skip)]
     pub(crate) presented_text_input_horizontal_inset: f32,
+    #[serde(skip)]
+    pub(crate) presented_text_input_horizontal_bounds: Option<(f32, f32)>,
     #[serde(skip)]
     pub(crate) presented_text_input_top_inset: f32,
     pub(crate) disabled: bool,
@@ -274,6 +278,7 @@ impl Node {
             grid_multiselectable: false,
             current_date: false,
             described_by_text: None,
+            additional_description_text_targets: Vec::new(),
             assertive_live_status: false,
             alert_dialog: false,
             dialog_heading: None,
@@ -300,6 +305,7 @@ impl Node {
             text_input_caret_color: None,
             presented_text_input_placeholder: None,
             presented_text_input_horizontal_inset: 0.,
+            presented_text_input_horizontal_bounds: None,
             presented_text_input_top_inset: 0.,
             disabled: false,
             invalid: false,
@@ -808,6 +814,21 @@ impl Node {
     pub fn description_text_target(&self) -> Option<&str> {
         self.described_by_text.as_deref()
     }
+    /// Add stable IDs of passive text nodes that describe this node in order.
+    /// Hosts resolve these references before the existing single description.
+    pub fn described_by_texts<I, T>(mut self, targets: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<String>,
+    {
+        self.additional_description_text_targets
+            .extend(targets.into_iter().map(Into::into));
+        self
+    }
+
+    pub fn additional_description_text_targets(&self) -> &[String] {
+        &self.additional_description_text_targets
+    }
     /// Request assertive announcements for a passive status in its current
     /// accessibility scope. Give the status a stable ID and visible bounds
     /// even when its text is empty. Use this for urgent updates.
@@ -1266,6 +1287,30 @@ impl MicroDom {
             .ok_or(DomError::InvalidNode(id.index()))?;
         if node.role() == Role::TextInput {
             node.presented_text_input_horizontal_inset = inset;
+        }
+        Ok(())
+    }
+
+    /// Set a local text offset and width after layout. Only the display copy
+    /// uses these horizontal bounds.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_horizontal_bounds(
+        &mut self,
+        id: NodeId,
+        offset: f32,
+        width: f32,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::TextInput
+            && offset.is_finite()
+            && width.is_finite()
+            && offset >= 0.
+            && width > 0.
+        {
+            node.presented_text_input_horizontal_bounds = Some((offset, width));
         }
         Ok(())
     }

@@ -205,6 +205,7 @@ does not change application state.
 | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
 | `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
 | `filled_text_field` | One single-line editor with a filled container, inside floating label and bottom indicator |
+| `text_field_with_adornments` | Either single-line appearance with optional visual affixes and a separate named action |
 | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
 | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
 | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
@@ -1255,6 +1256,26 @@ for outlined fields. Use `filled_text_field_with_submit` for Enter.
 In Material Gallery, choose 動作 and 填色文字欄位.
 
 [Material 3 text field specifications](https://m3.material.io/components/text-fields/specs)
+
+### Text field adornments
+
+Use `Theme::text_field_with_adornments` for either appearance. Pass the
+ordinary `TextFieldOptions` and `TextFieldAdornments`. Each option can be
+omitted. Supply localized spoken text for a prefix or suffix. The
+application receives the input value by itself and handles Enter through
+the optional submit callback.
+
+The trailing button has its own name, focus and 48 dp target. Use its
+message for a separate action. Set the button's disabled flag if the
+action should be unavailable on a read-only field. A disabled field also
+disables the button. A pointer press leaves an active composition in the
+editor. Tab reaches the field before the button in either direction.
+
+If space is tight, affixes wrap below the field in readable text. The
+decorative icon can disappear, and the trailing button can move below
+the field with the same focus identity.
+
+In Material Gallery, choose 動作 and 文字欄位配件 to try both appearances.
 
 ## Baseline segmented buttons
 

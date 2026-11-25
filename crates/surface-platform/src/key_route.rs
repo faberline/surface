@@ -303,19 +303,23 @@ pub(crate) fn web_key<A: Application>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ime_session::ImeSession;
     use std::{cell::Cell, rc::Rc};
     use surface::{Node, Role};
     use surface_app::{ImeEvent, TextAction, TextOptions, View};
+    use winit::event::Ime;
 
     #[derive(Clone)]
     enum Msg {
         Text(String),
         Send,
     }
+    #[derive(Default)]
     struct App {
         draft: String,
         multiline: bool,
         handler: bool,
+        edits: u32,
         sent: u32,
         calls: Rc<Cell<u32>>,
     }
@@ -323,7 +327,10 @@ mod tests {
         type Message = Msg;
         fn update(&mut self, message: Msg) {
             match message {
-                Msg::Text(text) => self.draft = text,
+                Msg::Text(text) => {
+                    self.draft = text;
+                    self.edits += 1;
+                }
                 Msg::Send => self.sent += 1,
             }
         }
@@ -350,11 +357,9 @@ mod tests {
     }
     fn runtime(multiline: bool, handler: bool) -> Runtime<App> {
         let mut rt = Runtime::new(App {
-            draft: String::new(),
             multiline,
             handler,
-            sent: 0,
-            calls: Rc::default(),
+            ..App::default()
         })
         .unwrap();
         rt.activate("chat").unwrap();
@@ -437,6 +442,69 @@ mod tests {
         assert_eq!(rt.app().calls.get(), 0);
         assert_eq!(rt.app().sent, 0);
         assert_eq!(rt.app().draft, "hi", "no newline during composition");
+    }
+
+    #[test]
+    fn native_ime_session_commits_before_a_separate_enter_and_cancels_without_editing() {
+        let mut rt = Runtime::new(App {
+            draft: "台灣".into(),
+            handler: true,
+            ..App::default()
+        })
+        .unwrap();
+        rt.activate("chat").unwrap();
+        rt.dispatch(Event::Select {
+            anchor: "台".len(),
+            cursor: 0,
+        })
+        .unwrap();
+
+        let mut session = ImeSession::default();
+        assert_eq!(
+            session.focus(rt.input_snapshot().map(|input| input.id)),
+            [true]
+        );
+        // Match the WindowEvent::Ime branch without creating a native window.
+        let mut deliver = |rt: &mut Runtime<App>, event| {
+            if let Some(event) = session.event(event) {
+                rt.dispatch(event).unwrap();
+            }
+        };
+        let calls = |rt: &Runtime<App>| (rt.app().edits, rt.app().sent, rt.app().calls.get());
+
+        deliver(&mut rt, Ime::Enabled);
+        deliver(&mut rt, Ime::Preedit("ㄓㄨㄥ".into(), Some((3, 6))));
+        let editor = rt.editor("chat").unwrap();
+        assert_eq!(editor.display_value(), "ㄓㄨㄥ灣");
+        assert_eq!(editor.display_selection().unwrap().range(), 3..6);
+        assert_eq!(rt.app().draft, "台灣");
+        assert_eq!(calls(&rt), (0, 0, 0));
+        assert_eq!(native_press(&mut rt, &ENTER, Some("\r"), NONE), "Ignore");
+        assert_eq!(calls(&rt), (0, 0, 0));
+        assert!(rt.input_snapshot().unwrap().composing);
+
+        // Winit's macOS insertText queues an empty preedit before the commit.
+        deliver(&mut rt, Ime::Preedit(String::new(), None));
+        assert_eq!(calls(&rt), (0, 0, 0));
+        deliver(&mut rt, Ime::Commit("中".into()));
+        assert_eq!(rt.app().draft, "中灣");
+        assert_eq!(calls(&rt), (1, 0, 0));
+        assert!(!rt.input_snapshot().unwrap().composing);
+        assert_eq!(native_press(&mut rt, &ENTER, Some("\r"), NONE), "Consumed");
+        assert_eq!(calls(&rt), (1, 1, 1));
+
+        let selected = rt.input_snapshot().unwrap().selection;
+        deliver(&mut rt, Ime::Preedit("ㄅ".into(), None));
+        assert!(rt.input_snapshot().unwrap().composing);
+        deliver(&mut rt, Ime::Disabled);
+        deliver(&mut rt, Ime::Commit("誤".into()));
+        let input = rt.input_snapshot().unwrap();
+        assert!(!input.composing);
+        assert_eq!(input.value, "中灣");
+        assert_eq!(input.selection, selected);
+        assert_eq!(rt.editor("chat").unwrap().display_value(), "中灣");
+        assert_eq!(rt.app().draft, "中灣");
+        assert_eq!(calls(&rt), (1, 1, 1));
     }
 
     #[test]

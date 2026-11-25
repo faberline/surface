@@ -1,4 +1,7 @@
-use surface::{Align, Color, Corners, Insets, Length, Node, Role, Style};
+use surface::{
+    Align, Color, Corners, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style,
+    TextMeasurer,
+};
 use surface_app::{CursorStyle, View};
 
 use crate::{IconButtonKind, Theme, VectorIcon};
@@ -75,14 +78,49 @@ impl Theme {
         icon: MaterialIcon<'_>,
         message: M,
     ) -> Option<View<M>> {
+        self.build_icon_button(options, IconButtonArtwork::Glyph(icon), message)
+    }
+
+    /// A 48 dp trailing action. The field paints the separate passive glyph.
+    pub(crate) fn text_field_trailing_icon_button<M>(
+        &self,
+        id: &str,
+        name: &str,
+        disabled: bool,
+        field_icon_ink: Color,
+        message: M,
+    ) -> Option<View<M>> {
+        self.build_icon_button(
+            IconButtonOptions {
+                id,
+                name,
+                description: None,
+                kind: IconButtonKind::Standard,
+                size: IconButtonSize::Small,
+                width: IconButtonWidth::Narrow,
+                shape: IconButtonShape::Round,
+                disabled,
+            },
+            IconButtonArtwork::FieldAdornment(field_icon_ink),
+            message,
+        )
+    }
+
+    fn build_icon_button<M>(
+        &self,
+        options: IconButtonOptions<'_>,
+        artwork: IconButtonArtwork<'_>,
+        message: M,
+    ) -> Option<View<M>> {
         if options.id.trim().is_empty() || options.name.trim().is_empty() {
             return None;
         }
-        let (asset, checked) = match icon {
-            MaterialIcon::Command(asset) => (asset, None),
-            MaterialIcon::Toggle { checked, off, on } => {
-                (if checked { on } else { off }, Some(checked))
+        let (asset, checked, field_ink) = match artwork {
+            IconButtonArtwork::Glyph(MaterialIcon::Command(asset)) => (Some(asset), None, None),
+            IconButtonArtwork::Glyph(MaterialIcon::Toggle { checked, off, on }) => {
+                (Some(if checked { on } else { off }), Some(checked), None)
             }
+            IconButtonArtwork::FieldAdornment(ink) => (None, None, Some(ink)),
         };
         let tokens = options.size.tokens();
         let [narrow, default, wide] = tokens.widths;
@@ -104,14 +142,8 @@ impl Theme {
         let pressed_corners =
             |outset| (!options.disabled).then_some(Corners::all(tokens.pressed_radius + outset));
 
-        let icon_view = View::new(
-            Node::new(Role::Group, "")
-                .id(format!("{}-icon", options.id))
-                .styled(centered_box(tokens.icon, tokens.icon))
-                .fill_contour(asset.contour_dp(tokens.icon, palette.icon)?),
-        );
         let face_id = format!("{}-face", options.id);
-        let face = View::new(
+        let mut face = View::new(
             Node::new(Role::Group, "")
                 .id(&face_id)
                 .styled(
@@ -125,7 +157,7 @@ impl Theme {
                         .state_layer(if options.disabled {
                             Color::TRANSPARENT
                         } else {
-                            palette.icon
+                            field_ink.unwrap_or(palette.icon)
                         }),
                 )
                 // Keep the pressed target with the passive face. The parent
@@ -135,20 +167,29 @@ impl Theme {
                 .animate_interaction_corners_with_spring(CORNER_STIFFNESS, CORNER_DAMPING_RATIO)
                 .state_layer_alphas(20, 26, 26),
         )
-        .children([icon_view])
         .without_interaction(None);
+        if let Some(asset) = asset {
+            let icon_view = View::new(
+                Node::new(Role::Group, "")
+                    .id(format!("{}-icon", options.id))
+                    .styled(centered_box(tokens.icon, tokens.icon))
+                    .fill_contour(asset.contour_dp(tokens.icon, palette.icon)?),
+            );
+            face = face.children([icon_view]);
+        }
+        let mut focus_style = centered_box(width + 2. * FOCUS_OUTSET, height + 2. * FOCUS_OUTSET)
+            .corners(Corners::all(radius + FOCUS_OUTSET));
+        if field_ink.is_none() {
+            focus_style = focus_style.absolute(Insets {
+                left: Length::Px((target_width - width) / 2. - FOCUS_OUTSET),
+                top: Length::Px((target_height - height) / 2. - FOCUS_OUTSET),
+                ..Insets::default()
+            });
+        }
         let focus = View::new(
             Node::new(Role::Group, "")
                 .id(format!("{}-focus", options.id))
-                .styled(
-                    centered_box(width + 2. * FOCUS_OUTSET, height + 2. * FOCUS_OUTSET)
-                        .absolute(Insets {
-                            left: Length::Px((target_width - width) / 2. - FOCUS_OUTSET),
-                            top: Length::Px((target_height - height) / 2. - FOCUS_OUTSET),
-                            ..Insets::default()
-                        })
-                        .corners(Corners::all(radius + FOCUS_OUTSET)),
-                )
+                .styled(focus_style)
                 // The focus outline uses the same target plus its outset.
                 .interaction_corners(None, pressed_corners(FOCUS_OUTSET), None)
                 .interaction_corners_from_parent()
@@ -171,6 +212,9 @@ impl Theme {
         if let Some(target) = options.description {
             action = action.described_by_text(target);
         }
+        if field_ink.is_some() {
+            action = action.measured_group(FieldActionLayout { width, height });
+        }
         let mut view = View::new(action).children([face, focus]);
         if options.disabled {
             return Some(view);
@@ -187,6 +231,42 @@ impl Theme {
                 .suppress_repeated_activation()
                 .cursor(CursorStyle::Pointer),
         )
+    }
+}
+
+enum IconButtonArtwork<'a> {
+    Glyph(MaterialIcon<'a>),
+    FieldAdornment(Color),
+}
+
+#[derive(Debug)]
+struct FieldActionLayout {
+    width: f32,
+    height: f32,
+}
+
+impl MeasuredGroupLayout for FieldActionLayout {
+    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
+        (MIN_TARGET, MIN_TARGET)
+    }
+
+    fn place(
+        &self,
+        _: &[&Node],
+        (width, height): (f32, f32),
+        _: &mut dyn TextMeasurer,
+    ) -> Vec<Rect> {
+        let x = (width - self.width) / 2.;
+        let y = (height - self.height) / 2.;
+        vec![
+            Rect::new(x, y, self.width, self.height),
+            Rect::new(
+                x - FOCUS_OUTSET,
+                y - FOCUS_OUTSET,
+                self.width + 2. * FOCUS_OUTSET,
+                self.height + 2. * FOCUS_OUTSET,
+            ),
+        ]
     }
 }
 
@@ -267,6 +347,137 @@ impl Palette {
                 fill,
                 icon,
                 outline,
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use surface::{Rect, TextMeasurer};
+    use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime};
+
+    const INK: Color = Color(115, 27, 38, 255);
+
+    struct Field {
+        disabled: bool,
+        requests: usize,
+    }
+
+    impl Application for Field {
+        type Message = ();
+
+        fn update(&mut self, (): ()) {
+            self.requests += 1;
+        }
+
+        fn view(&self) -> View<()> {
+            let action = Theme::light()
+                .text_field_trailing_icon_button("trailing", "清除文字", self.disabled, INK, ())
+                .unwrap();
+            View::new(Node::new(Role::Window, "Test").styled(Style::row().align(Align::Center)))
+                .children([
+                    View::new(
+                        Node::new(Role::TextInput, "名稱")
+                            .id("editor")
+                            .styled(centered_box(80., 56.)),
+                    )
+                    .on_input(|_| ()),
+                    action,
+                ])
+        }
+    }
+
+    struct Metrics;
+
+    impl TextMeasurer for Metrics {
+        fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
+            (text.chars().count() as f32 * size, size)
+        }
+    }
+
+    #[test]
+    fn trailing_action_retains_the_icon_button_target_without_an_internal_glyph() {
+        assert!(Theme::light()
+            .text_field_trailing_icon_button("trailing", " ", false, INK, ())
+            .is_none());
+        for disabled in [false, true] {
+            let mut rt = Runtime::new(Field {
+                disabled,
+                requests: 0,
+            })
+            .unwrap();
+            rt.activate("editor").unwrap();
+            rt.render(160., 72., &mut Metrics).unwrap();
+            let bounds = |key| {
+                let id = rt.dom().by_id(key).unwrap();
+                rt.computed().unwrap().nodes[id.index()].bounds
+            };
+            let editor = bounds("editor");
+            let target = bounds("trailing");
+            let face = bounds("trailing-face");
+            let focus = bounds("trailing-focus");
+            let id = rt.dom().by_id("trailing").unwrap();
+            let action = rt.dom().get(id).unwrap();
+            assert_eq!(action.role(), Role::Button);
+            assert_eq!(action.name(), "清除文字");
+            assert_eq!(action.is_disabled(), disabled);
+            assert_eq!(action.press_ripple_target_name(), Some("trailing-face"));
+            assert!(rt.dom().by_id("trailing-icon").is_none());
+            assert_eq!(editor.intersect(target).width, 0.);
+            assert_eq!(target, Rect::new(80., 12., 48., 48.));
+            assert_eq!(face, Rect::new(88., 16., 32., 40.));
+            assert_eq!(focus, Rect::new(83., 11., 42., 50.));
+            let face_node = rt
+                .dom()
+                .get(rt.dom().by_id("trailing-face").unwrap())
+                .unwrap();
+            assert_eq!(
+                face_node.style().state_layer,
+                if disabled { Color::TRANSPARENT } else { INK }
+            );
+            assert_eq!(
+                rt.accessibility_frame()
+                    .unwrap()
+                    .activation_target(id)
+                    .is_some(),
+                !disabled
+            );
+
+            let pointer = [
+                Event::PointerDown { x: 104., y: 36. },
+                Event::PointerUp { x: 104., y: 36. },
+            ];
+            if !disabled {
+                rt.dispatch(Event::Ime(ImeEvent::Preedit {
+                    text: "ㄓ".into(),
+                    selection: None,
+                }))
+                .unwrap();
+                for event in pointer.clone() {
+                    rt.dispatch(event).unwrap();
+                }
+                assert!(rt.input_snapshot().unwrap().composing);
+                assert_eq!(rt.app().requests, 0);
+                rt.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+                rt.render(160., 72., &mut Metrics).unwrap();
+            }
+            for event in pointer {
+                rt.dispatch(event).unwrap();
+            }
+            if disabled {
+                assert_eq!(rt.app().requests, 0);
+            } else {
+                assert_eq!(rt.focused(), Some("trailing"));
+                assert_eq!(rt.app().requests, 1);
+                let space = KeyPress::new(Key::Space, Modifiers::default());
+                assert!(rt.key(&space.clone().with_repeat(true)).unwrap());
+                assert_eq!(rt.app().requests, 1);
+                // An ordinary Space falls through to the platform's activation event.
+                assert!(!rt.key(&space).unwrap());
+                assert!(rt.dispatch(Event::Activate).unwrap());
+                assert_eq!(rt.app().requests, 2);
             }
         }
     }

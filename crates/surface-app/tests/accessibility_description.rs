@@ -332,6 +332,171 @@ fn a_clipped_text_parent_with_a_visible_child_is_not_a_validation_target() {
     assert_eq!(frame.clipped_validation_text(editor), None);
 }
 
+#[test]
+fn supplementary_descriptions_require_passive_visible_unique_targets_in_scope() {
+    #[derive(Clone, Copy)]
+    struct Adorned {
+        modal: bool,
+        disabled: bool,
+        clipped_error: bool,
+    }
+
+    impl Application for Adorned {
+        type Message = Self;
+
+        fn update(&mut self, message: Self) {
+            *self = message;
+        }
+
+        fn view(&self) -> View<Self> {
+            let editor = View::new(
+                Node::new(Role::TextInput, "Amount")
+                    .id("amount")
+                    .text("12")
+                    .disabled(self.disabled)
+                    .invalid(true)
+                    .described_by_texts([
+                        "prefix",
+                        "missing",
+                        "tooltip",
+                        "status",
+                        "button",
+                        "focusable",
+                        "disabled",
+                        "blank",
+                        "suppressed",
+                        "clipped",
+                        "parent",
+                        "suffix",
+                        "prefix",
+                        "amount",
+                        "error",
+                    ])
+                    .described_by_text("error"),
+            )
+            .on_input(|_| Adorned {
+                modal: false,
+                disabled: false,
+                clipped_error: false,
+            });
+            let suffix = View::new(Node::new(Role::Text, "").id("suffix").text("公斤"));
+            let error_style = if self.clipped_error {
+                Style::default().width(Length::Px(100.)).fixed(Insets {
+                    left: Length::Px(-220.),
+                    top: Length::Px(100.),
+                    ..Default::default()
+                })
+            } else {
+                Style::default()
+            };
+            let error = View::new(
+                Node::new(Role::Text, "")
+                    .id("error")
+                    .text("請輸入整數。")
+                    .styled(error_style),
+            );
+            let local = if self.modal {
+                View::new(Node::new(Role::Dialog, "Edit amount").id("modal"))
+                    .children([editor, suffix, error])
+                    .modal(*self)
+            } else {
+                View::new(Node::new(Role::Group, "").styled(Style::column()))
+                    .children([editor, suffix, error])
+            };
+            let text = |id, value| Node::new(Role::Text, "").id(id).text(value);
+            View::new(Node::new(Role::Window, "App").styled(Style::column())).children([
+                local,
+                View::new(text("prefix", "歐元")),
+                View::new(
+                    Node::new(Role::Tooltip, "Tooltip")
+                        .id("tooltip")
+                        .text("Tooltip"),
+                ),
+                View::new(
+                    Node::new(Role::Status, "Status")
+                        .id("status")
+                        .text("Status"),
+                ),
+                View::new(
+                    Node::new(Role::Button, "Button")
+                        .id("button")
+                        .text("Button"),
+                ),
+                View::new(text("focusable", "Focusable").tab_index(0)),
+                View::new(text("disabled", "Disabled").disabled(true)),
+                View::new(text("blank", " ")),
+                View::new(text("suppressed", "Suppressed")).without_interaction(None),
+                View::new(text("clipped", "Clipped").styled(
+                    Style::default().width(Length::Px(100.)).fixed(Insets {
+                        left: Length::Px(-220.),
+                        ..Default::default()
+                    }),
+                )),
+                View::new(text("parent", "Parent")).children([View::new(text("child", "Child"))]),
+            ])
+        }
+    }
+
+    let base = Adorned {
+        modal: false,
+        disabled: false,
+        clipped_error: false,
+    };
+    let mut runtime = Runtime::new(base).unwrap();
+    for (scene, expected) in [
+        (
+            base,
+            vec![("prefix", None), ("suffix", None), ("error", None)],
+        ),
+        (
+            Adorned {
+                modal: true,
+                ..base
+            },
+            vec![("suffix", None), ("error", None)],
+        ),
+        (
+            Adorned {
+                clipped_error: true,
+                ..base
+            },
+            vec![
+                ("prefix", None),
+                ("suffix", None),
+                ("error", Some("請輸入整數。")),
+            ],
+        ),
+        (
+            Adorned {
+                disabled: true,
+                ..base
+            },
+            vec![],
+        ),
+    ] {
+        runtime.apply(scene).unwrap();
+        runtime.render(320., 440., &mut Metrics).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let owner = runtime.dom().by_id("amount").unwrap();
+        let parts = frame.description_parts(owner);
+        let observed: Vec<_> = parts
+            .into_iter()
+            .map(|(target, clipped)| {
+                (
+                    frame.node(target).unwrap().node.stable_id().unwrap(),
+                    clipped,
+                )
+            })
+            .collect();
+        assert_eq!(observed, expected);
+        assert_eq!(
+            frame.description_target(owner),
+            (!scene.disabled && !scene.clipped_error)
+                .then(|| runtime.dom().by_id("error").unwrap())
+        );
+    }
+}
+
 #[cfg(feature = "devtools")]
 #[test]
 fn devtools_exposes_grid_state_and_text_reference_through_the_existing_methods() {

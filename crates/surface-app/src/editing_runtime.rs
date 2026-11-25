@@ -300,10 +300,35 @@ impl<A: Application> Runtime<A> {
             } else {
                 binding.single_line_text_horizontal_inset
             };
-            let mut origin = g
-                .bounds
-                .inset(node.style().padding)
-                .inset_horizontal(content_inset);
+            let padded = g.bounds.inset(node.style().padding);
+            let measured_horizontal = binding
+                .single_line_text_horizontal_bounds
+                .as_deref()
+                .filter(|_| !options.multiline)
+                .and_then(|key| display.by_id(key))
+                .filter(|sibling| {
+                    *sibling != id
+                        && node.parent().is_some()
+                        && display.get(*sibling).is_ok_and(|reference| {
+                            reference.role() == Role::Group
+                                && reference.parent() == node.parent()
+                                && !reference.is_focusable()
+                        })
+                        && !self.has_interaction_binding(*sibling)
+                })
+                .map(|sibling| computed.nodes[sibling.index()].bounds)
+                .filter(|bounds| {
+                    bounds.x.is_finite()
+                        && bounds.width.is_finite()
+                        && bounds.width > 0.
+                        && bounds.x >= padded.x
+                        && bounds.x + bounds.width <= padded.x + padded.width
+                });
+            let mut origin = padded.inset_horizontal(content_inset);
+            if let Some(bounds) = measured_horizontal {
+                origin.x = bounds.x;
+                origin.width = bounds.width;
+            }
             let content_width = origin.width;
             let text = editor.display_value();
             let text_style = node.style().text_style();
@@ -423,7 +448,13 @@ impl<A: Application> Runtime<A> {
                 },
             );
             decorations.insert(id, decoration);
-            if content_inset > 0. {
+            if let Some(bounds) = measured_horizontal {
+                display.set_presented_text_input_horizontal_bounds(
+                    id,
+                    bounds.x - padded.x,
+                    bounds.width,
+                )?;
+            } else if content_inset > 0. {
                 display.set_presented_text_input_horizontal_inset(id, content_inset)?;
             }
             if top_inset > 0. {
