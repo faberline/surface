@@ -944,10 +944,13 @@ fn compile_into<Op: CompileOp>(
         let placeholder = n.text_input_placeholder();
         let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
         if let Some((text, text_color)) = text_run {
-            let rect = g
+            let mut rect = g
                 .bounds
                 .inset(s.padding)
                 .inset_horizontal(n.presented_text_input_horizontal_inset);
+            let top_inset = n.presented_text_input_top_inset.min(rect.height);
+            rect.y += top_inset;
+            rect.height -= top_inset;
             let clip = g.clip.intersect(rect);
             let decoration = decorations.get(id);
             let editable = n.role() == Role::TextInput;

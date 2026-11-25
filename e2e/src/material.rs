@@ -42,6 +42,8 @@ mod material_extended_fab;
 mod material_fab;
 #[path = "material_fab_menu.rs"]
 mod material_fab_menu;
+#[path = "material_filled_text_field.rs"]
+mod material_filled_text_field;
 #[path = "material_flexible_navigation_bar.rs"]
 mod material_flexible_navigation_bar;
 #[path = "material_icon_buttons.rs"]
@@ -159,7 +161,7 @@ pub const STEPS: &[&str] = &[
     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
-    "M323", "M324", "M325", "M326", "M327", "M328",
+    "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -292,7 +294,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_slider_inset::run(env, chrome, &url).await?;
     material_buttons::run(env, chrome, &url).await?;
     material_segmented::run(env, chrome, &url).await?;
-    material_outlined_text_field::run(env, chrome, &url).await
+    material_outlined_text_field::run(env, chrome, &url).await?;
+    material_filled_text_field::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -523,6 +526,11 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn filled_text_field_steps_are_required_by_the_material_case() {
+        assert!(super::STEPS.ends_with(&super::material_filled_text_field::STEPS));
+    }
+
     #[test]
     fn outlined_text_field_steps_are_required_by_the_material_case() {
         let outlined = super::material_outlined_text_field::STEPS;

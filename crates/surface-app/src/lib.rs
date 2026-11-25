@@ -76,6 +76,13 @@ use surface::{
 type ContourPainter = Box<dyn Fn() -> FillContour>;
 type ModalTransformPainter = Box<dyn Fn() -> Option<PaintTransform>>;
 
+#[derive(Clone, Copy)]
+enum SingleLineVerticalPlacement {
+    Top,
+    Center,
+    Inset(f32),
+}
+
 pub use editor_paint::TextInputPaintState;
 
 /// One view of application state. Messages return through `Application::update`.
@@ -89,7 +96,7 @@ pub struct View<M> {
     focus_disabled_menu_item: bool,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
-    center_single_line_text: bool,
+    single_line_vertical_placement: SingleLineVerticalPlacement,
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
     text_input_placeholder: Option<Arc<(String, Color)>>,
@@ -182,7 +189,7 @@ impl<M> View<M> {
             focus_disabled_menu_item: false,
             input: None,
             text_options: TextOptions::default(),
-            center_single_line_text: false,
+            single_line_vertical_placement: SingleLineVerticalPlacement::Top,
             right_align_single_line_text: false,
             single_line_text_horizontal_inset: 0.,
             text_input_placeholder: None,
@@ -510,7 +517,17 @@ impl<M> View<M> {
     /// Center a single-line editor's text and caret within its content box.
     /// The focus outline, hit target and multiline layout stay the same.
     pub fn center_single_line_text(mut self) -> Self {
-        self.center_single_line_text = true;
+        self.single_line_vertical_placement = SingleLineVerticalPlacement::Center;
+        self
+    }
+
+    /// Place a single line below the top of its padded content box, in logical
+    /// pixels. The inset leaves room for the measured text line when possible.
+    /// Negative and non-finite insets use zero. The last vertical placement
+    /// builder wins. The full hit target and multiline layout stay the same.
+    pub fn inset_single_line_text_from_top(mut self, inset: f32) -> Self {
+        let inset = if inset.is_finite() { inset.max(0.) } else { 0. };
+        self.single_line_vertical_placement = SingleLineVerticalPlacement::Inset(inset);
         self
     }
 
@@ -1205,7 +1222,7 @@ struct Binding<M> {
     disabled_menu_tab_stop: Option<bool>,
     input: Option<Rc<dyn Fn(String) -> M>>,
     text_options: TextOptions,
-    center_single_line_text: bool,
+    single_line_vertical_placement: SingleLineVerticalPlacement,
     right_align_single_line_text: bool,
     single_line_text_horizontal_inset: f32,
     text_input_placeholder: Option<Arc<(String, Color)>>,
@@ -1740,7 +1757,7 @@ impl<A: Application> Runtime<A> {
                     disabled_menu_tab_stop,
                     input: view.input,
                     text_options: view.text_options,
-                    center_single_line_text: view.center_single_line_text,
+                    single_line_vertical_placement: view.single_line_vertical_placement,
                     right_align_single_line_text: view.right_align_single_line_text,
                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
                     text_input_placeholder: view.text_input_placeholder,

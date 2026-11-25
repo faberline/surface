@@ -210,6 +210,8 @@ pub struct Node {
     presented_text_input_placeholder: Option<Arc<(String, Color)>>,
     #[serde(skip)]
     pub(crate) presented_text_input_horizontal_inset: f32,
+    #[serde(skip)]
+    pub(crate) presented_text_input_top_inset: f32,
     pub(crate) disabled: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     invalid: bool,
@@ -298,6 +300,7 @@ impl Node {
             text_input_caret_color: None,
             presented_text_input_placeholder: None,
             presented_text_input_horizontal_inset: 0.,
+            presented_text_input_top_inset: 0.,
             disabled: false,
             invalid: false,
             checked: None,
@@ -1263,6 +1266,23 @@ impl MicroDom {
             .ok_or(DomError::InvalidNode(id.index()))?;
         if node.role() == Role::TextInput {
             node.presented_text_input_horizontal_inset = inset;
+        }
+        Ok(())
+    }
+
+    /// Inset the top of the painted editor box on the display copy.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_top_inset(
+        &mut self,
+        id: NodeId,
+        inset: f32,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::TextInput && inset.is_finite() {
+            node.presented_text_input_top_inset = inset.max(0.);
         }
         Ok(())
     }
