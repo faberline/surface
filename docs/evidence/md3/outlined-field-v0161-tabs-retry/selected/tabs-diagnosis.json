@@ -1,0 +1,129 @@
+{
+  "candidate": {
+    "version": "0.1.61",
+    "source_manifest_sha256": "3c79ae5ee15bf3b9b786d37452f1e0e5929ac0d31276ca7f6506897462dd9cc8",
+    "source_paths": 668,
+    "candidate_tree": "7c7881f78c3dc44129f52688a079b6874c9a4991",
+    "base_tree": "b9539a68d5993b8c29a9dc17da571b31078c6874",
+    "head": "c6d7d06861d3f6221d06c1c6dd682692fa1984a5",
+    "base": "98c62d31d1646878b1a5393f84aa896e52aa2985",
+    "pr": 237,
+    "runs": {
+      "pull_request": {
+        "id": 45569894616,
+        "attempt": 1,
+        "jobs": {
+          "browser-e2e": 139053680602,
+          "build-and-behavior": 139053680941
+        }
+      },
+      "push": {
+        "id": 45569881486,
+        "attempt": 1,
+        "jobs": {
+          "build-and-behavior": 139053636247,
+          "browser-e2e": 139053636506
+        }
+      }
+    }
+  },
+  "originals": {
+    "pull_request": {
+      "attempt": 1,
+      "run_url": "https://github.com/faberline/surface/actions/runs/45569894616",
+      "jobs": {
+        "browser-e2e": 139053680602,
+        "build-and-behavior": 139053680941
+      },
+      "artifact": {
+        "id": 15003353358,
+        "name": "surface-e2e-artifacts",
+        "digest": "sha256:01beec1c1bd51b3cc23a011be1cc441d12cbfa462e299675d047bc2bfbda0f3f",
+        "size_in_bytes": 62464987,
+        "created_at": "2026-11-25T08:13:36Z",
+        "workflow_run": {
+          "id": 45569894616,
+          "repository_id": 1444489189,
+          "head_repository_id": 1444489189,
+          "head_branch": "codex/md3-outlined-field",
+          "head_sha": "c6d7d06861d3f6221d06c1c6dd682692fa1984a5"
+        }
+      },
+      "logs": {
+        "browser-e2e": "5856ab0bc1e3af8ac076264b60f3baa6199457369736575c65794196e5673c4c",
+        "build-and-behavior": "0e0eda050e17267ed7dd658cbe2cd7f6c02a902c4b7019316bd61b05fb149d68"
+      }
+    },
+    "push": {
+      "attempt": 1,
+      "run_url": "https://github.com/faberline/surface/actions/runs/45569881486",
+      "jobs": {
+        "build-and-behavior": 139053636247,
+        "browser-e2e": 139053636506
+      },
+      "artifact": {
+        "id": 15003667072,
+        "name": "surface-e2e-artifacts",
+        "digest": "sha256:5812c1e36d96bc394e20bf58d453f773e01cce4a01d2ac318f34ca6d9998e825",
+        "size_in_bytes": 57981253,
+        "created_at": "2026-11-25T08:16:07Z",
+        "workflow_run": {
+          "id": 45569881486,
+          "repository_id": 1444489189,
+          "head_repository_id": 1444489189,
+          "head_branch": "codex/md3-outlined-field",
+          "head_sha": "c6d7d06861d3f6221d06c1c6dd682692fa1984a5"
+        }
+      },
+      "logs": {
+        "build-and-behavior": "ebfeec8878dc747707707d35f5b7b5810a2a5727fa988457d9f87d25907a5baf",
+        "browser-e2e": "22633832a3dcba80fa9531e5087f36d40aae21532cb3662831acabd3ca380a54"
+      }
+    }
+  },
+  "PR_attempt_1": {
+    "passed_checks": 24033,
+    "motion": {
+      "sample_count": 50,
+      "start_center": 120.0,
+      "end_center": 600.0,
+      "intermediate_centers": [
+        135.98058128356934
+      ]
+    }
+  },
+  "push_attempt_1": {
+    "first_failure": "M287",
+    "report_error": "motion presents an in-between frame",
+    "foreground": "tabs-demo-activity",
+    "accepted_selection": "tabs-demo-activity",
+    "requests": 3,
+    "final_indicator": [
+      572.0,
+      61.0,
+      56.0,
+      3.0
+    ],
+    "actual_ink": {
+      "origin": [
+        20,
+        18,
+        24
+      ],
+      "target": [
+        207,
+        189,
+        254
+      ]
+    },
+    "page_errors": 0,
+    "outlined_steps_reached": false,
+    "motion_trace_saved": false,
+    "identical_v0158_failure_png_sha256": "82f7d1fcb45a4c6e89dbdf2623d194ab601dc13bf31aa8ef9c303f4ee9b64e18"
+  },
+  "unchanged_tabs_source_sha256": {
+    "e2e/src/material_tabs.rs": "55ea0494965055dee482adc19e9329b6a521893399b9a6a0161a2c970a33f2f3",
+    "examples/material-gallery/src/tabs_demo.rs": "ad88982d30d2137752d48bcc61dfbbf34f06fe146d867e2aea289332a79e3fa6",
+    "crates/surface-material/src/tab_bar/motion.rs": "4b37d3eab8d3df21ec36d750afe56c22929809c3ba300b1b826a802df77632a2"
+  }
+}
