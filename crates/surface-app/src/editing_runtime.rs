@@ -78,17 +78,25 @@ impl<A: Application> Runtime<A> {
                 .and_then(|id| self.dom.get(id).ok())
                 .is_some_and(|n| n.role() == Role::TextInput && !n.is_disabled())
         });
-        for (_, node) in self
+        for (node_id, node) in self
             .dom
             .iter()
             .filter(|(_, n)| n.role() == Role::TextInput && !n.is_disabled())
         {
             if let Some(id) = node.stable_id() {
                 let value = node.text_value().unwrap_or_default();
-                self.editors
+                let editor = self
+                    .editors
                     .entry(id.to_owned())
-                    .and_modify(|editor| editor.sync(value))
                     .or_insert_with(|| TextEditor::new(value));
+                let options = &self.bindings[&node_id].text_options;
+                if options.read_only && editor.composition().is_some() {
+                    editor.ime(ImeEvent::Cancel, options);
+                    if self.focused.as_deref() == Some(id) {
+                        self.ime_area = None;
+                    }
+                }
+                editor.sync(value);
             }
         }
     }
@@ -356,10 +364,11 @@ impl<A: Application> Runtime<A> {
                     r.height,
                 )
             };
-            let placeholder = binding
-                .text_input_placeholder
-                .as_ref()
-                .filter(|_| editor.value().is_empty() && !editor.is_composing());
+            let placeholder = binding.text_input_placeholder.as_ref().filter(|_| {
+                editor.value().is_empty()
+                    && !editor.is_composing()
+                    && (!binding.focused_placeholder || self.focused() == Some(key.as_str()))
+            });
             let paint_scroll_x = if let (true, Some(hint)) = (right_aligned, placeholder) {
                 let hint_layout = measurer.text_layout_styled(&hint.0, &text_style, None);
                 -right_alignment_space(content_width, &hint_layout).max(0.)

@@ -13,6 +13,100 @@ impl TextMeasurer for Metrics {
     }
 }
 
+#[test]
+fn text_input_caret_override_changes_only_the_caret_in_normal_paint() {
+    let foreground = Color::rgb(18, 28, 39);
+    let accent = Color::rgb(187, 32, 55);
+    let colors = TextSelectionColors {
+        background: Color::rgb(20, 40, 60),
+        foreground: Color::rgb(232, 240, 248),
+    };
+    let node = Node::new(Role::TextInput, "Field").text("入力").styled(
+        Style::column()
+            .width(Length::Px(90.))
+            .height(Length::Px(48.))
+            .foreground(foreground),
+    );
+    let legacy = serde_json::to_value(&node).unwrap();
+    assert!(legacy.get("text_input_caret_color").is_none());
+    let decoded: Node = serde_json::from_value(legacy.clone()).unwrap();
+    assert_eq!(serde_json::to_value(decoded).unwrap(), legacy);
+    let accented = node.clone().text_input_caret_color(accent);
+    let encoded = serde_json::to_value(&accented).unwrap();
+    assert_eq!(
+        encoded["text_input_caret_color"],
+        serde_json::json!([187, 32, 55, 255])
+    );
+    let accented: Node = serde_json::from_value(encoded).unwrap();
+    assert!(
+        serde_json::to_value(Node::new(Role::Text, "").text_input_caret_color(accent))
+            .unwrap()
+            .get("text_input_caret_color")
+            .is_none()
+    );
+
+    let caret = Rect::new(25., 1., 1., 16.);
+    let render = |field| {
+        let mut dom = MicroDom::new(Node::new(Role::Window, ""));
+        let id = dom.append(dom.root(), field).unwrap();
+        let computed = LayoutEngine::default()
+            .compute(&dom, 120., 90., &mut Metrics)
+            .unwrap();
+        let decorations = BTreeMap::from([(
+            id,
+            TextDecoration {
+                caret: Some(caret),
+                selection: vec![Rect::new(0., 1., 24., 16.)],
+                underline: vec![Rect::new(0., 16., 26., 1.)],
+                ..TextDecoration::default()
+            },
+        )]);
+        let interaction = InteractionState::default();
+        let normal =
+            DisplayList::compile_with_interaction(&dom, &computed, None, &decorations, interaction);
+        let forced = ExtendedDisplayList::compile_with_selection_colors(
+            &dom,
+            &computed,
+            None,
+            &decorations,
+            interaction,
+            colors,
+        );
+        (normal, forced)
+    };
+    let (ordinary, forced) = render(node);
+    let (custom, custom_forced) = render(accented);
+    let (last, other) = ordinary.ops.split_last().unwrap();
+    let (custom_last, custom_other) = custom.ops.split_last().unwrap();
+    assert_eq!(other, custom_other);
+    let PaintOp::Quad {
+        rect,
+        clip,
+        radius,
+        color,
+    } = last
+    else {
+        panic!("caret is a quad");
+    };
+    assert_eq!((*rect, *radius, *color), (caret, 0., foreground));
+    assert_eq!(
+        *custom_last,
+        PaintOp::Quad {
+            rect: caret,
+            clip: *clip,
+            radius: 0.,
+            color: accent
+        }
+    );
+    assert!(forced.ops().iter().any(|op| matches!(op,
+        ExtendedPaintOp::TextSelection(paint) if paint.colors() == colors)));
+    assert_eq!(
+        custom_forced.ops(),
+        forced.ops(),
+        "forced text and caret paint take precedence"
+    );
+}
+
 fn contains(region: TextSelectionRegion, x: u32, y: u32) -> bool {
     let [left, top, width, height] = region.scissor;
     x >= left && x < left + width && y >= top && y < top + height

@@ -161,6 +161,8 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     described_by_text: Option<String>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    assertive_live_status: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     alert_dialog: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     dialog_heading: Option<String>,
@@ -202,6 +204,8 @@ pub struct Node {
     pub(crate) role: Role,
     pub(crate) name: String,
     pub(crate) text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    text_input_caret_color: Option<Color>,
     #[serde(skip)]
     presented_text_input_placeholder: Option<Arc<(String, Color)>>,
     #[serde(skip)]
@@ -268,6 +272,7 @@ impl Node {
             grid_multiselectable: false,
             current_date: false,
             described_by_text: None,
+            assertive_live_status: false,
             alert_dialog: false,
             dialog_heading: None,
             tab_controls: None,
@@ -290,6 +295,7 @@ impl Node {
             role,
             name: name.into(),
             text: None,
+            text_input_caret_color: None,
             presented_text_input_placeholder: None,
             presented_text_input_horizontal_inset: 0.,
             disabled: false,
@@ -557,6 +563,20 @@ impl Node {
             .filter(|_| self.text_value().is_none_or(str::is_empty))
             .map(|(text, color)| (text.as_str(), *color))
     }
+
+    /// Set the editable caret's color independently of text and IME ink.
+    /// With no override, or when forced text colors are supplied for paint,
+    /// the caret uses the displayed foreground.
+    pub fn text_input_caret_color(mut self, color: Color) -> Self {
+        if self.role == Role::TextInput {
+            self.text_input_caret_color = Some(color);
+        }
+        self
+    }
+
+    pub(crate) fn resolved_text_input_caret_color(&self) -> Color {
+        self.text_input_caret_color.unwrap_or(self.style.foreground)
+    }
     /// Draw one closed fill relative to the node's origin after its paths.
     /// The ancestor clip applies. The fill adds no layout or input area and
     /// does not create a semantic child.
@@ -784,6 +804,16 @@ impl Node {
     }
     pub fn description_text_target(&self) -> Option<&str> {
         self.described_by_text.as_deref()
+    }
+    /// Request assertive announcements for a passive status in its current
+    /// accessibility scope. Give the status a stable ID and visible bounds
+    /// even when its text is empty. Use this for urgent updates.
+    pub fn assertive_live_status(mut self) -> Self {
+        self.assertive_live_status = self.role == Role::Status;
+        self
+    }
+    pub fn is_assertive_live_status(&self) -> bool {
+        self.assertive_live_status && self.role == Role::Status
     }
     /// Ask accessibility hosts to expose this dialog as an alert while it is
     /// modal. The base role, keyboard behavior, and dismissal policy stay

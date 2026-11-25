@@ -435,3 +435,22 @@ fn from_snapshot_rejects_wrong_parent() {
         DomError::InvalidTree(2)
     );
 }
+#[test]
+fn assertive_live_status_is_an_additive_role_guarded_opt_in() {
+    let plain = Node::new(Role::Status, "Saved").id("notice");
+    assert!(!plain.is_assertive_live_status());
+    let legacy = serde_json::to_value(&plain).unwrap();
+    assert!(legacy.get("assertive_live_status").is_none());
+    assert_eq!(serde_json::from_value::<Node>(legacy).unwrap(), plain);
+
+    let urgent = plain.assertive_live_status();
+    let wire = serde_json::to_value(&urgent).unwrap();
+    assert_eq!(wire["assertive_live_status"], true);
+    let restored: Node = serde_json::from_value(wire).unwrap();
+    assert!(restored.is_assertive_live_status());
+    assert_eq!(restored.role(), Role::Status);
+    assert!(!restored.is_focusable());
+    assert!(!Node::new(Role::Text, "Text")
+        .assertive_live_status()
+        .is_assertive_live_status());
+}

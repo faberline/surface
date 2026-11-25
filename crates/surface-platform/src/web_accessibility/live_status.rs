@@ -14,7 +14,7 @@ use web_sys::{Document, Element, Window};
 pub(super) fn message<'a, M>(
     frame: &'a AccessibilityFrame<'_, M>,
     id: NodeId,
-) -> Option<(&'a str, &'a str)> {
+) -> Option<(&'a str, &'a str, bool)> {
     let source = frame.node(id)?;
     if id == frame.root()
         || source.node.role() != Role::Status
@@ -30,7 +30,7 @@ pub(super) fn message<'a, M>(
     }
     let key = source.node.stable_id().filter(|key| !key.is_empty())?;
     let text = source.node.text_value().unwrap_or(source.node.name());
-    Some((key, text))
+    Some((key, text, source.node.is_assertive_live_status()))
 }
 
 type Messages = BTreeMap<String, String>;
@@ -46,9 +46,13 @@ pub(super) struct LiveStatus {
 }
 
 impl LiveStatus {
-    pub(super) fn new(window: Window, document: &Document) -> Result<Self, JsValue> {
+    pub(super) fn new(
+        window: Window,
+        document: &Document,
+        assertive: bool,
+    ) -> Result<Self, JsValue> {
         let element = document.create_element("div")?;
-        element.set_attribute("aria-live", "polite")?;
+        element.set_attribute("aria-live", if assertive { "assertive" } else { "polite" })?;
         element.set_attribute("aria-atomic", "true")?;
         element.set_attribute("aria-relevant", "additions text")?;
         let pending = Rc::new(RefCell::new(Messages::new()));

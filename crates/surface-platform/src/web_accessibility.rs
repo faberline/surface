@@ -84,6 +84,7 @@ pub(crate) struct WebAccessibility {
     targets: Rc<RefCell<BTreeMap<usize, Target>>>,
     published: Option<Published>,
     live_status: live_status::LiveStatus,
+    assertive_status: live_status::LiveStatus,
     follow_focus: bool,
     projecting_focus: Rc<RefCell<Option<Element>>>,
     listeners: Vec<(&'static str, EventListener)>,
@@ -106,14 +107,17 @@ impl WebAccessibility {
                 "opacity:0;white-space:nowrap;pointer-events:none",
             ),
         )?;
-        let live_status = live_status::LiveStatus::new(browser, &document)?;
+        let live_status = live_status::LiveStatus::new(browser.clone(), &document, false)?;
+        let assertive_status = live_status::LiveStatus::new(browser, &document, true)?;
         live_status.mount(&root)?;
+        assertive_status.mount(&root)?;
         let mut bridge = Self {
             root,
             document,
             targets: Rc::default(),
             published: None,
             live_status,
+            assertive_status,
             follow_focus: false,
             projecting_focus: Rc::default(),
             listeners: Vec::new(),
@@ -247,11 +251,19 @@ impl WebAccessibility {
                 relations.clipped_text.insert(target, text.to_owned());
             }
         }
-        let statuses = visible
+        let mut statuses = BTreeMap::new();
+        let mut assertive = BTreeMap::new();
+        for (key, text, priority) in visible
             .iter()
             .filter_map(|id| live_status::message(frame, *id))
-            .map(|(key, text)| (key.to_owned(), text.to_owned()))
-            .collect();
+        {
+            let region = if priority {
+                &mut assertive
+            } else {
+                &mut statuses
+            };
+            region.insert(key.to_owned(), text.to_owned());
+        }
         let focused = frame.focused();
         let editor = focused.filter(|id| {
             frame
@@ -295,13 +307,15 @@ impl WebAccessibility {
                 placeholder.set_attribute("aria-hidden", "true")?;
                 tree.append_child(&placeholder)?;
             }
-            // Put the live region inside the active modal. A browser may
+            // Put the live regions inside the active modal. A browser may
             // prune accessibility content outside an aria-modal dialog.
-            self.live_status.mount(if frame.modal_root().is_some() {
+            let parent = if frame.modal_root().is_some() {
                 &tree
             } else {
                 &self.root
-            })?;
+            };
+            self.live_status.mount(parent)?;
+            self.assertive_status.mount(parent)?;
             if let Some(old) = &self.published {
                 self.root.replace_child(&tree, &old.tree)?;
             } else {
@@ -334,6 +348,8 @@ impl WebAccessibility {
         }
         self.live_status
             .publish(frame, &statuses, same_generation)?;
+        self.assertive_status
+            .publish(frame, &assertive, same_generation)?;
         if keep_focus {
             let destination = focused
                 .and_then(|id| {
@@ -414,7 +430,7 @@ fn project<M>(
         children.is_empty(),
         frame.slider_adjustment_bounds(id),
     )?;
-    if live_status::message(frame, id).is_some() {
+    if source.node.is_assertive_live_status() || live_status::message(frame, id).is_some() {
         // Keep this status readable where it was authored. The persistent
         // region delivers text changes without re-announcing the new tree.
         element.set_attribute("aria-live", "off")?;
