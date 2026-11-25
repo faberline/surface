@@ -1,0 +1,177 @@
+{
+  "native": {
+    "binaries": {
+      "surface-devtools": "8ec7d151241c0db16120a5936d19a656d76ba12d5f06dd9d4781034d825b0282",
+      "surface-material-gallery": "cdc425b8ba6dd642fa7196d023a03bbcb8237604d3a5f7c5d1a9a38e0ce77c6c"
+    },
+    "captures": {
+      "centered-compact-dark-rtl-200.png": "805e67cba101655f8eab635ba059a1d6cd15ada507cf705e65349b80489ab701",
+      "centered-wide-light-rest.png": "0cbdf8ad1d00f4588ccfd7dc1afcbca803288d8e6f328493f4420a12327973bd",
+      "centered-wide-light-signed-focus.png": "90b945467a9bac4e7a1a838728c93a850c9ab52555dd0f336315de97cc9f13b7",
+      "inset-compact-dark-rtl-200-horizontal.png": "4bef799eb35664f40bf8c803eec13cff0ef7c06d54cae60351eb267c9be1f7b0",
+      "inset-compact-dark-rtl-200-vertical.png": "4892ca26358abbb7ebed6bbf0ffabcf38c92d3803e8d48c36511389f7075d7ef",
+      "inset-wide-light-minimum.png": "38aa18ae8583d1b4d580d922e15785e24d81c8ceefa7c1fab56bb6f8f3908d37",
+      "inset-wide-light-relocated.png": "78640dd6740da4f038d21e0f445686eb7ff817986be76d3d6eec131a8891a1f6",
+      "inset-wide-light-rest.png": "d258848712833d300a199d8f0118051ce487744f5147d98fdbb273e5d50b7362"
+    },
+    "owned_processes_reaped": 8,
+    "report_sha256": "eee0a1bbff6afa583b3cc457d9305836ee893a5b2e68ade3cdc0c7b1c54353d9",
+    "runs": 2,
+    "seal": "43f72374785a2eec0932b2ff6c42ef152fa5567d82214b3345ff596d8ff3c51b",
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ],
+    "visible_windows": 0,
+    "window_samples": 32
+  },
+  "rust": {
+    "metal": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "d74747155e1118bc06a2e9e9f22d42aa3d0c4636fadf276ad63d49bc3726efc9",
+      "passed": 16
+    },
+    "source_checks": {
+      "gpu-r1-source-after.log": "45413ebbc18b71e8e43527f5e0124061a387e7d23b1b14bdc6907e8cdc958e03",
+      "gpu-r1-source-before.log": "45413ebbc18b71e8e43527f5e0124061a387e7d23b1b14bdc6907e8cdc958e03",
+      "workspace-r1-source-after.log": "45413ebbc18b71e8e43527f5e0124061a387e7d23b1b14bdc6907e8cdc958e03",
+      "workspace-r1-source-before.log": "45413ebbc18b71e8e43527f5e0124061a387e7d23b1b14bdc6907e8cdc958e03"
+    },
+    "supplemental": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "94dd2808b3220eb16df5e0893d02d4c390284fd86a81511c2708df3b1475eccb",
+      "passed": 2
+    },
+    "workspace": {
+      "ignored": 19,
+      "log_sha256": "043c3d584b6c189a19eb9c273e5c86b4104bb14eda48401ca4edd25cdb6d8a08",
+      "passed": 1481,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_source_sha256": "de92395ee2ab7b8d7d49760adb2722d5b44ca270c2002deb6fefbecd809e8647",
+    "base_tree": "6e7c09a6eda249eb046babf3f2a4b392b0aaa99c",
+    "changed_paths": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/surface-material/src/lib.rs",
+      "crates/surface-material/src/standard_slider.rs",
+      "crates/surface-material/src/standard_slider/inset_icon.rs",
+      "crates/surface-material/src/standard_slider/vertical.rs",
+      "crates/surface-material/tests/slider_inset_icon.rs",
+      "crates/surface-material/tests/vertical_standard_slider.rs",
+      "docs/material-coverage.json",
+      "docs/material.md",
+      "e2e/src/material.rs",
+      "e2e/src/material_slider_inset.rs",
+      "e2e/src/material_vertical_centered_slider.rs",
+      "examples/material-gallery/src/lib.rs",
+      "examples/material-gallery/src/slider_inset_demo.rs",
+      "examples/material-gallery/src/vertical_centered_slider_demo.rs"
+    ],
+    "patch_sha256": "aee0551b61d814069ba29052af7f00c601de8f6de371247f79fdcfa475870327",
+    "source_files": 652,
+    "source_sha256": "5936ee7ecfdf584a2ca3acf7fa3297db09e86132b8a5dd60bd169391a90d44c1",
+    "tree": "72cf21a76d284e3a299aedff91b953eae232db07",
+    "version": "0.1.57"
+  },
+  "status": "verified",
+  "stock_macos": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "captures": {
+      "material-slider-inset-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "b7d9c91051addb798deff5e4c7708e4b6097c6268229cc4508f07c4ee3e57999",
+        "sha256": "3f8b1c62afae63db14d72103438e5d1c392b50b8698ebcecc688df0e5e8f569f",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-slider-inset-light.png": {
+        "decoded_rgb_sha256": "f3de5ad68abfc57c141a035e62107dbac77e977c1e200486850ee3d5d660eeb6",
+        "sha256": "0689890db54be1f1d44d104a4106798033dc8d4b94a49f738699e73cfa8d941c",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-slider-inset-muted.png": {
+        "decoded_rgb_sha256": "d88b8e73ff2e456fbeefaaec4bb9cc7cf0ae4b243022fb2c6de6a15f09d99fb6",
+        "sha256": "0d5f99efe067d75080ea70919a6f1ab1cc3aa5137d653934873f54759284d3f6",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-slider-inset-quiet.png": {
+        "decoded_rgb_sha256": "baa3211c769d274ac6267a18cddb13fab93826730912d68f744cfdb297f1784e",
+        "sha256": "99a9a34b0a5b509ae28902b40eb9f6b48e5d4b7c63fef4574f59d45da5cab1fe",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-vertical-centered-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "7c93917612d8a0c18a6865008219279f0fd3d588b36e600a8e5a966a9df93a09",
+        "sha256": "03edce5b9d225d819281341e5b416cadd63f793854064aa7f42d4f432c0c9880",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-vertical-centered-keyboard.png": {
+        "decoded_rgb_sha256": "e8edb9fc176588c44f476a30d8d8478447d80ea591205dbd4517d182ff2b7871",
+        "sha256": "474630f445e45eb246b0568f24499ea9aff4e3b527a21cb903294f1a73440670",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-vertical-centered-light.png": {
+        "decoded_rgb_sha256": "19605d3a401e431e1acd2eec6189f65be181a52fd7ca7d7d4dfbf58023000e46",
+        "sha256": "fa4d51bda6b52a54e53503c9be13b727ccc74b557d017ead20f5181bfd9d9820",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 22325,
+        "steps": 314
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "page_errors": 0,
+    "receipt_sha256": "85eae3623880e0c43eebebbf091c28d3cc1053a9d25850de7743881dd4a06fa0",
+    "runner_sha256": "90afee69933e69308bdb1f106562c5e5e41c50fe58d3e909b97398e754a6796a",
+    "surviving_processes": 0,
+    "total_checks": 22606,
+    "visible_windows": 0
+  }
+}

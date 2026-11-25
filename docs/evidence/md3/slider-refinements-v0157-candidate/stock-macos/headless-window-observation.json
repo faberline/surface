@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4295,
+      "pids": [
+        12951,
+        21972
+      ]
+    },
+    "native_gallery": {
+      "samples": 16,
+      "pids": [
+        22895
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4249,
+      "pids": [
+        12951
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 46,
+      "pids": [
+        21972
+      ],
+      "detached_samples": 40
+    },
+    "native": {
+      "samples": 16,
+      "pids": [
+        22895
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 12951,
+      "ppid": 12944,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=53016",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-slider-refinements-stock-v0157.z4WspMGg/run/tmp/.tmpwzr8b0",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-slider-refinements-stock-v0157.z4WspMGg/run/tmp/.tmpwzr8b0"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 21972,
+      "ppid": 21948,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=54557",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-slider-refinements-stock-v0157.z4WspMGg/run/tmp/.tmpaZx0JK",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-slider-refinements-stock-v0157.z4WspMGg/run/tmp/.tmpaZx0JK"
+    },
+    {
+      "role": "native",
+      "pid": 22895,
+      "ppid": 12944,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}

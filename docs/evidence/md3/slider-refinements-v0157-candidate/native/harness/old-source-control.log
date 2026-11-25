@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/private/tmp/surface-md3-slider-refinements-native.SBOymsiH/replay-slider-refinements.py", line 753, in <module>
+    main()
+  File "/private/tmp/surface-md3-slider-refinements-native.SBOymsiH/replay-slider-refinements.py", line 716, in main
+    sources = source_pins(source_root, source_manifest, args.source_manifest_sha256)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/surface-md3-slider-refinements-native.SBOymsiH/replay-slider-refinements.py", line 583, in source_pins
+    require(required <= entries.keys(), "Source seal omits the reviewed refinement routes")
+  File "/private/tmp/surface-md3-slider-refinements-native.SBOymsiH/gallery_transport.py", line 20, in require
+    raise RuntimeError(message)
+RuntimeError: Source seal omits the reviewed refinement routes
