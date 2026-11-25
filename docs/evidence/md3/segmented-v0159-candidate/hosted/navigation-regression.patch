@@ -1,0 +1,35 @@
+--- a/verify_navigation_bar.py
++++ b/verify_navigation_bar.py
+@@ -61,7 +61,7 @@
+     return starts, cases, steps, tuple(map(int, summary[0])), browsers
+ 
+ 
+-def validate_log(log, platform, stock):
++def validate_log(log, platform, stock, stock_last_material=273):
+     starts, cases, steps, summary, browsers = runner_result(log)
+     expected_cases = (MAC_CASES if platform == "macos" else LINUX_CASES) if stock else ["material"]
+     need(starts == [case[0] for case in cases] == expected_cases,
+@@ -69,7 +69,7 @@
+     counts = {case: {"steps": int(count), "checks": int(checks)} for case, count, checks in cases}
+     need(all(record["steps"] > 0 and record["checks"] > 0 for record in counts.values()),
+          "a passing suite withheld all steps or checks")
+-    expected_steps = STOCK_STEPS if stock else NAV_STEPS
++    expected_steps = [f"M{index}" for index in range(1, stock_last_material + 1) if index != 23] if stock else NAV_STEPS
+     need(steps == expected_steps and counts["material"]["steps"] == len(expected_steps),
+          "missing, extra or out-of-order Material step")
+     need(counts["material"]["checks"] >= 458, "required Material checks are missing")
+@@ -282,12 +282,12 @@
+ 
+ 
+ def validate(run, *, platform, scope="stock", log=None, window_receipt=None,
+-             expected_metadata=None, expect_swiftshader=False):
++             expected_metadata=None, expect_swiftshader=False, stock_last_material=273):
+     run = Path(run)
+     stock = scope == "stock"
+     need(not expect_swiftshader or (stock and platform == "linux"), "SwiftShader pin requires Linux stock mode")
+     log_path = Path(log) if log is not None else run / "runner.log"
+-    counts, steps, total, logged_browsers = validate_log(log_path.read_text(), platform, stock)
++    counts, steps, total, logged_browsers = validate_log(log_path.read_text(), platform, stock, stock_last_material=stock_last_material)
+     report_path = run / f"browser-{STEM}.json"
+     report = read_json(report_path)
+     need(report["errors"] == [] and not {"failure", "state_at_failure"} & report.keys(),

@@ -1,0 +1,20 @@
+--- menu-validator-original.py
++++ verify_menu_report.py
+@@ -145,7 +145,7 @@
+ 
+ 
+ def validate(attempt, *, platform, log=None, window_receipt=None, expected_metadata=None,
+-             scope="focused", pre_footer=False):
++             scope="focused", pre_footer=False, stock_material_steps=268):
+     """Return independent results. `attempt` holds the PNGs and exact Menu report."""
+     attempt = Path(attempt)
+     log_path = Path(log) if log is not None else attempt / "runner.log"
+@@ -157,7 +157,7 @@
+     counts = re.findall(r"case material\s+\.\.\.\s+ok \(([0-9]+) steps, ([0-9]+) checks", output)
+     need(len(counts) == 1, "missing successful Material case result")
+     step_count, check_count = map(int, counts[0])
+-    need(len(material_steps) == step_count and step_count == (268 if stock else 3),
++    need(len(material_steps) == step_count and step_count == (stock_material_steps if stock else 3),
+          "runner step count differs from the selected case scope")
+     need(check_count >= (117 if pre_footer else 122), "too few actual Material checks")
+     browser_names = set(re.findall(r"\bbrowser: (Chrome/[0-9][0-9.]+)\b", output))

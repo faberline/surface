@@ -1,0 +1,2660 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index c92b54e37acb512bfbdf30b6449e14e97d66a8c0..c1345e31ba0a279b505ca4b8dd4c8dd73105f51a 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.58"
++version = "0.1.59"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index be08ee346d1a0e6a9f7078b56f27c8f881f72d7e..9be0e0fdd50d2a509cd1acd67bfc32fe404254de 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.58"
++version = "0.1.59"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/baseline_segmented_button.rs b/crates/surface-material/src/baseline_segmented_button.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a631a83c41bce23929dc9fb4a95ed05bd38b916
+--- /dev/null
++++ b/crates/surface-material/src/baseline_segmented_button.rs
+@@ -0,0 +1,734 @@
++//! The original outlined Material 3 segmented button.
++
++use surface::{
++    Align, Color, Corners, FillContour, Length, MeasuredGroupLayout, Node, Rect, Role, Style,
++    TextAlignment, TextMeasurer, TextScaling, TextStyle,
++};
++use surface_app::{CursorStyle, Roving, View};
++
++use crate::{shape::LayoutDirection, typography, Theme, VectorIcon};
++
++const FACE_HEIGHT: f32 = 40.;
++const TARGET: f32 = 48.;
++const BORDER: f32 = 1.;
++const INSET: f32 = 12.;
++const GAP: f32 = 8.;
++const ICON: f32 = 18.;
++const BLOCK_PADDING: f32 = 10.;
++const HIT_SLACK: f32 = TARGET - FACE_HEIGHT;
++const FOCUS_WIDTH: f32 = 3.;
++const FOCUS_OUTSET: f32 = 2. + FOCUS_WIDTH;
++const CHECK: [[f32; 2]; 6] = [
++    [2.5, 9.1],
++    [4., 7.6],
++    [7., 10.6],
++    [14.2, 3.4],
++    [15.7, 4.9],
++    [7., 13.6],
++];
++
++/// The current selection supplied by the application.
++#[derive(Clone, Copy, Debug)]
++pub enum BaselineSegmentedSelection<'a> {
++    /// Exactly one stable item ID. Activating the checked radio has no effect.
++    Single(&'a str),
++    /// Zero or more stable item IDs. An enabled item may always be toggled.
++    Multiple(&'a [&'a str]),
++}
++
++/// One named, horizontal Baseline segmented button group.
++#[derive(Clone, Copy, Debug)]
++pub struct BaselineSegmentedButtonOptions<'a> {
++    pub id: &'a str,
++    pub name: &'a str,
++    /// The available viewport width, including the exterior focus padding.
++    pub available_width: f32,
++    pub direction: LayoutDirection,
++    /// Scales labels. The icon, border and minimum hit target stay fixed.
++    pub text_scale: f32,
++    pub selection: BaselineSegmentedSelection<'a>,
++}
++
++/// A segment's visual content, accessibility name and activation message.
++pub struct BaselineSegmentedItem<'a, M> {
++    pub id: &'a str,
++    pub label: Option<&'a str>,
++    /// Defaults to the label. Required for an icon-only choice.
++    pub name: Option<&'a str>,
++    pub icon: Option<&'a VectorIcon>,
++    pub disabled: bool,
++    pub on_activate: M,
++}
++
++impl Theme {
++    /// Build 2–5 equal-width outline segments with a caller-owned selection.
++    ///
++    /// The group enters at the first enabled item. Left and Right move focus
++    /// in the visual direction. Space and Enter activate. This follows
++    /// Material's keyboard design, including for single-select. Standalone
++    /// WAI-ARIA radios enter at the checked item and select on arrow keys.
++    ///
++    /// The default face is 40 dp high and each hit target is at least
++    /// 48 × 48 dp. Long labels can wrap within their segment. A viewport
++    /// too narrow for all minimum targets scrolls the single row with wheel,
++    /// keyboard focus, or accessibility reveal. Provide
++    /// the actual available width and unique IDs, including generated
++    /// descendant IDs. Unusable geometry, content or selection returns None.
++    ///
++    /// Use [`Theme::button_group`] with Connected for M3 Expressive.
++    pub fn baseline_segmented_button<'a, M>(
++        &self,
++        options: BaselineSegmentedButtonOptions<'a>,
++        items: impl IntoIterator<Item = BaselineSegmentedItem<'a, M>>,
++    ) -> Option<View<M>> {
++        let items: Vec<_> = items.into_iter().collect();
++        let font = typography::LABEL_LARGE.scaled(options.text_scale);
++        if text(options.id).is_none()
++            || text(options.name).is_none()
++            || !(2..=5).contains(&items.len())
++            || !options.available_width.is_finite()
++            || options.available_width < TARGET + 2. * FOCUS_OUTSET
++            || !options.text_scale.is_finite()
++            || options.text_scale <= 0.
++            || !font.line_height.is_some_and(f32::is_finite)
++            || !valid_ids(options, &items)
++        {
++            return None;
++        }
++
++        let single = matches!(options.selection, BaselineSegmentedSelection::Single(_));
++        let rtl = options.direction == LayoutDirection::RightToLeft;
++        let count = items.len();
++        let mut contents = Vec::with_capacity(count);
++        let mut controls = Vec::with_capacity(count);
++        let mut outlines = Vec::with_capacity(count);
++        let mut seams = Vec::with_capacity(count - 1);
++        let mut previous_disabled = false;
++        for (index, item) in items.into_iter().enumerate() {
++            let label = item.label.and_then(text);
++            let name = item.name.and_then(text).or(label)?;
++            if label.is_none() && item.icon.is_none() {
++                return None;
++            }
++            let checked = match options.selection {
++                BaselineSegmentedSelection::Single(id) => item.id == id,
++                BaselineSegmentedSelection::Multiple(ids) => ids.contains(&item.id),
++            };
++            let physical = if rtl { count - 1 - index } else { index };
++            let edge = match physical {
++                0 => Edge::Left,
++                x if x == count - 1 => Edge::Right,
++                _ => Edge::Middle,
++            };
++            let layout = ContentLayout {
++                label: label.map(str::to_owned),
++                font: font.clone(),
++                rtl,
++                icon: item.icon.is_some(),
++                checked,
++            };
++            let disabled = item.disabled;
++            outlines.push(outline(self, edge, disabled));
++            if index > 0 {
++                seams.push(passive(
++                    Node::new(Role::Group, "")
++                        .id(format!("{}-seam-{}", options.id, index - 1))
++                        .styled(
++                            Style::column()
++                                .background(outline_ink(self, previous_disabled && disabled)),
++                        ),
++                ));
++            }
++            previous_disabled = disabled;
++            controls.push(self.baseline_segment(item, name, layout.clone(), edge, single)?);
++            contents.push(layout);
++        }
++
++        let minimum_slot = if contents.iter().any(|item| item.label.is_some()) {
++            TARGET.max(2. * INSET + font.font_size.ceil())
++        } else {
++            TARGET
++        };
++        let geometry = TrackLayout {
++            contents,
++            minimum_slot,
++            rtl,
++            available: options.available_width,
++        };
++        let min_width = geometry.min_width();
++        let scroll = min_width > options.available_width;
++        let mut viewport = Style::column()
++            .width(Length::Px(options.available_width))
++            .align(if rtl && !scroll {
++                Align::End
++            } else {
++                Align::Start
++            })
++            .clip(true);
++        if rtl && scroll {
++            viewport.scroll_x = min_width - options.available_width;
++        }
++        let outline = passive(
++            Node::new(Role::Group, "")
++                .id(format!("{}-outline", options.id))
++                .measured_group(OutlineLayout { count, rtl }),
++        )
++        .children(outlines);
++        let mut strip = Style::row();
++        strip.min_width = min_width;
++        let mut track = Node::new(Role::Group, "")
++            .id(format!("{}-track", options.id))
++            .styled(strip)
++            .measured_group(geometry);
++        if rtl {
++            track = track.reverse_row();
++        }
++        let root = View::new(
++            Node::new(
++                if single {
++                    Role::RadioGroup
++                } else {
++                    Role::Group
++                },
++                options.name,
++            )
++            .id(options.id)
++            .styled(viewport),
++        )
++        .children([View::new(track)
++            .children(controls.into_iter().chain([outline]).chain(seams))
++            .roving_first(Roving::horizontal(false))]);
++        if scroll {
++            Some(
++                root.on_horizontal_scroll(|_, _| None)
++                    .accessibility_scroll_pages(),
++            )
++        } else {
++            Some(root)
++        }
++    }
++
++    fn baseline_segment<M>(
++        &self,
++        item: BaselineSegmentedItem<'_, M>,
++        name: &str,
++        layout: ContentLayout,
++        edge: Edge,
++        single: bool,
++    ) -> Option<View<M>> {
++        let checked = layout.checked;
++        let disabled = item.disabled;
++        let ink = if disabled {
++            alpha(self.colors.on_surface, 97)
++        } else if checked {
++            self.colors.on_secondary_container
++        } else {
++            self.colors.on_surface
++        };
++        let face_id = format!("{}-face", item.id);
++        let mut children = Vec::new();
++        if let Some(label) = &layout.label {
++            children.push(passive(
++                Node::new(Role::Text, "")
++                    .id(format!("{}-label", item.id))
++                    .text(label)
++                    .text_scaling(TextScaling::Fixed)
++                    .text_alignment(TextAlignment::Center)
++                    .styled(
++                        Style::column()
++                            .with_text_style(layout.font.clone())
++                            .foreground(ink),
++                    ),
++            ));
++        }
++        if checked || item.icon.is_some() {
++            let contour = if checked && layout.label.is_some() {
++                FillContour::new(CHECK, ink)?
++            } else if let Some(icon) = item.icon {
++                icon.contour_dp(ICON, ink)?
++            } else {
++                return None;
++            };
++            children.push(passive(
++                Node::new(Role::Group, "")
++                    .id(format!("{}-icon", item.id))
++                    .fill_contour(contour),
++            ));
++        }
++        if checked && layout.label.is_none() {
++            children.push(passive(
++                Node::new(Role::Group, "")
++                    .id(format!("{}-check", item.id))
++                    .fill_contour(FillContour::new(CHECK, ink)?),
++            ));
++        }
++        let face = passive(
++            Node::new(Role::Group, "")
++                .id(&face_id)
++                .styled(
++                    Style::column()
++                        .corners(edge.corners())
++                        .background(if checked && !disabled {
++                            self.colors.secondary_container
++                        } else {
++                            Color::TRANSPARENT
++                        })
++                        .state_layer(if disabled { Color::TRANSPARENT } else { ink }),
++                )
++                .state_layer_alphas(20, 26, 26)
++                .measured_group(layout),
++        )
++        .children(children);
++        let focus = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-focus", item.id))
++                .styled(Style::column().corners(edge.corners()))
++                .focus_color(self.colors.secondary)
++                .focus_outline_width(FOCUS_WIDTH)
++                .focus_outline_from_parent(),
++        )
++        .visual_overlay();
++        let action = View::new(
++            Node::new(if single { Role::Radio } else { Role::Checkbox }, name)
++                .id(item.id)
++                .disabled(disabled)
++                .checked(checked)
++                .focus_color(Color::TRANSPARENT)
++                .press_ripple_to(face_id)
++                .measured_group(ActionLayout),
++        )
++        .children([face, focus]);
++        if disabled {
++            return Some(action);
++        }
++
++        let action = action
++            .accessibility_scroll_into_view()
++            .cursor(CursorStyle::Pointer);
++        if single && checked {
++            Some(action)
++        } else {
++            Some(
++                action
++                    .on_press(item.on_activate)
++                    .accessible_activation()
++                    .focus_on_pointer_release()
++                    .protect_composition_on_press()
++                    .suppress_repeated_activation(),
++            )
++        }
++    }
++}
++
++fn text(s: &str) -> Option<&str> {
++    (!s.trim().is_empty()).then_some(s)
++}
++
++fn valid_ids<M>(
++    options: BaselineSegmentedButtonOptions<'_>,
++    items: &[BaselineSegmentedItem<'_, M>],
++) -> bool {
++    let mut ids = std::collections::BTreeSet::new();
++    for key in [
++        options.id.to_owned(),
++        format!("{}-track", options.id),
++        format!("{}-outline", options.id),
++    ] {
++        if !ids.insert(key) {
++            return false;
++        }
++    }
++    for index in 0..items.len() - 1 {
++        ids.insert(format!("{}-seam-{index}", options.id));
++    }
++    for item in items {
++        if text(item.id).is_none() || !ids.insert(item.id.to_owned()) {
++            return false;
++        }
++        for suffix in ["face", "focus", "label", "icon", "check"] {
++            if !ids.insert(format!("{}-{suffix}", item.id)) {
++                return false;
++            }
++        }
++    }
++    let selected: &[&str] = match &options.selection {
++        BaselineSegmentedSelection::Single(id) => std::slice::from_ref(id),
++        BaselineSegmentedSelection::Multiple(ids) => ids,
++    };
++    selected.iter().enumerate().all(|(index, id)| {
++        items.iter().any(|item| item.id == *id) && !selected[..index].contains(id)
++    })
++}
++
++fn alpha(Color(r, g, b, _): Color, a: u8) -> Color {
++    Color(r, g, b, a)
++}
++
++fn outline_ink(theme: &Theme, disabled: bool) -> Color {
++    if disabled {
++        alpha(theme.colors.on_surface, 31)
++    } else {
++        theme.colors.outline
++    }
++}
++
++fn passive<M>(node: Node) -> View<M> {
++    View::new(node).without_interaction(None)
++}
++
++#[derive(Clone, Copy, Debug)]
++enum Edge {
++    Left,
++    Middle,
++    Right,
++}
++impl Edge {
++    fn corners(self) -> Corners {
++        match self {
++            Self::Left => Corners::start(Corners::FULL_RADIUS),
++            Self::Middle => Corners::ZERO,
++            Self::Right => Corners::end(Corners::FULL_RADIUS),
++        }
++    }
++}
++
++fn outline<M>(theme: &Theme, edge: Edge, disabled: bool) -> View<M> {
++    let color = outline_ink(theme, disabled);
++    let line = || passive(Node::new(Role::Group, "").styled(Style::column().background(color)));
++    let cap = (!matches!(edge, Edge::Middle)).then(|| {
++        passive(
++            Node::new(Role::Group, "")
++                .styled(Style::column().clip(true))
++                .measured_group(ClipCap(edge)),
++        )
++        .children([passive(
++            Node::new(Role::Group, "").styled(
++                Style::column()
++                    .corners(Corners::full())
++                    .border(BORDER, color),
++            ),
++        )])
++    });
++    passive(Node::new(Role::Group, "").measured_group(OutlineCell(edge)))
++        .children([line(), line()].into_iter().chain(cap))
++}
++
++#[derive(Clone, Debug)]
++struct ContentLayout {
++    label: Option<String>,
++    font: TextStyle,
++    rtl: bool,
++    icon: bool,
++    checked: bool,
++}
++
++impl ContentLayout {
++    fn natural(&self, fonts: &mut dyn TextMeasurer) -> f32 {
++        let content = self.label.as_ref().map_or(2. * ICON, |label| {
++            fonts.measure_text(label, &self.font, None).0 + ICON
++        });
++        (content + GAP + 2. * INSET).ceil()
++    }
++
++    fn layout(&self, width: f32, fonts: &mut dyn TextMeasurer, reserve: bool) -> (f32, Vec<Rect>) {
++        let usable = width - 2. * INSET;
++        let first = self.label.as_ref().map_or((ICON, ICON), |label| {
++            fonts.measure_text(label, &self.font, None)
++        });
++        let second = if self.label.is_some() {
++            reserve || self.checked || self.icon
++        } else {
++            reserve || self.checked
++        };
++        let minimum = first.0.min(self.font.font_size.max(ICON));
++        let stacked = second && usable < minimum + GAP + ICON;
++        let label_width = if self.label.is_some() {
++            first
++                .0
++                .min(if second && !stacked {
++                    usable - GAP - ICON
++                } else {
++                    usable
++                })
++                .max(1.)
++        } else {
++            ICON
++        };
++        let label_height = self.label.as_ref().map_or(ICON, |label| {
++            fonts
++                .measure_text(label, &self.font, Some(label_width))
++                .1
++                .ceil()
++        });
++        if stacked {
++            return (
++                ICON + GAP + label_height,
++                vec![
++                    Rect::new(
++                        (width - label_width) / 2.,
++                        ICON + GAP,
++                        label_width,
++                        label_height,
++                    ),
++                    Rect::new((width - ICON) / 2., 0., ICON, ICON),
++                ],
++            );
++        }
++        let height = label_height.max(if second { ICON } else { 0. });
++        let second_width = if second { ICON + GAP } else { 0. };
++        let x = (width - label_width - second_width) / 2.;
++        let first_x = if self.rtl { x } else { x + second_width };
++        let second_x = if self.rtl { x + label_width + GAP } else { x };
++        let mut contents = vec![Rect::new(
++            first_x,
++            (height - label_height) / 2.,
++            label_width,
++            label_height,
++        )];
++        if second {
++            contents.push(Rect::new(second_x, (height - ICON) / 2., ICON, ICON));
++        }
++        (height, contents)
++    }
++}
++
++impl MeasuredGroupLayout for ContentLayout {
++    fn measure(
++        &self,
++        _children: &[&Node],
++        width: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let width = width.unwrap_or_else(|| self.natural(fonts)).max(TARGET);
++        (
++            width,
++            self.layout(width, fonts, true).0 + 2. * BLOCK_PADDING,
++        )
++    }
++
++    fn place(
++        &self,
++        _children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let (content_height, mut contents) = self.layout(width, fonts, false);
++        for rect in &mut contents {
++            rect.y += (height - content_height) / 2.;
++        }
++        contents
++    }
++}
++
++#[derive(Debug)]
++struct TrackLayout {
++    contents: Vec<ContentLayout>,
++    minimum_slot: f32,
++    rtl: bool,
++    available: f32,
++}
++impl TrackLayout {
++    fn min_width(&self) -> f32 {
++        self.contents.len() as f32 * self.minimum_slot + 2. * FOCUS_OUTSET
++    }
++
++    fn slot_width(&self, width: f32) -> f32 {
++        (width - 2. * FOCUS_OUTSET) / self.contents.len() as f32
++    }
++
++    fn face_height(&self, slot: f32, fonts: &mut dyn TextMeasurer) -> f32 {
++        self.contents
++            .iter()
++            .map(|layout| layout.layout(slot, fonts, true).0 + 2. * BLOCK_PADDING)
++            .fold(FACE_HEIGHT, f32::max)
++    }
++}
++impl MeasuredGroupLayout for TrackLayout {
++    fn places_measured_groups(&self) -> bool {
++        true
++    }
++
++    fn measure(
++        &self,
++        _children: &[&Node],
++        available: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let intrinsic = self
++            .contents
++            .iter()
++            .map(|item| item.natural(fonts))
++            .fold(TARGET, f32::max);
++        let width = (intrinsic * self.contents.len() as f32 + 2. * FOCUS_OUTSET)
++            .min(available.unwrap_or(self.available).min(self.available))
++            .max(self.min_width());
++        (
++            width,
++            self.face_height(self.slot_width(width), fonts) + 2. * FOCUS_OUTSET,
++        )
++    }
++
++    fn place(
++        &self,
++        _children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let count = self.contents.len();
++        let slot = self.slot_width(width);
++        let face = self.face_height(slot, fonts);
++        let action = face + HIT_SLACK;
++        let y = (height - action) / 2.;
++        let actions = (0..count).map(|i| {
++            let x = logical_index(count, i, self.rtl) as f32 * slot + FOCUS_OUTSET;
++            Rect::new(x, y, slot, action)
++        });
++        let outline = Rect::new(
++            FOCUS_OUTSET,
++            (height - face) / 2.,
++            width - 2. * FOCUS_OUTSET,
++            face,
++        );
++        let seams = (1..count).map(|i| {
++            let edge = if self.rtl { count - i } else { i };
++            Rect::new(
++                outline.x + edge as f32 * slot - BORDER / 2.,
++                outline.y + BORDER,
++                BORDER,
++                face - 2. * BORDER,
++            )
++        });
++        actions.chain([outline]).chain(seams).collect()
++    }
++}
++
++fn logical_index(count: usize, index: usize, rtl: bool) -> usize {
++    if rtl {
++        count - 1 - index
++    } else {
++        index
++    }
++}
++
++#[derive(Debug)]
++struct ActionLayout;
++impl MeasuredGroupLayout for ActionLayout {
++    fn places_measured_groups(&self) -> bool {
++        true
++    }
++    fn measure(
++        &self,
++        _children: &[&Node],
++        _width: Option<f32>,
++        _fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        (TARGET, TARGET)
++    }
++    fn place(
++        &self,
++        _children: &[&Node],
++        (width, height): (f32, f32),
++        _fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let face = height - HIT_SLACK;
++        let y = (height - face) / 2.;
++        vec![
++            Rect::new(0., y, width, face),
++            Rect::new(
++                -FOCUS_OUTSET,
++                y - FOCUS_OUTSET,
++                width + 2. * FOCUS_OUTSET,
++                face + 2. * FOCUS_OUTSET,
++            ),
++        ]
++    }
++}
++
++#[derive(Debug)]
++struct OutlineLayout {
++    count: usize,
++    rtl: bool,
++}
++impl MeasuredGroupLayout for OutlineLayout {
++    fn places_measured_groups(&self) -> bool {
++        true
++    }
++    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
++        (0., 0.)
++    }
++    fn place(
++        &self,
++        _: &[&Node],
++        (width, height): (f32, f32),
++        _: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let slot = width / self.count as f32;
++        (0..self.count)
++            .map(|i| {
++                Rect::new(
++                    logical_index(self.count, i, self.rtl) as f32 * slot,
++                    0.,
++                    slot,
++                    height,
++                )
++            })
++            .collect()
++    }
++}
++
++#[derive(Debug)]
++struct OutlineCell(Edge);
++impl MeasuredGroupLayout for OutlineCell {
++    fn places_measured_groups(&self) -> bool {
++        true
++    }
++    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
++        (0., 0.)
++    }
++    fn place(
++        &self,
++        _: &[&Node],
++        (width, height): (f32, f32),
++        _: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let cap = width.min(height) / 2.;
++        let (x, straight) = match self.0 {
++            Edge::Left => (cap, width - cap),
++            Edge::Middle => (0., width),
++            Edge::Right => (0., width - cap),
++        };
++        let lines = [
++            Rect::new(x, 0., straight, BORDER),
++            Rect::new(x, height - BORDER, straight, BORDER),
++        ];
++        let rounded = match self.0 {
++            Edge::Left => Some(Rect::new(0., 0., cap, height)),
++            Edge::Middle => None,
++            Edge::Right => Some(Rect::new(width - cap, 0., cap, height)),
++        };
++        lines.into_iter().chain(rounded).collect()
++    }
++}
++
++#[derive(Debug)]
++struct ClipCap(Edge);
++impl MeasuredGroupLayout for ClipCap {
++    fn measure(&self, _: &[&Node], _: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
++        (0., 0.)
++    }
++    fn place(
++        &self,
++        _: &[&Node],
++        (width, height): (f32, f32),
++        _: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        // Only one end of this stroke belongs to the shared perimeter. Clip
++        // the other end before painting so the straight edges meet once.
++        let x = if matches!(self.0, Edge::Left) {
++            0.
++        } else {
++            -width
++        };
++        vec![Rect::new(x, 0., width * 2., height)]
++    }
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index ac48dc7fae6d5533c37ccf1ae1c4ac52bbdc2fbe..fec8121fb3aa98c3b4109a5d0f59bff1795da270 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -6,6 +6,7 @@ mod app_bar;
+ mod app_bar_scroll;
+ mod app_bar_search;
+ mod badge;
++mod baseline_segmented_button;
+ mod basic_dialog;
+ mod bottom_sheet;
+ mod bottom_sheet_motion;
+@@ -83,6 +84,9 @@ pub use app_bar::{AppBarContent, AppBarKind, AppBarOptions};
+ pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
+ pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
+ pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
++pub use baseline_segmented_button::{
++    BaselineSegmentedButtonOptions, BaselineSegmentedItem, BaselineSegmentedSelection,
++};
+ pub use basic_dialog::{BasicDialogContent, BasicDialogMotion, BasicDialogOptions};
+ pub use bottom_sheet::{
+     BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
+diff --git a/crates/surface-material/tests/baseline_segmented_button.rs b/crates/surface-material/tests/baseline_segmented_button.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..77dd4f23771a649d01dd22626817565972737da5
+--- /dev/null
++++ b/crates/surface-material/tests/baseline_segmented_button.rs
+@@ -0,0 +1,659 @@
++use surface::{
++    Color, ExtendedDisplayList, ExtendedPaintOp, Node, NodeId, PaintOp, Rect, Role, Style,
++    TextMeasurer, TextStyle,
++};
++use surface_app::{
++    AccessibilityActivationResult, AccessibilityScrollResult, Application, EditKey, Event, Key,
++    KeyPress, Modifiers, Runtime, View,
++};
++use surface_material::{
++    shape::LayoutDirection, BaselineSegmentedButtonOptions, BaselineSegmentedItem,
++    BaselineSegmentedSelection, Theme, VectorIcon,
++};
++
++use surface_wgpu::TextSystem;
++
++const IDS: [&str; 5] = ["walk", "tram", "bike", "boat", "rail"];
++
++#[derive(Clone, Copy)]
++enum Message {
++    Choose(usize),
++    Disable(usize),
++    Modal(bool),
++    Noop,
++}
++
++struct Model {
++    selection: [bool; 5],
++    disabled: [bool; 5],
++    count: usize,
++    rtl: bool,
++    dark: bool,
++    available_width: f32,
++    text_scale: f32,
++    multiple: bool,
++    accept: bool,
++    modal: bool,
++    requests: Vec<usize>,
++}
++
++impl Default for Model {
++    fn default() -> Self {
++        Self {
++            selection: [false, false, true, false, false],
++            disabled: [false, true, false, false, false],
++            count: 3,
++            rtl: false,
++            dark: false,
++            available_width: 400.,
++            text_scale: 1.,
++            multiple: false,
++            accept: true,
++            modal: false,
++            requests: Vec::new(),
++        }
++    }
++}
++
++impl Model {
++    fn theme(&self) -> Theme {
++        if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++
++    fn group(&self) -> Option<View<Message>> {
++        let selected = (0..self.count)
++            .filter(|&i| self.selection[i])
++            .map(|i| IDS[i])
++            .collect::<Vec<_>>();
++        let options = BaselineSegmentedButtonOptions {
++            id: "travel",
++            name: "交通方式",
++            available_width: self.available_width,
++            text_scale: self.text_scale,
++            direction: if self.rtl {
++                LayoutDirection::RightToLeft
++            } else {
++                LayoutDirection::LeftToRight
++            },
++            selection: if self.multiple {
++                BaselineSegmentedSelection::Multiple(&selected)
++            } else {
++                BaselineSegmentedSelection::Single(selected.first().copied().unwrap_or("unknown"))
++            },
++        };
++        let art = VectorIcon::new([[0., 0.], [24., 0.], [0., 24.]]).unwrap();
++        let labels = if self.text_scale == 1. {
++            [Some("步行"), Some("電車"), None, Some("渡輪"), Some("火車")]
++        } else {
++            [
++                Some("沿河散步"),
++                Some("社區電車"),
++                None,
++                Some("市區渡輪"),
++                Some("城際火車"),
++            ]
++        };
++        self.theme().baseline_segmented_button(
++            options,
++            (0..self.count).map(|i| BaselineSegmentedItem {
++                id: IDS[i],
++                label: labels[i],
++                name: (i == 2).then_some("騎自行車"),
++                icon: (i == 0 || i == 2).then_some(&art),
++                disabled: self.disabled[i],
++                on_activate: Message::Choose(i),
++            }),
++        )
++    }
++}
++
++impl Application for Model {
++    type Message = Message;
++
++    fn text_scale(&self) -> f32 {
++        self.text_scale
++    }
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Choose(i) => {
++                self.requests.push(i);
++                if self.accept && self.multiple {
++                    self.selection[i] = !self.selection[i];
++                } else if self.accept {
++                    self.selection = std::array::from_fn(|selected| i == selected);
++                }
++            }
++            Message::Disable(i) => self.disabled[i] = true,
++            Message::Modal(open) => self.modal = open,
++            Message::Noop => {}
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let theme = self.theme();
++        let modal = self.modal.then(|| {
++            View::new(Node::new(Role::Dialog, "Confirm").id("dialog"))
++                .children([theme.button("dismiss", "Close", Message::Modal(false))])
++                .modal(Message::Modal(false))
++        });
++        View::new(Node::new(Role::Window, "Travel").styled(Style::column().padding(12.).gap(12.)))
++            .children(
++                [
++                    self.group().unwrap(),
++                    theme.button("after", "After", Message::Noop),
++                ]
++                .into_iter()
++                .chain(modal),
++            )
++    }
++}
++
++struct Metrics;
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, width: Option<f32>) -> (f32, f32) {
++        let natural = text.chars().count() as f32 * size;
++        let width = width.unwrap_or(natural).min(natural);
++        (width, (natural / width.max(1.)).ceil().max(1.) * size)
++    }
++
++    fn measure_text(&mut self, text: &str, style: &TextStyle, width: Option<f32>) -> (f32, f32) {
++        let (width, height) = self.measure(text, style.font_size, width);
++        let lines = height / style.font_size;
++        (width, lines * style.line_height.unwrap_or(style.font_size))
++    }
++}
++
++fn draw(runtime: &mut Runtime<Model>) -> ExtendedDisplayList {
++    let width = (runtime.app().available_width + 24.).max(320.);
++    runtime.render_extended(width, 820., &mut Metrics).unwrap()
++}
++
++fn id(runtime: &Runtime<Model>, key: &str) -> NodeId {
++    runtime.dom().by_id(key).unwrap()
++}
++
++fn rect(runtime: &Runtime<Model>, key: &str) -> Rect {
++    runtime.computed().unwrap().nodes[id(runtime, key).index()].bounds
++}
++
++fn tab(runtime: &mut Runtime<Model>, reverse: bool, will_focus: &str) {
++    runtime.dispatch(Event::FocusNext { reverse }).unwrap();
++    assert_eq!(runtime.focused(), Some(will_focus));
++}
++
++fn arrow(runtime: &mut Runtime<Model>, key: EditKey, will_focus: &str) {
++    runtime
++        .dispatch(Event::Edit {
++            key,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some(will_focus));
++}
++
++fn projected_key(runtime: &mut Runtime<Model>, key: Key, repeated: bool) {
++    draw(runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let node = id(runtime, runtime.focused().unwrap());
++    let target = frame.focus_target(node).unwrap();
++    let press = KeyPress::new(key, Modifiers::default()).with_repeat(repeated);
++    assert!(runtime
++        .accessibility_key(&target, &press, Event::Activate)
++        .unwrap());
++}
++
++fn alpha(Color(r, g, b, _): Color, alpha: u8) -> Color {
++    Color(r, g, b, alpha)
++}
++
++fn ink(op: &ExtendedPaintOp) -> Option<Color> {
++    match op {
++        ExtendedPaintOp::Legacy(
++            PaintOp::Quad { color, .. }
++            | PaintOp::Shape { color, .. }
++            | PaintOp::Stroke { color, .. }
++            | PaintOp::ShapeStroke { color, .. }
++            | PaintOp::StyledText { color, .. },
++        ) => Some(*color),
++        ExtendedPaintOp::FillPath(path) => Some(path.color()),
++        ExtendedPaintOp::AlignedText(text) => match text.run() {
++            PaintOp::StyledText { color, .. } => Some(*color),
++            _ => None,
++        },
++        _ => None,
++    }
++}
++
++fn fills(list: &ExtendedDisplayList, color: Color) -> impl Iterator<Item = Rect> + '_ {
++    list.ops().iter().filter_map(move |op| {
++        let rect = match op {
++            ExtendedPaintOp::Legacy(PaintOp::Quad { rect, .. } | PaintOp::Shape { rect, .. }) => {
++                *rect
++            }
++            _ => return None,
++        };
++        (ink(op) == Some(color)).then_some(rect)
++    })
++}
++
++#[test]
++fn defaults_use_one_outline_one_seam_and_equal_40_dp_faces_with_48_dp_targets() {
++    for dark in [false, true] {
++        let mut runtime = Runtime::new(Model {
++            dark,
++            ..Model::default()
++        })
++        .unwrap();
++        let list = draw(&mut runtime);
++        assert!(rect(&runtime, "travel-track").width < rect(&runtime, "travel").width);
++        let width = rect(&runtime, "walk").width;
++        assert!(width >= 48.);
++        for key in &IDS[..3] {
++            let hit = rect(&runtime, key);
++            let face = rect(&runtime, &format!("{key}-face"));
++            assert_eq!(hit.height, 48.);
++            assert_eq!(face.height, 40.);
++            assert_eq!(hit.width, width);
++            assert_eq!(face.width, width);
++            assert_eq!(face.y, hit.y + 4.);
++        }
++        let c = runtime.app().theme().colors;
++        let outline = rect(&runtime, "travel-outline");
++        let face = rect(&runtime, "bike-face");
++        assert!(fills(&list, c.secondary_container).any(|rect| rect == face));
++        let segment_rect = rect(&runtime, "travel-seam-0");
++        assert!(fills(&list, c.outline).any(|rect| rect == segment_rect));
++        assert_eq!(
++            fills(&list, c.outline)
++                .filter(|rect| rect.width == 1. && rect.height == 38.)
++                .count(),
++            2
++        );
++        for seam_index in 0..2 {
++            let seam = rect(&runtime, &format!("travel-seam-{seam_index}"));
++            assert_eq!(seam.y, outline.y + 1.);
++            assert_eq!(seam.height, 38.);
++            assert_eq!(seam.width, 1.);
++        }
++        let disabled_ink = alpha(c.on_surface, 31);
++        assert_eq!(
++            fills(&list, disabled_ink)
++                .filter(|r| r.height == 1.)
++                .count(),
++            2
++        );
++        assert!(list
++            .ops()
++            .iter()
++            .any(|op| ink(op) == Some(alpha(c.on_surface, 97))));
++        assert!(list.ops().iter().any(|op| matches!(op,
++            ExtendedPaintOp::Legacy(PaintOp::Stroke { rect, clip, color, width, .. })
++            if *width == 1. && *color == c.outline && rect.height == 40. && clip.width == 20.
++        )));
++    }
++}
++
++#[test]
++fn manual_radio_entry_projection_and_keyboard_match_material() {
++    let mut runtime = Runtime::new(Model {
++        accept: false,
++        ..Model::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let root = id(&runtime, "travel");
++    let a = id(&runtime, "walk");
++    let b = id(&runtime, "tram");
++    let c = id(&runtime, "bike");
++    assert_eq!(frame.node(root).unwrap().node.role(), Role::RadioGroup);
++    for (node, checked) in [(a, false), (b, false), (c, true)] {
++        let node = frame.node(node).unwrap().node;
++        assert_eq!(node.role(), Role::Radio);
++        assert_eq!(node.is_checked(), Some(checked));
++    }
++    assert_eq!(frame.node(c).unwrap().node.name(), "騎自行車");
++    assert_eq!(frame.children(a).count(), 0);
++    assert!(frame.focus_target(b).is_none() && frame.activation_target(b).is_none());
++    assert!(frame.focus_target(c).is_some() && frame.activation_target(c).is_none());
++    let projected = frame.activation_target(a).unwrap();
++    tab(&mut runtime, false, "walk");
++    assert_eq!(
++        runtime.accessibility_activate(&projected).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    draw(&mut runtime);
++    arrow(&mut runtime, EditKey::Right, "bike");
++    assert_eq!(runtime.app().requests, [0]);
++    runtime.dispatch(Event::Activate).unwrap();
++    assert_eq!(runtime.app().requests, [0]);
++    tab(&mut runtime, false, "after");
++    tab(&mut runtime, true, "walk");
++    projected_key(&mut runtime, Key::Enter, false);
++    projected_key(&mut runtime, Key::Enter, true);
++    projected_key(&mut runtime, Key::Space, false);
++    assert_eq!(runtime.app().requests, [0, 0, 0]);
++    assert!(runtime.app().selection[2]);
++    draw(&mut runtime);
++    let stale = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(a)
++        .unwrap();
++    runtime.apply(Message::Disable(0)).unwrap();
++    draw(&mut runtime);
++    assert_ne!(
++        runtime.accessibility_activate(&stale).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    assert!(runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(a)
++        .is_none());
++}
++
++#[test]
++fn multi_checkboxes_allow_clear_and_real_projected_activation() {
++    let mut runtime = Runtime::new(Model {
++        multiple: true,
++        selection: [false; 5],
++        ..Model::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    let frame = runtime.accessibility_frame().unwrap();
++    let root = id(&runtime, "travel");
++    let a = id(&runtime, "walk");
++    let c = id(&runtime, "bike");
++    assert_eq!(frame.node(root).unwrap().node.role(), Role::Group);
++    let target = frame.activation_target(a).unwrap();
++    assert_eq!(frame.node(a).unwrap().node.role(), Role::Checkbox);
++    assert_eq!(
++        runtime.accessibility_activate(&target).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    assert!(runtime.app().selection[0]);
++    draw(&mut runtime);
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(c)
++        .unwrap();
++    runtime.accessibility_activate(&target).unwrap();
++    assert_eq!(runtime.app().selection, [true, false, true, false, false]);
++    draw(&mut runtime);
++    for member in [a, c] {
++        let target = runtime
++            .accessibility_frame()
++            .unwrap()
++            .activation_target(member)
++            .unwrap();
++        runtime.accessibility_activate(&target).unwrap();
++        draw(&mut runtime);
++    }
++    assert_eq!(runtime.app().selection, [false; 5]);
++    assert_eq!(runtime.app().requests, [0, 2, 0, 2]);
++}
++
++#[test]
++fn compact_rtl_grows_one_row_and_paints_the_whole_focus_outline() {
++    let mut runtime = Runtime::new(Model {
++        count: 5,
++        rtl: true,
++        dark: true,
++        available_width: 296.,
++        text_scale: 2.,
++        ..Model::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    tab(&mut runtime, false, "walk");
++    arrow(&mut runtime, EditKey::Left, "bike");
++    let list = draw(&mut runtime);
++    let focus = rect(&runtime, "bike-focus");
++    let face = rect(&runtime, "bike-face");
++    assert_eq!(
++        focus,
++        Rect::new(
++            face.x - 5.,
++            face.y - 5.,
++            face.width + 10.,
++            face.height + 10.
++        )
++    );
++    let secondary = runtime.app().theme().colors.secondary;
++    assert!(
++        matches!(list.ops().last(), Some(ExtendedPaintOp::Legacy(PaintOp::Stroke { rect, clip, width, color, .. })) if *rect == focus && rect.intersect(*clip) == *rect && *width == 3. && *color == secondary)
++    );
++    let outline = rect(&runtime, "travel-outline");
++    let mut prev = f32::INFINITY;
++    for key in IDS {
++        let hit = rect(&runtime, key);
++        let face = rect(&runtime, &format!("{key}-face"));
++        assert!(hit.x < prev && hit.height >= 48. && hit.width >= 48. && face.height > 40.);
++        assert_eq!(face.y, outline.y);
++        assert_eq!(face.width, outline.width / 5.);
++        prev = hit.x;
++        let label_key = format!("{key}-label");
++        if let Some(label) = runtime.dom().by_id(&label_key) {
++            let rect = runtime.computed().unwrap().nodes[label.index()].bounds;
++            let visible = rect.intersect(face);
++            assert!(
++                (visible.width - rect.width).abs() < 0.01
++                    && (visible.height - rect.height).abs() < 0.01,
++                "{key} label must stay within face"
++            );
++        }
++    }
++    assert!(runtime.app().requests.is_empty());
++}
++
++#[test]
++fn narrow_rtl_scroll_keeps_whole_targets_and_reveals_keyboard_and_ax_choices() {
++    let mut runtime = Runtime::new(Model {
++        count: 5,
++        available_width: 174.,
++        rtl: true,
++        ..Model::default()
++    })
++    .unwrap();
++    draw(&mut runtime);
++    let view = rect(&runtime, "travel");
++    let first = rect(&runtime, "walk");
++    let last = rect(&runtime, "rail");
++    assert_eq!(first.intersect(view), first);
++    assert!(last.intersect(view).width <= 0.);
++    assert_eq!(last.width, 48.);
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.scroll_target(id(&runtime, "rail")).is_some());
++    tab(&mut runtime, false, "walk");
++    arrow(&mut runtime, EditKey::End, "rail");
++    draw(&mut runtime);
++    let last = rect(&runtime, "rail");
++    assert_eq!(last.intersect(view), last);
++    assert!(runtime.app().requests.is_empty());
++}
++
++#[test]
++fn touch_accepts_target_slack_and_cancellation_clears_the_wave() {
++    let mut runtime = Runtime::new(Model::default()).unwrap();
++    runtime.set_time(0.);
++    draw(&mut runtime);
++    let hit = rect(&runtime, "walk");
++    let face = rect(&runtime, "walk-face");
++    let (x, y) = (hit.x + hit.width / 2., hit.y + 1.);
++    assert!(hit.contains(x, y) && !face.contains(x, y));
++    runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
++    draw(&mut runtime);
++    runtime.set_time(50.);
++    let held = draw(&mut runtime);
++    let wave = held
++        .ops()
++        .iter()
++        .find_map(|op| match op {
++            ExtendedPaintOp::FillPath(path) if path.color().3 < 255 && path.color().3 > 0 => {
++                Some(path)
++            }
++            _ => None,
++        })
++        .expect("accepted ripple");
++    assert!(wave.points().iter().all(|p| face.contains(p[0], p[1])));
++    assert!(runtime.app().requests.is_empty());
++    assert!(runtime.cancel_pointer().unwrap());
++    runtime.dispatch_touch(Event::PointerUp { x, y }).unwrap();
++    assert!(runtime.app().requests.is_empty());
++    runtime.set_reduced_motion(true);
++    runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
++    let reduced = draw(&mut runtime);
++    assert!(fills(&reduced, alpha(runtime.app().theme().colors.on_surface, 26)).any(|r| r == face));
++    runtime.dispatch_touch(Event::PointerUp { x, y }).unwrap();
++    draw(&mut runtime);
++    assert_eq!(runtime.app().requests, [0]);
++    assert!(runtime.app().selection[0]);
++}
++
++#[test]
++fn rejects_invalid_range_count_name_and_selection() {
++    assert!(Model {
++        count: 2,
++        multiple: true,
++        ..Model::default()
++    }
++    .group()
++    .is_some());
++    let invalid = [
++        Model {
++            count: 1,
++            ..Model::default()
++        },
++        Model {
++            available_width: 50.,
++            ..Model::default()
++        },
++        Model {
++            text_scale: f32::NAN,
++            ..Model::default()
++        },
++        Model {
++            selection: [false; 5],
++            ..Model::default()
++        },
++    ];
++    for model in invalid {
++        assert!(model.group().is_none());
++    }
++    let options = BaselineSegmentedButtonOptions {
++        id: "bad",
++        name: "Options",
++        available_width: 200.,
++        direction: LayoutDirection::LeftToRight,
++        text_scale: 1.,
++        selection: BaselineSegmentedSelection::Multiple(&[]),
++    };
++    let item = |id| BaselineSegmentedItem {
++        id,
++        label: Some("Option"),
++        name: None,
++        icon: None,
++        disabled: false,
++        on_activate: (),
++    };
++    assert!(Theme::light()
++        .baseline_segmented_button(options, [item("duplicate"), item("duplicate")])
++        .is_none());
++    let art = VectorIcon::new([[0., 0.], [24., 0.], [0., 24.]]).unwrap();
++    let unnamed = BaselineSegmentedItem {
++        label: None,
++        icon: Some(&art),
++        ..item("unnamed")
++    };
++    assert!(Theme::light()
++        .baseline_segmented_button(options, [item("named"), unnamed])
++        .is_none());
++}
++
++#[test]
++fn action_projection_cannot_cross_a_later_modal_scope() {
++    let mut runtime = Runtime::new(Model::default()).unwrap();
++    draw(&mut runtime);
++    let walk = id(&runtime, "walk");
++    let action = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(walk)
++        .unwrap();
++    runtime.apply(Message::Modal(true)).unwrap();
++    draw(&mut runtime);
++    assert!(runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(walk)
++        .is_none());
++    assert_ne!(
++        runtime.accessibility_activate(&action).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    assert!(runtime.app().requests.is_empty());
++    runtime.apply(Message::Modal(false)).unwrap();
++    draw(&mut runtime);
++    let current = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(walk)
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_activate(&current).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++}
++
++#[test]
++fn measured_cjk_and_actual_accessibility_reveal_at_two_times_scale() {
++    let mut runtime = Runtime::new(Model {
++        count: 5,
++        rtl: true,
++        dark: true,
++        text_scale: 2.,
++        available_width: 174.,
++        ..Model::default()
++    })
++    .unwrap();
++    let mut fonts = TextSystem::default();
++    let mut draw =
++        |runtime: &mut Runtime<Model>| runtime.render_extended(320., 820., &mut fonts).unwrap();
++    let list = draw(&mut runtime);
++    let view = rect(&runtime, "travel");
++    let first = rect(&runtime, "walk");
++    let last = rect(&runtime, "rail");
++    assert!(first.width >= 52. && first.intersect(view) == first);
++    assert!(last.intersect(view).width <= 0.);
++    assert!(list.ops().iter().any(|op| matches!(op, ExtendedPaintOp::AlignedText(text)
++        if matches!(text.run(), PaintOp::StyledText { text, rect, .. } if text == "沿河散步" && rect.height >= 40.)
++    )));
++    let rail = id(&runtime, "rail");
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.activation_target(rail).is_none());
++    let target = frame.scroll_target(rail).unwrap();
++    let result = runtime.accessibility_scroll_into_view(&target).unwrap();
++    assert_eq!(result, AccessibilityScrollResult::Scheduled);
++    draw(&mut runtime);
++    let last = rect(&runtime, "rail");
++    assert_eq!(last.intersect(view), last);
++    let after = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(rail)
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_activate(&after).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    assert_eq!(runtime.app().requests, [4]);
++}
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 08de59b574056216fc8de7c5cf4ddb181ee18908..658685363086d3f72930913dcb2b4d8f0cdf0ed9 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -67,10 +67,11 @@
+       "id": "segmented-buttons",
+       "spec": "https://m3.material.io/components/segmented-buttons/overview",
+       "status": "partial",
+-      "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Controlled single selection; manual keyboard activation; position-aware segments with a selected check mark for single and multi select. Inner borders are drawn per segment, not shared; no elevation or ripple"
++      "variant_review": "audit baseline outlined segment groups and the Expressive Connected successor against Material 3's published catalog",
++      "desktop_evidence": "The native headless Gallery replay covers light, dark, compact RTL at 200%, keyboard selection, and matching Page.screenshot, CLI and MCP PNGs",
++      "web_evidence": "M320–M323 in e2e/src/material_segmented.rs cover shared outline and seams, projected roles and state, keyboard focus, pointer and touch targets, and narrow RTL scroll",
++      "implemented": "Two to five equal-width Baseline choices with a shared outline, one seam, icon or text, caller-owned radio or checkbox selection, disabled state and a 48 dp minimum hit target. The row grows for large labels and scrolls with a wheel, keyboard focus or accessibility reveal. Direct touch panning, live assistive speech and system contrast remain open. The separate Connected button group provides the Expressive successor.",
++      "unit_evidence": "crates/surface-material/tests/baseline_segmented_button.rs covers layout, paint, validation, roles, selection, accessible activation and focus"
+     },
+     {
+       "id": "split-button",
+diff --git a/docs/material.md b/docs/material.md
+index 2722b6fee72e3aae5f4b3061000bbe0940c21547..d413f62868598d2a5575528b7107953e988fb7e2 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -143,6 +143,7 @@ does not change application state.
+ | API | Current behavior |
+ | --- | --- |
+ | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
++| `baseline_segmented_button` | Two to five equal-width outlined choices with single or multiple selection and a shared border |
+ | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
+ | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
+ | `command_menu` | Baseline M3 commands anchored to a caller's button, with grouped rows, keyboard focus, and scrolling |
+@@ -1210,6 +1211,33 @@ in headless mode to replay it and capture PNGs without opening a window.
+ [Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.624e8f2da4007fc8.json) ·
+ [Menu button keyboard and semantics](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/)
+ 
++## Baseline segmented buttons
++
++Use `Theme::baseline_segmented_button` for two to five related choices in
++one outlined row. Pass the actual available width, layout direction and
++text scale. Give the group and its items stable IDs. Each item supplies
++text, a vector icon with a spoken name, or both. The application applies
++the messages and passes the current selection to the next view.
++
++Use `BaselineSegmentedSelection::Single` for one required choice. It
++exposes a named radio group. Use `Multiple` for independent checkboxes.
++It allows any number of values, including zero. Disabled choices stay
++visible and do not accept focus or activation.
++
++Tab enters on the first enabled item. Left and Right move focus in the
++visual direction and skip disabled items. Space or Enter activates the
++focused choice. The default face is 40 dp tall. The 48 dp minimum target
++stays in place when labels wrap and the row grows. When the targets cannot
++fit, the row scrolls with a wheel, keyboard focus, or an accessibility
++reveal action. Choose a Connected button group for the Expressive style.
++Existing segmented helpers retain their behavior.
++
++In Material Gallery, choose 動作, then 分段按鈕. The example includes left
++and right layout directions, light and dark colors, and 200% text.
++
++[Material 3 segmented buttons](https://m3.material.io/components/segmented-buttons/overview) ·
++[Material 3 button groups](https://m3.material.io/components/button-groups/overview)
++
+ ## Button groups
+ 
+ Use `Theme::button_group` with stable item IDs and the available logical
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index e5d2f66793fe18628983f6b44bbe1ea355be6338..dea3caee1a34c4234336902f01fd4213caf184b3 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -86,6 +86,8 @@ mod material_scroll_pair_fields;
+ mod material_scroll_popup_fields;
+ #[path = "material_search_overlay.rs"]
+ mod material_search_overlay;
++#[path = "material_segmented.rs"]
++mod material_segmented;
+ #[path = "material_side_sheet.rs"]
+ mod material_side_sheet;
+ #[path = "material_slider_forms.rs"]
+@@ -154,7 +156,8 @@ pub const STEPS: &[&str] = &[
+     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
+     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
+     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
+-    "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319",
++    "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
++    "M323",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -285,7 +288,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_range_slider::run(env, chrome, &url).await?;
+     material_vertical_centered_slider::run(env, chrome, &url).await?;
+     material_slider_inset::run(env, chrome, &url).await?;
+-    material_buttons::run(env, chrome, &url).await
++    material_buttons::run(env, chrome, &url).await?;
++    material_segmented::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -516,6 +520,14 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn segmented_steps_are_required_by_the_material_case() {
++        let segmented = super::material_segmented::STEPS;
++        assert!(super::STEPS
++            .windows(segmented.len())
++            .any(|steps| steps == segmented));
++    }
++
+     #[test]
+     fn common_button_steps_are_required_by_the_material_case() {
+         let buttons = super::material_buttons::STEPS;
+diff --git a/e2e/src/material_segmented.rs b/e2e/src/material_segmented.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4231d705948a3f5d26dc09b59c0e40088959c39
+--- /dev/null
++++ b/e2e/src/material_segmented.rs
+@@ -0,0 +1,485 @@
++//! Baseline segmented buttons in the stock headless WebGPU Gallery.
++
++use anyhow::{Context, Result};
++use serde::Serialize;
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focused, near, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "segmented-demo-show";
++const BACK: &str = "segmented-demo-back";
++const THEME: &str = "segmented-demo-theme";
++const RTL: &str = "segmented-demo-rtl";
++const TEXT: &str = "segmented-demo-large-text";
++const AFTER: &str = "segmented-demo-after";
++const COMPARE: &str = "segments-comparison";
++const VIEW: &str = "segments-view";
++const FILTERS: &str = "segments-filters";
++const LEFT: &str = "segment-left-pane";
++const RIGHT: &str = "segment-right-pane";
++const LIST: &str = "segment-list-view";
++const TABLE: &str = "segment-table-view";
++const GRID: &str = "segment-grid-view";
++const NEW: &str = "segment-new";
++const SAVED: &str = "segment-saved";
++const LOCAL: &str = "segment-local";
++const SHARED: &str = "segment-shared";
++const ARCHIVED: &str = "segment-archived";
++const WIDE: &str = "material-segmented-wide.png";
++const SELECTED: &str = "material-segmented-selection.png";
++const PRESSED: &str = "material-segmented-pressed.png";
++const COMPACT: &str = "material-segmented-rtl-200.png";
++const SCROLLED: &str = "material-segmented-scroll-rtl.png";
++pub(super) const STEPS: [&str; 4] = ["M320", "M321", "M322", "M323"];
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++type Sample = (&'static str, &'static str, bool);
++
++const COMPARE_ITEMS: [Sample; 2] = [(LEFT, "左側", false), (RIGHT, "右側", false)];
++const VIEW_ITEMS: [Sample; 3] = [
++    (LIST, "清單檢視", false),
++    (TABLE, "表格檢視", true),
++    (GRID, "格狀檢視", false),
++];
++const FILTER_ITEMS: [Sample; 5] = [
++    (NEW, "最新", false),
++    (SAVED, "已儲存", false),
++    (LOCAL, "離線", true),
++    (SHARED, "已分享", false),
++    (ARCHIVED, "封存", false),
++];
++
++#[derive(Serialize)]
++struct Segment {
++    hit: Rect,
++    face: Rect,
++    focus: Rect,
++}
++
++fn centre([x, y, w, h]: Rect) -> [f64; 2] {
++    [x + w / 2., y + h / 2.]
++}
++
++async fn part(tab: &Tab, id: &str, name: &str) -> Result<Rect> {
++    bounds(tab, &format!("{id}-{name}")).await
++}
++
++async fn segment(tab: &Tab, id: &str) -> Result<Segment> {
++    let g = Segment {
++        hit: bounds(tab, id).await?,
++        face: part(tab, id, "face").await?,
++        focus: part(tab, id, "focus").await?,
++    };
++    check!(
++        g.hit[2] >= 48. && g.hit[3] >= 48. && contains(g.hit, g.face),
++        "{id} has an independent touch target"
++    );
++    check!(
++        near(g.face[0] - g.focus[0], 5.)
++            && near(g.face[1] - g.focus[1], 5.)
++            && near(g.focus[2] - g.face[2], 10.)
++            && near(g.focus[3] - g.face[3], 10.),
++        "{id} keeps a 5 dp focus outset"
++    );
++    Ok(g)
++}
++
++async fn model(tab: &Tab, condition: &str) -> Result<Value> {
++    until(tab, &format!("(d => {condition})(s.segmented_demo)")).await?;
++    tab.settle().await?;
++    Ok(state(tab).await?["segmented_demo"].clone())
++}
++
++fn paint_color(model: &Value, name: &str) -> Result<Rgb> {
++    let [r, g, b, _]: [u8; 4] = serde_json::from_value(model["palette"][name].clone())
++        .with_context(|| format!("segmented color {name}"))?;
++    Ok([r, g, b])
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 2200).await?;
++    reduced_motion(tab, true).await?;
++    until(tab, "s.section === 0 && !s.segmented_demo.visible").await?;
++    activate(tab, SHOW).await?;
++    model(tab, "d.visible && !d.dark && !d.rtl && d.text_scale === 1").await?;
++    resize(tab, 960, 880).await
++}
++
++fn states(tree: &[Value], items: &[Sample], role: &str, checked: &[&str]) -> Result<Value> {
++    let mut exported = Vec::new();
++    for (id, name, disabled) in items {
++        let node = ax(tree, role, name)?;
++        let expected = checked.contains(id);
++        check_eq!(
++            ax_property(node, "checked"),
++            Some(&json!(if expected { "true" } else { "false" })),
++            "{id} checked"
++        );
++        check_eq!(
++            ax_property(node, "disabled") == Some(&json!(true)),
++            *disabled,
++            "{id} disabled"
++        );
++        exported
++            .push(json!({"id":id,"name":name,"role":role,"checked":expected,"disabled":disabled}));
++    }
++    Ok(json!(exported))
++}
++
++async fn wide(tab: &Tab, env: &Env) -> Result<Value> {
++    let initial = model(tab, "d.comparison === 'segment-right-pane' && d.view === 'segment-grid-view' && !d.filters.length").await?;
++    let tree = ax_tree(tab).await?;
++    ax(&tree, "radiogroup", "對照位置")?;
++    ax(&tree, "radiogroup", "檢視方式")?;
++    ax(&tree, "group", "篩選條件")?;
++    let roles = json!({
++        "comparison": states(&tree, &COMPARE_ITEMS, "radio", &[RIGHT])?,
++        "view": states(&tree, &VIEW_ITEMS, "radio", &[GRID])?,
++        "filters": states(&tree, &FILTER_ITEMS, "checkbox", &[])?,
++    });
++
++    let frame = photo(tab, env, WIDE).await?;
++    let mut outline_samples = Vec::new();
++    let mut rows = Vec::new();
++    for (group, items) in [
++        (COMPARE, COMPARE_ITEMS.as_slice()),
++        (VIEW, VIEW_ITEMS.as_slice()),
++        (FILTERS, FILTER_ITEMS.as_slice()),
++    ] {
++        let mut geometry = Vec::new();
++        let outline = part(tab, group, "outline").await?;
++        let first = segment(tab, items[0].0).await?;
++        for (n, (id, _, _)) in items.iter().enumerate() {
++            let g = segment(tab, id).await?;
++            check!(
++                near(g.hit[2], first.hit[2])
++                    && near(g.face[3], 40.)
++                    && near(g.face[1], first.face[1]),
++                "equal-width 40 dp faces in one row"
++            );
++            check!(
++                near(g.hit[0], first.hit[0] + n as f64 * first.hit[2]),
++                "segments touch without gaps"
++            );
++            if n > 0 {
++                let seam = part(tab, group, &format!("seam-{}", n - 1)).await?;
++                let [x, y] = centre(seam);
++                check!(
++                    near(seam[2], 1.) && near(seam[3], g.face[3] - 2.),
++                    "single 1 dp seam stops inside the outline, got {seam:?}"
++                );
++                let ink = frame.sample(x, y)?;
++                check_eq!(
++                    ink,
++                    paint_color(&initial, "outline")?,
++                    "seam uses the outline token"
++                );
++                outline_samples.push(json!({"rect":seam,"point":[x,y],"ink":ink}));
++            }
++            geometry.push(json!({"id":id,"rects":g}));
++        }
++        rows.push(json!({"id":group,"outline":outline,"segments":geometry}));
++    }
++    let grid = segment(tab, GRID).await?;
++    let selected_point = [centre(grid.face)[0], grid.face[1] + 4.];
++    check_eq!(
++        frame.sample(selected_point[0], selected_point[1])?,
++        paint_color(&initial, "selection")?,
++        "checked icon-only option uses the selected color"
++    );
++    let check = part(tab, GRID, "check").await?;
++    let icon = part(tab, GRID, "icon").await?;
++    check!(
++        check[2] > 0. && icon[2] > 0. && check[0] + check[2] < icon[0],
++        "checked icon-only choice paints both cues"
++    );
++
++    Ok(
++        json!({"initial":initial,"roles":roles,"rows":rows,"seams":outline_samples,
++        "capture":WIDE,"selected_point":selected_point,"check":check,"icon":icon}),
++    )
++}
++
++async fn keyboard(tab: &Tab, env: &Env) -> Result<Value> {
++    activate(tab, TEXT).await?;
++    activate(tab, TEXT).await?;
++    model(tab, "d.text_scale === 1").await?;
++    tab.press("Tab").await?;
++    focused(tab, LEFT).await?;
++    tab.press("ArrowRight").await?;
++    focused(tab, RIGHT).await?;
++    model(
++        tab,
++        "d.comparison === 'segment-right-pane' && d.activations === 0",
++    )
++    .await?;
++    tab.press("Tab").await?;
++    focused(tab, LIST).await?;
++    tab.press("ArrowRight").await?;
++    focused(tab, GRID).await?;
++    model(tab, "d.view === 'segment-grid-view' && d.activations === 0").await?;
++    tab.press("ArrowLeft").await?;
++    focused(tab, LIST).await?;
++    tab.press("Space").await?;
++    model(tab, "d.view === 'segment-list-view' && d.activations === 1").await?;
++    tab.press("Enter").await?;
++    model(tab, "d.view === 'segment-list-view' && d.activations === 1").await?;
++    tab.press("Tab").await?;
++    focused(tab, NEW).await?;
++    tab.press("Space").await?;
++    model(
++        tab,
++        "d.filters.includes('segment-new') && d.activations === 2",
++    )
++    .await?;
++    tab.press("ArrowRight").await?;
++    focused(tab, SAVED).await?;
++    tab.press("ArrowRight").await?;
++    focused(tab, SHARED).await?;
++    model(tab, "d.filters.length === 1 && d.activations === 2").await?;
++    for repeat in [false, true, true] {
++        tab.cdp(
++            "Input.dispatchKeyEvent",
++            json!({"type":"keyDown","key":"Enter","code":"Enter","windowsVirtualKeyCode":13,"autoRepeat":repeat}),
++        ).await?;
++        model(
++            tab,
++            "d.filters.includes('segment-shared') && d.filters.length === 2 && d.activations === 3",
++        )
++        .await?;
++    }
++    tab.cdp(
++        "Input.dispatchKeyEvent",
++        json!({"type":"keyUp","key":"Enter","code":"Enter","windowsVirtualKeyCode":13}),
++    )
++    .await?;
++    let selected = model(tab, "d.filters.length === 2").await?;
++    let tree = ax_tree(tab).await?;
++    let roles = json!({
++        "view":states(&tree, &VIEW_ITEMS, "radio", &[LIST])?,
++        "filters":states(&tree, &FILTER_ITEMS, "checkbox", &[NEW, SHARED])?,
++    });
++    let g = segment(tab, SHARED).await?;
++    let frame = photo(tab, env, SELECTED).await?;
++    let focus = paint_color(&selected, "focus")?;
++    let focus_pixels = frame.colors(g.focus)?.get(&focus).copied().unwrap_or(0);
++    check!(
++        focus_pixels > 40,
++        "keyboard focus is visible in the rendered frame"
++    );
++    tab.press("Space").await?;
++    model(tab, "d.filters.length === 1 && d.activations === 4").await?;
++    tab.press("ArrowLeft").await?;
++    focused(tab, SAVED).await?;
++    tab.press("ArrowLeft").await?;
++    focused(tab, NEW).await?;
++    tab.press("Enter").await?;
++    let cleared = model(tab, "d.filters.length === 0 && d.activations === 5").await?;
++    tab.press("Tab").await?;
++    focused(tab, AFTER).await?;
++    Ok(
++        json!({"selected":selected,"cleared":cleared,"roles":roles,"focus":g.focus,
++        "focus_pixels":focus_pixels,"capture":SELECTED}),
++    )
++}
++
++async fn pressed(tab: &Tab, target: Option<&str>) -> Result<()> {
++    tab.wait_for(&format!(
++        "JSON.parse(window.gallery.export_dom()).interaction.pressed === {}",
++        json!(target)
++    ))
++    .await?;
++    tab.settle().await
++}
++
++async fn pointer(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    let canvas = tab.canvas_box().await?;
++    let g = segment(tab, SAVED).await?;
++    let x = centre(g.hit)[0];
++    let y = g.hit[1] + 1.;
++    check!(
++        y < g.face[1],
++        "test presses outside the artwork and inside the touch target"
++    );
++    let [cx, cy] = [canvas[0] + x, canvas[1] + y];
++    tab.mouse_move(cx, cy).await?;
++    tab.mouse_down().await?;
++    pressed(tab, Some(SAVED)).await?;
++    let hold = model(tab, "d.filters.length === 0 && d.activations === 0").await?;
++    photo(tab, env, PRESSED).await?;
++    for (kind, buttons) in [("mouseMoved", 1), ("mouseReleased", 0)] {
++        tab.cdp(
++            "Input.dispatchMouseEvent",
++            json!({
++                "type":kind,"x":canvas[0] + 2.,"y":canvas[1] + 2.,
++                "button":"left","buttons":buttons,"clickCount":1,
++            }),
++        )
++        .await?;
++    }
++    pressed(tab, None).await?;
++    model(tab, "d.filters.length === 0 && d.activations === 0").await?;
++
++    let touch = json!({"x":cx,"y":cy,"id":1});
++    for (end, requests) in [("touchCancel", 0), ("touchEnd", 1)] {
++        tab.cdp(
++            "Input.dispatchTouchEvent",
++            json!({"type":"touchStart","touchPoints":[touch]}),
++        )
++        .await?;
++        pressed(tab, Some(SAVED)).await?;
++        tab.cdp(
++            "Input.dispatchTouchEvent",
++            json!({"type":end,"touchPoints":[]}),
++        )
++        .await?;
++        pressed(tab, None).await?;
++        model(tab, &format!("d.activations === {requests}")).await?;
++    }
++    let disabled = centre(bounds(tab, LOCAL).await?);
++    tab.click(canvas[0] + disabled[0], canvas[1] + disabled[1])
++        .await?;
++    let final_state = model(
++        tab,
++        "d.filters.join() === 'segment-saved' && d.activations === 1",
++    )
++    .await?;
++    Ok(json!({"hold":hold,"final":final_state,"point":[x,y],"capture":PRESSED}))
++}
++
++async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    resize(tab, 320, 880).await?;
++    for setting in [THEME, RTL, TEXT] {
++        activate(tab, setting).await?;
++    }
++    let initial = model(
++        tab,
++        "d.dark && d.rtl && d.text_scale === 2 && d.width === 320",
++    )
++    .await?;
++    for id in [LEFT, LIST, NEW] {
++        tab.press("Tab").await?;
++        focused(tab, id).await?;
++    }
++    let first = segment(tab, NEW).await?;
++    let last = segment(tab, ARCHIVED).await?;
++    check!(
++        first.hit[0] > last.hit[0] && near(first.hit[1], last.hit[1]),
++        "RTL is physically mirrored while Tab enters at the first logical choice"
++    );
++    check!(
++        first.face[3] > 40.,
++        "large labels grow the equal-height row"
++    );
++    let g = photo(tab, env, COMPACT).await?;
++    let pixels = g
++        .colors(first.focus)?
++        .get(&paint_color(&initial, "focus")?)
++        .copied()
++        .unwrap_or(0);
++    check!(pixels > 40, "dark compact keyboard ring is visible");
++
++    resize(tab, 240, 880).await?;
++    focused(tab, NEW).await?;
++    let window = bounds(tab, FILTERS).await?;
++    let start = part(tab, FILTERS, "track").await?;
++    check!(
++        start[2] > window[2] && contains(window, bounds(tab, NEW).await?),
++        "the first touch target remains whole in the narrow scroll port"
++    );
++    for id in [SAVED, SHARED, ARCHIVED] {
++        tab.press("ArrowLeft").await?;
++        focused(tab, id).await?;
++    }
++    let end = part(tab, FILTERS, "track").await?;
++    check!(
++        end[0] > start[0] && contains(window, bounds(tab, ARCHIVED).await?),
++        "logical movement reveals the other edge without reducing touch targets"
++    );
++    let archive = segment(tab, ARCHIVED).await?;
++    tab.press("Space").await?;
++    let final_state = model(
++        tab,
++        "d.width === 240 && d.filters.join() === 'segment-archived' && d.activations === 1",
++    )
++    .await?;
++    let frame = photo(tab, env, SCROLLED).await?;
++    let ring_pixels = frame
++        .colors(archive.focus)?
++        .get(&paint_color(&final_state, "focus")?)
++        .copied()
++        .unwrap_or(0);
++    check!(
++        ring_pixels > 40,
++        "focused checkbox remains visible in the scrolled row"
++    );
++    resize(tab, 960, 2200).await?;
++    activate(tab, BACK).await?;
++    model(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"first":first,"last":last,"initial":initial,"final":final_state,"viewport":window,
++        "track_before":start,"track_after":end,"compact_pixels":pixels,"focus_pixels":ring_pixels,
++        "archive":archive,"returned_focus":SHOW,"captures":[COMPACT,SCROLLED]}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 924, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(
++            STEPS[0],
++            "Baseline segmented rows have equal faces, a single seam and distinct accessible roles",
++        );
++        route(&tab, url).await?;
++        report["wide"] = wide(&tab, env).await?;
++        step(
++            STEPS[1],
++            "trusted Tab and arrows move focus and explicit keys own selection",
++        );
++        report["keyboard"] = keyboard(&tab, env).await?;
++        step(
++            STEPS[2],
++            "padded pointer or touch targets accept once and cancel cleanly",
++        );
++        report["pointer"] = pointer(&tab, env, url).await?;
++        step(
++            STEPS[3],
++            "compact dark RTL grows the row and scrolls without reducing targets",
++        );
++        report["compact"] = compact(&tab, env, url).await?;
++        Ok(())
++    }
++    .await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact("material-segmented-failure.png"))
++            .await;
++    }
++    env.write_json("material-segmented.json", &report)?;
++    result?;
++    check!(tab.errors().is_empty(), "no segmented button page errors");
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index dc4f7a96e9448c67efd0c914e45ee2981908016b..bb6f1fa65872ce564f64f59b920681b919a3a5eb 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -36,6 +36,7 @@ mod scroll_modal_demo;
+ mod scroll_pair_demo;
+ mod scroll_popup_demo;
+ mod search_overlay_demo;
++mod segmented_demo;
+ mod side_sheet_demo;
+ mod slider_demo;
+ mod slider_forms_demo;
+@@ -89,6 +90,7 @@ use scroll_modal_demo::{ScrollModalDemo, ScrollModalDemoEvent};
+ use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
+ use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
+ use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
++use segmented_demo::{SegmentedDemo, SegmentedDemoEvent};
+ use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
+ use slider_demo::{SliderDemo, SliderDemoEvent};
+ use slider_forms_demo::{SliderFormsDemo, SliderFormsEvent};
+@@ -147,6 +149,7 @@ pub struct Gallery {
+     chip_demo: ChipDemo,
+     icon_button_demo: IconButtonDemo,
+     button_demo: ButtonDemo,
++    segmented_demo: SegmentedDemo,
+     slider_demo: SliderDemo,
+     slider_forms_demo: SliderFormsDemo,
+     range_slider_demo: RangeSliderDemo,
+@@ -224,6 +227,7 @@ impl Default for Gallery {
+             chip_demo: ChipDemo::default(),
+             icon_button_demo: IconButtonDemo::default(),
+             button_demo: ButtonDemo::default(),
++            segmented_demo: SegmentedDemo::default(),
+             slider_demo: SliderDemo::default(),
+             slider_forms_demo: SliderFormsDemo::default(),
+             range_slider_demo: RangeSliderDemo::default(),
+@@ -346,6 +350,7 @@ pub enum Message {
+     ChipDemo(ChipDemoEvent),
+     IconButtonDemo(IconButtonDemoEvent),
+     ButtonDemo(ButtonDemoEvent),
++    SegmentedDemo(SegmentedDemoEvent),
+     SliderDemo(SliderDemoEvent),
+     SliderForms(SliderFormsEvent),
+     RangeSliderDemo(RangeSliderDemoEvent),
+@@ -533,6 +538,9 @@ impl Application for Gallery {
+         if self.button_demo.visible() {
+             return self.button_demo.text_scale();
+         }
++        if self.segmented_demo.visible() {
++            return self.segmented_demo.text_scale();
++        }
+         if self.slider_demo.visible() {
+             return self.slider_demo.text_scale();
+         }
+@@ -562,6 +570,7 @@ impl Application for Gallery {
+         let chips = self.chip_demo.viewport_changed(width);
+         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
+         let buttons = self.button_demo.viewport_changed(width, height);
++        let segmented = self.segmented_demo.viewport_changed(width);
+         let sliders = self.slider_demo.viewport_changed(width, height);
+         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
+         let range_sliders = self.range_slider_demo.viewport_changed(width, height);
+@@ -631,6 +640,7 @@ impl Application for Gallery {
+             || chips
+             || icon_buttons
+             || buttons
++            || segmented
+             || sliders
+             || slider_forms
+             || range_sliders
+@@ -974,6 +984,9 @@ impl Application for Gallery {
+                 if i != button_demo::SECTION {
+                     self.button_demo.leave();
+                 }
++                if i != segmented_demo::SECTION {
++                    self.segmented_demo.leave();
++                }
+                 if i != slider_demo::SECTION {
+                     self.slider_demo.leave();
+                     self.slider_forms_demo.leave();
+@@ -999,6 +1012,7 @@ impl Application for Gallery {
+             Message::ChipDemo(event) => self.chip_demo.update(event),
+             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
+             Message::ButtonDemo(event) => self.button_demo.update(event),
++            Message::SegmentedDemo(event) => self.segmented_demo.update(event),
+             Message::SliderDemo(event) => self.slider_demo.update(event),
+             Message::SliderForms(event) => self.slider_forms_demo.update(event),
+             Message::RangeSliderDemo(event) => self.range_slider_demo.update(event),
+@@ -1218,6 +1232,9 @@ impl Application for Gallery {
+         if self.button_demo.visible() {
+             return self.button_demo.view(&t, self.dark);
+         }
++        if self.segmented_demo.visible() {
++            return self.segmented_demo.view(&t, self.dark);
++        }
+         if self.slider_demo.visible() {
+             return self.slider_demo.view(&t, self.dark);
+         }
+@@ -1343,6 +1360,7 @@ impl Application for Gallery {
+                             VerticalCenteredSliderDemo::show_button(&t),
+                             SliderInsetDemo::show_button(&t),
+                             ButtonDemo::show_button(&t),
++                            SegmentedDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -1975,6 +1993,7 @@ mod web {
+         state["chip_demo"] = s.chip_demo.inspect(&theme);
+         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
+         state["button_demo"] = s.button_demo.inspect(&theme, s.dark);
++        state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
+         state["slider_demo"] = s.slider_demo.inspect(&theme);
+         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
+         state["range_slider_demo"] = s.range_slider_demo.inspect(&theme, s.dark);
+diff --git a/examples/material-gallery/src/segmented_demo.rs b/examples/material-gallery/src/segmented_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..4c3a3e27c4452fd4785222c386ba82be037e39c9
+--- /dev/null
++++ b/examples/material-gallery/src/segmented_demo.rs
+@@ -0,0 +1,383 @@
++use std::{collections::BTreeSet, sync::OnceLock};
++
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, typography, BaselineSegmentedButtonOptions, BaselineSegmentedItem,
++    BaselineSegmentedSelection, ButtonKind, ChoiceState, Theme, VectorIcon,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const SHOW: &str = "segmented-demo-show";
++const BACK: &str = "segmented-demo-back";
++const THEME: &str = "segmented-demo-theme";
++const RTL: &str = "segmented-demo-rtl";
++const LARGE_TEXT: &str = "segmented-demo-large-text";
++const AFTER: &str = "segmented-demo-after";
++const TITLE: &str = "分段按鈕";
++const PADDING: f32 = 16.;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum Group {
++    Comparison,
++    View,
++    Filters,
++}
++
++#[derive(Clone, Copy)]
++struct Sample {
++    id: &'static str,
++    name: &'static str,
++    label: bool,
++    icon: Option<SampleIcon>,
++    disabled: bool,
++}
++
++impl Sample {
++    const fn text(id: &'static str, name: &'static str) -> Self {
++        Self {
++            id,
++            name,
++            label: true,
++            icon: None,
++            disabled: false,
++        }
++    }
++}
++
++const COMPARISON: [Sample; 2] = [
++    Sample::text("segment-left-pane", "左側"),
++    Sample::text("segment-right-pane", "右側"),
++];
++const VIEWS: [Sample; 3] = [
++    Sample {
++        icon: Some(SampleIcon::List),
++        ..Sample::text("segment-list-view", "清單檢視")
++    },
++    Sample {
++        disabled: true,
++        ..Sample::text("segment-table-view", "表格檢視")
++    },
++    Sample {
++        label: false,
++        icon: Some(SampleIcon::Grid),
++        ..Sample::text("segment-grid-view", "格狀檢視")
++    },
++];
++const FILTERS: [Sample; 5] = [
++    Sample::text("segment-new", "最新"),
++    Sample::text("segment-saved", "已儲存"),
++    Sample {
++        disabled: true,
++        ..Sample::text("segment-local", "離線")
++    },
++    Sample::text("segment-shared", "已分享"),
++    Sample::text("segment-archived", "封存"),
++];
++
++impl Group {
++    fn samples(self) -> &'static [Sample] {
++        match self {
++            Self::Comparison => &COMPARISON,
++            Self::View => &VIEWS,
++            Self::Filters => &FILTERS,
++        }
++    }
++
++    fn id(self) -> &'static str {
++        match self {
++            Self::Comparison => "segments-comparison",
++            Self::View => "segments-view",
++            Self::Filters => "segments-filters",
++        }
++    }
++
++    fn title(self) -> &'static str {
++        match self {
++            Self::Comparison => "對照位置",
++            Self::View => "檢視方式",
++            Self::Filters => "篩選條件",
++        }
++    }
++}
++
++#[derive(Clone)]
++pub enum SegmentedDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Choose(Group, &'static str),
++    After,
++}
++
++pub(crate) struct SegmentedDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    width: f32,
++    comparison: &'static str,
++    view: &'static str,
++    filters: BTreeSet<&'static str>,
++    activations: usize,
++    after: usize,
++}
++
++impl Default for SegmentedDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            width: 960.,
++            comparison: COMPARISON[1].id,
++            view: VIEWS[2].id,
++            filters: BTreeSet::new(),
++            activations: 0,
++            after: 0,
++        }
++    }
++}
++
++impl SegmentedDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        if self.width == width {
++            return false;
++        }
++        self.width = width;
++        self.visible
++    }
++
++    pub(crate) fn update(&mut self, event: SegmentedDemoEvent) {
++        use SegmentedDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            Choose(group, id)
++                if self.visible && group.samples().iter().any(|s| s.id == id && !s.disabled) =>
++            {
++                match group {
++                    Group::Comparison => self.comparison = id,
++                    Group::View => self.view = id,
++                    Group::Filters => {
++                        if !self.filters.remove(id) {
++                            self.filters.insert(id);
++                        }
++                    }
++                }
++                self.activations += 1;
++            }
++            Choose(..) => {}
++            After => self.after += 1,
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                TITLE,
++                ButtonKind::Outlined,
++                false,
++                Message::SegmentedDemo(SegmentedDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++            .suppress_repeated_activation()
++    }
++
++    fn row(&self, theme: &Theme, group: Group) -> View<Message> {
++        let selected: Vec<_> = self.filters.iter().copied().collect();
++        let selection = match group {
++            Group::Comparison => BaselineSegmentedSelection::Single(self.comparison),
++            Group::View => BaselineSegmentedSelection::Single(self.view),
++            Group::Filters => BaselineSegmentedSelection::Multiple(&selected),
++        };
++        let control = theme
++            .baseline_segmented_button(
++                BaselineSegmentedButtonOptions {
++                    id: group.id(),
++                    name: group.title(),
++                    available_width: (self.width - 2. * PADDING).clamp(58., 600.),
++                    direction: if self.rtl {
++                        LayoutDirection::RightToLeft
++                    } else {
++                        LayoutDirection::LeftToRight
++                    },
++                    text_scale: self.text_scale(),
++                    selection,
++                },
++                group.samples().iter().map(|s| BaselineSegmentedItem {
++                    id: s.id,
++                    label: s.label.then_some(s.name),
++                    name: Some(s.name),
++                    icon: s.icon.map(SampleIcon::art),
++                    disabled: s.disabled,
++                    on_activate: Message::SegmentedDemo(SegmentedDemoEvent::Choose(group, s.id)),
++                }),
++            )
++            .expect("valid Gallery segmented row");
++
++        View::new(Node::new(Role::Group, "").styled(Style::column().gap(8.))).children([
++            theme.heading(&format!("{}-title", group.id()), group.title()),
++            control,
++        ])
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use SegmentedDemoEvent::*;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++                .suppress_repeated_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::SegmentedDemo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation()
++                .suppress_repeated_activation(),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(
++                RTL,
++                "右起",
++                self.rtl,
++                Message::SegmentedDemo(ToggleDirection),
++            ),
++            toggle(
++                LARGE_TEXT,
++                "大字",
++                self.large_text,
++                Message::SegmentedDemo(ToggleLargeText),
++            ),
++        ]);
++        let after = theme
++            .button_with(
++                AFTER,
++                "完成",
++                ButtonKind::Text,
++                false,
++                Message::SegmentedDemo(After),
++            )
++            .accessible_activation()
++            .suppress_repeated_activation();
++        let status = if self.filters.is_empty() {
++            "未選取篩選條件".to_owned()
++        } else {
++            format!("已選取 {} 項篩選條件", self.filters.len())
++        };
++        let status = View::new(
++            Node::new(Role::Status, "")
++                .id("segmented-demo-status")
++                .text(status)
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .with_text_style(typography::BODY_MEDIUM)
++                        .foreground(theme.colors.on_surface),
++                ),
++        );
++
++        View::new(
++            Node::new(Role::Window, TITLE)
++                .id("segmented-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(PADDING)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .accessibility_scroll_pages()
++        .children([
++            theme.heading("segmented-demo-title", TITLE),
++            controls,
++            self.row(theme, Group::Comparison),
++            self.row(theme, Group::View),
++            self.row(theme, Group::Filters),
++            status,
++            after,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let c = theme.colors;
++        serde_json::json!({
++            "visible": self.visible, "width": self.width, "rtl": self.rtl, "dark": dark,
++            "text_scale": self.text_scale(), "comparison": self.comparison, "view": self.view,
++            "filters": self.filters, "activations": self.activations, "after": self.after,
++            "palette": {
++                "background": color(theme.background), "ink": color(c.on_surface),
++                "selection": color(c.secondary_container), "selection_ink": color(c.on_secondary_container),
++                "outline": color(c.outline), "focus": color(c.secondary),
++            },
++        })
++    }
++}
++
++#[derive(Clone, Copy)]
++enum SampleIcon {
++    List,
++    Grid,
++}
++
++impl SampleIcon {
++    fn art(self) -> &'static VectorIcon {
++        static LIST: OnceLock<VectorIcon> = OnceLock::new();
++        static GRID: OnceLock<VectorIcon> = OnceLock::new();
++        match self {
++            Self::List => LIST.get_or_init(|| {
++                VectorIcon::from_contours([
++                    [[2., 3.], [22., 3.], [22., 9.], [2., 9.]],
++                    [[2., 15.], [22., 15.], [22., 21.], [2., 21.]],
++                ])
++                .expect("valid list icon")
++            }),
++            Self::Grid => GRID.get_or_init(|| {
++                VectorIcon::from_contours([
++                    [[3., 3.], [10., 3.], [10., 10.], [3., 10.]],
++                    [[14., 3.], [21., 3.], [21., 10.], [14., 10.]],
++                    [[3., 14.], [10., 14.], [10., 21.], [3., 21.]],
++                    [[14., 14.], [21., 14.], [21., 21.], [14., 21.]],
++                ])
++                .expect("valid grid icon")
++            }),
++        }
++    }
++}
