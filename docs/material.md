@@ -143,6 +143,7 @@ does not change application state.
 | API | Current behavior |
 | --- | --- |
 | `button_with` | Filled, tonal, outlined and text; disabled state; 48-pixel touch area |
+| `baseline_segmented_button` | Two to five equal-width outlined choices with single or multiple selection and a shared border |
 | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
 | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
 | `command_menu` | Baseline M3 commands anchored to a caller's button, with grouped rows, keyboard focus, and scrolling |
@@ -1209,6 +1210,33 @@ in headless mode to replay it and capture PNGs without opening a window.
 [Material 3 split button specs](https://m3.material.io/components/split-button/specs) ·
 [Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.624e8f2da4007fc8.json) ·
 [Menu button keyboard and semantics](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/)
+
+## Baseline segmented buttons
+
+Use `Theme::baseline_segmented_button` for two to five related choices in
+one outlined row. Pass the actual available width, layout direction and
+text scale. Give the group and its items stable IDs. Each item supplies
+text, a vector icon with a spoken name, or both. The application applies
+the messages and passes the current selection to the next view.
+
+Use `BaselineSegmentedSelection::Single` for one required choice. It
+exposes a named radio group. Use `Multiple` for independent checkboxes.
+It allows any number of values, including zero. Disabled choices stay
+visible and do not accept focus or activation.
+
+Tab enters on the first enabled item. Left and Right move focus in the
+visual direction and skip disabled items. Space or Enter activates the
+focused choice. The default face is 40 dp tall. The 48 dp minimum target
+stays in place when labels wrap and the row grows. When the targets cannot
+fit, the row scrolls with a wheel, keyboard focus, or an accessibility
+reveal action. Choose a Connected button group for the Expressive style.
+Existing segmented helpers retain their behavior.
+
+In Material Gallery, choose 動作, then 分段按鈕. The example includes left
+and right layout directions, light and dark colors, and 200% text.
+
+[Material 3 segmented buttons](https://m3.material.io/components/segmented-buttons/overview) ·
+[Material 3 button groups](https://m3.material.io/components/button-groups/overview)
 
 ## Button groups
 
