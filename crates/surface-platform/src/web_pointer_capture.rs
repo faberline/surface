@@ -19,6 +19,7 @@ impl Pointer {
 pub(crate) enum DragOwner {
     Point,
     SliderPair,
+    TouchScroll,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -230,6 +231,27 @@ mod tests {
                 assert_eq!(capture.take_loss(), None);
             }
         }
+    }
+
+    #[test]
+    fn touch_scroll_arms_only_the_matched_touch_and_delivers_loss_once() {
+        let mut capture = Capture::default();
+        let pointer = Pointer::Touch(7);
+        capture.pointer_down(pointer);
+        capture.accept_down(Some(8), Some(DragOwner::TouchScroll));
+        assert!(!capture.capture_lost(pointer));
+        capture.pointer_down(pointer);
+        capture.accept_down(Some(7), Some(DragOwner::TouchScroll));
+        assert!(!capture.capture_lost(Pointer::MouseLike(7)));
+        assert!(capture.capture_lost(pointer));
+        assert_eq!(
+            capture.take_loss(),
+            Some(Contact {
+                pointer,
+                owner: DragOwner::TouchScroll
+            }),
+        );
+        assert_eq!(capture.take_loss(), None);
     }
 
     #[test]

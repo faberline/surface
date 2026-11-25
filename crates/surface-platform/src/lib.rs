@@ -561,6 +561,8 @@ impl<A: Application> Host<A> {
                 Some(DragOwner::Point)
             } else if runtime.has_slider_pair_capture() {
                 Some(DragOwner::SliderPair)
+            } else if touch.is_some() && runtime.has_touch_scroll_capture() {
+                Some(DragOwner::TouchScroll)
             } else {
                 None
             };
@@ -579,6 +581,7 @@ impl<A: Application> Host<A> {
                 self.dispatch_input(event_loop, |runtime| match contact.owner {
                     DragOwner::Point => runtime.cancel_point_drag(),
                     DragOwner::SliderPair => runtime.cancel_slider_pair_capture(),
+                    DragOwner::TouchScroll => runtime.cancel_touch_scroll_capture(),
                 });
             }
         }

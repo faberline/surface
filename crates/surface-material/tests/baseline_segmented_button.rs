@@ -657,3 +657,20 @@ fn measured_cjk_and_actual_accessibility_reveal_at_two_times_scale() {
     );
     assert_eq!(runtime.app().requests, [4]);
 }
+
+#[test]
+fn icon_stacks_when_more_chinese_text_fits_on_each_line() {
+    let mut runtime = Runtime::new(Model {
+        available_width: 288.,
+        rtl: true,
+        text_scale: 2.,
+        ..Model::default()
+    })
+    .unwrap();
+    draw(&mut runtime);
+    let icon = rect(&runtime, "walk-icon");
+    let label = rect(&runtime, "walk-label");
+    assert!(icon.y + icon.height < label.y);
+    assert!(label.width >= 56.);
+    assert!(label.height <= 80.);
+}

@@ -37,7 +37,7 @@ const SELECTED: &str = "material-segmented-selection.png";
 const PRESSED: &str = "material-segmented-pressed.png";
 const COMPACT: &str = "material-segmented-rtl-200.png";
 const SCROLLED: &str = "material-segmented-scroll-rtl.png";
-pub(super) const STEPS: [&str; 4] = ["M320", "M321", "M322", "M323"];
+pub(super) const STEPS: [&str; 5] = ["M320", "M321", "M322", "M323", "M324"];
 
 type Rect = [f64; 4];
 type Rgb = [u8; 3];
@@ -443,6 +443,208 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     )
 }
 
+async fn touch_at(tab: &Tab, kind: &str, point: Option<[f64; 2]>) -> Result<()> {
+    let mut points = Vec::new();
+    if let Some([x, y]) = point {
+        let canvas = tab.canvas_box().await?;
+        points.push(json!({"x":canvas[0] + x,"y":canvas[1] + y,"id":1}));
+    }
+    tab.cdp(
+        "Input.dispatchTouchEvent",
+        json!({"type":kind,"touchPoints":points}),
+    )
+    .await?;
+    tab.settle().await
+}
+
+async fn overflow_path(tab: &Tab, url: &str, rtl: bool, height: u32) -> Result<()> {
+    route(tab, url).await?;
+    if rtl {
+        activate(tab, THEME).await?;
+        activate(tab, RTL).await?;
+    }
+    activate(tab, TEXT).await?;
+    resize(tab, 240, height).await?;
+    for id in [LEFT, LIST, NEW] {
+        tab.press("Tab").await?;
+        focused(tab, id).await?;
+    }
+    Ok(())
+}
+
+async fn touch_overflow(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+    let mut replays = Vec::new();
+    const TOUCH_LTR: &str = "material-segmented-touch-ltr.png";
+    const TOUCH_RTL: &str = "material-segmented-touch-rtl.png";
+    for (rtl, dx, capture) in [(false, -1., TOUCH_LTR), (true, 1., TOUCH_RTL)] {
+        overflow_path(tab, url, rtl, 880).await?;
+        let port = bounds(tab, FILTERS).await?;
+        let start = part(tab, FILTERS, "track").await?;
+        check!(
+            start[2] > port[2] && contains(port, bounds(tab, NEW).await?),
+            "touch replay starts at the visible logical leading end"
+        );
+        let hit = bounds(tab, SAVED).await?;
+        let [x, y] = centre(hit);
+        check!(
+            contains(port, hit) && x + dx * 70. > 0. && x + dx * 70. < 240. && y > 85.,
+            "the touch journey starts on an enabled segment and stays in the viewport"
+        );
+        touch_at(tab, "touchStart", Some([x, y])).await?;
+        pressed(tab, Some(SAVED)).await?;
+        touch_at(tab, "touchMove", Some([x + dx * 2., y])).await?;
+        pressed(tab, Some(SAVED)).await?;
+        check!(
+            near(part(tab, FILTERS, "track").await?[0], start[0]),
+            "motion below the drag threshold retains the tap"
+        );
+        touch_at(tab, "touchMove", Some([x + dx * 30., y])).await?;
+        pressed(tab, None).await?;
+        let preview = part(tab, FILTERS, "track").await?;
+        check!(
+            (preview[0] - start[0]) * dx > 12. && near(preview[1], start[1]),
+            "horizontal drag reveals the row without moving the parent"
+        );
+        touch_at(tab, "touchCancel", None).await?;
+        let canceled = part(tab, FILTERS, "track").await?;
+        check!(
+            near(canceled[0], start[0]) && near(canceled[1], start[1]),
+            "touch cancellation restores the original offsets"
+        );
+        model(tab, "d.activations === 0 && d.filters.length === 0").await?;
+
+        touch_at(tab, "touchStart", Some([x, y])).await?;
+        touch_at(tab, "touchMove", Some([x + dx * 30., y])).await?;
+        touch_at(tab, "touchMove", Some([x + dx * 70., y - 85.])).await?;
+        touch_at(tab, "touchEnd", None).await?;
+        let end = part(tab, FILTERS, "track").await?;
+        check!(
+            (end[0] - start[0]) * dx > 25. && near(end[1], start[1]),
+            "drag keeps its axis until release"
+        );
+        let last = segment(tab, ARCHIVED).await?.hit;
+        check!(
+            contains(port, last),
+            "the trailing 48 dp target fits completely after drag"
+        );
+        model(tab, "d.activations === 0 && d.filters.length === 0").await?;
+        photo(tab, env, capture).await?;
+
+        let last_point = centre(last);
+        touch_at(tab, "touchStart", Some(last_point)).await?;
+        pressed(tab, Some(ARCHIVED)).await?;
+        touch_at(tab, "touchMove", Some([last_point[0] + 2., last_point[1]])).await?;
+        pressed(tab, Some(ARCHIVED)).await?;
+        touch_at(tab, "touchEnd", None).await?;
+        let tapped = model(
+            tab,
+            "d.activations === 1 && d.filters.join() === 'segment-archived'",
+        )
+        .await?;
+        replays.push(json!({
+            "rtl":rtl,"capture":capture,"start":start,"preview":preview,
+            "canceled":canceled,"end":end,"port":port,"trailing_target":last,"tap":tapped
+        }));
+    }
+
+    overflow_path(tab, url, false, 600).await?;
+    let start = part(tab, FILTERS, "track").await?;
+    let target = bounds(tab, SAVED).await?;
+    let x = centre(target)[0];
+    let y = target[1].max(0.) + 9.;
+    check!(
+        y < target[1] + target[3] && y + 55. < 600.,
+        "a contact in the overflowing row has room for vertical motion"
+    );
+    touch_at(tab, "touchStart", Some([x, y])).await?;
+    pressed(tab, Some(SAVED)).await?;
+    touch_at(tab, "touchMove", Some([x + 3., y + 28.])).await?;
+    pressed(tab, None).await?;
+    let preview = part(tab, FILTERS, "track").await?;
+    check!(
+        preview[1] > start[1] + 12. && near(preview[0], start[0]),
+        "vertical motion inside the row scrolls its parent and preserves horizontal offset"
+    );
+    touch_at(tab, "touchMove", Some([x + 70., y + 42.])).await?;
+    touch_at(tab, "touchEnd", None).await?;
+    let end = part(tab, FILTERS, "track").await?;
+    check!(
+        end[1] > preview[1] && near(end[0], start[0]),
+        "vertical motion stays locked to the parent after the horizontal coordinate changes"
+    );
+    model(tab, "d.activations === 0 && d.filters.length === 0").await?;
+    Ok(json!({"directions":replays,"parent":{"start":start,"preview":preview,"end":end}}))
+}
+
+async fn touch_capture_loss(tab: &Tab, url: &str) -> Result<Value> {
+    overflow_path(tab, url, false, 880).await?;
+    tab.eval(
+        "(() => {
+            const canvas = document.getElementById('surface');
+            window.segmentedTouchEvents = [];
+            for (const kind of ['gotpointercapture', 'lostpointercapture']) {
+                canvas.addEventListener(kind, event => {
+                    if (event.isTrusted && event.pointerType === 'touch') {
+                        window.segmentedTouchEvents.push({kind, id:event.pointerId});
+                    }
+                }, {capture:true,passive:true});
+            }
+        })()",
+    )
+    .await?;
+    let start = part(tab, FILTERS, "track").await?;
+    let [x, y] = centre(bounds(tab, SAVED).await?);
+    touch_at(tab, "touchStart", Some([x, y])).await?;
+    pressed(tab, Some(SAVED)).await?;
+    touch_at(tab, "touchMove", Some([x - 30., y])).await?;
+    let preview = part(tab, FILTERS, "track").await?;
+    check!(preview[0] < start[0] - 12., "held touch moves the row");
+    tab.wait_for("window.segmentedTouchEvents.some(event => event.kind === 'gotpointercapture')")
+        .await?;
+    let owner = tab
+        .eval("window.segmentedTouchEvents.find(event => event.kind === 'gotpointercapture').id")
+        .await?
+        .as_i64()
+        .context("the active touch capture ID")?;
+
+    tab.eval(&format!(
+        "document.getElementById('surface').releasePointerCapture({owner})"
+    ))
+    .await?;
+    touch_at(tab, "touchMove", Some([x - 40., y])).await?;
+    tab.wait_for(&format!(
+        "window.segmentedTouchEvents.some(event =>
+          event.kind === 'lostpointercapture' && event.id === {owner})"
+    ))
+    .await?;
+    let restored = part(tab, FILTERS, "track").await?;
+    check!(
+        near(restored[0], start[0]) && near(restored[1], start[1]),
+        "trusted capture loss restores the pre-gesture offset"
+    );
+    touch_at(tab, "touchEnd", None).await?;
+    let after_up = part(tab, FILTERS, "track").await?;
+    check!(
+        near(after_up[0], restored[0]),
+        "a stale release cannot revive the lost gesture"
+    );
+    model(tab, "d.activations === 0 && d.filters.length === 0").await?;
+    // A pointer gesture can move browser focus to the canvas. The
+    // Runtime must keep the original item and route the next key from it.
+    until(tab, "s.focused === 'segment-new'").await?;
+    let browser_focus = tab
+        .eval("document.activeElement?.dataset.surfaceId || document.activeElement?.id")
+        .await?;
+    tab.press("ArrowRight").await?;
+    until(tab, "s.focused === 'segment-saved'").await?;
+    model(tab, "d.activations === 0 && d.filters.length === 0").await?;
+    Ok(json!({
+        "start":start,"preview":preview,"restored":restored,"after_up":after_up,
+        "owner":owner,"events":tab.eval("window.segmentedTouchEvents").await?,
+        "browser_focus":browser_focus,"keyboard_resumed_at":SAVED,
+    }))
+}
+
 pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
     let tab = chrome.page(960, 924, 2.).await?;
     let mut report = json!({"browser":chrome.version});
@@ -468,6 +670,12 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
             "compact dark RTL grows the row and scrolls without reducing targets",
         );
         report["compact"] = compact(&tab, env, url).await?;
+        step(
+            STEPS[4],
+            "touch panning locks the scroll axis in both directions and preserves short taps",
+        );
+        report["touch_overflow"] = touch_overflow(&tab, env, url).await?;
+        report["touch_capture_loss"] = touch_capture_loss(&tab, url).await?;
         Ok(())
     }
     .await;

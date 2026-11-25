@@ -147,7 +147,7 @@ impl PointDragLayout {
 }
 
 #[derive(Clone, Copy)]
-enum Axis {
+pub(crate) enum Axis {
     Horizontal,
     Vertical,
 }
@@ -155,14 +155,14 @@ enum Axis {
 impl Axis {
     const ALL: [Self; 2] = [Self::Horizontal, Self::Vertical];
 
-    fn component(self, x: f32, y: f32) -> f32 {
+    pub(crate) fn component(self, x: f32, y: f32) -> f32 {
         match self {
             Self::Horizontal => x,
             Self::Vertical => y,
         }
     }
 
-    fn dominant(dx: f32, dy: f32) -> Option<Self> {
+    pub(crate) fn dominant(dx: f32, dy: f32) -> Option<Self> {
         if dx.abs() > dy.abs() {
             Some(Self::Horizontal)
         } else if dy.abs() > dx.abs() {
