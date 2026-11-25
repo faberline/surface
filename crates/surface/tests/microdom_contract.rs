@@ -256,6 +256,36 @@ fn parent_corners_are_opt_in_and_spring_state_stays_live_only() {
 }
 
 #[test]
+fn slider_value_text_is_optional_and_preserves_the_numeric_range() {
+    let range = RangeValue {
+        min: 0.,
+        max: 100.,
+        value: 25.,
+        step: 5.,
+    };
+    let slider = Node::new(Role::Slider, "音量").id("volume").range(range);
+    let ordinary = serde_json::to_value(&slider).unwrap();
+    assert!(ordinary.get("slider_value_text").is_none());
+    assert_eq!(serde_json::from_value::<Node>(ordinary).unwrap(), slider);
+
+    let json = serde_json::to_value(slider.with_slider_value_text("25％")).unwrap();
+    let restored: Node = serde_json::from_value(json).unwrap();
+    assert_eq!(restored.range_value(), Some(range));
+    assert_eq!(restored.slider_value_text(), Some("25％"));
+    assert_eq!(
+        restored.with_slider_value_text("  ").slider_value_text(),
+        None
+    );
+    assert_eq!(
+        Node::new(Role::Progress, "進度")
+            .range(range)
+            .with_slider_value_text("25％")
+            .slider_value_text(),
+        None
+    );
+}
+
+#[test]
 fn web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values() {
     let ordinary = Node::new(Role::Checkbox, "Coffee").checked(true);
     let json = serde_json::to_value(&ordinary).unwrap();

@@ -35,6 +35,7 @@ mod scroll_pair_demo;
 mod scroll_popup_demo;
 mod search_overlay_demo;
 mod side_sheet_demo;
+mod slider_demo;
 mod snackbar_demo;
 mod split_demo;
 mod switch_demo;
@@ -82,6 +83,7 @@ use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
 use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
 use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
+use slider_demo::{SliderDemo, SliderDemoEvent};
 use snackbar_demo::{SnackbarDemo, SnackbarEvent};
 use split_demo::{SplitDemo, SplitEvent};
 use surface::{Color, Node, RangeValue, Role, Style};
@@ -134,6 +136,7 @@ pub struct Gallery {
     tabs_demo: TabsDemo,
     chip_demo: ChipDemo,
     icon_button_demo: IconButtonDemo,
+    slider_demo: SliderDemo,
     drawer_demo: DrawerDemo,
     progress_demo: ProgressDemo,
     loading_demo: LoadingDemo,
@@ -205,6 +208,7 @@ impl Default for Gallery {
             tabs_demo: TabsDemo::default(),
             chip_demo: ChipDemo::default(),
             icon_button_demo: IconButtonDemo::default(),
+            slider_demo: SliderDemo::default(),
             drawer_demo: DrawerDemo::default(),
             progress_demo: ProgressDemo::default(),
             loading_demo: LoadingDemo::default(),
@@ -321,6 +325,7 @@ pub enum Message {
     TabsDemo(TabsDemoEvent),
     ChipDemo(ChipDemoEvent),
     IconButtonDemo(IconButtonDemoEvent),
+    SliderDemo(SliderDemoEvent),
     ScrollChoice(ScrollChoiceDemoEvent),
     ScrollPair(ScrollPairDemoEvent),
     ScrollPopup(ScrollPopupDemoEvent),
@@ -500,6 +505,9 @@ impl Application for Gallery {
         if self.icon_button_demo.visible() {
             return self.icon_button_demo.text_scale();
         }
+        if self.slider_demo.visible() {
+            return self.slider_demo.text_scale();
+        }
         if self.rail_large_text
             || self.snackbar_demo.large_text()
             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
@@ -513,6 +521,7 @@ impl Application for Gallery {
         let tabs = self.tabs_demo.viewport_changed(width);
         let chips = self.chip_demo.viewport_changed(width);
         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
+        let sliders = self.slider_demo.viewport_changed(width, height);
         let inline = self.wide_rail_demo.viewport_changed(width);
         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
         let drawer = self.drawer_demo.viewport_changed(width, height);
@@ -574,6 +583,7 @@ impl Application for Gallery {
             || tabs
             || chips
             || icon_buttons
+            || sliders
             || list_actions
             || list_media
             || list_reorder
@@ -588,6 +598,7 @@ impl Application for Gallery {
             || self.checkbox_demo.visible()
             || self.switch_demo.visible()
             || self.icon_button_demo.visible()
+            || self.slider_demo.visible()
             || self.tooltip_demo.visible()
             || self.scroll_popup_demo.visible()
             || self.button_group_demo.visible()
@@ -674,6 +685,7 @@ impl Application for Gallery {
         let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
         let radio = self.radio_demo.frame(&frame, &input, press, hovered);
         let icons = self.icon_button_demo.frame(&frame, input, pressed, hovered);
+        let sliders = self.slider_demo.observe_frame(input, pressed);
         let tabs = self
             .tabs_demo
             .observe_interaction(&frame, input, pressed, hovered);
@@ -684,7 +696,8 @@ impl Application for Gallery {
             || checkbox.rebuild
             || radio.rebuild
             || tabs
-            || icons.animation.rebuild;
+            || icons.animation.rebuild
+            || sliders;
         update.animation.request_next |= fab.animation.request_next
             || menu.request_next
             || switch.request_next
@@ -892,6 +905,9 @@ impl Application for Gallery {
                 if i != icon_button_demo::SECTION {
                     self.icon_button_demo.leave();
                 }
+                if i != slider_demo::SECTION {
+                    self.slider_demo.leave();
+                }
                 if i != tooltip_demo::SECTION {
                     self.tooltip_demo.leave();
                 }
@@ -909,6 +925,7 @@ impl Application for Gallery {
             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
             Message::ChipDemo(event) => self.chip_demo.update(event),
             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
+            Message::SliderDemo(event) => self.slider_demo.update(event),
             Message::Drawer(i) => self.drawer = i,
             Message::DrawerDemo(event) => self.drawer_demo.update(event),
             Message::Progress(event) => self.progress_demo.update(event),
@@ -1118,6 +1135,9 @@ impl Application for Gallery {
         if self.icon_button_demo.visible() {
             return self.icon_button_demo.view(&t, self.dark);
         }
+        if self.slider_demo.visible() {
+            return self.slider_demo.view(&t, self.dark);
+        }
         let mut children = vec![
             t.heading("gallery-title", "Material gallery"),
             t.row([
@@ -1222,6 +1242,7 @@ impl Application for Gallery {
                             TabsDemo::show_button(&t),
                             ChipDemo::show_button(&t),
                             IconButtonDemo::show_button(&t),
+                            SliderDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1853,6 +1874,7 @@ mod web {
         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
         state["chip_demo"] = s.chip_demo.inspect(&theme);
         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
+        state["slider_demo"] = s.slider_demo.inspect(&theme);
         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
         state["list_expand"] = s.list_expand_demo.inspect(&theme);
         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);

@@ -485,6 +485,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
         node.set_min_numeric_value(range.min);
         node.set_max_numeric_value(range.max);
         node.set_numeric_value_step(range.step);
+        if let Some(text) = authored.slider_value_text().filter(|_| range.is_valid()) {
+            node.set_value(text);
+        }
     }
     node
 }
@@ -1459,6 +1462,146 @@ mod tests {
             .action(&mut disabled, request(id, Action::Increment, None))
             .unwrap());
         assert_eq!(disabled.app().value, Some(6.));
+    }
+
+    #[test]
+    fn slider_projection_keeps_number_and_description_and_routes_token_actions() {
+        #[derive(Clone, Copy)]
+        enum Message {
+            Set(f64),
+            Disable,
+        }
+
+        struct Slider {
+            value: f64,
+            disabled: bool,
+        }
+        impl Application for Slider {
+            type Message = Message;
+
+            fn update(&mut self, message: Message) {
+                match message {
+                    Message::Set(value) => self.value = value,
+                    Message::Disable => self.disabled = true,
+                }
+            }
+
+            fn view(&self) -> View<Message> {
+                let range = surface::RangeValue {
+                    min: 0.,
+                    max: 10.,
+                    value: self.value,
+                    step: 2.,
+                };
+                let node = |role, name, id| {
+                    SurfaceNode::new(role, name)
+                        .id(id)
+                        .range(range)
+                        .styled(Style::row().width(Length::Px(120.)).height(Length::Px(48.)))
+                };
+                let current = View::new(
+                    node(SurfaceRole::Slider, "Volume", "volume")
+                        .with_slider_value_text(format!("{} 音量", self.value))
+                        .disabled(self.disabled),
+                )
+                .on_value(Message::Set)
+                .accessible_slider_adjustment();
+                let legacy =
+                    View::new(node(SurfaceRole::Slider, "Legacy", "legacy")).on_value(Message::Set);
+                let unbound =
+                    View::new(node(SurfaceRole::Slider, "Unbound", "unbound").disabled(true))
+                        .accessible_slider_adjustment();
+                let progress = View::new(
+                    node(SurfaceRole::Progress, "Progress", "progress")
+                        .with_slider_value_text("Only for Slider"),
+                );
+                View::new(SurfaceNode::new(SurfaceRole::Window, "Test").styled(Style::column()))
+                    .children([current, legacy, unbound, progress])
+            }
+        }
+
+        let mut runtime = Runtime::new(Slider {
+            value: 4.,
+            disabled: false,
+        })
+        .unwrap();
+        let mut tree = Tree::default();
+        let actions = [Action::SetValue, Action::Increment, Action::Decrement];
+        let request = |target_node, action, data| ActionRequest {
+            target_tree: TreeId::ROOT,
+            target_node,
+            action,
+            data,
+        };
+
+        for (current, action, data, expected) in [
+            (4., Action::Increment, None, 6.),
+            (6., Action::Decrement, None, 4.),
+            (
+                4.,
+                Action::SetValue,
+                Some(ActionData::NumericValue(9.)),
+                10.,
+            ),
+            (
+                10.,
+                Action::SetValue,
+                Some(ActionData::Value(" 3 ".into())),
+                4.,
+            ),
+        ] {
+            let projection = update(&mut runtime, &mut tree);
+            let (id, slider) = named(&projection, "Volume");
+            assert_eq!(slider.role(), Role::Slider);
+            assert_eq!(slider.numeric_value(), Some(current));
+            assert_eq!(slider.min_numeric_value(), Some(0.));
+            assert_eq!(slider.max_numeric_value(), Some(10.));
+            assert_eq!(slider.numeric_value_step(), Some(2.));
+            let value_text = format!("{current} 音量");
+            assert_eq!(slider.value(), Some(value_text.as_str()));
+            assert!(slider.supports_action(Action::Focus));
+            assert!(!slider.supports_action(Action::Click));
+            assert!(slider.supports_action(Action::SetValue));
+            assert!(slider.supports_action(Action::Decrement));
+            assert_eq!(slider.supports_action(Action::Increment), current < 10.);
+            assert!(tree
+                .action(&mut runtime, request(id, action, data.clone()))
+                .unwrap());
+            assert_eq!(runtime.app().value, expected);
+            assert!(!tree
+                .action(&mut runtime, request(id, action, data))
+                .unwrap());
+        }
+        assert_eq!(runtime.focused(), None);
+
+        let projection = update(&mut runtime, &mut tree);
+        for name in ["Legacy", "Unbound", "Progress"] {
+            let (id, node) = named(&projection, name);
+            assert_eq!(node.numeric_value(), Some(4.));
+            assert_eq!(node.value(), None);
+            for action in actions {
+                assert!(!node.supports_action(action));
+            }
+            assert!(!tree
+                .action(&mut runtime, request(id, Action::Increment, None))
+                .unwrap());
+        }
+        let (old_id, _) = named(&projection, "Volume");
+        runtime.apply(Message::Disable).unwrap();
+        assert!(!tree
+            .action(&mut runtime, request(old_id, Action::Increment, None))
+            .unwrap());
+        let projection = update(&mut runtime, &mut tree);
+        let (id, disabled) = named(&projection, "Volume");
+        assert!(disabled.is_disabled());
+        assert_eq!(disabled.value(), Some("4 音量"));
+        for action in actions {
+            assert!(!disabled.supports_action(action));
+        }
+        assert!(!tree
+            .action(&mut runtime, request(id, Action::Increment, None))
+            .unwrap());
+        assert_eq!(runtime.app().value, 4.);
     }
 
     #[test]

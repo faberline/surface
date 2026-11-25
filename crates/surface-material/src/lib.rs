@@ -61,6 +61,7 @@ mod split_button;
 mod split_button_layout;
 mod split_button_motion;
 mod standard_navigation_drawer;
+mod standard_slider;
 mod switch;
 mod tab_bar;
 mod time_dial;
@@ -205,6 +206,7 @@ pub use split_button_motion::SplitButtonMotion;
 pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
+pub use standard_slider::{StandardSliderMode, StandardSliderOptions, StandardSliderSize};
 pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
 pub use tab_bar::{
     TabActivation, TabBarInput, TabBarKind, TabBarLayout, TabBarMotion, TabBarOptions, TabItem,

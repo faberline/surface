@@ -302,9 +302,10 @@
       "spec": "https://m3.material.io/components/sliders/overview",
       "status": "partial",
       "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Single thumb; controlled finite range; pointer and keyboard"
+      "desktop_evidence": "Two headless native Metal replays check light 960 dp, dark RTL at 320 dp and 200% text, exact keyboard endpoints, disabled and focus restoration, and all five sizes. Four PNGs match through Page.screenshot, CLI and MCP. The macOS AccessKit adapter verifies actual bounded adjustment actions and rejects stale targets.",
+      "web_evidence": "Headless Chrome WebGPU M298–M301 checks five token sizes and actual paint, numeric and human-readable AX values, arrows and exact endpoints, continuous mouse and discrete touch, resize cancellation, and 320 dp dark RTL at 200% text.",
+      "implemented": "The horizontal Standard slider supports five sizes, continuous values and discrete stops, LTR and RTL input, fixed hit geometry, a narrow engaged handle, an independent focus outline, localized value text and opt-in native accessibility adjustment. The original slider API remains available. Centered, vertical, horizontal two-thumb Range and inset icons remain open.",
+      "unit_evidence": "Material and Runtime tests cover all five token rows, the measured rail and track, discrete ties and adjacent representable stops, exact endpoints, RTL, continuous pointer and discrete touch input, disabled rejection, cancellation, and accessible value updates."
     },
     {
       "id": "snackbar",

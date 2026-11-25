@@ -1,7 +1,8 @@
 //! The rendered accessibility tree and checked input actions for platform hosts.
 use crate::{
-    controls::descendant, focus_scroll::can_reveal, AppError, Application, Binding, Event,
-    KeyPress, Runtime, ScrollMetrics, TextOptions,
+    controls::{changed_slider_value, descendant},
+    focus_scroll::can_reveal,
+    AppError, Application, Binding, Event, KeyPress, Runtime, ScrollMetrics, TextOptions,
 };
 use std::{
     cell::{OnceCell, RefCell},
@@ -10,7 +11,8 @@ use std::{
     sync::LazyLock,
 };
 use surface::{
-    scroll_extent, AdjustableValue, ComputedDom, ComputedNode, MicroDom, Node, NodeId, Rect, Role,
+    scroll_extent, AdjustableValue, ComputedDom, ComputedNode, MicroDom, Node, NodeId, RangeValue,
+    Rect, Role,
 };
 
 static EMPTY_ROOT: LazyLock<Node> = LazyLock::new(|| Node::new(Role::Group, ""));
@@ -147,22 +149,54 @@ impl AccessibilityAdjustment {
     }
 }
 
+enum AdjustmentRange<'a> {
+    Group(&'a AdjustableValue),
+    Slider(RangeValue, Option<crate::SliderInputOptions>),
+}
+
+impl AdjustmentRange<'_> {
+    fn resolve(&self, action: AccessibilityAdjustment) -> Option<f64> {
+        match self {
+            Self::Group(range) => action.resolve(range),
+            Self::Slider(range, input) => {
+                let relative = |steps| {
+                    input.map_or_else(
+                        || range.value + steps * range.step,
+                        |policy| policy.relative(*range, steps),
+                    )
+                };
+                let request = match action {
+                    AccessibilityAdjustment::Increment => relative(1.),
+                    AccessibilityAdjustment::Decrement => relative(-1.),
+                    AccessibilityAdjustment::SetValue(request) => request,
+                };
+                changed_slider_value(*range, request, *input)
+            }
+        }
+    }
+}
+
 struct AdjustmentBinding<'a, M> {
-    range: &'a AdjustableValue,
+    range: AdjustmentRange<'a>,
     on_value: &'a dyn Fn(f64) -> M,
     on_step: Option<&'a dyn Fn(bool) -> M>,
 }
 
 impl<M> AdjustmentBinding<'_, M> {
     fn supports_step(&self, increment: bool) -> bool {
-        self.on_step.is_some() || self.range.step_value(increment).is_some()
+        let action = if increment {
+            AccessibilityAdjustment::Increment
+        } else {
+            AccessibilityAdjustment::Decrement
+        };
+        self.on_step.is_some() || self.range.resolve(action).is_some()
     }
 
     fn message(&self, action: AccessibilityAdjustment) -> Option<M> {
         match (action, self.on_step) {
             (AccessibilityAdjustment::Increment, Some(step)) => Some(step(true)),
             (AccessibilityAdjustment::Decrement, Some(step)) => Some(step(false)),
-            _ => action.resolve(self.range).map(self.on_value),
+            _ => self.range.resolve(action).map(self.on_value),
         }
     }
 }
@@ -598,11 +632,20 @@ impl<M> AccessibilityFrame<'_, M> {
 
     fn adjustment_binding(&self, id: NodeId) -> Option<AdjustmentBinding<'_, M>> {
         let source = self.node(id).filter(visible_enabled_control)?;
-        let range = source.node.accessibility_adjustable()?;
         let binding = self.bindings.get(&id)?;
+        let on_value = binding.value.as_deref()?;
+        if binding.accessible_slider_adjustment && source.node.role() == Role::Slider {
+            let range = source.node.range_value().filter(|range| range.is_valid())?;
+            return Some(AdjustmentBinding {
+                range: AdjustmentRange::Slider(range, binding.slider_input),
+                on_value,
+                on_step: None,
+            });
+        }
+        let range = source.node.accessibility_adjustable()?;
         Some(AdjustmentBinding {
-            range,
-            on_value: binding.value.as_deref()?,
+            range: AdjustmentRange::Group(range),
+            on_value,
             on_step: range.value.and(binding.accessible_step.as_deref()),
         })
     }
@@ -985,7 +1028,7 @@ impl<A: Application> Runtime<A> {
     }
 
     /// Adjust only the control named by the current rendered action token.
-    /// AX adjustment changes a draft value without moving keyboard focus.
+    /// AX adjustment changes an opted-in control's value without moving keyboard focus.
     pub fn accessibility_adjust(
         &mut self,
         target: &AccessibilityAdjustmentTarget,

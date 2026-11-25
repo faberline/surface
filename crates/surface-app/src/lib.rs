@@ -22,6 +22,7 @@ mod motion;
 mod paint_export;
 mod press_ripple;
 mod scroll_control;
+mod slider;
 mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
@@ -56,6 +57,7 @@ pub use scroll_control::{
     HorizontalScroll, HorizontalScrollResponse, ScrollMetrics, ScrollTarget, VerticalScroll,
     VerticalScrollResponse,
 };
+pub use slider::{SliderInputOptions, SliderScale};
 pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
 use std::{
     cell::{Cell, RefCell},
@@ -86,6 +88,8 @@ pub struct View<M> {
     single_line_text_horizontal_inset: f32,
     text_input_placeholder: Option<Arc<(String, Color)>>,
     value: Option<Rc<dyn Fn(f64) -> M>>,
+    accessible_slider_adjustment: bool,
+    slider_input: Option<SliderInputOptions>,
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
@@ -173,6 +177,8 @@ impl<M> View<M> {
             single_line_text_horizontal_inset: 0.,
             text_input_placeholder: None,
             value: None,
+            accessible_slider_adjustment: false,
+            slider_input: None,
             accessible_step: None,
             roving: None,
             dismiss: None,
@@ -463,6 +469,21 @@ impl<M> View<M> {
     /// Bind a slider value or an opted-in adjustable Group.
     pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
         self.value = Some(Rc::new(handler));
+        self
+    }
+    /// Offer native accessibility adjustment on a visible, enabled slider.
+    ///
+    /// The slider needs a valid range and [Self::on_value]. SetValue and the
+    /// available directional steps use the slider's normal snapping policy.
+    /// Adjusting through this path does not move keyboard focus.
+    pub fn accessible_slider_adjustment(mut self) -> Self {
+        self.accessible_slider_adjustment = true;
+        self
+    }
+    /// Use explicit horizontal input rules for this Slider. The rendered
+    /// rail spans the node's bounds inside its padding.
+    pub fn with_slider_input(mut self, options: SliderInputOptions) -> Self {
+        self.slider_input = Some(options);
         self
     }
     /// Handle native Increment (`true`) or Decrement (`false`) directly.
@@ -1057,6 +1078,8 @@ struct Binding<M> {
     single_line_text_horizontal_inset: f32,
     text_input_placeholder: Option<Arc<(String, Color)>>,
     value: Option<Rc<dyn Fn(f64) -> M>>,
+    accessible_slider_adjustment: bool,
+    slider_input: Option<SliderInputOptions>,
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
@@ -1323,7 +1346,12 @@ impl<A: Application> Runtime<A> {
         self.discard_wheel_burst();
         let ripple_changed = self.cancel_press_ripple();
         let pointer_changed = self.pointer_position.take().is_some();
-        let cancelled = if self.touch.is_some() {
+        let cancelled = if self.touch.is_some()
+            || self
+                .range_drag
+                .as_ref()
+                .is_some_and(controls::RangeDrag::has_input_policy)
+        {
             self.cancel_pointer()?
         } else {
             self.cancel_drag()?
@@ -1538,6 +1566,8 @@ impl<A: Application> Runtime<A> {
                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
                     text_input_placeholder: view.text_input_placeholder,
                     value: view.value,
+                    accessible_slider_adjustment: view.accessible_slider_adjustment,
+                    slider_input: view.slider_input,
                     accessible_step: view.accessible_step,
                     roving: view.roving,
                     dismiss: view.dismiss,
