@@ -101,6 +101,35 @@ pub(crate) struct RangeDrag {
     id: String,
     bounds: Rect,
     range: RangeValue,
+    input: Option<crate::SliderInputOptions>,
+}
+
+impl RangeDrag {
+    pub(crate) fn has_input_policy(&self) -> bool {
+        self.input.is_some()
+    }
+
+    fn matches_range(&self, current: RangeValue) -> bool {
+        current.min == self.range.min
+            && current.max == self.range.max
+            && current.step == self.range.step
+    }
+}
+
+/// Normalize requests from the regular setter and native accessibility.
+pub(crate) fn changed_slider_value(
+    range: RangeValue,
+    request: f64,
+    input: Option<crate::SliderInputOptions>,
+) -> Option<f64> {
+    if !request.is_finite() {
+        return None;
+    }
+    let value = match input {
+        Some(input) => input.resolve_value(range, request)?,
+        None => range.snap(request),
+    };
+    (value != range.value).then_some(value)
 }
 
 fn has_extent(layout: &ComputedDom, id: NodeId) -> bool {
@@ -608,17 +637,35 @@ impl<A: Application> Runtime<A> {
             self.ime_area = None;
             self.text_drag = None;
         }
-        if self.range_drag.as_ref().is_some_and(|drag| {
-            self.dom.by_id(&drag.id).is_none_or(|id| {
-                !self.in_scope(id)
-                    || self
-                        .dom
-                        .get(id)
-                        .is_ok_and(|n| n.is_disabled() || n.role() != Role::Slider)
-            })
-        }) {
+        if self
+            .range_drag
+            .as_ref()
+            .is_some_and(|drag| !self.valid_range_drag(drag))
+        {
+            if self
+                .range_drag
+                .as_ref()
+                .is_some_and(RangeDrag::has_input_policy)
+            {
+                self.pressed = None;
+            }
             self.range_drag = None;
         }
+    }
+    fn valid_range_drag(&self, drag: &RangeDrag) -> bool {
+        let Some(id) = self.dom.by_id(&drag.id).filter(|id| self.in_scope(*id)) else {
+            return false;
+        };
+        let node = self.dom.get(id).expect("stable slider exists");
+        if node.is_disabled() || node.role() != Role::Slider {
+            return false;
+        }
+        !drag.has_input_policy()
+            || (self.bindings.get(&id).is_some_and(|binding| {
+                binding.value.is_some() && binding.slider_input == drag.input
+            }) && node
+                .range_value()
+                .is_some_and(|range| drag.matches_range(range)))
     }
     pub(crate) fn clear_modal_pointer(&mut self) {
         self.modal_outside = false;
@@ -726,6 +773,17 @@ impl<A: Application> Runtime<A> {
         };
         let node = self.dom.get(id)?;
         if let Some(range) = node.range_value().filter(|_| node.role() == Role::Slider) {
+            if let Some(input) = self
+                .bindings
+                .get(&id)
+                .and_then(|binding| binding.slider_input)
+            {
+                let Some(value) = input.key_value(range, key) else {
+                    return Ok(false);
+                };
+                let id = self.stable(id).expect("slider has ID");
+                return self.set_value(&id, value);
+            }
             let value = match key {
                 EditKey::Left | EditKey::Down => range.value - range.step,
                 EditKey::Right | EditKey::Up => range.value + range.step,
@@ -856,13 +914,12 @@ impl<A: Application> Runtime<A> {
             })
             .ok_or_else(|| AppError::MissingControl(key.to_owned()))?;
         let range = self.dom.get(id)?.range_value().expect("validated slider");
-        let value = range.snap(value);
-        if value == range.value {
+        let binding = self.bindings.get(&id);
+        let input = binding.and_then(|binding| binding.slider_input);
+        let Some(value) = changed_slider_value(range, value, input) else {
             return Ok(false);
-        }
-        let message = self
-            .bindings
-            .get(&id)
+        };
+        let message = binding
             .and_then(|b| b.value.as_ref())
             .map(|handler| handler(value));
         self.message(message)
@@ -875,6 +932,11 @@ impl<A: Application> Runtime<A> {
         if node.role() != Role::Slider {
             return false;
         }
+        let binding = self.bindings.get(&id);
+        let input = binding.and_then(|binding| binding.slider_input);
+        if input.is_some() && binding.is_none_or(|binding| binding.value.is_none()) {
+            return false;
+        }
         let Some(computed) = &self.computed else {
             return false;
         };
@@ -885,6 +947,7 @@ impl<A: Application> Runtime<A> {
             id: self.stable(id).expect("slider has ID"),
             bounds,
             range: node.range_value().expect("validated range"),
+            input,
         });
         true
     }
@@ -895,9 +958,22 @@ impl<A: Application> Runtime<A> {
         if !x.is_finite() || drag.bounds.width <= 0. {
             return Ok(false);
         }
-        let value = drag.range.min
-            + ((x - drag.bounds.x) / drag.bounds.width).clamp(0., 1.) as f64
-                * (drag.range.max - drag.range.min);
+        let value = if let Some(input) = drag.input {
+            if self.computed.as_ref().is_some_and(|layout| {
+                self.dom.by_id(&drag.id).is_none_or(|id| {
+                    self.dom.get(id).is_ok_and(|node| {
+                        layout.nodes[id.index()].bounds.inset(node.style().padding) != drag.bounds
+                    })
+                })
+            }) {
+                return self.cancel_pointer();
+            }
+            input.pointer_value(drag.range, drag.bounds, x)
+        } else {
+            drag.range.min
+                + ((x - drag.bounds.x) / drag.bounds.width).clamp(0., 1.) as f64
+                    * (drag.range.max - drag.range.min)
+        };
         let id = drag.id.clone();
         self.set_value(&id, value).map(|_| true)
     }

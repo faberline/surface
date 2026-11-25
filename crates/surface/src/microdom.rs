@@ -217,6 +217,8 @@ pub struct Node {
     #[serde(default)]
     range: Option<RangeValue>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    slider_value_text: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     adjustable: Option<Box<AdjustableValue>>,
     #[serde(skip)]
     web_adjustable_value_description: bool,
@@ -294,6 +296,7 @@ impl Node {
             selected: None,
             mixed: false,
             range: None,
+            slider_value_text: None,
             adjustable: None,
             web_adjustable_value_description: false,
             tab_index: None,
@@ -890,6 +893,18 @@ impl Node {
     pub fn range(mut self, value: RangeValue) -> Self {
         self.range = Some(value);
         self
+    }
+    /// Supply a human-readable current value for a Slider. The numeric
+    /// range still supplies the value used by input and accessibility.
+    pub fn with_slider_value_text(mut self, text: impl Into<String>) -> Self {
+        let text = text.into();
+        self.slider_value_text = (!text.trim().is_empty()).then_some(text);
+        self
+    }
+    pub fn slider_value_text(&self) -> Option<&str> {
+        self.slider_value_text
+            .as_deref()
+            .filter(|text| self.role == Role::Slider && !text.trim().is_empty())
     }
     /// Expose this named Group as an adjustable control in accessibility
     /// adapters. Slider geometry, pointer hit testing and legacy ranges are

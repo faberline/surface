@@ -186,7 +186,8 @@ does not change application state.
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `chip_with_options` | Flat and elevated Assist, Filter and Suggestion, plus Input with one or two named actions |
 | `chip_in_grid` / `chip_grid` | Measured rows and one Tab entry, with arrows between the individual actions |
-| `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
+| `standard_slider` | Horizontal Standard slider. Five track sizes, continuous values or discrete stops, mirrored RTL input, localized value text, and an independent focus outline. |
+| `slider` | Original controlled range and fixed track. Supports pointer drag, arrows, Home/End and Page Up/Down. |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
 | `dialog_with` | Static Basic dialog with optional icon, headline, supporting text and actions |
 | `basic_dialog` / `basic_dialog_with_motion` | Measured Basic or alert dialog with a scrolling body, fixed actions, focus management and optional fade |
@@ -983,6 +984,28 @@ and place the Web anchor near the top or bottom.
 [Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.1a076cec8bc202c2.json) ·
 [FAB Menu accessibility](https://m3.material.io/components/fab-menu/accessibility) ·
 [Pinned Compose FAB Menu](https://github.com/androidx/androidx/blob/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButtonMenu.kt)
+
+## Sliders
+
+Use `Theme::standard_slider` to build a horizontal Standard slider.
+Set a stable ID, a localized name, the bounds, and the current value.
+The caller applies each requested value. Use Continuous to keep the
+pointer position as a value and set the keyboard step. Use Discrete
+to divide the range into equal intervals, including both endpoints.
+
+Use the same direction for the slider and its surrounding layout.
+In RTL, the logical minimum is on the right. Left and Right follow
+the physical rail. Up and Down change the logical value. Home and
+End reach the exact bounds. Page Up and Page Down use larger changes.
+
+Set `engaged` from the current focus or accepted press in the frame
+hook. The handle narrows from 4 dp to 2 dp while engaged. Its hit
+area keeps the same size. If you supply a localized value label,
+reserve at least 53 dp above the handle and more for enlarged text.
+The label also supplies the human-readable accessibility value.
+
+[Material 3 sliders](https://m3.material.io/components/sliders/specs) ·
+[WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
 
 ## Icon buttons
 

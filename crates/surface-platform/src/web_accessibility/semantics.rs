@@ -136,6 +136,9 @@ pub(super) fn element(
                 element.set_attribute("aria-valuemin", &range.min.to_string())?;
                 element.set_attribute("aria-valuemax", &range.max.to_string())?;
                 element.set_attribute("aria-valuenow", &range.value.to_string())?;
+                if let Some(text) = node.slider_value_text() {
+                    element.set_attribute("aria-valuetext", text)?;
+                }
             }
         }
         Some("textbox") => {
