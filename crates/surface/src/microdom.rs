@@ -113,6 +113,7 @@ pub(crate) struct AbsoluteOverlayFit {
 pub(crate) struct PressRipple {
     pub(crate) after: Option<String>,
     pub(crate) presented: Option<PresentedPressRipple>,
+    requires_activation: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -157,6 +158,10 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     dialog_heading: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    tab_controls: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    tab_panel_label: Option<(String, String)>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     expanded: Option<bool>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     disclosure: bool,
@@ -182,6 +187,8 @@ pub struct Node {
     focus_outline_width: Option<f32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     state_layer_alphas: Option<[u8; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    press_state_layer_ink: Option<Color>,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     focus_outline_from_parent: bool,
     pub(crate) stable_id: Option<String>,
@@ -249,6 +256,8 @@ impl Node {
             described_by_text: None,
             alert_dialog: false,
             dialog_heading: None,
+            tab_controls: None,
+            tab_panel_label: None,
             expanded: None,
             disclosure: false,
             horizontal_slide: 0.,
@@ -262,6 +271,7 @@ impl Node {
             focus_color: None,
             focus_outline_width: None,
             state_layer_alphas: None,
+            press_state_layer_ink: None,
             focus_outline_from_parent: false,
             role,
             name: name.into(),
@@ -381,8 +391,28 @@ impl Node {
         self.press_ripple = Some(Arc::new(PressRipple {
             after,
             presented: None,
+            requires_activation: true,
         }));
         self
+    }
+
+    /// Enable a bounded pointer ripple on an enabled, focusable node.
+    /// The node can give press feedback without an activation binding.
+    /// This adds no accessibility action or keyboard activation.
+    pub fn press_ripple_on_focusable(mut self) -> Self {
+        self.press_ripple = Some(Arc::new(PressRipple {
+            after: None,
+            presented: None,
+            requires_activation: false,
+        }));
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn allows_unbound_press_ripple(&self) -> bool {
+        self.press_ripple
+            .as_ref()
+            .is_some_and(|ripple| !ripple.requires_activation)
     }
 
     /// Whether this live node requests pointer ripple feedback.
@@ -595,6 +625,17 @@ impl Node {
         self.state_layer_alphas = Some([hover, focus, press]);
         self
     }
+    /// Set the color used for pressed state feedback and its pointer ripple.
+    /// Hover and keyboard focus keep the ordinary state-layer color.
+    pub fn press_state_layer_ink(mut self, color: Color) -> Self {
+        self.press_state_layer_ink = Some(color);
+        self
+    }
+
+    pub(crate) fn resolved_press_state_layer_ink(&self) -> Color {
+        self.press_state_layer_ink.unwrap_or(self.style.state_layer)
+    }
+
     pub(crate) fn resolved_state_layer_alphas(&self) -> [u8; 3] {
         self.state_layer_alphas.unwrap_or([20, 0, 31])
     }
@@ -685,6 +726,44 @@ impl Node {
             .as_deref()
             .filter(|_| self.role == Role::Dialog)
     }
+    /// Declare the stable ID of the panel controlled by this Tab.
+    ///
+    /// An active panel reciprocates with [Self::tab_panel_labelled_by].
+    /// Keep inactive panel content unmounted. A host may publish a hidden
+    /// reference target for an explicitly unselected Tab.
+    pub fn tab_controls(mut self, panel_id: impl Into<String>) -> Self {
+        self.tab_controls = (self.role == Role::Tab).then(|| panel_id.into());
+        self
+    }
+
+    pub fn tab_controls_target(&self) -> Option<&str> {
+        self.tab_controls
+            .as_deref()
+            .filter(|_| self.role == Role::Tab)
+    }
+
+    /// Opt this Group into tab panel semantics. The named TabList is a
+    /// direct sibling. Its selected Tab must declare this panel's ID.
+    /// Use [Self::tab_index] when plain panel content needs a Tab stop.
+    pub fn tab_panel_labelled_by(
+        mut self,
+        tablist_id: impl Into<String>,
+        tab_id: impl Into<String>,
+    ) -> Self {
+        self.tab_panel_label =
+            (self.role == Role::Group).then(|| (tablist_id.into(), tab_id.into()));
+        self
+    }
+
+    /// The authored (TabList, Tab) stable IDs. The accessibility frame
+    /// validates the relationship against the current scope and view.
+    pub fn tab_panel_label_target(&self) -> Option<(&str, &str)> {
+        self.tab_panel_label
+            .as_ref()
+            .filter(|_| self.role == Role::Group)
+            .map(|(tablist, tab)| (tablist.as_str(), tab.as_str()))
+    }
+
     /// Set the open or closed state of a button that controls a disclosure.
     pub fn disclosure_expanded(mut self, value: bool) -> Self {
         self.expanded = (self.role == Role::Button).then_some(value);

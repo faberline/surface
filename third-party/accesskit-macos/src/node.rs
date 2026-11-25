@@ -41,6 +41,16 @@ const SCROLL_ACTIONS: [(&str, Action); 5] = [
     ("AXScrollDownByPage", Action::ScrollDown),
 ];
 
+fn tab_member_filter(node: &NodeRef) -> FilterResult {
+    match filter(node) {
+        // The bar's scroll area keeps its own AX element and page actions.
+        // Pass through it only when listing the owning TabList's tabs.
+        FilterResult::Include if node.role() == Role::ScrollView => FilterResult::ExcludeNode,
+        FilterResult::Include if node.role() != Role::Tab => FilterResult::ExcludeSubtree,
+        result => result,
+    }
+}
+
 fn ns_role(node: &NodeRef) -> &'static NSAccessibilityRole {
     let role = node.role();
     // TODO: Handle special cases.
@@ -1294,8 +1304,7 @@ declare_class!(
                     return None;
                 }
                 let platform_nodes = node
-                    .filtered_children(filter)
-                    .filter(|child| child.role() == Role::Tab)
+                    .filtered_children(tab_member_filter)
                     .map(|tab| context.get_or_create_platform_node(tab.id()))
                     .collect::<Vec<Id<PlatformNode>>>();
                 Some(NSArray::from_vec(platform_nodes))
@@ -1502,6 +1511,66 @@ impl PlatformNode {
 mod tests {
     use super::*;
     use accesskit::{Node, NodeId, TreeId, TreeInfo, TreeUpdate};
+
+    #[test]
+    fn ax_tabs_traverses_scroll_regions_within_the_owning_tab_list() {
+        let make = |id, role, children: &[u64]| {
+            let mut node = Node::new(role);
+            node.set_children(children.iter().copied().map(NodeId).collect::<Vec<_>>());
+            (NodeId(id), node)
+        };
+        let mut scroll = make(5, Role::ScrollView, &[6, 8, 10, 12]);
+        scroll.1.add_action(Action::ScrollRight);
+        let mut hidden = make(12, Role::ScrollView, &[13]);
+        hidden.1.set_hidden();
+        let mut group = make(8, Role::Group, &[9]);
+        group.1.set_label("Other controls");
+        let mut nested_list = make(10, Role::TabList, &[11]);
+        nested_list.1.set_label("Other tabs");
+        let tree = Tree::new(
+            TreeUpdate {
+                nodes: vec![
+                    make(1, Role::TabList, &[2, 3, 5, 14]),
+                    make(2, Role::Tab, &[]),
+                    make(3, Role::GenericContainer, &[4]),
+                    make(4, Role::Tab, &[]),
+                    scroll,
+                    make(6, Role::GenericContainer, &[7]),
+                    make(7, Role::Tab, &[]),
+                    group,
+                    make(9, Role::Tab, &[]),
+                    nested_list,
+                    make(11, Role::Tab, &[]),
+                    hidden,
+                    make(13, Role::Tab, &[]),
+                    make(14, Role::Tab, &[]),
+                ],
+                tree: Some(TreeInfo::new(NodeId(1))),
+                tree_id: TreeId::ROOT,
+                focus: NodeId(1),
+            },
+            true,
+        );
+        let root = tree.state().root();
+        let find = |id| {
+            tree.state()
+                .node_by_tree_local_id(NodeId(id), TreeId::ROOT)
+                .unwrap()
+                .id()
+        };
+        let ids = |filter: fn(&NodeRef) -> FilterResult| {
+            root.filtered_children(filter)
+                .map(|node| node.id())
+                .collect::<Vec<_>>()
+        };
+        assert_eq!(ids(tab_member_filter), [2, 4, 7, 14].map(find));
+        assert_eq!(ids(filter), [2, 4, 5, 14].map(find));
+        let viewport = root
+            .filtered_children(filter)
+            .find(|node| node.role() == Role::ScrollView)
+            .unwrap();
+        assert!(viewport.data().supports_action(Action::ScrollRight));
+    }
 
     #[test]
     fn checkbox_ax_values_distinguish_unchecked_checked_and_mixed() {

@@ -858,14 +858,17 @@ fn compile_into<Op: CompileOp>(
                 .then_some((ripple.presented?, ripple.after.as_deref()))
         });
         let [hover_alpha, focus_alpha, press_alpha] = n.resolved_state_layer_alphas();
-        if s.state_layer.3 > 0 && !n.is_disabled() {
+        let press_ink = n.resolved_press_state_layer_ink();
+        if (s.state_layer.3 > 0 || press_ink.3 > 0) && !n.is_disabled() {
             let mut target = Some(*id);
+            let mut ink = s.state_layer;
             let mut opacity = 0;
             while let Some(ancestor) = target {
                 if interaction.pressed == Some(ancestor) {
                     // The held wave provides the pressed ink, including on
                     // its first transparent frame. Avoid doubling it with
                     // the hovered or focused fill during the same contact.
+                    ink = press_ink;
                     opacity = if ancestor == *id && active_wave.is_some() {
                         0
                     } else {
@@ -880,11 +883,8 @@ fn compile_into<Op: CompileOp>(
                 }
                 target = dom.get(ancestor).ok().and_then(|n| n.parent());
             }
-            if opacity > 0 {
-                ops.push(
-                    *id,
-                    outline.fill(g.bounds, g.clip, state_ink(s.state_layer, opacity)),
-                );
+            if opacity > 0 && ink.3 > 0 {
+                ops.push(*id, outline.fill(g.bounds, g.clip, state_ink(ink, opacity)));
             }
         }
         let focus_color = n
@@ -901,7 +901,7 @@ fn compile_into<Op: CompileOp>(
             }
         });
         if let Some((wave, after)) = active_wave {
-            let mut ink = state_ink(s.state_layer, press_alpha);
+            let mut ink = state_ink(press_ink, press_alpha);
             ink.3 = (f32::from(ink.3) * wave.opacity).round() as u8;
             let wave = press_ripple::contour(
                 wave,
