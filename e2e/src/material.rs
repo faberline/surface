@@ -42,6 +42,8 @@ mod material_fab;
 mod material_fab_menu;
 #[path = "material_flexible_navigation_bar.rs"]
 mod material_flexible_navigation_bar;
+#[path = "material_icon_buttons.rs"]
+mod material_icon_buttons;
 #[path = "material_list_actions.rs"]
 mod material_list_actions;
 #[path = "material_list_corners.rs"]
@@ -138,7 +140,7 @@ pub const STEPS: &[&str] = &[
     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
-    "M287", "M288", "M289", "M290", "M291", "M292", "M293",
+    "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -262,7 +264,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_checkbox::run(env, chrome, &url).await?;
     material_radio::run(env, chrome, &url).await?;
     material_tabs::run(env, chrome, &url).await?;
-    material_chips::run(env, chrome, &url).await
+    material_chips::run(env, chrome, &url).await?;
+    material_icon_buttons::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {

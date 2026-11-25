@@ -234,6 +234,28 @@ fn web_listbox_round_trip_preserves_checked_radios_and_legacy_json() {
 }
 
 #[test]
+fn parent_corners_are_opt_in_and_spring_state_stays_live_only() {
+    let plain = Node::new(Role::Group, "Face");
+    let json = serde_json::to_value(&plain).unwrap();
+    assert!(json.get("interaction_corners_from_parent").is_none());
+    assert!(json.get("interaction_corner_spring").is_none());
+    assert_eq!(serde_json::from_value::<Node>(json).unwrap(), plain);
+
+    let live = plain
+        .id("face")
+        .interaction_corners(None, Some(Corners::all(8.)), None)
+        .interaction_corners_from_parent()
+        .animate_interaction_corners_with_spring(800., 0.6);
+    assert_eq!(live.interaction_corner_spring(), Some([800., 0.6]));
+    let json = serde_json::to_value(&live).unwrap();
+    assert_eq!(json["interaction_corners_from_parent"], true);
+    assert!(json.get("interaction_corner_spring").is_none());
+    let restored: Node = serde_json::from_value(json.clone()).unwrap();
+    assert_eq!(restored.interaction_corner_spring(), None);
+    assert_eq!(serde_json::to_value(restored).unwrap(), json);
+}
+
+#[test]
 fn web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values() {
     let ordinary = Node::new(Role::Checkbox, "Coffee").checked(true);
     let json = serde_json::to_value(&ordinary).unwrap();

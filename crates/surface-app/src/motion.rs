@@ -8,9 +8,9 @@
 //! position under the nearest stable ancestor, so animate only elements that
 //! have a stable ID. If siblings without IDs are inserted or reordered, a node
 //! can inherit the track of the node that held its position and fade from its
-//! values. When no element has a transition and nothing runs, tracks are
+//! values. When no element has motion and nothing runs, tracks are
 //! dropped. Then `Motion::present` does no allocation or track work. It still
-//! scans the nodes once per call for a transition. While every track is
+//! scans the nodes once per call for motion. While every track is
 //! settled and no target has moved, `present` only compares the tree with a
 //! saved copy and allocates nothing. `render` itself still lays out and clones
 //! the DOM. Because tracks are dropped then, a transition added in the same
@@ -108,11 +108,57 @@ impl Channel {
 /// The corners of one element. `target` is the unresolved style value, so a
 /// resize of a `FULL` shape is not a change. `shown` is resolved and only
 /// meaningful while `run` is set.
-#[derive(Clone, Copy)]
 struct CornerChannel {
     target: Corners,
     shown: Corners,
-    run: Option<Run>,
+    run: Option<CornerRun>,
+}
+
+enum CornerRun {
+    Timed(Run),
+    Spring(Box<CornerSpringRun>),
+}
+
+#[derive(Clone, Copy, PartialEq)]
+enum CornerAnimation {
+    Timed(Transition),
+    Spring([f32; 2]),
+}
+
+struct CornerSpringRun {
+    target: [f32; 4],
+    parameters: [f32; 2],
+    springs: [ScalarSpring; 4],
+}
+
+impl CornerSpringRun {
+    fn new(target: [f32; 4], parameters: [f32; 2], from: [[f64; 2]; 4], now: f64) -> Self {
+        let [stiffness, damping_ratio] = parameters;
+        let springs = std::array::from_fn(|i| {
+            let [position, velocity] = from[i];
+            let offset = position - f64::from(target[i]);
+            ScalarSpring::new(stiffness, damping_ratio, [1. + offset, velocity], now)
+        });
+        Self {
+            target,
+            parameters,
+            springs,
+        }
+    }
+
+    fn sample(&self, now: f64) -> ([[f64; 2]; 4], bool) {
+        let mut running = false;
+        let pose = std::array::from_fn(|i| {
+            let target = f64::from(self.target[i]);
+            if let Some([position, velocity]) = self.springs[i].sample(now) {
+                running = true;
+                [target + (position - 1.), velocity]
+            } else {
+                [target, 0.]
+            }
+        });
+        (pose, running)
+    }
 }
 
 fn corner_values(c: Corners) -> [f32; 4] {
@@ -131,11 +177,29 @@ impl CornerChannel {
     fn update(
         &mut self,
         target: Corners,
+        animation: Option<CornerAnimation>,
+        now: f64,
+        size: (f32, f32),
+    ) -> bool {
+        match animation {
+            Some(CornerAnimation::Spring(parameters)) => {
+                self.update_spring(target, parameters, now, size)
+            }
+            Some(CornerAnimation::Timed(transition)) => {
+                self.update_timed(target, Some(transition), now, size)
+            }
+            None => self.update_timed(target, None, now, size),
+        }
+    }
+
+    fn update_timed(
+        &mut self,
+        target: Corners,
         transition: Option<Transition>,
         now: f64,
         (width, height): (f32, f32),
     ) -> bool {
-        if self.target != target {
+        if self.target != target || matches!(self.run, Some(CornerRun::Spring(_))) {
             let from = match self.run {
                 Some(_) => self.shown,
                 None => self.target.resolve(width, height),
@@ -143,14 +207,16 @@ impl CornerChannel {
             self.target = target;
             self.run = transition
                 .filter(|t| t.is_valid() && t.duration_ms > 0.)
-                .map(|t| Run {
-                    from: Value(corner_values(from)),
-                    start: now,
-                    duration: f64::from(t.duration_ms),
-                    easing: t.easing,
+                .map(|t| {
+                    CornerRun::Timed(Run {
+                        from: Value(corner_values(from)),
+                        start: now,
+                        duration: f64::from(t.duration_ms),
+                        easing: t.easing,
+                    })
                 });
         }
-        let Some(run) = self.run else {
+        let Some(CornerRun::Timed(run)) = self.run else {
             return false;
         };
         let progress = ((now - run.start) / run.duration).clamp(0., 1.);
@@ -174,11 +240,56 @@ impl CornerChannel {
         self.shown = Corners::new(top_left, top_right, bottom_right, bottom_left);
         true
     }
+
+    fn update_spring(
+        &mut self,
+        target: Corners,
+        parameters: [f32; 2],
+        now: f64,
+        (width, height): (f32, f32),
+    ) -> bool {
+        let resolved = corner_values(target.resolve(width, height));
+        let changed = match &self.run {
+            Some(CornerRun::Spring(run)) => run.target != resolved || run.parameters != parameters,
+            Some(CornerRun::Timed(_)) => true,
+            None => self.target != target,
+        };
+        let max = f64::from(width.max(0.).min(height.max(0.)) / 2.);
+        if changed {
+            let from = match &self.run {
+                Some(CornerRun::Spring(run)) => run.sample(now).0,
+                Some(CornerRun::Timed(_)) => corner_values(self.shown).map(still),
+                None => corner_values(self.target.resolve(width, height)).map(still),
+            };
+            let from = from.map(|[position, velocity]| {
+                let visible = position.clamp(0., max);
+                [visible, if visible == position { velocity } else { 0. }]
+            });
+            self.run = Some(CornerRun::Spring(Box::new(CornerSpringRun::new(
+                resolved, parameters, from, now,
+            ))));
+        }
+        self.target = target;
+        let Some(CornerRun::Spring(run)) = &self.run else {
+            return false;
+        };
+        let (pose, running) = run.sample(now);
+        let [tl, tr, br, bl] = pose.map(|[position, _]| position.clamp(0., max) as f32);
+        self.shown = Corners::new(tl, tr, br, bl);
+        if !running {
+            self.run = None;
+        }
+        running
+    }
     /// Jump to `target` and cancel any running transition.
     fn settle(&mut self, target: Corners) {
         self.target = target;
         self.run = None;
     }
+}
+
+fn still(value: f32) -> [f64; 2] {
+    [f64::from(value), 0.]
 }
 
 const COLORS: usize = 4;
@@ -304,7 +415,7 @@ impl Seen {
 #[derive(Clone, Copy, PartialEq)]
 struct InteractionCornerTarget {
     corners: Corners,
-    transition: Option<Transition>,
+    animation: Option<CornerAnimation>,
 }
 
 #[derive(Clone, Copy)]
@@ -332,13 +443,19 @@ impl InteractionCorners {
         } else {
             Corners::default()
         };
-        let transition = style
-            .transition
-            .filter(|t| enabled && t.is_valid() && t.duration_ms > 0.);
-        Some(InteractionCornerTarget {
-            corners,
-            transition,
-        })
+        let animation = if enabled {
+            node.interaction_corner_spring()
+                .map(CornerAnimation::Spring)
+                .or_else(|| {
+                    style
+                        .transition
+                        .filter(|t| t.is_valid() && t.duration_ms > 0.)
+                        .map(CornerAnimation::Timed)
+                })
+        } else {
+            None
+        };
+        Some(InteractionCornerTarget { corners, animation })
     }
 
     fn present_endpoints(&self, dom: &MicroDom, display: &mut MicroDom) -> Result<(), DomError> {
@@ -367,10 +484,9 @@ impl Motion {
             return inputs.present_endpoints(dom, display);
         };
         if !self.running {
-            if !dom
-                .iter()
-                .any(|(_, node)| node.style().transition.is_some())
-            {
+            if !dom.iter().any(|(_, node)| {
+                node.style().transition.is_some() || node.interaction_corner_spring().is_some()
+            }) {
                 self.tracks.clear();
                 self.seen.clear();
                 return inputs.present_endpoints(dom, display);
@@ -416,11 +532,14 @@ impl Motion {
             }
             let bounds = computed.nodes.get(id.index()).map(|n| n.bounds);
             let size = bounds.map_or((0., 0.), |b| (b.width, b.height));
-            if self.reduced || animated.is_some_and(|target| target.transition.is_none()) {
+            if self.reduced || animated.is_some_and(|target| target.animation.is_none()) {
                 track.corners.settle(corners);
             } else {
-                let transition = animated.map_or(style.transition, |target| target.transition);
-                running |= track.corners.update(corners, transition, now, size);
+                let animation = animated.map_or_else(
+                    || style.transition.map(CornerAnimation::Timed),
+                    |target| target.animation,
+                );
+                running |= track.corners.update(corners, animation, now, size);
             }
             if !track.settled() {
                 let mut presented = style.clone();
