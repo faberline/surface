@@ -1,0 +1,185 @@
+{
+  "native": {
+    "binaries": {
+      "surface-devtools": "25851c96c365de569ec7db59731f9867a7214dcc6bf1e60dd1550f0bbaeb91ab",
+      "surface-material-gallery": "480d11e6704124d2fa58fe30cc29465707a0f2f70a89bb38518506eb1997d70c"
+    },
+    "captures": {
+      "compact-dark-rtl-200-sliders.png": {
+        "decoded_rgb_sha256": "eb827209a700fb879b47e48f8f608d45f11d652593dc7d2d4fb47e66db9ec01f",
+        "file_sha256": "d2449929d6aa33a759167397c5eb211979d7fc303db77dc76f75f5ce1719c7fe",
+        "size": [
+          320,
+          880
+        ]
+      },
+      "compact-dark-rtl-200-xl.png": {
+        "decoded_rgb_sha256": "4c1b63bc1bc0f1adf9ec090e2ea8c261f7ffbb8d16f42883ec36c738284f2d1e",
+        "file_sha256": "b3a62d8ce2cb0394b5f67779e9de2be768ea6ab3756769379306404fd4db7b8c",
+        "size": [
+          320,
+          880
+        ]
+      },
+      "wide-light-focused-slider.png": {
+        "decoded_rgb_sha256": "fbe30862d0b94758d194c59b82d68a10d0a0ee453cbb73386f9ce0234603ffd5",
+        "file_sha256": "85716d98eab700edbdc772d1e9dac9e5840cd2f5e7aceea251ab4c1bac235c07",
+        "size": [
+          960,
+          1040
+        ]
+      },
+      "wide-light-sliders.png": {
+        "decoded_rgb_sha256": "1daf9e763e4e253b0c0f4d00addb81a385769bec5ae1cd92e73327ff2d558491",
+        "file_sha256": "bd0306dc6df42634df07ca6088595910535470338dd619307d7f467ba07779aa",
+        "size": [
+          960,
+          1040
+        ]
+      }
+    },
+    "harness_seal": "d7b1beca4199e90b48e3d44324f6371dde3bec21ffffd7c6e8c1bea1b333f5f6",
+    "report_sha256": "980e7ab964901fe4a5fbd5662dd15c1cc65d275ac3c2cb5c0c832cbe6f6b5312",
+    "runs": 2,
+    "seal": "92f0a0d87713f5764be964e769303279f1d95b04bfe99223cd2492db2d77fe80",
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ],
+    "visible_windows": 0,
+    "window_samples": 20
+  },
+  "rust": {
+    "metal": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "23f5578a05ffce3ca958fadf6c3aad7ed8c6b17110dcf04a44f5599a3d7250d8",
+      "passed": 16
+    },
+    "supplemental": {
+      "ignored": 0,
+      "log_sha256": "afba8c6f5f446cf7d83528a5193d6a3d63ca14c5fc5351199c89aa9d3c602fb6",
+      "passed": 2
+    },
+    "workspace": {
+      "ignored": 19,
+      "log_sha256": "86b3fc40b1fabfcbb3b0d0750c3a5f7d8a609a2ba2ee4d5229e13cd38227680d",
+      "passed": 1421,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_source_sha256": "b957fec84eb0c5f3574df79c9d7756d1263f7667d0ac0d3b0c3ec8915d49775f",
+    "base_tree": "c694ddfc095f5cc18e3c27b99f7d02985b49abbc",
+    "changed_paths": 21,
+    "patch_sha256": "f8990bc3b6a1aa81ee1a409d25c38f2b68d94839cff5437f08f94b1904671319",
+    "source_files": 635,
+    "source_sha256": "1e1c1be43dbd652ff26dbaab2f264651c2c811915bc04e41dfbedd425ba830d8",
+    "tree": "a92d66c4998656b1749f322723aa4324028afdc4",
+    "version": "0.1.54"
+  },
+  "status": "verified",
+  "stock_macos": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 21178,
+        "steps": 300
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "checks": 21459,
+    "files": 761,
+    "report_sha256": "5f1dd1d021ac04cee4113090d8b6fa677992d0ff508009f2a3ee55992a050ca2",
+    "screenshots": {
+      "material-standard-slider-compact-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "384ebed6059f184320527f129029a6bad4f1dff3a0fbe16b814fadc2f714d4a0",
+        "sha256": "ca0156b2beb62c6d954f9fe29138077b8258f7151a87a080d76d833f37e869c9",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-standard-slider-keyboard.png": {
+        "decoded_rgb_sha256": "8b3c54035e7f633cfbb3b88ad39eba9ca52de3939d2b5c3d83838d555849146b",
+        "sha256": "e1f1c99e0fafe176f0d5d1f8b1dd847ca16e41b065e1c425061c9cd1acb0f30e",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-standard-slider-live-drag.png": {
+        "decoded_rgb_sha256": "a0d33c4c94c5299d73c67192c8815913013bddd06b1ae3af5983610e034410f5",
+        "sha256": "f5604e84a441f700ba3ab7bf83fe07797cec70ac461af21f398cbb85295b3096",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-standard-slider-wide-light.png": {
+        "decoded_rgb_sha256": "8ff02503cf6261670fc47bd8d999c0e17aba0b0e9d52819a4d061808f956375e",
+        "sha256": "c0d39586f628cecf8721b80029d26b263eb2fc7cbaed431b76a3db302acadb78",
+        "size": [
+          1920,
+          2168
+        ]
+      }
+    },
+    "seal": "bb55899a7ad66a491adcc2d53cf8447f8338c41130d48bde56cf8757933b9875",
+    "sliders_pixels": {
+      "compact_label_fill": 17944,
+      "compact_label_ink": 1023,
+      "focus_pixels": 1114,
+      "held_handle_rgb": [
+        101,
+        85,
+        143
+      ],
+      "key_label_fill": 8570,
+      "key_label_ink": 144,
+      "stop_rgb": [
+        30,
+        25,
+        43
+      ],
+      "tick_pixels": 38,
+      "track_and_handle_rgb": [
+        [
+          101,
+          85,
+          143
+        ],
+        [
+          232,
+          222,
+          248
+        ],
+        [
+          101,
+          85,
+          143
+        ]
+      ]
+    }
+  }
+}
