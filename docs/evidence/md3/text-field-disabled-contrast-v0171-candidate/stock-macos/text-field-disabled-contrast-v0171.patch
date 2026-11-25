@@ -1,0 +1,2122 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 0b2ff440b18faefe10bc34fcfc951ac3c69e9aab..312ca4458e86f59663c438f1f68917db3fe9010b 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.70"
++version = "0.1.71"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index fa2a5ee778345a1a30f5b1c247212816ecb3927c..02fbdd3b5f2245dba73d41c3cfa967e479870a0d 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.70"
++version = "0.1.71"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/display_contrast.rs b/crates/surface-app/src/display_contrast.rs
+index 6b3f1b3cffc14ea8adb79a377c8920107dd540b7..5539fddd555f42069c30f7ce5f7f9303f2d14bb9 100644
+--- a/crates/surface-app/src/display_contrast.rs
++++ b/crates/surface-app/src/display_contrast.rs
+@@ -19,7 +19,7 @@ pub struct SystemColorPair {
+     pub foreground: Color,
+ }
+ 
+-/// Resolved native color pairs. The host owns color lookup and any policy for
++/// Resolved system colors. The host owns color lookup and any policy for
+ /// a forced palette. Surface keeps the resolved RGBA values as supplied.
+ #[derive(Clone, Copy, Debug, PartialEq)]
+ #[non_exhaustive]
+@@ -30,6 +30,8 @@ pub struct SystemContrastColors {
+     pub button: SystemColorPair,
+     /// Selected background and its text.
+     pub highlight: SystemColorPair,
++    /// System disabled text ink, when the host can resolve it.
++    pub disabled_text: Option<Color>,
+ }
+ 
+ impl SystemContrastColors {
+@@ -42,6 +44,15 @@ impl SystemContrastColors {
+             canvas,
+             button,
+             highlight,
++            disabled_text: None,
++        }
++    }
++
++    /// Attach the system's disabled text color without changing its alpha.
++    pub const fn with_disabled_text(self, ink: Color) -> Self {
++        Self {
++            disabled_text: Some(ink),
++            ..self
+         }
+     }
+ }
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index b9211d0be6bcd8ab6f5c33cf5e12c0c013d11fd7..db04b462e45861cf29f457ba31f746a42b6e6137 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -182,7 +182,7 @@ pub use navigation_drawer::{
+ };
+ pub use outlined_text_field::OutlinedTextFieldOptions as TextFieldOptions;
+ pub use outlined_text_field::{
+-    MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldEditability,
++    MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldEditability, TextFieldTheme,
+ };
+ pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
+ pub use radio::{RadioGroupLayout, RadioGroupOptions, RadioMotion, RadioOptions, RadioPose};
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+index 7bda2c08825054aadd9b49b1e898302b091f7fae..6364032abe4f3b023bd1eaeb2288132c93ed93f0 100644
+--- a/crates/surface-material/src/outlined_text_field.rs
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -7,7 +7,8 @@ use surface::{
+     TextMeasurer, TextScaling, TextStyle,
+ };
+ use surface_app::{
+-    CursorStyle, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions, ToggleSpring, View,
++    CursorStyle, DisplayContrast, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions,
++    ToggleSpring, View,
+ };
+ use unicode_segmentation::UnicodeSegmentation;
+ 
+@@ -78,7 +79,28 @@ struct FieldEditing<Submit> {
+     on_submit: Submit,
+ }
+ 
++/// Text field builders that can use the host's disabled text color.
++#[derive(Clone, Copy, Debug)]
++pub struct TextFieldTheme<'a> {
++    theme: &'a Theme,
++    disabled_ink: Option<Color>,
++}
++
+ impl Theme {
++    /// Use the host's disabled text ink in forced colors when it is available.
++    ///
++    /// Use a theme that already matches the display preference. This only
++    /// changes disabled text and glyph ink in the fields built here.
++    pub fn text_fields_for(&self, contrast: DisplayContrast) -> TextFieldTheme<'_> {
++        TextFieldTheme {
++            theme: self,
++            disabled_ink: match contrast {
++                DisplayContrast::Forced(colors) => colors.disabled_text,
++                _ => None,
++            },
++        }
++    }
++
+     /// Build an outlined field which uses the width supplied by its parent.
+     ///
+     /// Keep the ID stable across changes to value, validation, theme and scale.
+@@ -148,17 +170,8 @@ impl Theme {
+         on_input: impl Fn(String) -> M + 'static,
+         on_submit: impl Fn() -> Option<M> + 'static,
+     ) -> Option<View<M>> {
+-        self.build_text_field(
+-            appearance,
+-            options,
+-            adornments,
+-            None,
+-            on_input,
+-            FieldEditing {
+-                multiline: None,
+-                on_submit,
+-            },
+-        )
++        self.text_fields_for(DisplayContrast::Normal)
++            .single_line(appearance, options, adornments, None, on_input, on_submit)
+     }
+ 
+     /// Add a character count and soft limit to either field appearance.
+@@ -174,16 +187,13 @@ impl Theme {
+         on_input: impl Fn(String) -> M + 'static,
+         on_submit: impl Fn() -> Option<M> + 'static,
+     ) -> Option<View<M>> {
+-        self.build_text_field(
++        self.text_fields_for(DisplayContrast::Normal).single_line(
+             appearance,
+             options,
+             adornments,
+             Some(counter),
+             on_input,
+-            FieldEditing {
+-                multiline: None,
+-                on_submit,
+-            },
++            on_submit,
+         )
+     }
+ 
+@@ -200,6 +210,49 @@ impl Theme {
+         adornments: TextFieldAdornments<'_, M>,
+         counter: Option<TextFieldCounterOptions<'_>>,
+         on_input: impl Fn(String) -> M + 'static,
++    ) -> Option<View<M>> {
++        self.text_fields_for(DisplayContrast::Normal)
++            .multiline(appearance, options, size, adornments, counter, on_input)
++    }
++}
++
++impl TextFieldTheme<'_> {
++    /// Build either single-line appearance with optional adornments and a counter.
++    ///
++    /// A plain Enter can submit after any active IME composition ends.
++    pub fn single_line<M>(
++        &self,
++        appearance: TextFieldAppearance,
++        options: TextFieldOptions<'_>,
++        adornments: TextFieldAdornments<'_, M>,
++        counter: Option<TextFieldCounterOptions<'_>>,
++        on_input: impl Fn(String) -> M + 'static,
++        on_submit: impl Fn() -> Option<M> + 'static,
++    ) -> Option<View<M>> {
++        self.build_text_field(
++            appearance,
++            options,
++            adornments,
++            counter,
++            on_input,
++            FieldEditing {
++                multiline: None,
++                on_submit,
++            },
++        )
++    }
++
++    /// Build a growing field or a fixed text area in either appearance.
++    ///
++    /// Enter inserts a line break. Place any submit action outside the editor.
++    pub fn multiline<M>(
++        &self,
++        appearance: TextFieldAppearance,
++        options: TextFieldOptions<'_>,
++        size: MultilineTextFieldSize,
++        adornments: TextFieldAdornments<'_, M>,
++        counter: Option<TextFieldCounterOptions<'_>>,
++        on_input: impl Fn(String) -> M + 'static,
+     ) -> Option<View<M>> {
+         self.build_text_field(
+             appearance,
+@@ -262,7 +315,7 @@ impl Theme {
+         };
+         let error = visible_text(options.error).or(limit_error);
+         let description = error.or_else(|| visible_text(options.supporting_text));
+-        let rgba = self.colors;
++        let rgba = self.theme.colors;
+         let filled = appearance == TextFieldAppearance::Filled;
+         let tokens = FieldColors {
+             disabled,
+@@ -283,7 +336,9 @@ impl Theme {
+             error_ink: rgba.error,
+             error_hover: rgba.on_error_container,
+             disabled_boundary: translucent(rgba.on_surface, if filled { 97 } else { 31 }),
+-            disabled_text: translucent(rgba.on_surface, 97),
++            disabled_text: self
++                .disabled_ink
++                .unwrap_or_else(|| translucent(rgba.on_surface, 97)),
+         };
+         let rtl = options.direction == LayoutDirection::RightToLeft;
+         let alignment = if rtl {
+@@ -604,15 +659,16 @@ impl Theme {
+                 icon.clone()
+             };
+             slots.push(
+-                self.text_field_trailing_icon_button(
+-                    &action_id,
+-                    action.name,
+-                    disabled,
+-                    ink,
+-                    action.on_press,
+-                )?
+-                .restore_focus_on_removal(id)
+-                .accessibility_scroll_into_view(),
++                self.theme
++                    .text_field_trailing_icon_button(
++                        &action_id,
++                        action.name,
++                        disabled,
++                        ink,
++                        action.on_press,
++                    )?
++                    .restore_focus_on_removal(id)
++                    .accessibility_scroll_into_view(),
+             );
+             slots.push(
+                 View::new(
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+index d130c356727c783da5b4949283cb8372bf6ad728..2933e7097f2dd9717206cbe86ad44f57f39c512d 100644
+--- a/crates/surface-material/tests/outlined_text_field.rs
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -5,7 +5,10 @@ use surface::{
+     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
+     TextAlignment,
+ };
+-use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
++use surface_app::{
++    Application, DisplayContrast, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime,
++    SystemColorPair, SystemContrastColors, View,
++};
+ use surface_material::{
+     shape::LayoutDirection, MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldAdornments,
+     TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability,
+@@ -47,6 +50,8 @@ struct Form {
+     adorned: Option<TextFieldAppearance>,
+     character_limit: Option<usize>,
+     multiline: Option<MultilineTextFieldSize>,
++    field_contrast: Option<DisplayContrast>,
++    trailing_disabled: bool,
+     builds: Cell<usize>,
+ }
+ 
+@@ -66,6 +71,8 @@ impl Default for Form {
+             adorned: None,
+             character_limit: None,
+             multiline: None,
++            field_contrast: None,
++            trailing_disabled: false,
+             builds: Cell::new(0),
+         }
+     }
+@@ -97,6 +104,14 @@ impl Application for Form {
+         self.scale
+     }
+ 
++    fn display_contrast_changed(&mut self, contrast: DisplayContrast) -> bool {
++        if let Some(current) = &mut self.field_contrast {
++            *current = contrast;
++            return true;
++        }
++        false
++    }
++
+     fn view(&self) -> View<Message> {
+         self.builds.set(self.builds.get() + 1);
+         let theme = if self.dark {
+@@ -123,7 +138,7 @@ impl Application for Form {
+                 trailing_action: Some(TextFieldTrailingAction {
+                     icon: &icon,
+                     name: "套用金額",
+-                    disabled: false,
++                    disabled: self.trailing_disabled,
+                     on_press: Message::Action,
+                 }),
+                 prefix: Some(TextFieldAffix {
+@@ -142,8 +157,8 @@ impl Application for Form {
+                     over_limit_error: COUNT_ERROR,
+                     describe: &|count, max| format!("已輸入{count}個字元，上限{max}個。"),
+                 });
+-            match (self.multiline, counter) {
+-                (Some(size), counter) => theme.multiline_text_field(
++            match (self.field_contrast, self.multiline, counter) {
++                (Some(contrast), Some(size), counter) => theme.text_fields_for(contrast).multiline(
+                     appearance,
+                     options,
+                     size,
+@@ -151,7 +166,7 @@ impl Application for Form {
+                     counter,
+                     Message::Edit,
+                 ),
+-                (None, Some(counter)) => theme.text_field_with_counter(
++                (Some(contrast), None, counter) => theme.text_fields_for(contrast).single_line(
+                     appearance,
+                     options,
+                     adornments,
+@@ -159,7 +174,23 @@ impl Application for Form {
+                     Message::Edit,
+                     on_submit,
+                 ),
+-                (None, None) => theme.text_field_with_adornments(
++                (None, Some(size), counter) => theme.multiline_text_field(
++                    appearance,
++                    options,
++                    size,
++                    adornments,
++                    counter,
++                    Message::Edit,
++                ),
++                (None, None, Some(counter)) => theme.text_field_with_counter(
++                    appearance,
++                    options,
++                    adornments,
++                    counter,
++                    Message::Edit,
++                    on_submit,
++                ),
++                (None, None, None) => theme.text_field_with_adornments(
+                     appearance,
+                     options,
+                     adornments,
+@@ -283,10 +314,23 @@ fn label_pose(list: &ExtendedDisplayList, label: &str) -> (Rect, f32) {
+ }
+ 
+ fn label_color(list: &ExtendedDisplayList, label: &str) -> Color {
+-    let Some((PaintOp::StyledText { color, .. }, _)) = text_run(list, label) else {
+-        panic!("expected painted field label");
+-    };
+-    *color
++    let mut colors = list.ops().iter().filter_map(|op| {
++        let run = match op {
++            ExtendedPaintOp::Legacy(run) => run,
++            ExtendedPaintOp::AlignedText(run) => run.run(),
++            _ => return None,
++        };
++        match run {
++            PaintOp::StyledText { text, color, .. } if text == label && color.3 > 0 => Some(*color),
++            _ => None,
++        }
++    });
++    let color = colors.next().expect("expected visible field text");
++    assert!(
++        colors.next().is_none(),
++        "expected one visible run for {label}"
++    );
++    color
+ }
+ 
+ fn hint_alpha(list: &ExtendedDisplayList) -> Option<u8> {
+@@ -296,6 +340,166 @@ fn hint_alpha(list: &ExtendedDisplayList) -> Option<u8> {
+     Some(color.3)
+ }
+ 
++fn force_contrast(disabled_text: Option<Color>) -> DisplayContrast {
++    let pair = SystemColorPair {
++        background: Color::rgb(255, 255, 255),
++        foreground: Color::rgb(0, 0, 0),
++    };
++    let colors = SystemContrastColors::new(pair, pair, pair);
++    DisplayContrast::Forced(disabled_text.map_or(colors, |ink| colors.with_disabled_text(ink)))
++}
++
++fn assert_glyph_ink(list: &ExtendedDisplayList, bounds: Rect, ink: Color) {
++    assert!(list.ops().iter().any(|op| matches!(
++        op,
++        ExtendedPaintOp::FillPath(path) if path.color() == ink
++            && covers(path, bounds.x + bounds.width / 2., bounds.y + bounds.height / 2.)
++    )));
++}
++
++#[test]
++fn system_disabled_ink_reaches_both_field_appearances_and_row_layouts() {
++    const SYSTEM_INK: Color = Color(57, 142, 91, 173);
++    const VALUE: &str = "數值";
++    let colors = Theme::light().colors;
++    let Color(r, g, b, _) = colors.on_surface;
++    let mut fonts = TextSystem::default();
++    for (appearance, border) in [
++        (TextFieldAppearance::Outlined, "project-name-outline"),
++        (TextFieldAppearance::Filled, "project-name-indicator"),
++    ] {
++        for multiline in [
++            None,
++            Some(MultilineTextFieldSize::FixedRows(
++                NonZeroU16::new(2).unwrap(),
++            )),
++        ] {
++            let mut runtime = Runtime::new(Form {
++                value: VALUE.into(),
++                adorned: Some(appearance),
++                character_limit: Some(8),
++                multiline,
++                invalid: true,
++                editability: TextFieldEditability::Disabled,
++                field_contrast: Some(DisplayContrast::Normal),
++                ..Form::default()
++            })
++            .unwrap();
++            runtime.set_display_contrast(force_contrast(None)).unwrap();
++            let fallback = render(&mut runtime, 400., &mut fonts);
++            assert_eq!(label_color(&fallback, VALUE), Color(r, g, b, 97));
++            let face = bounds(&runtime, border);
++            let editor = bounds(&runtime, ID);
++            runtime
++                .dispatch(Event::PointerMove {
++                    x: editor.x + editor.width / 2.,
++                    y: editor.y + editor.height / 2.,
++                })
++                .unwrap();
++            runtime
++                .set_display_contrast(force_contrast(Some(SYSTEM_INK)))
++                .unwrap();
++            let forced = render(&mut runtime, 400., &mut fonts);
++            for text in [LABEL, VALUE, ERROR, "2/8", "€", "/月"] {
++                assert_eq!(label_color(&forced, text), SYSTEM_INK, "{text}");
++            }
++            for icon in ["project-name-leading-icon", "project-name-trailing-icon"] {
++                assert_glyph_ink(&forced, bounds(&runtime, icon), SYSTEM_INK);
++            }
++            assert_eq!(bounds(&runtime, border), face);
++            assert_eq!(bounds(&runtime, ID), editor);
++            let before = bottom_boundary(&fallback, face);
++            let after = bottom_boundary(&forced, face);
++            assert_eq!(after.points(), before.points());
++            assert_eq!(after.color(), before.color());
++            let id = runtime.dom().by_id(ID).unwrap();
++            let frame = runtime.accessibility_frame().unwrap();
++            let semantic = frame.node(id).unwrap().node;
++            assert!(semantic.is_disabled());
++            assert!(!semantic.is_invalid());
++            assert_eq!(semantic.text_value(), Some(VALUE));
++            assert!(!frame.accepts_focus(id));
++        }
++    }
++}
++
++#[test]
++fn system_disabled_ink_reaches_an_empty_hint_and_an_independently_disabled_action() {
++    const SYSTEM_INK: Color = Color::rgb(57, 142, 91);
++    const VALUE: &str = "數值";
++    let colors = Theme::light().colors;
++    let mut fonts = TextSystem::default();
++    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
++        let mut disabled = Runtime::new(Form {
++            adorned: Some(appearance),
++            label: LONG_LABEL,
++            editability: TextFieldEditability::Disabled,
++            rtl: true,
++            scale: 2.,
++            field_contrast: Some(DisplayContrast::Normal),
++            ..Form::default()
++        })
++        .unwrap();
++        disabled
++            .set_display_contrast(force_contrast(Some(SYSTEM_INK)))
++            .unwrap();
++        let compact = render(&mut disabled, 320., &mut fonts);
++        assert_eq!(label_color(&compact, HINT), SYSTEM_INK);
++        assert_eq!(label_color(&compact, LONG_LABEL), SYSTEM_INK);
++        let hint = disabled
++            .dom()
++            .by_id("project-name-disabled-placeholder")
++            .unwrap();
++        assert!(disabled.accessibility_frame().unwrap().node(hint).is_none());
++
++        let mut read_only = Runtime::new(Form {
++            value: VALUE.into(),
++            adorned: Some(appearance),
++            trailing_disabled: true,
++            editability: TextFieldEditability::ReadOnly,
++            invalid: true,
++            field_contrast: Some(DisplayContrast::Normal),
++            ..Form::default()
++        })
++        .unwrap();
++        render(&mut read_only, 400., &mut fonts);
++        tab(&mut read_only);
++        assert_eq!(read_only.focused(), Some(ID));
++        read_only
++            .set_display_contrast(force_contrast(Some(SYSTEM_INK)))
++            .unwrap();
++        render(&mut read_only, 400., &mut fonts);
++        let action = bounds(&read_only, TRAILING);
++        read_only
++            .dispatch(Event::PointerMove {
++                x: action.x + action.width / 2.,
++                y: action.y + action.height / 2.,
++            })
++            .unwrap();
++        let focused = render(&mut read_only, 400., &mut fonts);
++        assert_eq!(label_color(&focused, VALUE), colors.on_surface);
++        assert_eq!(label_color(&focused, LABEL), colors.error);
++        assert_glyph_ink(
++            &focused,
++            bounds(&read_only, "project-name-trailing-icon"),
++            SYSTEM_INK,
++        );
++        assert_glyph_ink(
++            &focused,
++            bounds(&read_only, "project-name-leading-icon"),
++            colors.on_surface_variant,
++        );
++        let editor = read_only.dom().by_id(ID).unwrap();
++        let action = read_only.dom().by_id(TRAILING).unwrap();
++        let frame = read_only.accessibility_frame().unwrap();
++        assert!(frame.node(editor).unwrap().text_options.unwrap().read_only);
++        assert!(frame.node(editor).unwrap().node.is_invalid());
++        assert!(frame.node(action).unwrap().node.is_disabled());
++        assert!(!frame.accepts_focus(action));
++        assert_eq!(read_only.focused(), Some(ID));
++    }
++}
++
+ #[test]
+ fn expanding_label_hints_fade_without_overlapping_or_painting_during_ime() {
+     for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+diff --git a/crates/surface-platform/src/web_contrast.rs b/crates/surface-platform/src/web_contrast.rs
+index 9899e7fe7710d3060d5dc1e34da3dba5e61b8004..569ffee6111cd23f525c53b5f4e0674b9add2ab4 100644
+--- a/crates/surface-platform/src/web_contrast.rs
++++ b/crates/surface-platform/src/web_contrast.rs
+@@ -250,6 +250,7 @@ mod browser {
+     struct ColorProbe {
+         root: HtmlElement,
+         pairs: [HtmlElement; 3],
++        gray_text_supported: bool,
+         scheme: String,
+     }
+ 
+@@ -267,6 +268,12 @@ mod browser {
+                 "position:fixed;visibility:hidden;pointer-events:none;width:0;height:0;overflow:hidden;forced-color-adjust:auto;",
+             );
+             style.set_property_with_priority("color-scheme", &scheme, "important")?;
++            let gray_text_supported = style
++                .set_property_with_priority("color", "GrayText", "important")
++                .is_ok()
++                && style
++                    .get_property_value("color")
++                    .is_ok_and(|value| !value.is_empty());
+             let pair = |(name, background, foreground)| -> Result<HtmlElement, JsValue> {
+                 let element: HtmlElement = document.create_element("span")?.dyn_into()?;
+                 element.set_attribute("data-surface-system-pair", name)?;
+@@ -293,6 +300,7 @@ mod browser {
+             Ok(Self {
+                 root,
+                 pairs,
++                gray_text_supported,
+                 scheme,
+             })
+         }
+@@ -318,11 +326,18 @@ mod browser {
+             };
+             let [canvas, button, highlight] = PAIRS;
+             let [canvas_probe, button_probe, highlight_probe] = &self.pairs;
+-            Ok(SystemContrastColors::new(
++            let colors = SystemContrastColors::new(
+                 read_pair(canvas_probe, canvas)?,
+                 read_pair(button_probe, button)?,
+                 read_pair(highlight_probe, highlight)?,
+-            ))
++            );
++            let gray_text = self
++                .gray_text_supported
++                .then(|| window.get_computed_style(&self.root).ok().flatten())
++                .flatten()
++                .and_then(|style| style.get_property_value("color").ok())
++                .and_then(|color| css_color(&color));
++            Ok(gray_text.map_or(colors, |ink| colors.with_disabled_text(ink)))
+         }
+     }
+ 
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index c7dab329741f144287d26349e0167be0e8f70ea9..32a72cbeabd5719ae2528b87b2c8e693cba90e6c 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -342,10 +342,10 @@
+       "spec": "https://m3.material.io/components/text-fields/overview",
+       "status": "partial",
+       "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Leading and trailing icons and text affixes checked against both token sets. The counter follows the supporting-row dimensions for both appearances. Grow and FixedRows cover the two multiline layouts with the same field tokens.",
+-      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints. Two placeholder replays add 40 matching PNGs through Page.screenshot, CLI and MCP. They check focus, blur and idle above-label hints in both appearances, including dark 320 dp RTL at 200% text. Two boundary replays add 18 matching PNGs to check 1 dp idle and 3 dp focus ink in both appearances, blur restoration and the closed dark RTL top edge.",
+-      "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. M351–M353 compare 58 paired WebGPU originals to verify the two placeholder spring rates, reversal, RTL alignment, Reduce Motion, immediate suppression during marked and empty composition, and the unfocused above-label clear transition. CDP delivers real marked text; an explicitly synthetic empty composition start exercises the same Runtime bridge. M354–M356 compare 33 boundary PNGs at 2×. They measure independent intermediate width and ink, hover, error and disabled color, focus reversal, a closed RTL long-label border and Reduce Motion.",
+-      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. With an expanding label, an empty field fades the hint in on focus using Standard Slow Effects and out on blur using Fast Effects. Above-field labels leave the hint visible at rest, including in a disabled field with disabled ink. Clearing an unfocused above-field editor fades the hint back in. Committed text, active composition and overlap with the moving label suppress the hint independently of its opacity. A long hint can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. The 1 dp and 3 dp boundary endpoints match the published Material artwork. Filled width uses Standard Fast Spatial and Outlined width uses Fast Effects. Both animate ink with Fast Effects. The measured notch stays with the label, and width and ink remain separate from editor geometry. System contrast, live speech and operating-system composition remain open.",
+-      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. Boundary tests cover independent width curves, continuous focus reversal, hover and validation ink, same-ID disable during motion, theme replacement and Reduce Motion. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry."
++      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints. Two placeholder replays add 40 matching PNGs through Page.screenshot, CLI and MCP. They check focus, blur and idle above-label hints in both appearances, including dark 320 dp RTL at 200% text. Two boundary replays add 18 matching PNGs to check 1 dp idle and 3 dp focus ink in both appearances, blur restoration and the closed dark RTL top edge. The headless Gallery offers fixed light and dark W3C palettes for repeatable preview of system disabled text ink.",
++      "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. M351–M353 compare 58 paired WebGPU originals to verify the two placeholder spring rates, reversal, RTL alignment, Reduce Motion, immediate suppression during marked and empty composition, and the unfocused above-label clear transition. CDP delivers real marked text; an explicitly synthetic empty composition start exercises the same Runtime bridge. M354–M356 compare 33 boundary PNGs at 2×. They measure independent intermediate width and ink, hover, error and disabled color, focus reversal, a closed RTL long-label border and Reduce Motion. M357–M359 sample the browser's GrayText in 15 real WebGPU originals for Outlined, Filled, adorned, counted and multiline disabled fields. Read-only fields retain CanvasText. Normal paint restores pixel-for-pixel, and the active Filled editor retains its draft and backward selection through the mode change.",
++      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. With an expanding label, an empty field fades the hint in on focus using Standard Slow Effects and out on blur using Fast Effects. Above-field labels leave the hint visible at rest, including in a disabled field with disabled ink. Clearing an unfocused above-field editor fades the hint back in. Committed text, active composition and overlap with the moving label suppress the hint independently of its opacity. A long hint can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. The 1 dp and 3 dp boundary endpoints match the published Material artwork. Filled width uses Standard Fast Spatial and Outlined width uses Fast Effects. Both animate ink with Fast Effects. The measured notch stays with the label, and width and ink remain separate from editor geometry. Forced colors use the host's disabled text ink when supplied. It covers disabled captions, values, hints, supporting text, counters and glyphs. The original Material ink is the fallback. Broader system color roles, live speech and operating-system composition remain open.",
++      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. Boundary tests cover independent width curves, continuous focus reversal, hover and validation ink, same-ID disable during motion, theme replacement and Reduce Motion. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry. Disabled-ink tests cover host RGBA and fallback ink, locked multiline values, a disabled narrow hint and a disabled action beside a focused read-only editor."
+     },
+     {
+       "id": "toolbars",
+diff --git a/docs/material.md b/docs/material.md
+index b61b33470ce4d936236a18202e1b941f72229429..dd735f9a22331ce48785ecdce9515f0573be5de5 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1378,6 +1378,23 @@ immediately. A theme change applies the new boundary ink immediately.
+ [Filled indicator motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextField.kt#773) ·
+ [Outlined border motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextFieldDefaults.kt#1164)
+ 
++### System colors for disabled field text
++
++Build fields with `theme.text_fields_for(contrast)` when the application
++already follows the host's display preference. Use `single_line` or
++`multiline` on the returned builder. In forced colors, both appearances use
++the host's disabled ink for their captions, values, hints, supporting text,
++counters and disabled glyphs. When the host does not supply that color,
++the field uses its Material disabled ink.
++
++On the Web, Surface resolves the browser's `GrayText` system color. For a
++repeatable native preview, run the headless Gallery with
++`--forced-colors light` or `--forced-colors dark`. The preview uses the
++fixed testing palettes in the CSS Color Adjustment specification.
++
++[W3C system colors](https://www.w3.org/TR/css-color-4/#css-system-colors) ·
++[Forced colors mode test palettes](https://www.w3.org/TR/css-color-adjust-1/#forced-colors-mode-color-palettes)
++
+ ## Baseline segmented buttons
+ 
+ Use `Theme::baseline_segmented_button` for two to five related choices in
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 5b59fb2502f1003b662ed963ee35db663b199945..30b026beda32c4caa9850335b1aedc9b5bd3976c 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -116,6 +116,8 @@ mod material_text_field_adornments;
+ mod material_text_field_boundary_motion;
+ #[path = "material_text_field_counter.rs"]
+ mod material_text_field_counter;
++#[path = "material_text_field_disabled_contrast.rs"]
++mod material_text_field_disabled_contrast;
+ #[path = "material_text_field_label_motion.rs"]
+ mod material_text_field_label_motion;
+ #[path = "material_text_field_placeholder.rs"]
+@@ -175,7 +177,8 @@ pub const STEPS: &[&str] = &[
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+-    "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356",
++    "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
++    "M359",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -315,7 +318,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_multiline_text_field::run(env, chrome, &url).await?;
+     material_text_field_label_motion::run(env, chrome, &url).await?;
+     material_text_field_placeholder::run(env, chrome, &url).await?;
+-    material_text_field_boundary_motion::run(env, chrome, &url).await
++    material_text_field_boundary_motion::run(env, chrome, &url).await?;
++    material_text_field_disabled_contrast::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -570,7 +574,8 @@ mod tests {
+             .windows(label.len() + placeholder.len())
+             .any(|scope| { scope[..label.len()] == label && scope[label.len()..] == placeholder }));
+         let boundary = super::material_text_field_boundary_motion::STEPS;
+-        assert!(super::STEPS.ends_with(&[placeholder, boundary].concat()));
++        let disabled_contrast = super::material_text_field_disabled_contrast::STEPS;
++        assert!(super::STEPS.ends_with(&[placeholder, boundary, disabled_contrast].concat()));
+     }
+ 
+     #[test]
+diff --git a/e2e/src/material_multiline_text_field.rs b/e2e/src/material_multiline_text_field.rs
+index 4bcb8d1410a201fba6b23b1c101c50a563589a7d..9b9f3b41959b25a3f6a6bbec50209748f0c69bc9 100644
+--- a/e2e/src/material_multiline_text_field.rs
++++ b/e2e/src/material_multiline_text_field.rs
+@@ -411,7 +411,7 @@ async fn outer_offset(tab: &Tab) -> Result<f64> {
+     .context("outer scroller offset")
+ }
+ 
+-async fn wheel(tab: &Tab, body: Rect, dy: f64) -> Result<()> {
++pub(super) async fn wheel(tab: &Tab, body: Rect, dy: f64) -> Result<()> {
+     let [left, top, ..] = tab.canvas_box().await?;
+     let (x, y) = (left + body[0] + body[2] / 2., top + body[1] + body[3] / 2.);
+     tab.cdp(
+diff --git a/e2e/src/material_text_field_disabled_contrast.rs b/e2e/src/material_text_field_disabled_contrast.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..7a645058e4c3093cfff28c800ff89ca8a5bd380a
+--- /dev/null
++++ b/e2e/src/material_text_field_disabled_contrast.rs
+@@ -0,0 +1,664 @@
++//! Real headless Canvas pixels for the browser's disabled system text ink.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_multiline_text_field::wheel;
++use super::material_time_input::{activate, ax, ax_property, ax_tree, bounds, resize};
++use super::material_web_contrast::{contrast, media, palette_with_disabled};
++use super::material_web_contrast_png::{CanvasPng, Rect, Rgb};
++use super::{click, focus, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M357", "M358", "M359"];
++const PREFIX: &str = "material-text-field-disabled-contrast";
++const DRAFT: &str = "Surface draft";
++const DPI: f64 = 2.;
++
++#[derive(Clone, Copy)]
++enum Kind {
++    Outlined,
++    Filled,
++    Adorned,
++    Counter,
++    Multiline,
++}
++
++impl Kind {
++    fn parts(self) -> (&'static str, &'static str, &'static str) {
++        match self {
++            Self::Outlined => (
++                "outlined",
++                "outlined-text-field-demo",
++                "outlined_text_field_demo",
++            ),
++            Self::Filled => ("filled", "filled-text-field-demo", "filled_text_field_demo"),
++            Self::Adorned => (
++                "adorned",
++                "text-field-adornments-demo",
++                "text_field_adornments_demo",
++            ),
++            Self::Counter => (
++                "counter",
++                "text-field-counter-demo",
++                "text_field_counter_demo",
++            ),
++            Self::Multiline => (
++                "multiline",
++                "multiline-text-field-demo",
++                "multiline_text_field_demo",
++            ),
++        }
++    }
++
++    fn id(self, part: &str) -> String {
++        format!("{}-{part}", self.parts().1)
++    }
++
++    fn lock_labels(self) -> [(&'static str, &'static str); 2] {
++        match self {
++            Self::Outlined | Self::Filled => [("停用名稱", "已封存專案"), ("唯讀名稱", "既有專案")],
++            Self::Adorned => [("停用方案費用", "30"), ("目前方案費用", "18")],
++            Self::Counter => [("停用標籤", "停用標籤內容"), ("唯讀標籤", "🇹🇼a\u{301}")],
++            Self::Multiline => [
++                ("停用內容", "停用的第一行\n停用的第二行"),
++                ("唯讀內容", "已儲存的第一行\n已儲存的第二行\n"),
++            ],
++        }
++    }
++
++    fn filled(self) -> bool {
++        matches!(self, Self::Filled)
++    }
++}
++
++async fn scene(tab: &Tab, url: &str, kind: Kind) -> Result<Value> {
++    media(tab, false, false).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 2500).await?;
++    until(tab, "s.section === 0").await?;
++    activate(tab, &kind.id("show")).await?;
++    let model = kind.parts().2;
++    until(tab, &format!("s.{model}.visible === true")).await?;
++    resize(
++        tab,
++        960,
++        if matches!(kind, Kind::Multiline) {
++            1120
++        } else {
++            820
++        },
++    )
++    .await?;
++    if matches!(kind, Kind::Multiline) {
++        let [x, y, _, h] = bounds(tab, &kind.id("scroll")).await?;
++        // Scroll on the outer padding so the locked fields both enter the viewport.
++        wheel(tab, [x, y, 8., h], 720.).await?;
++    }
++    let normal = contrast(tab, "normal").await?;
++    check!(
++        normal["system_colors"].is_null(),
++        "normal mode uses the authored palette"
++    );
++    Ok(state(tab).await?[model]["palette"].clone())
++}
++
++fn opaque(value: &Value, role: &str) -> Result<Rgb> {
++    let [r, g, b, a]: [u8; 4] =
++        serde_json::from_value(value.clone()).with_context(|| format!("{role} color bytes"))?;
++    check_eq!(a, 255, format!("{role} has full opacity"));
++    Ok([r, g, b])
++}
++
++fn mixed(base: Rgb, ink: Rgb, alpha: u8, linear: bool) -> Rgb {
++    let decode = |byte: u8| {
++        let c = f64::from(byte) / 255.;
++        if !linear {
++            c
++        } else if c <= 0.04045 {
++            c / 12.92
++        } else {
++            ((c + 0.055) / 1.055).powf(2.4)
++        }
++    };
++    let alpha = f64::from(alpha) / 255.;
++    std::array::from_fn(|channel| {
++        let c = decode(base[channel]) * (1. - alpha) + decode(ink[channel]) * alpha;
++        let c = if !linear {
++            c
++        } else if c <= 0.0031308 {
++            12.92 * c
++        } else {
++            1.055 * c.powf(1. / 2.4) - 0.055
++        };
++        (255. * c).round() as u8
++    })
++}
++
++fn near_rgb(actual: Rgb, expected: Rgb) -> bool {
++    actual
++        .into_iter()
++        .zip(expected)
++        .all(|(a, b)| a.abs_diff(b) <= 2)
++}
++
++#[derive(Clone, Copy, PartialEq)]
++enum Ink {
++    DisabledFace,
++    DisabledPage,
++    ReadOnlyValue,
++    ReadOnlyLabel,
++}
++
++struct Probe {
++    part: &'static str,
++    rect: Rect,
++    ink: Ink,
++    minimum: usize,
++}
++
++impl Probe {
++    async fn by_id(
++        tab: &Tab,
++        kind: Kind,
++        part: &'static str,
++        ink: Ink,
++        minimum: usize,
++    ) -> Result<Self> {
++        Ok(Self {
++            part,
++            rect: bounds(tab, &kind.id(part)).await?,
++            ink,
++            minimum,
++        })
++    }
++
++    fn ink_count(&self, image: &CanvasPng, expected: [Rgb; 2], opaque: bool) -> Result<usize> {
++        if opaque {
++            return image.count_color(self.rect, expected[0]);
++        }
++        let [left, top, right, bottom] = grid(self.rect);
++        let mut count = 0;
++        for y in top..bottom {
++            for x in left..right {
++                let pixel = image.pixel(x, y)?;
++                count += usize::from(expected.into_iter().any(|ink| near_rgb(pixel, ink)));
++            }
++        }
++        Ok(count)
++    }
++}
++
++fn grid([x, y, width, height]: Rect) -> [usize; 4] {
++    [x, y, x + width, y + height].map(|value| (value * DPI).round() as usize)
++}
++
++fn crop_changes(before: &CanvasPng, after: &CanvasPng, rect: Rect) -> Result<[usize; 2]> {
++    let [left, top, right, bottom] = grid(rect);
++    let mut changed = 0;
++    for y in top..bottom {
++        for x in left..right {
++            changed += usize::from(before.pixel(x, y)? != after.pixel(x, y)?);
++        }
++    }
++    Ok([(right - left) * (bottom - top), changed])
++}
++
++struct Regions {
++    face: Rect,
++    read_only: Rect,
++    probes: Vec<Probe>,
++}
++
++impl Regions {
++    async fn read(tab: &Tab, kind: Kind) -> Result<Self> {
++        let face = bounds(
++            tab,
++            &kind.id(if kind.filled() {
++                "disabled-indicator"
++            } else {
++                "disabled-outline"
++            }),
++        )
++        .await?;
++        let read_only = bounds(tab, &kind.id("read-only")).await?;
++        let value = bounds(tab, &kind.id("disabled-disabled-value")).await?;
++        let mut probes = vec![
++            Probe::by_id(
++                tab,
++                kind,
++                "disabled-floating-label",
++                if kind.filled() {
++                    Ink::DisabledFace
++                } else {
++                    Ink::DisabledPage
++                },
++                6,
++            )
++            .await?,
++        ];
++        if matches!(kind, Kind::Multiline) {
++            let [x, y, w, h] = value;
++            for (part, top) in [
++                ("disabled-first-line", y),
++                ("disabled-second-line", y + h / 2.),
++            ] {
++                probes.push(Probe {
++                    part,
++                    rect: [x, top, w, h / 2.],
++                    ink: Ink::DisabledFace,
++                    minimum: 12,
++                });
++            }
++            probes.push(
++                Probe::by_id(tab, kind, "disabled-description", Ink::DisabledPage, 12).await?,
++            );
++        } else {
++            probes.push(Probe {
++                part: "disabled-disabled-value",
++                rect: value,
++                ink: Ink::DisabledFace,
++                minimum: 6,
++            });
++        }
++        for &part in match kind {
++            Kind::Adorned => &[
++                "disabled-leading-icon",
++                "disabled-trailing-icon",
++                "disabled-prefix-visual",
++                "disabled-suffix-visual",
++            ][..],
++            Kind::Counter => &["disabled-counter"][..],
++            _ => &[][..],
++        } {
++            probes.push(
++                Probe::by_id(
++                    tab,
++                    kind,
++                    part,
++                    if part.ends_with("-counter") {
++                        Ink::DisabledPage
++                    } else {
++                        Ink::DisabledFace
++                    },
++                    3,
++                )
++                .await?,
++            );
++        }
++        probes.push(
++            Probe::by_id(tab, kind, "read-only-floating-label", Ink::ReadOnlyLabel, 6).await?,
++        );
++        let ro_line = if matches!(kind, Kind::Adorned | Kind::Multiline) {
++            bounds(tab, &kind.id("read-only-value-box")).await?
++        } else {
++            let [x, y, w, h] = read_only;
++            [x + 12., y + h * 0.43, w - 24., h * 0.57 - 5.]
++        };
++        probes.push(Probe {
++            part: "read-only-value",
++            rect: ro_line,
++            ink: Ink::ReadOnlyValue,
++            minimum: 3,
++        });
++        let [_, _, w, h] = tab.canvas_box().await?;
++        let viewport = [0., 0., w, h];
++        let clip = if matches!(kind, Kind::Multiline) {
++            bounds(tab, &kind.id("scroll")).await?
++        } else {
++            viewport
++        };
++        check!(
++            [face, read_only]
++                .into_iter()
++                .chain(probes.iter().map(|p| p.rect))
++                .all(|[x, y, rw, rh]| {
++                    rw >= 2.
++                        && rh >= 2.
++                        && [viewport, clip].into_iter().all(|[left, top, cw, ch]| {
++                            x >= left && y >= top && x + rw <= left + cw && y + rh <= top + ch
++                        })
++                }),
++            "all disabled and read-only glyph sampling rectangles lie in the visible Canvas"
++        );
++        Ok(Self {
++            face,
++            read_only,
++            probes,
++        })
++    }
++
++    fn geometry(&self) -> Value {
++        json!({
++            "disabled_face":self.face,"read_only_face":self.read_only,
++            "ink_rects":self.probes.iter().map(|p| (p.part,p.rect)).collect::<std::collections::BTreeMap<_,_>>(),
++        })
++    }
++}
++
++async fn lock_state(tab: &Tab, kind: Kind) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let [(disabled_name, disabled_value), (readonly_name, readonly_value)] = kind.lock_labels();
++    let disabled = ax(&tree, "textbox", disabled_name)?;
++    let readonly = ax(&tree, "textbox", readonly_name)?;
++    check!(
++        disabled["value"]["value"] == disabled_value && readonly["value"]["value"] == readonly_value
++            && ax_property(disabled, "disabled") == Some(&json!(true))
++            && ax_property(readonly, "readonly") == Some(&json!(true)),
++        "Chrome keeps the authored values and distinguishes the disabled and read-only textbox states"
++    );
++    let actions = if matches!(kind, Kind::Adorned) {
++        let disabled_action = ax(&tree, "button", "套用停用方案金額")?;
++        let read_action = ax(&tree, "button", "查看現有費率")?;
++        check_eq!(
++            ax_property(disabled_action, "disabled"),
++            Some(&json!(true)),
++            "the disabled trailing peer stays disabled"
++        );
++        check!(
++            ax_property(read_action, "focusable") == Some(&json!(true)),
++            "the read-only field keeps its focusable trailing action"
++        );
++        json!({"disabled":disabled_action["name"]["value"],"read_only":read_action["name"]["value"]})
++    } else {
++        Value::Null
++    };
++    let multiline = matches!(kind, Kind::Multiline);
++    for (item, name) in [(disabled, disabled_name), (readonly, readonly_name)] {
++        let amount = tree
++            .iter()
++            .filter(|node| {
++                node["ignored"] == false
++                    && node["role"]["value"] == "textbox"
++                    && node["name"]["value"] == name
++            })
++            .count();
++        check_eq!(amount, 1, format!("one named Chrome textbox for {name}"));
++        check_eq!(
++            ax_property(item, "multiline"),
++            Some(&json!(multiline)),
++            "textbox line mode stays stable"
++        );
++    }
++    Ok(json!({
++        "disabled":{"name":disabled_name,"value":disabled_value,"state":"disabled"},
++        "read_only":{"name":readonly_name,"value":readonly_value,"state":"read-only"},
++        "multiline":multiline,"actions":actions,
++    }))
++}
++
++async fn draft(tab: &Tab, kind: Kind) -> Result<Value> {
++    let id = kind.id("editable");
++    focus(tab, &id, "surface-text-input").await?;
++    let sample = tab
++        .eval(&format!(
++            r#"(() => {{
++        const node = document.getElementById("surface-text-input");
++        const input = JSON.parse(window.gallery.export_dom()).text_inputs[{}];
++        const model = JSON.parse(window.gallery.inspect());
++        return {{owner:model.focused,dom:node.value,active:document.activeElement===node,
++            web_selection:[node.selectionStart,node.selectionEnd,node.selectionDirection],
++            runtime_selection:[input.selection_anchor,input.selection_cursor],value:input.value,
++            composing:input.composing, caller:model.{}.value}};
++    }})()"#,
++            js(&id),
++            kind.parts().2
++        ))
++        .await?;
++    check!(
++        sample["owner"] == id
++            && sample["active"] == true
++            && sample["dom"] == DRAFT
++            && sample["value"] == DRAFT
++            && sample["caller"] == DRAFT
++            && sample["web_selection"] == json!([DRAFT.len() - 2, DRAFT.len(), "backward"])
++            && sample["runtime_selection"] == json!([DRAFT.len(), DRAFT.len() - 2])
++            && sample["composing"] == false,
++        "the real filled editor retains its letter range in both Chrome and Runtime"
++    );
++    Ok(sample)
++}
++
++struct Paint {
++    paper: Rgb,
++    ordinary: Rgb,
++    quiet_label: Rgb,
++    gray: Option<Rgb>,
++}
++
++impl Paint {
++    fn from_normal(palette: &Value) -> Result<Self> {
++        Ok(Self {
++            paper: opaque(&palette["background"], "authored background")?,
++            ordinary: opaque(&palette["on_surface"], "authored on-surface text")?,
++            quiet_label: opaque(&palette["on_surface_variant"], "authored caption ink")?,
++            gray: None,
++        })
++    }
++
++    fn from_forced(witness: &Value) -> Result<Self> {
++        let paper = opaque(&witness["pairs"]["canvas"]["background"], "CSS Canvas")?;
++        let ordinary = opaque(&witness["pairs"]["canvas"]["foreground"], "CSS CanvasText")?;
++        let gray = opaque(&witness["disabled_text"]["rgba"], "CSS GrayText")?;
++        check!(
++            gray != ordinary && gray != paper,
++            format!(
++                "Chrome gives a visible GrayText distinct from CanvasText and Canvas: {gray:?}"
++            )
++        );
++        Ok(Self {
++            paper,
++            ordinary,
++            quiet_label: ordinary,
++            gray: Some(gray),
++        })
++    }
++
++    fn sample(&self, image: &CanvasPng, kind: Kind, regions: &Regions) -> Result<Value> {
++        let [x, y, w, h] = regions.face;
++        let [base_point, border_point] = [[x + w * 0.70, y + h - 6.], [x + w * 0.70, y + h - 0.25]];
++        let base = image.sample(base_point[0], base_point[1])?;
++        let border = image.sample(border_point[0], border_point[1])?;
++        let face_opacity = if kind.filled() { 10 } else { 0 };
++        let stroke_opacity = if kind.filled() { 97 } else { 31 };
++        check!(
++            [false, true].into_iter().any(|linear| {
++                near_rgb(base, mixed(self.paper, self.ordinary, face_opacity, linear))
++                    && near_rgb(border, mixed(base, self.ordinary, stroke_opacity, linear))
++            }),
++            format!("the disabled face and boundary keep their own tokens: {base:?} / {border:?}")
++        );
++        let mut glyphs = Vec::new();
++        for probe in &regions.probes {
++            let (expected, solid) = match (probe.ink, self.gray) {
++                (Ink::DisabledFace | Ink::DisabledPage, Some(gray)) => ([gray; 2], true),
++                (Ink::ReadOnlyValue, _) => ([self.ordinary; 2], true),
++                (Ink::ReadOnlyLabel, _) => ([self.quiet_label; 2], true),
++                (location, None) => {
++                    let under = if location == Ink::DisabledFace {
++                        base
++                    } else {
++                        self.paper
++                    };
++                    (
++                        [false, true].map(|linear| mixed(under, self.ordinary, 97, linear)),
++                        false,
++                    )
++                }
++            };
++            let actual = probe.ink_count(image, expected, solid)?;
++            check!(
++                actual >= probe.minimum,
++                format!(
++                    "{} has real ink in its own crop: {actual} pixels near {expected:?}",
++                    probe.part
++                )
++            );
++            glyphs.push(
++                json!({"part":probe.part,"bounds":probe.rect,"expected_rgb":expected,
++                "exact_opaque":solid,"minimum":probe.minimum,"matching_pixels":actual}),
++            );
++        }
++        Ok(
++            json!({"glyphs":glyphs,"paper":self.paper,"ordinary":self.ordinary,"gray":self.gray,
++            "face":{"point":base_point,"rgb":base,"on_surface_alpha":face_opacity},
++            "boundary":{"point":border_point,"rgb":border,"on_surface_alpha":stroke_opacity}}),
++        )
++    }
++}
++
++async fn route(env: &Env, tab: &Tab, url: &str, kind: Kind) -> Result<Value> {
++    let palette = scene(tab, url, kind).await?;
++    let keep_draft = kind.filled();
++    if keep_draft {
++        let id = kind.id("editable");
++        click(tab, &id).await?;
++        focus(tab, &id, "surface-text-input").await?;
++        tab.insert_text(DRAFT).await?;
++        until(
++            tab,
++            &format!("s.{}.value === {}", kind.parts().2, js(DRAFT)),
++        )
++        .await?;
++        tab.wait_for(&format!(
++            "document.getElementById('surface-text-input')?.value === {}",
++            js(DRAFT)
++        ))
++        .await?;
++        for _ in 0..2 {
++            tab.press("Shift+ArrowLeft").await?;
++        }
++        tab.wait_for(&format!(
++            r#"(() => {{
++            const input = JSON.parse(window.gallery.export_dom()).text_inputs[{}];
++            return input?.selection_anchor === {} && input?.selection_cursor === {};
++        }})()"#,
++            js(&id),
++            DRAFT.len(),
++            DRAFT.len() - 2
++        ))
++        .await?;
++    }
++    let (tag, _, model) = kind.parts();
++    let regions = Regions::read(tab, kind).await?;
++    let geometry = regions.geometry();
++    let mut frames = Vec::new();
++    let mut normal = None;
++    let mut initial_draft = None;
++    for (phase, forced) in [("normal", false), ("forced", true), ("restored", false)] {
++        media(tab, forced, false).await?;
++        if forced {
++            until(
++                tab,
++                "Array.isArray(s.display_contrast?.system_colors?.disabled_text)",
++            )
++            .await?;
++        }
++        let preference = contrast(tab, if forced { "forced" } else { "normal" }).await?;
++        let witness = if forced {
++            palette_with_disabled(tab, &preference).await?
++        } else {
++            check!(
++                preference["system_colors"].is_null(),
++                "leaving forced colors clears the system palette"
++            );
++            Value::Null
++        };
++        let paint = if forced {
++            Paint::from_forced(&witness)?
++        } else {
++            Paint::from_normal(&palette)?
++        };
++        if !forced {
++            check_eq!(
++                state(tab).await?[model]["palette"],
++                palette,
++                "the authored field palette returns"
++            );
++        }
++        check_eq!(
++            Regions::read(tab, kind).await?.geometry(),
++            geometry,
++            "system ink keeps paint and hit rectangles"
++        );
++        let locks = lock_state(tab, kind).await?;
++        let editor = if keep_draft {
++            let editor = draft(tab, kind).await?;
++            if let Some(initial) = &initial_draft {
++                check_eq!(
++                    &editor,
++                    initial,
++                    "mode switching preserves the focused draft and directed selection"
++                );
++            } else {
++                initial_draft = Some(editor.clone());
++            }
++            editor
++        } else {
++            Value::Null
++        };
++        let name = format!("{PREFIX}-{tag}-{phase}.png");
++        let image = CanvasPng::capture_file(env, tab, &name, DPI).await?;
++        let sampled = paint.sample(&image, kind, &regions)?;
++        let mut restored_crops = Vec::new();
++        if phase == "restored" {
++            let before = normal
++                .as_ref()
++                .context("actual screenshot of original Normal mode")?;
++            for probe in &regions.probes {
++                let [pixels, changed] = crop_changes(before, &image, probe.rect)?;
++                check!(
++                    pixels > 20 && changed == 0,
++                    format!("{} restores its exact original pixels", probe.part)
++                );
++                restored_crops.push(json!({"part":probe.part,"pixels":pixels,"changed":changed}));
++            }
++        }
++        frames.push(json!({"phase":phase,"png":name,"size":image.dimensions(),"paint":sampled,
++            "system_colors":preference["system_colors"],"css":witness,"ax":locks,"focused_draft":editor,
++            "restored_crops":restored_crops}));
++        if phase == "normal" {
++            normal = Some(image);
++        }
++    }
++    Ok(json!({"geometry":geometry,"normal_palette":palette,"frames":frames}))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 864, DPI).await?;
++    let mut report = json!({"browser":chrome.version,"dpr":DPI,"preference_source":"CDP browser media emulation"});
++    let result: Result<()> = async {
++        step(STEPS[0], "Outlined and Filled fields paint actual CSS GrayText while an enabled draft stays selected");
++        for kind in [Kind::Outlined, Kind::Filled] {
++            report[kind.parts().0] = route(env, &tab, url, kind).await?;
++        }
++        report["adapter"] = tab.eval(r#"(async () => {
++            const {info} = await navigator.gpu.requestAdapter();
++            const {vendor,architecture,isFallbackAdapter} = info;
++            return {vendor,architecture,isFallbackAdapter};
++        })()"#).await?;
++        check!(report["adapter"]["vendor"].is_string() && report["adapter"]["architecture"].is_string()
++            && report["adapter"]["isFallbackAdapter"].is_boolean(), "actual browser WebGPU adapter");
++
++        step(STEPS[1], "Adorned and counted disabled peers use GrayText for ink in the real Canvas");
++        for kind in [Kind::Adorned, Kind::Counter] {
++            report[kind.parts().0] = route(env, &tab, url, kind).await?;
++        }
++        step(STEPS[2], "Both lines and supporting text of the disabled multiline field use the same visible system ink");
++        report["multiline"] = route(env, &tab, url, Kind::Multiline).await?;
++        check!(tab.errors().is_empty(), "the field contrast route has no page errors");
++        Ok(())
++    }.await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact(&format!("{PREFIX}-failure.png")))
++            .await;
++    }
++    env.write_json(&format!("{PREFIX}.json"), &report)?;
++    result
++}
+diff --git a/e2e/src/material_web_contrast.rs b/e2e/src/material_web_contrast.rs
+index 8723d74c090b4f41ead8e22b32172e82412c27bc..8ba7e66cdac27421581907107a7e25ab97146efc 100644
+--- a/e2e/src/material_web_contrast.rs
++++ b/e2e/src/material_web_contrast.rs
+@@ -85,7 +85,13 @@ const CSS_WITNESS: &str = r#"(() => {
+             raw[key] = {background:css.backgroundColor,foreground:css.color};
+             pairs[key] = {background:rgba(raw[key].background),foreground:rgba(raw[key].foreground)};
+         }
+-        return {scheme, pairs, raw};
++        const disabled = owner.createElement("span");
++        disabled.style.setProperty("color", "GrayText", "important");
++        witness.appendChild(disabled);
++        const grayCss = disabled.style.getPropertyValue("color")
++            ? view.getComputedStyle(disabled).getPropertyValue("color") : null;
++        return {scheme, pairs, raw, disabled_text: grayCss === null ? null :
++            {css: grayCss, rgba: rgba(grayCss)} };
+     } finally {
+         witness.remove();
+     }
+@@ -118,13 +124,22 @@ pub(super) async fn contrast(tab: &Tab, mode: &str) -> Result<Value> {
+ }
+ 
+ pub(super) async fn palette(tab: &Tab, appearance: &Value) -> Result<Value> {
++    let mut css = palette_with_disabled(tab, appearance).await?;
++    css.as_object_mut()
++        .context("CSS palette witness")?
++        .remove("disabled_text");
++    Ok(css)
++}
++
++pub(super) async fn palette_with_disabled(tab: &Tab, appearance: &Value) -> Result<Value> {
+     let css = tab.eval(CSS_WITNESS).await?;
+     let pairs = &css["pairs"];
+     let theme = &appearance["theme"];
+     check_eq!(
+-        &appearance["system_colors"],
+-        pairs,
+-        "the accepted palette matches all three independently measured browser pairs byte for byte"
++        appearance["system_colors"],
++        json!({"canvas":pairs["canvas"],"button":pairs["button"],"highlight":pairs["highlight"],
++            "disabled_text":css["disabled_text"]["rgba"]}),
++        "the three accepted system pairs and optional GrayText match independent browser measurements"
+     );
+     for (role, source) in [
+         ("surface", &pairs["canvas"]["background"]),
+diff --git a/e2e/src/material_web_contrast_png.rs b/e2e/src/material_web_contrast_png.rs
+index 1505aea578bae6aec157110ec55a52e5fc63bc7e..009c908ca43acc53b8823c1dd71bc33b8368ab44 100644
+--- a/e2e/src/material_web_contrast_png.rs
++++ b/e2e/src/material_web_contrast_png.rs
+@@ -29,6 +29,21 @@ impl CanvasPng {
+         tab: &Tab,
+         name: &str,
+         scale: f64,
++    ) -> Result<Self> {
++        Self::capture_file(
++            env,
++            tab,
++            &format!("material-web-contrast-{name}.png"),
++            scale,
++        )
++        .await
++    }
++
++    pub(super) async fn capture_file(
++        env: &Env,
++        tab: &Tab,
++        filename: &str,
++        scale: f64,
+     ) -> Result<Self> {
+         tab.settle().await?;
+         let [x, y, width, height] = tab.canvas_box().await?;
+@@ -47,10 +62,7 @@ impl CanvasPng {
+             )
+             .await?;
+         let png = STANDARD.decode(response["data"].as_str().context("Chrome PNG bytes")?)?;
+-        fs::write(
+-            env.artifact(&format!("material-web-contrast-{name}.png")),
+-            &png,
+-        )?;
++        fs::write(env.artifact(filename), &png)?;
+         let mut decoder = png::Decoder::new(Cursor::new(png));
+         decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
+         let mut reader = decoder.read_info()?;
+diff --git a/examples/material-gallery/src/filled_text_field_demo.rs b/examples/material-gallery/src/filled_text_field_demo.rs
+index 4dbd3f466f34308d1049bb9024b5e3c29e6c5563..093c5069355134cd99f75d7efc50fdb3a8779fad 100644
+--- a/examples/material-gallery/src/filled_text_field_demo.rs
++++ b/examples/material-gallery/src/filled_text_field_demo.rs
+@@ -1,8 +1,8 @@
+ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ use surface_material::{
+-    shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldEditability,
+-    TextFieldOptions, Theme,
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
++    TextFieldAppearance, TextFieldEditability, TextFieldOptions, TextFieldTheme, Theme,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+@@ -139,7 +139,12 @@ impl FilledTextFieldDemo {
+         options
+     }
+ 
+-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++    pub(crate) fn view(
++        &self,
++        theme: &Theme,
++        fields: TextFieldTheme<'_>,
++        dark: bool,
++    ) -> View<Message> {
+         use FilledTextFieldDemoEvent::*;
+         let demo = Message::FilledTextFieldDemo;
+         let toggle = |id, label, selected, message| {
+@@ -168,13 +173,17 @@ impl FilledTextFieldDemo {
+             toggle(ERROR, "錯誤", self.show_error, demo(ToggleError)),
+         ]);
+ 
++        let appearance = TextFieldAppearance::Filled;
+         let mut editable = self.options(EDITABLE, "專案名稱", &self.value);
+         editable.placeholder = Some("輸入名稱");
+         editable.supporting_text = Some("請輸入中文或英文名稱。");
+         editable.error = self.show_error.then_some("請輸入有效的專案名稱。");
+-        let editable = theme
+-            .filled_text_field_with_submit(
++        let editable = fields
++            .single_line(
++                appearance,
+                 editable,
++                TextFieldAdornments::default(),
++                None,
+                 move |value| demo(Edit(value)),
+                 move || Some(demo(Submit)),
+             )
+@@ -182,14 +191,28 @@ impl FilledTextFieldDemo {
+ 
+         let mut read_only = self.options(READ_ONLY, "唯讀名稱", "既有專案");
+         read_only.editability = TextFieldEditability::ReadOnly;
+-        let read_only = theme
+-            .filled_text_field(read_only, move |_| demo(EditLocked))
++        let read_only = fields
++            .single_line(
++                appearance,
++                read_only,
++                TextFieldAdornments::default(),
++                None,
++                move |_| demo(EditLocked),
++                || None,
++            )
+             .expect("valid read-only Gallery field");
+ 
+         let mut disabled = self.options(DISABLED, "停用名稱", "已封存專案");
+         disabled.editability = TextFieldEditability::Disabled;
+-        let disabled = theme
+-            .filled_text_field(disabled, move |_| demo(EditLocked))
++        let disabled = fields
++            .single_line(
++                appearance,
++                disabled,
++                TextFieldAdornments::default(),
++                None,
++                move |_| demo(EditLocked),
++                || None,
++            )
+             .expect("valid disabled Gallery field");
+ 
+         let long_label = self.options(
+@@ -197,8 +220,15 @@ impl FilledTextFieldDemo {
+             "輸入團隊成員在共用專案清單中容易辨認的完整名稱",
+             &self.long_value,
+         );
+-        let long_label = theme
+-            .filled_text_field(long_label, move |value| demo(EditLong(value)))
++        let long_label = fields
++            .single_line(
++                appearance,
++                long_label,
++                TextFieldAdornments::default(),
++                None,
++                move |value| demo(EditLong(value)),
++                || None,
++            )
+             .expect("valid long-label Gallery field");
+ 
+         let status = View::new(
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 4b3d85cb598aa1602663a5b3381c39009670546d..b1e11f9934f88a0f6ea584ecfa46ee8b4b376a80 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1319,22 +1319,42 @@ impl Application for Gallery {
+             return self.button_demo.view(&t, self.dark);
+         }
+         if self.filled_text_field_demo.visible() {
+-            return self.filled_text_field_demo.view(&t, self.dark);
++            return self.filled_text_field_demo.view(
++                &t,
++                t.text_fields_for(self.display_contrast),
++                self.dark,
++            );
+         }
+         if self.outlined_text_field_demo.visible() {
+-            return self.outlined_text_field_demo.view(&t, self.dark);
++            return self.outlined_text_field_demo.view(
++                &t,
++                t.text_fields_for(self.display_contrast),
++                self.dark,
++            );
+         }
+         if self.text_field_adornments_demo.visible() {
+-            return self.text_field_adornments_demo.view(&t, self.dark);
++            return self.text_field_adornments_demo.view(
++                &t,
++                t.text_fields_for(self.display_contrast),
++                self.dark,
++            );
+         }
+         if self.text_field_counter_demo.visible() {
+-            return self.text_field_counter_demo.view(&t, self.dark);
++            return self.text_field_counter_demo.view(
++                &t,
++                t.text_fields_for(self.display_contrast),
++                self.dark,
++            );
+         }
+         if self.text_field_placeholder_demo.visible() {
+             return self.text_field_placeholder_demo.view(&t, self.dark);
+         }
+         if self.multiline_text_field_demo.visible() {
+-            return self.multiline_text_field_demo.view(&t, self.dark);
++            return self.multiline_text_field_demo.view(
++                &t,
++                t.text_fields_for(self.display_contrast),
++                self.dark,
++            );
+         }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.view(&t, self.dark);
+@@ -2013,6 +2033,7 @@ mod web {
+                     "canvas": pair(colors.canvas),
+                     "button": pair(colors.button),
+                     "highlight": pair(colors.highlight),
++                    "disabled_text": colors.disabled_text,
+                 })),
+             ),
+             _ => ("unsupported", None),
+diff --git a/examples/material-gallery/src/main.rs b/examples/material-gallery/src/main.rs
+index a9e69142021063d7fa62d60c0d95099c5341f606..803611e423f34e98c5bb3445802f03b8745cbfeb 100644
+--- a/examples/material-gallery/src/main.rs
++++ b/examples/material-gallery/src/main.rs
+@@ -4,12 +4,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
+     if arguments.iter().any(|arg| arg == "--headless") {
+         #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+         {
+-            let (width, height) = headless_viewport(&arguments)?;
+-            return surface_platform::run_headless_runtime(runtime, width, height);
++            let options = headless_options(&arguments)?;
++            let mut runtime = runtime;
++            if let Some(contrast) = options.contrast {
++                runtime.set_display_contrast(contrast)?;
++            }
++            return surface_platform::run_headless_runtime(runtime, options.width, options.height);
+         }
+         #[cfg(not(all(feature = "devtools", not(target_arch = "wasm32"))))]
+         return Err("build the native Gallery with --features devtools for --headless".into());
+     }
++    if arguments.iter().any(|arg| arg == "--forced-colors") {
++        return Err("--forced-colors requires --headless".into());
++    }
+     let mut options = surface_platform::Options::default();
+     if arguments.iter().any(|arg| arg == "--smoke") {
+         options.close_after_frames = Some(2);
+@@ -19,16 +26,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
+ }
+ 
+ #[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+-fn headless_viewport(arguments: &[String]) -> Result<(u32, u32), Box<dyn std::error::Error>> {
+-    let (mut width, mut height) = (960, 800);
++struct HeadlessOptions {
++    width: u32,
++    height: u32,
++    contrast: Option<surface_app::DisplayContrast>,
++}
++
++#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
++fn headless_options(arguments: &[String]) -> Result<HeadlessOptions, Box<dyn std::error::Error>> {
++    let mut options = HeadlessOptions {
++        width: 960,
++        height: 800,
++        contrast: None,
++    };
+     let mut args = arguments.iter();
+     while let Some(arg) = args.next() {
+         match arg.as_str() {
+             "--headless" => {}
+-            "--width" => width = args.next().ok_or("missing value for --width")?.parse()?,
+-            "--height" => height = args.next().ok_or("missing value for --height")?.parse()?,
++            "--width" => {
++                options.width = args.next().ok_or("missing value for --width")?.parse()?;
++            }
++            "--height" => {
++                options.height = args.next().ok_or("missing value for --height")?.parse()?;
++            }
++            "--forced-colors" => {
++                let dark = match args.next().map(String::as_str) {
++                    Some("light") => false,
++                    Some("dark") => true,
++                    _ => return Err("--forced-colors expects light or dark".into()),
++                };
++                options.contrast = Some(preview_contrast(dark));
++            }
+             flag => return Err(format!("unexpected headless argument {flag}").into()),
+         }
+     }
+-    Ok((width, height))
++    Ok(options)
++}
++
++#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
++fn preview_contrast(dark: bool) -> surface_app::DisplayContrast {
++    use surface::Color;
++    use surface_app::{DisplayContrast, SystemColorPair, SystemContrastColors};
++
++    // CSS Color Adjustment Level 1, Forced Colors Mode Color Palettes.
++    let black = Color::rgb(0, 0, 0);
++    let white = Color::rgb(255, 255, 255);
++    let (background, foreground, disabled, highlight) = if dark {
++        (
++            black,
++            white,
++            Color::rgb(63, 242, 63),
++            Color::rgb(26, 235, 255),
++        )
++    } else {
++        (white, black, Color::rgb(96, 0, 0), Color::rgb(55, 0, 110))
++    };
++    let canvas = SystemColorPair {
++        background,
++        foreground,
++    };
++    let selection = SystemColorPair {
++        background: highlight,
++        foreground: background,
++    };
++    DisplayContrast::Forced(
++        SystemContrastColors::new(canvas, canvas, selection).with_disabled_text(disabled),
++    )
+ }
+diff --git a/examples/material-gallery/src/multiline_text_field_demo.rs b/examples/material-gallery/src/multiline_text_field_demo.rs
+index 45243106e83481a3ab408079fefdbf5444dac04d..337f295fd59ba710f54948a2929c21e255872438 100644
+--- a/examples/material-gallery/src/multiline_text_field_demo.rs
++++ b/examples/material-gallery/src/multiline_text_field_demo.rs
+@@ -5,7 +5,7 @@ use surface_app::View;
+ use surface_material::{
+     shape::LayoutDirection, typography, ButtonKind, ChoiceState, MultilineTextFieldSize,
+     TextFieldAdornments, TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions,
+-    TextFieldEditability, TextFieldOptions, TextFieldTrailingAction, Theme,
++    TextFieldEditability, TextFieldOptions, TextFieldTheme, TextFieldTrailingAction, Theme,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, text_field_counter_demo::clear_icon, Message};
+@@ -173,7 +173,7 @@ impl MultilineTextFieldDemo {
+             .suppress_repeated_activation()
+     }
+ 
+-    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
++    fn field(&self, fields: TextFieldTheme<'_>, sample: Sample) -> View<Message> {
+         use MultilineTextFieldDemoEvent::*;
+         use MultilineTextFieldSize::{FixedRows, Grow};
+         let demo = Message::MultilineTextFieldDemo;
+@@ -242,8 +242,8 @@ impl MultilineTextFieldDemo {
+         } else {
+             None
+         };
+-        theme
+-            .multiline_text_field(
++        fields
++            .multiline(
+                 self.appearance,
+                 options,
+                 size,
+@@ -260,7 +260,12 @@ impl MultilineTextFieldDemo {
+             .expect("valid Gallery multiline field")
+     }
+ 
+-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++    pub(crate) fn view(
++        &self,
++        theme: &Theme,
++        fields: TextFieldTheme<'_>,
++        dark: bool,
++    ) -> View<Message> {
+         use MultilineTextFieldDemoEvent::*;
+         let demo = Message::MultilineTextFieldDemo;
+         let toggle = |id, label, selected, message| {
+@@ -329,12 +334,12 @@ impl MultilineTextFieldDemo {
+         )
+         .accessibility_scroll_pages()
+         .children([
+-            self.field(theme, Sample::Grow),
+-            self.field(theme, Sample::Fixed),
++            self.field(fields, Sample::Grow),
++            self.field(fields, Sample::Fixed),
+             submit,
+             feedback,
+-            self.field(theme, Sample::ReadOnly),
+-            self.field(theme, Sample::Disabled),
++            self.field(fields, Sample::ReadOnly),
++            self.field(fields, Sample::Disabled),
+         ]);
+         View::new(
+             Node::new(Role::Window, TITLE)
+diff --git a/examples/material-gallery/src/outlined_text_field_demo.rs b/examples/material-gallery/src/outlined_text_field_demo.rs
+index 5889b965736248e3ff407c66bb07f26394a441e1..1707cdd5aa34877ed13cfbe056e8681ea8ce4d6e 100644
+--- a/examples/material-gallery/src/outlined_text_field_demo.rs
++++ b/examples/material-gallery/src/outlined_text_field_demo.rs
+@@ -2,7 +2,7 @@ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ use surface_material::{
+     shape::LayoutDirection, typography, ButtonKind, ChoiceState, OutlinedTextFieldOptions,
+-    TextFieldEditability, Theme,
++    TextFieldAdornments, TextFieldAppearance, TextFieldEditability, TextFieldTheme, Theme,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+@@ -144,7 +144,12 @@ impl OutlinedTextFieldDemo {
+         options
+     }
+ 
+-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++    pub(crate) fn view(
++        &self,
++        theme: &Theme,
++        fields: TextFieldTheme<'_>,
++        dark: bool,
++    ) -> View<Message> {
+         use OutlinedTextFieldDemoEvent::*;
+         let demo = Message::OutlinedTextFieldDemo;
+         let toggle = |id, label, selected, message| {
+@@ -173,13 +178,17 @@ impl OutlinedTextFieldDemo {
+             toggle(ERROR, "錯誤", self.show_error, demo(ToggleError)),
+         ]);
+ 
++        let appearance = TextFieldAppearance::Outlined;
+         let mut editable = self.options(EDITABLE, "專案名稱", &self.value);
+         editable.placeholder = Some("輸入名稱");
+         editable.supporting_text = Some("請輸入中文或英文名稱。");
+         editable.error = self.show_error.then_some("請輸入有效的專案名稱。");
+-        let editable = theme
+-            .outlined_text_field_with_submit(
++        let editable = fields
++            .single_line(
++                appearance,
+                 editable,
++                TextFieldAdornments::default(),
++                None,
+                 move |value| demo(Edit(value)),
+                 move || Some(demo(Submit)),
+             )
+@@ -187,14 +196,28 @@ impl OutlinedTextFieldDemo {
+ 
+         let mut read_only = self.options(READ_ONLY, "唯讀名稱", "既有專案");
+         read_only.editability = TextFieldEditability::ReadOnly;
+-        let read_only = theme
+-            .outlined_text_field(read_only, move |_| demo(EditLocked))
++        let read_only = fields
++            .single_line(
++                appearance,
++                read_only,
++                TextFieldAdornments::default(),
++                None,
++                move |_| demo(EditLocked),
++                || None,
++            )
+             .expect("valid read-only Gallery field");
+ 
+         let mut disabled = self.options(DISABLED, "停用名稱", "已封存專案");
+         disabled.editability = TextFieldEditability::Disabled;
+-        let disabled = theme
+-            .outlined_text_field(disabled, move |_| demo(EditLocked))
++        let disabled = fields
++            .single_line(
++                appearance,
++                disabled,
++                TextFieldAdornments::default(),
++                None,
++                move |_| demo(EditLocked),
++                || None,
++            )
+             .expect("valid disabled Gallery field");
+ 
+         let long_label = self.options(
+@@ -202,8 +225,15 @@ impl OutlinedTextFieldDemo {
+             "輸入團隊成員在共用專案清單中容易辨認的完整名稱",
+             &self.long_value,
+         );
+-        let long_label = theme
+-            .outlined_text_field(long_label, move |value| demo(EditLong(value)))
++        let long_label = fields
++            .single_line(
++                appearance,
++                long_label,
++                TextFieldAdornments::default(),
++                None,
++                move |value| demo(EditLong(value)),
++                || None,
++            )
+             .expect("valid long-label Gallery field");
+ 
+         let status = View::new(
+diff --git a/examples/material-gallery/src/text_field_adornments_demo.rs b/examples/material-gallery/src/text_field_adornments_demo.rs
+index 6e1c8c82f14cdfe233a0df285e990b473d28a2cd..84577a29afd9a8aabd60175f0a331b088c9ef62b 100644
+--- a/examples/material-gallery/src/text_field_adornments_demo.rs
++++ b/examples/material-gallery/src/text_field_adornments_demo.rs
+@@ -4,7 +4,7 @@ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ use surface_material::{
+     shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
+-    TextFieldAffix, TextFieldAppearance, TextFieldEditability, TextFieldOptions,
++    TextFieldAffix, TextFieldAppearance, TextFieldEditability, TextFieldOptions, TextFieldTheme,
+     TextFieldTrailingAction, Theme, VectorIcon,
+ };
+ 
+@@ -189,7 +189,7 @@ impl TextFieldAdornmentsDemo {
+             .suppress_repeated_activation()
+     }
+ 
+-    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
++    fn field(&self, fields: TextFieldTheme<'_>, sample: Sample) -> View<Message> {
+         use TextFieldAdornmentsDemoEvent::*;
+         let demo = Message::TextFieldAdornmentsDemo;
+         let (id, label, value, editability, action_name, icon, action) = match sample {
+@@ -252,11 +252,12 @@ impl TextFieldAdornmentsDemo {
+                 spoken_name: "每月",
+             }),
+         };
+-        let field = theme
+-            .text_field_with_adornments(
++        let field = fields
++            .single_line(
+                 self.appearance,
+                 options,
+                 adornments,
++                None,
+                 move |value| demo(if editable { Edit(value) } else { EditLocked }),
+                 move || editable.then(|| demo(Submit)),
+             )
+@@ -273,7 +274,12 @@ impl TextFieldAdornmentsDemo {
+         }
+     }
+ 
+-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++    pub(crate) fn view(
++        &self,
++        theme: &Theme,
++        fields: TextFieldTheme<'_>,
++        dark: bool,
++    ) -> View<Message> {
+         use TextFieldAdornmentsDemoEvent::*;
+         let demo = Message::TextFieldAdornmentsDemo;
+         let toggle = |id, label, selected, message| {
+@@ -335,9 +341,9 @@ impl TextFieldAdornmentsDemo {
+         )
+         .accessibility_scroll_pages()
+         .children([
+-            self.field(theme, Sample::Editable),
+-            self.field(theme, Sample::ReadOnly),
+-            self.field(theme, Sample::Disabled),
++            self.field(fields, Sample::Editable),
++            self.field(fields, Sample::ReadOnly),
++            self.field(fields, Sample::Disabled),
+             feedback,
+         ]);
+         View::new(
+diff --git a/examples/material-gallery/src/text_field_counter_demo.rs b/examples/material-gallery/src/text_field_counter_demo.rs
+index d92efe7b4e881b28c76c3c9747bf4dd0dbbe4d4b..ac1806b9fd120fe7e1e552dc65d02f0fe6c51b4b 100644
+--- a/examples/material-gallery/src/text_field_counter_demo.rs
++++ b/examples/material-gallery/src/text_field_counter_demo.rs
+@@ -5,7 +5,7 @@ use surface_app::View;
+ use surface_material::{
+     shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
+     TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability,
+-    TextFieldOptions, TextFieldTrailingAction, Theme, VectorIcon,
++    TextFieldOptions, TextFieldTheme, TextFieldTrailingAction, Theme, VectorIcon,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+@@ -176,7 +176,7 @@ impl TextFieldCounterDemo {
+             .suppress_repeated_activation()
+     }
+ 
+-    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
++    fn field(&self, fields: TextFieldTheme<'_>, sample: Sample) -> View<Message> {
+         use TextFieldCounterDemoEvent::*;
+         let demo = Message::TextFieldCounterDemo;
+         let (id, label, value, editability) = match sample {
+@@ -230,18 +230,18 @@ impl TextFieldCounterDemo {
+                 on_press: demo(Clear),
+             });
+         }
+-        let field = theme
+-            .text_field_with_counter(
++        let field = fields
++            .single_line(
+                 self.appearance,
+                 options,
+                 adornments,
+-                TextFieldCounterOptions {
++                Some(TextFieldCounterOptions {
+                     max_graphemes: LIMIT,
+                     over_limit_error: "請輸入最多 5 個字。",
+                     describe: &|count, limit| {
+                         format!("字數，已輸入 {count} 個字，上限 {limit} 個字。")
+                     },
+-                },
++                }),
+                 move |value| demo(if editable { Edit(value) } else { EditLocked }),
+                 move || editable.then(|| demo(Submit)),
+             )
+@@ -258,7 +258,12 @@ impl TextFieldCounterDemo {
+         }
+     }
+ 
+-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++    pub(crate) fn view(
++        &self,
++        theme: &Theme,
++        fields: TextFieldTheme<'_>,
++        dark: bool,
++    ) -> View<Message> {
+         use TextFieldCounterDemoEvent::*;
+         let demo = Message::TextFieldCounterDemo;
+         let toggle = |id, label, selected, message| {
+@@ -322,9 +327,9 @@ impl TextFieldCounterDemo {
+         )
+         .accessibility_scroll_pages()
+         .children([
+-            self.field(theme, Sample::Editable),
+-            self.field(theme, Sample::ReadOnly),
+-            self.field(theme, Sample::Disabled),
++            self.field(fields, Sample::Editable),
++            self.field(fields, Sample::ReadOnly),
++            self.field(fields, Sample::Disabled),
+             feedback,
+         ]);
+         View::new(

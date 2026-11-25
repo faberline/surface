@@ -1,0 +1,166 @@
+{
+  "q70_prior_actual_sealed_readback": {
+    "scope": "Native headless Reduce Motion endpoints at 1x raster scale, with Runtime semantic snapshots",
+    "source_manifest_sha256": "bc6f3023d68c8bec8c801c7a9a2d7c88207d625697cffb34f1eb4f5fef5a6d85",
+    "binary_manifest_sha256": "6bd269e0a9fe5b38e4c887aee0342d916b0a42b1157cb9b2378953485fc51a58",
+    "replay_manifest_sha256": "374bc9e179b3501bcc7403c241b8f44eea1a836b59071d1991d0731fdaf89233",
+    "report_sha256": "bd18e0ecf29b5ed3c327eb9af17ebb82061bb970e47bdbfb07bfa22eebcf4852",
+    "repeats": 2,
+    "original_pngs": 18,
+    "observed_window_samples": 48,
+    "visible_owned_windows": 0,
+    "reaped_gallery_processes": 4,
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ]
+  },
+  "q71_exact_inputs_only": {
+    "source_version": "0.1.71",
+    "source_files": 690,
+    "source_manifest_sha256": "888bf446dba55df082f0f8c8c9181e5a76fbad76c63e3cc002c9f3d211d07ed8",
+    "binary_manifest_sha256": "2932f41e240c5d8eb0898b1d40b2c41d6f1f278c301d80186df33c04ffc9be56",
+    "binaries": {
+      "surface-material-gallery": "52433c0fbda6afb6bf8d123f42ce4e02144ba6d2f941a52e2ab6751bf1fadf0f",
+      "surface-devtools": "30933e64f8a6c8be96cb9512639f7a1d96155a089a76cb064983983f9d7acf04"
+    }
+  },
+  "launcher_references": {
+    "global_instructions_checked": 314,
+    "r1_global_instructions": 293,
+    "r1_missing": [
+      [
+        "play",
+        "focus_by_tab"
+      ]
+    ],
+    "r3_missing": [],
+    "production_helpers_checked": {
+      "gallery_transport": [
+        "read_png",
+        "require"
+      ],
+      "native_runtime": [
+        "digest",
+        "focus_by_tab",
+        "focused",
+        "launch",
+        "same_box"
+      ],
+      "render_helpers": [
+        "activate",
+        "capture",
+        "find",
+        "focus",
+        "key",
+        "node",
+        "settle",
+        "visible"
+      ],
+      "window_check": [
+        "onscreen_windows"
+      ]
+    }
+  },
+  "shell_fixture_only": {
+    "wide-light": {
+      "confirmed": [
+        "--headless",
+        "--width",
+        "960",
+        "--height",
+        "900",
+        "--forced-colors",
+        "light"
+      ],
+      "bypasses_rejected": 3
+    },
+    "wide-dark": {
+      "confirmed": [
+        "--headless",
+        "--width",
+        "960",
+        "--height",
+        "900",
+        "--forced-colors",
+        "dark"
+      ],
+      "bypasses_rejected": 3
+    },
+    "compact-dark-rtl": {
+      "confirmed": [
+        "--headless",
+        "--width",
+        "320",
+        "--height",
+        "900",
+        "--forced-colors",
+        "dark"
+      ],
+      "bypasses_rejected": 3
+    }
+  },
+  "synthetic_pixel_controls": {
+    "synthetic_positive_profiles_forms_phases": 12,
+    "rejections": {
+      "wrong_disabled_value": "disabled-body has too few exact (63, 242, 63, 255) pixels. Got 0",
+      "wrong_disabled_label": "disabled-label has too few pixels blended from (10, 10, 10, 255) toward (63, 242, 63, 255): 0, 0 strong",
+      "wrong_readonly_value": "read-only-body has too few exact (255, 255, 255, 255) pixels. Got 0",
+      "idle_boundary_as_focus": "Read-only field lost 3 dp CanvasText boundary. Got [(0, 0, 0, 255), (255, 255, 255, 255), (0, 0, 0, 255), (0, 0, 0, 255), (0, 0, 0, 255)]",
+      "shifted_body_bounds": "filled/disabled measured glyph bounds or scale changed",
+      "mirrored_to_wrong_side": "disabled-body painted on the wrong logical side"
+    }
+  },
+  "actual_r2_partial_screen": {
+    "source_png_sha256": "cbea94f34801da7bc0ee674955c53c679353b8ec99d111a5834eb0ca6419775e",
+    "label": {
+      "exact_pixels": 0,
+      "extent": [
+        41,
+        326,
+        87,
+        338
+      ],
+      "leading_margin": 3,
+      "other_role_pixels": 0,
+      "rgba": [
+        96,
+        0,
+        0,
+        255
+      ],
+      "paper_rgba": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "caption_fit_pixels": 176,
+      "caption_strong_pixels": 47
+    },
+    "body": {
+      "exact_pixels": 152,
+      "extent": [
+        42,
+        354,
+        119,
+        368
+      ],
+      "leading_margin": 3,
+      "other_role_pixels": 0,
+      "rgba": [
+        96,
+        0,
+        0,
+        255
+      ]
+    },
+    "old_solid_check": "disabled-label has too few exact (96, 0, 0, 255) pixels. Got 0",
+    "wrong_ink_rejections": {
+      "wrong_red": "disabled-label has too few pixels blended from (255, 255, 255, 255) toward (96, 0, 0, 255): 0, 0 strong",
+      "grayscale_fallback": "disabled-label has too few pixels blended from (255, 255, 255, 255) toward (96, 0, 0, 255): 0, 0 strong"
+    }
+  },
+  "q71_runtime_exercised": false
+}

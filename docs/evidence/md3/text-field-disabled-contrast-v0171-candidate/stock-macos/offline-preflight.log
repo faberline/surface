@@ -1,0 +1,78 @@
+PASS pure guard predicates; no executable started
+{
+  "scope": "offline only; no .71 stock run or process launch",
+  "verified_previous_portable_stock": {
+    "archive_sha256": "5768509d54c91d83054cf12afff6a3eee8070c333dfa29a5324ee67077fc5a48",
+    "files": 613,
+    "checks": 28706,
+    "material_steps": 355,
+    "stock_receipt_sha256": "78f3585f8292bb91e4983bdbfb05f98ec8c1d29aab375970bfec67803f8da6bd",
+    "retained_boundary_pngs": 33,
+    "retained_placeholder_pngs": 58,
+    "retained_label_pngs": 34
+  },
+  "original_canonical_links_checked": 4,
+  "focused": {
+    "actual_receipt_sha256": "c6a3a984fcd408108ae61fcb889e7097f3c70fe370898c8176f6c016361ddada",
+    "checks": 1470,
+    "steps": [
+      "M241",
+      "M242",
+      "M243",
+      "M244",
+      "M245",
+      "M246",
+      "M247",
+      "M357",
+      "M358",
+      "M359"
+    ],
+    "headless_samples": 162,
+    "original_pngs": 15,
+    "ink_pixels": {
+      "outlined": {
+        "normal": 2608,
+        "forced": 2434,
+        "restored": 2608
+      },
+      "filled": {
+        "normal": 2791,
+        "forced": 2607,
+        "restored": 2791
+      },
+      "adorned": {
+        "normal": 2723,
+        "forced": 2583,
+        "restored": 2723
+      },
+      "counter": {
+        "normal": 2297,
+        "forced": 2116,
+        "restored": 2297
+      },
+      "multiline": {
+        "normal": 6519,
+        "forced": 6064,
+        "restored": 6519
+      }
+    },
+    "exact_source_bound": true
+  },
+  "negative_controls": {
+    "old_stock_steps": "Material steps changed",
+    "old_without_contrast": "material-text-field-disabled-contrast.json",
+    "skipped_m358": "Material steps changed",
+    "old_source": "not the v0.1.71 candidate",
+    "product_delta_instead_of_docs": "Material doc",
+    "missing_exact_runner_pin": "Provide every reviewed",
+    "scoped_as_stock": "exactly the ordered five",
+    "wrong_actual_adapter": "original PNG inventory",
+    "unreviewed_source_path": "An unreviewed source path changed",
+    "checking_the_link_as_original": "Different or missing pinned file",
+    "swapped_original_name": "exact canonical target",
+    "changed_original_digest": "Different or missing pinned file",
+    "shell_missing_png": true,
+    "shell_visible_window": true,
+    "shell_inherited_oracle_weakened": true
+  }
+}
