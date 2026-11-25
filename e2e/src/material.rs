@@ -88,6 +88,8 @@ mod material_search_overlay;
 mod material_side_sheet;
 #[path = "material_slider_forms.rs"]
 mod material_slider_forms;
+#[path = "material_slider_inset.rs"]
+mod material_slider_inset;
 #[path = "material_snackbar.rs"]
 mod material_snackbar;
 #[path = "material_split_button.rs"]
@@ -110,6 +112,8 @@ mod material_time_scroll;
 mod material_toolbar;
 #[path = "material_tooltip.rs"]
 mod material_tooltip;
+#[path = "material_vertical_centered_slider.rs"]
+mod material_vertical_centered_slider;
 #[path = "material_web_contrast.rs"]
 mod material_web_contrast;
 #[path = "material_web_contrast_png.rs"]
@@ -147,7 +151,8 @@ pub const STEPS: &[&str] = &[
     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
-    "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309",
+    "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
+    "M311", "M312", "M313", "M314", "M315",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -275,7 +280,9 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_icon_buttons::run(env, chrome, &url).await?;
     material_standard_slider::run(env, chrome, &url).await?;
     material_slider_forms::run(env, chrome, &url).await?;
-    material_range_slider::run(env, chrome, &url).await
+    material_range_slider::run(env, chrome, &url).await?;
+    material_vertical_centered_slider::run(env, chrome, &url).await?;
+    material_slider_inset::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -506,6 +513,22 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn inset_slider_steps_are_required_by_the_material_case() {
+        let inset = super::material_slider_inset::STEPS;
+        assert!(super::STEPS
+            .windows(inset.len())
+            .any(|steps| steps == inset));
+    }
+
+    #[test]
+    fn vertical_centered_steps_are_required_by_the_material_case() {
+        let centered = super::material_vertical_centered_slider::STEPS;
+        assert!(super::STEPS
+            .windows(centered.len())
+            .any(|steps| steps == centered));
+    }
+
     #[test]
     fn range_slider_steps_are_required_by_the_material_case() {
         let range = super::material_range_slider::STEPS;

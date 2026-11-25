@@ -208,7 +208,7 @@ pub use standard_navigation_drawer::{
 };
 pub use standard_slider::VerticalStandardSliderPlacement;
 pub use standard_slider::{
-    RangeSliderChange, RangeSliderOptions, RangeSliderThumb, StandardSliderMode,
+    RangeSliderChange, RangeSliderOptions, RangeSliderThumb, SliderInsetIcon, StandardSliderMode,
     StandardSliderOptions, StandardSliderSize,
 };
 pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};

@@ -7,8 +7,11 @@ use surface_app::{CursorStyle, SliderInputOptions, SliderScale, View};
 
 use crate::{shape::LayoutDirection, typography, Elevation, Theme};
 
+mod inset_icon;
 mod range_slider;
 mod vertical;
+pub use inset_icon::SliderInsetIcon;
+use inset_icon::{Axis, IconPaint};
 pub use range_slider::{RangeSliderChange, RangeSliderOptions, RangeSliderThumb};
 pub use vertical::VerticalStandardSliderPlacement;
 
@@ -84,7 +87,20 @@ impl Theme {
         options: StandardSliderOptions<'_>,
         handler: impl Fn(f64) -> M + 'static,
     ) -> Option<View<M>> {
-        self.horizontal_slider(options, None, handler)
+        self.horizontal_slider(options, None, None, handler)
+    }
+
+    /// Build a Standard slider with an optional measured track decoration.
+    /// Medium, Large, and ExtraLarge can show the glyph. It prefers the
+    /// active track and moves to the inactive track when only that one fits.
+    /// The glyph is decorative. The slider keeps its name and input target.
+    pub fn standard_slider_with_inset_icon<M>(
+        &self,
+        options: StandardSliderOptions<'_>,
+        icon: SliderInsetIcon<'_>,
+        handler: impl Fn(f64) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.horizontal_slider(options, None, Some(icon), handler)
     }
 
     /// Build a horizontal slider that fills between its handle and a fixed
@@ -99,13 +115,14 @@ impl Theme {
         neutral: f64,
         handler: impl Fn(f64) -> M + 'static,
     ) -> Option<View<M>> {
-        self.horizontal_slider(options, Some(neutral), handler)
+        self.horizontal_slider(options, Some(neutral), None, handler)
     }
 
     fn horizontal_slider<M>(
         &self,
         options: StandardSliderOptions<'_>,
         neutral: Option<f64>,
+        inset: Option<SliderInsetIcon<'_>>,
         handler: impl Fn(f64) -> M + 'static,
     ) -> Option<View<M>> {
         if options.id.trim().is_empty() || options.name.trim().is_empty() {
@@ -130,6 +147,7 @@ impl Theme {
             ticks.retain(|tick| tick.index != 0);
         }
         let palette = Palette::new(self, options.disabled);
+        let inset = IconPaint::prepare(inset, options, &palette, range.value == range.min);
         let handle_width = if engaged { 2. } else { 4. };
         let (leading, trailing) = if reverse {
             (INNER_RADIUS, size.outer_radius)
@@ -247,13 +265,18 @@ impl Theme {
             .padding(RAIL_INSET);
         style.min_width = MIN_TARGET;
         style.min_height = height;
-        let mut node = Node::new(Role::Slider, options.name)
+        let node = Node::new(Role::Slider, options.name)
             .id(options.id)
             .range(range)
             .disabled(options.disabled)
             .focus_color(Color::TRANSPARENT)
-            .styled(style)
-            .measured_group(Artwork {
+            .styled(style);
+        let mut node = IconPaint::attach(
+            inset,
+            Axis::Horizontal { reverse },
+            node,
+            &mut parts,
+            Artwork {
                 size,
                 reverse,
                 fraction,
@@ -261,7 +284,8 @@ impl Theme {
                 handle_width,
                 ticks,
                 has_label: label.is_some(),
-            });
+            },
+        );
         if let Some(text) = options.value_label {
             node = node.with_slider_value_text(text);
         }
