@@ -1,0 +1,156 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "calendar": {
+    "bounds": [
+      370.0,
+      178.0,
+      360.0,
+      524.0
+    ],
+    "grid": {
+      "type": "role",
+      "value": "grid"
+    },
+    "weekday": {
+      "type": "computedString",
+      "value": "星期日",
+      "sources": [
+        {
+          "type": "relatedElement",
+          "attribute": "aria-labelledby"
+        },
+        {
+          "type": "attribute",
+          "value": {
+            "type": "computedString",
+            "value": "星期日"
+          },
+          "attribute": "aria-label",
+          "attributeValue": {
+            "type": "string",
+            "value": "星期日"
+          }
+        },
+        {
+          "type": "contents",
+          "superseded": true
+        },
+        {
+          "type": "attribute",
+          "attribute": "title",
+          "superseded": true
+        }
+      ]
+    },
+    "today": {
+      "current": "date",
+      "selected": "false"
+    },
+    "selected": [
+      {
+        "name": "focusable",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "focused",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      },
+      {
+        "name": "readonly",
+        "value": {
+          "type": "boolean",
+          "value": false
+        }
+      },
+      {
+        "name": "required",
+        "value": {
+          "type": "boolean",
+          "value": false
+        }
+      },
+      {
+        "name": "selected",
+        "value": {
+          "type": "booleanOrUndefined",
+          "value": true
+        }
+      }
+    ],
+    "unavailable": [
+      {
+        "name": "disabled",
+        "value": {
+          "type": "boolean",
+          "value": true
+        }
+      },
+      {
+        "name": "readonly",
+        "value": {
+          "type": "boolean",
+          "value": false
+        }
+      },
+      {
+        "name": "required",
+        "value": {
+          "type": "boolean",
+          "value": false
+        }
+      }
+    ]
+  },
+  "years": {
+    "bounds": [
+      370.0,
+      394.0,
+      360.0,
+      1152.0
+    ],
+    "restored": true
+  },
+  "input": {
+    "hint": {
+      "type": "computedString",
+      "value": "年／月／日（YYYY/MM/DD）"
+    },
+    "error": {
+      "type": "computedString",
+      "value": "這個日期不存在 年／月／日（YYYY/MM/DD）"
+    },
+    "composition_enter_commits": false,
+    "explicit_submit": true
+  },
+  "compact": {
+    "panel": [
+      0.0,
+      0.0,
+      320.0,
+      520.0
+    ],
+    "day": [
+      128.0,
+      472.0,
+      48.0,
+      48.0
+    ],
+    "confirm": [
+      8.0,
+      8.0,
+      76.0,
+      60.0
+    ],
+    "body_scroll": [
+      120.0,
+      0
+    ]
+  },
+  "errors": []
+}

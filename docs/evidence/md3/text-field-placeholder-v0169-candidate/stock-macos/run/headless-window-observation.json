@@ -1,0 +1,113 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4862,
+      "pids": [
+        9413,
+        21270
+      ]
+    },
+    "native_gallery": {
+      "samples": 8,
+      "pids": [
+        21679
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4806,
+      "pids": [
+        9413
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 56,
+      "pids": [
+        21270
+      ],
+      "detached_samples": 50
+    },
+    "native": {
+      "samples": 8,
+      "pids": [
+        21679
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 9413,
+      "ppid": 9405,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=52809",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-field-placeholder-stock-v0169.RECb56Zt/run/tmp/.tmpTaQOCe",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new",
+        "--disable-updater-scheduler"
+      ],
+      "profile": "/private/tmp/surface-md3-field-placeholder-stock-v0169.RECb56Zt/run/tmp/.tmpTaQOCe"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 21270,
+      "ppid": 21259,
+      "allowed": true,
+      "argv": [
+        "--disable-updater-scheduler",
+        "--remote-debugging-port=54566",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-field-placeholder-stock-v0169.RECb56Zt/run/tmp/.tmp1uxoM4",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-field-placeholder-stock-v0169.RECb56Zt/run/tmp/.tmp1uxoM4"
+    },
+    {
+      "role": "native",
+      "pid": 21679,
+      "ppid": 9405,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
