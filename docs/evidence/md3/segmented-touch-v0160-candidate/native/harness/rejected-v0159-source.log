@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/private/tmp/surface-md3-segmented-touch-native.26fxPGhh/replay-segmented.py", line 556, in <module>
+    main()
+  File "/private/tmp/surface-md3-segmented-touch-native.26fxPGhh/replay-segmented.py", line 505, in main
+    sources = source_pins(source_root, source_manifest, args.source_manifest_sha256)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/surface-md3-segmented-touch-native.26fxPGhh/replay-segmented.py", line 392, in source_pins
+    require(len(entries) == SOURCE_FILES, f"Expected {SOURCE_FILES} files in the source seal")
+  File "/private/tmp/surface-md3-segmented-touch-native.26fxPGhh/gallery_transport.py", line 20, in require
+    raise RuntimeError(message)
+RuntimeError: Expected 662 files in the source seal
