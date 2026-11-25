@@ -553,20 +553,33 @@ impl<A: Application> Host<A> {
         }
     }
     #[cfg(target_arch = "wasm32")]
-    fn track_web_point_down(&self, touch: Option<u64>) {
+    fn track_web_drag_down(&self, touch: Option<u64>) {
+        use web_pointer_capture::DragOwner;
         if let Some(capture) = &self.web_pointer_capture {
-            capture.accept_down(touch, self.runtime.borrow().has_point_drag());
+            let runtime = self.runtime.borrow();
+            let owner = if runtime.has_point_drag() {
+                Some(DragOwner::Point)
+            } else if runtime.has_slider_pair_capture() {
+                Some(DragOwner::SliderPair)
+            } else {
+                None
+            };
+            capture.accept_down(touch, owner);
         }
     }
     #[cfg(target_arch = "wasm32")]
-    fn cancel_lost_web_point(&mut self, event_loop: &ActiveEventLoop) {
+    fn cancel_lost_web_drag(&mut self, event_loop: &ActiveEventLoop) {
+        use web_pointer_capture::DragOwner;
         let loss = self
             .web_pointer_capture
             .as_ref()
             .and_then(web_pointer_capture::WebPointerCapture::take_loss);
-        if let Some(pointer) = loss {
-            if self.touch.retire_web_contact(pointer.touch_id()) {
-                self.dispatch_input(event_loop, Runtime::cancel_point_drag);
+        if let Some(contact) = loss {
+            if self.touch.retire_web_contact(contact.pointer.touch_id()) {
+                self.dispatch_input(event_loop, |runtime| match contact.owner {
+                    DragOwner::Point => runtime.cancel_point_drag(),
+                    DragOwner::SliderPair => runtime.cancel_slider_pair_capture(),
+                });
             }
         }
     }
@@ -1057,7 +1070,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                 self.web_accessibility_action(event_loop, action)
             }
             #[cfg(target_arch = "wasm32")]
-            UserEvent::WebPointerCaptureLost => self.cancel_lost_web_point(event_loop),
+            UserEvent::WebPointerCaptureLost => self.cancel_lost_web_drag(event_loop),
         }
     }
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
@@ -1070,7 +1083,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
         // Chrome may deliver the next move or up immediately after loss.
         // Drain before winit can dispatch either for the old contact.
         #[cfg(target_arch = "wasm32")]
-        self.cancel_lost_web_point(event_loop);
+        self.cancel_lost_web_drag(event_loop);
         #[cfg(all(target_os = "macos", feature = "macos-accessibility"))]
         if let (Some(window), Some(adapter)) = (
             self.window.as_ref().filter(|window| window.id() == _id),
@@ -1172,7 +1185,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                     },
                 );
                 if down {
-                    self.track_web_point_down(None);
+                    self.track_web_drag_down(None);
                 }
             }
             WindowEvent::Touch(touch) => {
@@ -1193,7 +1206,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
                         });
                         #[cfg(target_arch = "wasm32")]
                         if down {
-                            self.track_web_point_down(Some(touch_id));
+                            self.track_web_drag_down(Some(touch_id));
                         }
                     }
                     touch_route::TouchStep::Cancel => {

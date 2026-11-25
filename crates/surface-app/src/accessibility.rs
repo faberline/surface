@@ -151,14 +151,22 @@ impl AccessibilityAdjustment {
 
 enum AdjustmentRange<'a> {
     Group(&'a AdjustableValue),
-    Slider(RangeValue, Option<crate::SliderInputOptions>),
+    Slider {
+        range: RangeValue,
+        input: Option<crate::SliderInputOptions>,
+        limits: Option<(f64, f64)>,
+    },
 }
 
 impl AdjustmentRange<'_> {
     fn resolve(&self, action: AccessibilityAdjustment) -> Option<f64> {
         match self {
             Self::Group(range) => action.resolve(range),
-            Self::Slider(range, input) => {
+            Self::Slider {
+                range,
+                input,
+                limits,
+            } => {
                 let relative = |steps| {
                     input.map_or_else(
                         || range.value + steps * range.step,
@@ -170,7 +178,7 @@ impl AdjustmentRange<'_> {
                     AccessibilityAdjustment::Decrement => relative(-1.),
                     AccessibilityAdjustment::SetValue(request) => request,
                 };
-                changed_slider_value(*range, request, *input)
+                changed_slider_value(*range, request, *input, *limits)
             }
         }
     }
@@ -630,6 +638,25 @@ impl<M> AccessibilityFrame<'_, M> {
             .is_some_and(|binding| binding.supports_step(increment))
     }
 
+    /// Return the currently legal numeric limits of a Slider in this scope.
+    ///
+    /// A thumb in a pair cannot cross its peer. Its two limits can coincide.
+    /// This descriptive query also applies to disabled sliders and leaves
+    /// the authored full numeric range available to the input policy.
+    pub fn slider_adjustment_bounds(&self, id: NodeId) -> Option<(f64, f64)> {
+        let node = self.node(id)?.node;
+        if node.role() != Role::Slider {
+            return None;
+        }
+        let range = node.range_value().filter(|range| range.is_valid())?;
+        Some(
+            self.bindings
+                .get(&id)?
+                .slider_limits
+                .unwrap_or((range.min, range.max)),
+        )
+    }
+
     fn adjustment_binding(&self, id: NodeId) -> Option<AdjustmentBinding<'_, M>> {
         let source = self.node(id).filter(visible_enabled_control)?;
         let binding = self.bindings.get(&id)?;
@@ -637,7 +664,11 @@ impl<M> AccessibilityFrame<'_, M> {
         if binding.accessible_slider_adjustment && source.node.role() == Role::Slider {
             let range = source.node.range_value().filter(|range| range.is_valid())?;
             return Some(AdjustmentBinding {
-                range: AdjustmentRange::Slider(range, binding.slider_input),
+                range: AdjustmentRange::Slider {
+                    range,
+                    input: binding.slider_input,
+                    limits: binding.slider_limits,
+                },
                 on_value,
                 on_step: None,
             });

@@ -103,11 +103,23 @@ pub(crate) struct RangeDrag {
     range: RangeValue,
     input: Option<crate::SliderInputOptions>,
     vertical: bool,
+    pair: Option<PairDrag>,
+}
+
+struct PairDrag {
+    owner: String,
+    spec: crate::slider_pair::HorizontalPair,
+    limit: f64,
+    pending: Option<(f32, f32)>,
 }
 
 impl RangeDrag {
     pub(crate) fn has_input_policy(&self) -> bool {
         self.input.is_some()
+    }
+
+    pub(crate) fn is_pair(&self) -> bool {
+        self.pair.is_some()
     }
 
     fn matches_range(&self, current: RangeValue) -> bool {
@@ -122,6 +134,7 @@ pub(crate) fn changed_slider_value(
     range: RangeValue,
     request: f64,
     input: Option<crate::SliderInputOptions>,
+    limits: Option<(f64, f64)>,
 ) -> Option<f64> {
     if !request.is_finite() {
         return None;
@@ -130,6 +143,7 @@ pub(crate) fn changed_slider_value(
         Some(input) => input.resolve_value(range, request)?,
         None => range.snap(request),
     };
+    let value = limits.map_or(value, |(min, max)| value.clamp(min, max));
     (value != range.value).then_some(value)
 }
 
@@ -203,6 +217,9 @@ impl<A: Application> Runtime<A> {
 
     fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
         let member = self.dom.get(id).ok()?;
+        if member.role() == Role::Slider && self.bindings.get(&id)?.slider_limits.is_some() {
+            return None;
+        }
         let mut parent = member.parent();
         let mut crossed_grid = member.accessibility_grid_role() == Some(GridRole::Grid);
         while let Some(id) = parent {
@@ -643,6 +660,9 @@ impl<A: Application> Runtime<A> {
             .as_ref()
             .is_some_and(|drag| !self.valid_range_drag(drag))
         {
+            if self.has_slider_pair_capture() {
+                self.cancel_touch_contact();
+            }
             if self
                 .range_drag
                 .as_ref()
@@ -668,7 +688,22 @@ impl<A: Application> Runtime<A> {
                 })
                 && node
                     .range_value()
-                    .is_some_and(|range| drag.matches_range(range)))
+                    .is_some_and(|range| drag.matches_range(range))
+                && drag.pair.as_ref().is_none_or(|pair| {
+                    self.dom.by_id(&pair.owner).is_some_and(|owner| {
+                        self.in_scope(owner)
+                            && self
+                                .bindings
+                                .get(&owner)
+                                .and_then(|binding| binding.slider_pair.as_ref())
+                                == Some(&pair.spec)
+                            && self.pair_peer_limit(id, &pair.spec) == Some(pair.limit)
+                            && (pair.pending.is_none()
+                                || node
+                                    .range_value()
+                                    .is_some_and(|range| range.value == drag.range.value))
+                    })
+                }))
     }
     pub(crate) fn clear_modal_pointer(&mut self) {
         self.modal_outside = false;
@@ -919,7 +954,8 @@ impl<A: Application> Runtime<A> {
         let range = self.dom.get(id)?.range_value().expect("validated slider");
         let binding = self.bindings.get(&id);
         let input = binding.and_then(|binding| binding.slider_input);
-        let Some(value) = changed_slider_value(range, value, input) else {
+        let limits = binding.and_then(|binding| binding.slider_limits);
+        let Some(value) = changed_slider_value(range, value, input, limits) else {
             return Ok(false);
         };
         let message = binding
@@ -936,6 +972,9 @@ impl<A: Application> Runtime<A> {
             return false;
         }
         let binding = self.bindings.get(&id);
+        if binding.is_some_and(|binding| binding.slider_limits.is_some()) {
+            return false;
+        }
         let input = binding.and_then(|binding| binding.slider_input);
         if input.is_some() && binding.is_none_or(|binding| binding.value.is_none()) {
             return false;
@@ -952,10 +991,172 @@ impl<A: Application> Runtime<A> {
             range: node.range_value().expect("validated range"),
             input,
             vertical: input.is_some() && node.is_vertical_slider(),
+            pair: None,
         });
         true
     }
-    pub(crate) fn range_pointer(&mut self, x: f32, y: f32) -> Result<bool, AppError> {
+    fn pair_peer_limit(
+        &self,
+        id: NodeId,
+        spec: &crate::slider_pair::HorizontalPair,
+    ) -> Option<f64> {
+        let key = self.dom.get(id).ok()?.stable_id()?;
+        let (min, max) = self.bindings.get(&id)?.slider_limits?;
+        if key == spec.lower {
+            Some(max)
+        } else if key == spec.upper {
+            Some(min)
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn start_pair_drag(
+        &mut self,
+        contact: crate::slider_pair::PairPress,
+        x: f32,
+        y: f32,
+    ) -> Result<bool, AppError> {
+        let spec = self.bindings[&contact.owner]
+            .slider_pair
+            .clone()
+            .expect("pair candidate has an owner");
+        let limit = self
+            .pair_peer_limit(contact.thumb, &spec)
+            .expect("validated pair thumb");
+        self.cancel_composition();
+        self.cancel_press_ripple();
+        self.pressed = None;
+        self.modal_outside = false;
+        self.range_drag = Some(RangeDrag {
+            id: self
+                .stable(contact.thumb)
+                .expect("pair thumb has a stable ID"),
+            bounds: contact.rail,
+            range: self
+                .dom
+                .get(contact.thumb)?
+                .range_value()
+                .expect("pair range"),
+            input: self.bindings[&contact.thumb].slider_input,
+            vertical: false,
+            pair: Some(PairDrag {
+                owner: self
+                    .stable(contact.owner)
+                    .expect("pair owner has a stable ID"),
+                spec,
+                limit,
+                pending: contact.ambiguous.then_some((x, y)),
+            }),
+        });
+        if contact.ambiguous {
+            return Ok(true);
+        }
+        self.press_pair_thumb(contact.thumb, x, y);
+        self.range_pointer(x, y, false)
+    }
+
+    fn press_pair_thumb(&mut self, thumb: NodeId, x: f32, y: f32) {
+        let id = self.stable(thumb).expect("pair thumb has a stable ID");
+        self.focused = Some(id.clone());
+        self.pressed = Some(id.clone());
+        self.hovered = Some(id.clone());
+        let ripple = self.press_ripple_contact(thumb);
+        let observes = self.app.observes_frame_input();
+        if let Some(bounds) = self
+            .computed
+            .as_ref()
+            .filter(|_| observes || ripple.is_some())
+            .and_then(|layout| layout.nodes.get(thumb.index()).map(|item| item.bounds))
+        {
+            let time = self.input_time_ms();
+            self.press_observation
+                .accept(&id, (x, y), bounds, time, observes, ripple);
+        }
+    }
+
+    fn claim_pending_pair(
+        &mut self,
+        x: f32,
+        y: f32,
+        ending: bool,
+    ) -> Result<Option<f32>, AppError> {
+        use crate::slider_pair::PAIR_SLOP;
+        let drag = self.range_drag.as_ref().expect("range pointer has a drag");
+        let Some((start_x, start_y)) = drag.pair.as_ref().and_then(|pair| pair.pending) else {
+            return Ok(Some(x));
+        };
+        let dx = x - start_x;
+        let dy = y - start_y;
+        if dy.abs() > PAIR_SLOP && dy.abs() > dx.abs() {
+            self.cancel_pointer()?;
+            return Ok(None);
+        }
+        let moved = dx.abs() > PAIR_SLOP && dx.abs() >= dy.abs();
+        if !moved && !ending {
+            return Ok(None);
+        }
+        let pair = drag.pair.as_ref().expect("pending pair has a pair");
+        let id = if moved {
+            let toward_maximum = (dx > 0.) != drag.input.expect("pair input").reverse_horizontal;
+            if toward_maximum {
+                &pair.spec.upper
+            } else {
+                &pair.spec.lower
+            }
+        } else {
+            &drag.id
+        };
+        let thumb = self
+            .dom
+            .by_id(id)
+            .expect("pending pair thumb still mounted");
+        let limit = self
+            .pair_peer_limit(thumb, &pair.spec)
+            .expect("pair thumb limit");
+        let range = self.dom.get(thumb)?.range_value().expect("pair range");
+        let id = id.clone();
+        let drag = self.range_drag.as_mut().expect("pending pair still exists");
+        drag.id = id;
+        drag.range = range;
+        let pair = drag.pair.as_mut().expect("pending pair has a pair");
+        pair.limit = limit;
+        pair.pending = None;
+        self.press_pair_thumb(thumb, start_x, start_y);
+        Ok(Some(if moved { x } else { start_x }))
+    }
+
+    pub(crate) fn range_pointer(&mut self, x: f32, y: f32, ending: bool) -> Result<bool, AppError> {
+        if self.has_slider_pair_capture() {
+            if ![x, y].into_iter().all(f32::is_finite) {
+                return self.cancel_pointer();
+            }
+            let drag = self.range_drag.as_ref().expect("paired drag exists");
+            let pair = drag.pair.as_ref().expect("paired drag has owner");
+            if !self.valid_range_drag(drag)
+                || self.computed.as_ref().is_some_and(|layout| {
+                    self.dom
+                        .by_id(&pair.spec.rail)
+                        .and_then(|id| layout.nodes.get(id.index()))
+                        .is_none_or(|rail| rail.bounds != drag.bounds)
+                })
+            {
+                return self.cancel_pointer();
+            }
+            let Some(x) = self.claim_pending_pair(x, y, ending)? else {
+                return Ok(true);
+            };
+            let drag = self.range_drag.as_ref().expect("claimed pair still exists");
+            let value = drag.input.expect("pair has typed input").pointer_value(
+                drag.range,
+                x,
+                drag.bounds.x,
+                drag.bounds.width,
+                false,
+            );
+            let id = drag.id.clone();
+            return self.set_value(&id, value).map(|_| true);
+        }
         let Some(drag) = &self.range_drag else {
             return Ok(false);
         };

@@ -7,7 +7,9 @@ use surface_app::{CursorStyle, SliderInputOptions, SliderScale, View};
 
 use crate::{shape::LayoutDirection, typography, Elevation, Theme};
 
+mod range_slider;
 mod vertical;
+pub use range_slider::{RangeSliderChange, RangeSliderOptions, RangeSliderThumb};
 pub use vertical::VerticalStandardSliderPlacement;
 
 const RAIL_INSET: f32 = 12.;

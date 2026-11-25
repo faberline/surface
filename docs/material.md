@@ -1018,9 +1018,26 @@ beside the control. This space includes the outline and gap. It stays
 outside the slider's hit target. The value text remains available to
 accessibility when the label has too little space to paint.
 
+Use `Theme::range_slider` with `RangeSliderOptions` for a horizontal
+interval. Give the pair and both ends distinct localized names. Store
+the lower and upper values together and apply both values from each
+`RangeSliderChange`. The change identifies the end that moved.
+
+Both ends use the same scale. They can meet, and each keeps its own Tab
+stop. The order stays lower then upper in either layout direction.
+The other value sets each end's accessible limit. A track press chooses
+the nearer end. When the handles overlap, a horizontal drag picks the end
+that can move in that direction. A canceled gesture keeps changes that
+the caller has already accepted.
+
+Set the engaged end from the current focus or accepted press. Each
+handle has its own hit area. Allow at least 53 dp above the handle
+for its value label and more space for large or wrapped text.
+
 [Material 3 sliders](https://m3.material.io/components/sliders/specs) ·
 [WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) ·
-[WAI vertical slider example](https://www.w3.org/WAI/ARIA/apg/patterns/slider/examples/slider-temperature/)
+[WAI vertical slider example](https://www.w3.org/WAI/ARIA/apg/patterns/slider/examples/slider-temperature/) ·
+[WAI multi-thumb sliders](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multithumb/)
 
 ## Icon buttons
 

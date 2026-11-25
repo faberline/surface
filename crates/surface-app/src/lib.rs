@@ -23,6 +23,7 @@ mod paint_export;
 mod press_ripple;
 mod scroll_control;
 mod slider;
+mod slider_pair;
 mod snapshot;
 #[cfg(feature = "devtools")]
 pub mod trace;
@@ -90,6 +91,7 @@ pub struct View<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_slider_adjustment: bool,
     slider_input: Option<SliderInputOptions>,
+    slider_pair: Option<slider_pair::HorizontalPair>,
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
@@ -179,6 +181,7 @@ impl<M> View<M> {
             value: None,
             accessible_slider_adjustment: false,
             slider_input: None,
+            slider_pair: None,
             accessible_step: None,
             roving: None,
             dismiss: None,
@@ -498,6 +501,33 @@ impl<M> View<M> {
             reverse_horizontal: false,
         });
         self.node = self.node.with_slider_vertical(true);
+        self
+    }
+    /// Bind two ordered Slider children to one horizontal rail.
+    ///
+    /// Use a stable named Group with a local passive rail and distinct
+    /// lower and upper Slider children in that authored order. The rail is
+    /// a noninteractive Group leaf. Both sliders use the same full numeric
+    /// range and horizontal input policy.
+    /// Author canonical values with the lower value no greater than the upper.
+    /// Disable both thumbs together via the owner. The ordinary setters and
+    /// accessibility actions use the peer value as the current limit.
+    /// Both enabled thumbs remain separate Tab stops inside roving groups.
+    /// Place the rail and the two positive-size hit targets inside the owner.
+    /// A press chooses a thumb by distance on the rail. When the pointer
+    /// lands close to both centers, horizontal movement chooses the thumb on
+    /// that logical side.
+    pub fn with_horizontal_slider_pair(
+        mut self,
+        rail_id: impl Into<String>,
+        lower_id: impl Into<String>,
+        upper_id: impl Into<String>,
+    ) -> Self {
+        self.slider_pair = Some(slider_pair::HorizontalPair {
+            rail: rail_id.into(),
+            lower: lower_id.into(),
+            upper: upper_id.into(),
+        });
         self
     }
     /// Handle native Increment (`true`) or Decrement (`false`) directly.
@@ -1094,6 +1124,8 @@ struct Binding<M> {
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_slider_adjustment: bool,
     slider_input: Option<SliderInputOptions>,
+    slider_pair: Option<slider_pair::HorizontalPair>,
+    slider_limits: Option<(f64, f64)>,
     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
     roving: Option<controls::RovingGroup>,
     dismiss: Option<M>,
@@ -1354,6 +1386,24 @@ impl<A: Application> Runtime<A> {
         self.cancel_drag().map(|drag| changed || drag)
     }
 
+    /// Cancel a pending or claimed contact on a paired slider.
+    /// Return false when the host has no paired contact to cancel.
+    pub fn cancel_slider_pair_capture(&mut self) -> Result<bool, AppError> {
+        if self.has_slider_pair_capture() {
+            self.cancel_pointer()
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Let the host associate its physical pointer ID with this contact.
+    #[doc(hidden)]
+    pub fn has_slider_pair_capture(&self) -> bool {
+        self.range_drag
+            .as_ref()
+            .is_some_and(controls::RangeDrag::is_pair)
+    }
+
     /// Invalidate pointer geometry before the next resize or scale redraw.
     pub fn pointer_geometry_changed(&mut self) -> Result<bool, AppError> {
         self.pointer_geometry_current = false;
@@ -1397,7 +1447,11 @@ impl<A: Application> Runtime<A> {
     /// IME replacement is pending. Hosts can consult this before a native
     /// focus transfer would end composition. This does not dispatch the press.
     pub fn pointer_preserves_composition(&self, x: f32, y: f32) -> bool {
-        let hit = self.hit(x, y);
+        let hit = self.raw_hit(x, y);
+        let hit = self
+            .horizontal_pair_at(hit, x, y)
+            .map(|pair| pair.thumb)
+            .or(hit);
         self.protects_pointer_composition(hit)
             || (self.has_pending_composition() && self.drag_candidate(hit, x, y).is_some())
     }
@@ -1492,7 +1546,10 @@ impl<A: Application> Runtime<A> {
         } else {
             self.cancel_press_ripple();
             self.discard_drag();
-            if self.cancel_touch_contact() || self.active_scope_root().is_some() {
+            if self.cancel_touch_contact()
+                || self.active_scope_root().is_some()
+                || self.has_slider_pair_capture()
+            {
                 self.clear_modal_pointer();
             }
         }
@@ -1530,6 +1587,7 @@ impl<A: Application> Runtime<A> {
                 || view.stick
                 || view.vertical_scroll.is_some()
                 || view.horizontal_scroll.is_some()
+                || view.slider_pair.is_some()
                 || view.accessible_scroll
                 || view.accessible_scroll_pages
                 || !view.drag_bindings.is_empty())
@@ -1582,6 +1640,8 @@ impl<A: Application> Runtime<A> {
                     value: view.value,
                     accessible_slider_adjustment: view.accessible_slider_adjustment,
                     slider_input: view.slider_input,
+                    slider_pair: view.slider_pair,
+                    slider_limits: None,
                     accessible_step: view.accessible_step,
                     roving: view.roving,
                     dismiss: view.dismiss,
@@ -1643,6 +1703,7 @@ impl<A: Application> Runtime<A> {
             false,
             None,
         )?;
+        slider_pair::bind_limits(&dom, &mut bindings)?;
         for (key, (x, y)) in &self.scroll {
             if let Some(id) = dom.by_id(key) {
                 let mut style = dom.get(id)?.style().clone();
@@ -1886,6 +1947,17 @@ impl<A: Application> Runtime<A> {
         Ok(list)
     }
     fn hit(&self, x: f32, y: f32) -> Option<NodeId> {
+        let id = self.raw_hit(x, y)?;
+        if self.bindings.get(&id)?.slider_limits.is_some() {
+            Some(
+                self.horizontal_pair_at(Some(id), x, y)
+                    .map_or(id, |pair| pair.thumb),
+            )
+        } else {
+            Some(id)
+        }
+    }
+    fn raw_hit(&self, x: f32, y: f32) -> Option<NodeId> {
         self.computed
             .as_ref()?
             .hit_test_where(&self.dom, x, y, |id| self.in_scope(id))
@@ -2129,12 +2201,17 @@ impl<A: Application> Runtime<A> {
     ) -> Result<bool, AppError> {
         match event {
             Event::PointerDown { x, y } => {
-                if self.has_captured_drag() {
+                if self.has_captured_drag() || self.has_slider_pair_capture() {
                     self.cancel_pointer()?;
                 }
-                let hit = self.hit(x, y);
+                let hit = self.raw_hit(x, y);
+                let pair = self.horizontal_pair_at(hit, x, y);
+                let hit = pair.as_ref().map(|pair| pair.thumb).or(hit);
                 if self.protects_pointer_composition(hit) {
                     return Ok(false);
+                }
+                if let Some(pair) = pair {
+                    return self.start_pair_drag(pair, x, y);
                 }
                 let observes_application = self.app.observes_frame_input();
                 let ripple = hit.and_then(|id| self.press_ripple_contact(id));
@@ -2189,7 +2266,7 @@ impl<A: Application> Runtime<A> {
                         self.focused = self.pressed.clone();
                     }
                     if self.start_range_drag() {
-                        return self.range_pointer(x, y);
+                        return self.range_pointer(x, y, false);
                     }
                     self.place_text_cursor(x, y, false);
                 }
@@ -2206,9 +2283,18 @@ impl<A: Application> Runtime<A> {
                 if self.update_drag(x, y, true, suppress_touch_activation)? {
                     return Ok(true);
                 }
-                if self.range_drag.is_some() {
-                    self.press_observation.release();
-                    let result = self.range_pointer(x, y);
+                if let Some(drag) = &self.range_drag {
+                    let paired = drag.is_pair();
+                    if paired && suppress_touch_activation {
+                        return self.cancel_pointer();
+                    }
+                    if !paired {
+                        self.press_observation.release();
+                    }
+                    let result = self.range_pointer(x, y, true);
+                    if self.has_slider_pair_capture() {
+                        self.press_observation.release();
+                    }
                     self.range_drag = None;
                     self.pressed = None;
                     return result;
@@ -2325,7 +2411,7 @@ impl<A: Application> Runtime<A> {
                 let changed = self.hovered != hover;
                 self.hovered = hover;
                 if self.range_drag.is_some() {
-                    return self.range_pointer(x, y);
+                    return self.range_pointer(x, y, false);
                 }
                 self.place_text_cursor(x, y, true);
                 Ok(changed || self.text_drag.is_some())
@@ -2371,7 +2457,7 @@ impl<A: Application> Runtime<A> {
                     .map(|changed| pointer || changed)
             }
             Event::Cancel => {
-                let dragging = self.has_captured_drag();
+                let dragging = self.has_captured_drag() || self.has_slider_pair_capture();
                 let pointer = self.cancel_pointer()?;
                 if dragging {
                     return Ok(true);

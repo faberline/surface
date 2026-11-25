@@ -610,10 +610,11 @@ impl Node {
     pub(crate) fn horizontal_slide(&self) -> f32 {
         self.horizontal_slide
     }
-    /// Measure this node as a single item and place its direct decorative leaves.
+    /// Measure this node as a single item and place its direct flow children.
     ///
-    /// Children must be flow leaves. Each receives a rectangle relative to
-    /// this group. The callback is runtime-only and is not serialized.
+    /// Each child receives a rectangle relative to this group. Children must
+    /// be leaves unless the layout opts in to placing measured children.
+    /// The callback is runtime-only and is not serialized.
     pub fn measured_group(mut self, layout: impl crate::MeasuredGroupLayout + 'static) -> Self {
         self.measured_group = Some(crate::layout::MeasuredGroup(Arc::new(layout)));
         self

@@ -72,12 +72,21 @@ pub trait TextMeasurer {
         }
     }
 }
-/// Measure a group as a single layout item and place its direct decorative leaves.
+/// Measure a group as a single layout item and place its direct flow children.
 ///
 /// The children keep their authored semantics and paint order. The group
 /// owns placement and the usual ancestor and group clipping applies. Measured
 /// sizes and placed rectangles must be finite and have nonnegative dimensions.
 pub trait MeasuredGroupLayout: std::fmt::Debug + Send + Sync {
+    /// Allow direct children that have their own measured layout.
+    ///
+    /// Each child places its descendants within the size given by this
+    /// group. Normal flow containers with descendants and out-of-flow
+    /// children remain unsupported.
+    fn places_measured_groups(&self) -> bool {
+        false
+    }
+
     /// Return the group's desired content size within the available width.
     fn measure(
         &self,
@@ -414,15 +423,19 @@ impl LayoutEngine {
             if !valid(&n.style) {
                 return Err(LayoutError::InvalidStyle(i));
             }
-            if n.measured
-                && n.children.iter().any(|id| {
+            if let Some(group) = node.measured_group_layout() {
+                let nested = group.places_measured_groups();
+                if n.children.iter().any(|id| {
                     let child = &input[id.index()];
                     child.style.position != Position::Flow
-                        || !child.children.is_empty()
-                        || child.measured
-                })
-            {
-                return Err(LayoutError::InvalidStyle(i));
+                        || if child.measured {
+                            !nested
+                        } else {
+                            !child.children.is_empty()
+                        }
+                }) {
+                    return Err(LayoutError::InvalidStyle(i));
+                }
             }
         }
         let topology_changed = self.previous.len() != input.len()

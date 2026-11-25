@@ -68,6 +68,8 @@ mod material_progress;
 mod material_radio;
 #[path = "material_rail.rs"]
 mod material_rail;
+#[path = "material_range_slider.rs"]
+mod material_range_slider;
 #[path = "material_scroll_choice_fields.rs"]
 mod material_scroll_choice_fields;
 #[path = "material_scroll_fields.rs"]
@@ -145,7 +147,7 @@ pub const STEPS: &[&str] = &[
     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
-    "M299", "M300", "M301", "M302", "M303", "M304", "M305",
+    "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -272,7 +274,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_chips::run(env, chrome, &url).await?;
     material_icon_buttons::run(env, chrome, &url).await?;
     material_standard_slider::run(env, chrome, &url).await?;
-    material_slider_forms::run(env, chrome, &url).await
+    material_slider_forms::run(env, chrome, &url).await?;
+    material_range_slider::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -503,6 +506,14 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn range_slider_steps_are_required_by_the_material_case() {
+        let range = super::material_range_slider::STEPS;
+        assert!(super::STEPS
+            .windows(range.len())
+            .any(|steps| steps == range));
+    }
+
     #[test]
     fn failure_dump_step_is_not_required() {
         // M23 only runs on failure, so a passing run must not require it.
