@@ -1,0 +1,169 @@
+{
+  "native": {
+    "binaries": {
+      "surface-devtools": "f11abddc4e52f07f0cf430af1a28d39d6d2b7ae106383f39dfd5a0f7ee0ab49f",
+      "surface-material-gallery": "98fc9702067a1123b71373d02ed384bb962f8f6c1aba3eb64901305e1655e794"
+    },
+    "captures": {
+      "compact-dark-rtl-200-sizes.png": "23c3b7e464aaa1910cedf1ba387515f6c097f42fdcc87e4cb7e16435540d3d34",
+      "compact-dark-rtl-200-wrapped-focus.png": "faaf6e98a81629c51e0ba822c766bdc7f2e3198ae4c693ddea3ea32467986ab7",
+      "wide-light-rest.png": "6a0840335bb788a47fafb701d34bda41af420ff7ec4b4c9e95f021c55868f26d",
+      "wide-light-selected-focus.png": "1813437e3bc78605137e11c111794d5ab0607b0b10762e38fafa5d72fa57344f",
+      "wide-light-square-toggle.png": "cd56dc5ff8648d08f1f80d30cb48412fcf35b9cd31ded7ce48e627e4cff83a98"
+    },
+    "owned_processes_reaped": 4,
+    "report_sha256": "732bfa65e6278e776f5297f638f807b6f25f57355be3eb388b6984c83113cca2",
+    "runs": 2,
+    "seal": "0a24e86234540ba47b8da45d6a85b5b55924015bc826794c748839357d34d1f6",
+    "transports": [
+      "Page.screenshot",
+      "CLI",
+      "MCP"
+    ],
+    "visible_windows": 0,
+    "window_samples": 16
+  },
+  "rust": {
+    "metal": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "72c90ce0f760d98b5415f15952882e8e82996eb9309bbfea3b129c390cef17d2",
+      "passed": 16
+    },
+    "source_checks": {
+      "gpu-source-after.log": "0310b83157f8832e581a3726555ee617cd1e76562508164782149dc80fecc4d0",
+      "gpu-source-before.log": "0310b83157f8832e581a3726555ee617cd1e76562508164782149dc80fecc4d0",
+      "workspace-source-after.log": "0310b83157f8832e581a3726555ee617cd1e76562508164782149dc80fecc4d0",
+      "workspace-source-before.log": "0310b83157f8832e581a3726555ee617cd1e76562508164782149dc80fecc4d0"
+    },
+    "supplemental": {
+      "backend": "Metal",
+      "ignored": 0,
+      "log_sha256": "7f70a3773617fe87b8e968efd721aa97e88c069870c12ce3afc612d462627d77",
+      "passed": 2
+    },
+    "workspace": {
+      "ignored": 19,
+      "log_sha256": "c7064dd1585fa15298c42e7809b83def58747e84014755817f33b6e19b34cb4e",
+      "passed": 1492,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_source_sha256": "5936ee7ecfdf584a2ca3acf7fa3297db09e86132b8a5dd60bd169391a90d44c1",
+    "base_tree": "72cf21a76d284e3a299aedff91b953eae232db07",
+    "changed_paths": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/surface-material/src/button.rs",
+      "crates/surface-material/src/lib.rs",
+      "crates/surface-material/tests/material_button.rs",
+      "docs/material-coverage.json",
+      "docs/material.md",
+      "e2e/src/material.rs",
+      "e2e/src/material_buttons.rs",
+      "examples/material-gallery/src/button_demo.rs",
+      "examples/material-gallery/src/lib.rs"
+    ],
+    "patch_sha256": "ce244dac0a2487b87e292b3f6dd0a1fcfb861644af9f68cf4cd610bebe35e362",
+    "source_files": 656,
+    "source_sha256": "b03623198811629a68a2dfe5620d5705c55ea7744157ff2ac732d174833eedbf",
+    "tree": "8ba487496a2816f3bff3363328ba0dc40a059c30",
+    "version": "0.1.58"
+  },
+  "status": "verified",
+  "stock_macos": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "captures": {
+      "material-buttons-checked.png": {
+        "decoded_rgb_sha256": "4aedd64750b5f60781ef62ccbf2cf490c46de00555744b17b7f05506cb4a8fb0",
+        "sha256": "0c7ed90b5f3ff954892633501c36856a52a2059b54650d982dea5e55249a58f8",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "a537af260b6157124020a6d990b6baf4e36c2e0f7d1c1a44fdbe74c1a2918c9f",
+        "sha256": "aec1c85fcabfbbf6cd8db5371195d5c8370bcfc3305d1278ecd4d84b2cd2f6b4",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-buttons-held.png": {
+        "decoded_rgb_sha256": "0d13f2903be1a8b6cfeb420f644c9e9eb4b4e5525a0d59a4f76f359d9b6f497d",
+        "sha256": "692bd63a3ba3c21f81c6f09601230b67fbd2985f725ed2c3ee362b23a6d3f3fc",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-light.png": {
+        "decoded_rgb_sha256": "ba75e30b28a54a9f5391489e54a2e930103100e7327935df9710198c5bc0ea3b",
+        "sha256": "ea364bfc1c76a22cea0ca2849e27d5cee247db877659fdd3a8e2b61980a49069",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-motion-early.png": {
+        "decoded_rgb_sha256": "df8c44c29e8242b3ca3dff1ce6de4f1e576da22e562085f1a4e167eda6eb1c3b",
+        "sha256": "d78c1231a7a3f0638dba53c4250cc6482d302c1a036b653221046c4edfc42f79",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-motion-reduced.png": {
+        "decoded_rgb_sha256": "09ac73ed8413fc128441777ef9eeb4987153a5162b4268db633e9b712068d483",
+        "sha256": "d85261e29cb76279edafc106f433637e5c6def589436b3be781b13c2d94e7a1c",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-motion-rest.png": {
+        "decoded_rgb_sha256": "08b911bfbcb56af019b1d777a0f96cafbd8a263100cf978a18f37d65a9aaa435",
+        "sha256": "e00c79877de93c8236658bb68fe296f69a4a35930a0153a1ee0a72d978a20605",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 22723,
+        "steps": 318
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "page_errors": 0,
+    "receipt_sha256": "39ffada1b11abbdb39e2eea7943041a5a891c576501c7411ed60c12a3aa1c218",
+    "runner_sha256": "2983095ebdaeccae35bad12f6bf5026fcd904929a136ecf29cfa89cfc92d5314",
+    "surviving_processes": 0,
+    "total_checks": 23004,
+    "visible_windows": 0
+  }
+}

@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/private/tmp/surface-md3-common-buttons-native.juKPEyE6/replay-common-buttons.py", line 525, in <module>
+    main()
+  File "/private/tmp/surface-md3-common-buttons-native.juKPEyE6/replay-common-buttons.py", line 475, in main
+    sources = source_pins(source_root, source_manifest, args.source_manifest_sha256)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/surface-md3-common-buttons-native.juKPEyE6/replay-common-buttons.py", line 401, in source_pins
+    require(path.is_file() and not path.is_symlink() and path.resolve().is_relative_to(root)
+  File "/private/tmp/surface-md3-common-buttons-native.juKPEyE6/gallery_transport.py", line 20, in require
+    raise RuntimeError(message)
+RuntimeError: Wrong source bytes for e2e/src/material_buttons.rs
