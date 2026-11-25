@@ -1,0 +1,4122 @@
+{
+  "source": {
+    "manifest_sha256": "fe7349b293de3078ca44fd6b1fa1885a5fa156ba559503c795cd9d6daab5e4a3",
+    "files": 678
+  },
+  "binary_manifest_sha256": "1f6bf2107ef940ba23912ac57b349a188cfa034d94dc8ffa574269ba195dc098",
+  "binaries": {
+    "surface-devtools": "a742149852b47481974bf0037024b918583bd457c6d577c59b53e9e1a9308ab6",
+    "surface-material-gallery": "0d20f8323c211435a3ac438bbf564fc7751ae9397ebce7d49fc734e3cd2d1872"
+  },
+  "schema": "surface.test.text-field-counter.native.v1",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "replays": [
+    {
+      "wide": {
+        "viewport": [
+          960,
+          1120
+        ],
+        "captures": [
+          {
+            "name": "wide-outlined-seed.png",
+            "sha256": "42bcd73f9e5c1279d0768a2e08d619120838daf919b75db43633728e2d3cf729",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 160.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 51,
+                "ink_contrast_pixels": 82,
+                "blend_space": "linear",
+                "fit_pixels": 82,
+                "peak_coverage": 0.99298,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 1379,
+                "ink_contrast_pixels": 2191,
+                "blend_space": "linear",
+                "fit_pixels": 2191,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 1,
+              "samples": [
+                [
+                  122,
+                  117,
+                  127,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "fill": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "locked": {
+              "text-field-counter-demo-read-only": {
+                "state": {
+                  "id": "text-field-counter-demo-read-only",
+                  "value": "🇹🇼á",
+                  "counter": "2/5",
+                  "invalid": false,
+                  "description": "已儲存的標籤。",
+                  "description_ids": [
+                    "text-field-counter-demo-read-only-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 2 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 248.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 248.0
+                  },
+                  "helper": {
+                    "height": 16.0,
+                    "width": 437.0,
+                    "x": 40.0,
+                    "y": 308.0
+                  },
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 308.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 308.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 50,
+                    "ink_contrast_pixels": 80,
+                    "blend_space": "linear",
+                    "fit_pixels": 80,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ],
+                  "helper": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 307,
+                    "ink_contrast_pixels": 515,
+                    "blend_space": "linear",
+                    "fit_pixels": 515,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "text-field-counter-demo-disabled": {
+                "state": {
+                  "id": "text-field-counter-demo-disabled",
+                  "value": "停用標籤內容",
+                  "counter": "6/5",
+                  "invalid": false,
+                  "description": null,
+                  "description_ids": [
+                    "text-field-counter-demo-disabled-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 352.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 352.0
+                  },
+                  "helper": null,
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 412.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 412.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      29,
+                      27,
+                      32,
+                      97
+                    ],
+                    "ink_pixels": 37,
+                    "ink_contrast_pixels": 78,
+                    "blend_space": "encoded",
+                    "fit_pixels": 78,
+                    "peak_coverage": 0.98926,
+                    "candidate_composites": [
+                      [
+                        168,
+                        163,
+                        170,
+                        255
+                      ],
+                      [
+                        205,
+                        200,
+                        207,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "wide-outlined-overflow.png",
+            "sha256": "0ea7b086649f076c1a21cc631f92e89d40fd230a5063cfeb3d00e1a30c5cd604",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽🇹🇼👩‍💻Z",
+              "counter": "6/5",
+              "invalid": true,
+              "description": "請輸入最多 5 個字。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+              "assertive_status": "請輸入最多 5 個字。",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 160.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                "ink_pixels": 37,
+                "ink_contrast_pixels": 96,
+                "blend_space": "encoded",
+                "fit_pixels": 96,
+                "peak_coverage": 0.9866,
+                "candidate_composites": [
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ],
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                "ink_pixels": 300,
+                "ink_contrast_pixels": 597,
+                "blend_space": "encoded",
+                "fit_pixels": 597,
+                "peak_coverage": 0.98444,
+                "candidate_composites": [
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ],
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "fill": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "wide-outlined-manual-error.png",
+            "sha256": "9a89e8d73c141726a3a6b5af0b196d1da8d4d31d13b2cf4ce73f9bb9994d4b6d",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": true,
+              "description": "這個標籤已存在。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "這個標籤已存在。",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 160.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 51,
+                "ink_contrast_pixels": 82,
+                "blend_space": "linear",
+                "fit_pixels": 82,
+                "peak_coverage": 0.99298,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                "ink_pixels": 296,
+                "ink_contrast_pixels": 589,
+                "blend_space": "encoded",
+                "fit_pixels": 589,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ],
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "fill": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "wide-filled-seed.png",
+            "sha256": "87b87223712e235e56cde654f2f277fdbfe9807c52b044f73310b9f426010e92",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "filled",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 136.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 136.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 196.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 196.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 196.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 140.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 152.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 51,
+                "ink_contrast_pixels": 82,
+                "blend_space": "linear",
+                "fit_pixels": 82,
+                "peak_coverage": 0.99298,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 1379,
+                "ink_contrast_pixels": 2191,
+                "blend_space": "linear",
+                "fit_pixels": 2191,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "fill": [
+                230,
+                224,
+                233,
+                255
+              ]
+            },
+            "locked": {
+              "text-field-counter-demo-read-only": {
+                "state": {
+                  "id": "text-field-counter-demo-read-only",
+                  "value": "🇹🇼á",
+                  "counter": "2/5",
+                  "invalid": false,
+                  "description": "已儲存的標籤。",
+                  "description_ids": [
+                    "text-field-counter-demo-read-only-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 2 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 232.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 232.0
+                  },
+                  "helper": {
+                    "height": 16.0,
+                    "width": 437.0,
+                    "x": 40.0,
+                    "y": 292.0
+                  },
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 292.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 292.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 50,
+                    "ink_contrast_pixels": 80,
+                    "blend_space": "linear",
+                    "fit_pixels": 80,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ],
+                  "helper": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 307,
+                    "ink_contrast_pixels": 515,
+                    "blend_space": "linear",
+                    "fit_pixels": 515,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "text-field-counter-demo-disabled": {
+                "state": {
+                  "id": "text-field-counter-demo-disabled",
+                  "value": "停用標籤內容",
+                  "counter": "6/5",
+                  "invalid": false,
+                  "description": null,
+                  "description_ids": [
+                    "text-field-counter-demo-disabled-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 328.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 328.0
+                  },
+                  "helper": null,
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 388.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 388.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      29,
+                      27,
+                      32,
+                      97
+                    ],
+                    "ink_pixels": 37,
+                    "ink_contrast_pixels": 78,
+                    "blend_space": "encoded",
+                    "fit_pixels": 78,
+                    "peak_coverage": 0.98926,
+                    "candidate_composites": [
+                      [
+                        168,
+                        163,
+                        170,
+                        255
+                      ],
+                      [
+                        205,
+                        200,
+                        207,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "behavior": {
+          "soft_overflow_submit": {
+            "id": "text-field-counter-demo-editable",
+            "value": "中á👍🏽🇹🇼👩‍💻Z",
+            "counter": "6/5",
+            "invalid": true,
+            "description": "請輸入最多 5 個字。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+            "assertive_status": "請輸入最多 5 個字。",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": false
+            }
+          },
+          "submit_feedback": "已送出標籤。",
+          "manual_priority_during_overflow": {
+            "id": "text-field-counter-demo-editable",
+            "value": "中á👍🏽🇹🇼👩‍💻Z",
+            "counter": "6/5",
+            "invalid": true,
+            "description": "這個標籤已存在。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+            "assertive_status": "這個標籤已存在。",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": false
+            }
+          },
+          "exact_limit": {
+            "id": "text-field-counter-demo-editable",
+            "value": "中á👍🏽🇹🇼👩‍💻",
+            "counter": "5/5",
+            "invalid": false,
+            "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 5 個字，上限 5 個字。",
+            "assertive_status": "",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": false
+            }
+          },
+          "clear": {
+            "id": "text-field-counter-demo-editable",
+            "value": "",
+            "counter": "0/5",
+            "invalid": false,
+            "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 0 個字，上限 5 個字。",
+            "assertive_status": "",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": true
+            }
+          },
+          "clear_feedback": "已清除標籤。",
+          "locked": {
+            "text-field-counter-demo-read-only": {
+              "id": "text-field-counter-demo-read-only",
+              "value": "🇹🇼á",
+              "counter": "2/5",
+              "invalid": false,
+              "description": "已儲存的標籤。",
+              "description_ids": [
+                "text-field-counter-demo-read-only-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 2 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": null
+            },
+            "text-field-counter-demo-disabled": {
+              "id": "text-field-counter-demo-disabled",
+              "value": "停用標籤內容",
+              "counter": "6/5",
+              "invalid": false,
+              "description": null,
+              "description_ids": [
+                "text-field-counter-demo-disabled-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": null
+            }
+          }
+        }
+      },
+      "compact": {
+        "viewport": [
+          320,
+          1200
+        ],
+        "captures": [
+          {
+            "name": "compact-outlined-rtl-200.png",
+            "sha256": "f8adc9c36ec10d0124567175070b5cfbaea47d8dba37679080b77ad76ae23843",
+            "format": "png",
+            "width": 320,
+            "height": 1200,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": true,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 80.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 384.0
+              },
+              "editor": {
+                "height": 80.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 384.0
+              },
+              "helper": {
+                "height": 160.0,
+                "width": 187.0,
+                "x": 93.0,
+                "y": 468.0
+              },
+              "count": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "spoken": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 400.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 36.0,
+                "y": 412.0
+              },
+              "value": {
+                "height": 48.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 400.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 400.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 166,
+                "ink_contrast_pixels": 266,
+                "blend_space": "encoded",
+                "fit_pixels": 266,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 4165,
+                "ink_contrast_pixels": 7098,
+                "blend_space": "encoded",
+                "fit_pixels": 7098,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 120,
+                "ink_contrast_pixels": 175,
+                "blend_space": "encoded",
+                "fit_pixels": 175,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ]
+              ],
+              "fill": [
+                20,
+                18,
+                24,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "compact-filled-overflow-rtl-200.png",
+            "sha256": "89deff33e3dfa9e98c7ac10d4ca1ccc98fd1db28630d3b89a5878a540c7d85aa",
+            "format": "png",
+            "width": 320,
+            "height": 1200,
+            "scale": 1.0,
+            "appearance": "filled",
+            "rtl": true,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽🇹🇼👩‍💻Z",
+              "counter": "6/5",
+              "invalid": true,
+              "description": "請輸入最多 5 個字。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+              "assertive_status": "請輸入最多 5 個字。",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 96.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 368.0
+              },
+              "editor": {
+                "height": 96.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 368.0
+              },
+              "helper": {
+                "height": 64.0,
+                "width": 187.0,
+                "x": 93.0,
+                "y": 468.0
+              },
+              "count": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "spoken": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 392.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 36.0,
+                "y": 404.0
+              },
+              "value": {
+                "height": 48.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 408.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 408.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                "ink_pixels": 173,
+                "ink_contrast_pixels": 280,
+                "blend_space": "encoded",
+                "fit_pixels": 280,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ],
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                "ink_pixels": 1085,
+                "ink_contrast_pixels": 1987,
+                "blend_space": "encoded",
+                "fit_pixels": 1987,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ],
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 120,
+                "ink_contrast_pixels": 173,
+                "blend_space": "encoded",
+                "fit_pixels": 173,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "fill": [
+                54,
+                52,
+                58,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "compact-filled-stacked-112.png",
+            "sha256": "b4fc9fe9c26c3872b2907419e83522d36b7765f7531b4c7bf6f6f4f6dfe85faf",
+            "format": "png",
+            "width": 320,
+            "height": 1200,
+            "scale": 1.0,
+            "appearance": "filled",
+            "rtl": true,
+            "stacked": true,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 96.0,
+                "width": 112.0,
+                "x": 24.0,
+                "y": 436.0
+              },
+              "editor": {
+                "height": 96.0,
+                "width": 112.0,
+                "x": 24.0,
+                "y": 436.0
+              },
+              "helper": {
+                "height": 352.0,
+                "width": 80.0,
+                "x": 40.0,
+                "y": 536.0
+              },
+              "count": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 892.0
+              },
+              "spoken": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 892.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 928.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 36.0,
+                "y": 940.0
+              },
+              "value": {
+                "height": 48.0,
+                "width": 80.0,
+                "x": 40.0,
+                "y": 476.0
+              },
+              "prefix": {
+                "height": 32.0,
+                "width": 80.0,
+                "x": 40.0,
+                "y": 980.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-wrapped"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 166,
+                "ink_contrast_pixels": 266,
+                "blend_space": "encoded",
+                "fit_pixels": 266,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 4165,
+                "ink_contrast_pixels": 7098,
+                "blend_space": "encoded",
+                "fit_pixels": 7098,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 422,
+                "ink_contrast_pixels": 678,
+                "blend_space": "encoded",
+                "fit_pixels": 678,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "fill": [
+                54,
+                52,
+                58,
+                255
+              ]
+            },
+            "locked": {}
+          }
+        ],
+        "behavior": {
+          "relocated_clear": {
+            "id": "text-field-counter-demo-editable",
+            "value": "",
+            "counter": "0/5",
+            "invalid": false,
+            "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 0 個字，上限 5 個字。",
+            "assertive_status": "",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": true
+            }
+          },
+          "clear_feedback": "已清除標籤。"
+        }
+      }
+    },
+    {
+      "wide": {
+        "viewport": [
+          960,
+          1120
+        ],
+        "captures": [
+          {
+            "name": "wide-outlined-seed.png",
+            "sha256": "42bcd73f9e5c1279d0768a2e08d619120838daf919b75db43633728e2d3cf729",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 160.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 51,
+                "ink_contrast_pixels": 82,
+                "blend_space": "linear",
+                "fit_pixels": 82,
+                "peak_coverage": 0.99298,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 1379,
+                "ink_contrast_pixels": 2191,
+                "blend_space": "linear",
+                "fit_pixels": 2191,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 1,
+              "samples": [
+                [
+                  122,
+                  117,
+                  127,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "fill": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "locked": {
+              "text-field-counter-demo-read-only": {
+                "state": {
+                  "id": "text-field-counter-demo-read-only",
+                  "value": "🇹🇼á",
+                  "counter": "2/5",
+                  "invalid": false,
+                  "description": "已儲存的標籤。",
+                  "description_ids": [
+                    "text-field-counter-demo-read-only-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 2 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 248.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 248.0
+                  },
+                  "helper": {
+                    "height": 16.0,
+                    "width": 437.0,
+                    "x": 40.0,
+                    "y": 308.0
+                  },
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 308.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 308.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 50,
+                    "ink_contrast_pixels": 80,
+                    "blend_space": "linear",
+                    "fit_pixels": 80,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ],
+                  "helper": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 307,
+                    "ink_contrast_pixels": 515,
+                    "blend_space": "linear",
+                    "fit_pixels": 515,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "text-field-counter-demo-disabled": {
+                "state": {
+                  "id": "text-field-counter-demo-disabled",
+                  "value": "停用標籤內容",
+                  "counter": "6/5",
+                  "invalid": false,
+                  "description": null,
+                  "description_ids": [
+                    "text-field-counter-demo-disabled-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 352.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 352.0
+                  },
+                  "helper": null,
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 412.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 412.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      29,
+                      27,
+                      32,
+                      97
+                    ],
+                    "ink_pixels": 37,
+                    "ink_contrast_pixels": 78,
+                    "blend_space": "encoded",
+                    "fit_pixels": 78,
+                    "peak_coverage": 0.98926,
+                    "candidate_composites": [
+                      [
+                        168,
+                        163,
+                        170,
+                        255
+                      ],
+                      [
+                        205,
+                        200,
+                        207,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "name": "wide-outlined-overflow.png",
+            "sha256": "0ea7b086649f076c1a21cc631f92e89d40fd230a5063cfeb3d00e1a30c5cd604",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽🇹🇼👩‍💻Z",
+              "counter": "6/5",
+              "invalid": true,
+              "description": "請輸入最多 5 個字。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+              "assertive_status": "請輸入最多 5 個字。",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 160.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                "ink_pixels": 37,
+                "ink_contrast_pixels": 96,
+                "blend_space": "encoded",
+                "fit_pixels": 96,
+                "peak_coverage": 0.9866,
+                "candidate_composites": [
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ],
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                "ink_pixels": 300,
+                "ink_contrast_pixels": 597,
+                "blend_space": "encoded",
+                "fit_pixels": 597,
+                "peak_coverage": 0.98444,
+                "candidate_composites": [
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ],
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "fill": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "wide-outlined-manual-error.png",
+            "sha256": "9a89e8d73c141726a3a6b5af0b196d1da8d4d31d13b2cf4ce73f9bb9994d4b6d",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": true,
+              "description": "這個標籤已存在。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "這個標籤已存在。",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 204.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 160.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 51,
+                "ink_contrast_pixels": 82,
+                "blend_space": "linear",
+                "fit_pixels": 82,
+                "peak_coverage": 0.99298,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                "ink_pixels": 296,
+                "ink_contrast_pixels": 589,
+                "blend_space": "encoded",
+                "fit_pixels": 589,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ],
+                  [
+                    186,
+                    26,
+                    26,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  186,
+                  26,
+                  26,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "fill": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "wide-filled-seed.png",
+            "sha256": "87b87223712e235e56cde654f2f277fdbfe9807c52b044f73310b9f426010e92",
+            "format": "png",
+            "width": 960,
+            "height": 1120,
+            "scale": 1.0,
+            "appearance": "filled",
+            "rtl": false,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 136.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 136.0
+              },
+              "helper": {
+                "height": 16.0,
+                "width": 437.0,
+                "x": 40.0,
+                "y": 196.0
+              },
+              "count": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 196.0
+              },
+              "spoken": {
+                "height": 16.0,
+                "width": 19.0,
+                "x": 493.0,
+                "y": 196.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 140.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 492.0,
+                "y": 152.0
+              },
+              "value": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 51,
+                "ink_contrast_pixels": 82,
+                "blend_space": "linear",
+                "fit_pixels": 82,
+                "peak_coverage": 0.99298,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 1379,
+                "ink_contrast_pixels": 2191,
+                "blend_space": "linear",
+                "fit_pixels": 2191,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  73,
+                  69,
+                  78,
+                  255
+                ],
+                "ink_pixels": 32,
+                "ink_contrast_pixels": 50,
+                "blend_space": "linear",
+                "fit_pixels": 50,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ],
+                  [
+                    73,
+                    69,
+                    78,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "fill": [
+                230,
+                224,
+                233,
+                255
+              ]
+            },
+            "locked": {
+              "text-field-counter-demo-read-only": {
+                "state": {
+                  "id": "text-field-counter-demo-read-only",
+                  "value": "🇹🇼á",
+                  "counter": "2/5",
+                  "invalid": false,
+                  "description": "已儲存的標籤。",
+                  "description_ids": [
+                    "text-field-counter-demo-read-only-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 2 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 232.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 232.0
+                  },
+                  "helper": {
+                    "height": 16.0,
+                    "width": 437.0,
+                    "x": 40.0,
+                    "y": 292.0
+                  },
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 292.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 292.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 50,
+                    "ink_contrast_pixels": 80,
+                    "blend_space": "linear",
+                    "fit_pixels": 80,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ],
+                  "helper": {
+                    "rgba": [
+                      73,
+                      69,
+                      78,
+                      255
+                    ],
+                    "ink_pixels": 307,
+                    "ink_contrast_pixels": 515,
+                    "blend_space": "linear",
+                    "fit_pixels": 515,
+                    "peak_coverage": 1.0,
+                    "candidate_composites": [
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ],
+                      [
+                        73,
+                        69,
+                        78,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "text-field-counter-demo-disabled": {
+                "state": {
+                  "id": "text-field-counter-demo-disabled",
+                  "value": "停用標籤內容",
+                  "counter": "6/5",
+                  "invalid": false,
+                  "description": null,
+                  "description_ids": [
+                    "text-field-counter-demo-disabled-counter-description"
+                  ],
+                  "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+                  "assertive_status": "",
+                  "clear": null
+                },
+                "geometry": {
+                  "face": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 328.0
+                  },
+                  "editor": {
+                    "height": 56.0,
+                    "width": 504.0,
+                    "x": 24.0,
+                    "y": 328.0
+                  },
+                  "helper": null,
+                  "count": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 388.0
+                  },
+                  "spoken": {
+                    "height": 16.0,
+                    "width": 19.0,
+                    "x": 493.0,
+                    "y": 388.0
+                  }
+                },
+                "paint": {
+                  "counter": {
+                    "rgba": [
+                      29,
+                      27,
+                      32,
+                      97
+                    ],
+                    "ink_pixels": 37,
+                    "ink_contrast_pixels": 78,
+                    "blend_space": "encoded",
+                    "fit_pixels": 78,
+                    "peak_coverage": 0.98926,
+                    "candidate_composites": [
+                      [
+                        168,
+                        163,
+                        170,
+                        255
+                      ],
+                      [
+                        205,
+                        200,
+                        207,
+                        255
+                      ]
+                    ]
+                  },
+                  "backdrop": [
+                    253,
+                    247,
+                    255,
+                    255
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "behavior": {
+          "soft_overflow_submit": {
+            "id": "text-field-counter-demo-editable",
+            "value": "中á👍🏽🇹🇼👩‍💻Z",
+            "counter": "6/5",
+            "invalid": true,
+            "description": "請輸入最多 5 個字。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+            "assertive_status": "請輸入最多 5 個字。",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": false
+            }
+          },
+          "submit_feedback": "已送出標籤。",
+          "manual_priority_during_overflow": {
+            "id": "text-field-counter-demo-editable",
+            "value": "中á👍🏽🇹🇼👩‍💻Z",
+            "counter": "6/5",
+            "invalid": true,
+            "description": "這個標籤已存在。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+            "assertive_status": "這個標籤已存在。",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": false
+            }
+          },
+          "exact_limit": {
+            "id": "text-field-counter-demo-editable",
+            "value": "中á👍🏽🇹🇼👩‍💻",
+            "counter": "5/5",
+            "invalid": false,
+            "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 5 個字，上限 5 個字。",
+            "assertive_status": "",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": false
+            }
+          },
+          "clear": {
+            "id": "text-field-counter-demo-editable",
+            "value": "",
+            "counter": "0/5",
+            "invalid": false,
+            "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 0 個字，上限 5 個字。",
+            "assertive_status": "",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": true
+            }
+          },
+          "clear_feedback": "已清除標籤。",
+          "locked": {
+            "text-field-counter-demo-read-only": {
+              "id": "text-field-counter-demo-read-only",
+              "value": "🇹🇼á",
+              "counter": "2/5",
+              "invalid": false,
+              "description": "已儲存的標籤。",
+              "description_ids": [
+                "text-field-counter-demo-read-only-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 2 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": null
+            },
+            "text-field-counter-demo-disabled": {
+              "id": "text-field-counter-demo-disabled",
+              "value": "停用標籤內容",
+              "counter": "6/5",
+              "invalid": false,
+              "description": null,
+              "description_ids": [
+                "text-field-counter-demo-disabled-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": null
+            }
+          }
+        }
+      },
+      "compact": {
+        "viewport": [
+          320,
+          1200
+        ],
+        "captures": [
+          {
+            "name": "compact-outlined-rtl-200.png",
+            "sha256": "f8adc9c36ec10d0124567175070b5cfbaea47d8dba37679080b77ad76ae23843",
+            "format": "png",
+            "width": 320,
+            "height": 1200,
+            "scale": 1.0,
+            "appearance": "outlined",
+            "rtl": true,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 80.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 384.0
+              },
+              "editor": {
+                "height": 80.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 384.0
+              },
+              "helper": {
+                "height": 160.0,
+                "width": 187.0,
+                "x": 93.0,
+                "y": 468.0
+              },
+              "count": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "spoken": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 400.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 36.0,
+                "y": 412.0
+              },
+              "value": {
+                "height": 48.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 400.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 400.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 166,
+                "ink_contrast_pixels": 266,
+                "blend_space": "encoded",
+                "fit_pixels": 266,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 4165,
+                "ink_contrast_pixels": 7098,
+                "blend_space": "encoded",
+                "fit_pixels": 7098,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 120,
+                "ink_contrast_pixels": 175,
+                "blend_space": "encoded",
+                "fit_pixels": 175,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ]
+              ],
+              "fill": [
+                20,
+                18,
+                24,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "compact-filled-overflow-rtl-200.png",
+            "sha256": "89deff33e3dfa9e98c7ac10d4ca1ccc98fd1db28630d3b89a5878a540c7d85aa",
+            "format": "png",
+            "width": 320,
+            "height": 1200,
+            "scale": 1.0,
+            "appearance": "filled",
+            "rtl": true,
+            "stacked": false,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽🇹🇼👩‍💻Z",
+              "counter": "6/5",
+              "invalid": true,
+              "description": "請輸入最多 5 個字。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 6 個字，上限 5 個字。",
+              "assertive_status": "請輸入最多 5 個字。",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 96.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 368.0
+              },
+              "editor": {
+                "height": 96.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 368.0
+              },
+              "helper": {
+                "height": 64.0,
+                "width": 187.0,
+                "x": 93.0,
+                "y": 468.0
+              },
+              "count": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "spoken": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 468.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 392.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 36.0,
+                "y": 404.0
+              },
+              "value": {
+                "height": 48.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 408.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 408.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-visual"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                "ink_pixels": 173,
+                "ink_contrast_pixels": 280,
+                "blend_space": "encoded",
+                "fit_pixels": 280,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ],
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                "ink_pixels": 1085,
+                "ink_contrast_pixels": 1987,
+                "blend_space": "encoded",
+                "fit_pixels": 1987,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ],
+                  [
+                    255,
+                    180,
+                    171,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 120,
+                "ink_contrast_pixels": 173,
+                "blend_space": "encoded",
+                "fit_pixels": 173,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                [
+                  255,
+                  180,
+                  171,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "fill": [
+                54,
+                52,
+                58,
+                255
+              ]
+            },
+            "locked": {}
+          },
+          {
+            "name": "compact-filled-stacked-112.png",
+            "sha256": "b4fc9fe9c26c3872b2907419e83522d36b7765f7531b4c7bf6f6f4f6dfe85faf",
+            "format": "png",
+            "width": 320,
+            "height": 1200,
+            "scale": 1.0,
+            "appearance": "filled",
+            "rtl": true,
+            "stacked": true,
+            "state": {
+              "id": "text-field-counter-demo-editable",
+              "value": "中á👍🏽",
+              "counter": "3/5",
+              "invalid": false,
+              "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+              "description_ids": [
+                "text-field-counter-demo-editable-prefix-description",
+                "text-field-counter-demo-editable-counter-description"
+              ],
+              "spoken_count": "字數，已輸入 3 個字，上限 5 個字。",
+              "assertive_status": "",
+              "clear": {
+                "name": "清除標籤",
+                "disabled": false
+              }
+            },
+            "geometry": {
+              "face": {
+                "height": 96.0,
+                "width": 112.0,
+                "x": 24.0,
+                "y": 436.0
+              },
+              "editor": {
+                "height": 96.0,
+                "width": 112.0,
+                "x": 24.0,
+                "y": 436.0
+              },
+              "helper": {
+                "height": 352.0,
+                "width": 80.0,
+                "x": 40.0,
+                "y": 536.0
+              },
+              "count": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 892.0
+              },
+              "spoken": {
+                "height": 32.0,
+                "width": 37.0,
+                "x": 40.0,
+                "y": 892.0
+              },
+              "action": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 928.0
+              },
+              "trailing": {
+                "height": 24.0,
+                "width": 24.0,
+                "x": 36.0,
+                "y": 940.0
+              },
+              "value": {
+                "height": 48.0,
+                "width": 80.0,
+                "x": 40.0,
+                "y": 476.0
+              },
+              "prefix": {
+                "height": 32.0,
+                "width": 80.0,
+                "x": 40.0,
+                "y": 980.0
+              },
+              "prefix_id": "text-field-counter-demo-editable-prefix-wrapped"
+            },
+            "paint": {
+              "counter": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 166,
+                "ink_contrast_pixels": 266,
+                "blend_space": "encoded",
+                "fit_pixels": 266,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "backdrop": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "helper": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 4165,
+                "ink_contrast_pixels": 7098,
+                "blend_space": "encoded",
+                "fit_pixels": 7098,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              },
+              "affix": {
+                "rgba": [
+                  202,
+                  196,
+                  207,
+                  255
+                ],
+                "ink_pixels": 422,
+                "ink_contrast_pixels": 678,
+                "blend_space": "encoded",
+                "fit_pixels": 678,
+                "peak_coverage": 1.0,
+                "candidate_composites": [
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ],
+                  [
+                    202,
+                    196,
+                    207,
+                    255
+                  ]
+                ]
+              }
+            },
+            "face_paint": {
+              "bottom_edge_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "fill": [
+                54,
+                52,
+                58,
+                255
+              ]
+            },
+            "locked": {}
+          }
+        ],
+        "behavior": {
+          "relocated_clear": {
+            "id": "text-field-counter-demo-editable",
+            "value": "",
+            "counter": "0/5",
+            "invalid": false,
+            "description": "請輸入 5 個字以內的標籤名稱。英文字母、中文或表情符號都可以使用。",
+            "description_ids": [
+              "text-field-counter-demo-editable-prefix-description",
+              "text-field-counter-demo-editable-counter-description"
+            ],
+            "spoken_count": "字數，已輸入 0 個字，上限 5 個字。",
+            "assertive_status": "",
+            "clear": {
+              "name": "清除標籤",
+              "disabled": true
+            }
+          },
+          "clear_feedback": "已清除標籤。"
+        }
+      }
+    }
+  ],
+  "processes": [
+    {
+      "wide": {
+        "pid": 89131,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "submitted_soft_overflow": 0,
+          "clear_and_locked_fields": 0,
+          "captures_saved": 0,
+          "closed": 0
+        },
+        "reaped": true
+      },
+      "compact": {
+        "pid": 90406,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "compact_overflow": 0,
+          "compact_relocated_clear": 0,
+          "captures_saved": 0,
+          "closed": 0
+        },
+        "reaped": true
+      }
+    },
+    {
+      "wide": {
+        "pid": 90965,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "submitted_soft_overflow": 0,
+          "clear_and_locked_fields": 0,
+          "captures_saved": 0,
+          "closed": 0
+        },
+        "reaped": true
+      },
+      "compact": {
+        "pid": 92076,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "compact_overflow": 0,
+          "compact_relocated_clear": 0,
+          "captures_saved": 0,
+          "closed": 0
+        },
+        "reaped": true
+      }
+    }
+  ],
+  "semantics": "Styled Runtime DOM through native headless DevTools"
+}

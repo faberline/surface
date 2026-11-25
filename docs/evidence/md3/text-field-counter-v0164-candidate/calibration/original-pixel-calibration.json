@@ -1,0 +1,96 @@
+{
+  "scope": "previously captured original PNG calibration",
+  "failed_run_png_sha256": "42bcd73f9e5c1279d0768a2e08d619120838daf919b75db43633728e2d3cf729",
+  "preview_wide_byte_identical": true,
+  "original_r1_rejection": "Text lacks original pixels at its authored color [73, 69, 78, 255]",
+  "wide": {
+    "sha256": "42bcd73f9e5c1279d0768a2e08d619120838daf919b75db43633728e2d3cf729",
+    "bounds": {
+      "height": 16.0,
+      "width": 19.0,
+      "x": 493.0,
+      "y": 204.0
+    },
+    "background": [
+      253,
+      247,
+      255,
+      255
+    ],
+    "old_endpoint_hits": 0,
+    "r2_original_pixel_check": {
+      "rgba": [
+        73,
+        69,
+        78,
+        255
+      ],
+      "ink_pixels": 51,
+      "ink_contrast_pixels": 82,
+      "blend_space": "linear",
+      "fit_pixels": 82,
+      "peak_coverage": 0.99298,
+      "candidate_composites": [
+        [
+          73,
+          69,
+          78,
+          255
+        ],
+        [
+          73,
+          69,
+          78,
+          255
+        ]
+      ]
+    },
+    "erroneous_palette_rejected": "Text pixels do not match the authored hue and opacity [186, 26, 26, 255]: {'encoded': {'fit_pixels': 0, 'ink_pixels': 0, 'peak_coverage': 0.0, 'opacity_overshoot': 0}, 'linear': {'fit_pixels': 0, 'ink_pixels': 0, 'peak_coverage': 0.0, 'opacity_overshoot': 3}}",
+    "erroneous_38_percent_alpha_rejected": "Text pixels do not match the authored hue and opacity [73, 69, 78, 97]: {'encoded': {'fit_pixels': 24, 'ink_pixels': 6, 'peak_coverage': 0.99748, 'opacity_overshoot': 58}, 'linear': {'fit_pixels': 18, 'ink_pixels': 8, 'peak_coverage': 0.99525, 'opacity_overshoot': 64}}"
+  },
+  "compact": {
+    "sha256": "8fc0e1b8d92f19275223bade7b138ffedbfd51d63ada704c1c850859738718a1",
+    "bounds": {
+      "height": 32.0,
+      "width": 37.0,
+      "x": 40.0,
+      "y": 892.0
+    },
+    "background": [
+      20,
+      18,
+      24,
+      255
+    ],
+    "old_endpoint_hits": 78,
+    "r2_original_pixel_check": {
+      "rgba": [
+        202,
+        196,
+        207,
+        255
+      ],
+      "ink_pixels": 166,
+      "ink_contrast_pixels": 266,
+      "blend_space": "encoded",
+      "fit_pixels": 266,
+      "peak_coverage": 1.0,
+      "candidate_composites": [
+        [
+          202,
+          196,
+          207,
+          255
+        ],
+        [
+          202,
+          196,
+          207,
+          255
+        ]
+      ]
+    },
+    "erroneous_palette_rejected": "Text pixels do not match the authored hue and opacity [255, 180, 171, 255]: {'encoded': {'fit_pixels': 8, 'ink_pixels': 0, 'peak_coverage': 0.08287, 'opacity_overshoot': 0}, 'linear': {'fit_pixels': 0, 'ink_pixels': 0, 'peak_coverage': 0.0, 'opacity_overshoot': 0}}",
+    "erroneous_38_percent_alpha_rejected": "Text pixels do not match the authored hue and opacity [202, 196, 207, 97]: {'encoded': {'fit_pixels': 71, 'ink_pixels': 28, 'peak_coverage': 1.0, 'opacity_overshoot': 195}, 'linear': {'fit_pixels': 99, 'ink_pixels': 22, 'peak_coverage': 1.0, 'opacity_overshoot': 167}}"
+  }
+}
