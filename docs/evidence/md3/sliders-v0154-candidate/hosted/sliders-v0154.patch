@@ -1,0 +1,3775 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 1021b91..3d4669b 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.53"
++version = "0.1.54"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index e4936c1..c68ccf1 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.53"
++version = "0.1.54"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/accessibility.rs b/crates/surface-app/src/accessibility.rs
+index 5f0e3c7..15ae6e6 100644
+--- a/crates/surface-app/src/accessibility.rs
++++ b/crates/surface-app/src/accessibility.rs
+@@ -1,7 +1,8 @@
+ //! The rendered accessibility tree and checked input actions for platform hosts.
+ use crate::{
+-    controls::descendant, focus_scroll::can_reveal, AppError, Application, Binding, Event,
+-    KeyPress, Runtime, ScrollMetrics, TextOptions,
++    controls::{changed_slider_value, descendant},
++    focus_scroll::can_reveal,
++    AppError, Application, Binding, Event, KeyPress, Runtime, ScrollMetrics, TextOptions,
+ };
+ use std::{
+     cell::{OnceCell, RefCell},
+@@ -10,7 +11,8 @@ use std::{
+     sync::LazyLock,
+ };
+ use surface::{
+-    scroll_extent, AdjustableValue, ComputedDom, ComputedNode, MicroDom, Node, NodeId, Rect, Role,
++    scroll_extent, AdjustableValue, ComputedDom, ComputedNode, MicroDom, Node, NodeId, RangeValue,
++    Rect, Role,
+ };
+ 
+ static EMPTY_ROOT: LazyLock<Node> = LazyLock::new(|| Node::new(Role::Group, ""));
+@@ -147,22 +149,54 @@ impl AccessibilityAdjustment {
+     }
+ }
+ 
++enum AdjustmentRange<'a> {
++    Group(&'a AdjustableValue),
++    Slider(RangeValue, Option<crate::SliderInputOptions>),
++}
++
++impl AdjustmentRange<'_> {
++    fn resolve(&self, action: AccessibilityAdjustment) -> Option<f64> {
++        match self {
++            Self::Group(range) => action.resolve(range),
++            Self::Slider(range, input) => {
++                let relative = |steps| {
++                    input.map_or_else(
++                        || range.value + steps * range.step,
++                        |policy| policy.relative(*range, steps),
++                    )
++                };
++                let request = match action {
++                    AccessibilityAdjustment::Increment => relative(1.),
++                    AccessibilityAdjustment::Decrement => relative(-1.),
++                    AccessibilityAdjustment::SetValue(request) => request,
++                };
++                changed_slider_value(*range, request, *input)
++            }
++        }
++    }
++}
++
+ struct AdjustmentBinding<'a, M> {
+-    range: &'a AdjustableValue,
++    range: AdjustmentRange<'a>,
+     on_value: &'a dyn Fn(f64) -> M,
+     on_step: Option<&'a dyn Fn(bool) -> M>,
+ }
+ 
+ impl<M> AdjustmentBinding<'_, M> {
+     fn supports_step(&self, increment: bool) -> bool {
+-        self.on_step.is_some() || self.range.step_value(increment).is_some()
++        let action = if increment {
++            AccessibilityAdjustment::Increment
++        } else {
++            AccessibilityAdjustment::Decrement
++        };
++        self.on_step.is_some() || self.range.resolve(action).is_some()
+     }
+ 
+     fn message(&self, action: AccessibilityAdjustment) -> Option<M> {
+         match (action, self.on_step) {
+             (AccessibilityAdjustment::Increment, Some(step)) => Some(step(true)),
+             (AccessibilityAdjustment::Decrement, Some(step)) => Some(step(false)),
+-            _ => action.resolve(self.range).map(self.on_value),
++            _ => self.range.resolve(action).map(self.on_value),
+         }
+     }
+ }
+@@ -598,11 +632,20 @@ impl<M> AccessibilityFrame<'_, M> {
+ 
+     fn adjustment_binding(&self, id: NodeId) -> Option<AdjustmentBinding<'_, M>> {
+         let source = self.node(id).filter(visible_enabled_control)?;
++        let binding = self.bindings.get(&id)?;
++        let on_value = binding.value.as_deref()?;
++        if binding.accessible_slider_adjustment && source.node.role() == Role::Slider {
++            let range = source.node.range_value().filter(|range| range.is_valid())?;
++            return Some(AdjustmentBinding {
++                range: AdjustmentRange::Slider(range, binding.slider_input),
++                on_value,
++                on_step: None,
++            });
++        }
+         let range = source.node.accessibility_adjustable()?;
+-        let binding = self.bindings.get(&id)?;
+         Some(AdjustmentBinding {
+-            range,
+-            on_value: binding.value.as_deref()?,
++            range: AdjustmentRange::Group(range),
++            on_value,
+             on_step: range.value.and(binding.accessible_step.as_deref()),
+         })
+     }
+@@ -985,7 +1028,7 @@ impl<A: Application> Runtime<A> {
+     }
+ 
+     /// Adjust only the control named by the current rendered action token.
+-    /// AX adjustment changes a draft value without moving keyboard focus.
++    /// AX adjustment changes an opted-in control's value without moving keyboard focus.
+     pub fn accessibility_adjust(
+         &mut self,
+         target: &AccessibilityAdjustmentTarget,
+diff --git a/crates/surface-app/src/controls.rs b/crates/surface-app/src/controls.rs
+index adfdd3e..d39ea9f 100644
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -101,6 +101,35 @@ pub(crate) struct RangeDrag {
+     id: String,
+     bounds: Rect,
+     range: RangeValue,
++    input: Option<crate::SliderInputOptions>,
++}
++
++impl RangeDrag {
++    pub(crate) fn has_input_policy(&self) -> bool {
++        self.input.is_some()
++    }
++
++    fn matches_range(&self, current: RangeValue) -> bool {
++        current.min == self.range.min
++            && current.max == self.range.max
++            && current.step == self.range.step
++    }
++}
++
++/// Normalize requests from the regular setter and native accessibility.
++pub(crate) fn changed_slider_value(
++    range: RangeValue,
++    request: f64,
++    input: Option<crate::SliderInputOptions>,
++) -> Option<f64> {
++    if !request.is_finite() {
++        return None;
++    }
++    let value = match input {
++        Some(input) => input.resolve_value(range, request)?,
++        None => range.snap(request),
++    };
++    (value != range.value).then_some(value)
+ }
+ 
+ fn has_extent(layout: &ComputedDom, id: NodeId) -> bool {
+@@ -608,18 +637,36 @@ impl<A: Application> Runtime<A> {
+             self.ime_area = None;
+             self.text_drag = None;
+         }
+-        if self.range_drag.as_ref().is_some_and(|drag| {
+-            self.dom.by_id(&drag.id).is_none_or(|id| {
+-                !self.in_scope(id)
+-                    || self
+-                        .dom
+-                        .get(id)
+-                        .is_ok_and(|n| n.is_disabled() || n.role() != Role::Slider)
+-            })
+-        }) {
++        if self
++            .range_drag
++            .as_ref()
++            .is_some_and(|drag| !self.valid_range_drag(drag))
++        {
++            if self
++                .range_drag
++                .as_ref()
++                .is_some_and(RangeDrag::has_input_policy)
++            {
++                self.pressed = None;
++            }
+             self.range_drag = None;
+         }
+     }
++    fn valid_range_drag(&self, drag: &RangeDrag) -> bool {
++        let Some(id) = self.dom.by_id(&drag.id).filter(|id| self.in_scope(*id)) else {
++            return false;
++        };
++        let node = self.dom.get(id).expect("stable slider exists");
++        if node.is_disabled() || node.role() != Role::Slider {
++            return false;
++        }
++        !drag.has_input_policy()
++            || (self.bindings.get(&id).is_some_and(|binding| {
++                binding.value.is_some() && binding.slider_input == drag.input
++            }) && node
++                .range_value()
++                .is_some_and(|range| drag.matches_range(range)))
++    }
+     pub(crate) fn clear_modal_pointer(&mut self) {
+         self.modal_outside = false;
+         self.pressed = None;
+@@ -726,6 +773,17 @@ impl<A: Application> Runtime<A> {
+         };
+         let node = self.dom.get(id)?;
+         if let Some(range) = node.range_value().filter(|_| node.role() == Role::Slider) {
++            if let Some(input) = self
++                .bindings
++                .get(&id)
++                .and_then(|binding| binding.slider_input)
++            {
++                let Some(value) = input.key_value(range, key) else {
++                    return Ok(false);
++                };
++                let id = self.stable(id).expect("slider has ID");
++                return self.set_value(&id, value);
++            }
+             let value = match key {
+                 EditKey::Left | EditKey::Down => range.value - range.step,
+                 EditKey::Right | EditKey::Up => range.value + range.step,
+@@ -856,13 +914,12 @@ impl<A: Application> Runtime<A> {
+             })
+             .ok_or_else(|| AppError::MissingControl(key.to_owned()))?;
+         let range = self.dom.get(id)?.range_value().expect("validated slider");
+-        let value = range.snap(value);
+-        if value == range.value {
++        let binding = self.bindings.get(&id);
++        let input = binding.and_then(|binding| binding.slider_input);
++        let Some(value) = changed_slider_value(range, value, input) else {
+             return Ok(false);
+-        }
+-        let message = self
+-            .bindings
+-            .get(&id)
++        };
++        let message = binding
+             .and_then(|b| b.value.as_ref())
+             .map(|handler| handler(value));
+         self.message(message)
+@@ -875,6 +932,11 @@ impl<A: Application> Runtime<A> {
+         if node.role() != Role::Slider {
+             return false;
+         }
++        let binding = self.bindings.get(&id);
++        let input = binding.and_then(|binding| binding.slider_input);
++        if input.is_some() && binding.is_none_or(|binding| binding.value.is_none()) {
++            return false;
++        }
+         let Some(computed) = &self.computed else {
+             return false;
+         };
+@@ -885,6 +947,7 @@ impl<A: Application> Runtime<A> {
+             id: self.stable(id).expect("slider has ID"),
+             bounds,
+             range: node.range_value().expect("validated range"),
++            input,
+         });
+         true
+     }
+@@ -895,9 +958,22 @@ impl<A: Application> Runtime<A> {
+         if !x.is_finite() || drag.bounds.width <= 0. {
+             return Ok(false);
+         }
+-        let value = drag.range.min
+-            + ((x - drag.bounds.x) / drag.bounds.width).clamp(0., 1.) as f64
+-                * (drag.range.max - drag.range.min);
++        let value = if let Some(input) = drag.input {
++            if self.computed.as_ref().is_some_and(|layout| {
++                self.dom.by_id(&drag.id).is_none_or(|id| {
++                    self.dom.get(id).is_ok_and(|node| {
++                        layout.nodes[id.index()].bounds.inset(node.style().padding) != drag.bounds
++                    })
++                })
++            }) {
++                return self.cancel_pointer();
++            }
++            input.pointer_value(drag.range, drag.bounds, x)
++        } else {
++            drag.range.min
++                + ((x - drag.bounds.x) / drag.bounds.width).clamp(0., 1.) as f64
++                    * (drag.range.max - drag.range.min)
++        };
+         let id = drag.id.clone();
+         self.set_value(&id, value).map(|_| true)
+     }
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 2694f96..553f409 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -22,6 +22,7 @@ mod motion;
+ mod paint_export;
+ mod press_ripple;
+ mod scroll_control;
++mod slider;
+ mod snapshot;
+ #[cfg(feature = "devtools")]
+ pub mod trace;
+@@ -56,6 +57,7 @@ pub use scroll_control::{
+     HorizontalScroll, HorizontalScrollResponse, ScrollMetrics, ScrollTarget, VerticalScroll,
+     VerticalScrollResponse,
+ };
++pub use slider::{SliderInputOptions, SliderScale};
+ pub use snapshot::{DomExport, EditingSnapshot, InteractionSnapshot};
+ use std::{
+     cell::{Cell, RefCell},
+@@ -86,6 +88,8 @@ pub struct View<M> {
+     single_line_text_horizontal_inset: f32,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
++    accessible_slider_adjustment: bool,
++    slider_input: Option<SliderInputOptions>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+     dismiss: Option<M>,
+@@ -173,6 +177,8 @@ impl<M> View<M> {
+             single_line_text_horizontal_inset: 0.,
+             text_input_placeholder: None,
+             value: None,
++            accessible_slider_adjustment: false,
++            slider_input: None,
+             accessible_step: None,
+             roving: None,
+             dismiss: None,
+@@ -465,6 +471,21 @@ impl<M> View<M> {
+         self.value = Some(Rc::new(handler));
+         self
+     }
++    /// Offer native accessibility adjustment on a visible, enabled slider.
++    ///
++    /// The slider needs a valid range and [Self::on_value]. SetValue and the
++    /// available directional steps use the slider's normal snapping policy.
++    /// Adjusting through this path does not move keyboard focus.
++    pub fn accessible_slider_adjustment(mut self) -> Self {
++        self.accessible_slider_adjustment = true;
++        self
++    }
++    /// Use explicit horizontal input rules for this Slider. The rendered
++    /// rail spans the node's bounds inside its padding.
++    pub fn with_slider_input(mut self, options: SliderInputOptions) -> Self {
++        self.slider_input = Some(options);
++        self
++    }
+     /// Handle native Increment (`true`) or Decrement (`false`) directly.
+     ///
+     /// Use this on an adjustable Group with [Self::on_value] to allow custom
+@@ -1057,6 +1078,8 @@ struct Binding<M> {
+     single_line_text_horizontal_inset: f32,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
++    accessible_slider_adjustment: bool,
++    slider_input: Option<SliderInputOptions>,
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+     dismiss: Option<M>,
+@@ -1323,7 +1346,12 @@ impl<A: Application> Runtime<A> {
+         self.discard_wheel_burst();
+         let ripple_changed = self.cancel_press_ripple();
+         let pointer_changed = self.pointer_position.take().is_some();
+-        let cancelled = if self.touch.is_some() {
++        let cancelled = if self.touch.is_some()
++            || self
++                .range_drag
++                .as_ref()
++                .is_some_and(controls::RangeDrag::has_input_policy)
++        {
+             self.cancel_pointer()?
+         } else {
+             self.cancel_drag()?
+@@ -1538,6 +1566,8 @@ impl<A: Application> Runtime<A> {
+                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
+                     text_input_placeholder: view.text_input_placeholder,
+                     value: view.value,
++                    accessible_slider_adjustment: view.accessible_slider_adjustment,
++                    slider_input: view.slider_input,
+                     accessible_step: view.accessible_step,
+                     roving: view.roving,
+                     dismiss: view.dismiss,
+diff --git a/crates/surface-app/src/slider.rs b/crates/surface-app/src/slider.rs
+new file mode 100644
+index 0000000..bd68c3f
+--- /dev/null
++++ b/crates/surface-app/src/slider.rs
+@@ -0,0 +1,169 @@
++use std::num::NonZeroU16;
++
++use surface::{RangeValue, Rect};
++
++use crate::EditKey;
++
++/// How a slider converts a position to a controlled value.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub enum SliderScale {
++    /// Pointer and absolute adjustment keep the requested value. Keyboard
++    /// and relative adjustment use the range's step.
++    Continuous,
++    /// The range contains this many equal intervals, including both endpoints.
++    Discrete(NonZeroU16),
++}
++
++/// Optional pointer, key, and accessible adjustment rules for a horizontal
++/// slider. Without this policy, a slider uses its original step behavior.
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++pub struct SliderInputOptions {
++    pub scale: SliderScale,
++    /// The physical right edge is the minimum. Only Left and Right reverse.
++    pub reverse_horizontal: bool,
++}
++
++impl SliderInputOptions {
++    /// Clamp a finite request to the range and apply the authored stop grid.
++    pub fn resolve_value(self, range: RangeValue, value: f64) -> Option<f64> {
++        if !range.is_valid() || !value.is_finite() {
++            return None;
++        }
++        let value = value.clamp(range.min, range.max);
++        Some(match self.scale {
++            SliderScale::Continuous => value,
++            SliderScale::Discrete(intervals) => {
++                stop_value(range, intervals, stop_index(range, intervals, value))
++            }
++        })
++    }
++
++    /// Position of the controlled value between the logical minimum and maximum.
++    pub fn value_fraction(self, range: RangeValue) -> Option<f64> {
++        if !range.is_valid() {
++            return None;
++        }
++        Some(match self.scale {
++            SliderScale::Continuous => (range.value - range.min) / (range.max - range.min),
++            SliderScale::Discrete(intervals) => {
++                stop_index(range, intervals, range.value) / f64::from(intervals.get())
++            }
++        })
++    }
++
++    pub(crate) fn relative(self, range: RangeValue, steps: f64) -> f64 {
++        match self.scale {
++            SliderScale::Continuous => {
++                (range.value + steps * range.step).clamp(range.min, range.max)
++            }
++            SliderScale::Discrete(intervals) => {
++                let index = stop_index(range, intervals, range.value);
++                stop_value(range, intervals, index + steps)
++            }
++        }
++    }
++
++    pub(crate) fn key_value(self, range: RangeValue, key: EditKey) -> Option<f64> {
++        let sign = if self.reverse_horizontal { -1. } else { 1. };
++        Some(match key {
++            EditKey::Left => self.relative(range, -sign),
++            EditKey::Right => self.relative(range, sign),
++            EditKey::Down => self.relative(range, -1.),
++            EditKey::Up => self.relative(range, 1.),
++            EditKey::Home => range.min,
++            EditKey::End => range.max,
++            EditKey::PageUp | EditKey::PageDown => {
++                let sign = if key == EditKey::PageUp { 1. } else { -1. };
++                match self.scale {
++                    SliderScale::Continuous => {
++                        let distance = ((range.max - range.min) / 10.).max(range.step);
++                        (range.value + sign * distance).clamp(range.min, range.max)
++                    }
++                    SliderScale::Discrete(intervals) => {
++                        self.relative(range, sign * (f64::from(intervals.get()) / 10.).ceil())
++                    }
++                }
++            }
++            _ => return None,
++        })
++    }
++
++    pub(crate) fn pointer_value(self, range: RangeValue, rail: Rect, x: f32) -> f64 {
++        let fraction = if x <= rail.x {
++            0.
++        } else if x >= rail.x + rail.width {
++            1.
++        } else {
++            (f64::from(x) - f64::from(rail.x)) / f64::from(rail.width)
++        };
++        let fraction = if self.reverse_horizontal {
++            1. - fraction
++        } else {
++            fraction
++        };
++        if fraction == 1. {
++            range.max
++        } else {
++            range.min + fraction * (range.max - range.min)
++        }
++    }
++}
++
++fn stop_index(range: RangeValue, intervals: NonZeroU16, value: f64) -> f64 {
++    let span = range.max - range.min;
++    (((value - range.min) / span) * f64::from(intervals.get())).round()
++}
++
++fn stop_value(range: RangeValue, intervals: NonZeroU16, index: f64) -> f64 {
++    let count = f64::from(intervals.get());
++    if index <= 0. {
++        range.min
++    } else if index >= count {
++        range.max
++    } else {
++        range.min + (range.max - range.min) * (index / count)
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn discrete_arrows_and_page_keys_cross_a_sub_ulp_boundary_by_index() {
++        let scale = SliderScale::Discrete(NonZeroU16::new(3).unwrap());
++        let input = SliderInputOptions {
++            scale,
++            reverse_horizontal: false,
++        };
++        let eps = f64::EPSILON;
++        let range = RangeValue {
++            min: 1.,
++            max: 1. + 4. * eps,
++            value: 1. + 3. * eps,
++            step: (4. * eps) / 3.,
++        };
++        assert_eq!(input.key_value(range, EditKey::Left), Some(1. + eps));
++        assert_eq!(input.key_value(range, EditKey::PageDown), Some(1. + eps));
++        assert_eq!(input.value_fraction(range), Some(2. / 3.));
++    }
++
++    #[test]
++    fn pointer_uses_the_visible_f32_edge_as_the_exact_endpoint() {
++        let input = SliderInputOptions {
++            scale: SliderScale::Continuous,
++            reverse_horizontal: false,
++        };
++        let range = RangeValue {
++            min: 0.,
++            max: 100.,
++            value: 0.,
++            step: 1.,
++        };
++        let rail = Rect::new(0.2, 0., 0.6, 48.);
++        assert_eq!(
++            input.pointer_value(range, rail, rail.x + rail.width),
++            range.max
++        );
++    }
++}
+diff --git a/crates/surface-app/tests/slider_accessibility.rs b/crates/surface-app/tests/slider_accessibility.rs
+new file mode 100644
+index 0000000..b5c3eb2
+--- /dev/null
++++ b/crates/surface-app/tests/slider_accessibility.rs
+@@ -0,0 +1,319 @@
++use surface::{Length, Node, RangeValue, Role, Style, TextMeasurer};
++use surface_app::{
++    AccessibilityAdjustment as Action, AccessibilityAdjustmentResult as Outcome,
++    AccessibilityAdjustmentTarget, AppError, Application, Event, ImeEvent, Queue, Runtime, View,
++};
++
++const SLIDER: &str = "volume";
++
++#[derive(Clone)]
++enum Message {
++    Change(f64),
++    Disable,
++    Hide,
++    Open,
++    Close,
++    Edit,
++}
++
++struct App {
++    range: RangeValue,
++    opt_in: bool,
++    bound: bool,
++    disabled: bool,
++    hidden: bool,
++    modal: bool,
++    hide_on_request: bool,
++    writes: usize,
++    queue: Option<Queue<Message>>,
++}
++
++impl Default for App {
++    fn default() -> Self {
++        Self {
++            range: RangeValue {
++                min: 0.,
++                max: 10.,
++                value: 6.,
++                step: 2.,
++            },
++            opt_in: true,
++            bound: true,
++            disabled: false,
++            hidden: false,
++            modal: false,
++            hide_on_request: false,
++            writes: 0,
++            queue: None,
++        }
++    }
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Change(value) => {
++                self.range.value = value;
++                self.writes += 1;
++            }
++            Message::Disable => self.disabled = true,
++            Message::Hide => self.hidden = true,
++            Message::Open => self.modal = true,
++            Message::Close => self.modal = false,
++            Message::Edit => {}
++        }
++    }
++
++    fn attach_queue(&mut self, queue: Queue<Message>) {
++        self.queue = Some(queue);
++    }
++
++    fn view(&self) -> View<Message> {
++        let size = || Style::row().width(Length::Px(120.)).height(Length::Px(48.));
++        let mut slider = View::new(
++            Node::new(Role::Slider, "Volume")
++                .id(SLIDER)
++                .range(self.range)
++                .disabled(self.disabled)
++                .styled(size()),
++        );
++        if self.opt_in {
++            slider = slider.accessible_slider_adjustment();
++        }
++        if self.bound {
++            let queue = self.queue.clone().filter(|_| self.hide_on_request);
++            slider = slider.on_value(move |value| {
++                if let Some(queue) = &queue {
++                    queue.post(Message::Hide);
++                }
++                Message::Change(value)
++            });
++        }
++        if self.hidden {
++            slider = slider.without_interaction(None);
++        }
++        let opener = View::new(Node::new(Role::Button, "Open").id("open").styled(size()))
++            .on_press(Message::Open);
++        let editor = View::new(
++            Node::new(Role::TextInput, "Editor")
++                .id("editor")
++                .text("sample")
++                .styled(size()),
++        )
++        .on_input(|_| Message::Edit);
++        let panel = self.modal.then(|| {
++            View::new(Node::new(Role::Dialog, "Modal").id("panel").styled(size()))
++                .on_value(Message::Change)
++                .accessible_slider_adjustment()
++                .modal_overlay(Message::Close)
++        });
++        View::new(Node::new(Role::Window, "Slider fixture").styled(Style::column()))
++            .children([opener, editor, slider].into_iter().chain(panel))
++    }
++}
++
++struct Text;
++impl TextMeasurer for Text {
++    fn measure(&mut self, _: &str, _: f32, _: Option<f32>) -> (f32, f32) {
++        (24., 24.)
++    }
++}
++
++fn draw(runtime: &mut Runtime<App>) {
++    runtime.render(320., 400., &mut Text).unwrap();
++}
++
++fn fixture(app: App) -> Runtime<App> {
++    let mut runtime = Runtime::new(app).unwrap();
++    draw(&mut runtime);
++    runtime
++}
++
++fn target(runtime: &Runtime<App>, key: &str) -> Option<AccessibilityAdjustmentTarget> {
++    let id = runtime.dom().by_id(key).unwrap();
++    runtime.accessibility_frame()?.adjustment_target(id)
++}
++
++fn offers_steps(runtime: &Runtime<App>) -> [bool; 2] {
++    let id = runtime.dom().by_id(SLIDER).unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    [true, false].map(|increment| frame.supports_adjustment_step(id, increment))
++}
++
++fn adjust(
++    runtime: &mut Runtime<App>,
++    token: &AccessibilityAdjustmentTarget,
++    action: Action,
++) -> Outcome {
++    runtime.accessibility_adjust(token, action).unwrap()
++}
++
++#[test]
++fn native_steps_and_set_value_share_legacy_snapping_and_keep_focus() {
++    let mut rt = Runtime::new(App::default()).unwrap();
++    assert!(target(&rt, SLIDER).is_none());
++    rt.activate("editor").unwrap();
++    draw(&mut rt);
++
++    let token = target(&rt, SLIDER).unwrap();
++    assert_eq!(offers_steps(&rt), [true, true]);
++    for request in [6., 6.2, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
++        assert_eq!(
++            adjust(&mut rt, &token, Action::SetValue(request)),
++            Outcome::Rejected
++        );
++    }
++    assert_eq!(rt.app().writes, 0);
++    assert_eq!(
++        adjust(&mut rt, &token, Action::SetValue(7.2)),
++        Outcome::Adjusted
++    );
++    assert_eq!(rt.app().range.value, 8.);
++    assert_eq!(rt.focused(), Some("editor"));
++
++    draw(&mut rt);
++    assert_eq!(
++        adjust(&mut rt, &token, Action::Increment),
++        Outcome::Rejected
++    );
++    for (request, expected, offered) in [
++        (Action::Increment, 10., [false, true]),
++        (Action::Decrement, 8., [true, true]),
++        (Action::SetValue(-80.), 0., [true, false]),
++    ] {
++        let token = target(&rt, SLIDER).unwrap();
++        assert_eq!(adjust(&mut rt, &token, request), Outcome::Adjusted);
++        assert_eq!(rt.app().range.value, expected);
++        assert_eq!(rt.focused(), Some("editor"));
++        draw(&mut rt);
++        assert_eq!(offers_steps(&rt), offered);
++    }
++    let token = target(&rt, SLIDER).unwrap();
++    assert_eq!(
++        adjust(&mut rt, &token, Action::Decrement),
++        Outcome::Rejected
++    );
++    assert_eq!(rt.app().writes, 4);
++}
++
++#[test]
++fn legacy_unaligned_endpoint_matches_setter_for_opted_in_slider() {
++    let app = || App {
++        range: RangeValue {
++            min: 0.,
++            max: 100.,
++            value: 50.,
++            step: 30.,
++        },
++        ..App::default()
++    };
++    let mut ordinary = fixture(app());
++    let mut native = fixture(app());
++    assert!(ordinary.set_value(SLIDER, 100.).unwrap());
++    let token = target(&native, SLIDER).unwrap();
++    assert_eq!(
++        adjust(&mut native, &token, Action::SetValue(100.)),
++        Outcome::Adjusted
++    );
++    assert_eq!(native.app().range.value, ordinary.app().range.value);
++    assert_eq!(native.app().range.value, 90.);
++    draw(&mut native);
++    assert_eq!(offers_steps(&native), [false, true]);
++}
++
++#[test]
++fn adjustment_requires_opt_in_a_value_binding_visibility_and_scope() {
++    let mut legacy = fixture(App {
++        opt_in: false,
++        ..App::default()
++    });
++    assert!(target(&legacy, SLIDER).is_none());
++    assert_eq!(offers_steps(&legacy), [false, false]);
++    assert!(legacy.set_value(SLIDER, 9.2).unwrap());
++    assert_eq!(legacy.app().range.value, 10.);
++    assert!(!legacy.set_value("missing", f64::NAN).unwrap());
++
++    let unbound_disabled = fixture(App {
++        bound: false,
++        disabled: true,
++        ..App::default()
++    });
++    assert!(target(&unbound_disabled, SLIDER).is_none());
++    assert!(
++        matches!(Runtime::new(App { bound: false, ..App::default() }), Err(AppError::InvalidRange(id)) if id == SLIDER)
++    );
++
++    let mut rt = fixture(App::default());
++    let before_modal = target(&rt, SLIDER).unwrap();
++    rt.apply(Message::Open).unwrap();
++    draw(&mut rt);
++    assert!(target(&rt, SLIDER).is_none());
++    assert!(target(&rt, "panel").is_none());
++    assert_eq!(
++        adjust(&mut rt, &before_modal, Action::Increment),
++        Outcome::Rejected
++    );
++
++    rt.apply(Message::Close).unwrap();
++    draw(&mut rt);
++    let enabled = target(&rt, SLIDER).unwrap();
++    rt.apply(Message::Disable).unwrap();
++    draw(&mut rt);
++    assert!(target(&rt, SLIDER).is_none());
++    assert_eq!(
++        adjust(&mut rt, &enabled, Action::Increment),
++        Outcome::Rejected
++    );
++    assert_eq!(rt.app().writes, 0);
++}
++
++#[test]
++fn composition_pressed_pointer_and_a_queued_rebuild_reject_the_adjustment() {
++    let mut rt = fixture(App {
++        hide_on_request: true,
++        ..App::default()
++    });
++    rt.activate("editor").unwrap();
++    rt.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    draw(&mut rt);
++    let token = target(&rt, SLIDER).unwrap();
++    assert_eq!(
++        adjust(&mut rt, &token, Action::Increment),
++        Outcome::BlockedByComposition
++    );
++    rt.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
++    draw(&mut rt);
++
++    let opener = rt.dom().by_id("open").unwrap();
++    let bounds = rt.computed().unwrap().nodes[opener.index()].bounds;
++    rt.dispatch(Event::PointerDown {
++        x: bounds.x + 4.,
++        y: bounds.y + 4.,
++    })
++    .unwrap();
++    draw(&mut rt);
++    let token = target(&rt, SLIDER).unwrap();
++    assert_eq!(
++        adjust(&mut rt, &token, Action::Increment),
++        Outcome::BlockedByPointer
++    );
++    rt.cancel_pointer().unwrap();
++    draw(&mut rt);
++
++    let token = target(&rt, SLIDER).unwrap();
++    assert_eq!(
++        adjust(&mut rt, &token, Action::SetValue(9.)),
++        Outcome::Rebuilt
++    );
++    assert!(rt.app().hidden);
++    assert_eq!(rt.app().range.value, 6.);
++    assert_eq!(rt.app().writes, 0);
++    draw(&mut rt);
++    assert!(target(&rt, SLIDER).is_none());
++    assert_eq!(
++        adjust(&mut rt, &token, Action::Decrement),
++        Outcome::Rejected
++    );
++}
+diff --git a/crates/surface-app/tests/slider_input.rs b/crates/surface-app/tests/slider_input.rs
+new file mode 100644
+index 0000000..abf61ea
+--- /dev/null
++++ b/crates/surface-app/tests/slider_input.rs
+@@ -0,0 +1,204 @@
++use std::num::NonZeroU16;
++
++use surface::{Length, Node, RangeValue, Role, Style, TextMeasurer};
++use surface_app::{
++    AccessibilityAdjustment, AccessibilityAdjustmentResult, Application, EditKey, Event, Runtime,
++    SliderInputOptions, SliderScale, View,
++};
++
++#[derive(Clone)]
++enum Message {
++    Value(f64),
++    Reverse,
++}
++
++struct App {
++    current: f64,
++    history: Vec<f64>,
++    input: SliderInputOptions,
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn view(&self) -> View<Message> {
++        let node = Node::new(Role::Slider, "Volume")
++            .id("volume")
++            .range(RangeValue {
++                min: 0.,
++                max: 100.,
++                value: self.current,
++                step: 7.,
++            })
++            .styled(
++                Style::row()
++                    .width(Length::Percent(1.))
++                    .height(Length::Px(48.))
++                    .padding(12.),
++            );
++        View::new(Node::new(Role::Window, "Sliders").styled(Style::column())).children([View::new(
++            node,
++        )
++        .on_value(Message::Value)
++        .with_slider_input(self.input)
++        .accessible_slider_adjustment()])
++    }
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Value(value) => {
++                self.current = value;
++                self.history.push(value);
++            }
++            Message::Reverse => self.input.reverse_horizontal = !self.input.reverse_horizontal,
++        }
++    }
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, _: &str, _: f32, _: Option<f32>) -> (f32, f32) {
++        (0., 0.)
++    }
++}
++
++fn start(scale: SliderScale, rtl: bool) -> Runtime<App> {
++    let mut runtime = Runtime::new(App {
++        current: 0.,
++        history: Vec::new(),
++        input: SliderInputOptions {
++            scale,
++            reverse_horizontal: rtl,
++        },
++    })
++    .unwrap();
++    paint(&mut runtime, 200.);
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("volume"));
++    runtime
++}
++
++fn paint(runtime: &mut Runtime<App>, width: f32) {
++    runtime.render(width, 64., &mut Metrics).unwrap();
++}
++
++fn key(runtime: &mut Runtime<App>, key: EditKey) {
++    runtime
++        .dispatch(Event::Edit {
++            key,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap();
++}
++
++fn pointer(runtime: &mut Runtime<App>, event: Event) {
++    runtime.dispatch(event).unwrap();
++}
++
++#[test]
++fn continuous_pointer_write_is_unsnapped_but_arrows_use_authored_step() {
++    let mut runtime = start(SliderScale::Continuous, false);
++    // The real rail runs from 12 to 188 dp. This is 3/16 along it.
++    pointer(&mut runtime, Event::PointerDown { x: 45., y: 24. });
++    assert_eq!(runtime.app().history, [18.75]);
++    paint(&mut runtime, 200.);
++    pointer(&mut runtime, Event::PointerMove { x: 100., y: 24. });
++    assert_eq!(runtime.app().history, [18.75, 50.]);
++    paint(&mut runtime, 200.);
++    pointer(&mut runtime, Event::PointerUp { x: 100., y: 24. });
++    key(&mut runtime, EditKey::Right);
++    key(&mut runtime, EditKey::PageUp);
++    key(&mut runtime, EditKey::End);
++    assert_eq!(runtime.app().history, [18.75, 50., 57., 67., 100.]);
++}
++
++#[test]
++fn rtl_mirrors_pointer_and_horizontal_arrows_but_keeps_logical_keys() {
++    let mut runtime = start(SliderScale::Continuous, true);
++    pointer(&mut runtime, Event::PointerDown { x: 45., y: 24. });
++    pointer(&mut runtime, Event::PointerUp { x: 45., y: 24. });
++    assert_eq!(runtime.app().history, [81.25]);
++    key(&mut runtime, EditKey::Left);
++    key(&mut runtime, EditKey::Right);
++    key(&mut runtime, EditKey::Up);
++    key(&mut runtime, EditKey::Home);
++    assert_eq!(runtime.app().history, [81.25, 88.25, 81.25, 88.25, 0.]);
++    paint(&mut runtime, 200.);
++    for event in [
++        Event::PointerDown { x: 3., y: 24. },
++        Event::PointerUp { x: 3., y: 24. },
++    ] {
++        runtime.dispatch_touch(event).unwrap();
++    }
++    assert_eq!(runtime.app().current, 100.);
++    assert_eq!(runtime.app().history.len(), 6);
++}
++
++#[test]
++fn discrete_pointer_keyboard_and_absolute_requests_keep_both_exact_endpoints() {
++    let mut runtime = start(SliderScale::Discrete(NonZeroU16::new(3).unwrap()), false);
++    key(&mut runtime, EditKey::Right);
++    assert!((runtime.app().current - 100. / 3.).abs() < 1e-10);
++    runtime.set_value("volume", 60.).unwrap();
++    assert!((runtime.app().current - 200. / 3.).abs() < 1e-10);
++    key(&mut runtime, EditKey::End);
++    assert_eq!(runtime.app().current, 100.);
++    key(&mut runtime, EditKey::Home);
++    assert_eq!(runtime.app().current, 0.);
++    paint(&mut runtime, 200.);
++    pointer(&mut runtime, Event::PointerDown { x: 192., y: 24. });
++    pointer(&mut runtime, Event::PointerUp { x: 192., y: 24. });
++    assert_eq!(runtime.app().current, 100.);
++}
++
++#[test]
++fn changed_geometry_and_replaced_direction_cancel_a_live_drag() {
++    let mut runtime = start(SliderScale::Continuous, false);
++    pointer(&mut runtime, Event::PointerDown { x: 45., y: 24. });
++    assert!(runtime.pointer_geometry_changed().unwrap());
++    paint(&mut runtime, 300.);
++    pointer(&mut runtime, Event::PointerMove { x: 250., y: 24. });
++    pointer(&mut runtime, Event::PointerUp { x: 250., y: 24. });
++    assert_eq!(runtime.app().history, [18.75]);
++    pointer(&mut runtime, Event::PointerDown { x: 150., y: 24. });
++    runtime.apply(Message::Reverse).unwrap();
++    paint(&mut runtime, 300.);
++    pointer(&mut runtime, Event::PointerMove { x: 80., y: 24. });
++    pointer(&mut runtime, Event::PointerUp { x: 80., y: 24. });
++    assert_eq!(runtime.app().history, [18.75, 50.]);
++    pointer(&mut runtime, Event::PointerDown { x: 150., y: 24. });
++    paint(&mut runtime, 400.);
++    pointer(&mut runtime, Event::PointerMove { x: 250., y: 24. });
++    assert_eq!(runtime.app().history, [18.75, 50.]);
++}
++
++#[test]
++fn accesskit_tokens_use_continuous_requests_and_relative_steps() {
++    let mut runtime = start(SliderScale::Continuous, true);
++    let target = |runtime: &mut Runtime<App>| {
++        paint(runtime, 200.);
++        let id = runtime.dom().by_id("volume").unwrap();
++        runtime
++            .accessibility_frame()
++            .unwrap()
++            .adjustment_target(id)
++            .unwrap()
++    };
++    let absolute = target(&mut runtime);
++    let result = runtime
++        .accessibility_adjust(&absolute, AccessibilityAdjustment::SetValue(18.75))
++        .unwrap();
++    assert_eq!(result, AccessibilityAdjustmentResult::Adjusted);
++    assert_eq!(runtime.app().current, 18.75);
++    let relative = target(&mut runtime);
++    let result = runtime
++        .accessibility_adjust(&relative, AccessibilityAdjustment::Increment)
++        .unwrap();
++    assert_eq!(result, AccessibilityAdjustmentResult::Adjusted);
++    assert_eq!(runtime.app().current, 25.75);
++    assert_eq!(runtime.focused(), Some("volume"));
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 18d957b..514d4ec 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -61,6 +61,7 @@ mod split_button;
+ mod split_button_layout;
+ mod split_button_motion;
+ mod standard_navigation_drawer;
++mod standard_slider;
+ mod switch;
+ mod tab_bar;
+ mod time_dial;
+@@ -205,6 +206,7 @@ pub use split_button_motion::SplitButtonMotion;
+ pub use standard_navigation_drawer::{
+     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
+ };
++pub use standard_slider::{StandardSliderMode, StandardSliderOptions, StandardSliderSize};
+ pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
+ pub use tab_bar::{
+     TabActivation, TabBarInput, TabBarKind, TabBarLayout, TabBarMotion, TabBarOptions, TabItem,
+diff --git a/crates/surface-material/src/standard_slider.rs b/crates/surface-material/src/standard_slider.rs
+new file mode 100644
+index 0000000..06607df
+--- /dev/null
++++ b/crates/surface-material/src/standard_slider.rs
+@@ -0,0 +1,481 @@
++use std::num::NonZeroU16;
++
++use surface::{
++    Color, Corners, Length, MeasuredGroupLayout, Node, RangeValue, Rect, Role, Style, TextMeasurer,
++};
++use surface_app::{CursorStyle, SliderInputOptions, SliderScale, View};
++
++use crate::{shape::LayoutDirection, typography, Elevation, Theme};
++
++const RAIL_INSET: f32 = 12.;
++const MIN_TARGET: f32 = 48.;
++const HANDLE_GAP: f32 = 6.;
++const INNER_RADIUS: f32 = 2.;
++const STOP_SIZE: f32 = 4.;
++const STOP_INSET: f32 = 4.;
++const TICK_SPACING: f32 = 8.;
++const MAX_TICK_CANDIDATES: u16 = 32;
++const FOCUS_STROKE: f32 = 3.;
++const FOCUS_OUTSET: f32 = 2. + FOCUS_STROKE;
++const LABEL_GAP: f32 = 4.;
++const LABEL_MIN_WIDTH: f32 = 48.;
++const LABEL_MIN_HEIGHT: f32 = 44.;
++const LABEL_INLINE_PADDING: f32 = 16.;
++const LABEL_BLOCK_PADDING: f32 = 12.;
++
++/// The five horizontal Material 3 track and handle sizes.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum StandardSliderSize {
++    #[default]
++    ExtraSmall,
++    Small,
++    Medium,
++    Large,
++    ExtraLarge,
++}
++
++/// How a controlled value is stepped. The endpoints are inclusive.
++///
++/// A discrete slider rounds the authored value to the nearest stop. Ties
++/// round toward the maximum. The stop values must be distinguishable.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub enum StandardSliderMode {
++    Continuous { keyboard_step: f64 },
++    Discrete { intervals: u16 },
++}
++
++#[derive(Clone, Copy, Debug)]
++pub struct StandardSliderOptions<'a> {
++    pub id: &'a str,
++    /// A localized name for the slider.
++    pub name: &'a str,
++    pub min: f64,
++    pub max: f64,
++    pub value: f64,
++    pub mode: StandardSliderMode,
++    pub size: StandardSliderSize,
++    pub direction: LayoutDirection,
++    pub disabled: bool,
++    /// The owner sets this while the enabled slider is focused or pressed.
++    pub engaged: bool,
++    /// Optional localized current value for the indicator and accessibility.
++    ///
++    /// Reserve 53 dp above the handle for the nominal indicator and its
++    /// focus outline clearance. Allow more space for enlarged or wrapped text.
++    /// The indicator does not change the slider's target or its rail.
++    pub value_label: Option<&'a str>,
++}
++
++impl Theme {
++    /// Build a full-width horizontal Standard slider with one value binding.
++    ///
++    /// Use a unique stable ID. The caller applies each reported value to its
++    /// model. Returns `None` for an unnamed slider or an invalid numeric range.
++    pub fn standard_slider<M>(
++        &self,
++        options: StandardSliderOptions<'_>,
++        handler: impl Fn(f64) -> M + 'static,
++    ) -> Option<View<M>> {
++        if options.id.trim().is_empty() || options.name.trim().is_empty() {
++            return None;
++        }
++        let (range, intervals, input) = range(options)?;
++        let size = options.size.tokens();
++        let engaged = options.engaged && !options.disabled;
++        let label = options
++            .value_label
++            .filter(|label| engaged && !label.trim().is_empty());
++        let reverse = input.reverse_horizontal;
++        let fraction = input.value_fraction(range)? as f32;
++        let ticks = ticks(intervals);
++        let palette = Palette::new(self, options.disabled);
++        let handle_width = if engaged { 2. } else { 4. };
++        let (leading, trailing) = if reverse {
++            (INNER_RADIUS, size.outer_radius)
++        } else {
++            (size.outer_radius, INNER_RADIUS)
++        };
++        let track = |color, left, right| {
++            Style::default()
++                .background(color)
++                .corners(Corners::new(left, right, right, left))
++        };
++        let pill = |color| Style::default().background(color).corners(Corners::full());
++        let part = |suffix, style| {
++            View::new(
++                Node::new(Role::Group, "")
++                    .id(format!("{}-{suffix}", options.id))
++                    .styled(style),
++            )
++            .without_interaction(None)
++        };
++
++        let handle_shadow = if options.disabled {
++            Elevation::Level0
++        } else {
++            Elevation::Level1
++        };
++        let handle = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-handle", options.id))
++                .styled(pill(palette.active))
++                .box_shadows(self.elevation(handle_shadow)),
++        )
++        .without_interaction(None);
++        let focus = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-focus", options.id))
++                .styled(Style::default().corners(Corners::full()))
++                .focus_outline_from_parent()
++                .focus_outline_width(FOCUS_STROKE)
++                .focus_color(self.colors.secondary),
++        )
++        .without_interaction(None);
++        let mut parts = vec![
++            part("rail", Style::default()),
++            part("active", track(palette.active, leading, trailing)),
++            part("inactive", track(palette.inactive, trailing, leading)),
++            handle,
++            focus,
++            part("stop", pill(palette.inactive_stop)),
++        ];
++        for tick in &ticks {
++            let ink = if tick.fraction <= fraction {
++                palette.active_stop
++            } else {
++                palette.inactive_stop
++            };
++            parts.push(
++                View::new(
++                    Node::new(Role::Group, "")
++                        .id(format!("{}-tick-{}", options.id, tick.index))
++                        .styled(pill(ink)),
++                )
++                .without_interaction(None),
++            );
++        }
++        if let Some(label) = label {
++            parts.extend([
++                part("label", pill(self.colors.inverse_surface)),
++                View::new(
++                    Node::new(Role::Text, "")
++                        .id(format!("{}-label-text", options.id))
++                        .text(label)
++                        .styled(
++                            Style::default()
++                                .with_text_style(typography::LABEL_LARGE)
++                                .foreground(self.colors.inverse_on_surface),
++                        ),
++                )
++                .without_interaction(None),
++            ]);
++        }
++
++        let height = size.handle_height.max(MIN_TARGET);
++        let mut style = Style::row()
++            .width(Length::Percent(1.))
++            .height(Length::Px(height))
++            .padding(RAIL_INSET);
++        style.min_width = MIN_TARGET;
++        style.min_height = height;
++        let mut node = Node::new(Role::Slider, options.name)
++            .id(options.id)
++            .range(range)
++            .disabled(options.disabled)
++            .focus_color(Color::TRANSPARENT)
++            .styled(style)
++            .measured_group(Artwork {
++                size,
++                reverse,
++                fraction,
++                handle_width,
++                ticks,
++                has_label: label.is_some(),
++            });
++        if let Some(text) = options.value_label {
++            node = node.with_slider_value_text(text);
++        }
++        let view = View::new(node).children(parts);
++        if options.disabled {
++            return Some(view);
++        }
++        // Keep the value and hit geometry in one Runtime binding.
++        Some(
++            view.on_value(handler)
++                .with_slider_input(input)
++                .accessible_slider_adjustment()
++                .accessibility_scroll_into_view()
++                .cursor(CursorStyle::Pointer),
++        )
++    }
++}
++
++fn range(
++    options: StandardSliderOptions<'_>,
++) -> Option<(RangeValue, Option<u16>, SliderInputOptions)> {
++    let span = options.max - options.min;
++    let (step, intervals) = match options.mode {
++        StandardSliderMode::Continuous { keyboard_step } => (keyboard_step, None),
++        StandardSliderMode::Discrete { intervals } => (
++            span / f64::from(intervals),
++            Some(NonZeroU16::new(intervals)?),
++        ),
++    };
++    let mut range = RangeValue {
++        min: options.min,
++        max: options.max,
++        value: options.value,
++        step,
++    };
++    if !range.is_valid() {
++        return None;
++    }
++    let edge_step = step.min(span);
++    if range.min + edge_step <= range.min || range.max - edge_step >= range.max {
++        return None;
++    }
++    let input = SliderInputOptions {
++        scale: intervals.map_or(SliderScale::Continuous, SliderScale::Discrete),
++        reverse_horizontal: options.direction == LayoutDirection::RightToLeft,
++    };
++    let intervals = intervals.map(NonZeroU16::get);
++    if let Some(intervals) = intervals {
++        // Most ranges are well above machine precision. Check each stop only
++        // when its increment is near the representable spacing at an edge.
++        let edge_resolution =
++            (range.min.next_up() - range.min).max(range.max - range.max.next_down());
++        if step <= edge_resolution {
++            let mut previous = range.min;
++            for index in 1..=intervals {
++                let value = stop_value(range, index, intervals);
++                let index_position = f64::from(index) / f64::from(intervals);
++                if value <= previous
++                    || input.value_fraction(RangeValue { value, ..range }) != Some(index_position)
++                {
++                    return None;
++                }
++                previous = value;
++            }
++        }
++    }
++    range.value = input.resolve_value(range, range.value)?;
++    Some((range, intervals, input))
++}
++
++fn stop_value(range: RangeValue, index: u16, intervals: u16) -> f64 {
++    if index == 0 {
++        range.min
++    } else if index == intervals {
++        range.max
++    } else {
++        range.min + (range.max - range.min) * (f64::from(index) / f64::from(intervals))
++    }
++}
++
++#[derive(Clone, Copy, Debug)]
++struct SizeTokens {
++    track_height: f32,
++    handle_height: f32,
++    outer_radius: f32,
++}
++
++impl StandardSliderSize {
++    fn tokens(self) -> SizeTokens {
++        let (track_height, handle_height, outer_radius) = match self {
++            Self::ExtraSmall => (16., 44., 8.),
++            Self::Small => (24., 44., 8.),
++            Self::Medium => (40., 52., 12.),
++            Self::Large => (56., 68., 16.),
++            Self::ExtraLarge => (96., 108., 28.),
++        };
++        SizeTokens {
++            track_height,
++            handle_height,
++            outer_radius,
++        }
++    }
++}
++
++struct Palette {
++    active: Color,
++    inactive: Color,
++    active_stop: Color,
++    inactive_stop: Color,
++}
++
++impl Palette {
++    fn new(theme: &Theme, disabled: bool) -> Self {
++        let colors = theme.colors;
++        if disabled {
++            let faint = |Color(r, g, b, _), opacity| Color(r, g, b, opacity);
++            Self {
++                active: faint(colors.on_surface, 97),
++                inactive: faint(colors.on_surface, 31),
++                active_stop: faint(colors.inverse_on_surface, 97),
++                inactive_stop: faint(colors.on_surface, 97),
++            }
++        } else {
++            Self {
++                active: colors.primary,
++                inactive: colors.secondary_container,
++                active_stop: colors.on_primary,
++                inactive_stop: colors.on_secondary_container,
++            }
++        }
++    }
++}
++
++#[derive(Debug)]
++struct Tick {
++    index: u16,
++    fraction: f32,
++}
++
++fn ticks(intervals: Option<u16>) -> Vec<Tick> {
++    let Some(intervals) = intervals else {
++        return Vec::new();
++    };
++    let candidates = u32::from(intervals.min(MAX_TICK_CANDIDATES));
++    (0..candidates)
++        .map(|candidate| {
++            let index = (candidate * u32::from(intervals) / candidates) as u16;
++            Tick {
++                index,
++                fraction: f32::from(index) / f32::from(intervals),
++            }
++        })
++        .collect()
++}
++
++#[derive(Debug)]
++struct Artwork {
++    size: SizeTokens,
++    reverse: bool,
++    fraction: f32,
++    handle_width: f32,
++    ticks: Vec<Tick>,
++    has_label: bool,
++}
++
++impl MeasuredGroupLayout for Artwork {
++    fn measure(&self, _: &[&Node], available: Option<f32>, _: &mut dyn TextMeasurer) -> (f32, f32) {
++        (
++            available.unwrap_or(MIN_TARGET - 2. * RAIL_INSET),
++            self.size.handle_height.max(MIN_TARGET) - 2. * RAIL_INSET,
++        )
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let rail = (width - 2. * RAIL_INSET).max(0.);
++        let x_at = |start: f32, width| {
++            RAIL_INSET
++                + if self.reverse {
++                    rail - start - width
++                } else {
++                    start
++                }
++        };
++        let center = rail * self.fraction;
++        let half_gap = HANDLE_GAP + self.handle_width / 2.;
++        let active_end = (center - half_gap).max(0.);
++        let inactive_start = (center + half_gap).min(rail);
++        let inactive_width = rail - inactive_start;
++        let track_height = self.size.track_height;
++        let track_y = (height - track_height) / 2.;
++        let handle_y = (height - self.size.handle_height) / 2.;
++        let handle = Rect::new(
++            x_at(center - self.handle_width / 2., self.handle_width),
++            handle_y,
++            self.handle_width,
++            self.size.handle_height,
++        );
++        let stop = |start| {
++            Rect::new(
++                x_at(start, STOP_SIZE),
++                (height - STOP_SIZE) / 2.,
++                STOP_SIZE,
++                STOP_SIZE,
++            )
++        };
++        let max_stop_start = rail - STOP_INSET - STOP_SIZE;
++        let show_stop = inactive_width >= STOP_INSET + STOP_SIZE;
++        let mut placements = vec![
++            Rect::new(RAIL_INSET, 0., rail, height),
++            Rect::new(x_at(0., active_end), track_y, active_end, track_height),
++            if show_stop {
++                Rect::new(
++                    x_at(inactive_start, inactive_width),
++                    track_y,
++                    inactive_width,
++                    track_height,
++                )
++            } else {
++                Rect::default()
++            },
++            handle,
++            Rect::new(
++                handle.x - FOCUS_OUTSET,
++                handle.y - FOCUS_OUTSET,
++                handle.width + 2. * FOCUS_OUTSET,
++                handle.height + 2. * FOCUS_OUTSET,
++            ),
++            if show_stop {
++                stop(max_stop_start)
++            } else {
++                Rect::default()
++            },
++        ];
++        let mut previous = f32::NEG_INFINITY;
++        for tick in &self.ticks {
++            let start = if tick.index == 0 {
++                STOP_INSET
++            } else {
++                rail * tick.fraction - STOP_SIZE / 2.
++            };
++            let fits_active = start + STOP_SIZE <= active_end;
++            let fits_inactive =
++                show_stop && start >= inactive_start && start <= max_stop_start - TICK_SPACING;
++            if start >= 0. && start >= previous + TICK_SPACING && (fits_active || fits_inactive) {
++                placements.push(stop(start));
++                previous = start;
++            } else {
++                placements.push(Rect::default());
++            }
++        }
++        if self.has_label {
++            let label = children.last().expect("indicator text child");
++            let style = label.style().text_style();
++            let value = label.text_value().unwrap_or_default();
++            let limit = width.max(1.);
++            let padding = LABEL_INLINE_PADDING.min(limit / 4.);
++            let natural_width = fonts.measure_text(value, &style, None).0.ceil();
++            let label_width = (natural_width + 2. * padding)
++                .max(LABEL_MIN_WIDTH)
++                .min(limit);
++            let line_limit = label_width - 2. * padding;
++            let (measured_width, measured_height) =
++                fonts.measure_text(value, &style, Some(line_limit));
++            let text_width = measured_width.ceil().min(line_limit);
++            let text_height = measured_height.max(style.line_height_px());
++            let label_height = (text_height + 2. * LABEL_BLOCK_PADDING).max(LABEL_MIN_HEIGHT);
++            let thumb_center = handle.x + handle.width / 2.;
++            let x = (thumb_center - label_width / 2.).clamp(0., limit - label_width);
++            let y = handle.y - FOCUS_OUTSET - LABEL_GAP - label_height;
++            placements.extend([
++                Rect::new(x, y, label_width, label_height),
++                Rect::new(
++                    x + (label_width - text_width) / 2.,
++                    y + (label_height - text_height) / 2.,
++                    text_width,
++                    text_height,
++                ),
++            ]);
++        }
++        placements
++    }
++}
+diff --git a/crates/surface-material/tests/standard_slider.rs b/crates/surface-material/tests/standard_slider.rs
+new file mode 100644
+index 0000000..8af95df
+--- /dev/null
++++ b/crates/surface-material/tests/standard_slider.rs
+@@ -0,0 +1,568 @@
++use surface::{
++    Color, Corners, DisplayList, Node, NodeId, PaintOp, RangeValue, Rect, Role, Style, TextMeasurer,
++};
++use surface_app::{Application, Event, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection, StandardSliderMode, StandardSliderOptions, StandardSliderSize, Theme,
++};
++
++const ID: &str = "volume";
++const OPTIONS: StandardSliderOptions<'static> = StandardSliderOptions {
++    id: ID,
++    name: "音量",
++    min: 0.,
++    max: 100.,
++    value: 25.,
++    mode: StandardSliderMode::Continuous { keyboard_step: 1. },
++    size: StandardSliderSize::ExtraSmall,
++    direction: LayoutDirection::LeftToRight,
++    disabled: false,
++    engaged: false,
++    value_label: None,
++};
++
++#[derive(Clone)]
++enum Message {
++    Value(f64),
++    Engage(bool),
++}
++
++struct Model {
++    options: StandardSliderOptions<'static>,
++    dark: bool,
++    scale: f32,
++    requests: Vec<f64>,
++}
++
++impl Model {
++    fn theme(&self) -> Theme {
++        if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++}
++
++impl Application for Model {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Value(value) => {
++                self.options.value = value;
++                self.requests.push(value);
++            }
++            Message::Engage(engaged) => self.options.engaged = engaged,
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let slider = self
++            .theme()
++            .standard_slider(self.options, Message::Value)
++            .expect("valid test slider");
++        View::new(Node::new(Role::Window, "").styled(Style::column().padding(18.).gap(8.)))
++            .children([
++                // Leave room above the fixed cross-axis slider hit target.
++                View::new(
++                    Node::new(Role::Group, "")
++                        .styled(Style::column().height(surface::Length::Px(155.))),
++                ),
++                slider,
++            ])
++    }
++
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, font_size: f32, width: Option<f32>) -> (f32, f32) {
++        let advance = font_size * 0.75;
++        let count = text.chars().count() as f32;
++        let limit = width.unwrap_or(f32::INFINITY);
++        let per_line = (limit / advance).floor().max(1.);
++        (
++            (advance * count.min(per_line)).min(limit),
++            (count / per_line).ceil().max(1.) * font_size * 1.5,
++        )
++    }
++}
++
++fn runtime(options: StandardSliderOptions<'static>, dark: bool, scale: f32) -> Runtime<Model> {
++    Runtime::new(Model {
++        options,
++        dark,
++        scale,
++        requests: Vec::new(),
++    })
++    .unwrap()
++}
++
++fn paint(runtime: &mut Runtime<Model>, width: f32) -> DisplayList {
++    runtime.render(width, 640., &mut Metrics).unwrap()
++}
++
++fn id(runtime: &Runtime<Model>, key: &str) -> NodeId {
++    runtime.dom().by_id(key).unwrap()
++}
++
++fn bounds(runtime: &Runtime<Model>, key: &str) -> Rect {
++    runtime.computed().unwrap().nodes[id(runtime, key).index()].bounds
++}
++
++fn center(rect: Rect) -> f32 {
++    rect.x + rect.width / 2.
++}
++
++fn right(rect: Rect) -> f32 {
++    rect.x + rect.width
++}
++
++fn has_fill(list: &DisplayList, area: Rect, ink: Color, corners: Corners) -> bool {
++    list.ops.iter().any(|op| match op {
++        PaintOp::Shape {
++            rect,
++            color,
++            corners: c,
++            ..
++        } => *rect == area && *color == ink && *c == corners,
++        PaintOp::Quad {
++            rect,
++            color,
++            radius,
++            ..
++        } => *rect == area && *color == ink && Corners::all(*radius) == corners,
++        _ => false,
++    })
++}
++
++fn alpha(color: Color, a: u8) -> Color {
++    Color(color.0, color.1, color.2, a)
++}
++
++#[test]
++fn both_themes_paint_all_five_exact_size_rows_and_responsive_rails() {
++    for (size, track_height, handle_height, radius) in [
++        (StandardSliderSize::ExtraSmall, 16., 44_f32, 8.),
++        (StandardSliderSize::Small, 24., 44., 8.),
++        (StandardSliderSize::Medium, 40., 52., 12.),
++        (StandardSliderSize::Large, 56., 68., 16.),
++        (StandardSliderSize::ExtraLarge, 96., 108., 28.),
++    ] {
++        for dark in [false, true] {
++            let mut runtime = runtime(StandardSliderOptions { size, ..OPTIONS }, dark, 1.);
++            let colors = runtime.app().theme().colors;
++            for width in [320., 960.] {
++                let list = paint(&mut runtime, width);
++                let touch = bounds(&runtime, ID);
++                let rail = bounds(&runtime, "volume-rail");
++                let active = bounds(&runtime, "volume-active");
++                let inactive = bounds(&runtime, "volume-inactive");
++                let handle = bounds(&runtime, "volume-handle");
++                let stop = bounds(&runtime, "volume-stop");
++                assert_eq!(touch.height, handle_height.max(48.));
++                assert_eq!(touch.width, width - 36.);
++                assert_eq!(rail.x, touch.x + 12.);
++                assert_eq!(rail.width, touch.width - 24.);
++                assert_eq!(center(handle), rail.x + rail.width / 4.);
++                assert_eq!((handle.width, handle.height), (4., handle_height));
++                assert_eq!(
++                    (active.height, inactive.height),
++                    (track_height, track_height)
++                );
++                assert_eq!(active.x, rail.x);
++                assert_eq!(right(active) + 6., handle.x);
++                assert_eq!(right(handle) + 6., inactive.x);
++                assert_eq!(right(inactive), right(rail));
++                assert_eq!((stop.width, stop.height), (4., 4.));
++                assert_eq!(right(stop) + 4., right(inactive));
++                assert!(has_fill(
++                    &list,
++                    active,
++                    colors.primary,
++                    Corners::new(radius, 2., 2., radius)
++                ));
++                assert!(has_fill(
++                    &list,
++                    inactive,
++                    colors.secondary_container,
++                    Corners::new(2., radius, radius, 2.)
++                ));
++                assert!(has_fill(&list, handle, colors.primary, Corners::all(2.)));
++                assert!(has_fill(
++                    &list,
++                    stop,
++                    colors.on_secondary_container,
++                    Corners::all(2.)
++                ));
++            }
++        }
++    }
++}
++
++#[test]
++fn rtl_mirrors_all_parts_and_endpoints_keep_short_caps_inside_the_rail() {
++    for value in [0., 4., 25., 97., 100.] {
++        let mut ltr = runtime(StandardSliderOptions { value, ..OPTIONS }, false, 1.);
++        let mut rtl = runtime(
++            StandardSliderOptions {
++                value,
++                direction: LayoutDirection::RightToLeft,
++                ..OPTIONS
++            },
++            false,
++            1.,
++        );
++        paint(&mut ltr, 320.);
++        let painted = paint(&mut rtl, 320.);
++        let rail = bounds(&ltr, "volume-rail");
++        let touch = bounds(&ltr, ID);
++        for key in [
++            "volume-active",
++            "volume-inactive",
++            "volume-handle",
++            "volume-stop",
++        ] {
++            let nominal = bounds(&ltr, key);
++            let mirrored = bounds(&rtl, key);
++            assert_eq!(
++                (nominal.y, nominal.width, nominal.height),
++                (mirrored.y, mirrored.width, mirrored.height)
++            );
++            if nominal.width > 0. {
++                assert!((center(mirrored) + center(nominal) - 2. * center(touch)).abs() < 0.001);
++            }
++        }
++        let handle = bounds(&rtl, "volume-handle");
++        let active = bounds(&rtl, "volume-active");
++        let inactive = bounds(&rtl, "volume-inactive");
++        let stop = bounds(&rtl, "volume-stop");
++        let expected = match value {
++            0. => right(rail),
++            100. => rail.x,
++            value => rail.x + rail.width * (1. - value as f32 / 100.),
++        };
++        assert!((center(handle) - expected).abs() < 0.001);
++        if active.width > 0. {
++            assert!((active.x - right(handle) - 6.).abs() < 0.001);
++            let corners = Corners::new(2., 8., 8., 2.).resolve(active.width, active.height);
++            assert!(has_fill(
++                &painted,
++                active,
++                rtl.app().theme().colors.primary,
++                corners
++            ));
++        }
++        if inactive.width > 0. {
++            assert!(inactive.width >= 8.);
++            assert_eq!(stop.x, inactive.x + 4.);
++            assert!((handle.x - right(inactive) - 6.).abs() < 0.001);
++        } else {
++            assert_eq!(stop.width, 0.);
++        }
++    }
++}
++
++#[test]
++fn discrete_ties_snap_to_logical_stops_and_dense_dots_do_not_overlap() {
++    for (current, snapped) in [(0., 0.), (12.5, 25.), (37.5, 50.), (100., 100.)] {
++        let mut runtime = runtime(
++            StandardSliderOptions {
++                mode: StandardSliderMode::Discrete { intervals: 4 },
++                value: current,
++                ..OPTIONS
++            },
++            false,
++            1.,
++        );
++        paint(&mut runtime, 320.);
++        assert_eq!(
++            runtime.dom().get(id(&runtime, ID)).unwrap().range_value(),
++            Some(RangeValue {
++                min: 0.,
++                max: 100.,
++                value: snapped,
++                step: 25.
++            })
++        );
++        let rail = bounds(&runtime, "volume-rail");
++        assert_eq!(
++            center(bounds(&runtime, "volume-handle")),
++            rail.x + rail.width * snapped as f32 / 100.
++        );
++    }
++    for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++        let mut runtime = runtime(
++            StandardSliderOptions {
++                mode: StandardSliderMode::Discrete {
++                    intervals: u16::MAX,
++                },
++                direction,
++                ..OPTIONS
++            },
++            true,
++            1.,
++        );
++        for width in [80., 320.] {
++            let list = paint(&mut runtime, width);
++            let colors = runtime.app().theme().colors;
++            let active = bounds(&runtime, "volume-active");
++            let inactive = bounds(&runtime, "volume-inactive");
++            let end = bounds(&runtime, "volume-stop");
++            let ticks: Vec<_> = runtime
++                .dom()
++                .iter()
++                .filter_map(|(id, node)| {
++                    node.stable_id()?.strip_prefix("volume-tick-")?;
++                    Some(runtime.computed().unwrap().nodes[id.index()].bounds)
++                })
++                .collect();
++            assert_eq!(ticks.len(), 32);
++            let mut visible: Vec<_> = ticks.into_iter().filter(|b| b.width > 0.).collect();
++            if end.width > 0. {
++                visible.push(end);
++            }
++            visible.sort_by(|a, b| a.x.total_cmp(&b.x));
++            assert!(visible.len() <= ((width - 36. - 24.) / 8.).ceil() as usize);
++            assert!(visible
++                .windows(2)
++                .all(|pair| pair[1].x - pair[0].x >= 7.999));
++            for dot in visible {
++                assert_eq!((dot.width, dot.height), (4., 4.));
++                let inside =
++                    |outer: Rect| dot.x >= outer.x - 0.001 && right(dot) <= right(outer) + 0.001;
++                let color = if inside(active) {
++                    colors.on_primary
++                } else {
++                    assert!(inside(inactive));
++                    colors.on_secondary_container
++                };
++                assert!(has_fill(&list, dot, color, Corners::all(2.)));
++            }
++        }
++    }
++}
++
++#[test]
++fn focus_engages_a_two_dp_handle_and_measured_label_without_moving_the_target() {
++    let label = "媒體音量五十百分比以及目前的播放輸出";
++    let mut runtime = runtime(
++        StandardSliderOptions {
++            value: 0.,
++            direction: LayoutDirection::RightToLeft,
++            value_label: Some(label),
++            ..OPTIONS
++        },
++        true,
++        2.,
++    );
++    paint(&mut runtime, 320.);
++    let before = bounds(&runtime, ID);
++    let rail = bounds(&runtime, "volume-rail");
++    assert!(runtime.dom().by_id("volume-label").is_none());
++    assert_eq!(bounds(&runtime, "volume-handle").width, 4.);
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some(ID));
++    runtime.apply(Message::Engage(true)).unwrap();
++    let list = paint(&mut runtime, 320.);
++    let handle = bounds(&runtime, "volume-handle");
++    let focus = bounds(&runtime, "volume-focus");
++    let indicator = bounds(&runtime, "volume-label");
++    let text = bounds(&runtime, "volume-label-text");
++    let colors = runtime.app().theme().colors;
++    assert_eq!(bounds(&runtime, ID), before);
++    assert_eq!(bounds(&runtime, "volume-rail"), rail);
++    assert_eq!((handle.width, center(handle)), (2., right(rail)));
++    assert_eq!(focus.width, 12.);
++    assert_eq!(indicator.y + indicator.height + 4., focus.y);
++    assert!(indicator.height > 64.);
++    assert!(indicator.x >= before.x && right(indicator) <= right(before));
++    assert!(text.x >= indicator.x && right(text) <= right(indicator));
++    assert!(list.ops.iter().any(|op| matches!(op, PaintOp::Stroke {
++        rect, width: 3., color, ..
++    } if *rect == focus && *color == colors.secondary)));
++    assert!(list.ops.iter().any(|op| matches!(op, PaintOp::StyledText {
++        text: painted, style, color, ..
++    } if painted == label && style.font_size == 28. && *color == colors.inverse_on_surface)));
++    let ax = runtime.accessibility_frame().unwrap();
++    assert_eq!(ax.children(id(&runtime, ID)).count(), 0);
++    assert!(ax.node(id(&runtime, "volume-label-text")).is_none());
++    assert!(runtime.app().requests.is_empty());
++}
++
++#[test]
++fn one_slider_exposes_the_numeric_value_and_disabled_ink_has_no_binding() {
++    for disabled in [false, true] {
++        let mut runtime = runtime(
++            StandardSliderOptions {
++                disabled,
++                engaged: true,
++                value_label: Some("   "),
++                ..OPTIONS
++            },
++            true,
++            1.,
++        );
++        let list = paint(&mut runtime, 320.);
++        let colors = runtime.app().theme().colors;
++        assert!(runtime.dom().by_id("volume-label").is_none());
++        let slider = id(&runtime, ID);
++        let ax = runtime.accessibility_frame().unwrap();
++        let node = ax.node(slider).unwrap().node;
++        assert_eq!(
++            (node.role(), node.name(), node.is_disabled()),
++            (Role::Slider, "音量", disabled)
++        );
++        assert_eq!(
++            node.range_value(),
++            Some(RangeValue {
++                min: 0.,
++                max: 100.,
++                value: 25.,
++                step: 1.
++            })
++        );
++        assert_eq!(ax.children(slider).count(), 0);
++        if disabled {
++            let handle = bounds(&runtime, "volume-handle");
++            let active = bounds(&runtime, "volume-active");
++            let inactive = bounds(&runtime, "volume-inactive");
++            let stop = bounds(&runtime, "volume-stop");
++            assert_eq!(handle.width, 4.);
++            assert!(has_fill(
++                &list,
++                handle,
++                alpha(colors.on_surface, 97),
++                Corners::all(2.)
++            ));
++            assert!(has_fill(
++                &list,
++                active,
++                alpha(colors.on_surface, 97),
++                Corners::new(8., 2., 2., 8.)
++            ));
++            assert!(has_fill(
++                &list,
++                inactive,
++                alpha(colors.on_surface, 31),
++                Corners::new(2., 8., 8., 2.)
++            ));
++            assert!(has_fill(
++                &list,
++                stop,
++                alpha(colors.on_surface, 97),
++                Corners::all(2.)
++            ));
++            assert!(ax.focus_target(slider).is_none());
++            assert!(runtime.set_value(ID, 26.).is_err());
++            assert!(runtime.app().requests.is_empty());
++        } else {
++            assert!(ax.focus_target(slider).is_some());
++            assert!(runtime.set_value(ID, 26.).unwrap());
++            assert!(!runtime.set_value(ID, 26.).unwrap());
++            assert_eq!(runtime.app().requests, [26.]);
++        }
++    }
++}
++
++#[test]
++fn closely_spaced_discrete_values_keep_their_exact_logical_placement() {
++    let epsilon = f64::EPSILON;
++    let value = 1. + 3. * epsilon;
++    let mut runtime = runtime(
++        StandardSliderOptions {
++            min: 1.,
++            max: 1. + 4. * epsilon,
++            value,
++            mode: StandardSliderMode::Discrete { intervals: 3 },
++            ..OPTIONS
++        },
++        false,
++        1.,
++    );
++    paint(&mut runtime, 320.);
++    let rail = bounds(&runtime, "volume-rail");
++    let handle = bounds(&runtime, "volume-handle");
++    assert!((center(handle) - (rail.x + rail.width * (2. / 3.))).abs() < 0.001);
++    assert!(runtime
++        .dom()
++        .get(id(&runtime, ID))
++        .unwrap()
++        .range_value()
++        .is_some_and(|range| range.value == value));
++}
++
++#[test]
++fn invalid_ranges_or_names_never_build_a_slider() {
++    let theme = Theme::light();
++    for invalid in [
++        StandardSliderOptions { id: "", ..OPTIONS },
++        StandardSliderOptions {
++            name: " ",
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            min: f64::NAN,
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            min: -f64::MAX,
++            max: f64::MAX,
++            ..OPTIONS
++        },
++        StandardSliderOptions { max: 0., ..OPTIONS },
++        StandardSliderOptions {
++            value: 101.,
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            mode: StandardSliderMode::Continuous { keyboard_step: 0. },
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            mode: StandardSliderMode::Continuous {
++                keyboard_step: f64::EPSILON,
++            },
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            mode: StandardSliderMode::Discrete { intervals: 0 },
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            // The six raw positions are distinct, but one rounded value
++            // would select its adjacent logical stop on the next rebuild.
++            min: 1. - 2. * f64::EPSILON,
++            max: 1. + 3. * f64::EPSILON,
++            value: 1.,
++            mode: StandardSliderMode::Discrete { intervals: 6 },
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            min: 1.,
++            max: 1. + 3. * f64::EPSILON,
++            value: 1.,
++            mode: StandardSliderMode::Discrete { intervals: 4 },
++            ..OPTIONS
++        },
++        StandardSliderOptions {
++            min: 1.,
++            max: 1. + f64::EPSILON,
++            value: 1.,
++            mode: StandardSliderMode::Discrete { intervals: 100 },
++            ..OPTIONS
++        },
++    ] {
++        assert!(
++            theme.standard_slider(invalid, |_| ()).is_none(),
++            "{invalid:?}"
++        );
++    }
++}
+diff --git a/crates/surface-platform/src/macos_accessibility.rs b/crates/surface-platform/src/macos_accessibility.rs
+index 3c880e8..b834565 100644
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -485,6 +485,9 @@ fn describe(source: &AccessibilityNode<'_>) -> Node {
+         node.set_min_numeric_value(range.min);
+         node.set_max_numeric_value(range.max);
+         node.set_numeric_value_step(range.step);
++        if let Some(text) = authored.slider_value_text().filter(|_| range.is_valid()) {
++            node.set_value(text);
++        }
+     }
+     node
+ }
+@@ -1461,6 +1464,146 @@ mod tests {
+         assert_eq!(disabled.app().value, Some(6.));
+     }
+ 
++    #[test]
++    fn slider_projection_keeps_number_and_description_and_routes_token_actions() {
++        #[derive(Clone, Copy)]
++        enum Message {
++            Set(f64),
++            Disable,
++        }
++
++        struct Slider {
++            value: f64,
++            disabled: bool,
++        }
++        impl Application for Slider {
++            type Message = Message;
++
++            fn update(&mut self, message: Message) {
++                match message {
++                    Message::Set(value) => self.value = value,
++                    Message::Disable => self.disabled = true,
++                }
++            }
++
++            fn view(&self) -> View<Message> {
++                let range = surface::RangeValue {
++                    min: 0.,
++                    max: 10.,
++                    value: self.value,
++                    step: 2.,
++                };
++                let node = |role, name, id| {
++                    SurfaceNode::new(role, name)
++                        .id(id)
++                        .range(range)
++                        .styled(Style::row().width(Length::Px(120.)).height(Length::Px(48.)))
++                };
++                let current = View::new(
++                    node(SurfaceRole::Slider, "Volume", "volume")
++                        .with_slider_value_text(format!("{} 音量", self.value))
++                        .disabled(self.disabled),
++                )
++                .on_value(Message::Set)
++                .accessible_slider_adjustment();
++                let legacy =
++                    View::new(node(SurfaceRole::Slider, "Legacy", "legacy")).on_value(Message::Set);
++                let unbound =
++                    View::new(node(SurfaceRole::Slider, "Unbound", "unbound").disabled(true))
++                        .accessible_slider_adjustment();
++                let progress = View::new(
++                    node(SurfaceRole::Progress, "Progress", "progress")
++                        .with_slider_value_text("Only for Slider"),
++                );
++                View::new(SurfaceNode::new(SurfaceRole::Window, "Test").styled(Style::column()))
++                    .children([current, legacy, unbound, progress])
++            }
++        }
++
++        let mut runtime = Runtime::new(Slider {
++            value: 4.,
++            disabled: false,
++        })
++        .unwrap();
++        let mut tree = Tree::default();
++        let actions = [Action::SetValue, Action::Increment, Action::Decrement];
++        let request = |target_node, action, data| ActionRequest {
++            target_tree: TreeId::ROOT,
++            target_node,
++            action,
++            data,
++        };
++
++        for (current, action, data, expected) in [
++            (4., Action::Increment, None, 6.),
++            (6., Action::Decrement, None, 4.),
++            (
++                4.,
++                Action::SetValue,
++                Some(ActionData::NumericValue(9.)),
++                10.,
++            ),
++            (
++                10.,
++                Action::SetValue,
++                Some(ActionData::Value(" 3 ".into())),
++                4.,
++            ),
++        ] {
++            let projection = update(&mut runtime, &mut tree);
++            let (id, slider) = named(&projection, "Volume");
++            assert_eq!(slider.role(), Role::Slider);
++            assert_eq!(slider.numeric_value(), Some(current));
++            assert_eq!(slider.min_numeric_value(), Some(0.));
++            assert_eq!(slider.max_numeric_value(), Some(10.));
++            assert_eq!(slider.numeric_value_step(), Some(2.));
++            let value_text = format!("{current} 音量");
++            assert_eq!(slider.value(), Some(value_text.as_str()));
++            assert!(slider.supports_action(Action::Focus));
++            assert!(!slider.supports_action(Action::Click));
++            assert!(slider.supports_action(Action::SetValue));
++            assert!(slider.supports_action(Action::Decrement));
++            assert_eq!(slider.supports_action(Action::Increment), current < 10.);
++            assert!(tree
++                .action(&mut runtime, request(id, action, data.clone()))
++                .unwrap());
++            assert_eq!(runtime.app().value, expected);
++            assert!(!tree
++                .action(&mut runtime, request(id, action, data))
++                .unwrap());
++        }
++        assert_eq!(runtime.focused(), None);
++
++        let projection = update(&mut runtime, &mut tree);
++        for name in ["Legacy", "Unbound", "Progress"] {
++            let (id, node) = named(&projection, name);
++            assert_eq!(node.numeric_value(), Some(4.));
++            assert_eq!(node.value(), None);
++            for action in actions {
++                assert!(!node.supports_action(action));
++            }
++            assert!(!tree
++                .action(&mut runtime, request(id, Action::Increment, None))
++                .unwrap());
++        }
++        let (old_id, _) = named(&projection, "Volume");
++        runtime.apply(Message::Disable).unwrap();
++        assert!(!tree
++            .action(&mut runtime, request(old_id, Action::Increment, None))
++            .unwrap());
++        let projection = update(&mut runtime, &mut tree);
++        let (id, disabled) = named(&projection, "Volume");
++        assert!(disabled.is_disabled());
++        assert_eq!(disabled.value(), Some("4 音量"));
++        for action in actions {
++            assert!(!disabled.supports_action(action));
++        }
++        assert!(!tree
++            .action(&mut runtime, request(id, Action::Increment, None))
++            .unwrap());
++        assert_eq!(runtime.app().value, 4.);
++    }
++
+     #[test]
+     fn cyclic_adjustable_projects_and_routes_both_directions_at_bounds() {
+         #[derive(Clone, Copy)]
+diff --git a/crates/surface-platform/src/web_accessibility/semantics.rs b/crates/surface-platform/src/web_accessibility/semantics.rs
+index ffc37ea..6ed1f0d 100644
+--- a/crates/surface-platform/src/web_accessibility/semantics.rs
++++ b/crates/surface-platform/src/web_accessibility/semantics.rs
+@@ -136,6 +136,9 @@ pub(super) fn element(
+                 element.set_attribute("aria-valuemin", &range.min.to_string())?;
+                 element.set_attribute("aria-valuemax", &range.max.to_string())?;
+                 element.set_attribute("aria-valuenow", &range.value.to_string())?;
++                if let Some(text) = node.slider_value_text() {
++                    element.set_attribute("aria-valuetext", text)?;
++                }
+             }
+         }
+         Some("textbox") => {
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index ff6793e..bfd8e62 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -217,6 +217,8 @@ pub struct Node {
+     #[serde(default)]
+     range: Option<RangeValue>,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
++    slider_value_text: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
+     adjustable: Option<Box<AdjustableValue>>,
+     #[serde(skip)]
+     web_adjustable_value_description: bool,
+@@ -294,6 +296,7 @@ impl Node {
+             selected: None,
+             mixed: false,
+             range: None,
++            slider_value_text: None,
+             adjustable: None,
+             web_adjustable_value_description: false,
+             tab_index: None,
+@@ -891,6 +894,18 @@ impl Node {
+         self.range = Some(value);
+         self
+     }
++    /// Supply a human-readable current value for a Slider. The numeric
++    /// range still supplies the value used by input and accessibility.
++    pub fn with_slider_value_text(mut self, text: impl Into<String>) -> Self {
++        let text = text.into();
++        self.slider_value_text = (!text.trim().is_empty()).then_some(text);
++        self
++    }
++    pub fn slider_value_text(&self) -> Option<&str> {
++        self.slider_value_text
++            .as_deref()
++            .filter(|text| self.role == Role::Slider && !text.trim().is_empty())
++    }
+     /// Expose this named Group as an adjustable control in accessibility
+     /// adapters. Slider geometry, pointer hit testing and legacy ranges are
+     /// unchanged. Grid roles keep priority over this opt-in.
+diff --git a/crates/surface/tests/microdom_contract.rs b/crates/surface/tests/microdom_contract.rs
+index 359ac6d..7595641 100644
+--- a/crates/surface/tests/microdom_contract.rs
++++ b/crates/surface/tests/microdom_contract.rs
+@@ -255,6 +255,36 @@ fn parent_corners_are_opt_in_and_spring_state_stays_live_only() {
+     assert_eq!(serde_json::to_value(restored).unwrap(), json);
+ }
+ 
++#[test]
++fn slider_value_text_is_optional_and_preserves_the_numeric_range() {
++    let range = RangeValue {
++        min: 0.,
++        max: 100.,
++        value: 25.,
++        step: 5.,
++    };
++    let slider = Node::new(Role::Slider, "音量").id("volume").range(range);
++    let ordinary = serde_json::to_value(&slider).unwrap();
++    assert!(ordinary.get("slider_value_text").is_none());
++    assert_eq!(serde_json::from_value::<Node>(ordinary).unwrap(), slider);
++
++    let json = serde_json::to_value(slider.with_slider_value_text("25％")).unwrap();
++    let restored: Node = serde_json::from_value(json).unwrap();
++    assert_eq!(restored.range_value(), Some(range));
++    assert_eq!(restored.slider_value_text(), Some("25％"));
++    assert_eq!(
++        restored.with_slider_value_text("  ").slider_value_text(),
++        None
++    );
++    assert_eq!(
++        Node::new(Role::Progress, "進度")
++            .range(range)
++            .with_slider_value_text("25％")
++            .slider_value_text(),
++        None
++    );
++}
++
+ #[test]
+ fn web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values() {
+     let ordinary = Node::new(Role::Checkbox, "Coffee").checked(true);
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index a1b6856..4efde4b 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -302,9 +302,10 @@
+       "spec": "https://m3.material.io/components/sliders/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Single thumb; controlled finite range; pointer and keyboard"
++      "desktop_evidence": "Two headless native Metal replays check light 960 dp, dark RTL at 320 dp and 200% text, exact keyboard endpoints, disabled and focus restoration, and all five sizes. Four PNGs match through Page.screenshot, CLI and MCP. The macOS AccessKit adapter verifies actual bounded adjustment actions and rejects stale targets.",
++      "web_evidence": "Headless Chrome WebGPU M298–M301 checks five token sizes and actual paint, numeric and human-readable AX values, arrows and exact endpoints, continuous mouse and discrete touch, resize cancellation, and 320 dp dark RTL at 200% text.",
++      "implemented": "The horizontal Standard slider supports five sizes, continuous values and discrete stops, LTR and RTL input, fixed hit geometry, a narrow engaged handle, an independent focus outline, localized value text and opt-in native accessibility adjustment. The original slider API remains available. Centered, vertical, horizontal two-thumb Range and inset icons remain open.",
++      "unit_evidence": "Material and Runtime tests cover all five token rows, the measured rail and track, discrete ties and adjacent representable stops, exact endpoints, RTL, continuous pointer and discrete touch input, disabled rejection, cancellation, and accessible value updates."
+     },
+     {
+       "id": "snackbar",
+diff --git a/docs/material.md b/docs/material.md
+index add272f..5650bd6 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -186,7 +186,8 @@ does not change application state.
+ | `chip` | Assist, suggestion, filter and input; input removal has its own action |
+ | `chip_with_options` | Flat and elevated Assist, Filter and Suggestion, plus Input with one or two named actions |
+ | `chip_in_grid` / `chip_grid` | Measured rows and one Tab entry, with arrows between the individual actions |
+-| `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
++| `standard_slider` | Horizontal Standard slider. Five track sizes, continuous values or discrete stops, mirrored RTL input, localized value text, and an independent focus outline. |
++| `slider` | Original controlled range and fixed track. Supports pointer drag, arrows, Home/End and Page Up/Down. |
+ | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
+ | `dialog_with` | Static Basic dialog with optional icon, headline, supporting text and actions |
+ | `basic_dialog` / `basic_dialog_with_motion` | Measured Basic or alert dialog with a scrolling body, fixed actions, focus management and optional fade |
+@@ -984,6 +985,28 @@ and place the Web anchor near the top or bottom.
+ [FAB Menu accessibility](https://m3.material.io/components/fab-menu/accessibility) ·
+ [Pinned Compose FAB Menu](https://github.com/androidx/androidx/blob/ffbddbd1295b99a57b395a5dcfb86af31f451492/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/FloatingActionButtonMenu.kt)
+ 
++## Sliders
++
++Use `Theme::standard_slider` to build a horizontal Standard slider.
++Set a stable ID, a localized name, the bounds, and the current value.
++The caller applies each requested value. Use Continuous to keep the
++pointer position as a value and set the keyboard step. Use Discrete
++to divide the range into equal intervals, including both endpoints.
++
++Use the same direction for the slider and its surrounding layout.
++In RTL, the logical minimum is on the right. Left and Right follow
++the physical rail. Up and Down change the logical value. Home and
++End reach the exact bounds. Page Up and Page Down use larger changes.
++
++Set `engaged` from the current focus or accepted press in the frame
++hook. The handle narrows from 4 dp to 2 dp while engaged. Its hit
++area keeps the same size. If you supply a localized value label,
++reserve at least 53 dp above the handle and more for enlarged text.
++The label also supplies the human-readable accessibility value.
++
++[Material 3 sliders](https://m3.material.io/components/sliders/specs) ·
++[WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/)
++
+ ## Icon buttons
+ 
+ Use `Theme::icon_button_with_options` for a standalone vector button.
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 560c8ae..c882e61 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -88,6 +88,8 @@ mod material_side_sheet;
+ mod material_snackbar;
+ #[path = "material_split_button.rs"]
+ mod material_split_button;
++#[path = "material_standard_slider.rs"]
++mod material_standard_slider;
+ #[path = "material_switch.rs"]
+ mod material_switch;
+ #[path = "material_tabs.rs"]
+@@ -140,7 +142,8 @@ pub const STEPS: &[&str] = &[
+     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
+     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
+     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
+-    "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297",
++    "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
++    "M299", "M300", "M301",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -265,7 +268,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_radio::run(env, chrome, &url).await?;
+     material_tabs::run(env, chrome, &url).await?;
+     material_chips::run(env, chrome, &url).await?;
+-    material_icon_buttons::run(env, chrome, &url).await
++    material_icon_buttons::run(env, chrome, &url).await?;
++    material_standard_slider::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+diff --git a/e2e/src/material_standard_slider.rs b/e2e/src/material_standard_slider.rs
+new file mode 100644
+index 0000000..b54a6df
+--- /dev/null
++++ b/e2e/src/material_standard_slider.rs
+@@ -0,0 +1,482 @@
++//! Standard Material sliders through the real Gallery and browser inputs.
++
++use anyhow::{Context, Result};
++use serde::{Deserialize, Serialize};
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "slider-demo-show";
++const BACK: &str = "slider-demo-back";
++const THEME: &str = "slider-demo-theme";
++const RTL: &str = "slider-demo-rtl";
++const LARGE_TEXT: &str = "slider-demo-large-text";
++const SCROLL: &str = "slider-demo-scroll";
++const IDS: [&str; 6] = [
++    "slider-demo-xs",
++    "slider-demo-s",
++    "slider-demo-m",
++    "slider-demo-l",
++    "slider-demo-xl",
++    "slider-demo-disabled",
++];
++const NAMES: [&str; 6] = [
++    "特小連續",
++    "小型階梯",
++    "中型滑桿",
++    "大型滑桿",
++    "特大滑桿",
++    "停用滑桿",
++];
++const TRACK: [f64; 5] = [16., 24., 40., 56., 96.];
++const HANDLE: [f64; 5] = [44., 44., 52., 68., 108.];
++const WIDE: [u32; 2] = [960, 1040];
++const COMPACT: [u32; 2] = [320, 880];
++const WIDE_PNG: &str = "material-standard-slider-wide-light.png";
++const KEY_PNG: &str = "material-standard-slider-keyboard.png";
++const POINTER_PNG: &str = "material-standard-slider-live-drag.png";
++const COMPACT_PNG: &str = "material-standard-slider-compact-dark-rtl-200.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++#[derive(Deserialize, Serialize)]
++struct Palette {
++    background: [u8; 4],
++    primary: [u8; 4],
++    on_primary: [u8; 4],
++    secondary: [u8; 4],
++    secondary_container: [u8; 4],
++    on_secondary_container: [u8; 4],
++    inverse_surface: [u8; 4],
++    inverse_on_surface: [u8; 4],
++}
++
++#[derive(Deserialize, Serialize)]
++struct Model {
++    rtl: bool,
++    text_scale: f64,
++    engaged: [bool; 6],
++    values: [f64; 6],
++    requests: [u32; 6],
++    palette: Palette,
++}
++
++#[derive(Serialize)]
++struct Geometry {
++    id: &'static str,
++    hit: Rect,
++    rail: Rect,
++    active: Rect,
++    inactive: Rect,
++    handle: Rect,
++}
++
++fn part(id: &str, suffix: &str) -> String {
++    format!("{id}-{suffix}")
++}
++
++fn center([x, y, w, h]: Rect) -> [f64; 2] {
++    [x + w / 2., y + h / 2.]
++}
++
++fn rgb([r, g, b, _]: [u8; 4]) -> Rgb {
++    [r, g, b]
++}
++
++async fn ready(tab: &Tab, condition: &str) -> Result<Model> {
++    until(tab, &format!("(d => {condition})(s.slider_demo)")).await?;
++    tab.settle().await?;
++    Ok(serde_json::from_value(
++        state(tab).await?["slider_demo"].clone(),
++    )?)
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1900).await?;
++    reduced_motion(tab, true).await?;
++    until(tab, "s.section === 0 && !s.slider_demo.visible").await?;
++    activate(tab, SHOW).await?;
++    ready(
++        tab,
++        "d.visible && d.values[0] === 25 && d.requests.every(n => n === 0)",
++    )
++    .await?;
++    resize(tab, WIDE[0], WIDE[1]).await
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++async fn geometry(tab: &Tab, id: &'static str) -> Result<Geometry> {
++    Ok(Geometry {
++        id,
++        hit: bounds(tab, id).await?,
++        rail: bounds(tab, &part(id, "rail")).await?,
++        active: bounds(tab, &part(id, "active")).await?,
++        inactive: bounds(tab, &part(id, "inactive")).await?,
++        handle: bounds(tab, &part(id, "handle")).await?,
++    })
++}
++
++fn pixel(image: &Raster, rect: Rect) -> Result<Rgb> {
++    let [x, y] = center(rect);
++    image.sample(x, y)
++}
++
++fn ink(image: &Raster, rect: Rect, color: Rgb) -> Result<usize> {
++    Ok(image.colors(rect)?.get(&color).copied().unwrap_or(0))
++}
++
++async fn ax_range(tab: &Tab, index: usize, disabled: bool) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let node = ax(&tree, "slider", NAMES[index])?;
++    check_eq!(
++        ax_property(node, "valuemin").and_then(Value::as_f64),
++        Some(0.),
++        "AX minimum"
++    );
++    check_eq!(
++        ax_property(node, "valuemax").and_then(Value::as_f64),
++        Some(100.),
++        "AX maximum"
++    );
++    check_eq!(
++        ax_property(node, "disabled") == Some(&json!(true)),
++        disabled,
++        "AX disabled state"
++    );
++    let element = projected(IDS[index]);
++    let value = tab
++        .eval(&format!(
++            "[{element}.getAttribute('aria-valuenow'),{element}.getAttribute('aria-valuetext')]"
++        ))
++        .await?;
++    check!(
++        value[0]
++            .as_str()
++            .and_then(|text| text.parse::<f64>().ok())
++            .is_some(),
++        "numeric value remains in the projected range"
++    );
++    check!(
++        value[1].as_str().is_some_and(|text| text.ends_with('％')),
++        "localized value text is exposed"
++    );
++    Ok(value)
++}
++
++async fn wide(env: &Env, tab: &Tab) -> Result<Value> {
++    let model = ready(tab, "d.visible && !d.rtl && d.text_scale === 1").await?;
++    let pane = bounds(tab, SCROLL).await?;
++    let mut presets = Vec::new();
++    for (index, id) in IDS.into_iter().take(5).enumerate() {
++        let g = geometry(tab, id).await?;
++        check!(
++            contains(pane, g.hit),
++            format!("{id}: reachable in the wide Gallery")
++        );
++        check!(
++            near(g.hit[3], HANDLE[index].max(48.)),
++            "target height keeps the minimum and full handle"
++        );
++        check!(
++            near(g.rail[0] - g.hit[0], 12.) && near(g.hit[2] - g.rail[2], 24.),
++            "rendered and input rails share the same padding"
++        );
++        check!(
++            near(g.active[3], TRACK[index]) && near(g.inactive[3], TRACK[index]),
++            "both track halves use the same size token"
++        );
++        check!(
++            near(g.handle[2], 4.) && near(g.handle[3], HANDLE[index]),
++            "ready handle dimensions"
++        );
++        let fraction = (center(g.handle)[0] - g.rail[0]) / g.rail[2];
++        check!(
++            (fraction - model.values[index] / 100.).abs() < 0.005,
++            "handle position follows controlled value"
++        );
++        check!(
++            near(g.handle[0] - (g.active[0] + g.active[2]), 6.)
++                && near(g.inactive[0] - (g.handle[0] + g.handle[2]), 6.),
++            "logical inner edges leave the measured handle gap"
++        );
++        presets.push(g);
++    }
++    let ax = ax_range(tab, 0, false).await?;
++    check_eq!(
++        ax,
++        json!(["25", "25％"]),
++        "AX numeric and localized continuous value"
++    );
++    let disabled_ax = ax_range(tab, 5, true).await?;
++    let image = photo(tab, env, WIDE_PNG).await?;
++    let first = &presets[0];
++    let colors = [
++        pixel(&image, first.active)?,
++        pixel(&image, first.inactive)?,
++        pixel(&image, first.handle)?,
++    ];
++    check_eq!(
++        colors,
++        [
++            rgb(model.palette.primary),
++            rgb(model.palette.secondary_container),
++            rgb(model.palette.primary)
++        ],
++        "actual active, inactive and handle token paint"
++    );
++    let stop = bounds(tab, &part(IDS[0], "stop")).await?;
++    check!(
++        near(stop[2], 4.) && near(stop[3], 4.),
++        "continuous slider has a four dp end stop"
++    );
++    check_eq!(
++        pixel(&image, stop)?,
++        rgb(model.palette.on_secondary_container),
++        "end stop color is visible in the inactive segment"
++    );
++    let tick = bounds(tab, &part(IDS[1], "tick-1")).await?;
++    check!(
++        near(tick[2], 4.) && ink(&image, tick, rgb(model.palette.on_primary))? > 0,
++        "discrete active tick has visible paint"
++    );
++    Ok(
++        json!({"viewport":WIDE,"geometry":presets,"colors":colors,"stop":stop,"tick":tick,
++              "ax":ax,"disabled_ax":disabled_ax,"palette":model.palette,"capture":WIDE_PNG}),
++    )
++}
++
++async fn tab_into_first(tab: &Tab) -> Result<()> {
++    focused(tab, BACK).await?;
++    for target in [THEME, RTL, LARGE_TEXT, IDS[0]] {
++        tab.press("Tab").await?;
++        focused(tab, target).await?;
++    }
++    Ok(())
++}
++
++async fn keyboard(tab: &Tab, env: &Env) -> Result<Value> {
++    tab_into_first(tab).await?;
++    tab.press("ArrowRight").await?;
++    ready(tab, "d.values[0] === 30 && d.requests[0] === 1").await?;
++    tab.press("End").await?;
++    ready(tab, "d.values[0] === 100 && d.requests[0] === 2").await?;
++    tab.press("ArrowRight").await?;
++    ready(tab, "d.values[0] === 100 && d.requests[0] === 2").await?;
++    tab.press("Home").await?;
++    ready(tab, "d.values[0] === 0 && d.requests[0] === 3").await?;
++    tab.press("PageUp").await?;
++    let model = ready(
++        tab,
++        "d.values[0] === 10 && d.requests[0] === 4 && d.engaged[0]",
++    )
++    .await?;
++    let g = geometry(tab, IDS[0]).await?;
++    check!(
++        model.engaged[0] && near(g.handle[2], 2.) && near(g.handle[3], 44.),
++        "focus narrows handle paint without moving the rail"
++    );
++    let ring = bounds(tab, &part(IDS[0], "focus")).await?;
++    let label = bounds(tab, &part(IDS[0], "label")).await?;
++    check!(
++        label[1] + label[3] <= g.handle[1] + 0.75,
++        "localized value fits above the handle"
++    );
++    let aria = ax_range(tab, 0, false).await?;
++    check_eq!(
++        aria,
++        json!(["10", "10％"]),
++        "AX value text tracks key updates"
++    );
++    let image = photo(tab, env, KEY_PNG).await?;
++    let focus_ink = ink(&image, ring, rgb(model.palette.secondary))?;
++    let label_ink = ink(&image, label, rgb(model.palette.inverse_on_surface))?;
++    check!(
++        focus_ink > 15
++            && label_ink > 15
++            && ink(&image, label, rgb(model.palette.inverse_surface))? > 15,
++        "actual focus outline and localized value paint"
++    );
++    tab.press("Tab").await?;
++    focused(tab, IDS[1]).await?;
++    tab.press("ArrowRight").await?;
++    let discrete = ready(tab, "d.values[1] === 62.5 && d.requests[1] === 1").await?;
++    Ok(
++        json!({"geometry":g,"value_label":label,"ring":ring,"focus_ink":focus_ink,"label_ink":label_ink,
++              "continuous_requests":model.requests[0],"discrete":discrete.values[1],"ax":aria,
++              "palette":model.palette,"capture":KEY_PNG}),
++    )
++}
++
++async fn point(tab: &Tab, rail: Rect, fraction: f64) -> Result<[f64; 2]> {
++    let origin = tab.canvas_box().await?;
++    Ok([
++        origin[0] + rail[0] + rail[2] * fraction,
++        origin[1] + center(rail)[1],
++    ])
++}
++
++async fn touch(tab: &Tab, kind: &str, point: Option<[f64; 2]>) -> Result<()> {
++    let points = point.map_or_else(|| json!([]), |[x, y]| json!([{"x":x,"y":y,"id":1}]));
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":kind,"touchPoints":points}),
++    )
++    .await?;
++    tab.settle().await
++}
++
++async fn pointer(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    let g = geometry(tab, IDS[0]).await?;
++    let [x, y] = point(tab, g.rail, 0.333).await?;
++    tab.click(x, y).await?;
++    let tap = ready(
++        tab,
++        "d.requests[0] === 1 && Math.abs(d.values[0] - 33.3) < 0.4",
++    )
++    .await?;
++    check!(
++        tap.values[0] % 5. > 0.1,
++        "continuous pointer follows the exact rail position"
++    );
++
++    tab.mouse_move(x, y).await?;
++    tab.mouse_down().await?;
++    let [x, y] = point(tab, g.rail, 0.731).await?;
++    tab.mouse_move(x, y).await?;
++    let held = ready(
++        tab,
++        "d.requests[0] === 2 && Math.abs(d.values[0] - 73.1) < 0.4 && d.engaged[0]",
++    )
++    .await?;
++    let contact = geometry(tab, IDS[0]).await?;
++    check!(
++        near(contact.handle[2], 2.) && near(contact.rail[2], g.rail[2]),
++        "held paint does not move the input rail"
++    );
++    photo(tab, env, POINTER_PNG).await?;
++    resize(tab, 900, WIDE[1]).await?;
++    tab.mouse_move(x - 80., y).await?;
++    tab.mouse_up().await?;
++    let canceled = ready(tab, "d.requests[0] === 2").await?;
++    check_eq!(
++        canceled.values[0],
++        held.values[0],
++        "resize retires the stale mouse route"
++    );
++
++    let small = geometry(tab, IDS[1]).await?;
++    let first = point(tab, small.rail, 0.13).await?;
++    let moved = point(tab, small.rail, 0.81).await?;
++    touch(tab, "touchStart", Some(first)).await?;
++    ready(tab, "d.values[1] === 12.5 && d.requests[1] === 1").await?;
++    touch(tab, "touchMove", Some(moved)).await?;
++    ready(tab, "d.values[1] === 75 && d.requests[1] === 2").await?;
++    touch(tab, "touchCancel", None).await?;
++    let touch_end = ready(tab, "d.values[1] === 75 && d.requests[1] === 2").await?;
++    let disabled = bounds(tab, IDS[5]).await?;
++    let [x, y] = point(tab, disabled, 0.8).await?;
++    tab.click(x, y).await?;
++    let disabled = ready(tab, "d.values[5] === 50 && d.requests[5] === 0").await?;
++    Ok(
++        json!({"tap":tap.values[0],"held":held.values[0],"canceled":canceled.values[0],"handle":contact.handle,
++              "touch":touch_end.values[1],"requests":disabled.requests,"capture":POINTER_PNG}),
++    )
++}
++
++async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    resize(tab, COMPACT[0], COMPACT[1]).await?;
++    for setting in [THEME, RTL, LARGE_TEXT] {
++        activate(tab, setting).await?;
++    }
++    focus_projected(tab, IDS[0]).await?;
++    tab.press("ArrowLeft").await?;
++    let model = ready(
++        tab,
++        "d.rtl && d.text_scale === 2 && d.values[0] === 30 && d.engaged[0]",
++    )
++    .await?;
++    let g = geometry(tab, IDS[0]).await?;
++    let label = bounds(tab, &part(IDS[0], "label")).await?;
++    let viewport = [0., 0., f64::from(COMPACT[0]), f64::from(COMPACT[1])];
++    check!(
++        contains(viewport, g.hit) && contains(viewport, label),
++        "compact 200% value label and slider fit without clipping"
++    );
++    check!(
++        center(g.active)[0] > center(g.handle)[0] && center(g.inactive)[0] < center(g.handle)[0],
++        "RTL mirrors both track portions"
++    );
++    let image = photo(tab, env, COMPACT_PNG).await?;
++    let ink_count = ink(&image, label, rgb(model.palette.inverse_on_surface))?;
++    check!(ink_count > 40, "200% value label contains readable ink");
++    let compact_ax = ax_range(tab, 0, false).await?;
++    for target in IDS.into_iter().skip(1).take(4) {
++        tab.press("Tab").await?;
++        focused(tab, target).await?;
++    }
++    let xl = bounds(tab, IDS[4]).await?;
++    check!(
++        contains(bounds(tab, SCROLL).await?, xl),
++        "keyboard can reveal the extra large compact slider"
++    );
++    activate(tab, BACK).await?;
++    ready(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"viewport":COMPACT,"rtl":model.rtl,"text_scale":model.text_scale,"geometry":g,
++              "label":label,"label_ink":ink_count,"ax":compact_ax,"back_focus":SHOW,
++              "palette":model.palette,"capture":COMPACT_PNG}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(WIDE[0], WIDE[1] + 44, 2.).await?;
++    let mut report = json!({"browser":chrome.version,"adapter":null,"wide":null,"keyboard":null,
++                           "pointer":null,"compact":null});
++    let result: Result<()> = async {
++        step("M298", "Standard slider size tokens, track/stop paint and Chrome range semantics");
++        route(&tab, url).await?;
++        report["adapter"] = tab.eval("(async()=>{ const a=await navigator.gpu.requestAdapter(); const {vendor,architecture,isFallbackAdapter}=a.info; return {vendor,architecture,isFallbackAdapter}; })()").await?;
++        report["wide"] = wide(env, &tab).await.context("M298 slider presets")?;
++        step("M299", "Standard slider keys, exact endpoints, discrete stops, focus and accessible value text");
++        report["keyboard"] = keyboard(&tab, env).await.context("M299 slider keyboard")?;
++        step("M300", "Standard slider target geometry, continuous mouse drag, discrete touch and cancellation");
++        report["pointer"] = pointer(&tab, env, url).await.context("M300 slider pointer")?;
++        step("M301", "Standard slider dark 320 dp RTL, 200 percent value text and scroll reveal");
++        report["compact"] = compact(&tab, env, url).await.context("M301 slider compact")?;
++        Ok(())
++    }.await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact("material-standard-slider-failure.png"))
++            .await;
++    }
++    env.write_json("material-standard-slider.json", &report)?;
++    result?;
++    check!(
++        tab.errors().is_empty(),
++        "Standard slider Chrome page has no errors"
++    );
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 867e546..7c043fd 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -35,6 +35,7 @@ mod scroll_pair_demo;
+ mod scroll_popup_demo;
+ mod search_overlay_demo;
+ mod side_sheet_demo;
++mod slider_demo;
+ mod snackbar_demo;
+ mod split_demo;
+ mod switch_demo;
+@@ -82,6 +83,7 @@ use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
+ use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
+ use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
+ use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
++use slider_demo::{SliderDemo, SliderDemoEvent};
+ use snackbar_demo::{SnackbarDemo, SnackbarEvent};
+ use split_demo::{SplitDemo, SplitEvent};
+ use surface::{Color, Node, RangeValue, Role, Style};
+@@ -134,6 +136,7 @@ pub struct Gallery {
+     tabs_demo: TabsDemo,
+     chip_demo: ChipDemo,
+     icon_button_demo: IconButtonDemo,
++    slider_demo: SliderDemo,
+     drawer_demo: DrawerDemo,
+     progress_demo: ProgressDemo,
+     loading_demo: LoadingDemo,
+@@ -205,6 +208,7 @@ impl Default for Gallery {
+             tabs_demo: TabsDemo::default(),
+             chip_demo: ChipDemo::default(),
+             icon_button_demo: IconButtonDemo::default(),
++            slider_demo: SliderDemo::default(),
+             drawer_demo: DrawerDemo::default(),
+             progress_demo: ProgressDemo::default(),
+             loading_demo: LoadingDemo::default(),
+@@ -321,6 +325,7 @@ pub enum Message {
+     TabsDemo(TabsDemoEvent),
+     ChipDemo(ChipDemoEvent),
+     IconButtonDemo(IconButtonDemoEvent),
++    SliderDemo(SliderDemoEvent),
+     ScrollChoice(ScrollChoiceDemoEvent),
+     ScrollPair(ScrollPairDemoEvent),
+     ScrollPopup(ScrollPopupDemoEvent),
+@@ -500,6 +505,9 @@ impl Application for Gallery {
+         if self.icon_button_demo.visible() {
+             return self.icon_button_demo.text_scale();
+         }
++        if self.slider_demo.visible() {
++            return self.slider_demo.text_scale();
++        }
+         if self.rail_large_text
+             || self.snackbar_demo.large_text()
+             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
+@@ -513,6 +521,7 @@ impl Application for Gallery {
+         let tabs = self.tabs_demo.viewport_changed(width);
+         let chips = self.chip_demo.viewport_changed(width);
+         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
++        let sliders = self.slider_demo.viewport_changed(width, height);
+         let inline = self.wide_rail_demo.viewport_changed(width);
+         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
+         let drawer = self.drawer_demo.viewport_changed(width, height);
+@@ -574,6 +583,7 @@ impl Application for Gallery {
+             || tabs
+             || chips
+             || icon_buttons
++            || sliders
+             || list_actions
+             || list_media
+             || list_reorder
+@@ -588,6 +598,7 @@ impl Application for Gallery {
+             || self.checkbox_demo.visible()
+             || self.switch_demo.visible()
+             || self.icon_button_demo.visible()
++            || self.slider_demo.visible()
+             || self.tooltip_demo.visible()
+             || self.scroll_popup_demo.visible()
+             || self.button_group_demo.visible()
+@@ -674,6 +685,7 @@ impl Application for Gallery {
+         let checkbox = self.checkbox_demo.frame(&frame, &input, press, hovered);
+         let radio = self.radio_demo.frame(&frame, &input, press, hovered);
+         let icons = self.icon_button_demo.frame(&frame, input, pressed, hovered);
++        let sliders = self.slider_demo.observe_frame(input, pressed);
+         let tabs = self
+             .tabs_demo
+             .observe_interaction(&frame, input, pressed, hovered);
+@@ -684,7 +696,8 @@ impl Application for Gallery {
+             || checkbox.rebuild
+             || radio.rebuild
+             || tabs
+-            || icons.animation.rebuild;
++            || icons.animation.rebuild
++            || sliders;
+         update.animation.request_next |= fab.animation.request_next
+             || menu.request_next
+             || switch.request_next
+@@ -892,6 +905,9 @@ impl Application for Gallery {
+                 if i != icon_button_demo::SECTION {
+                     self.icon_button_demo.leave();
+                 }
++                if i != slider_demo::SECTION {
++                    self.slider_demo.leave();
++                }
+                 if i != tooltip_demo::SECTION {
+                     self.tooltip_demo.leave();
+                 }
+@@ -909,6 +925,7 @@ impl Application for Gallery {
+             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
+             Message::ChipDemo(event) => self.chip_demo.update(event),
+             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
++            Message::SliderDemo(event) => self.slider_demo.update(event),
+             Message::Drawer(i) => self.drawer = i,
+             Message::DrawerDemo(event) => self.drawer_demo.update(event),
+             Message::Progress(event) => self.progress_demo.update(event),
+@@ -1118,6 +1135,9 @@ impl Application for Gallery {
+         if self.icon_button_demo.visible() {
+             return self.icon_button_demo.view(&t, self.dark);
+         }
++        if self.slider_demo.visible() {
++            return self.slider_demo.view(&t, self.dark);
++        }
+         let mut children = vec![
+             t.heading("gallery-title", "Material gallery"),
+             t.row([
+@@ -1222,6 +1242,7 @@ impl Application for Gallery {
+                             TabsDemo::show_button(&t),
+                             ChipDemo::show_button(&t),
+                             IconButtonDemo::show_button(&t),
++                            SliderDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -1853,6 +1874,7 @@ mod web {
+         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
+         state["chip_demo"] = s.chip_demo.inspect(&theme);
+         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
++        state["slider_demo"] = s.slider_demo.inspect(&theme);
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
+diff --git a/examples/material-gallery/src/slider_demo.rs b/examples/material-gallery/src/slider_demo.rs
+new file mode 100644
+index 0000000..f6908b3
+--- /dev/null
++++ b/examples/material-gallery/src/slider_demo.rs
+@@ -0,0 +1,498 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::{FrameInput, View};
++use surface_material::{
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, StandardSliderMode,
++    StandardSliderOptions, StandardSliderSize, Theme,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const SHOW: &str = "slider-demo-show";
++const BACK: &str = "slider-demo-back";
++const SCROLL: &str = "slider-demo-scroll";
++const THEME: &str = "slider-demo-theme";
++const RTL: &str = "slider-demo-rtl";
++const LARGE_TEXT: &str = "slider-demo-large-text";
++const TWO_COLUMNS_AT: f32 = 720.;
++const INITIAL_VALUES: [f64; 6] = [25., 50., 50., 50., 50., 50.];
++
++struct Sample {
++    id: &'static str,
++    label: &'static str,
++    size: StandardSliderSize,
++    mode: StandardSliderMode,
++    disabled: bool,
++}
++
++const SAMPLES: [Sample; 6] = [
++    Sample {
++        id: "slider-demo-xs",
++        label: "特小連續",
++        size: StandardSliderSize::ExtraSmall,
++        mode: StandardSliderMode::Continuous { keyboard_step: 5. },
++        disabled: false,
++    },
++    Sample {
++        id: "slider-demo-s",
++        label: "小型階梯",
++        size: StandardSliderSize::Small,
++        mode: StandardSliderMode::Discrete { intervals: 8 },
++        disabled: false,
++    },
++    Sample {
++        id: "slider-demo-m",
++        label: "中型滑桿",
++        size: StandardSliderSize::Medium,
++        mode: StandardSliderMode::Continuous { keyboard_step: 10. },
++        disabled: false,
++    },
++    Sample {
++        id: "slider-demo-l",
++        label: "大型滑桿",
++        size: StandardSliderSize::Large,
++        mode: StandardSliderMode::Discrete { intervals: 4 },
++        disabled: false,
++    },
++    Sample {
++        id: "slider-demo-xl",
++        label: "特大滑桿",
++        size: StandardSliderSize::ExtraLarge,
++        mode: StandardSliderMode::Continuous { keyboard_step: 10. },
++        disabled: false,
++    },
++    Sample {
++        id: "slider-demo-disabled",
++        label: "停用滑桿",
++        size: StandardSliderSize::Small,
++        mode: StandardSliderMode::Discrete { intervals: 8 },
++        disabled: true,
++    },
++];
++
++#[derive(Clone)]
++pub enum SliderDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Value(usize, f64),
++}
++
++pub(crate) struct SliderDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    viewport: (f32, f32),
++    engaged: [bool; SAMPLES.len()],
++    values: [f64; SAMPLES.len()],
++    requests: [usize; SAMPLES.len()],
++}
++
++impl Default for SliderDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            viewport: (960., 800.),
++            engaged: [false; SAMPLES.len()],
++            values: INITIAL_VALUES,
++            requests: [0; SAMPLES.len()],
++        }
++    }
++}
++
++impl SliderDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.engaged.fill(false);
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
++        let viewport = (width, height);
++        if self.viewport == viewport {
++            return false;
++        }
++        self.viewport = viewport;
++        self.visible
++    }
++
++    pub(crate) fn observe_frame(&mut self, input: FrameInput<'_>, pressed: Option<&str>) -> bool {
++        if !self.visible {
++            return false;
++        }
++        let engaged = SAMPLES
++            .each_ref()
++            .map(|sample| !sample.disabled && [input.focused, pressed].contains(&Some(sample.id)));
++        if self.engaged == engaged {
++            return false;
++        }
++        self.engaged = engaged;
++        true
++    }
++
++    pub(crate) fn update(&mut self, event: SliderDemoEvent) {
++        match event {
++            SliderDemoEvent::Show => self.visible = true,
++            SliderDemoEvent::Back => self.leave(),
++            SliderDemoEvent::ToggleDirection => self.rtl = !self.rtl,
++            SliderDemoEvent::ToggleLargeText => self.large_text = !self.large_text,
++            SliderDemoEvent::Value(index, value) => {
++                if self.visible
++                    && SAMPLES.get(index).is_some_and(|sample| !sample.disabled)
++                    && (0. ..=100.).contains(&value)
++                {
++                    self.values[index] = value;
++                    self.requests[index] += 1;
++                }
++            }
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "標準滑桿",
++                ButtonKind::Outlined,
++                false,
++                Message::SliderDemo(SliderDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn sample(&self, theme: &Theme, index: usize, wide: bool) -> View<Message> {
++        let sample = &SAMPLES[index];
++        let value = self.values[index];
++        let display_value = (value * 10.).round() / 10.;
++        let value_label = format!("{display_value}％");
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let slider = theme
++            .standard_slider(
++                StandardSliderOptions {
++                    id: sample.id,
++                    name: sample.label,
++                    min: 0.,
++                    max: 100.,
++                    value,
++                    mode: sample.mode,
++                    size: sample.size,
++                    direction,
++                    disabled: sample.disabled,
++                    engaged: self.engaged[index],
++                    value_label: Some(&value_label),
++                },
++                move |value| Message::SliderDemo(SliderDemoEvent::Value(index, value)),
++            )
++            .expect("valid Gallery slider");
++        let mut style = Style::column().align(if self.rtl { Align::End } else { Align::Start });
++        if wide {
++            style = style.width(Length::Px(0.)).grow(1.);
++        } else {
++            style = style.width(Length::Percent(1.));
++        }
++        // One Label Large line, its 24dp block padding, and clearance from
++        // the handle's outer focus outline. Keep the reserved space stable
++        // as focus and pressed feedback come and go.
++        let reserve = typography::LABEL_LARGE.line_height_px() * self.text_scale() + 24. + 9.;
++        let clearance = View::new(
++            Node::new(Role::Group, "").styled(Style::column().height(Length::Px(reserve))),
++        );
++        View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-row", sample.id))
++                .styled(style),
++        )
++        .children([
++            theme
++                .text(&format!("{}-caption", sample.id), sample.label)
++                .without_interaction(None),
++            clearance,
++            slider,
++        ])
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use SliderDemoEvent::*;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::SliderDemo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(RTL, "右起", self.rtl, Message::SliderDemo(ToggleDirection)),
++            toggle(
++                LARGE_TEXT,
++                "大字",
++                self.large_text,
++                Message::SliderDemo(ToggleLargeText),
++            ),
++        ]);
++        let wide = self.viewport.0 >= TWO_COLUMNS_AT;
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .gap(16.)
++            .padding(6.)
++            .clip(true);
++        scroll_style.max_width = Length::Px(856.);
++        let scroller = View::new(
++            Node::new(Role::Group, "滑桿範例")
++                .id(SCROLL)
++                .styled(scroll_style),
++        )
++        .accessibility_scroll_pages();
++        let scroller = if wide {
++            scroller.children((0..SAMPLES.len()).step_by(2).map(|index| {
++                let row = Node::new(Role::Group, "").styled(
++                    Style::row()
++                        .width(Length::Percent(1.))
++                        .align(Align::Start)
++                        .gap(24.),
++                );
++                let row = if self.rtl { row.reverse_row() } else { row };
++                View::new(row).children([
++                    self.sample(theme, index, wide),
++                    self.sample(theme, index + 1, wide),
++                ])
++            }))
++        } else {
++            scroller.children((0..SAMPLES.len()).map(|index| self.sample(theme, index, wide)))
++        };
++
++        View::new(
++            Node::new(Role::Window, "Material gallery")
++                .id("slider-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("slider-demo-title", "標準滑桿"),
++            controls,
++            scroller,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let colors = theme.colors;
++        serde_json::json!({
++            "visible": self.visible,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "width": self.viewport.0,
++            "height": self.viewport.1,
++            "engaged": self.engaged,
++            "values": self.values,
++            "requests": self.requests,
++            "palette": {
++                "background": color(theme.background),
++                "primary": color(colors.primary),
++                "on_primary": color(colors.on_primary),
++                "secondary_container": color(colors.secondary_container),
++                "on_secondary_container": color(colors.on_secondary_container),
++                "secondary": color(colors.secondary),
++                "on_surface": color(colors.on_surface),
++                "inverse_surface": color(colors.inverse_surface),
++                "inverse_on_surface": color(colors.inverse_on_surface)
++            }
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::Gallery;
++    use surface::{Rect, TextMeasurer};
++    use surface_app::{Event, Runtime};
++
++    struct Fonts;
++
++    impl TextMeasurer for Fonts {
++        fn measure(&mut self, text: &str, size: f32, max_width: Option<f32>) -> (f32, f32) {
++            let width = text.chars().count() as f32 * size;
++            let available = max_width.unwrap_or(width).max(1.);
++            (
++                width.min(available),
++                size * (width / available).ceil().max(1.),
++            )
++        }
++    }
++
++    fn draw(runtime: &mut Runtime<Gallery>, width: f32, height: f32) {
++        runtime.render(width, height, &mut Fonts).unwrap();
++    }
++
++    fn route() -> Runtime<Gallery> {
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        runtime.apply(Message::Section(SECTION)).unwrap();
++        draw(&mut runtime, 960., 800.);
++        assert!(runtime.activate(SHOW).unwrap());
++        draw(&mut runtime, 960., 800.);
++        runtime
++    }
++
++    fn bounds(runtime: &Runtime<Gallery>, id: &str) -> Rect {
++        runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++    }
++
++    fn tab(runtime: &mut Runtime<Gallery>, reverse: bool) {
++        runtime.dispatch(Event::FocusNext { reverse }).unwrap();
++    }
++
++    #[test]
++    fn wide_presets_are_visible_and_keyboard_visits_one_stop_per_enabled_slider() {
++        let mut runtime = route();
++        let scroll = bounds(&runtime, SCROLL);
++        let first = bounds(&runtime, SAMPLES[0].id);
++        let second = bounds(&runtime, SAMPLES[1].id);
++        assert_eq!(first.y, second.y);
++        assert!(first.x + first.width < second.x);
++        assert_eq!(first.width, second.width);
++        for (sample, height) in SAMPLES.iter().zip([48., 48., 52., 68., 108., 48.]) {
++            let slider = bounds(&runtime, sample.id);
++            assert_eq!(slider.height, height);
++            assert_eq!(scroll.intersect(slider), slider);
++        }
++
++        assert_eq!(runtime.focused(), Some(BACK));
++        for id in [THEME, RTL, LARGE_TEXT]
++            .into_iter()
++            .chain(SAMPLES[..5].iter().map(|sample| sample.id))
++            .chain([BACK])
++        {
++            tab(&mut runtime, false);
++            draw(&mut runtime, 960., 800.);
++            assert_eq!(runtime.focused(), Some(id));
++        }
++        tab(&mut runtime, true);
++        draw(&mut runtime, 960., 800.);
++        assert_eq!(runtime.focused(), Some(SAMPLES[4].id));
++        assert_eq!(runtime.app().slider_demo.values, INITIAL_VALUES);
++        assert_eq!(runtime.app().slider_demo.requests, [0; 6]);
++
++        assert!(runtime.set_value(SAMPLES[1].id, 63.).unwrap());
++        draw(&mut runtime, 960., 800.);
++        assert_eq!(
++            runtime.app().slider_demo.values,
++            [25., 62.5, 50., 50., 50., 50.]
++        );
++        assert_eq!(runtime.app().slider_demo.requests, [0, 1, 0, 0, 0, 0]);
++        let disabled = bounds(&runtime, SAMPLES[5].id);
++        for event in [
++            Event::PointerDown {
++                x: disabled.x + 12.,
++                y: disabled.y + 24.,
++            },
++            Event::PointerUp {
++                x: disabled.x + 12.,
++                y: disabled.y + 24.,
++            },
++        ] {
++            runtime.dispatch(event).unwrap();
++        }
++        assert_eq!(runtime.app().slider_demo.requests, [0, 1, 0, 0, 0, 0]);
++        assert!(!runtime.app().slider_demo.engaged[5]);
++        runtime.activate(BACK).unwrap();
++        draw(&mut runtime, 960., 800.);
++        assert_eq!(runtime.focused(), Some(SHOW));
++        assert!(!runtime.app().slider_demo.visible());
++    }
++
++    #[test]
++    fn compact_dark_rtl_keeps_an_enlarged_value_clear_of_caption_and_focus() {
++        let mut runtime = route();
++        for id in [THEME, RTL, LARGE_TEXT] {
++            runtime.activate(id).unwrap();
++            draw(&mut runtime, 320., 400.);
++        }
++        for _ in 0..5 {
++            if runtime.focused() == Some(SAMPLES[0].id) {
++                break;
++            }
++            tab(&mut runtime, false);
++            draw(&mut runtime, 320., 400.);
++        }
++
++        assert!(runtime.app().dark);
++        assert!(runtime.app().slider_demo.rtl);
++        assert_eq!(runtime.app().slider_demo.text_scale(), 2.);
++        assert_eq!(runtime.focused(), Some(SAMPLES[0].id));
++        assert_eq!(
++            runtime.app().slider_demo.engaged,
++            [true, false, false, false, false, false]
++        );
++        let id = SAMPLES[0].id;
++        let slider = bounds(&runtime, id);
++        let second = bounds(&runtime, SAMPLES[1].id);
++        assert_eq!((slider.x, slider.width), (second.x, second.width));
++        assert!(second.y > slider.y + slider.height);
++        let rail = bounds(&runtime, &format!("{id}-rail"));
++        let handle = bounds(&runtime, &format!("{id}-handle"));
++        let focus = bounds(&runtime, &format!("{id}-focus"));
++        assert_eq!(handle.width, 2.);
++        assert!((handle.x + 1. - (rail.x + rail.width * 0.75)).abs() < 0.01);
++
++        let caption = bounds(&runtime, &format!("{id}-caption"));
++        let label = bounds(&runtime, &format!("{id}-label"));
++        let text = bounds(&runtime, &format!("{id}-label-text"));
++        assert!(label.y >= caption.y + caption.height - 0.01);
++        assert!(label.y + label.height + 4. <= focus.y + 0.01);
++        assert!(label.height >= 64.);
++        assert_eq!(label.intersect(text), text);
++        let scroll = bounds(&runtime, SCROLL);
++        for part in [label, focus, slider] {
++            assert_eq!(scroll.intersect(part), part);
++        }
++
++        tab(&mut runtime, false);
++        draw(&mut runtime, 320., 400.);
++        assert_eq!(runtime.focused(), Some(SAMPLES[1].id));
++        let revealed = bounds(&runtime, SAMPLES[1].id);
++        assert_eq!(scroll.intersect(revealed), revealed);
++        assert_eq!(runtime.app().slider_demo.requests, [0; 6]);
++    }
++}

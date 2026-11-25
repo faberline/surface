@@ -1,0 +1,76 @@
+{
+  "sliders": {
+    "scope": "mutated local copies only",
+    "original_report_sha256": "9695332082099f2155284eca02f99d5c0379febc82b489e6c5280e788934de4e",
+    "rejected": {
+      "missing_m301": "missing, duplicate or out-of-order Standard Slider step",
+      "wrong_capture_dimensions": "wrong Standard Slider screenshot dimensions: material-standard-slider-compact-dark-rtl-200.png",
+      "duplicate_capture": "duplicate Standard Slider screenshot pixels",
+      "false_ax_value_text": "Slider numeric or localized accessibility value differs",
+      "bad_hardware_geometry": "Slider track, handle or target dimensions differ",
+      "break_cancel": "Slider continuous drag, cancellation, discrete touch or disabled counts differ",
+      "disabled_activates": "Slider continuous drag, cancellation, discrete touch or disabled counts differ",
+      "back_focus_lost": "compact Slider paint or return focus differs",
+      "recolor_one_actual_stop_pixel": "Slider decoded ring, dot, label or dark track paint differs"
+    }
+  },
+  "icon_buttons": {
+    "scope": "mutated local copies only",
+    "original_report_sha256": "7434332b32ee9471ab6c5b3fa14acc4cc6b15daff99ce7176deed939bd8b259d",
+    "rejected": {
+      "missing_m297": "missing, duplicate or out-of-order Icon Button step",
+      "wrong_capture_shape": "wrong Icon Button screenshot dimensions: material-icon-buttons-compact-dark-rtl-200.png",
+      "duplicate_capture_pixels": "duplicate Icon Button screenshot pixels",
+      "command_claims_checked": "wrong named Chrome AX button, disabled or pressed state",
+      "disabled_claims_enabled": "wrong named Chrome AX button, disabled or pressed state",
+      "lost_artwork_motion": "wrong Icon Button rest, held, release or Reduce Motion contours",
+      "outside_release_activates": "wrong Icon Button cancellation or accepted request count",
+      "missing_tooltip_description": "wrong or overlapping compact Icon Button tooltip",
+      "buffer_pixel_changed": "decoded Icon Button command_fill color differs"
+    }
+  },
+  "chips": {
+    "scope": "mutated local copies only",
+    "original_report_sha256": "a7e6591ef4d08c99a16d29ea2c2aea48e8a3bb69ca7f9941315f2af8927bf87c",
+    "rejected": {
+      "missing_m293": "missing, duplicate or out-of-order Chips step",
+      "false_capture_shape": "wrong Chips screenshot dimensions: material-chips-compact-dark-rtl-200.png",
+      "duplicate_capture_pixels": "duplicate Chips screenshot pixels",
+      "wrong_adapter_type": "Chips failure, page errors or Chrome adapter mismatch",
+      "page_error": "Chips failure, page errors or Chrome adapter mismatch",
+      "missing_ax_cell": "wrong Chips AX action or ancestry: assist",
+      "touch_cancel_commits": "Chips mouse or touch change differs: after_canceled_touch",
+      "wrapped_ink_disagrees": "Chips wrapped foreground pixels differ",
+      "broken_compact_nearest_focus": "Chips RTL nearest-row focus path differs"
+    }
+  },
+  "tabs": {
+    "scope": "mutated local copies only",
+    "original_report_sha256": "597886343aa55b302b83fcc4ab26123507e0d7bc2e65b78c9d064d08383ce389",
+    "rejected": {
+      "missing_m289": "missing, duplicate or out-of-order Tabs step",
+      "hidden_panel_exposed": "bad Tabs mount or placeholder for lock",
+      "duplicate_target_id": "unbound or ambiguous Tabs relationship for activity",
+      "wrong_chrome_adapter": "Tabs failure, page errors or independent Chrome adapter mismatch",
+      "page_error": "Tabs failure, page errors or independent Chrome adapter mismatch",
+      "fake_press_color": "Tabs held press pixels changed",
+      "wrong_rtl_size": "wrong Tabs PNG dimensions for material-tabs-rtl-320.png",
+      "duplicate_dark_frame": "duplicate Tabs PNG pixels"
+    }
+  },
+  "navigation": {
+    "platform": "linux",
+    "role": "mutated copies are rejection tests only",
+    "original_report_sha256": "2e92750d52bae40777fc0dcc01956adaf115bbd59c3935c442f77ff27c6c9197",
+    "rejected": {
+      "missing_m273": "missing, extra or out-of-order Material step",
+      "incorrect_total": "the passing suite totals do not match the runner summary",
+      "wrong_independent_adapter": "the browser or adapter differs from the expected runtime metadata",
+      "nonboolean_fallback": "invalid observed WebGPU adapter fields",
+      "wrong_theme_capture": "decoded bar, pill or rounded corner pixels disagree with the report",
+      "unscrolled_capture": "wheel screenshots did not show changing content",
+      "wrong_activation_count": "wrong keyboard or pointer activation, or a title escaped the fixed header",
+      "wrong_linux_adapter": "the observed Linux WebGPU adapter did not match the SwiftShader pin"
+    }
+  }
+}
