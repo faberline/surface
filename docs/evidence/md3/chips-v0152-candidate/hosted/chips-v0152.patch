@@ -1,0 +1,5472 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 0fc408d..39c90fd 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.51"
++version = "0.1.52"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index e797702..bbaf03b 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.51"
++version = "0.1.52"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/controls.rs b/crates/surface-app/src/controls.rs
+index 94a9a2c..adfdd3e 100644
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -1,6 +1,12 @@
+-use crate::{AccessibilityAdjustment, AppError, Application, EditKey, ModalDismissal, Runtime};
++use crate::{
++    focus_scroll::can_reveal, grid_navigation, AccessibilityAdjustment, AppError, Application,
++    EditKey, ModalDismissal, Runtime,
++};
+ use std::{collections::BTreeSet, rc::Rc};
+-use surface::{ComputedDom, Direction, MicroDom, Node, NodeId, Position, RangeValue, Rect, Role};
++use surface::{
++    scroll_extent, ComputedDom, Direction, GridRole, MicroDom, Node, NodeId, Position, RangeValue,
++    Rect, Role,
++};
+ 
+ /// Mount or update a named control, then focus it without activating it.
+ #[derive(Clone, Debug, PartialEq, Eq)]
+@@ -49,18 +55,29 @@ pub(crate) enum RovingArrows {
+     Axis,
+     All,
+     Radio { reverse_horizontal: bool },
++    Grid,
+ }
+ 
+ impl RovingGroup {
+     fn is_radio(self) -> bool {
+         matches!(self.arrows, RovingArrows::Radio { .. })
+     }
++
++    fn is_grid(self) -> bool {
++        matches!(self.arrows, RovingArrows::Grid)
++    }
+ }
+ 
+ pub(crate) struct RetainedRovingFocus {
+     group: String,
+     visible_predecessors: Option<Vec<String>>,
+     fully_visible: bool,
++    grid_center: Option<grid_navigation::Center>,
++}
++
++pub(crate) struct PendingRovingFocus {
++    group: String,
++    grid_center: Option<grid_navigation::Center>,
+ }
+ 
+ pub(crate) struct FocusScope {
+@@ -157,12 +174,16 @@ impl<A: Application> Runtime<A> {
+     fn group(&self, id: NodeId) -> Option<(NodeId, RovingGroup)> {
+         let member = self.dom.get(id).ok()?;
+         let mut parent = member.parent();
++        let mut crossed_grid = member.accessibility_grid_role() == Some(GridRole::Grid);
+         while let Some(id) = parent {
+             if let Some(options) = self.bindings.get(&id).and_then(|b| b.roving) {
+-                return (!options.is_radio() || member.role() == Role::Radio)
++                return ((!options.is_radio() || member.role() == Role::Radio)
++                    && (!options.is_grid() || !crossed_grid))
+                     .then_some((id, options));
+             }
+-            parent = self.dom.get(id).ok()?.parent();
++            let node = self.dom.get(id).ok()?;
++            crossed_grid |= node.accessibility_grid_role() == Some(GridRole::Grid);
++            parent = node.parent();
+         }
+         None
+     }
+@@ -172,9 +193,10 @@ impl<A: Application> Runtime<A> {
+         collapsed: Option<&BTreeSet<String>>,
+         layout: Option<&ComputedDom>,
+     ) -> Vec<NodeId> {
+-        let measure_members = self.bindings[&group]
++        let roving = self.bindings[&group]
+             .roving
+-            .is_some_and(|group| group.first_enabled_on_entry || group.is_radio());
++            .expect("group has roving behavior");
++        let measure_members = roving.first_enabled_on_entry || roving.is_radio();
+         self.dom
+             .iter()
+             .filter(|(id, node)| {
+@@ -183,12 +205,62 @@ impl<A: Application> Runtime<A> {
+                     && self.group(*id).is_some_and(|(parent, _)| parent == group)
+                     && collapsed
+                         .is_none_or(|ids| node.stable_id().is_none_or(|key| !ids.contains(key)))
+-                    && (!measure_members || layout.is_none_or(|layout| has_extent(layout, *id)))
++                    && if roving.is_grid() {
++                        !node.is_disabled()
++                            && layout.is_none_or(|layout| self.grid_member_visible(layout, *id))
++                    } else {
++                        !measure_members || layout.is_none_or(|layout| has_extent(layout, *id))
++                    }
+             })
+             .map(|(id, _)| id)
+             .collect()
+     }
+ 
++    fn grid_member_visible(&self, layout: &ComputedDom, id: NodeId) -> bool {
++        if !has_extent(layout, id) {
++            return false;
++        }
++        let geometry = &layout.nodes[id.index()];
++        let rect = geometry.bounds;
++        if ![
++            rect.x,
++            rect.y,
++            rect.width,
++            rect.height,
++            rect.x + rect.width,
++            rect.y + rect.height,
++        ]
++        .into_iter()
++        .all(f32::is_finite)
++        {
++            return false;
++        }
++        let portion = rect.intersect(geometry.clip);
++        (portion.width > 0. && portion.height > 0.)
++            || can_reveal(
++                &self.dom,
++                layout,
++                id,
++                self.active_scope_root(),
++                |ancestor, _| {
++                    let view = layout.nodes[ancestor.index()].bounds;
++                    let (width, height) = scroll_extent(&self.dom, layout, ancestor)?;
++                    Some(((width - view.width).max(0.), (height - view.height).max(0.)))
++                },
++            )
++    }
++
++    fn grid_center(
++        &self,
++        layout: &ComputedDom,
++        group: NodeId,
++        member: NodeId,
++    ) -> grid_navigation::Center {
++        let (x, y) = grid_navigation::center(layout.nodes[member.index()].bounds);
++        let group = layout.nodes[group.index()].bounds;
++        (x - f64::from(group.x), y - f64::from(group.y))
++    }
++
+     fn roving_entry(
+         &self,
+         members: &[NodeId],
+@@ -243,6 +315,11 @@ impl<A: Application> Runtime<A> {
+                     .collect()
+             }),
+             fully_visible,
++            grid_center: self
++                .computed
++                .as_ref()
++                .filter(|layout| options.is_grid() && self.grid_member_visible(layout, focused))
++                .map(|layout| self.grid_center(layout, group, focused)),
+         })
+     }
+ 
+@@ -276,7 +353,10 @@ impl<A: Application> Runtime<A> {
+         } else if !matches!(options.arrows, RovingArrows::Axis) {
+             // This group uses measured eligibility. Wait for the replacement
+             // tree to lay out before picking a fallback.
+-            self.pending_roving_focus = Some(retained.group);
++            self.pending_roving_focus = Some(PendingRovingFocus {
++                group: retained.group,
++                grid_center: retained.grid_center,
++            });
+         } else if let Some(target) = self
+             .roving_entry(
+                 &self.members(group, None, self.computed.as_ref()),
+@@ -291,16 +371,31 @@ impl<A: Application> Runtime<A> {
+     }
+ 
+     pub(crate) fn resolve_pending_roving_focus(&mut self, layout: &ComputedDom) -> bool {
+-        let Some(key) = self.pending_roving_focus.take() else {
++        let Some(pending) = self.pending_roving_focus.take() else {
+             return false;
+         };
+         if self.focused.is_some() {
+             return false;
+         }
+         self.focused = self
+-            .measured_roving_group(&key)
++            .measured_roving_group(&pending.group)
+             .and_then(|(id, options)| {
+                 let members = self.members(id, None, Some(layout));
++                if let Some((x, y)) = pending.grid_center.filter(|_| options.is_grid()) {
++                    return members
++                        .iter()
++                        .copied()
++                        .min_by(|a, b| {
++                            let distance = |member| {
++                                let (mx, my) = self.grid_center(layout, id, member);
++                                (mx - x).hypot(my - y)
++                            };
++                            distance(*a)
++                                .total_cmp(&distance(*b))
++                                .then_with(|| a.index().cmp(&b.index()))
++                        })
++                        .and_then(|member| self.stable(member));
++                }
+                 self.stable(self.roving_entry(&members, options, false)?)
+             })
+             .or_else(|| {
+@@ -497,8 +592,8 @@ impl<A: Application> Runtime<A> {
+         }
+         if self
+             .pending_roving_focus
+-            .as_deref()
+-            .is_some_and(|key| self.measured_roving_group(key).is_none())
++            .as_ref()
++            .is_some_and(|pending| self.measured_roving_group(&pending.group).is_none())
+         {
+             self.pending_roving_focus = None;
+         }
+@@ -682,6 +777,19 @@ impl<A: Application> Runtime<A> {
+         };
+         let options = roving.options;
+         let members = self.members(group, None, self.computed.as_ref());
++        if roving.is_grid() {
++            if !self.in_scope(id) || !self.in_scope(group) || !grid_navigation::is_navigation(key) {
++                return Ok(false);
++            }
++            if let Some(next) = self
++                .computed
++                .as_ref()
++                .and_then(|layout| grid_navigation::target(key, id, &members, layout))
++            {
++                self.focused = self.stable(next);
++            }
++            return Ok(true);
++        }
+         if members.is_empty() {
+             return Ok(false);
+         }
+@@ -694,6 +802,7 @@ impl<A: Application> Runtime<A> {
+                 _ => key,
+             },
+             RovingArrows::Axis => key,
++            RovingArrows::Grid => unreachable!("grid navigation uses measured rows"),
+             RovingArrows::All | RovingArrows::Radio { .. } => {
+                 let mirrored = matches!(
+                     roving.arrows,
+diff --git a/crates/surface-app/src/devtools.rs b/crates/surface-app/src/devtools.rs
+index 650ba77..f46c19d 100644
+--- a/crates/surface-app/src/devtools.rs
++++ b/crates/surface-app/src/devtools.rs
+@@ -432,6 +432,18 @@ impl<A: Application> Runtime<A> {
+                         return Ok(json!({"changed":true,"focused":self.focused}));
+                     }
+                 }
++                if input.is_none() && !extend && !by_word {
++                    let deletion = match key {
++                        Key::Backspace => Some(crate::Key::Backspace),
++                        Key::Delete => Some(crate::Key::Delete),
++                        _ => None,
++                    };
++                    if let Some(key) = deletion {
++                        if self.key(&KeyPress::new(key, Modifiers::default()))? {
++                            return Ok(json!({"changed":true,"focused":self.focused}));
++                        }
++                    }
++                }
+                 let event = match key {
+                     Key::Tab => Event::FocusNext { reverse: extend },
+                     Key::Escape => Event::Cancel,
+diff --git a/crates/surface-app/src/frame_input.rs b/crates/surface-app/src/frame_input.rs
+index d5d9bed..ad0d77e 100644
+--- a/crates/surface-app/src/frame_input.rs
++++ b/crates/surface-app/src/frame_input.rs
+@@ -1,5 +1,6 @@
++use crate::press_ripple::PressRippleContact;
+ use crate::{AnimationUpdate, AppError, Application, Event, Runtime};
+-use surface::{Rect, Role};
++use surface::Rect;
+ 
+ /// A held primary touch contact in logical window coordinates.
+ #[derive(Clone, Copy, Debug, PartialEq)]
+@@ -62,7 +63,20 @@ struct ObservedPress {
+     started_ms: Option<f64>,
+     phase: FramePressPhase,
+     application: bool,
+-    ripple_role: Option<Role>,
++    ripple: Option<PressRippleContact>,
++}
++
++impl ObservedPress {
++    fn frame(&self, sequence: u64) -> FramePress<'_> {
++        FramePress {
++            id: &self.id,
++            position: self.position,
++            bounds: self.bounds,
++            started_ms: self.started_ms,
++            sequence,
++            phase: self.phase,
++        }
++    }
+ }
+ 
+ impl PressObservation {
+@@ -75,7 +89,7 @@ impl PressObservation {
+ 
+     pub(crate) fn clear_ripple(&mut self) {
+         if let Some(press) = &mut self.current {
+-            press.ripple_role = None;
++            press.ripple = None;
+         }
+         self.discard_if_unused();
+     }
+@@ -84,7 +98,7 @@ impl PressObservation {
+         if self
+             .current
+             .as_ref()
+-            .is_some_and(|p| !p.application && p.ripple_role.is_none())
++            .is_some_and(|p| !p.application && p.ripple.is_none())
+         {
+             self.current = None;
+         }
+@@ -97,7 +111,7 @@ impl PressObservation {
+         bounds: Rect,
+         started_ms: Option<f64>,
+         application: bool,
+-        ripple_role: Option<Role>,
++        ripple: Option<PressRippleContact>,
+     ) {
+         self.sequence = self.sequence.wrapping_add(1);
+         self.current = Some(ObservedPress {
+@@ -107,7 +121,7 @@ impl PressObservation {
+             started_ms,
+             phase: FramePressPhase::Held,
+             application,
+-            ripple_role,
++            ripple,
+         });
+     }
+ 
+@@ -121,34 +135,33 @@ impl PressObservation {
+         }
+     }
+ 
+-    fn frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
++    fn observe(&mut self, pressed: Option<&str>) -> Option<&ObservedPress> {
+         let press = self.current.as_mut()?;
+         if press.phase == FramePressPhase::Held && pressed != Some(press.id.as_str()) {
+             press.phase = FramePressPhase::Cancelled;
+         }
+-        Some(FramePress {
+-            id: &press.id,
+-            position: press.position,
+-            bounds: press.bounds,
+-            started_ms: press.started_ms,
+-            sequence: self.sequence,
+-            phase: press.phase,
+-        })
++        Some(press)
+     }
+ 
+     pub(crate) fn application_frame(&mut self, pressed: Option<&str>) -> Option<FramePress<'_>> {
+         self.current.as_ref().filter(|press| press.application)?;
+-        self.frame(pressed)
++        let sequence = self.sequence;
++        Some(self.observe(pressed)?.frame(sequence))
+     }
+ 
+-    pub(crate) fn ripple_frame(&mut self, pressed: Option<&str>) -> Option<(FramePress<'_>, Role)> {
+-        let role = self.current.as_ref()?.ripple_role?;
+-        Some((self.frame(pressed)?, role))
++    pub(crate) fn ripple_frame(
++        &mut self,
++        pressed: Option<&str>,
++    ) -> Option<(FramePress<'_>, &PressRippleContact)> {
++        self.current.as_ref()?.ripple.as_ref()?;
++        let sequence = self.sequence;
++        let press = self.observe(pressed)?;
++        Some((press.frame(sequence), press.ripple.as_ref()?))
+     }
+ 
+-    pub(crate) fn ripple_owner(&self) -> Option<(&str, Role)> {
++    pub(crate) fn ripple_owner(&self) -> Option<(&str, &PressRippleContact)> {
+         let press = self.current.as_ref()?;
+-        Some((&press.id, press.ripple_role?))
++        Some((&press.id, press.ripple.as_ref()?))
+     }
+ 
+     pub(crate) fn finish_application_frame(&mut self) {
+diff --git a/crates/surface-app/src/grid_navigation.rs b/crates/surface-app/src/grid_navigation.rs
+new file mode 100644
+index 0000000..60d4d5f
+--- /dev/null
++++ b/crates/surface-app/src/grid_navigation.rs
+@@ -0,0 +1,103 @@
++use surface::{ComputedDom, NodeId, Rect};
++
++use crate::EditKey;
++
++pub(crate) type Center = (f64, f64);
++
++pub(crate) fn center(rect: Rect) -> Center {
++    (
++        f64::from(rect.x) + f64::from(rect.width) / 2.,
++        f64::from(rect.y) + f64::from(rect.height) / 2.,
++    )
++}
++
++struct Cell {
++    id: NodeId,
++    rect: Rect,
++}
++
++struct Row {
++    top: f32,
++    bottom: f32,
++    cells: Vec<Cell>,
++}
++
++impl Row {
++    fn new(cell: Cell) -> Self {
++        Self {
++            top: cell.rect.y,
++            bottom: cell.rect.y + cell.rect.height,
++            cells: vec![cell],
++        }
++    }
++
++    fn overlaps(&self, cell: &Cell) -> bool {
++        cell.rect.y < self.bottom && cell.rect.y + cell.rect.height > self.top
++    }
++
++    fn add(&mut self, cell: Cell) {
++        // Keep the shared vertical span. A tall or offset cell must not
++        // merge two other rows that do not overlap each other.
++        self.top = self.top.max(cell.rect.y);
++        self.bottom = self.bottom.min(cell.rect.y + cell.rect.height);
++        self.cells.push(cell);
++    }
++}
++
++pub(crate) fn is_navigation(key: EditKey) -> bool {
++    matches!(
++        key,
++        EditKey::Left | EditKey::Right | EditKey::Up | EditKey::Down | EditKey::Home | EditKey::End
++    )
++}
++
++/// The chip's focusable actions supply the geometry. Rows follow the layout's
++/// vertical overlap. Authored order breaks ties and gives Home/End their
++/// logical direction even when the physical row is mirrored.
++pub(crate) fn target(
++    key: EditKey,
++    focused: NodeId,
++    members: &[NodeId],
++    layout: &ComputedDom,
++) -> Option<NodeId> {
++    let mut cells: Vec<_> = members
++        .iter()
++        .map(|&id| Cell {
++            id,
++            rect: layout.nodes[id.index()].bounds,
++        })
++        .collect();
++    cells.sort_by(|a, b| a.rect.y.total_cmp(&b.rect.y));
++    let mut rows: Vec<Row> = Vec::new();
++    for cell in cells {
++        if let Some(row) = rows.last_mut().filter(|row| row.overlaps(&cell)) {
++            row.add(cell);
++        } else {
++            rows.push(Row::new(cell));
++        }
++    }
++    let row_index = rows
++        .iter()
++        .position(|row| row.cells.iter().any(|cell| cell.id == focused))?;
++    let row = &rows[row_index];
++    let (x, _) = center(layout.nodes[focused.index()].bounds);
++    let candidate = match key {
++        EditKey::Home => row.cells.iter().min_by_key(|cell| cell.id.index()),
++        EditKey::End => row.cells.iter().max_by_key(|cell| cell.id.index()),
++        EditKey::Left => nearest_x(row.cells.iter().filter(|cell| center(cell.rect).0 < x), x),
++        EditKey::Right => nearest_x(row.cells.iter().filter(|cell| center(cell.rect).0 > x), x),
++        EditKey::Up => nearest_x(rows.get(row_index.checked_sub(1)?)?.cells.iter(), x),
++        EditKey::Down => nearest_x(rows.get(row_index + 1)?.cells.iter(), x),
++        _ => None,
++    }?;
++    Some(candidate.id)
++}
++
++fn nearest_x<'a>(cells: impl Iterator<Item = &'a Cell>, x: f64) -> Option<&'a Cell> {
++    cells.min_by(|a, b| {
++        (center(a.rect).0 - x)
++            .abs()
++            .total_cmp(&(center(b.rect).0 - x).abs())
++            .then_with(|| a.id.index().cmp(&b.id.index()))
++    })
++}
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 9f17ad7..2694f96 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -15,6 +15,7 @@ mod editing_runtime;
+ mod focus_scroll;
+ mod frame_input;
+ mod frame_paint;
++mod grid_navigation;
+ mod keys;
+ mod motion;
+ #[cfg(feature = "devtools")]
+@@ -542,6 +543,27 @@ impl<M> View<M> {
+         });
+         self
+     }
++    /// Give this named layout grid one Tab stop and manual arrow navigation.
++    ///
++    /// Either Tab direction enters at the first enabled member. Left and Right
++    /// move physically within the measured row. Up and Down go to the nearest
++    /// horizontal center in the neighboring row that has an eligible action.
++    /// Home and End follow the row's authored order. Navigation does not wrap
++    /// or invoke the action. Keep stable IDs on the actions. Use grid, row and
++    /// cell accessibility roles for the authored structure.
++    ///
++    /// When an action is removed, an explicit focus fallback still comes
++    /// first. Otherwise keep focus near the old measured position in this grid.
++    pub fn roving_grid(mut self) -> Self {
++        self.roving = Some(controls::RovingGroup {
++            options: Roving::horizontal(false),
++            first_enabled_on_entry: true,
++            retain_focus: true,
++            arrows: controls::RovingArrows::Grid,
++            reveal_after_rebuild: true,
++        });
++        self
++    }
+     /// Give a named standalone radio group one Tab stop. Either direction
+     /// enters at the checked enabled member when one exists. Otherwise Tab
+     /// enters at the first enabled member and Shift+Tab at the last.
+@@ -1124,7 +1146,7 @@ pub struct Runtime<A: Application> {
+     layout: LayoutEngine,
+     computed: Option<ComputedDom>,
+     focused: Option<String>,
+-    pending_roving_focus: Option<String>,
++    pending_roving_focus: Option<controls::PendingRovingFocus>,
+     pressed: Option<String>,
+     hovered: Option<String>,
+     pointer_position: Option<(f32, f32)>,
+@@ -2071,8 +2093,8 @@ impl<A: Application> Runtime<A> {
+                     return Ok(false);
+                 }
+                 let observes_application = self.app.observes_frame_input();
+-                let ripple_role = hit.and_then(|id| self.press_ripple_role(id));
+-                let press_bounds = if observes_application || ripple_role.is_some() {
++                let ripple = hit.and_then(|id| self.press_ripple_contact(id));
++                let press_bounds = if observes_application || ripple.is_some() {
+                     hit.and_then(|id| {
+                         self.computed
+                             .as_ref()?
+@@ -2110,7 +2132,7 @@ impl<A: Application> Runtime<A> {
+                         bounds,
+                         time,
+                         observes_application,
+-                        ripple_role,
++                        ripple,
+                     );
+                 }
+                 self.hovered = self.pressed.clone();
+diff --git a/crates/surface-app/src/press_ripple.rs b/crates/surface-app/src/press_ripple.rs
+index 4e0ed2c..b81ffc6 100644
+--- a/crates/surface-app/src/press_ripple.rs
++++ b/crates/surface-app/src/press_ripple.rs
+@@ -1,4 +1,4 @@
+-use surface::{ComputedDom, DomError, Easing, MicroDom, NodeId, Role};
++use surface::{ComputedDom, DomError, Easing, MicroDom, Node, NodeId, Rect, Role};
+ 
+ use crate::{Application, FramePress, FramePressPhase, Runtime};
+ 
+@@ -15,14 +15,30 @@ pub(crate) struct PressRipple {
+ 
+ struct Wave {
+     owner: String,
+-    role: Role,
++    contact: PressRippleContact,
+     sequence: u64,
+     center: (f32, f32),
+-    size: (f32, f32),
+     started_at: f64,
+     released_at: Option<f64>,
+ }
+ 
++#[derive(Clone)]
++pub(crate) struct PressRippleContact {
++    role: Role,
++    child: Option<String>,
++    bounds: Rect,
++    offset: (f32, f32),
++}
++
++fn paint_bounds(computed: &ComputedDom, id: NodeId) -> Option<Rect> {
++    let node = computed.nodes.get(id.index())?;
++    let visible = node
++        .bounds
++        .intersect(node.clip)
++        .intersect(computed.viewport);
++    (visible.width > 0. && visible.height > 0.).then_some(node.bounds)
++}
++
+ impl PressRipple {
+     pub(crate) fn needs_frame(&self) -> bool {
+         self.request_next
+@@ -33,8 +49,8 @@ impl PressRipple {
+         self.wave.take().is_some()
+     }
+ 
+-    fn observe(&mut self, observed: Option<(FramePress<'_>, Role)>, now: f64) {
+-        let Some((press, role)) = observed else {
++    fn observe(&mut self, observed: Option<(FramePress<'_>, &PressRippleContact)>, now: f64) {
++        let Some((press, contact)) = observed else {
+             if self
+                 .wave
+                 .as_ref()
+@@ -53,20 +69,15 @@ impl PressRipple {
+             .as_ref()
+             .is_none_or(|wave| wave.sequence != press.sequence)
+         {
+-            let bounds = press.bounds;
+-            if bounds.width <= 0. || bounds.height <= 0. {
+-                self.cancel();
+-                return;
+-            }
++            let bounds = contact.bounds;
+             self.wave = Some(Wave {
+                 owner: press.id.to_owned(),
+-                role,
++                contact: contact.clone(),
+                 sequence: press.sequence,
+                 center: (
+                     (press.position.0 - bounds.x).clamp(0., bounds.width),
+                     (press.position.1 - bounds.y).clamp(0., bounds.height),
+                 ),
+-                size: (bounds.width, bounds.height),
+                 // The host clock at pointer down can be from an idle frame.
+                 started_at: now,
+                 released_at: None,
+@@ -104,7 +115,7 @@ impl PressRipple {
+ }
+ 
+ impl<A: Application> Runtime<A> {
+-    pub(crate) fn press_ripple_role(&self, id: NodeId) -> Option<Role> {
++    fn press_ripple_owner(&self, id: NodeId) -> Option<&Node> {
+         let node = self.dom.get(id).ok()?;
+         (node.has_press_ripple()
+             && node.is_focusable()
+@@ -114,13 +125,36 @@ impl<A: Application> Runtime<A> {
+                     .bindings
+                     .get(&id)
+                     .is_some_and(|binding| binding.activate.is_some())))
+-        .then_some(node.role())
++        .then_some(node)
+     }
+ 
+-    fn current_ripple_id(&self, owner: &str, role: Role) -> Option<NodeId> {
+-        self.dom
+-            .by_id(owner)
+-            .filter(|&id| self.press_ripple_role(id) == Some(role))
++    pub(crate) fn press_ripple_contact(&self, owner: NodeId) -> Option<PressRippleContact> {
++        let node = self.press_ripple_owner(owner)?;
++        let target = self.dom.press_ripple_paint_target(owner)?;
++        let computed = self.computed.as_ref()?;
++        let bounds = paint_bounds(computed, target)?;
++        let owner_bounds = paint_bounds(computed, owner)?;
++        Some(PressRippleContact {
++            role: node.role(),
++            child: node.press_ripple_target_name().map(str::to_owned),
++            bounds,
++            offset: (bounds.x - owner_bounds.x, bounds.y - owner_bounds.y),
++        })
++    }
++
++    fn current_ripple_ids(
++        &self,
++        owner: &str,
++        contact: &PressRippleContact,
++    ) -> Option<(NodeId, NodeId)> {
++        let owner = self.dom.by_id(owner)?;
++        let node = self.press_ripple_owner(owner)?;
++        if node.role() != contact.role
++            || node.press_ripple_target_name() != contact.child.as_deref()
++        {
++            return None;
++        }
++        Some((owner, self.dom.press_ripple_paint_target(owner)?))
+     }
+ 
+     pub(crate) fn cancel_press_ripple(&mut self) -> bool {
+@@ -133,9 +167,9 @@ impl<A: Application> Runtime<A> {
+             self.press_ripple
+                 .wave
+                 .as_ref()
+-                .map(|wave| (wave.owner.as_str(), wave.role))
++                .map(|wave| (wave.owner.as_str(), &wave.contact))
+         });
+-        if owner.is_some_and(|(name, role)| self.current_ripple_id(name, role).is_none()) {
++        if owner.is_some_and(|(name, contact)| self.current_ripple_ids(name, contact).is_none()) {
+             self.cancel_press_ripple();
+         }
+     }
+@@ -155,19 +189,19 @@ impl<A: Application> Runtime<A> {
+         let Some(wave) = &self.press_ripple.wave else {
+             return Ok(());
+         };
+-        let id = self
+-            .current_ripple_id(&wave.owner, wave.role)
+-            .filter(|&id| {
+-                computed.nodes.get(id.index()).is_some_and(|node| {
+-                    let bounds = node.bounds;
+-                    let visible = bounds.intersect(node.clip).intersect(computed.viewport);
+-                    (bounds.width, bounds.height) == wave.size
+-                        && visible.width > 0.
+-                        && visible.height > 0.
++        let ids = self
++            .current_ripple_ids(&wave.owner, &wave.contact)
++            .filter(|&(owner, target)| {
++                let visible = paint_bounds(computed, target).zip(paint_bounds(computed, owner));
++                visible.is_some_and(|(bounds, owner_bounds)| {
++                    (bounds.width, bounds.height)
++                        == (wave.contact.bounds.width, wave.contact.bounds.height)
++                        && (bounds.x - owner_bounds.x - wave.contact.offset.0).abs() <= 0.01
++                        && (bounds.y - owner_bounds.y - wave.contact.offset.1).abs() <= 0.01
+                 })
+             });
+-        if let Some(id) = id {
+-            self.press_ripple.present(id, now, display)?;
++        if let Some((owner, _)) = ids {
++            self.press_ripple.present(owner, now, display)?;
+         } else {
+             self.cancel_press_ripple();
+         }
+diff --git a/crates/surface-app/tests/devtools.rs b/crates/surface-app/tests/devtools.rs
+index 2191bcf..ea73dc6 100644
+--- a/crates/surface-app/tests/devtools.rs
++++ b/crates/surface-app/tests/devtools.rs
+@@ -12,6 +12,7 @@ struct App {
+     volume: f64,
+     dialog: bool,
+     submit_on_enter: bool,
++    handle_delete: bool,
+     submissions: usize,
+ }
+ #[derive(Clone)]
+@@ -77,11 +78,21 @@ impl Application for App {
+             View::new(Node::new(Role::Button, "Open").id("open")).on_press(Message::Dialog(true)),
+         ];
+         if self.dialog {
++            let close = View::new(Node::new(Role::Button, "Close").id("close"))
++                .on_press(Message::Dialog(false));
++            let close = if self.handle_delete {
++                close.on_key(|press| {
++                    (matches!(press.key, Key::Backspace | Key::Delete)
++                        && press.modifiers.is_empty())
++                    .then_some(Message::Submit)
++                })
++            } else {
++                close
++            };
+             children.push(
+                 View::new(Node::new(Role::Dialog, "Dialog").id("dialog"))
+                     .modal(Message::Dialog(false))
+-                    .children([View::new(Node::new(Role::Button, "Close").id("close"))
+-                        .on_press(Message::Dialog(false))]),
++                    .children([close]),
+             );
+         }
+         View::new(
+@@ -449,6 +460,27 @@ fn action_enter_routes_to_single_line_key_handler_after_composition() {
+     assert!(!runtime.app().dialog);
+ }
+ #[test]
++fn action_delete_and_backspace_reach_a_focused_control_handler() {
++    let mut runtime = Runtime::new(App {
++        handle_delete: true,
++        ..App::default()
++    })
++    .unwrap();
++    runtime.render(320., 240., &mut Metrics).unwrap();
++    open_dialog(&mut runtime);
++    for key in ["delete", "backspace"] {
++        let result = ok(&mut runtime, "Action.key", json!({ "key": key }));
++        assert_eq!(result, json!({ "changed": true, "focused": "close" }));
++    }
++    let modified = ok(
++        &mut runtime,
++        "Action.key",
++        json!({ "key": "delete", "extend": true }),
++    );
++    assert_eq!(modified, json!({ "changed": false, "focused": "close" }));
++    assert_eq!(runtime.app().submissions, 2);
++}
++#[test]
+ fn action_key_rejects_no_focus_read_only_and_unknown_keys() {
+     let mut runtime = runtime();
+     let (code, message) = rejected(&mut runtime, "Action.key", json!({"key":"left"}));
+diff --git a/crates/surface-app/tests/press_feedback_target.rs b/crates/surface-app/tests/press_feedback_target.rs
+new file mode 100644
+index 0000000..99d622c
+--- /dev/null
++++ b/crates/surface-app/tests/press_feedback_target.rs
+@@ -0,0 +1,320 @@
++use surface::{
++    BoxShadow, Color, Corners, ExtendedDisplayList, ExtendedPaintOp, Insets, Length, Node, PaintOp,
++    PathFill, Rect, Role, Style, TextMeasurer,
++};
++use surface_app::{
++    AnimationFrame, Application, Event, FrameInput, FramePress, FramePressPhase,
++    InputAnimationUpdate, Runtime, View,
++};
++
++const BODY: &str = "body";
++const BODY_FACE: &str = "body-face";
++const REMOVE: &str = "remove";
++const REMOVE_FACE: &str = "remove-face";
++const BODY_INK: Color = Color(46, 48, 81, 255);
++const REMOVE_INK: Color = Color(87, 31, 10, 255);
++const HOVER_SHADOW: Color = Color(15, 75, 100, 255);
++
++#[derive(Clone)]
++enum Message {
++    Body,
++    Remove,
++    Retarget,
++    MoveFace,
++}
++
++struct App {
++    body_face: &'static str,
++    requested_face: &'static str,
++    face_offset: f32,
++    taps: Vec<&'static str>,
++    press: Option<(&'static str, Rect, FramePressPhase)>,
++}
++
++impl Default for App {
++    fn default() -> Self {
++        Self {
++            body_face: BODY_FACE,
++            requested_face: BODY_FACE,
++            face_offset: 0.,
++            taps: Vec::new(),
++            press: None,
++        }
++    }
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Body => self.taps.push(BODY),
++            Message::Remove => self.taps.push(REMOVE),
++            Message::Retarget => {
++                self.body_face = "replacement-face";
++                self.requested_face = self.body_face;
++            }
++            Message::MoveFace => self.face_offset = 6.,
++        }
++    }
++
++    fn observes_frame_input(&self) -> bool {
++        true
++    }
++
++    fn animation_frame_with_press_detail(
++        &mut self,
++        _: AnimationFrame<'_>,
++        _: FrameInput<'_>,
++        _: Option<&str>,
++        press: Option<FramePress<'_>>,
++        _: Option<&str>,
++    ) -> InputAnimationUpdate {
++        if let Some(press) = press {
++            let id = match press.id {
++                BODY => BODY,
++                REMOVE => REMOVE,
++                _ => panic!("unexpected press owner"),
++            };
++            self.press = Some((id, press.bounds, press.phase));
++        }
++        InputAnimationUpdate::default()
++    }
++
++    fn view(&self) -> View<Message> {
++        let action = |id, target| {
++            Node::new(Role::Button, id)
++                .id(id)
++                .styled(
++                    Style::column()
++                        .width(Length::Px(48.))
++                        .height(Length::Px(48.)),
++                )
++                .press_ripple_to(target)
++        };
++        let face = |id, x, y, width, height, ink, radius| {
++            Node::new(Role::Group, "")
++                .id(id)
++                .styled(
++                    Style::column()
++                        .width(Length::Px(width))
++                        .height(Length::Px(height))
++                        .absolute(Insets {
++                            left: Length::Px(x),
++                            top: Length::Px(y),
++                            ..Insets::default()
++                        })
++                        .corners(Corners::all(radius))
++                        .background(Color::rgb(224, 215, 240))
++                        .state_layer(Color::rgb(15, 38, 49)),
++                )
++                .press_state_layer_ink(ink)
++                .state_layer_alphas(20, 26, 26)
++        };
++        let body_face = face(self.body_face, self.face_offset, 8., 88., 32., BODY_INK, 8.)
++            .interaction_box_shadows(
++                Some([
++                    BoxShadow::new(0., 3., 0., 0., HOVER_SHADOW),
++                    BoxShadow::NONE,
++                ]),
++                None,
++                None,
++            )
++            .interaction_box_shadows_from_parent();
++        let remove_face = face(REMOVE_FACE, 12., 12., 24., 24., REMOVE_INK, 12.);
++        View::new(Node::new(Role::Window, "Feedback").styled(Style::row())).children([
++            View::new(action(BODY, self.requested_face))
++                .on_press(Message::Body)
++                .children([View::new(body_face).without_interaction(None)]),
++            View::new(action(REMOVE, REMOVE_FACE))
++                .on_press(Message::Remove)
++                .children([View::new(remove_face).without_interaction(None)]),
++        ])
++    }
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, _: &str, _: f32, _: Option<f32>) -> (f32, f32) {
++        (0., 0.)
++    }
++}
++
++fn frame(runtime: &mut Runtime<App>, time: f64) -> ExtendedDisplayList {
++    runtime.set_time(time);
++    runtime.render_extended(160., 96., &mut Metrics).unwrap()
++}
++
++fn bounds(runtime: &Runtime<App>, key: &str) -> Rect {
++    let id = runtime.dom().by_id(key).unwrap();
++    runtime.computed().unwrap().nodes[id.index()].bounds
++}
++
++fn wave(display: &ExtendedDisplayList) -> Option<&PathFill> {
++    let mut paths = display.ops().iter().filter_map(|op| match op {
++        ExtendedPaintOp::FillPath(path) => Some(path),
++        _ => None,
++    });
++    let path = paths.next();
++    assert!(paths.next().is_none());
++    path
++}
++
++fn tinted_rect(display: &ExtendedDisplayList, ink: Color) -> Option<Rect> {
++    display.ops().iter().find_map(|op| match op {
++        ExtendedPaintOp::Legacy(PaintOp::Quad { color, rect, .. })
++        | ExtendedPaintOp::Legacy(PaintOp::Shape { color, rect, .. })
++            if *color == ink =>
++        {
++            Some(*rect)
++        }
++        _ => None,
++    })
++}
++
++fn primary(x: f32, y: f32, down: bool) -> Event {
++    if down {
++        Event::PointerDown { x, y }
++    } else {
++        Event::PointerUp { x, y }
++    }
++}
++
++fn press_ink(ink: Color) -> Color {
++    Color(ink.0, ink.1, ink.2, 26)
++}
++
++#[test]
++fn the_face_uses_its_own_press_ink_and_bounds_without_changing_the_hit_area() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    frame(&mut runtime, 0.);
++    let owner = bounds(&runtime, BODY);
++    let face = bounds(&runtime, BODY_FACE);
++    assert_eq!(owner, Rect::new(0., 0., 48., 48.));
++    assert_eq!(face, Rect::new(0., 8., 88., 32.));
++
++    runtime
++        .dispatch(Event::PointerMove { x: 25., y: 2. })
++        .unwrap();
++    let hover = frame(&mut runtime, 1.);
++    let shadow = tinted_rect(&hover, HOVER_SHADOW).expect("hover shadow");
++    assert_eq!(
++        shadow,
++        Rect::new(face.x, face.y + 3., face.width, face.height)
++    );
++
++    runtime.dispatch(primary(25., 2., true)).unwrap();
++    let first = frame(&mut runtime, 10.);
++    assert!(wave(&first).is_none());
++    assert!(tinted_rect(&first, press_ink(BODY_INK)).is_none());
++    assert_eq!(
++        runtime.app().press,
++        Some((BODY, owner, FramePressPhase::Held))
++    );
++
++    let growing = frame(&mut runtime, 85.);
++    let partial = wave(&growing).unwrap();
++    assert_eq!(partial.color(), press_ink(BODY_INK));
++    assert_eq!(
++        partial.rect().y,
++        face.y,
++        "margin press clamps to top of the face"
++    );
++    assert!(partial.rect().width < face.width);
++    assert!(tinted_rect(&growing, press_ink(BODY_INK)).is_none());
++
++    let expanded = frame(&mut runtime, 235.);
++    assert_eq!(wave(&expanded).unwrap().rect(), face);
++    runtime.dispatch(primary(25., 2., false)).unwrap();
++    let released = frame(&mut runtime, 235.);
++    assert_eq!(wave(&released).unwrap().rect(), face);
++    assert_eq!(runtime.app().taps, [BODY]);
++    assert_eq!(
++        runtime.app().press,
++        Some((BODY, owner, FramePressPhase::Released))
++    );
++
++    runtime.dispatch_touch(primary(72., 24., true)).unwrap();
++    frame(&mut runtime, 240.);
++    let removing = frame(&mut runtime, 465.);
++    assert_eq!(
++        wave(&removing).unwrap().rect(),
++        bounds(&runtime, REMOVE_FACE)
++    );
++    assert_eq!(wave(&removing).unwrap().color(), press_ink(REMOVE_INK));
++    runtime.dispatch_touch(primary(72., 24., false)).unwrap();
++    assert_eq!(runtime.app().taps, [BODY, REMOVE]);
++}
++
++#[test]
++fn invalid_sibling_target_uses_static_feedback_and_does_not_paint_a_wave() {
++    let mut runtime = Runtime::new(App {
++        requested_face: REMOVE_FACE,
++        ..App::default()
++    })
++    .unwrap();
++    frame(&mut runtime, 0.);
++    runtime.dispatch(primary(25., 2., true)).unwrap();
++    let image = frame(&mut runtime, 75.);
++    assert!(wave(&image).is_none());
++    assert_eq!(
++        tinted_rect(&image, press_ink(BODY_INK)),
++        Some(bounds(&runtime, BODY_FACE))
++    );
++    runtime.dispatch(primary(25., 2., false)).unwrap();
++    assert_eq!(runtime.app().taps, [BODY]);
++}
++
++#[test]
++fn rebuilding_with_a_different_face_cancels_the_in_flight_wave() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    frame(&mut runtime, 0.);
++    runtime.dispatch(primary(25., 12., true)).unwrap();
++    frame(&mut runtime, 10.);
++    assert!(wave(&frame(&mut runtime, 85.)).is_some());
++    runtime.apply(Message::Retarget).unwrap();
++    let rebuilt = frame(&mut runtime, 120.);
++    assert!(wave(&rebuilt).is_none());
++    assert_eq!(
++        tinted_rect(&rebuilt, press_ink(BODY_INK)),
++        Some(bounds(&runtime, "replacement-face"))
++    );
++    assert_eq!(runtime.focused(), Some(BODY));
++    runtime.dispatch(primary(25., 12., false)).unwrap();
++    assert_eq!(runtime.app().taps, [BODY]);
++}
++
++#[test]
++fn moving_only_the_face_cancels_an_accepted_wave() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    frame(&mut runtime, 0.);
++    runtime.dispatch(primary(25., 12., true)).unwrap();
++    frame(&mut runtime, 10.);
++    assert!(wave(&frame(&mut runtime, 85.)).is_some());
++    runtime.apply(Message::MoveFace).unwrap();
++    let rebuilt = frame(&mut runtime, 120.);
++    assert!(wave(&rebuilt).is_none());
++    assert_eq!(
++        tinted_rect(&rebuilt, press_ink(BODY_INK)),
++        Some(bounds(&runtime, BODY_FACE))
++    );
++    runtime.dispatch(primary(25., 12., false)).unwrap();
++    assert_eq!(runtime.app().taps, [BODY]);
++}
++
++#[test]
++fn reduced_motion_paints_the_same_face_without_a_radial_wave() {
++    let mut runtime = Runtime::new(App::default()).unwrap();
++    runtime.set_reduced_motion(true);
++    frame(&mut runtime, 0.);
++    runtime.dispatch(primary(25., 2., true)).unwrap();
++    let image = frame(&mut runtime, 80.);
++    assert!(wave(&image).is_none());
++    assert_eq!(
++        tinted_rect(&image, press_ink(BODY_INK)),
++        Some(bounds(&runtime, BODY_FACE))
++    );
++    runtime.dispatch(primary(25., 2., false)).unwrap();
++    assert_eq!(runtime.app().taps, [BODY]);
++}
+diff --git a/crates/surface-app/tests/roving_grid.rs b/crates/surface-app/tests/roving_grid.rs
+new file mode 100644
+index 0000000..98eefa9
+--- /dev/null
++++ b/crates/surface-app/tests/roving_grid.rs
+@@ -0,0 +1,383 @@
++use surface::{GridRole, Insets, Length, Node, Rect, Role, Style, TextMeasurer};
++use surface_app::{Application, EditKey, Event, Runtime, View};
++
++#[derive(Clone)]
++enum Message {
++    Activate(&'static str),
++    Remove,
++    Disable,
++    Modal(bool),
++}
++
++#[derive(Default)]
++struct App {
++    rtl: bool,
++    scrolled: bool,
++    nested: bool,
++    removed: bool,
++    disabled: bool,
++    explicit_fallback: bool,
++    modal: bool,
++    actions: Vec<&'static str>,
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Activate(id) => self.actions.push(id),
++            Message::Remove => self.removed = true,
++            Message::Disable => self.disabled = true,
++            Message::Modal(open) => self.modal = open,
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let mut split = vec![cell("body-cell", action("body", 48., false))];
++        if !self.removed {
++            let remove = action("remove", 48., self.disabled);
++            let remove = if self.explicit_fallback {
++                remove.restore_focus_on_removal("after")
++            } else {
++                remove
++            };
++            split.push(cell("remove-cell", remove));
++        }
++        let mut first_row = vec![
++            cell("a-cell", action("a", 54., false)),
++            cell("blocked-cell", action("blocked", 40., true)),
++        ];
++        first_row.extend(split);
++        first_row.push(cell("zero-cell", action("zero", 0., false)));
++        if self.nested {
++            let inner = View::new(
++                Node::new(Role::Group, "Nested options")
++                    .id("inner-grid")
++                    .grid_role(GridRole::Grid),
++            )
++            .children([row(
++                "inner-row",
++                self.rtl,
++                [cell("inner-cell", action("inner", 48., false))],
++            )]);
++            first_row.push(cell("nested-cell", inner));
++        }
++        let unreachable = View::new(
++            Node::new(Role::Group, "").styled(
++                Style::column()
++                    .width(Length::Px(0.))
++                    .height(Length::Px(0.))
++                    .clip(true),
++            ),
++        )
++        .children([View::new(
++            Node::new(Role::Button, "Outside permanent clip")
++                .id("hidden")
++                .styled(
++                    Style::column()
++                        .width(Length::Px(40.))
++                        .height(Length::Px(48.))
++                        .absolute(Insets::all(0.)),
++                ),
++        )
++        .on_press(Message::Activate("hidden"))]);
++
++        let mut style = Style::column().width(Length::Px(300.));
++        if self.scrolled {
++            style = style.height(Length::Px(72.)).clip(true);
++        }
++        let grid = View::new(
++            Node::new(Role::Group, "Chips")
++                .id("chips")
++                .grid_role(GridRole::Grid)
++                .styled(style),
++        )
++        .children([
++            row(
++                "unreachable-row",
++                self.rtl,
++                [cell("unreachable-cell", unreachable)],
++            ),
++            row("first-row", self.rtl, first_row),
++            row(
++                "blocked-row",
++                self.rtl,
++                [cell("empty-cell", action("blocked-row-control", 60., true))],
++            ),
++            row(
++                "last-row",
++                self.rtl,
++                [
++                    cell("c-cell", action("c", 30., false)),
++                    cell("d-cell", action("d", 108., false)),
++                    cell("e-cell", action("e", 60., false)),
++                ],
++            ),
++        ])
++        .roving_grid();
++        let before = action("before", 100., false);
++        let after = action("after", 100., false);
++        let extra = self.modal.then(|| {
++            View::new(Node::new(Role::Dialog, "Modal").id("modal"))
++                .children([action("modal-action", 96., false)])
++                .modal(Message::Modal(false))
++        });
++        View::new(Node::new(Role::Window, "Test"))
++            .children([before, grid, after].into_iter().chain(extra))
++    }
++}
++
++fn action(id: &'static str, width: f32, disabled: bool) -> View<Message> {
++    View::new(
++        Node::new(Role::Button, id)
++            .id(id)
++            .disabled(disabled)
++            .styled(
++                Style::column()
++                    .width(Length::Px(width))
++                    .height(Length::Px(48.)),
++            ),
++    )
++    .on_press(Message::Activate(id))
++}
++
++fn cell(id: &str, action: View<Message>) -> View<Message> {
++    View::new(
++        Node::new(Role::Group, "")
++            .id(id)
++            .grid_role(GridRole::GridCell),
++    )
++    .children([action])
++}
++
++fn row(id: &str, rtl: bool, cells: impl IntoIterator<Item = View<Message>>) -> View<Message> {
++    let row = Node::new(Role::Group, "")
++        .id(id)
++        .grid_role(GridRole::Row)
++        .styled(Style::row().width(Length::Px(300.)).gap(4.));
++    let row = if rtl { row.reverse_row() } else { row };
++    View::new(row).children(cells)
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.chars().count() as f32 * size / 2., size * 1.5)
++    }
++}
++
++fn render(runtime: &mut Runtime<App>) {
++    runtime.render(330., 390., &mut Metrics).unwrap();
++}
++
++fn open(app: App) -> Runtime<App> {
++    let mut runtime = Runtime::new(app).unwrap();
++    render(&mut runtime);
++    runtime
++}
++
++fn focus(runtime: &mut Runtime<App>, reverse: bool, expected: &str) {
++    runtime.dispatch(Event::FocusNext { reverse }).unwrap();
++    assert_eq!(runtime.focused(), Some(expected));
++}
++
++fn edit(runtime: &mut Runtime<App>, key: EditKey, expected: &str) {
++    assert!(
++        runtime
++            .dispatch(Event::Edit {
++                key,
++                extend: false,
++                by_word: false
++            })
++            .unwrap(),
++        "{key:?} should belong to the grid"
++    );
++    assert_eq!(runtime.focused(), Some(expected), "{key:?}");
++}
++
++fn bounds(runtime: &Runtime<App>, id: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++}
++
++#[test]
++fn one_tab_stop_physical_rows_and_authored_row_edges_in_both_directions() {
++    for rtl in [false, true] {
++        let mut runtime = open(App {
++            rtl,
++            ..App::default()
++        });
++        let next = if rtl { EditKey::Left } else { EditKey::Right };
++        let previous = if rtl { EditKey::Right } else { EditKey::Left };
++        focus(&mut runtime, false, "before");
++        focus(&mut runtime, false, "a");
++        edit(&mut runtime, previous, "a");
++        edit(&mut runtime, next, "body");
++        edit(&mut runtime, EditKey::Down, "d");
++        edit(&mut runtime, EditKey::End, "e");
++        edit(&mut runtime, EditKey::Home, "c");
++        edit(&mut runtime, EditKey::Up, "a");
++        edit(&mut runtime, EditKey::End, "remove");
++        edit(&mut runtime, next, "remove");
++        edit(&mut runtime, EditKey::Down, "e");
++        edit(&mut runtime, EditKey::Down, "e");
++        edit(&mut runtime, EditKey::Up, "remove");
++        assert!(runtime.app().actions.is_empty());
++        runtime.dispatch(Event::Activate).unwrap();
++        assert_eq!(runtime.app().actions, ["remove"]);
++        render(&mut runtime);
++        focus(&mut runtime, false, "after");
++        focus(&mut runtime, true, "a");
++        focus(&mut runtime, true, "before");
++    }
++}
++
++#[test]
++fn fully_clipped_revealable_cell_takes_focus_and_scrolls_but_permanently_hidden_cell_does_not() {
++    let mut runtime = open(App {
++        scrolled: true,
++        ..App::default()
++    });
++    let initial = bounds(&runtime, "d").intersect(bounds(&runtime, "chips"));
++    assert_eq!(initial.height, 0.);
++    assert!(bounds(&runtime, "hidden").width > 0.);
++    focus(&mut runtime, false, "before");
++    focus(&mut runtime, false, "a");
++    edit(&mut runtime, EditKey::Right, "body");
++    edit(&mut runtime, EditKey::Down, "d");
++    render(&mut runtime);
++    assert_eq!(
++        bounds(&runtime, "d").intersect(bounds(&runtime, "chips")),
++        bounds(&runtime, "d")
++    );
++    assert!(runtime.scroll_metrics("chips").unwrap().offset.1 > 0.);
++    assert!(runtime.app().actions.is_empty());
++}
++
++#[test]
++fn nested_grid_actions_keep_their_own_focus_order() {
++    let mut runtime = open(App {
++        nested: true,
++        ..App::default()
++    });
++    focus(&mut runtime, false, "before");
++    focus(&mut runtime, false, "a");
++    edit(&mut runtime, EditKey::End, "remove");
++    edit(&mut runtime, EditKey::Right, "remove");
++    focus(&mut runtime, false, "inner");
++    assert!(!runtime
++        .dispatch(Event::Edit {
++            key: EditKey::Right,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap());
++    assert_eq!(runtime.focused(), Some("inner"));
++}
++
++#[test]
++fn lost_or_disabled_focus_prefers_nearest_surviving_peer_after_layout() {
++    for message in [Message::Remove, Message::Disable] {
++        let mut runtime = open(App::default());
++        focus(&mut runtime, false, "before");
++        focus(&mut runtime, false, "a");
++        edit(&mut runtime, EditKey::End, "remove");
++        runtime.apply(message).unwrap();
++        render(&mut runtime);
++        assert_eq!(runtime.focused(), Some("body"));
++        assert!(runtime.app().actions.is_empty());
++    }
++}
++
++#[test]
++fn explicit_fallback_and_new_modal_keep_priority_over_the_grid() {
++    let mut runtime = open(App {
++        explicit_fallback: true,
++        ..App::default()
++    });
++    focus(&mut runtime, false, "before");
++    focus(&mut runtime, false, "a");
++    edit(&mut runtime, EditKey::End, "remove");
++    runtime.apply(Message::Remove).unwrap();
++    render(&mut runtime);
++    assert_eq!(runtime.focused(), Some("after"));
++
++    focus(&mut runtime, true, "a");
++    runtime.apply(Message::Modal(true)).unwrap();
++    render(&mut runtime);
++    assert_eq!(runtime.focused(), Some("modal-action"));
++    assert!(!runtime
++        .dispatch(Event::Edit {
++            key: EditKey::Down,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap());
++    assert_eq!(runtime.focused(), Some("modal-action"));
++    runtime.dispatch(Event::Cancel).unwrap();
++    render(&mut runtime);
++    assert_eq!(runtime.focused(), Some("a"));
++    assert!(runtime.app().actions.is_empty());
++}
++
++#[test]
++fn one_authored_row_can_reflow_into_different_measured_rows() {
++    struct Wrap;
++
++    impl Application for Wrap {
++        type Message = Message;
++
++        fn update(&mut self, _: Message) {
++            panic!("grid navigation must not activate")
++        }
++
++        fn view(&self) -> View<Message> {
++            View::new(
++                Node::new(Role::Group, "Wrapped chips")
++                    .id("wrap-grid")
++                    .grid_role(GridRole::Grid)
++                    .styled(Style::column().width(Length::Percent(1.))),
++            )
++            .roving_grid()
++            .children([View::new(
++                Node::new(Role::Group, "")
++                    .id("wrap-row")
++                    .grid_role(GridRole::Row)
++                    .styled(Style::row().width(Length::Percent(1.)).wrap(true).gap(4.)),
++            )
++            .children([
++                cell("wrap-a", action("a", 150., false)),
++                cell("wrap-b", action("b", 95., false)),
++                cell("wrap-c", action("c", 104., false)),
++                cell("wrap-d", action("d", 90., false)),
++            ])])
++        }
++    }
++
++    let mut runtime = Runtime::new(Wrap).unwrap();
++    let press = |runtime: &mut Runtime<Wrap>, key, expected: &str| {
++        assert!(runtime
++            .dispatch(Event::Edit {
++                key,
++                extend: false,
++                by_word: false,
++            })
++            .unwrap());
++        assert_eq!(runtime.focused(), Some(expected));
++    };
++    runtime.render(320., 260., &mut Metrics).unwrap();
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    press(&mut runtime, EditKey::Right, "b");
++    press(&mut runtime, EditKey::Down, "d");
++    press(&mut runtime, EditKey::Home, "c");
++    runtime.render(220., 260., &mut Metrics).unwrap();
++    assert_eq!(runtime.focused(), Some("c"));
++    press(&mut runtime, EditKey::Home, "b");
++    press(&mut runtime, EditKey::Down, "d");
++    press(&mut runtime, EditKey::Up, "b");
++    press(&mut runtime, EditKey::Up, "a");
++    press(&mut runtime, EditKey::Right, "a");
++}
+diff --git a/crates/surface-material/src/chip.rs b/crates/surface-material/src/chip.rs
+new file mode 100644
+index 0000000..756b24b
+--- /dev/null
++++ b/crates/surface-material/src/chip.rs
+@@ -0,0 +1,967 @@
++//! Material 3 chips with caller-owned choices and separate action targets.
++
++use surface::{
++    Align, Color, Corners, FillContour, GridRole, Insets, Length, MeasuredGroupLayout, Node,
++    RasterImage, Rect, Role, Style, TextAlignment, TextMeasurer, TextScaling, TextStyle,
++};
++use surface_app::{CursorStyle, Key, View};
++
++use crate::{
++    motion::STATE_CHANGE,
++    shape::{self, LayoutDirection},
++    typography,
++    vector_icon::chevron_contour,
++    ChipKind, Elevation, Theme, VectorIcon,
++};
++
++const TOUCH: f32 = 48.;
++const HEIGHT: f32 = 32.;
++const VERTICAL_SLACK: f32 = (TOUCH - HEIGHT) / 2.;
++const ICON: f32 = 18.;
++const AVATAR: f32 = 24.;
++const GAP: f32 = 8.;
++const ICON_EDGE: f32 = 8.;
++const BARE_EDGE: f32 = 16.;
++const TAIL_PAINT: f32 = GAP + ICON + ICON_EDGE;
++const MIN_SPLIT_PAINT: f32 = 88.;
++const FOCUS_STROKE: f32 = 3.;
++const FOCUS_OUTSET: f32 = 2. + FOCUS_STROKE;
++const DISABLED_CONTENT: u8 = 97;
++const DISABLED_CONTAINER: u8 = 31;
++const HOVER: u8 = 20;
++const ACTIVE: u8 = 26;
++
++/// The appearance of an Assist, Filter, or Suggestion chip.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum ChipStyle {
++    #[default]
++    Flat,
++    Elevated,
++}
++
++/// Decorative artwork at the chip's logical start.
++#[derive(Clone, Copy, Debug)]
++pub enum ChipLeading<'a> {
++    /// An 18 dp icon tinted with the chip's role color.
++    Icon(&'a VectorIcon),
++    /// An 18 dp image, cropped to its square slot without a tint.
++    Image(&'a RasterImage),
++    /// A 24 dp circular image for an Input chip.
++    Avatar(&'a RasterImage),
++}
++
++/// Common layout and naming for a Material chip.
++#[derive(Clone, Copy, Debug)]
++pub struct ChipOptions<'a> {
++    /// Stable ID of the body action, or the sole action in a remove-only chip.
++    pub id: &'a str,
++    pub label: &'a str,
++    /// Omitted or blank uses the visible label. A remove-only Input uses its
++    /// explicit removal name instead.
++    pub accessible_name: Option<&'a str>,
++    pub direction: LayoutDirection,
++    pub text_scale: f32,
++    /// Width available for the artwork and all action targets in logical dp.
++    pub max_width: f32,
++    pub disabled: bool,
++}
++
++/// The explicit localized name and message of an Input chip's remove action.
++pub struct ChipRemove<'a, M> {
++    pub accessible_name: &'a str,
++    pub message: M,
++}
++
++/// An optional trailing action on a Filter chip.
++pub enum ChipTrailing<'a, M> {
++    Remove(ChipRemove<'a, M>),
++    /// A separate, independently named menu trigger at the logical end.
++    Menu {
++        accessible_name: &'a str,
++        expanded: bool,
++        message: M,
++    },
++    /// The body message opens the menu. Use this when the chip should have
++    /// one action, such as in a compact layout.
++    MenuOnBody {
++        expanded: bool,
++    },
++}
++
++/// Variant-specific chip artwork, app-owned state, and messages.
++pub enum ChipContent<'a, M> {
++    Assist {
++        style: ChipStyle,
++        leading: Option<ChipLeading<'a>>,
++        message: M,
++    },
++    Filter {
++        style: ChipStyle,
++        leading: Option<ChipLeading<'a>>,
++        selected: bool,
++        /// Replace the leading artwork with a check when selected.
++        show_checkmark: bool,
++        message: M,
++        trailing: Option<ChipTrailing<'a, M>>,
++    },
++    Input {
++        leading: Option<ChipLeading<'a>>,
++        selected: bool,
++        /// An optional select or edit action. Without one the entire chip
++        /// removes the token, using one keyboard and accessibility target.
++        body: Option<M>,
++        remove: ChipRemove<'a, M>,
++    },
++    Suggestion {
++        style: ChipStyle,
++        leading: Option<ChipLeading<'a>>,
++        message: M,
++    },
++}
++
++#[derive(Clone, Copy)]
++enum Glyph {
++    Check,
++    Remove,
++    Menu,
++}
++
++#[derive(Clone, Copy)]
++enum Leading<'a> {
++    Art(ChipLeading<'a>),
++    Check,
++}
++
++impl Leading<'_> {
++    fn size(self) -> f32 {
++        if matches!(self, Self::Art(ChipLeading::Avatar(_))) {
++            AVATAR
++        } else {
++            ICON
++        }
++    }
++}
++
++struct Secondary<'a, M> {
++    name: &'a str,
++    expanded: Option<bool>,
++    message: M,
++}
++
++impl<M> Secondary<'_, M> {
++    fn glyph(&self) -> Glyph {
++        if self.expanded.is_some() {
++            Glyph::Menu
++        } else {
++            Glyph::Remove
++        }
++    }
++}
++
++struct Chip<'a, M> {
++    kind: ChipKind,
++    style: ChipStyle,
++    selected: bool,
++    leading: Option<Leading<'a>>,
++    body_role: Role,
++    body_name: &'a str,
++    body_message: M,
++    body_menu: Option<bool>,
++    body_icon: Option<Glyph>,
++    secondary: Option<Secondary<'a, M>>,
++    remove_key: Option<M>,
++}
++
++impl<'a, M: Clone> Chip<'a, M> {
++    fn new(options: ChipOptions<'a>, content: ChipContent<'a, M>) -> Self {
++        let body_name = options
++            .accessible_name
++            .filter(|name| !name.trim().is_empty())
++            .unwrap_or(options.label);
++        let plain = |kind, style, leading: Option<ChipLeading<'a>>, body_message| Self {
++            kind,
++            style,
++            selected: false,
++            leading: leading.map(Leading::Art),
++            body_role: Role::Button,
++            body_name,
++            body_message,
++            body_menu: None,
++            body_icon: None,
++            secondary: None,
++            remove_key: None,
++        };
++        match content {
++            ChipContent::Assist {
++                style,
++                leading,
++                message,
++            } => plain(ChipKind::Assist, style, leading, message),
++            ChipContent::Suggestion {
++                style,
++                leading,
++                message,
++            } => plain(ChipKind::Suggestion, style, leading, message),
++            ChipContent::Filter {
++                style,
++                leading,
++                selected,
++                show_checkmark,
++                message,
++                trailing,
++            } => {
++                let mut chip = plain(ChipKind::Filter, style, leading, message);
++                chip.selected = selected;
++                chip.body_role = Role::Checkbox;
++                if selected && show_checkmark {
++                    chip.leading = Some(Leading::Check);
++                }
++                match trailing {
++                    Some(ChipTrailing::Remove(remove)) => {
++                        chip.secondary = Some(Secondary {
++                            name: remove.accessible_name,
++                            expanded: None,
++                            message: remove.message,
++                        });
++                    }
++                    Some(ChipTrailing::Menu {
++                        accessible_name,
++                        expanded,
++                        message,
++                    }) => {
++                        chip.secondary = Some(Secondary {
++                            name: accessible_name,
++                            expanded: Some(expanded),
++                            message,
++                        });
++                    }
++                    Some(ChipTrailing::MenuOnBody { expanded }) => {
++                        chip.body_role = Role::Button;
++                        chip.body_menu = Some(expanded);
++                        chip.body_icon = Some(Glyph::Menu);
++                    }
++                    None => {}
++                }
++                chip
++            }
++            ChipContent::Input {
++                leading,
++                selected,
++                body,
++                remove,
++            } => {
++                let remove_key = Some(remove.message.clone());
++                let mut chip = if let Some(body) = body {
++                    let mut chip = plain(ChipKind::Input, ChipStyle::Flat, leading, body);
++                    chip.secondary = Some(Secondary {
++                        name: remove.accessible_name,
++                        expanded: None,
++                        message: remove.message,
++                    });
++                    chip
++                } else {
++                    let mut chip = plain(ChipKind::Input, ChipStyle::Flat, leading, remove.message);
++                    chip.body_name = remove.accessible_name;
++                    chip.body_icon = Some(Glyph::Remove);
++                    chip
++                };
++                chip.selected = selected;
++                chip.remove_key = remove_key;
++                chip
++            }
++        }
++    }
++
++    fn valid(&self, options: ChipOptions<'_>) -> bool {
++        !options.id.trim().is_empty()
++            && !options.label.trim().is_empty()
++            && !self.body_name.trim().is_empty()
++            && self
++                .secondary
++                .as_ref()
++                .is_none_or(|part| !part.name.trim().is_empty())
++            && (matches!(self.kind, ChipKind::Input)
++                || !matches!(self.leading, Some(Leading::Art(ChipLeading::Avatar(_)))))
++    }
++}
++
++#[derive(Clone, Copy, Debug)]
++struct Geometry {
++    start: f32,
++    end: f32,
++    min_body: f32,
++    max_body: f32,
++    face_extension: f32,
++}
++
++impl Geometry {
++    fn new<M>(chip: &Chip<'_, M>, typography: &TextStyle, max_width: f32) -> Option<Self> {
++        let start = match chip.leading {
++            Some(Leading::Art(ChipLeading::Avatar(_))) => 4.,
++            Some(_) => ICON_EDGE,
++            None if matches!(chip.kind, ChipKind::Input) => 12.,
++            None => BARE_EDGE,
++        };
++        let split = chip.secondary.is_some();
++        let end = if split {
++            0.
++        } else if chip.body_icon.is_some() {
++            ICON_EDGE
++        } else {
++            BARE_EDGE
++        };
++        let leading_width = chip.leading.map_or(0., |leading| leading.size() + GAP);
++        let trailing_width = chip.body_icon.map_or(0., |_| ICON + GAP);
++        let label_space = typography.font_size;
++        let min_body = (start + leading_width + label_space + trailing_width + end).max(if split {
++            MIN_SPLIT_PAINT - TAIL_PAINT
++        } else {
++            TOUCH
++        });
++        let max_body = max_width - if split { TOUCH } else { 0. };
++        (max_body.is_finite() && max_body >= min_body).then_some(Self {
++            start,
++            end,
++            min_body,
++            max_body,
++            face_extension: if split { TAIL_PAINT } else { 0. },
++        })
++    }
++}
++
++struct Palette {
++    background: Color,
++    border: Color,
++    focused_border: Color,
++    label: Color,
++    leading: Color,
++    trailing: Color,
++    layer: Color,
++    pressed: Color,
++    elevation: Elevation,
++    hover_elevation: Elevation,
++}
++
++impl Palette {
++    fn new<M>(theme: &Theme, chip: &Chip<'_, M>, disabled: bool) -> Self {
++        let c = &theme.colors;
++        let assist = matches!(chip.kind, ChipKind::Assist);
++        let filter = matches!(chip.kind, ChipKind::Filter);
++        let input = matches!(chip.kind, ChipKind::Input);
++        let elevated = chip.style == ChipStyle::Elevated;
++        let selected = chip.selected;
++        let label = if selected {
++            c.on_secondary_container
++        } else if assist {
++            c.on_surface
++        } else {
++            c.on_surface_variant
++        };
++        let leading = if selected && filter {
++            c.on_secondary_container
++        } else if input && !selected {
++            c.on_surface_variant
++        } else {
++            c.primary
++        };
++        let filled = selected || elevated;
++        let background = if selected {
++            c.secondary_container
++        } else if elevated {
++            c.surface_container_low
++        } else {
++            Color::TRANSPARENT
++        };
++        let base = if elevated {
++            Elevation::Level1
++        } else {
++            Elevation::Level0
++        };
++        let hover = if elevated {
++            Elevation::Level2
++        } else if filter && selected {
++            Elevation::Level1
++        } else {
++            base
++        };
++        if disabled {
++            let ink = alpha(c.on_surface, DISABLED_CONTENT);
++            let surface = alpha(c.on_surface, DISABLED_CONTAINER);
++            return Self {
++                background: if filled { surface } else { Color::TRANSPARENT },
++                border: if filled { Color::TRANSPARENT } else { surface },
++                focused_border: Color::TRANSPARENT,
++                label: ink,
++                leading: ink,
++                trailing: ink,
++                layer: Color::TRANSPARENT,
++                pressed: Color::TRANSPARENT,
++                elevation: Elevation::Level0,
++                hover_elevation: Elevation::Level0,
++            };
++        }
++        Self {
++            background,
++            border: if filled {
++                Color::TRANSPARENT
++            } else {
++                c.outline_variant
++            },
++            focused_border: if filled { Color::TRANSPARENT } else { label },
++            label,
++            leading,
++            trailing: if selected {
++                c.on_secondary_container
++            } else {
++                c.on_surface_variant
++            },
++            layer: label,
++            pressed: if filter {
++                if selected {
++                    c.on_surface_variant
++                } else {
++                    c.on_secondary_container
++                }
++            } else {
++                label
++            },
++            elevation: base,
++            hover_elevation: hover,
++        }
++    }
++}
++
++impl Theme {
++    /// Build a standard Material 3 chip. Returns `None` if a name is blank,
++    /// the artwork is unsupported, or the requested width cannot fit its
++    /// fixed artwork, label, and non-overlapping action targets.
++    ///
++    /// The outer ID is `{id}-chip`. The body or sole action uses `id`.
++    /// A separate trailing action uses `{id}-remove` or `{id}-menu`.
++    pub fn chip_with_options<M: Clone + 'static>(
++        &self,
++        options: ChipOptions<'_>,
++        content: ChipContent<'_, M>,
++    ) -> Option<View<M>> {
++        self.build_chip(options, content, false)
++    }
++
++    /// Build the same chip with a passive grid cell around each action.
++    /// Place it under a named grid's row. The row owner handles directional
++    /// navigation. Cell IDs append `-cell` to the unchanged action IDs.
++    pub fn chip_in_grid<M: Clone + 'static>(
++        &self,
++        options: ChipOptions<'_>,
++        content: ChipContent<'_, M>,
++    ) -> Option<View<M>> {
++        self.build_chip(options, content, true)
++    }
++
++    fn build_chip<M: Clone + 'static>(
++        &self,
++        options: ChipOptions<'_>,
++        content: ChipContent<'_, M>,
++        grid: bool,
++    ) -> Option<View<M>> {
++        let chip = Chip::new(options, content);
++        if !chip.valid(options) {
++            return None;
++        }
++        let scale = options.text_scale;
++        let font = typography::LABEL_LARGE.scaled(if scale > 0. && (20. * scale).is_finite() {
++            scale
++        } else {
++            1.
++        });
++        let geometry = Geometry::new(&chip, &font, options.max_width)?;
++        let palette = Palette::new(self, &chip, options.disabled);
++        let face = self.chip_face(options, &geometry, &palette);
++        let content = body_content(options, &chip, &geometry, font, &palette);
++        let inset = |outset: f32| {
++            logical_insets(
++                options.direction,
++                -outset,
++                -geometry.face_extension - outset,
++                VERTICAL_SLACK - outset,
++            )
++        };
++        let focus = focus_ring(
++            format!("{}-focus", options.id),
++            inset(FOCUS_OUTSET),
++            Corners::all(8. + FOCUS_OUTSET),
++            self.colors.secondary,
++            FOCUS_STROKE,
++        );
++        let border = (palette.focused_border.3 > 0).then(|| {
++            focus_ring(
++                format!("{}-focused-border", options.id),
++                inset(0.),
++                shape::SMALL,
++                palette.focused_border,
++                1.,
++            )
++        });
++        let mut body_style = Style::column();
++        body_style.min_width = geometry.min_body;
++        body_style.max_width = Length::Px(geometry.max_body);
++        body_style.min_height = TOUCH;
++        let mut body = Node::new(chip.body_role, chip.body_name)
++            .id(options.id)
++            .press_ripple_to(format!("{}-face", options.id))
++            .styled(body_style);
++        if chip.body_role == Role::Checkbox {
++            body = body.checked(chip.selected);
++        } else if chip.body_menu.is_some()
++            || matches!(chip.kind, ChipKind::Input) && chip.secondary.is_some()
++        {
++            body = body.selected(chip.selected);
++        }
++        let keyboard_removal = chip.remove_key.is_some();
++        let second = chip
++            .secondary
++            .map(|part| self.chip_secondary(options, part, &palette, keyboard_removal, grid));
++        let body = bind_action(
++            body,
++            options.disabled,
++            chip.body_menu,
++            chip.body_message,
++            chip.remove_key,
++        )
++        .children(
++            [
++                face,
++                fixed_space(0., VERTICAL_SLACK),
++                content,
++                fixed_space(0., VERTICAL_SLACK),
++                focus,
++            ]
++            .into_iter()
++            .chain(border),
++        );
++        let mut root_style = Style::row();
++        root_style.min_width = geometry.min_body + if second.is_some() { TOUCH } else { 0. };
++        root_style.max_width = Length::Px(options.max_width);
++        Some(
++            View::new(directed(
++                Node::new(Role::Group, "")
++                    .id(format!("{}-chip", options.id))
++                    .styled(root_style),
++                options.direction,
++            ))
++            .children(std::iter::once(grid_cell(options.id, body, grid)).chain(second)),
++        )
++    }
++
++    fn chip_face<M>(
++        &self,
++        options: ChipOptions<'_>,
++        geometry: &Geometry,
++        palette: &Palette,
++    ) -> View<M> {
++        let style = Style::row()
++            .absolute(logical_insets(
++                options.direction,
++                0.,
++                -geometry.face_extension,
++                VERTICAL_SLACK,
++            ))
++            .corners(shape::SMALL)
++            .background(palette.background)
++            .border(1., palette.border)
++            .state_layer(palette.layer)
++            .transition(STATE_CHANGE);
++        View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-face", options.id))
++                .styled(style)
++                .box_shadows(self.elevation(palette.elevation))
++                .interaction_box_shadows(Some(self.elevation(palette.hover_elevation)), None, None)
++                .interaction_box_shadows_from_parent()
++                .state_layer_alphas(HOVER, ACTIVE, ACTIVE)
++                .press_state_layer_ink(palette.pressed),
++        )
++        .without_interaction(None)
++    }
++
++    fn chip_secondary<M: Clone + 'static>(
++        &self,
++        options: ChipOptions<'_>,
++        part: Secondary<'_, M>,
++        palette: &Palette,
++        keyboard_removal: bool,
++        grid: bool,
++    ) -> View<M> {
++        let glyph_kind = part.glyph();
++        let suffix = if part.expanded.is_some() {
++            "menu"
++        } else {
++            "remove"
++        };
++        let id = format!("{}-{suffix}", options.id);
++        let style = |size: f32| {
++            let start = GAP + (ICON - size) / 2.;
++            let mut style = Style::column()
++                .width(Length::Px(size))
++                .height(Length::Px(size));
++            let inset = if options.direction == LayoutDirection::LeftToRight {
++                Insets {
++                    left: Length::Px(start),
++                    ..Default::default()
++                }
++            } else {
++                Insets {
++                    right: Length::Px(start),
++                    ..Default::default()
++                }
++            };
++            style = style.absolute(inset);
++            style
++        };
++        let glyph = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{id}-icon"))
++                .styled(style(ICON))
++                .fill_contour(glyph(glyph_kind, palette.trailing)),
++        )
++        .without_interaction(None);
++        let face = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{id}-face"))
++                .styled(
++                    style(24.)
++                        .corners(shape::FULL)
++                        .state_layer(palette.trailing),
++                )
++                .state_layer_alphas(HOVER, ACTIVE, ACTIVE)
++                .press_state_layer_ink(palette.trailing),
++        )
++        .without_interaction(None);
++        let ring = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{id}-focus"))
++                .styled(style(ICON + 2. * FOCUS_OUTSET).corners(shape::FULL))
++                .focus_outline_from_parent()
++                .focus_color(self.colors.secondary)
++                .focus_outline_width(FOCUS_STROKE),
++        )
++        .without_interaction(None);
++        let mut hit = Style::row().align(Align::Center).width(Length::Px(TOUCH));
++        hit.min_width = TOUCH;
++        hit.min_height = TOUCH;
++        let remove_key = keyboard_removal.then(|| part.message.clone());
++        let action = bind_action(
++            Node::new(Role::Button, part.name)
++                .id(&id)
++                .press_ripple_to(format!("{id}-face"))
++                .styled(hit),
++            options.disabled,
++            part.expanded,
++            part.message,
++            remove_key,
++        )
++        .children([face, glyph, ring]);
++        grid_cell(&id, action, grid)
++    }
++}
++
++fn grid_cell<M>(id: &str, action: View<M>, grid: bool) -> View<M> {
++    if grid {
++        View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{id}-cell"))
++                .grid_role(GridRole::GridCell)
++                .styled(Style::row()),
++        )
++        .children([action])
++    } else {
++        action
++    }
++}
++
++fn body_content<M>(
++    options: ChipOptions<'_>,
++    chip: &Chip<'_, M>,
++    geometry: &Geometry,
++    font: TextStyle,
++    palette: &Palette,
++) -> View<M> {
++    let label = View::new(
++        Node::new(Role::Text, "")
++            .id(format!("{}-label", options.id))
++            .text(options.label)
++            .text_scaling(TextScaling::Fixed)
++            .text_alignment(if options.direction == LayoutDirection::LeftToRight {
++                TextAlignment::Left
++            } else {
++                TextAlignment::Right
++            })
++            .styled(
++                Style::column()
++                    .with_text_style(font)
++                    .foreground(palette.label),
++            ),
++    );
++    let leading = chip
++        .leading
++        .map(|icon| leading_view(options, icon, palette.leading));
++    let trailing = chip
++        .body_icon
++        .map(|icon| glyph_view(format!("{}-trailing", options.id), icon, palette.trailing));
++    View::new(Node::new(Role::Group, "").measured_group(ContentsLayout {
++        geometry: *geometry,
++        direction: options.direction,
++        leading_size: chip.leading.map(Leading::size),
++        trailing: chip.body_icon.is_some(),
++    }))
++    .children(std::iter::once(label).chain(leading).chain(trailing))
++    .without_interaction(None)
++}
++
++#[derive(Debug)]
++struct ContentsLayout {
++    geometry: Geometry,
++    direction: LayoutDirection,
++    leading_size: Option<f32>,
++    trailing: bool,
++}
++
++impl ContentsLayout {
++    fn label_start(&self) -> f32 {
++        self.geometry.start + self.leading_size.map_or(0., |size| size + GAP)
++    }
++
++    fn overhead(&self) -> f32 {
++        self.label_start() + self.geometry.end + if self.trailing { GAP + ICON } else { 0. }
++    }
++
++    fn label_height(&self, label: &Node, width: f32, fonts: &mut dyn TextMeasurer) -> f32 {
++        fonts
++            .measure_text(
++                label.text_value().unwrap_or_default(),
++                &label.style().text_style(),
++                Some(width),
++            )
++            .1
++    }
++}
++
++impl MeasuredGroupLayout for ContentsLayout {
++    fn measure(
++        &self,
++        children: &[&Node],
++        available_width: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let label = children[0];
++        let width_cap = available_width
++            .unwrap_or(self.geometry.max_body)
++            .clamp(self.geometry.min_body, self.geometry.max_body);
++        let text_width = fonts
++            .measure_text(
++                label.text_value().unwrap_or_default(),
++                &label.style().text_style(),
++                None,
++            )
++            .0;
++        let overhead = self.overhead();
++        let width = (text_width + overhead)
++            .clamp(self.geometry.min_body, width_cap)
++            .ceil()
++            .min(width_cap);
++        let height = self.label_height(label, width - overhead, fonts);
++        (width, HEIGHT.max(height + 12.))
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let label_width = (width - self.overhead()).max(0.);
++        let label_height = self.label_height(children[0], label_width, fonts);
++        let rect = |start, w, h| {
++            let x = if self.direction == LayoutDirection::LeftToRight {
++                start
++            } else {
++                width - start - w
++            };
++            Rect::new(x, (height - h) / 2., w, h)
++        };
++        std::iter::once(rect(self.label_start(), label_width, label_height))
++            .chain(
++                self.leading_size
++                    .map(|size| rect(self.geometry.start, size, size)),
++            )
++            .chain(
++                self.trailing
++                    .then(|| rect(width - self.geometry.end - ICON, ICON, ICON)),
++            )
++            .collect()
++    }
++}
++
++fn bind_action<M: Clone + 'static>(
++    mut node: Node,
++    disabled: bool,
++    menu: Option<bool>,
++    message: M,
++    remove: Option<M>,
++) -> View<M> {
++    if let Some(expanded) = menu {
++        node = node.menu_expanded(expanded);
++    }
++    let view = View::new(node.disabled(disabled).focus_color(Color::TRANSPARENT));
++    if disabled {
++        return view;
++    }
++    let view = view
++        .on_press(message)
++        .accessible_activation()
++        .accessibility_scroll_into_view()
++        .focus_on_pointer_release()
++        .protect_composition_on_press()
++        .suppress_repeated_activation()
++        .cursor(CursorStyle::Pointer);
++    if let Some(remove) = remove {
++        view.on_key(move |press| {
++            (matches!(press.key, Key::Backspace | Key::Delete)
++                && press.modifiers.is_empty()
++                && !press.repeat)
++                .then(|| remove.clone())
++        })
++    } else {
++        view
++    }
++}
++
++fn leading_view<M>(options: ChipOptions<'_>, leading: Leading<'_>, color: Color) -> View<M> {
++    let size = leading.size();
++    let id = format!("{}-leading", options.id);
++    let style = fixed_style(size, size);
++    let node = Node::new(Role::Group, "").id(id).styled(style.clone());
++    let node = match leading {
++        Leading::Check => node.fill_contour(glyph(Glyph::Check, color)),
++        Leading::Art(ChipLeading::Icon(icon)) => {
++            node.fill_contour(icon.contour_dp(size, color).expect("validated icon"))
++        }
++        Leading::Art(ChipLeading::Image(image) | ChipLeading::Avatar(image)) => {
++            let style = if size == AVATAR {
++                style.corners(shape::FULL)
++            } else {
++                style
++            };
++            node.styled(style).raster_image(if options.disabled {
++                dimmed(image)
++            } else {
++                image.clone()
++            })
++        }
++    };
++    View::new(node)
++}
++
++fn glyph_view<M>(id: String, icon: Glyph, color: Color) -> View<M> {
++    View::new(
++        Node::new(Role::Group, "")
++            .id(id)
++            .styled(fixed_style(ICON, ICON))
++            .fill_contour(glyph(icon, color)),
++    )
++}
++
++fn glyph(icon: Glyph, color: Color) -> FillContour {
++    let check = [
++        [3.0, 9.0],
++        [4.3, 7.7],
++        [7.3, 10.7],
++        [14.4, 3.7],
++        [15.7, 5.0],
++        [7.3, 13.4],
++    ];
++    let remove = [
++        [5., 3.6],
++        [9., 7.6],
++        [13., 3.6],
++        [14.4, 5.],
++        [10.4, 9.],
++        [14.4, 13.],
++        [13., 14.4],
++        [9., 10.4],
++        [5., 14.4],
++        [3.6, 13.],
++        [7.6, 9.],
++        [3.6, 5.],
++    ];
++    match icon {
++        Glyph::Check => FillContour::new(check, color),
++        Glyph::Remove => FillContour::new(remove, color),
++        Glyph::Menu => chevron_contour(ICON, 0., color),
++    }
++    .expect("valid chip icon")
++}
++
++fn dimmed(image: &RasterImage) -> RasterImage {
++    let mut pixels = image.rgba8().to_vec();
++    for pixel in pixels.chunks_exact_mut(4) {
++        pixel[3] = ((u16::from(pixel[3]) * u16::from(DISABLED_CONTENT) + 127) / 255) as u8;
++    }
++    RasterImage::new(image.width(), image.height(), pixels).expect("same image size")
++}
++
++fn focus_ring<M>(id: String, inset: Insets, corners: Corners, color: Color, width: f32) -> View<M> {
++    View::new(
++        Node::new(Role::Group, "")
++            .id(id)
++            .styled(Style::column().absolute(inset).corners(corners))
++            .focus_outline_from_parent()
++            .focus_color(color)
++            .focus_outline_width(width),
++    )
++    .without_interaction(None)
++}
++
++fn fixed_style(width: f32, height: f32) -> Style {
++    let mut style = Style::column()
++        .width(Length::Px(width))
++        .height(Length::Px(height));
++    style.min_width = width;
++    style.min_height = height;
++    style
++}
++
++fn fixed_space<M>(width: f32, height: f32) -> View<M> {
++    View::new(Node::new(Role::Group, "").styled(fixed_style(width, height)))
++        .without_interaction(None)
++}
++
++fn logical_insets(direction: LayoutDirection, start: f32, end: f32, y: f32) -> Insets {
++    let (left, right) = if direction == LayoutDirection::LeftToRight {
++        (start, end)
++    } else {
++        (end, start)
++    };
++    Insets {
++        left: Length::Px(left),
++        right: Length::Px(right),
++        top: Length::Px(y),
++        bottom: Length::Px(y),
++    }
++}
++
++fn directed(node: Node, direction: LayoutDirection) -> Node {
++    if direction == LayoutDirection::RightToLeft {
++        node.reverse_row()
++    } else {
++        node
++    }
++}
++
++fn alpha(Color(red, green, blue, original): Color, opacity: u8) -> Color {
++    Color(
++        red,
++        green,
++        blue,
++        ((u16::from(original) * u16::from(opacity) + 127) / 255) as u8,
++    )
++}
+diff --git a/crates/surface-material/src/chip_group.rs b/crates/surface-material/src/chip_group.rs
+new file mode 100644
+index 0000000..645475d
+--- /dev/null
++++ b/crates/surface-material/src/chip_group.rs
+@@ -0,0 +1,164 @@
++use std::ops::Range;
++
++use surface::{Align, GridRole, Length, Node, Role, Style};
++use surface_app::{AnimationFrame, AnimationUpdate, View};
++
++use crate::{shape::LayoutDirection, Theme};
++
++const GAP: f32 = 8.;
++
++/// Keep the measured rows of a set of Material chips. Use one instance per
++/// set. Child IDs are the stable IDs passed to [Theme::chip_in_grid].
++#[derive(Default)]
++pub struct ChipGridLayout {
++    width: f32,
++    text_scale: f32,
++    members: Vec<String>,
++    rows: Vec<Range<usize>>,
++}
++
++impl ChipGridLayout {
++    /// The current row ranges. Start new or resized content with one chip
++    /// per row so it stays reachable while the runtime measures its width.
++    pub fn rows(&self, width: f32, text_scale: f32, members: &[&str]) -> Vec<Range<usize>> {
++        if self.matches(width, text_scale, members) {
++            self.rows.clone()
++        } else {
++            (0..members.len()).map(|index| index..index + 1).collect()
++        }
++    }
++
++    /// Pack the measured chip widths in author order. Return the update
++    /// from the application frame hook so both paint and grid rows change
++    /// together. Give each chip the available width as its width cap.
++    pub fn advance(
++        &mut self,
++        frame: &AnimationFrame<'_>,
++        width: f32,
++        text_scale: f32,
++        members: &[&str],
++    ) -> AnimationUpdate {
++        if members.is_empty() || !width.is_finite() || width <= 0. {
++            return AnimationUpdate::default();
++        }
++        let Some(layout) = frame.layout else {
++            return AnimationUpdate {
++                request_next: true,
++                rebuild: false,
++            };
++        };
++        let widths: Option<Vec<_>> = members
++            .iter()
++            .map(|member| {
++                let id = frame.dom.by_id(&format!("{member}-chip"))?;
++                let measured = layout.nodes.get(id.index())?.bounds.width;
++                (measured.is_finite() && measured > 0.).then_some(measured)
++            })
++            .collect();
++        let Some(widths) = widths else {
++            return AnimationUpdate::default();
++        };
++        let rows = pack(width, &widths);
++        let changed = if self.matches(width, text_scale, members) {
++            self.rows != rows
++        } else {
++            rows.len() != members.len()
++        };
++        self.width = width;
++        self.text_scale = text_scale;
++        self.members = members.iter().map(|member| (*member).to_owned()).collect();
++        self.rows = rows;
++        AnimationUpdate {
++            rebuild: changed,
++            request_next: false,
++        }
++    }
++
++    fn matches(&self, width: f32, text_scale: f32, members: &[&str]) -> bool {
++        self.width == width
++            && self.text_scale == text_scale
++            && self
++                .members
++                .iter()
++                .map(String::as_str)
++                .eq(members.iter().copied())
++    }
++}
++
++fn pack(width: f32, chips: &[f32]) -> Vec<Range<usize>> {
++    let mut result = Vec::new();
++    let mut start = 0;
++    let mut used = 0.;
++    for (index, &chip) in chips.iter().enumerate() {
++        let additional = if index == start { chip } else { GAP + chip };
++        if index > start && used + additional > width {
++            result.push(start..index);
++            start = index;
++            used = chip;
++        } else {
++            used += additional;
++        }
++    }
++    if start < chips.len() {
++        result.push(start..chips.len());
++    }
++    result
++}
++
++impl Theme {
++    /// Lay out named, ordered rows of chips. Each chip's actions get their
++    /// own grid cells when built with [Self::chip_in_grid]. Tab enters once.
++    /// Arrows move between the actual controls without invoking them.
++    pub fn chip_grid<M, Rows, Row>(
++        &self,
++        id: &str,
++        name: &str,
++        direction: LayoutDirection,
++        rows: Rows,
++    ) -> View<M>
++    where
++        Rows: IntoIterator<Item = Row>,
++        Row: IntoIterator<Item = View<M>>,
++    {
++        let rows = rows.into_iter().enumerate().map(|(index, children)| {
++            let node = Node::new(Role::Group, "")
++                .id(format!("{id}-row-{index}"))
++                .grid_role(GridRole::Row)
++                .styled(
++                    Style::row()
++                        .width(Length::Percent(1.))
++                        .align(Align::Center)
++                        .gap(GAP),
++                );
++            let node = if direction == LayoutDirection::RightToLeft {
++                node.reverse_row()
++            } else {
++                node
++            };
++            View::new(node).children(children)
++        });
++        View::new(
++            Node::new(Role::Group, name)
++                .id(id)
++                .grid_role(GridRole::Grid)
++                .styled(Style::column().width(Length::Percent(1.)).gap(GAP)),
++        )
++        .children(rows)
++        .roving_grid()
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::pack;
++
++    #[test]
++    fn rows_repack_with_the_actual_width_of_each_chip() {
++        let widths = &[92., 144., 76., 55.];
++        assert_eq!(pack(340., widths), [0..3, 3..4]);
++        assert_eq!(pack(250., widths), [0..2, 2..4]);
++        assert_eq!(pack(220., widths), [0..1, 1..2, 2..4]);
++        assert_eq!(pack(72., widths), [0..1, 1..2, 2..3, 3..4]);
++        assert!(pack(250., &[]).is_empty());
++    }
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 4d73434..1b1d7c7 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -17,6 +17,8 @@ mod carousel;
+ mod carousel_layout;
+ mod carousel_state;
+ mod checkbox;
++mod chip;
++mod chip_group;
+ mod command_menu;
+ mod components;
+ mod date_picker;
+@@ -94,6 +96,8 @@ pub use carousel::{CarouselItem, CarouselKind, CarouselOptions, CarouselOrientat
+ pub use carousel_layout::{CarouselLayout, CarouselSlot};
+ pub use carousel_state::{CarouselInput, CarouselState};
+ pub use checkbox::{CheckboxMotion, CheckboxOptions, CheckboxPose};
++pub use chip::{ChipContent, ChipLeading, ChipOptions, ChipRemove, ChipStyle, ChipTrailing};
++pub use chip_group::ChipGridLayout;
+ pub use command_menu::{
+     CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
+ };
+diff --git a/crates/surface-material/tests/material_chips.rs b/crates/surface-material/tests/material_chips.rs
+new file mode 100644
+index 0000000..8ed4969
+--- /dev/null
++++ b/crates/surface-material/tests/material_chips.rs
+@@ -0,0 +1,736 @@
++use surface::{
++    Align, Color, ExtendedDisplayList, ExtendedPaintOp, GridRole, Node, PaintOp, RasterImage, Rect,
++    Role, Style,
++};
++use surface_app::{
++    AccessibilityActivationResult, Application, Event, Key, KeyPress, Modifiers, Runtime, View,
++};
++use surface_material::{
++    shape::LayoutDirection, ChipContent, ChipKind, ChipLeading, ChipOptions, ChipRemove, ChipStyle,
++    ChipTrailing, ChoiceState, Theme, VectorIcon,
++};
++use surface_wgpu::TextSystem;
++
++#[derive(Clone, Copy, Debug, PartialEq, Eq)]
++enum Action {
++    Body,
++    Remove,
++    Open,
++    Next,
++    Select(bool),
++}
++
++#[derive(Clone, Copy)]
++enum Kind {
++    Assist,
++    Filter,
++    Input,
++    Suggestion,
++    Legacy,
++}
++
++struct Model {
++    kind: Kind,
++    style: ChipStyle,
++    selected: bool,
++    disabled: bool,
++    split: bool,
++    compact_menu: bool,
++    leading: bool,
++    rtl: bool,
++    dark: bool,
++    enlarged: bool,
++    max_width: f32,
++    grid: bool,
++    hide_on_remove: bool,
++    requests: Vec<Action>,
++    asset: RasterImage,
++    icon: VectorIcon,
++}
++
++impl Default for Model {
++    fn default() -> Self {
++        Self {
++            kind: Kind::Assist,
++            style: ChipStyle::Flat,
++            selected: false,
++            disabled: false,
++            split: false,
++            compact_menu: false,
++            leading: false,
++            rtl: false,
++            dark: false,
++            enlarged: false,
++            max_width: 240.,
++            grid: false,
++            hide_on_remove: false,
++            requests: vec![],
++            asset: RasterImage::new(2, 1, [30, 20, 10, 255, 60, 50, 40, 50]).unwrap(),
++            icon: VectorIcon::new([[3., 4.], [20., 4.], [13., 22.]]).unwrap(),
++        }
++    }
++}
++
++impl Model {
++    fn theme(&self) -> Theme {
++        if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++
++    fn options(&self, max_width: f32) -> ChipOptions<'static> {
++        ChipOptions {
++            id: "chip",
++            label: if self.enlarged {
++                "將這個專案的訊息傳送給選定的常用聯絡人"
++            } else {
++                "Mina"
++            },
++            accessible_name: Some("聯絡人"),
++            direction: if self.rtl {
++                LayoutDirection::RightToLeft
++            } else {
++                LayoutDirection::LeftToRight
++            },
++            text_scale: if self.enlarged { 2. } else { 1. },
++            max_width,
++            disabled: self.disabled,
++        }
++    }
++
++    fn content(&self) -> ChipContent<'_, Action> {
++        let leading = self.leading.then_some(ChipLeading::Icon(&self.icon));
++        let remove = ChipRemove {
++            accessible_name: "移除聯絡人",
++            message: Action::Remove,
++        };
++        match self.kind {
++            Kind::Assist => ChipContent::Assist {
++                style: self.style,
++                leading,
++                message: Action::Body,
++            },
++            Kind::Suggestion => ChipContent::Suggestion {
++                style: self.style,
++                leading,
++                message: Action::Body,
++            },
++            Kind::Filter => ChipContent::Filter {
++                style: self.style,
++                leading,
++                selected: self.selected,
++                show_checkmark: true,
++                message: Action::Body,
++                trailing: if self.compact_menu {
++                    Some(ChipTrailing::MenuOnBody {
++                        expanded: self.selected,
++                    })
++                } else if self.split {
++                    Some(ChipTrailing::Menu {
++                        accessible_name: "更多選項",
++                        expanded: self.selected,
++                        message: Action::Open,
++                    })
++                } else {
++                    None
++                },
++            },
++            Kind::Input => ChipContent::Input {
++                leading: self.leading.then_some(ChipLeading::Avatar(&self.asset)),
++                selected: self.selected,
++                body: self.split.then_some(Action::Body),
++                remove,
++            },
++            Kind::Legacy => unreachable!(),
++        }
++    }
++}
++
++impl Application for Model {
++    type Message = Action;
++
++    fn update(&mut self, message: Action) {
++        if let Action::Select(value) = message {
++            self.selected = value;
++        } else {
++            self.requests.push(message);
++        }
++    }
++
++    fn view(&self) -> View<Action> {
++        let theme = self.theme();
++        let chip = if self.hide_on_remove && self.requests.contains(&Action::Remove) {
++            None
++        } else if matches!(self.kind, Kind::Legacy) {
++            Some(theme.chip(
++                "chip",
++                "Mina",
++                ChipKind::Input,
++                ChoiceState::default(),
++                Action::Body,
++                Some(Action::Remove),
++            ))
++        } else {
++            let options = self.options(self.max_width);
++            let chip = if self.grid {
++                theme.chip_in_grid(options, self.content())
++            } else {
++                theme.chip_with_options(options, self.content())
++            };
++            chip.map(|view| {
++                let view = view.restore_focus_in_subtree_on_removal("next");
++                if self.grid {
++                    let row = View::new(
++                        Node::new(Role::Group, "")
++                            .id("row")
++                            .grid_role(GridRole::Row)
++                            .styled(Style::row()),
++                    )
++                    .children([view]);
++                    View::new(
++                        Node::new(Role::Group, "Contacts")
++                            .id("grid")
++                            .grid_role(GridRole::Grid),
++                    )
++                    .children([row])
++                } else {
++                    view
++                }
++            })
++        };
++        View::new(
++            Node::new(Role::Window, "Chips")
++                .styled(Style::column().padding(20.).gap(12.).align(Align::Start)),
++        )
++        .children(
++            chip.into_iter()
++                .chain([theme.button("next", "Next", Action::Next)]),
++        )
++    }
++}
++
++fn bounds(runtime: &Runtime<Model>, id: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++}
++
++fn edge(rect: Rect) -> f32 {
++    rect.x + rect.width
++}
++
++fn paint(runtime: &mut Runtime<Model>, text: &mut TextSystem) -> ExtendedDisplayList {
++    runtime.render_extended(320., 480., text).unwrap()
++}
++
++fn shape(paint: &ExtendedDisplayList, area: Rect, ink: Color) -> bool {
++    paint.ops().iter().any(|op| matches!(op, ExtendedPaintOp::Legacy(PaintOp::Shape { rect, color, .. } | PaintOp::Quad { rect, color, .. }) if *rect == area && *color == ink))
++}
++
++fn stroke(paint: &ExtendedDisplayList, area: Rect, ink: Color, thickness: f32) -> bool {
++    paint.ops().iter().any(|op| matches!(op, ExtendedPaintOp::Legacy(PaintOp::ShapeStroke { rect, color, width, .. } | PaintOp::Stroke { rect, color, width, .. }) if *rect == area && *color == ink && *width == thickness))
++}
++
++fn tap(runtime: &mut Runtime<Model>, area: Rect, touch: bool) {
++    let x = area.x + 1.;
++    let y = area.y + 1.;
++    for event in [Event::PointerDown { x, y }, Event::PointerUp { x, y }] {
++        if touch {
++            runtime.dispatch_touch(event).unwrap();
++        } else {
++            runtime.dispatch(event).unwrap();
++        }
++    }
++}
++
++#[test]
++fn seven_variants_use_the_standard_face_ink_and_enabled_action() {
++    let mut text = TextSystem::default();
++    for (kind, style) in [
++        (Kind::Assist, ChipStyle::Flat),
++        (Kind::Assist, ChipStyle::Elevated),
++        (Kind::Filter, ChipStyle::Flat),
++        (Kind::Filter, ChipStyle::Elevated),
++        (Kind::Input, ChipStyle::Flat),
++        (Kind::Suggestion, ChipStyle::Flat),
++        (Kind::Suggestion, ChipStyle::Elevated),
++    ] {
++        for dark in [false, true] {
++            let mut runtime = Runtime::new(Model {
++                kind,
++                style,
++                dark,
++                leading: !matches!(kind, Kind::Input),
++                ..Model::default()
++            })
++            .unwrap();
++            let list = paint(&mut runtime, &mut text);
++            let colors = runtime.app().theme().colors;
++            let face = bounds(&runtime, "chip-face");
++            let hit = bounds(&runtime, "chip");
++            let label = bounds(&runtime, "chip-label");
++            let frame = runtime.accessibility_frame().unwrap();
++            let action = runtime.dom().by_id("chip").unwrap();
++            assert_eq!((face.height, hit.height), (32., 48.));
++            assert!(hit.width >= 48.);
++            assert_eq!(face.y - hit.y, 8.);
++            assert_eq!(frame.children(action).count(), 0);
++            assert!(frame.activation_target(action).is_some());
++            let action = frame.node(action).unwrap().node;
++            assert_eq!(
++                action.role(),
++                if matches!(kind, Kind::Filter) {
++                    Role::Checkbox
++                } else {
++                    Role::Button
++                }
++            );
++            assert_eq!(
++                action.is_checked(),
++                matches!(kind, Kind::Filter).then_some(false)
++            );
++            assert_eq!(action.is_selected(), None);
++            assert_eq!(
++                action.name(),
++                if matches!(kind, Kind::Input) {
++                    "移除聯絡人"
++                } else {
++                    "聯絡人"
++                }
++            );
++            if style == ChipStyle::Elevated {
++                assert!(shape(&list, face, colors.surface_container_low));
++            } else {
++                assert!(stroke(&list, face, colors.outline_variant, 1.));
++            }
++            let text_ink = if matches!(kind, Kind::Assist) {
++                colors.on_surface
++            } else {
++                colors.on_surface_variant
++            };
++            assert!(list.ops().iter().any(|op| match op {
++                ExtendedPaintOp::AlignedText(text) => matches!(text.run(), PaintOp::StyledText { rect, style, color, .. }
++                    if *rect == label && style.font_size == 14. && style.line_height == Some(20.) && style.weight == 500 && *color == text_ink),
++                _ => false,
++            }));
++        }
++    }
++}
++
++#[test]
++fn compact_split_input_has_separate_mirrored_targets_and_scaled_text() {
++    let mut text = TextSystem::default();
++    for rtl in [false, true] {
++        let mut runtime = Runtime::new(Model {
++            kind: Kind::Input,
++            split: true,
++            selected: true,
++            leading: true,
++            dark: true,
++            rtl,
++            enlarged: true,
++            ..Model::default()
++        })
++        .unwrap();
++        let list = paint(&mut runtime, &mut text);
++        let face = bounds(&runtime, "chip-face");
++        let hit = bounds(&runtime, "chip");
++        let remove = bounds(&runtime, "chip-remove");
++        let icon = bounds(&runtime, "chip-remove-icon");
++        let avatar = bounds(&runtime, "chip-leading");
++        let label = bounds(&runtime, "chip-label");
++        assert!(
++            face.height > 32. && label.height >= 80.,
++            "{face:?} {label:?}"
++        );
++        assert!(face.width >= 88. && face.width <= 240.);
++        assert!(hit.width >= 48. && hit.height >= 48.);
++        assert_eq!(remove.width, 48.);
++        assert_eq!(remove.height, hit.height);
++        assert_eq!(hit.intersect(remove).width, 0.);
++        assert_eq!((avatar.width, avatar.height), (24., 24.));
++        assert!(list.ops().iter().any(|op| matches!(op, ExtendedPaintOp::Raster(raster) if raster.rect() == avatar
++            && raster.corners().uniform() == Some(12.) && raster.image().shares_pixels(&runtime.app().asset))));
++        assert_eq!((icon.width, icon.height), (18., 18.));
++        assert_eq!(icon.y + icon.height / 2., hit.y + hit.height / 2.);
++        assert_eq!(label.intersect(hit), label);
++        if rtl {
++            assert_eq!(label.x - edge(icon), 8.);
++            assert_eq!(icon.x - face.x, 8.);
++            assert_eq!(edge(face) - edge(avatar), 4.);
++        } else {
++            assert_eq!(icon.x - edge(label), 8.);
++            assert_eq!(edge(face) - edge(icon), 8.);
++            assert_eq!(avatar.x - face.x, 4.);
++        }
++        assert!(shape(
++            &list,
++            face,
++            runtime.app().theme().colors.secondary_container
++        ));
++        let dom = runtime.dom();
++        let frame = runtime.accessibility_frame().unwrap();
++        let body = dom.by_id("chip").unwrap();
++        let close = dom.by_id("chip-remove").unwrap();
++        assert_eq!(
++            dom.get(body).unwrap().parent(),
++            dom.get(close).unwrap().parent()
++        );
++        assert_eq!(frame.node(close).unwrap().node.name(), "移除聯絡人");
++        assert!(
++            frame.activation_target(body).is_some() && frame.activation_target(close).is_some()
++        );
++        let body_point = (hit.x + 1., hit.y + 1.);
++        let close_point = (remove.x + 1., remove.y + 1.);
++        runtime
++            .dispatch(Event::PointerDown {
++                x: body_point.0,
++                y: body_point.1,
++            })
++            .unwrap();
++        runtime
++            .dispatch(Event::PointerUp {
++                x: close_point.0,
++                y: close_point.1,
++            })
++            .unwrap();
++        assert!(runtime.app().requests.is_empty());
++        tap(&mut runtime, hit, false);
++        assert_eq!(runtime.focused(), Some("chip"));
++        let focused = paint(&mut runtime, &mut text);
++        let ring = bounds(&runtime, "chip-focus");
++        assert!(stroke(
++            &focused,
++            ring,
++            runtime.app().theme().colors.secondary,
++            3.
++        ));
++        assert_eq!(ring.width - face.width, 10.);
++        tap(&mut runtime, remove, true);
++        assert_eq!(runtime.app().requests, [Action::Body, Action::Remove]);
++        assert_eq!(runtime.focused(), Some("chip-remove"));
++        let focused = paint(&mut runtime, &mut text);
++        assert!(stroke(
++            &focused,
++            bounds(&runtime, "chip-remove-focus"),
++            runtime.app().theme().colors.secondary,
++            3.
++        ));
++    }
++}
++
++#[test]
++fn focused_deletion_is_local_and_focus_recovers_after_controlled_removal() {
++    let mut runtime = Runtime::new(Model {
++        kind: Kind::Input,
++        split: true,
++        hide_on_remove: true,
++        ..Model::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    paint(&mut runtime, &mut text);
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("chip"));
++    let key = |key, repeat| KeyPress {
++        key,
++        repeat,
++        modifiers: Modifiers::default(),
++    };
++    assert!(!runtime.key(&key(Key::Delete, true)).unwrap());
++    assert!(runtime.key(&key(Key::Backspace, false)).unwrap());
++    assert_eq!(runtime.app().requests, [Action::Remove]);
++    paint(&mut runtime, &mut text);
++    assert_eq!(runtime.focused(), Some("next"));
++    assert!(!runtime.key(&key(Key::Delete, false)).unwrap());
++    assert_eq!(runtime.app().requests, [Action::Remove]);
++}
++
++#[test]
++fn disabled_choice_and_menu_keep_their_semantics_without_activation() {
++    let mut text = TextSystem::default();
++    let mut runtime = Runtime::new(Model {
++        kind: Kind::Filter,
++        style: ChipStyle::Elevated,
++        selected: true,
++        disabled: true,
++        split: true,
++        ..Model::default()
++    })
++    .unwrap();
++    let list = paint(&mut runtime, &mut text);
++    let colors = runtime.app().theme().colors;
++    assert!(shape(
++        &list,
++        bounds(&runtime, "chip-face"),
++        Color(
++            colors.on_surface.0,
++            colors.on_surface.1,
++            colors.on_surface.2,
++            31
++        )
++    ));
++    let frame = runtime.accessibility_frame().unwrap();
++    for (key, role) in [("chip", Role::Checkbox), ("chip-menu", Role::Button)] {
++        let id = runtime.dom().by_id(key).unwrap();
++        let node = frame.node(id).unwrap().node;
++        assert!(node.is_disabled());
++        assert_eq!(node.role(), role);
++        assert_eq!(
++            node.expanded_state(),
++            (role == Role::Button).then_some(true)
++        );
++        assert!(frame.activation_target(id).is_none());
++    }
++    for id in ["chip", "chip-menu"] {
++        let hit = bounds(&runtime, id);
++        tap(&mut runtime, hit, false);
++    }
++    assert!(runtime.app().requests.is_empty());
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("next"));
++    let mut runtime = Runtime::new(Model {
++        kind: Kind::Filter,
++        compact_menu: true,
++        ..Model::default()
++    })
++    .unwrap();
++    paint(&mut runtime, &mut text);
++    let body = runtime
++        .dom()
++        .get(runtime.dom().by_id("chip").unwrap())
++        .unwrap();
++    assert!(body.has_menu_popup());
++    assert_eq!(body.expanded_state(), Some(false));
++    assert!(runtime.dom().by_id("chip-menu").is_none());
++}
++
++#[test]
++fn validated_width_boundaries_and_legacy_geometry() {
++    let theme = Theme::light();
++    let split = Model {
++        kind: Kind::Input,
++        split: true,
++        ..Model::default()
++    };
++    assert!(theme
++        .chip_with_options(split.options(101.9), split.content())
++        .is_none());
++    assert!(theme
++        .chip_with_options(split.options(102.), split.content())
++        .is_some());
++    assert!(theme
++        .chip_with_options(split.options(f32::INFINITY), split.content())
++        .is_none());
++    let mut boundary = Runtime::new(Model {
++        max_width: 102.,
++        ..split
++    })
++    .unwrap();
++    paint(&mut boundary, &mut TextSystem::default());
++    assert_eq!(bounds(&boundary, "chip-chip").width, 102.);
++    assert_eq!(bounds(&boundary, "chip-face").width, 88.);
++    assert_eq!(bounds(&boundary, "chip").width, 54.);
++    assert_eq!(bounds(&boundary, "chip-remove").width, 48.);
++    let mut runtime = Runtime::new(Model {
++        kind: Kind::Legacy,
++        ..Model::default()
++    })
++    .unwrap();
++    paint(&mut runtime, &mut TextSystem::default());
++    let dom = runtime.dom();
++    let body = dom.by_id("chip").unwrap();
++    let remove = dom.get(dom.by_id("chip-remove").unwrap()).unwrap();
++    assert_eq!(dom.get(body).unwrap().is_selected(), Some(false));
++    assert_eq!(remove.parent(), Some(body));
++    assert_eq!(remove.name(), "Remove Mina");
++    assert_eq!(bounds(&runtime, "chip-remove").width, 24.);
++}
++
++#[test]
++fn grid_cells_wrap_each_action_without_changing_hits_or_face_ownership() {
++    for rtl in [false, true] {
++        let make = |grid| {
++            Runtime::new(Model {
++                kind: Kind::Input,
++                split: true,
++                leading: true,
++                enlarged: true,
++                rtl,
++                grid,
++                ..Model::default()
++            })
++            .unwrap()
++        };
++        let (mut grid, mut plain) = (make(true), make(false));
++        let mut text = TextSystem::default();
++        paint(&mut grid, &mut text);
++        paint(&mut plain, &mut text);
++        for action_id in ["chip", "chip-remove"] {
++            let cell = format!("{action_id}-cell");
++            let face = format!("{action_id}-face");
++            let dom = grid.dom();
++            let action = dom.by_id(action_id).unwrap();
++            let cell_id = dom.by_id(&cell).unwrap();
++            let frame = grid.accessibility_frame().unwrap();
++            assert_eq!(
++                frame.node(cell_id).unwrap().node.accessibility_grid_role(),
++                Some(GridRole::GridCell)
++            );
++            assert_eq!(frame.children(cell_id).collect::<Vec<_>>(), [action]);
++            assert_eq!(
++                dom.get(dom.by_id(&face).unwrap()).unwrap().parent(),
++                Some(action)
++            );
++            assert_eq!(bounds(&grid, action_id), bounds(&grid, &cell));
++            assert_eq!(bounds(&grid, action_id), bounds(&plain, action_id));
++            assert_eq!(bounds(&grid, &face), bounds(&plain, &face));
++        }
++    }
++}
++
++#[test]
++fn accepted_ripples_follow_the_two_faces_and_respect_reduce_motion() {
++    let mut runtime = Runtime::new(Model {
++        kind: Kind::Input,
++        split: true,
++        selected: true,
++        ..Model::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    let colors = runtime.app().theme().colors;
++    let wave_color = Color(
++        colors.on_secondary_container.0,
++        colors.on_secondary_container.1,
++        colors.on_secondary_container.2,
++        26,
++    );
++    for (index, id) in ["chip", "chip-remove"].into_iter().enumerate() {
++        let time = index as f64 * 200.;
++        runtime.set_time(time);
++        paint(&mut runtime, &mut text);
++        let hit = bounds(&runtime, id);
++        let face = bounds(&runtime, &format!("{id}-face"));
++        let (x, y) = (hit.x + 1., hit.y + 1.);
++        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++        paint(&mut runtime, &mut text);
++        runtime.set_time(time + 80.);
++        let list = paint(&mut runtime, &mut text);
++        let wave = list
++            .ops()
++            .iter()
++            .filter_map(|op| match op {
++                ExtendedPaintOp::FillPath(path) if path.color() == wave_color => Some(path),
++                _ => None,
++            })
++            .collect::<Vec<_>>();
++        assert_eq!(wave.len(), 1, "{id}");
++        for &[x, y] in wave[0].points() {
++            assert!(
++                x >= face.x && x <= edge(face) && y >= face.y && y <= face.y + face.height,
++                "{id} wave point ({x}, {y}) outside {face:?}"
++            );
++        }
++        runtime.cancel_pointer().unwrap();
++        assert!(runtime.app().requests.is_empty());
++    }
++    runtime.set_reduced_motion(true);
++    let x = bounds(&runtime, "chip").x + 1.;
++    let y = bounds(&runtime, "chip").y + 1.;
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    let list = paint(&mut runtime, &mut text);
++    assert!(shape(&list, bounds(&runtime, "chip-face"), wave_color));
++    assert!(!list
++        .ops()
++        .iter()
++        .any(|op| matches!(op, ExtendedPaintOp::FillPath(path) if path.color() == wave_color)));
++}
++
++#[test]
++fn filter_changes_only_when_authored_and_elevates_the_face_on_hover() {
++    let mut runtime = Runtime::new(Model {
++        kind: Kind::Filter,
++        style: ChipStyle::Elevated,
++        ..Model::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    let idle = paint(&mut runtime, &mut text);
++    let colors = runtime.app().theme().colors;
++    let face = bounds(&runtime, "chip-face");
++    let hit = bounds(&runtime, "chip");
++    let x = hit.x + 2.;
++    let y = hit.y + 2.;
++    let shadow = colors.shadow;
++    let shadow_edge = |list: &ExtendedDisplayList| {
++        list.ops()
++            .iter()
++            .filter_map(|op| match op {
++                ExtendedPaintOp::Legacy(
++                    PaintOp::Quad { rect, color, .. } | PaintOp::Stroke { rect, color, .. },
++                ) if color.0 == shadow.0
++                    && color.1 == shadow.1
++                    && color.2 == shadow.2
++                    && rect.y < face.y + face.height =>
++                {
++                    Some(rect.x)
++                }
++                _ => None,
++            })
++            .reduce(f32::min)
++            .unwrap()
++    };
++    runtime.dispatch(Event::PointerMove { x, y }).unwrap();
++    let hover = paint(&mut runtime, &mut text);
++    assert!(shadow_edge(&hover) < shadow_edge(&idle));
++    let with_alpha = |c: Color, a| Color(c.0, c.1, c.2, a);
++    assert!(shape(
++        &hover,
++        face,
++        with_alpha(colors.on_surface_variant, 20)
++    ));
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    let press = paint(&mut runtime, &mut text);
++    assert_eq!(shadow_edge(&press), shadow_edge(&idle));
++    assert!(shape(
++        &press,
++        face,
++        with_alpha(colors.on_secondary_container, 26)
++    ));
++    runtime.cancel_pointer().unwrap();
++    paint(&mut runtime, &mut text);
++    assert!(runtime.app().requests.is_empty());
++    let key = "chip";
++    let target = runtime
++        .accessibility_frame()
++        .unwrap()
++        .activation_target(runtime.dom().by_id(key).unwrap())
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_activate(&target).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    assert_eq!(runtime.app().requests, [Action::Body]);
++    let checked = |runtime: &Runtime<Model>| {
++        runtime
++            .dom()
++            .get(runtime.dom().by_id(key).unwrap())
++            .unwrap()
++            .is_checked()
++    };
++    assert_eq!(checked(&runtime), Some(false));
++    runtime.apply(Action::Select(true)).unwrap();
++    let selected = paint(&mut runtime, &mut text);
++    assert!(shape(
++        &selected,
++        bounds(&runtime, "chip-face"),
++        colors.secondary_container
++    ));
++    assert_eq!(checked(&runtime), Some(true));
++    assert_eq!(bounds(&runtime, "chip-leading").width, 18.);
++}
+diff --git a/crates/surface-platform/src/macos_accessibility.rs b/crates/surface-platform/src/macos_accessibility.rs
+index e057c63..3c880e8 100644
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -1752,6 +1752,104 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn accesskit_split_chip_keeps_two_named_actions_in_separate_grid_cells() {
++        #[derive(Default)]
++        struct Recipients {
++            edits: usize,
++            removed: bool,
++        }
++        #[derive(Clone)]
++        enum Message {
++            Edit,
++            Remove,
++        }
++        impl Application for Recipients {
++            type Message = Message;
++
++            fn update(&mut self, message: Message) {
++                match message {
++                    Message::Edit => self.edits += 1,
++                    Message::Remove => self.removed = true,
++                }
++            }
++
++            fn view(&self) -> View<Message> {
++                let cell = |id, name, message| {
++                    View::new(
++                        SurfaceNode::new(SurfaceRole::Group, "").grid_role(GridRole::GridCell),
++                    )
++                    .children([View::new(
++                        SurfaceNode::new(SurfaceRole::Button, name)
++                            .id(id)
++                            .styled(Style::row().width(Length::Px(48.)).height(Length::Px(48.))),
++                    )
++                    .on_press(message)
++                    .accessible_activation()])
++                };
++                let chip = (!self.removed).then(|| {
++                    View::new(SurfaceNode::new(SurfaceRole::Group, "").styled(Style::row()))
++                        .children([
++                            cell("edit", "小陳", Message::Edit),
++                            cell("remove", "移除小陳", Message::Remove),
++                        ])
++                });
++                let row =
++                    View::new(SurfaceNode::new(SurfaceRole::Group, "").grid_role(GridRole::Row))
++                        .children(chip);
++                let grid = View::new(
++                    SurfaceNode::new(SurfaceRole::Group, "收件人")
++                        .id("recipients")
++                        .grid_role(GridRole::Grid),
++                )
++                .children([row])
++                .roving_grid();
++                View::new(SurfaceNode::new(SurfaceRole::Window, "Chips")).children([grid])
++            }
++        }
++
++        let mut runtime = Runtime::new(Recipients::default()).unwrap();
++        let mut tree = Tree::default();
++        let frame = update(&mut runtime, &mut tree);
++        let grid = named(&frame, "收件人").1;
++        assert_eq!(grid.role(), Role::Grid);
++        let (edit_id, edit) = named(&frame, "小陳");
++        let (remove_id, remove) = named(&frame, "移除小陳");
++        assert_eq!(edit.role(), Role::Button);
++        assert_eq!(remove.role(), Role::Button);
++        assert!(edit.supports_action(Action::Click));
++        assert!(remove.supports_action(Action::Click));
++        let cells: Vec<_> = frame
++            .nodes
++            .iter()
++            .filter_map(|(_, node)| (node.role() == Role::GridCell).then_some(node.children()))
++            .collect();
++        assert_eq!(cells.len(), 2);
++        assert!(cells.contains(&&[edit_id][..]));
++        assert!(cells.contains(&&[remove_id][..]));
++
++        let click = |target_node| ActionRequest {
++            action: Action::Click,
++            target_tree: TreeId::ROOT,
++            target_node,
++            data: None,
++        };
++        assert!(tree.action(&mut runtime, click(edit_id)).unwrap());
++        assert_eq!(runtime.app().edits, 1);
++        assert!(!runtime.app().removed);
++        let frame = update(&mut runtime, &mut tree);
++        let remove = named(&frame, "移除小陳").0;
++        assert!(tree.action(&mut runtime, click(remove)).unwrap());
++        assert_eq!(runtime.app().edits, 1);
++        assert!(runtime.app().removed);
++        let frame = update(&mut runtime, &mut tree);
++        assert!(frame
++            .nodes
++            .iter()
++            .all(|(_, node)| node.role() != Role::GridCell));
++        assert!(!tree.action(&mut runtime, click(remove)).unwrap());
++    }
++
+     #[test]
+     fn an_accesskit_menu_trigger_reports_popup_and_expansion() {
+         let mut runtime = Runtime::new(App::default()).unwrap();
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index 8d6045e..01d4aa5 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -112,6 +112,7 @@ pub(crate) struct AbsoluteOverlayFit {
+ #[derive(Clone, Debug, PartialEq)]
+ pub(crate) struct PressRipple {
+     pub(crate) after: Option<String>,
++    pub(crate) target: Option<String>,
+     pub(crate) presented: Option<PresentedPressRipple>,
+     requires_activation: bool,
+ }
+@@ -129,6 +130,8 @@ pub struct Node {
+     box_shadows: [BoxShadow; 2],
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     interaction_box_shadows: Option<Box<InteractionBoxShadows>>,
++    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
++    interaction_box_shadows_from_parent: bool,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     interaction_corners: Option<Box<[Option<Corners>; 3]>>,
+     #[serde(skip)]
+@@ -242,6 +245,7 @@ impl Node {
+             stable_id: None,
+             box_shadows: [BoxShadow::NONE; 2],
+             interaction_box_shadows: None,
++            interaction_box_shadows_from_parent: false,
+             interaction_corners: None,
+             animate_interaction_corners: false,
+             press_ripple: None,
+@@ -328,6 +332,13 @@ impl Node {
+         self
+     }
+ 
++    /// Choose this node's interaction shadows from its direct parent's
++    /// pointer and focus state. The shadow still uses this node's outline.
++    pub fn interaction_box_shadows_from_parent(mut self) -> Self {
++        self.interaction_box_shadows_from_parent = true;
++        self
++    }
++
+     pub(crate) fn presented_box_shadow_layers(
+         &self,
+         id: NodeId,
+@@ -341,6 +352,10 @@ impl Node {
+         else {
+             return self.box_shadows;
+         };
++        let id = match (self.interaction_box_shadows_from_parent, self.parent()) {
++            (true, Some(parent)) => parent,
++            _ => id,
++        };
+         let active = if interaction.pressed == Some(id) {
+             layers.pressed
+         } else if interaction.hovered == Some(id) {
+@@ -390,6 +405,7 @@ impl Node {
+     pub fn press_ripple(mut self, after: Option<String>) -> Self {
+         self.press_ripple = Some(Arc::new(PressRipple {
+             after,
++            target: None,
+             presented: None,
+             requires_activation: true,
+         }));
+@@ -402,12 +418,31 @@ impl Node {
+     pub fn press_ripple_on_focusable(mut self) -> Self {
+         self.press_ripple = Some(Arc::new(PressRipple {
+             after: None,
++            target: None,
+             presented: None,
+             requires_activation: false,
+         }));
+         self
+     }
+ 
++    /// Paint an accepted pointer ripple on a named, passive direct Group
++    /// child. Its outline, clipping, and press ink define the wave. The
++    /// owner still supplies the hit area, focus and activation binding.
++    pub fn press_ripple_to(mut self, target: impl Into<String>) -> Self {
++        self.press_ripple = Some(Arc::new(PressRipple {
++            after: None,
++            target: Some(target.into()),
++            presented: None,
++            requires_activation: true,
++        }));
++        self
++    }
++
++    #[doc(hidden)]
++    pub fn press_ripple_target_name(&self) -> Option<&str> {
++        self.press_ripple.as_ref()?.target.as_deref()
++    }
++
+     #[doc(hidden)]
+     pub fn allows_unbound_press_ripple(&self) -> bool {
+         self.press_ripple
+@@ -1040,8 +1075,24 @@ impl MicroDom {
+         Ok(())
+     }
+ 
++    /// Resolve the live paint node for the owner's requested ripple.
++    #[doc(hidden)]
++    pub fn press_ripple_paint_target(&self, owner: NodeId) -> Option<NodeId> {
++        let ripple = self.get(owner).ok()?.press_ripple.as_deref()?;
++        let Some(target) = ripple.target.as_deref() else {
++            return Some(owner);
++        };
++        let target = self.by_id(target)?;
++        let node = self.get(target).ok()?;
++        (node.parent() == Some(owner)
++            && node.role() == Role::Group
++            && !node.is_focusable()
++            && !node.is_disabled())
++        .then_some(target)
++    }
++
+     /// Set the active ripple on a display copy for the extended renderer.
+-    /// The center is in physical logical pixels relative to the node.
++    /// The center is in logical pixels relative to the resolved paint node.
+     /// Finite progress and opacity clamp to 0–1. Zero opacity still replaces
+     /// the held press fill. An invalid sample clears the copy's wave.
+     #[doc(hidden)]
+diff --git a/crates/surface/src/paint.rs b/crates/surface/src/paint.rs
+index 80425a2..be605e2 100644
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -853,7 +853,16 @@ fn compile_into<Op: CompileOp>(
+                 outline.stroke(g.bounds, g.clip, s.border_width, s.border_color),
+             );
+         }
+-        let active_wave = n.press_ripple.as_deref().and_then(|ripple| {
++        let ripple = n
++            .press_ripple
++            .as_deref()
++            .filter(|ripple| ripple.target.is_none())
++            .or_else(|| {
++                let parent = n.parent()?;
++                let ripple = dom.get(parent).ok()?.press_ripple.as_deref()?;
++                (dom.press_ripple_paint_target(parent) == Some(*id)).then_some(ripple)
++            });
++        let active_wave = ripple.and_then(|ripple| {
+             (Op::PRESS_RIPPLE && !n.is_disabled())
+                 .then_some((ripple.presented?, ripple.after.as_deref()))
+         });
+@@ -869,7 +878,7 @@ fn compile_into<Op: CompileOp>(
+                     // its first transparent frame. Avoid doubling it with
+                     // the hovered or focused fill during the same contact.
+                     ink = press_ink;
+-                    opacity = if ancestor == *id && active_wave.is_some() {
++                    opacity = if active_wave.is_some() {
+                         0
+                     } else {
+                         press_alpha
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 9a24417..415b9b3 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -223,9 +223,10 @@
+       "spec": "https://m3.material.io/components/chips/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Assist, suggestion, filter and input; separate input removal action"
++      "desktop_evidence": "The dedicated headless Gallery route tests wide and dark 320 dp RTL chips, separate body and Remove targets, menu focus, deletion and PNG parity through Page.screenshot, CLI and MCP.",
++      "web_evidence": "Material Gallery M290 through M293 exercise real Chrome grid and action roles, the seven appearances, keyboard and pointer input, and compact 200% text.",
++      "implemented": "Additive flat and elevated Assist, Filter and Suggestion, and flat Input with an optional avatar. Covers controlled selection and Remove, measured reflow, named grid cells, 48 dp hit areas, face-bounded ripples, separate focus rings, and compact single-action Filter menus. Drag to reorder, system high contrast and live screen-reader speech remain open.",
++      "unit_evidence": "Material and Runtime tests cover the seven appearances, measured text in both directions, independent action cells, focus and elevation paint, contained pointer ripple, Reduce Motion, grid navigation and focus recovery, and the DevTools deletion route."
+     },
+     {
+       "id": "dialogs",
+diff --git a/docs/material.md b/docs/material.md
+index b392192..e60d5a6 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -183,6 +183,8 @@ does not change application state.
+ | `tab` / `tabs` | Controlled selection, selected underline and manual keyboard activation |
+ | `tab_bar` / `tab_panel` | Primary and Secondary bars, fixed and scrollable layouts, controlled selection, a measured indicator and named panels |
+ | `chip` | Assist, suggestion, filter and input; input removal has its own action |
++| `chip_with_options` | Flat and elevated Assist, Filter and Suggestion, plus Input with one or two named actions |
++| `chip_in_grid` / `chip_grid` | Measured rows and one Tab entry, with arrows between the individual actions |
+ | `slider` | Controlled finite range, pointer drag, arrows, Home/End and Page Up/Down |
+ | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
+ | `dialog_with` | Static Basic dialog with optional icon, headline, supporting text and actions |
+@@ -1805,6 +1807,31 @@ that its panel uses when mounted.
+ [Material 3 Tabs](https://m3.material.io/components/tabs/specs) ·
+ [WAI Tabs pattern](https://www.w3.org/WAI/ARIA/apg/patterns/tabs/)
+ 
++## Chips
++
++Use `Theme::chip_with_options` for a standalone chip. Use
++`ChipContent` to supply the actions for its type. The app owns Filter
++selection and Input removal. For a split Input chip, supply a body
++action and a localized Remove action. Leave the body action empty to
++make the whole chip remove the token.
++
++Use `Theme::chip_in_grid` for chips in a named `Theme::chip_grid`.
++Each split action gets its own cell and keeps its action role. Keep a
++`ChipGridLayout` for each set. Give the chips their available width as
++a cap. Call `advance` from the frame hook and pass the resulting row
++ranges to the grid. This keeps the rows used by arrow navigation in sync
++with the rows that fit on the screen. Pass the same text scale to the
++chips and the layout.
++
++Each action keeps a 48 dp minimum target. The 32 dp face grows with
++larger text. A split chip shares that face but gives Remove its own
++focus ring and press paint. At narrow widths, a Filter menu can use
++`MenuOnBody` for a single action. The Gallery makes every row available
++in one vertical viewport.
++
++[Material 3 Chips](https://m3.material.io/components/chips/specs) ·
++[WAI layout grids](https://www.w3.org/WAI/ARIA/apg/patterns/grid/#layoutGrid)
++
+ ## Gallery and evidence
+ 
+ Use the [headless native Gallery](devtools-protocol.md#headless-native-gallery)
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index b6fabc5..9128dfd 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -16,6 +16,8 @@ mod material_card;
+ mod material_carousel;
+ #[path = "material_checkbox.rs"]
+ mod material_checkbox;
++#[path = "material_chips.rs"]
++mod material_chips;
+ #[path = "material_command_menu.rs"]
+ mod material_command_menu;
+ #[path = "material_date_picker.rs"]
+@@ -136,7 +138,7 @@ pub const STEPS: &[&str] = &[
+     "M251", "M252", "M253", "M254", "M255", "M256", "M257", "M258", "M259", "M260", "M261", "M262",
+     "M263", "M264", "M265", "M266", "M267", "M268", "M269", "M270", "M271", "M272", "M273", "M274",
+     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
+-    "M287", "M288", "M289",
++    "M287", "M288", "M289", "M290", "M291", "M292", "M293",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -259,7 +261,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_switch::run(env, chrome, &url).await?;
+     material_checkbox::run(env, chrome, &url).await?;
+     material_radio::run(env, chrome, &url).await?;
+-    material_tabs::run(env, chrome, &url).await
++    material_tabs::run(env, chrome, &url).await?;
++    material_chips::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+diff --git a/e2e/src/material_chips.rs b/e2e/src/material_chips.rs
+new file mode 100644
+index 0000000..eb315f4
+--- /dev/null
++++ b/e2e/src/material_chips.rs
+@@ -0,0 +1,917 @@
++//! Trusted browser input, accessibility and WebGPU proof for Material chips.
++
++use anyhow::{Context, Result};
++use serde::{Deserialize, Serialize};
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{focus, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "chip-demo-show";
++const BACK: &str = "chip-demo-back";
++const THEME: &str = "chip-demo-theme";
++const RTL: &str = "chip-demo-rtl";
++const LARGE: &str = "chip-demo-large";
++const SINGLE: &str = "chip-demo-single";
++const ASSIST: &str = "chip-demo-assist";
++const ASSIST_RAISED: &str = "chip-demo-assist-elevated";
++const SUGGEST: &str = "chip-demo-suggest";
++const SUGGEST_RAISED: &str = "chip-demo-suggest-elevated";
++const DISABLED: &str = "chip-demo-disabled";
++const NEWS: &str = "chip-demo-news";
++const IMAGES: &str = "chip-demo-images";
++const TYPE: &str = "chip-demo-filter-type";
++const TYPE_MENU: &str = "chip-demo-filter-type-menu";
++const CHEN: &str = "chip-demo-chen";
++const CHEN_REMOVE: &str = "chip-demo-chen-remove";
++const MEI: &str = "chip-demo-mei";
++const LIN: &str = "chip-demo-lin";
++const LIN_REMOVE: &str = "chip-demo-lin-remove";
++const DOCUMENTS: &str = "chip-demo-documents";
++const LIN_LABEL: &str = "林小姐的工作用電子郵件";
++const ACTIONS: [&str; 4] = [ASSIST, ASSIST_RAISED, SUGGEST, SUGGEST_RAISED];
++const WIDE: (u32, u32) = (960, 800);
++const COMPACT: (u32, u32) = (320, 1020);
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++#[derive(Deserialize, Serialize)]
++#[serde(rename_all = "camelCase")]
++struct Adapter {
++    vendor: String,
++    architecture: String,
++    is_fallback_adapter: bool,
++}
++
++#[derive(Deserialize, Serialize)]
++struct Palette {
++    surface: [u8; 4],
++    surface_container_low: [u8; 4],
++    outline_variant: [u8; 4],
++    secondary_container: [u8; 4],
++    secondary: [u8; 4],
++}
++
++#[derive(Deserialize, Serialize)]
++struct Model {
++    visible: bool,
++    rtl: bool,
++    text_scale: f64,
++    multi: bool,
++    compact: bool,
++    menu_open: bool,
++    selected: [bool; 3],
++    removed: [bool; 3],
++    actions: u32,
++    edits: u32,
++    removals: u32,
++    last: Option<String>,
++    palette: Palette,
++}
++
++#[derive(Serialize)]
++struct Geometry {
++    id: &'static str,
++    kind: &'static str,
++    hit: Rect,
++    face: Rect,
++    chip: Rect,
++    label: Rect,
++}
++
++#[derive(Serialize)]
++struct AxAction {
++    id: &'static str,
++    name: &'static str,
++    role: &'static str,
++    grid: &'static str,
++    ancestry: Vec<String>,
++    checked: Option<String>,
++    disabled: bool,
++}
++
++#[derive(Serialize)]
++struct Wide {
++    canvas: [u32; 2],
++    palette: Palette,
++    variants: Vec<Geometry>,
++    artwork: [[f64; 2]; 4],
++    ax: Vec<AxAction>,
++    surface_pixel: Rgb,
++    elevated_fill_pixels: [Rgb; 3],
++    selected_fill_pixel: Rgb,
++    outline_pixel: Rgb,
++    shadow_samples: [usize; 4],
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Keyboard {
++    stops: Vec<&'static str>,
++    multi: [bool; 3],
++    single: [bool; 3],
++    wide_menu_trigger: &'static str,
++    focus: &'static str,
++    focus_rect: Rect,
++    focus_pixels: usize,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Pointer {
++    before: Rgb,
++    held: Rgb,
++    body_target: Rect,
++    remove_target: Rect,
++    body_point: [f64; 2],
++    remove_point: [f64; 2],
++    after_body: Model,
++    after_canceled_touch: Model,
++    after_remove: Model,
++    restored_focus: [&'static str; 2],
++    after_delete: Model,
++    after_backspace: Model,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Compact {
++    canvas: [u32; 2],
++    rtl: bool,
++    text_scale: f64,
++    first_row: Rect,
++    next_in_row: Rect,
++    following_row: Rect,
++    focus_path: [&'static str; 4],
++    long_label: Rect,
++    removal: Rect,
++    label_ink: Rgb,
++    label_line_ink: Vec<usize>,
++    menu_body: &'static str,
++    menu_ax: AxAction,
++    selection_after_menu: [bool; 3],
++    back_focus: &'static str,
++    capture: &'static str,
++}
++
++#[derive(Serialize)]
++struct Report {
++    browser: String,
++    adapter: Option<Adapter>,
++    wide: Option<Wide>,
++    keyboard: Option<Keyboard>,
++    pointer: Option<Pointer>,
++    compact: Option<Compact>,
++    page_errors: Vec<String>,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    failure: Option<String>,
++    #[serde(skip_serializing_if = "Option::is_none")]
++    state_at_failure: Option<Value>,
++}
++
++fn key(id: &str, part: &str) -> String {
++    format!("{id}-{part}")
++}
++
++fn right(rect: Rect) -> f64 {
++    rect[0] + rect[2]
++}
++
++fn bottom(rect: Rect) -> f64 {
++    rect[1] + rect[3]
++}
++
++fn center(rect: Rect) -> [f64; 2] {
++    [rect[0] + rect[2] / 2., rect[1] + rect[3] / 2.]
++}
++
++fn rgb(color: [u8; 4]) -> Rgb {
++    [color[0], color[1], color[2]]
++}
++
++async fn chip_state(tab: &Tab) -> Result<Model> {
++    Ok(serde_json::from_value(
++        state(tab).await?["chip_demo"].clone(),
++    )?)
++}
++
++async fn ready(tab: &Tab, predicate: &str) -> Result<Model> {
++    until(tab, &format!("(d => {predicate})(s.chip_demo)")).await?;
++    tab.settle().await?;
++    chip_state(tab).await
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1800).await?;
++    reduced_motion(tab, true).await?;
++    until(tab, "s.section === 0 && !s.chip_demo.visible").await?;
++    activate(tab, SHOW).await?;
++    ready(
++        tab,
++        "d.visible && !d.rtl && d.text_scale === 1 && d.removals === 0",
++    )
++    .await?;
++    focused(tab, BACK).await?;
++    resize(tab, WIDE.0, WIDE.1).await?;
++    tab.settle().await
++}
++
++async fn photo(env: &Env, tab: &Tab, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++async fn geometry(tab: &Tab, id: &'static str, kind: &'static str) -> Result<Geometry> {
++    Ok(Geometry {
++        id,
++        kind,
++        hit: bounds(tab, id).await?,
++        face: bounds(tab, &key(id, "face")).await?,
++        chip: bounds(tab, &key(id, "chip")).await?,
++        label: bounds(tab, &key(id, "label")).await?,
++    })
++}
++
++fn ax_action(
++    tree: &[Value],
++    id: &'static str,
++    name: &'static str,
++    role: &'static str,
++    grid: &'static str,
++) -> Result<AxAction> {
++    let node = ax(tree, role, name)?;
++    let mut current = node;
++    let mut ancestry = Vec::new();
++    while let Some(parent) = current["parentId"].as_str() {
++        let Some(target) = tree.iter().find(|item| item["nodeId"] == parent) else {
++            break;
++        };
++        current = target;
++        let role = current["role"]["value"].as_str().unwrap_or_default();
++        if matches!(role, "gridcell" | "row" | "grid") {
++            ancestry.push(role.to_owned());
++        }
++        if role == "grid" {
++            break;
++        }
++    }
++    check_eq!(
++        ancestry,
++        ["gridcell", "row", "grid"],
++        format!("{id} AX grid cell ancestry")
++    );
++    check_eq!(
++        current["name"]["value"],
++        grid,
++        format!("{id} owns the expected grid")
++    );
++    Ok(AxAction {
++        id,
++        name,
++        role,
++        grid,
++        ancestry,
++        checked: ax_property(node, "checked")
++            .and_then(Value::as_str)
++            .map(str::to_owned),
++        disabled: ax_property(node, "disabled") == Some(&json!(true)),
++    })
++}
++
++async fn wide(env: &Env, tab: &Tab) -> Result<Wide> {
++    let model = ready(
++        tab,
++        "!d.compact && d.multi && d.selected.join() === 'true,false,false'",
++    )
++    .await?;
++    let variants = [
++        (ASSIST, "assist-flat"),
++        (ASSIST_RAISED, "assist-elevated"),
++        (NEWS, "filter-flat"),
++        (IMAGES, "filter-elevated"),
++        (CHEN, "input"),
++        (SUGGEST, "suggestion-flat"),
++        (SUGGEST_RAISED, "suggestion-elevated"),
++    ];
++    let mut measured = Vec::new();
++    let viewport = bounds(tab, "chip-demo-preview").await?;
++    for (id, kind) in variants {
++        let g = geometry(tab, id, kind).await?;
++        check!(
++            near(g.face[3], 32.) && near(g.face[1] - g.hit[1], 8.),
++            format!("{id} has 32 dp art inside the action")
++        );
++        check!(
++            g.hit[2] >= 48. && g.hit[3] >= 48. && contains(g.hit, g.label),
++            format!("{id} has a full 48 dp target and visible label")
++        );
++        check!(
++            contains(g.chip, g.hit) && contains(viewport, g.chip),
++            format!("{id} is fully in the clear preview")
++        );
++        measured.push(g);
++    }
++    let mut artwork = [[0.; 2]; 4];
++    for (index, (name, size)) in [
++        (key(ASSIST, "leading"), 18.),
++        (key(ASSIST_RAISED, "leading"), 18.),
++        (key(NEWS, "leading"), 18.),
++        (key(CHEN, "leading"), 24.),
++    ]
++    .into_iter()
++    .enumerate()
++    {
++        let art = bounds(tab, &name).await?;
++        check!(
++            near(art[2], size) && near(art[3], size),
++            format!("{name} artwork measurement")
++        );
++        artwork[index] = [art[2], art[3]];
++    }
++
++    let tree = ax_tree(tab).await?;
++    let mut actions = Vec::new();
++    for (id, name, role, grid) in [
++        (ASSIST, "排程", "button", "動作與建議"),
++        (ASSIST_RAISED, "查看行程", "button", "動作與建議"),
++        (DISABLED, "停用", "button", "動作與建議"),
++        (NEWS, "新聞", "checkbox", "搜尋篩選"),
++        (IMAGES, "圖片", "checkbox", "搜尋篩選"),
++        (TYPE, "依檔案類型篩選", "checkbox", "搜尋篩選"),
++        (TYPE_MENU, "開啟檔案類型選單", "button", "搜尋篩選"),
++        (CHEN, "小陳", "button", "收件人"),
++        (CHEN_REMOVE, "移除小陳", "button", "收件人"),
++        (MEI, "移除小美", "button", "收件人"),
++        (LIN, LIN_LABEL, "button", "收件人"),
++        (LIN_REMOVE, "移除林小姐", "button", "收件人"),
++    ] {
++        let action = ax_action(&tree, id, name, role, grid)?;
++        check_eq!(
++            action.disabled,
++            id == DISABLED,
++            "disabled action in actual Chrome AX"
++        );
++        if role == "checkbox" {
++            check_eq!(
++                action.checked.as_deref(),
++                Some(if id == NEWS { "true" } else { "false" }),
++                "checkbox state in actual Chrome AX"
++            );
++        }
++        actions.push(action);
++    }
++
++    let image = photo(env, tab, "material-chips-wide-light.png").await?;
++    let fill = |face: Rect| image.sample(face[0] + 3., center(face)[1]);
++    let raised = [
++        fill(measured[1].face)?,
++        fill(measured[3].face)?,
++        fill(measured[6].face)?,
++    ];
++    let surface_pixel = fill(measured[0].face)?;
++    let selected = fill(measured[2].face)?;
++    let border = image.sample(measured[0].face[0] + 0.5, center(measured[0].face)[1])?;
++    check_eq!(
++        raised,
++        [rgb(model.palette.surface_container_low); 3],
++        "all elevated faces paint SurfaceContainerLow"
++    );
++    check_eq!(
++        surface_pixel,
++        rgb(model.palette.surface),
++        "flat unselected face leaves the Surface color"
++    );
++    check_eq!(
++        selected,
++        rgb(model.palette.secondary_container),
++        "selected filter face paints SecondaryContainer"
++    );
++    check_eq!(
++        border,
++        rgb(model.palette.outline_variant),
++        "flat Assist uses the exact outline token"
++    );
++    let mut shadows = [0; 4];
++    for (index, g) in [&measured[0], &measured[1], &measured[3], &measured[6]]
++        .into_iter()
++        .enumerate()
++    {
++        shadows[index] = image
++            .colors([g.face[0] + 12., bottom(g.face) + 0.5, g.face[2] - 24., 4.])?
++            .into_iter()
++            .filter(|(color, _)| *color != surface_pixel)
++            .map(|(_, count)| count)
++            .sum();
++    }
++    check!(
++        shadows[0] == 0 && shadows[1..].iter().all(|&count| count > 0),
++        "only elevated chips paint short ambient shadows below the face"
++    );
++    Ok(Wide {
++        canvas: [WIDE.0, WIDE.1],
++        palette: model.palette,
++        variants: measured,
++        artwork,
++        ax: actions,
++        surface_pixel,
++        elevated_fill_pixels: raised,
++        selected_fill_pixel: selected,
++        outline_pixel: border,
++        shadow_samples: shadows,
++        capture: "material-chips-wide-light.png",
++    })
++}
++
++async fn menu_trigger(tab: &Tab, id: &str) -> Result<()> {
++    for (attr, expected) in [("aria-haspopup", "menu"), ("aria-expanded", "false")] {
++        let value = tab
++            .eval(&format!("{}?.getAttribute({})", projected(id), js(attr)))
++            .await?;
++        check_eq!(value, json!(expected), format!("{id} {attr}"));
++    }
++    Ok(())
++}
++
++async fn keyboard(env: &Env, tab: &Tab) -> Result<Keyboard> {
++    let mut stops = Vec::new();
++    focus_projected(tab, SINGLE).await?;
++    for (press, id) in [
++        ("Tab", ASSIST),
++        ("ArrowRight", ASSIST_RAISED),
++        ("End", SUGGEST_RAISED),
++        ("Tab", NEWS),
++        ("Shift+Tab", ASSIST),
++        ("Tab", NEWS),
++        ("ArrowRight", IMAGES),
++    ] {
++        tab.press(press).await?;
++        focused(tab, id).await?;
++        stops.push(id);
++    }
++    ready(
++        tab,
++        "d.actions === 0 && d.edits === 0 && d.selected.join() === 'true,false,false'",
++    )
++    .await?;
++    tab.press("Space").await?;
++    let multi = ready(tab, "d.multi && d.selected.join() === 'true,true,false'")
++        .await?
++        .selected;
++    activate(tab, SINGLE).await?;
++    ready(tab, "!d.multi && d.selected.join() === 'true,false,false'").await?;
++    activate(tab, IMAGES).await?;
++    let single = ready(tab, "!d.multi && d.selected.join() === 'false,true,false'")
++        .await?
++        .selected;
++    activate(tab, SINGLE).await?;
++    ready(tab, "d.multi").await?;
++
++    menu_trigger(tab, TYPE_MENU).await?;
++    let whole = bounds(tab, &key(TYPE, "chip")).await?;
++    let action = bounds(tab, TYPE).await?;
++    let menu = bounds(tab, TYPE_MENU).await?;
++    check!(
++        contains(whole, action) && contains(whole, menu) && right(action) <= menu[0] + 0.1,
++        "wide Filter keeps separate body and menu hit areas"
++    );
++    check!(
++        menu[2] >= 48. && menu[3] >= 48.,
++        "wide menu has a full action target"
++    );
++    activate(tab, TYPE_MENU).await?;
++    ready(
++        tab,
++        "d.menu_open && d.selected.join() === 'false,true,false'",
++    )
++    .await?;
++    ax(&ax_tree(tab).await?, "menuitem", "文件")?;
++    tab.press("Escape").await?;
++    ready(tab, "!d.menu_open && !d.selected[2]").await?;
++    focused(tab, TYPE_MENU).await?;
++
++    focus_projected(tab, NEWS).await?;
++    tab.press("Tab").await?;
++    focused(tab, CHEN).await?;
++    tab.press("ArrowRight").await?;
++    focused(tab, CHEN_REMOVE).await?;
++    stops.extend([CHEN, CHEN_REMOVE]);
++    let focus_rect = bounds(tab, &key(CHEN_REMOVE, "focus")).await?;
++    check!(
++        near(focus_rect[2], 28.) && near(focus_rect[3], 28.),
++        "remove icon has an independent outer focus ring"
++    );
++    let pressed = chip_state(tab).await?;
++    check_eq!(
++        (pressed.actions, pressed.edits, pressed.removals),
++        (0, 0, 0),
++        "directional focus never activates a chip"
++    );
++    let image = photo(env, tab, "material-chips-wide-focus.png").await?;
++    let focus_pixels = image
++        .colors(focus_rect)?
++        .get(&rgb(pressed.palette.secondary))
++        .copied()
++        .unwrap_or(0);
++    check!(
++        focus_pixels > 20,
++        "the actual remove focus outline uses Secondary"
++    );
++    Ok(Keyboard {
++        stops,
++        multi,
++        single,
++        wide_menu_trigger: TYPE_MENU,
++        focus: CHEN_REMOVE,
++        focus_rect,
++        focus_pixels,
++        capture: "material-chips-wide-focus.png",
++    })
++}
++
++async fn browser_point(tab: &Tab, at: [f64; 2]) -> Result<[f64; 2]> {
++    let canvas = tab.canvas_box().await?;
++    Ok([canvas[0] + at[0], canvas[1] + at[1]])
++}
++
++async fn touch(tab: &Tab, phase: &str, contact: Option<[f64; 2]>) -> Result<()> {
++    let points = contact.map_or_else(Vec::new, |[x, y]| vec![json!({"x":x,"y":y,"id":1})]);
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":phase,"touchPoints":points}),
++    )
++    .await?;
++    Ok(())
++}
++
++async fn pointer(env: &Env, tab: &Tab) -> Result<Pointer> {
++    let assist = bounds(tab, ASSIST).await?;
++    let face = bounds(tab, &key(ASSIST, "face")).await?;
++    let at = [face[0] + 3., center(face)[1]];
++    let before = Raster::read(tab, env.artifact("material-chips-wide-light.png"))
++        .await?
++        .sample(at[0], at[1])?;
++    let [x, y] = browser_point(tab, center(assist)).await?;
++    tab.mouse_move(x, y).await?;
++    tab.mouse_down().await?;
++    ready(tab, "d.actions === 0").await?;
++    let held = photo(env, tab, "material-chips-wide-pressed.png")
++        .await?
++        .sample(at[0], at[1])?;
++    check!(
++        held != before,
++        "accepted held pointer paints inside the visible Assist face"
++    );
++    let [outside_x, outside_y] =
++        browser_point(tab, [WIDE.0 as f64 - 9., WIDE.1 as f64 - 9.]).await?;
++    tab.mouse_move(outside_x, outside_y).await?;
++    tab.mouse_up().await?;
++    ready(tab, "d.actions === 0 && d.edits === 0 && d.removals === 0").await?;
++    tab.click(x, y).await?;
++    ready(tab, "d.actions === 1 && d.last === 'chip-demo-assist'").await?;
++
++    tab.cdp(
++        "Emulation.setTouchEmulationEnabled",
++        json!({"enabled":true,"maxTouchPoints":1}),
++    )
++    .await?;
++    let disabled = browser_point(tab, center(bounds(tab, DISABLED).await?)).await?;
++    touch(tab, "touchStart", Some(disabled)).await?;
++    touch(tab, "touchEnd", None).await?;
++    ready(tab, "d.actions === 1 && d.edits === 0 && d.removals === 0").await?;
++    check!(
++        state(tab).await?["focused"] != DISABLED,
++        "disabled touch cannot focus"
++    );
++    tab.cdp(
++        "Emulation.setTouchEmulationEnabled",
++        json!({"enabled":false}),
++    )
++    .await?;
++
++    let body = bounds(tab, CHEN).await?;
++    let remove = bounds(tab, CHEN_REMOVE).await?;
++    let icon = bounds(tab, &key(CHEN_REMOVE, "icon")).await?;
++    check!(
++        right(body) <= remove[0] + 0.1 && remove[2] >= 48. && remove[3] >= 48.,
++        "split recipient has independent nonoverlapping body and remove targets"
++    );
++    let body_point = [body[0] + 2., body[1] + 4.];
++    let remove_point = [right(remove) - 2., remove[1] + 4.];
++    check!(
++        !contains(icon, [remove_point[0], remove_point[1], 1., 1.]),
++        "remove padding is outside its small glyph"
++    );
++    let [x, y] = browser_point(tab, body_point).await?;
++    tab.click(x, y).await?;
++    let after_body = ready(
++        tab,
++        "d.edits === 1 && d.removals === 0 && d.last === 'chip-demo-chen'",
++    )
++    .await?;
++    focus(tab, CHEN, "surface").await?;
++    let touch_point = browser_point(tab, remove_point).await?;
++    tab.cdp(
++        "Emulation.setTouchEmulationEnabled",
++        json!({"enabled":true,"maxTouchPoints":1}),
++    )
++    .await?;
++    touch(tab, "touchStart", Some(touch_point)).await?;
++    ready(tab, "d.edits === 1 && d.removals === 0").await?;
++    touch(tab, "touchCancel", None).await?;
++    let after_canceled_touch = ready(
++        tab,
++        "d.edits === 1 && d.removals === 0 && !d.removed.some(Boolean)",
++    )
++    .await?;
++    touch(tab, "touchStart", Some(touch_point)).await?;
++    ready(tab, "d.edits === 1 && d.removals === 0").await?;
++    touch(tab, "touchEnd", None).await?;
++    let after_remove = ready(
++        tab,
++        "d.edits === 1 && d.removals === 1 && d.removed.join() === 'true,false,false'",
++    )
++    .await?;
++    until(tab, &format!("s.focused === {}", js(MEI))).await?;
++    tab.cdp(
++        "Emulation.setTouchEmulationEnabled",
++        json!({"enabled":false}),
++    )
++    .await?;
++
++    focus_projected(tab, MEI).await?;
++    tab.press("Delete").await?;
++    let after_delete = ready(
++        tab,
++        "d.removals === 2 && d.removed.join() === 'true,true,false'",
++    )
++    .await?;
++    focused(tab, LIN).await?;
++    tab.press("Backspace").await?;
++    let after_backspace = ready(
++        tab,
++        "d.removals === 3 && d.removed.every(Boolean) && d.edits === 1",
++    )
++    .await?;
++    let tree = ax_tree(tab).await?;
++    check!(
++        tree.iter().all(|node| node["ignored"] != false
++            || !["小陳", "移除小陳", "移除小美", LIN_LABEL, "移除林小姐"]
++                .iter()
++                .any(|name| node["name"]["value"] == *name)),
++        "removed recipients leave the real AX tree"
++    );
++    Ok(Pointer {
++        before,
++        held,
++        body_target: body,
++        remove_target: remove,
++        body_point,
++        remove_point,
++        after_body,
++        after_canceled_touch,
++        after_remove,
++        restored_focus: [MEI, LIN],
++        after_delete,
++        after_backspace,
++        capture: "material-chips-wide-pressed.png",
++    })
++}
++
++async fn compact(env: &Env, tab: &Tab, url: &str) -> Result<Compact> {
++    route(tab, url).await?;
++    for toggle in [THEME, RTL, LARGE] {
++        activate(tab, toggle).await?;
++    }
++    resize(tab, COMPACT.0, COMPACT.1).await?;
++    until(tab, "s.dark").await?;
++    let model = ready(tab, "d.visible && d.rtl && d.compact && d.text_scale === 2").await?;
++    let mut placed = Vec::new();
++    for id in ACTIONS {
++        placed.push((id, bounds(tab, id).await?));
++    }
++    let first = placed[0];
++    let [first_x, first_y] = center(first.1);
++    let left = placed
++        .iter()
++        .copied()
++        .filter(|(_, rect)| {
++            let [x, y] = center(*rect);
++            near(y, first_y) && x + 0.5 < first_x
++        })
++        .max_by(|(_, a), (_, b)| center(*a)[0].total_cmp(&center(*b)[0]))
++        .context("320 dp has a real second action in the first RTL row")?;
++    let next_y = placed
++        .iter()
++        .map(|(_, rect)| center(*rect)[1])
++        .filter(|&y| y > first_y + 1.)
++        .min_by(f64::total_cmp)
++        .context("320 dp actions wrap to another measured row")?;
++    let left_x = center(left.1)[0];
++    let down = placed
++        .iter()
++        .copied()
++        .filter(|(_, rect)| near(center(*rect)[1], next_y))
++        .min_by(|(_, a), (_, b)| {
++            (center(*a)[0] - left_x)
++                .abs()
++                .total_cmp(&(center(*b)[0] - left_x).abs())
++        })
++        .context("next rendered row has an eligible action")?;
++    let down_x = center(down.1)[0];
++    let up = placed
++        .iter()
++        .copied()
++        .filter(|(_, rect)| near(center(*rect)[1], first_y))
++        .min_by(|(_, a), (_, b)| {
++            (center(*a)[0] - down_x)
++                .abs()
++                .total_cmp(&(center(*b)[0] - down_x).abs())
++        })
++        .context("previous rendered row has an eligible action")?;
++    check!(
++        down.1[1] >= bottom(left.1) - 1.,
++        "target is on a distinct wrapped row"
++    );
++    focus_projected(tab, SINGLE).await?;
++    for (press, id) in [
++        ("Tab", first.0),
++        ("ArrowLeft", left.0),
++        ("ArrowDown", down.0),
++        ("ArrowUp", up.0),
++    ] {
++        tab.press(press).await?;
++        focused(tab, id)
++            .await
++            .with_context(|| format!("{press} should focus the measured target {id}"))?;
++    }
++    ready(tab, "d.actions === 0 && d.edits === 0 && d.removals === 0").await?;
++
++    menu_trigger(tab, TYPE).await?;
++    check!(
++        tab.eval(&format!("{} === null", projected(TYPE_MENU)))
++            .await?
++            == true,
++        "compact Filter does not expose a second menu trigger"
++    );
++    let compact_ax = ax_action(
++        &ax_tree(tab).await?,
++        TYPE,
++        "依檔案類型篩選",
++        "button",
++        "搜尋篩選",
++    )?;
++    let body = bounds(tab, TYPE).await?;
++    let glyph = bounds(tab, &key(TYPE, "trailing")).await?;
++    let label_probe = [right(body) - 4., center(body)[1]];
++    check!(
++        !contains(glyph, [label_probe[0], label_probe[1], 1., 1.]),
++        "the compact menu press lands inside the body away from its trailing glyph"
++    );
++    let [x, y] = browser_point(tab, label_probe).await?;
++    tab.click(x, y).await?;
++    ready(tab, "d.menu_open && !d.selected[2]").await?;
++    ax(&ax_tree(tab).await?, "menuitem", "文件")?;
++    focus_projected(tab, DOCUMENTS).await?;
++    tab.press("Enter").await?;
++    let accepted = ready(
++        tab,
++        "!d.menu_open && d.selected.join() === 'true,false,true'",
++    )
++    .await?;
++    until(tab, &format!("s.focused === {}", js(TYPE))).await?;
++
++    focus_projected(tab, TYPE).await?;
++    tab.press("Tab").await?;
++    focused(tab, CHEN).await?;
++    for _ in 0..2 {
++        if state(tab).await?["focused"] == LIN {
++            break;
++        }
++        tab.press("ArrowDown").await?;
++        tab.settle().await?;
++    }
++    focused(tab, LIN).await?;
++    let long_label = bounds(tab, &key(LIN, "label")).await?;
++    let removal = bounds(tab, LIN_REMOVE).await?;
++    let recipient = bounds(tab, LIN).await?;
++    let preview = bounds(tab, "chip-demo-preview").await?;
++    check!(
++        contains(preview, long_label)
++            && contains(preview, removal)
++            && right(removal) <= recipient[0] + 0.1
++            && removal[2] >= 48.
++            && removal[3] >= 48.,
++        "RTL keeps the separate remove hit and all of the wrapped 200% label inside the preview"
++    );
++    ax_action(&ax_tree(tab).await?, LIN, LIN_LABEL, "button", "收件人")?;
++    let label_rgba: [u8; 4] = serde_json::from_value(
++        tab.eval(&format!(
++            "JSON.parse(window.gallery.export_dom()).dom.nodes.find(n => n.stable_id === {}).style.foreground",
++            js(key(LIN, "label"))
++        ))
++        .await?,
++    )?;
++    let label_ink = rgb(label_rgba);
++    check!(
++        label_ink != rgb(model.palette.surface),
++        "dark label has a distinct foreground ink"
++    );
++    let image = photo(env, tab, "material-chips-compact-dark-rtl-200.png").await?;
++    let line_height = 40.;
++    let lines = (long_label[3] / line_height).round() as usize;
++    check!(lines >= 2, "the 200 percent recipient actually wraps");
++    let mut ink_counts = Vec::new();
++    for line in 0..lines {
++        let y = long_label[1] + line as f64 * line_height;
++        let height = line_height.min(bottom(long_label) - y);
++        let amount = image
++            .colors([long_label[0], y, long_label[2], height])?
++            .get(&label_ink)
++            .copied()
++            .unwrap_or(0);
++        check!(
++            amount > 20,
++            format!("wrapped label line {line} has actual ink")
++        );
++        ink_counts.push(amount);
++    }
++    activate(tab, BACK).await?;
++    ready(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(Compact {
++        canvas: [COMPACT.0, COMPACT.1],
++        rtl: model.rtl,
++        text_scale: model.text_scale,
++        first_row: first.1,
++        next_in_row: left.1,
++        following_row: down.1,
++        focus_path: [first.0, left.0, down.0, up.0],
++        long_label,
++        removal,
++        label_ink,
++        label_line_ink: ink_counts,
++        menu_body: TYPE,
++        menu_ax: compact_ax,
++        selection_after_menu: accepted.selected,
++        back_focus: SHOW,
++        capture: "material-chips-compact-dark-rtl-200.png",
++    })
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1844, 2.).await?;
++    let mut report = Report {
++        browser: chrome.version.clone(),
++        adapter: None,
++        wide: None,
++        keyboard: None,
++        pointer: None,
++        compact: None,
++        page_errors: Vec::new(),
++        failure: None,
++        state_at_failure: None,
++    };
++    let result: Result<()> = async {
++        step("M290", "all seven Material chip surfaces, targets, artwork and actual Chrome grid semantics");
++        route(&tab, url).await?;
++        report.adapter = Some(serde_json::from_value(tab.eval(
++            "(async () => {
++                const a = await navigator.gpu?.requestAdapter();
++                if (!a) return null;
++                const {vendor, architecture, isFallbackAdapter} = a.info;
++                return {vendor, architecture, isFallbackAdapter};
++            })()"
++        ).await?).context("actual Chrome WebGPU adapter")?);
++        report.wide = Some(wide(env, &tab).await.context("M290 wide variant and AX proof")?);
++        step("M291", "keyboard grid traversal, controlled single/multiple filters, independent menu and focus paint");
++        report.keyboard = Some(keyboard(env, &tab).await.context("M291 keyboard and menu proof")?);
++        step("M292", "trusted pointer, touch cancellation, split recipient, deletion and retained focus");
++        report.pointer = Some(pointer(env, &tab).await.context("M292 input and removal proof")?);
++        step("M293", "320 dp dark RTL 200 percent measured rows, full label and whole-chip menu");
++        report.compact = Some(compact(env, &tab, url).await.context("M293 compact and RTL proof")?);
++        check!(tab.errors().is_empty(), "Chips journey has no Chrome page errors");
++        Ok(())
++    }.await;
++    report.page_errors = tab.errors();
++    if let Err(error) = &result {
++        report.failure = Some(format!("{error:#}"));
++        report.state_at_failure = state(&tab).await.ok();
++        let _ = tab
++            .screenshot(&env.artifact("material-chips-failure.png"))
++            .await;
++    }
++    env.write_json("material-chips.json", &serde_json::to_value(&report)?)?;
++    result
++}
+diff --git a/examples/material-gallery/src/chip_demo.rs b/examples/material-gallery/src/chip_demo.rs
+new file mode 100644
+index 0000000..9c61e5c
+--- /dev/null
++++ b/examples/material-gallery/src/chip_demo.rs
+@@ -0,0 +1,502 @@
++use surface::{Align, Length, Node, RasterImage, Role, Style};
++use surface_app::{AnimationFrame, AnimationUpdate, View};
++use surface_material::{
++    shape::LayoutDirection, ButtonKind, ChipContent, ChipGridLayout, ChipLeading, ChipOptions,
++    ChipRemove, ChipStyle, ChipTrailing, ChoiceState, CommandMenuEntry, CommandMenuItem,
++    CommandMenuMeasurement, CommandMenuOptions, Theme,
++};
++
++use crate::{rail_icons, scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const SHOW: &str = "chip-demo-show";
++const BACK: &str = "chip-demo-back";
++const MENU: &str = "chip-demo-menu-panel";
++const FILTER_MENU: &str = "chip-demo-filter-type";
++const FILTER_MENU_WIDE: &str = "chip-demo-filter-type-menu";
++const ACTIONS: [&str; 5] = [
++    "chip-demo-assist",
++    "chip-demo-assist-elevated",
++    "chip-demo-suggest",
++    "chip-demo-suggest-elevated",
++    "chip-demo-disabled",
++];
++const ACTION_TEXT: [&str; 5] = ["排程", "查看行程", "今天", "建議下一步", "停用"];
++const FILTERS: [&str; 3] = ["chip-demo-news", "chip-demo-images", FILTER_MENU];
++const FILTER_TEXT: [&str; 3] = ["新聞", "圖片", "依檔案類型篩選"];
++const CONTACTS: [&str; 3] = ["chip-demo-chen", "chip-demo-mei", "chip-demo-lin"];
++const CONTACT_NAMES: [&str; 3] = ["小陳", "小美", "林小姐的工作用電子郵件"];
++const REMOVE_NAMES: [&str; 3] = ["移除小陳", "移除小美", "移除林小姐"];
++
++#[derive(Clone)]
++pub enum ChipDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleSingle,
++    Action(&'static str),
++    Filter(usize),
++    Edit(usize),
++    Remove(usize),
++    ToggleMenu,
++    DismissMenu,
++    ChooseType,
++}
++
++pub(crate) struct ChipDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    multi: bool,
++    menu_open: bool,
++    width: f32,
++    selected: [bool; 3],
++    removed: [bool; 3],
++    actions: usize,
++    edits: usize,
++    removals: usize,
++    last: Option<&'static str>,
++    layouts: [ChipGridLayout; 3],
++    menu: CommandMenuMeasurement,
++    avatar: RasterImage,
++}
++
++impl Default for ChipDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            multi: true,
++            menu_open: false,
++            width: 720.,
++            selected: [true, false, false],
++            removed: [false; 3],
++            actions: 0,
++            edits: 0,
++            removals: 0,
++            last: None,
++            layouts: std::array::from_fn(|_| ChipGridLayout::default()),
++            menu: CommandMenuMeasurement::default(),
++            avatar: avatar(),
++        }
++    }
++}
++
++fn avatar() -> RasterImage {
++    let mut pixels = Vec::with_capacity(24 * 24 * 4);
++    for y in 0_i32..24 {
++        for x in 0_i32..24 {
++            let head = (x - 12).pow(2) + (y - 8).pow(2) <= 12;
++            let shoulders = y >= 13 && (x - 12).pow(2) + (y - 22).pow(2) <= 87;
++            pixels.extend_from_slice(if head || shoulders {
++                &[247, 211, 150, 255]
++            } else {
++                &[67, 89, 135, 255]
++            });
++        }
++    }
++    RasterImage::new(24, 24, pixels).expect("fixed Gallery avatar")
++}
++
++impl ChipDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++        self.menu_open = false;
++        self.layouts = std::array::from_fn(|_| ChipGridLayout::default());
++        self.menu = CommandMenuMeasurement::default();
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        let inner = (width - 44.).clamp(48., 720.);
++        let changed = self.width != inner;
++        self.width = inner;
++        changed && self.visible
++    }
++
++    fn direction(&self) -> LayoutDirection {
++        if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        }
++    }
++
++    fn compact(&self) -> bool {
++        self.width < 400.
++    }
++
++    fn trigger(&self) -> &str {
++        if self.compact() {
++            FILTER_MENU
++        } else {
++            FILTER_MENU_WIDE
++        }
++    }
++
++    fn contacts(&self) -> Vec<usize> {
++        (0..CONTACTS.len())
++            .filter(|&index| !self.removed[index])
++            .collect()
++    }
++
++    fn filter(&mut self, index: usize) {
++        if self.multi {
++            self.selected[index] = !self.selected[index];
++        } else {
++            self.selected = std::array::from_fn(|candidate| candidate == index);
++        }
++    }
++
++    pub(crate) fn update(&mut self, message: ChipDemoEvent) {
++        use ChipDemoEvent::*;
++        match message {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleSingle => {
++                self.multi = !self.multi;
++                if !self.multi {
++                    let selected = self.selected.iter().position(|&value| value).unwrap_or(0);
++                    self.filter(selected);
++                }
++            }
++            Action(id) => {
++                self.actions += 1;
++                self.last = Some(id);
++            }
++            Filter(index) => self.filter(index),
++            Edit(index) => {
++                self.edits += 1;
++                self.last = Some(CONTACTS[index]);
++            }
++            Remove(index) => {
++                if !self.removed[index] {
++                    self.removed[index] = true;
++                    self.removals += 1;
++                    self.last = Some(CONTACTS[index]);
++                }
++            }
++            ToggleMenu => self.menu_open = !self.menu_open,
++            DismissMenu => self.menu_open = false,
++            ChooseType => {
++                self.filter(2);
++                self.menu_open = false;
++            }
++        }
++    }
++
++    pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
++        if !self.visible {
++            return AnimationUpdate::default();
++        }
++        let trigger = if self.compact() {
++            FILTER_MENU
++        } else {
++            FILTER_MENU_WIDE
++        };
++        let ids: Vec<_> = self
++            .contacts()
++            .iter()
++            .map(|&index| CONTACTS[index])
++            .collect();
++        let scale = self.text_scale();
++        let mut update = self.menu.advance(MENU, trigger, frame);
++        for (layout, ids) in self
++            .layouts
++            .iter_mut()
++            .zip([&ACTIONS[..], &FILTERS[..], &ids[..]])
++        {
++            let next = layout.advance(frame, self.width, scale, ids);
++            update.rebuild |= next.rebuild;
++            update.request_next |= next.request_next;
++        }
++        update
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "標籤範例",
++                ButtonKind::Outlined,
++                false,
++                Message::ChipDemo(ChipDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn options(
++        &self,
++        id: &'static str,
++        label: &'static str,
++        disabled: bool,
++    ) -> ChipOptions<'static> {
++        ChipOptions {
++            id,
++            label,
++            accessible_name: None,
++            direction: self.direction(),
++            text_scale: self.text_scale(),
++            max_width: self.width,
++            disabled,
++        }
++    }
++
++    fn action(&self, theme: &Theme, index: usize) -> Option<View<Message>> {
++        let message = Message::ChipDemo(ChipDemoEvent::Action(ACTIONS[index]));
++        let style = if matches!(index, 1 | 3) {
++            ChipStyle::Elevated
++        } else {
++            ChipStyle::Flat
++        };
++        let content = if index < 2 {
++            ChipContent::Assist {
++                style,
++                leading: Some(if index == 0 {
++                    ChipLeading::Icon(rail_icons::search())
++                } else {
++                    ChipLeading::Image(&self.avatar)
++                }),
++                message,
++            }
++        } else {
++            ChipContent::Suggestion {
++                style,
++                leading: (index == 3).then(|| ChipLeading::Icon(rail_icons::search())),
++                message,
++            }
++        };
++        theme.chip_in_grid(
++            self.options(ACTIONS[index], ACTION_TEXT[index], index == 4),
++            content,
++        )
++    }
++
++    fn filter_chip(&self, theme: &Theme, index: usize) -> Option<View<Message>> {
++        use ChipDemoEvent::*;
++        let compact_menu = index == 2 && self.compact();
++        let trailing = if index != 2 {
++            None
++        } else if compact_menu {
++            Some(ChipTrailing::MenuOnBody {
++                expanded: self.menu_open,
++            })
++        } else {
++            Some(ChipTrailing::Menu {
++                accessible_name: "開啟檔案類型選單",
++                expanded: self.menu_open,
++                message: Message::ChipDemo(ToggleMenu),
++            })
++        };
++        let filter = theme.chip_in_grid(
++            self.options(FILTERS[index], FILTER_TEXT[index], false),
++            ChipContent::Filter {
++                style: if index == 1 {
++                    ChipStyle::Elevated
++                } else {
++                    ChipStyle::Flat
++                },
++                leading: None,
++                selected: self.selected[index],
++                show_checkmark: true,
++                message: Message::ChipDemo(if compact_menu {
++                    ToggleMenu
++                } else {
++                    Filter(index)
++                }),
++                trailing,
++            },
++        )?;
++        if index != 2 {
++            return Some(filter);
++        }
++        Some(theme.command_menu(
++            CommandMenuOptions {
++                id: MENU,
++                label: "檔案類型",
++                trigger_id: self.trigger(),
++                open: self.menu_open,
++                direction: self.direction(),
++                preferred_width: 180.,
++                restore_focus_to: Some(self.trigger()),
++            },
++            filter,
++            [CommandMenuEntry::Item(CommandMenuItem {
++                id: "chip-demo-documents",
++                label: "文件",
++                leading_icon: None,
++                trailing_icon: None,
++                disabled: false,
++                on_press: Message::ChipDemo(ChooseType),
++            })],
++            Message::ChipDemo(DismissMenu),
++            &self.menu,
++        ))
++    }
++
++    fn contact(&self, theme: &Theme, index: usize) -> Option<View<Message>> {
++        use ChipDemoEvent::*;
++        theme.chip_in_grid(
++            self.options(CONTACTS[index], CONTACT_NAMES[index], false),
++            ChipContent::Input {
++                leading: (index != 1).then_some(ChipLeading::Avatar(&self.avatar)),
++                selected: index == 0,
++                body: (index != 1).then_some(Message::ChipDemo(Edit(index))),
++                remove: ChipRemove {
++                    accessible_name: REMOVE_NAMES[index],
++                    message: Message::ChipDemo(Remove(index)),
++                },
++            },
++        )
++    }
++
++    fn grid(
++        &self,
++        theme: &Theme,
++        index: usize,
++        name: &str,
++        members: &[&str],
++        mut child: impl FnMut(usize) -> Option<View<Message>>,
++    ) -> View<Message> {
++        let rows: Vec<Vec<_>> = self.layouts[index]
++            .rows(self.width, self.text_scale(), members)
++            .into_iter()
++            .map(|row| row.filter_map(&mut child).collect())
++            .collect();
++        let id = [
++            "chip-demo-actions",
++            "chip-demo-filters",
++            "chip-demo-contacts",
++        ][index];
++        theme.chip_grid(id, name, self.direction(), rows)
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use ChipDemoEvent::*;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::ChipDemo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            toggle("chip-demo-theme", "深色", dark, Message::Theme),
++            toggle(
++                "chip-demo-rtl",
++                "右起",
++                self.rtl,
++                Message::ChipDemo(ToggleDirection),
++            ),
++            toggle(
++                "chip-demo-large",
++                "大字",
++                self.large_text,
++                Message::ChipDemo(ToggleLargeText),
++            ),
++            toggle(
++                "chip-demo-single",
++                "單選",
++                !self.multi,
++                Message::ChipDemo(ToggleSingle),
++            ),
++        ]);
++        let contacts = self.contacts();
++        let ids: Vec<_> = contacts.iter().map(|&index| CONTACTS[index]).collect();
++        let mut column = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .gap(12.)
++            .padding(6.)
++            .clip(true);
++        column.max_width = Length::Px(732.);
++        let preview = View::new(
++            Node::new(Role::Group, "")
++                .id("chip-demo-preview")
++                .styled(column),
++        )
++        .accessibility_scroll_pages()
++        .children([
++            theme.heading("chip-demo-action-heading", "動作與建議"),
++            self.grid(theme, 0, "動作與建議", &ACTIONS, |index| {
++                self.action(theme, index)
++            }),
++            theme.heading("chip-demo-filter-heading", "搜尋篩選"),
++            self.grid(theme, 1, "搜尋篩選", &FILTERS, |index| {
++                self.filter_chip(theme, index)
++            }),
++            theme.heading("chip-demo-contact-heading", "收件人"),
++            self.grid(theme, 2, "收件人", &ids, |index| {
++                self.contact(theme, contacts[index])
++            }),
++        ]);
++        View::new(
++            Node::new(Role::Window, "Material gallery")
++                .id("chip-demo")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([theme.heading("chip-demo-title", "標籤"), controls, preview])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++        serde_json::json!({
++            "visible": self.visible,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "multi": self.multi,
++            "menu_open": self.menu_open,
++            "compact": self.compact(),
++            "selected": self.selected,
++            "removed": self.removed,
++            "actions": self.actions,
++            "edits": self.edits,
++            "removals": self.removals,
++            "last": self.last,
++            "palette": {
++                "surface": theme.colors.surface,
++                "surface_container_low": theme.colors.surface_container_low,
++                "outline_variant": theme.colors.outline_variant,
++                "secondary_container": theme.colors.secondary_container,
++                "secondary": theme.colors.secondary,
++            },
++        })
++    }
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 2986b78..12cd569 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -5,6 +5,7 @@ mod button_group_demo;
+ mod card_demo;
+ mod carousel_demo;
+ mod checkbox_demo;
++mod chip_demo;
+ mod date_picker_demo;
+ mod date_range_picker_demo;
+ mod dialog_demo;
+@@ -51,6 +52,7 @@ use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
+ use card_demo::{CardDemo, CardEvent};
+ use carousel_demo::{CarouselDemo, CarouselEvent};
+ use checkbox_demo::{CheckboxDemo, CheckboxDemoEvent};
++use chip_demo::{ChipDemo, ChipDemoEvent};
+ use date_picker_demo::{DatePickerDemo, DatePickerDemoEvent};
+ use date_range_picker_demo::{DateRangeDemo, DateRangeDemoEvent};
+ use dialog_demo::{DialogDemo, DialogDemoEvent};
+@@ -128,6 +130,7 @@ pub struct Gallery {
+     checkbox_demo: CheckboxDemo,
+     radio_demo: RadioDemo,
+     tabs_demo: TabsDemo,
++    chip_demo: ChipDemo,
+     drawer_demo: DrawerDemo,
+     progress_demo: ProgressDemo,
+     loading_demo: LoadingDemo,
+@@ -197,6 +200,7 @@ impl Default for Gallery {
+             checkbox_demo: CheckboxDemo::default(),
+             radio_demo: RadioDemo::default(),
+             tabs_demo: TabsDemo::default(),
++            chip_demo: ChipDemo::default(),
+             drawer_demo: DrawerDemo::default(),
+             progress_demo: ProgressDemo::default(),
+             loading_demo: LoadingDemo::default(),
+@@ -311,6 +315,7 @@ pub enum Message {
+     CheckboxDemo(CheckboxDemoEvent),
+     RadioDemo(RadioDemoEvent),
+     TabsDemo(TabsDemoEvent),
++    ChipDemo(ChipDemoEvent),
+     ScrollChoice(ScrollChoiceDemoEvent),
+     ScrollPair(ScrollPairDemoEvent),
+     ScrollPopup(ScrollPopupDemoEvent),
+@@ -484,6 +489,9 @@ impl Application for Gallery {
+         if self.tabs_demo.visible() {
+             return self.tabs_demo.text_scale();
+         }
++        if self.chip_demo.visible() {
++            return self.chip_demo.text_scale();
++        }
+         if self.rail_large_text
+             || self.snackbar_demo.large_text()
+             || (self.section == badge_demo::SECTION && self.badge_demo.large_text())
+@@ -495,6 +503,7 @@ impl Application for Gallery {
+     }
+     fn viewport_changed(&mut self, width: f32, height: f32) -> bool {
+         let tabs = self.tabs_demo.viewport_changed(width);
++        let chips = self.chip_demo.viewport_changed(width);
+         let inline = self.wide_rail_demo.viewport_changed(width);
+         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
+         let drawer = self.drawer_demo.viewport_changed(width, height);
+@@ -554,6 +563,7 @@ impl Application for Gallery {
+             || dialog
+             || flexible_navigation_bar
+             || tabs
++            || chips
+             || list_actions
+             || list_media
+             || list_reorder
+@@ -671,6 +681,7 @@ impl Application for Gallery {
+     }
+     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
+         let tabs = self.tabs_demo.frame(&frame, self.queue.as_ref());
++        let chips = self.chip_demo.frame(&frame);
+         self.card_demo.frame(&frame);
+         let inline = self.wide_rail_demo.frame(&frame);
+         let modal = self.modal_wide_rail_demo.frame(&frame);
+@@ -695,7 +706,8 @@ impl Application for Gallery {
+         let list_expand = self.list_expand_demo.frame(&frame);
+         let list_reorder = self.list_reorder_demo.frame(&frame, self.queue.as_ref());
+         AnimationUpdate {
+-            rebuild: tabs.rebuild
++            rebuild: chips.rebuild
++                || tabs.rebuild
+                 || inline.rebuild
+                 || modal.rebuild
+                 || snackbar.rebuild
+@@ -718,7 +730,8 @@ impl Application for Gallery {
+                 || menu.rebuild
+                 || list_expand.rebuild
+                 || list_reorder.rebuild,
+-            request_next: tabs.request_next
++            request_next: chips.request_next
++                || tabs.request_next
+                 || inline.request_next
+                 || modal.request_next
+                 || snackbar.request_next
+@@ -857,6 +870,9 @@ impl Application for Gallery {
+                 if i != tabs_demo::SECTION {
+                     self.tabs_demo.leave();
+                 }
++                if i != chip_demo::SECTION {
++                    self.chip_demo.leave();
++                }
+                 if i != tooltip_demo::SECTION {
+                     self.tooltip_demo.leave();
+                 }
+@@ -872,6 +888,7 @@ impl Application for Gallery {
+             Message::CheckboxDemo(event) => self.checkbox_demo.update(event),
+             Message::RadioDemo(event) => self.radio_demo.update(event),
+             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
++            Message::ChipDemo(event) => self.chip_demo.update(event),
+             Message::Drawer(i) => self.drawer = i,
+             Message::DrawerDemo(event) => self.drawer_demo.update(event),
+             Message::Progress(event) => self.progress_demo.update(event),
+@@ -1075,6 +1092,9 @@ impl Application for Gallery {
+         if self.tabs_demo.visible() {
+             return self.tabs_demo.view(&t, self.dark);
+         }
++        if self.chip_demo.visible() {
++            return self.chip_demo.view(&t, self.dark);
++        }
+         let mut children = vec![
+             t.heading("gallery-title", "Material gallery"),
+             t.row([
+@@ -1177,6 +1197,7 @@ impl Application for Gallery {
+                             CheckboxDemo::show_button(&t),
+                             RadioDemo::show_button(&t),
+                             TabsDemo::show_button(&t),
++                            ChipDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -1806,6 +1827,7 @@ mod web {
+         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
+         state["radio_demo"] = s.radio_demo.inspect(&theme);
+         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
++        state["chip_demo"] = s.chip_demo.inspect(&theme);
+         state["list_actions"] = s.list_actions_demo.inspect(&runtime, &theme);
+         state["list_expand"] = s.list_expand_demo.inspect(&theme);
+         state["list_reorder"] = s.list_reorder_demo.inspect(&runtime, &theme);
