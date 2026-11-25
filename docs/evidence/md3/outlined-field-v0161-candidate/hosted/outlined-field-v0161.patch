@@ -1,0 +1,3581 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 09f3b0345d93558f00b306ed9675844321d5b6cb..546397aa0b03b2084b51af90e69ee9c51500f5eb 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3905,7 +3905,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3918,7 +3918,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3948,7 +3948,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3960,7 +3960,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4474,7 +4474,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5450,7 +5450,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.60"
++version = "0.1.61"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 3cec45609e64c06f79bdc48d32d6ab5f1cb99935..2c677af501e167f92f5081e139f0ee8e3a53260e 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.60"
++version = "0.1.61"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/editing_runtime.rs b/crates/surface-app/src/editing_runtime.rs
+index 877f6f389d11e7ec9cf8606747d4aeb4cec17d5d..0665b9845f4fcc800d1ca019f86577dcfd8bf38e 100644
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -78,17 +78,25 @@ impl<A: Application> Runtime<A> {
+                 .and_then(|id| self.dom.get(id).ok())
+                 .is_some_and(|n| n.role() == Role::TextInput && !n.is_disabled())
+         });
+-        for (_, node) in self
++        for (node_id, node) in self
+             .dom
+             .iter()
+             .filter(|(_, n)| n.role() == Role::TextInput && !n.is_disabled())
+         {
+             if let Some(id) = node.stable_id() {
+                 let value = node.text_value().unwrap_or_default();
+-                self.editors
++                let editor = self
++                    .editors
+                     .entry(id.to_owned())
+-                    .and_modify(|editor| editor.sync(value))
+                     .or_insert_with(|| TextEditor::new(value));
++                let options = &self.bindings[&node_id].text_options;
++                if options.read_only && editor.composition().is_some() {
++                    editor.ime(ImeEvent::Cancel, options);
++                    if self.focused.as_deref() == Some(id) {
++                        self.ime_area = None;
++                    }
++                }
++                editor.sync(value);
+             }
+         }
+     }
+@@ -356,10 +364,11 @@ impl<A: Application> Runtime<A> {
+                     r.height,
+                 )
+             };
+-            let placeholder = binding
+-                .text_input_placeholder
+-                .as_ref()
+-                .filter(|_| editor.value().is_empty() && !editor.is_composing());
++            let placeholder = binding.text_input_placeholder.as_ref().filter(|_| {
++                editor.value().is_empty()
++                    && !editor.is_composing()
++                    && (!binding.focused_placeholder || self.focused() == Some(key.as_str()))
++            });
+             let paint_scroll_x = if let (true, Some(hint)) = (right_aligned, placeholder) {
+                 let hint_layout = measurer.text_layout_styled(&hint.0, &text_style, None);
+                 -right_alignment_space(content_width, &hint_layout).max(0.)
+diff --git a/crates/surface-app/src/editor_paint.rs b/crates/surface-app/src/editor_paint.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8f05b74a64ee1cea91c53216451411807c1c681e
+--- /dev/null
++++ b/crates/surface-app/src/editor_paint.rs
+@@ -0,0 +1,153 @@
++use crate::{Application, ContourPainter, Runtime};
++use surface::{Color, ComputedDom, DomError, FillContour, MicroDom, NodeId, Rect, Role};
++
++/// The final rendered state of a named text input in logical window pixels.
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub struct TextInputPaintState {
++    pub is_focused: bool,
++    pub is_hovered: bool,
++    /// An active IME session, even when the current preedit is empty.
++    pub is_composing: bool,
++    /// Whether the committed Runtime editor value is empty.
++    /// A disabled editor uses its authored value.
++    pub is_empty: bool,
++    pub bounds: Rect,
++    pub clip: Rect,
++}
++
++pub(crate) type TextInputContour =
++    Box<dyn Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour>>;
++
++pub(crate) enum Effect {
++    Visibility(Box<dyn Fn(TextInputPaintState) -> bool>),
++    Foreground(Box<dyn Fn(TextInputPaintState) -> Option<Color>>),
++    Contour {
++        reference: Option<String>,
++        paint: TextInputContour,
++    },
++}
++
++pub(crate) struct Binding {
++    pub(crate) editor: String,
++    pub(crate) effect: Effect,
++}
++
++#[derive(Default)]
++pub(crate) struct PaintBindings {
++    pub(crate) retained_contours: Vec<(NodeId, ContourPainter)>,
++    pub(crate) text_inputs: Vec<(NodeId, Binding)>,
++}
++
++pub(crate) enum ResolvedPaint {
++    Foreground(Color),
++    Contour(FillContour),
++}
++
++impl ResolvedPaint {
++    pub(crate) fn apply(self, display: &mut MicroDom, id: NodeId) -> Result<(), DomError> {
++        match self {
++            Self::Foreground(color) => {
++                let style = display.get(id)?.style().clone().foreground(color);
++                display.set_style(id, style)
++            }
++            Self::Contour(contour) => display.set_presented_fill_contour(id, contour),
++        }
++    }
++}
++
++impl<A: Application> Runtime<A> {
++    fn editor_paint_state(
++        &self,
++        editor: &str,
++        visual: NodeId,
++        computed: &ComputedDom,
++        hovered: Option<NodeId>,
++    ) -> Option<TextInputPaintState> {
++        let id = self.dom.by_id(editor)?;
++        let node = self.dom.get(id).ok()?;
++        let shell = node.parent()?;
++        if node.role() != Role::TextInput || self.dom.get(visual).ok()?.parent() != Some(shell) {
++            return None;
++        }
++        let active = !node.is_disabled() && self.in_scope(id);
++        let buffer = self.editor(editor);
++        let geometry = &computed.nodes[id.index()];
++        Some(TextInputPaintState {
++            is_focused: active && self.focused() == Some(editor),
++            is_hovered: active && hovered == Some(id),
++            is_composing: active && buffer.is_some_and(crate::TextEditor::is_composing),
++            is_empty: buffer.map_or_else(
++                || node.text_value().unwrap_or_default().is_empty(),
++                |buffer| buffer.value().is_empty(),
++            ),
++            bounds: geometry.bounds,
++            clip: geometry.clip,
++        })
++    }
++
++    /// Resolve the passive branches before assigning modal paint ranges.
++    /// Keep every authored node and layout rectangle, including hidden art.
++    pub(crate) fn resolve_text_input_paint(
++        &self,
++        computed: &mut ComputedDom,
++    ) -> Vec<(NodeId, ResolvedPaint)> {
++        let bindings = &self.paint_bindings.text_inputs;
++        if bindings.is_empty() {
++            return Vec::new();
++        }
++        let hovered = self
++            .pointer_position
++            .and_then(|(x, y)| computed.hit_test_where(&self.dom, x, y, |id| self.in_scope(id)));
++        let mut resolved = Vec::new();
++        let mut hidden = Vec::new();
++        for (id, binding) in bindings {
++            let Some(state) = self.editor_paint_state(&binding.editor, *id, computed, hovered)
++            else {
++                hidden.push(*id);
++                continue;
++            };
++            let paint = match &binding.effect {
++                Effect::Visibility(predicate) => {
++                    if !predicate(state) {
++                        hidden.push(*id);
++                    }
++                    continue;
++                }
++                Effect::Foreground(color) => color(state).map(ResolvedPaint::Foreground),
++                Effect::Contour { reference, paint } => {
++                    let shell = self.dom.get(*id).ok().and_then(surface::Node::parent);
++                    let reference = reference
++                        .as_ref()
++                        .and_then(|key| self.dom.by_id(key))
++                        .filter(|reference| {
++                            self.dom
++                                .get(*reference)
++                                .ok()
++                                .and_then(surface::Node::parent)
++                                == shell
++                        })
++                        .map(|reference| computed.nodes[reference.index()].bounds);
++                    paint(state, reference).map(ResolvedPaint::Contour)
++                }
++            };
++            if let Some(paint) = paint {
++                resolved.push((*id, paint));
++            } else {
++                hidden.push(*id);
++            }
++        }
++        if !hidden.is_empty() {
++            let mut mask = vec![false; self.dom.len()];
++            for id in hidden {
++                mask[id.index()] = true;
++            }
++            for (id, node) in self.dom.iter() {
++                if node.parent().is_some_and(|parent| mask[parent.index()]) {
++                    mask[id.index()] = true;
++                }
++            }
++            computed.paint_order.retain(|id| !mask[id.index()]);
++        }
++        resolved
++    }
++}
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 46dda12858008ba9420dc308833c5da914ca99b5..eff10b68d65a36b1f7b128d0400a90d2c6053be8 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -12,6 +12,7 @@ mod display_contrast;
+ mod drag_motion;
+ mod editing;
+ mod editing_runtime;
++mod editor_paint;
+ mod focus_scroll;
+ mod frame_input;
+ mod frame_paint;
+@@ -75,11 +76,14 @@ use surface::{
+ type ContourPainter = Box<dyn Fn() -> FillContour>;
+ type ModalTransformPainter = Box<dyn Fn() -> Option<PaintTransform>>;
+ 
++pub use editor_paint::TextInputPaintState;
++
+ /// One view of application state. Messages return through `Application::update`.
+ pub struct View<M> {
+     node: Node,
+     children: Vec<Self>,
+     paint_contour: Option<ContourPainter>,
++    text_input_paint: Option<editor_paint::Binding>,
+     activate: Option<M>,
+     suppress_repeated_activation: bool,
+     focus_disabled_menu_item: bool,
+@@ -89,6 +93,7 @@ pub struct View<M> {
+     right_align_single_line_text: bool,
+     single_line_text_horizontal_inset: f32,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
++    focused_placeholder: bool,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_slider_adjustment: bool,
+     slider_input: Option<SliderInputOptions>,
+@@ -171,6 +176,7 @@ impl<M> View<M> {
+             node,
+             children: Vec::new(),
+             paint_contour: None,
++            text_input_paint: None,
+             activate: None,
+             suppress_repeated_activation: false,
+             focus_disabled_menu_item: false,
+@@ -180,6 +186,7 @@ impl<M> View<M> {
+             right_align_single_line_text: false,
+             single_line_text_horizontal_inset: 0.,
+             text_input_placeholder: None,
++            focused_placeholder: false,
+             value: None,
+             accessible_slider_adjustment: false,
+             slider_input: None,
+@@ -229,6 +236,64 @@ impl<M> View<M> {
+         self
+     }
+ 
++    /// Paint this passive subtree only when its sibling text input matches.
++    /// The editor and decoration must share an immediate parent. The rule
++    /// keeps the decoration allocated at its measured size in both phases.
++    pub fn paint_when_text_input(
++        self,
++        editor_id: impl Into<String>,
++        predicate: impl Fn(TextInputPaintState) -> bool + 'static,
++    ) -> Self {
++        self.with_text_input_paint(
++            editor_id,
++            editor_paint::Effect::Visibility(Box::new(predicate)),
++        )
++    }
++
++    /// Paint a passive label in a color derived from its sibling editor.
++    /// Returning `None` omits the branch while preserving its layout.
++    pub fn paint_text_input_foreground(
++        self,
++        editor_id: impl Into<String>,
++        color: impl Fn(TextInputPaintState) -> Option<Color> + 'static,
++    ) -> Self {
++        self.with_text_input_paint(editor_id, editor_paint::Effect::Foreground(Box::new(color)))
++    }
++
++    /// Paint a node-local contour using the sibling editor's rendered state.
++    /// The optional reference supplies its global bounds when it shares the
++    /// same immediate parent, including when its paint is hidden.
++    pub fn paint_text_input_contour(
++        self,
++        editor_id: impl Into<String>,
++        reference_id: Option<&str>,
++        painter: impl Fn(TextInputPaintState, Option<Rect>) -> Option<FillContour> + 'static,
++    ) -> Self {
++        self.with_text_input_paint(
++            editor_id,
++            editor_paint::Effect::Contour {
++                reference: reference_id.map(str::to_owned),
++                paint: Box::new(painter),
++            },
++        )
++    }
++
++    fn with_text_input_paint(
++        mut self,
++        editor_id: impl Into<String>,
++        effect: editor_paint::Effect,
++    ) -> Self {
++        self.text_input_paint = Some(editor_paint::Binding {
++            editor: editor_id.into(),
++            effect,
++        });
++        if self.interaction_suppression.is_none() {
++            self.without_interaction(None)
++        } else {
++            self
++        }
++    }
++
+     pub fn children(mut self, children: impl IntoIterator<Item = Self>) -> Self {
+         self.children = children.into_iter().collect();
+         self
+@@ -470,8 +535,17 @@ impl<M> View<M> {
+     pub fn text_input_placeholder(mut self, text: impl Into<String>, color: Color) -> Self {
+         let text = text.into();
+         self.text_input_placeholder = (!text.is_empty()).then(|| Arc::new((text, color)));
++        self.focused_placeholder = false;
+         self
+     }
++
++    /// Paint an empty editor's hint only while that editor has input focus.
++    /// An active composition keeps the hint hidden, even with empty preedit.
++    pub fn focused_text_input_placeholder(self, text: impl Into<String>, color: Color) -> Self {
++        let mut view = self.text_input_placeholder(text, color);
++        view.focused_placeholder = true;
++        view
++    }
+     /// Bind a slider value or an opted-in adjustable Group.
+     pub fn on_value(mut self, handler: impl Fn(f64) -> M + 'static) -> Self {
+         self.value = Some(Rc::new(handler));
+@@ -1135,6 +1209,7 @@ struct Binding<M> {
+     right_align_single_line_text: bool,
+     single_line_text_horizontal_inset: f32,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
++    focused_placeholder: bool,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_slider_adjustment: bool,
+     slider_input: Option<SliderInputOptions>,
+@@ -1218,7 +1293,7 @@ impl<M> Queue<M> {
+ struct PreparedView<M> {
+     dom: MicroDom,
+     bindings: BTreeMap<NodeId, Binding<M>>,
+-    contour_painters: Vec<(NodeId, ContourPainter)>,
++    paint_bindings: editor_paint::PaintBindings,
+ }
+ 
+ pub struct Runtime<A: Application> {
+@@ -1226,7 +1301,7 @@ pub struct Runtime<A: Application> {
+     app: A,
+     dom: MicroDom,
+     bindings: BTreeMap<NodeId, Binding<A::Message>>,
+-    contour_painters: Vec<(NodeId, ContourPainter)>,
++    paint_bindings: editor_paint::PaintBindings,
+     layout: LayoutEngine,
+     computed: Option<ComputedDom>,
+     focused: Option<String>,
+@@ -1275,7 +1350,7 @@ impl<A: Application> Runtime<A> {
+             app,
+             dom: MicroDom::new(Node::new(Role::Window, "Surface")),
+             bindings: BTreeMap::new(),
+-            contour_painters: Vec::new(),
++            paint_bindings: editor_paint::PaintBindings::default(),
+             layout: LayoutEngine::default(),
+             computed: None,
+             focused: None,
+@@ -1597,7 +1672,7 @@ impl<A: Application> Runtime<A> {
+             dom: &mut MicroDom,
+             parent: Option<NodeId>,
+             bindings: &mut BTreeMap<NodeId, Binding<M>>,
+-            contour_painters: &mut Vec<(NodeId, ContourPainter)>,
++            paint_bindings: &mut editor_paint::PaintBindings,
+             disabled: bool,
+             inherited_suppression: Option<&Rc<InteractionSuppression>>,
+         ) -> Result<(), AppError> {
+@@ -1652,7 +1727,10 @@ impl<A: Application> Runtime<A> {
+                 dom.root()
+             };
+             if let Some(paint) = view.paint_contour {
+-                contour_painters.push((id, paint));
++                paint_bindings.retained_contours.push((id, paint));
++            }
++            if let Some(paint) = view.text_input_paint {
++                paint_bindings.text_inputs.push((id, paint));
+             }
+             bindings.insert(
+                 id,
+@@ -1666,6 +1744,7 @@ impl<A: Application> Runtime<A> {
+                     right_align_single_line_text: view.right_align_single_line_text,
+                     single_line_text_horizontal_inset: view.single_line_text_horizontal_inset,
+                     text_input_placeholder: view.text_input_placeholder,
++                    focused_placeholder: view.focused_placeholder,
+                     value: view.value,
+                     accessible_slider_adjustment: view.accessible_slider_adjustment,
+                     slider_input: view.slider_input,
+@@ -1713,7 +1792,7 @@ impl<A: Application> Runtime<A> {
+                     dom,
+                     Some(id),
+                     bindings,
+-                    contour_painters,
++                    paint_bindings,
+                     disabled,
+                     suppression,
+                 )?;
+@@ -1723,13 +1802,13 @@ impl<A: Application> Runtime<A> {
+         let view = self.app.view();
+         let mut dom = MicroDom::new(view.node.clone());
+         let mut bindings = BTreeMap::new();
+-        let mut contour_painters = Vec::new();
++        let mut paint_bindings = editor_paint::PaintBindings::default();
+         add(
+             view,
+             &mut dom,
+             None,
+             &mut bindings,
+-            &mut contour_painters,
++            &mut paint_bindings,
+             false,
+             None,
+         )?;
+@@ -1745,7 +1824,7 @@ impl<A: Application> Runtime<A> {
+         Ok(PreparedView {
+             dom,
+             bindings,
+-            contour_painters,
++            paint_bindings,
+         })
+     }
+ 
+@@ -1765,7 +1844,7 @@ impl<A: Application> Runtime<A> {
+             .map(Node::role);
+         self.dom = prepared.dom;
+         self.bindings = prepared.bindings;
+-        self.contour_painters = prepared.contour_painters;
++        self.paint_bindings = prepared.paint_bindings;
+         self.reconcile_editors();
+         self.computed = None;
+         self.reconcile_controls(focus_after_removal, retained_roving_focus);
+@@ -1908,6 +1987,7 @@ impl<A: Application> Runtime<A> {
+             (display_dom, decorations, computed) =
+                 self.layout_editing(width, height, text_scale, measurer)?;
+         }
++        let editor_paint = self.resolve_text_input_paint(&mut computed);
+         let mut panel_effects = Vec::new();
+         let viewport = computed.viewport;
+         self.dom.apply_modal_layers_with_panel_ranges(
+@@ -1948,9 +2028,12 @@ impl<A: Application> Runtime<A> {
+         };
+         self.present_motion(&mut display_dom, &computed, focused, interaction)?;
+         self.present_press_ripple(&mut display_dom, &computed)?;
+-        for (id, paint) in &self.contour_painters {
++        for (id, paint) in &self.paint_bindings.retained_contours {
+             display_dom.set_presented_fill_contour(*id, paint())?;
+         }
++        for (id, paint) in editor_paint {
++            paint.apply(&mut display_dom, id)?;
++        }
+         let list = P::compile(
+             &display_dom,
+             &computed,
+diff --git a/crates/surface-app/tests/editing.rs b/crates/surface-app/tests/editing.rs
+index d54e2f1834551e8cfce7fbede469affeb0492405..7429c0dca7d2b8a86a7129a9ad63e44bf2c89cae 100644
+--- a/crates/surface-app/tests/editing.rs
++++ b/crates/surface-app/tests/editing.rs
+@@ -2,8 +2,8 @@ use surface::{
+     Color, DisplayList, ExtendedPaintOp, Length, Node, PaintOp, Rect, Role, Style, TextMeasurer,
+ };
+ use surface_app::{
+-    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Runtime, TextEditor,
+-    TextOptions, View,
++    utf16_to_utf8, utf8_to_utf16, Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers,
++    Runtime, TextEditor, TextOptions, View,
+ };
+ 
+ #[test]
+@@ -85,6 +85,128 @@ impl TextMeasurer for Metrics {
+     }
+ }
+ 
++#[test]
++fn stable_editor_read_only_transition_cancels_preedit_before_the_next_key() {
++    #[derive(Clone)]
++    enum Update {
++        ReadOnly,
++        Enter,
++        Value(String),
++    }
++
++    struct Editor {
++        value: String,
++        read_only: bool,
++        enters: usize,
++        inputs: usize,
++    }
++
++    impl Application for Editor {
++        type Message = Update;
++
++        fn update(&mut self, message: Update) {
++            match message {
++                Update::ReadOnly => self.read_only = true,
++                Update::Enter => self.enters += 1,
++                Update::Value(value) => {
++                    self.value = value;
++                    self.inputs += 1;
++                }
++            }
++        }
++
++        fn view(&self) -> View<Update> {
++            View::new(Node::new(Role::Window, "")).children([
++                View::new(
++                    Node::new(Role::TextInput, "Field")
++                        .id("field")
++                        .text(&self.value),
++                )
++                .text_options(TextOptions {
++                    read_only: self.read_only,
++                    ..TextOptions::default()
++                })
++                .on_input(Update::Value)
++                .on_key(|press| (press.key == Key::Enter).then_some(Update::Enter)),
++                View::new(Node::new(Role::Button, "Next").id("next"))
++                    .protect_composition_on_press(),
++            ])
++        }
++    }
++
++    for clear_native_preedit in [false, true] {
++        let initial = "台灣文";
++        let mut runtime = Runtime::new(Editor {
++            value: initial.into(),
++            read_only: false,
++            enters: 0,
++            inputs: 0,
++        })
++        .unwrap();
++        runtime.activate("field").unwrap();
++        runtime.render(240., 160., &mut Metrics).unwrap();
++        runtime
++            .dispatch(Event::Select {
++                anchor: 6,
++                cursor: 3,
++            })
++            .unwrap();
++        runtime
++            .dispatch(Event::Ime(ImeEvent::Preedit {
++                text: "ㄅ".into(),
++                selection: Some((3, 3)),
++            }))
++            .unwrap();
++        if clear_native_preedit {
++            runtime
++                .dispatch(Event::Ime(ImeEvent::Preedit {
++                    text: String::new(),
++                    selection: None,
++                }))
++                .unwrap();
++        }
++        runtime.render(240., 160., &mut Metrics).unwrap();
++        let editor = runtime.editor("field").unwrap();
++        assert!(editor.composition().is_some());
++        assert_eq!(editor.is_composing(), !clear_native_preedit);
++        let selection = editor.selection().clone();
++        let id = runtime.dom().by_id("field").unwrap();
++
++        runtime.apply(Update::ReadOnly).unwrap();
++        let editor = runtime.editor("field").unwrap();
++        assert!(!editor.is_composing() && editor.composition().is_none());
++        assert_eq!(editor.value(), initial);
++        assert_eq!(editor.selection(), &selection);
++        assert_eq!(runtime.dom().by_id("field"), Some(id));
++        assert_eq!(runtime.focused(), Some("field"));
++        assert!(runtime.input_snapshot().unwrap().read_only);
++        assert!(
++            runtime.input_snapshot().unwrap().caret.is_none(),
++            "stale preedit caret was invalidated"
++        );
++        assert_eq!(runtime.app().inputs, 0);
++
++        // The exact next key works without waiting for a stale IME event.
++        assert!(runtime
++            .key(&KeyPress::new(Key::Enter, Modifiers::default()))
++            .unwrap());
++        assert_eq!(runtime.app().enters, 1);
++        runtime
++            .dispatch(Event::ImeFor {
++                id: "field".into(),
++                event: ImeEvent::Commit("誤".into()),
++            })
++            .unwrap();
++        assert_eq!(runtime.editor("field").unwrap().value(), initial);
++        assert_eq!(runtime.editor("field").unwrap().selection(), &selection);
++        assert_eq!(runtime.app().inputs, 0);
++        runtime
++            .dispatch(Event::FocusNext { reverse: false })
++            .unwrap();
++        assert_eq!(runtime.focused(), Some("next"));
++    }
++}
++
+ #[test]
+ fn placeholder_only_paints_and_yields_to_both_native_composition_routes() {
+     const HINT: &str = "搜尋文件";
+diff --git a/crates/surface-app/tests/editor_paint.rs b/crates/surface-app/tests/editor_paint.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..a8481220695fc7587f4b126928c068dfc1734c38
+--- /dev/null
++++ b/crates/surface-app/tests/editor_paint.rs
+@@ -0,0 +1,352 @@
++use std::{cell::Cell, rc::Rc};
++
++use surface::{
++    Color, ExtendedDisplayList, ExtendedPaintOp, FillContour, Length, Node, PaintOp, Rect, Role,
++    Style, TextMeasurer,
++};
++use surface_app::{Application, Event, ImeEvent, Runtime, ScrollTarget, TextInputPaintState, View};
++
++const EDITOR: &str = "field";
++const INLINE: &str = "inline";
++const FLOATING: &str = "floating";
++const OUTLINE: &str = "outline";
++const HINT: Color = Color::rgb(22, 35, 61);
++const IDLE: Color = Color::rgb(40, 56, 71);
++const HOVER: Color = Color::rgb(40, 92, 118);
++const FOCUSED: Color = Color::rgb(70, 31, 144);
++const MARKER: Color = Color::rgb(33, 44, 55);
++
++type Observation = Rc<Cell<Option<(TextInputPaintState, Option<Rect>)>>>;
++
++#[derive(Clone)]
++enum Message {
++    Input(String),
++    Modal,
++    Refresh,
++}
++
++#[derive(Default)]
++struct Model {
++    value: String,
++    disabled: bool,
++    modal: bool,
++    foreign_reference: bool,
++    input_count: usize,
++    views: Cell<usize>,
++    observation: Observation,
++}
++
++impl Application for Model {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Input(value) => {
++                self.value = value;
++                self.input_count += 1;
++            }
++            Message::Modal => self.modal = !self.modal,
++            Message::Refresh => {}
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        self.views.set(self.views.get() + 1);
++        let editor = View::new(
++            Node::new(Role::TextInput, "Editor name")
++                .id(EDITOR)
++                .text(&self.value)
++                .disabled(self.disabled)
++                .styled(
++                    Style::column()
++                        .height(Length::Px(56.))
++                        .font_size(16.)
++                        .line_height(24.),
++                ),
++        )
++        .center_single_line_text()
++        .focused_text_input_placeholder("Hint", HINT)
++        .on_input(Message::Input);
++        let inline = View::new(Node::new(Role::Text, "").id(INLINE).text("Resting"))
++            .paint_text_input_foreground(EDITOR, |state| (!floats(state)).then_some(ink(state)));
++        let floating = View::new(Node::new(Role::Text, "").id(FLOATING).text("Floating"))
++            .paint_text_input_foreground(EDITOR, |state| floats(state).then_some(ink(state)));
++        let observation = self.observation.clone();
++        let reference = if self.foreign_reference {
++            "remote"
++        } else {
++            FLOATING
++        };
++        let outline = View::new(
++            Node::new(Role::Group, "")
++                .id(OUTLINE)
++                .styled(Style::column().height(Length::Px(12.))),
++        )
++        .paint_text_input_contour(EDITOR, Some(reference), move |state, label| {
++            observation.set(Some((state, label)));
++            FillContour::new([[0., 0.], [12., 0.], [0., 8.]], ink(state))
++        });
++        let conditional = View::new(Node::new(Role::Group, "").id("conditionally-painted"))
++            .children([View::new(
++                Node::new(Role::Text, "")
++                    .id("conditional-text")
++                    .text("Conditional")
++                    .styled(
++                        Style::column()
++                            .foreground(MARKER)
++                            .fixed(surface::Insets::all(12.)),
++                    ),
++            )])
++            .paint_when_text_input(EDITOR, |state| state.is_focused);
++        let foreign = View::new(Node::new(Role::Text, "Remote").id("remote").text("Remote"));
++        let wrong_owner = View::new(
++            Node::new(Role::Text, "Unbound")
++                .id("unbound")
++                .text("Unbound"),
++        )
++        .paint_when_text_input("after", |_| panic!("non-editor must not resolve"));
++        let shell = View::new(
++            Node::new(Role::Group, "Shell")
++                .id("shell")
++                .styled(Style::column().width(Length::Px(200.)).gap(2.)),
++        )
++        .children([editor, inline, floating, outline, conditional, wrong_owner]);
++        let after = View::new(
++            Node::new(Role::Button, "Next")
++                .id("after")
++                .styled(Style::column().height(Length::Px(36.))),
++        )
++        .on_press(Message::Refresh);
++        let modal = self.modal.then(|| {
++            View::new(
++                Node::new(Role::Dialog, "Modal").id("modal").styled(
++                    Style::column()
++                        .width(Length::Px(100.))
++                        .height(Length::Px(70.))
++                        .fixed(surface::Insets {
++                            top: Length::Px(20.),
++                            left: Length::Px(220.),
++                            ..surface::Insets::default()
++                        }),
++                ),
++            )
++            .children([
++                View::new(Node::new(Role::Button, "Close").id("close")).on_press(Message::Modal)
++            ])
++            .modal_overlay(Message::Modal)
++        });
++        let page =
++            View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(520.))))
++                .children([shell, after, foreign]);
++        View::new(
++            Node::new(Role::Window, "Page")
++                .id("page")
++                .styled(Style::column().clip(true)),
++        )
++        .children([page].into_iter().chain(modal))
++    }
++}
++
++fn floats(state: TextInputPaintState) -> bool {
++    state.is_focused || state.is_composing || !state.is_empty
++}
++
++fn ink(state: TextInputPaintState) -> Color {
++    if state.is_focused {
++        FOCUSED
++    } else if state.is_hovered {
++        HOVER
++    } else {
++        IDLE
++    }
++}
++
++struct Metrics;
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
++        (text.chars().count() as f32 * (size / 2.), size * 1.5)
++    }
++}
++
++fn draw(runtime: &mut Runtime<Model>) -> ExtendedDisplayList {
++    runtime.render_extended(320., 260., &mut Metrics).unwrap()
++}
++
++fn geometry(runtime: &Runtime<Model>, key: &str) -> Rect {
++    let id = runtime.dom().by_id(key).unwrap();
++    runtime.computed().unwrap().nodes[id.index()].bounds
++}
++
++fn text_ink(list: &ExtendedDisplayList, wanted: &str) -> Option<Color> {
++    list.ops().iter().find_map(|op| match op {
++        ExtendedPaintOp::Legacy(
++            PaintOp::Text { text, color, .. } | PaintOp::StyledText { text, color, .. },
++        ) if text == wanted => Some(*color),
++        _ => None,
++    })
++}
++
++fn contour_ink(list: &ExtendedDisplayList) -> Option<Color> {
++    list.ops().iter().find_map(|op| match op {
++        ExtendedPaintOp::FillPath(path) => Some(path.color()),
++        _ => None,
++    })
++}
++
++#[test]
++fn focus_only_changes_paint_and_keeps_one_semantic_editor() {
++    let mut runtime = Runtime::new(Model::default()).unwrap();
++    let idle = draw(&mut runtime);
++    assert_eq!(text_ink(&idle, "Resting"), Some(IDLE));
++    assert_eq!(text_ink(&idle, "Floating"), None);
++    assert_eq!(text_ink(&idle, "Conditional"), None);
++    assert_eq!(text_ink(&idle, "Unbound"), None);
++    assert_eq!(text_ink(&idle, "Hint"), None);
++    assert_eq!(contour_ink(&idle), Some(IDLE));
++    let bounds = geometry(&runtime, EDITOR);
++    let label = geometry(&runtime, FLOATING);
++    let observation = runtime.app().observation.get().unwrap();
++    assert_eq!(observation.0.bounds, bounds);
++    assert_eq!(
++        observation.1,
++        Some(label),
++        "reference geometry survives hidden paint"
++    );
++    let editor = runtime.dom().by_id(EDITOR).unwrap();
++    let views = runtime.app().views.get();
++
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some(EDITOR));
++    let focused = draw(&mut runtime);
++    assert_eq!(text_ink(&focused, "Floating"), Some(FOCUSED));
++    assert_eq!(text_ink(&focused, "Resting"), None);
++    assert_eq!(text_ink(&focused, "Conditional"), Some(MARKER));
++    assert_eq!(text_ink(&focused, "Hint"), Some(HINT));
++    assert_eq!(contour_ink(&focused), Some(FOCUSED));
++    assert_eq!(geometry(&runtime, EDITOR), bounds);
++    assert_eq!(geometry(&runtime, FLOATING), label);
++    assert!(runtime.input_snapshot().unwrap().caret.is_some());
++    assert_eq!(runtime.app().views.get(), views);
++    assert_eq!(runtime.app().input_count, 0);
++    let frame = runtime.accessibility_frame().unwrap();
++    let shell = runtime.dom().by_id("shell").unwrap();
++    assert_eq!(frame.children(shell).collect::<Vec<_>>(), [editor]);
++    assert_eq!(frame.node(editor).unwrap().node.name(), "Editor name");
++    assert_eq!(frame.node(editor).unwrap().node.text_value(), Some(""));
++    assert!(frame.focus_target(editor).is_some());
++
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("after"));
++    let blurred = draw(&mut runtime);
++    assert_eq!(text_ink(&blurred, "Resting"), Some(IDLE));
++    assert_eq!(text_ink(&blurred, "Floating"), None);
++    assert_eq!(text_ink(&blurred, "Hint"), None);
++    assert_eq!(geometry(&runtime, EDITOR), bounds);
++    assert_eq!(runtime.app().views.get(), views);
++}
++
++#[test]
++fn hover_uses_final_layout_and_ignores_an_out_of_scope_editor() {
++    let mut runtime = Runtime::new(Model::default()).unwrap();
++    draw(&mut runtime);
++    let bounds = geometry(&runtime, EDITOR);
++    runtime
++        .dispatch(Event::PointerMove {
++            x: bounds.x + 18.,
++            y: bounds.y + 17.,
++        })
++        .unwrap();
++    let hovered = draw(&mut runtime);
++    assert_eq!(text_ink(&hovered, "Resting"), Some(HOVER));
++    assert_eq!(contour_ink(&hovered), Some(HOVER));
++    assert!(runtime.scroll_to("page", ScrollTarget::Offset { x: 0., y: 70. }));
++    draw(&mut runtime);
++    let shifted = runtime.app().observation.get().unwrap().0;
++    assert_eq!(shifted.bounds.y, bounds.y - 70.);
++    assert!(!shifted.is_hovered);
++    assert!(shifted.bounds.intersect(shifted.clip).height <= 0.);
++
++    assert!(runtime.scroll_to("page", ScrollTarget::Top));
++    draw(&mut runtime);
++    assert!(runtime.app().observation.get().unwrap().0.is_hovered);
++    runtime.apply(Message::Modal).unwrap();
++    let modal = draw(&mut runtime);
++    assert_eq!(runtime.focused(), Some("close"));
++    let state = runtime.app().observation.get().unwrap().0;
++    assert!(!state.is_focused && !state.is_hovered && !state.is_composing);
++    assert_eq!(contour_ink(&modal), Some(IDLE));
++}
++
++#[test]
++fn empty_and_real_preedit_hide_the_hint_without_replacing_the_editor() {
++    let mut runtime = Runtime::new(Model::default()).unwrap();
++    runtime.activate(EDITOR).unwrap();
++    let focused = draw(&mut runtime);
++    assert_eq!(text_ink(&focused, "Hint"), Some(HINT));
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    let begun = draw(&mut runtime);
++    assert_eq!(text_ink(&begun, "Hint"), None);
++    let state = runtime.app().observation.get().unwrap().0;
++    assert!(state.is_empty && state.is_composing);
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "中".to_owned(),
++            selection: Some((0, 3)),
++        }))
++        .unwrap();
++    draw(&mut runtime);
++    runtime.apply(Message::Refresh).unwrap();
++    draw(&mut runtime);
++    let editor = runtime.editor(EDITOR).unwrap();
++    assert!(editor.is_composing());
++    assert_eq!(editor.value(), "");
++    assert_eq!(editor.composition().unwrap().text, "中");
++    assert_eq!(runtime.app().input_count, 0);
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("中".into())))
++        .unwrap();
++    draw(&mut runtime);
++    assert_eq!(runtime.app().value, "中");
++    assert_eq!(runtime.app().input_count, 1);
++    runtime
++        .dispatch(Event::Select {
++            anchor: 3,
++            cursor: 0,
++        })
++        .unwrap();
++    draw(&mut runtime);
++    assert_eq!(runtime.editor(EDITOR).unwrap().selected_text(), "中");
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    let settled = draw(&mut runtime);
++    assert_eq!(text_ink(&settled, "Floating"), Some(IDLE));
++    assert_eq!(text_ink(&settled, "Hint"), None);
++    assert_eq!(runtime.app().input_count, 1);
++}
++
++#[test]
++fn disabled_value_and_invalid_reference_have_safe_paint_defaults() {
++    let mut runtime = Runtime::new(Model {
++        value: "保存".into(),
++        disabled: true,
++        foreign_reference: true,
++        ..Model::default()
++    })
++    .unwrap();
++    let list = draw(&mut runtime);
++    let (state, reference) = runtime.app().observation.get().unwrap();
++    assert_eq!(reference, None);
++    assert!(!state.is_focused && !state.is_hovered && !state.is_composing && !state.is_empty);
++    assert!(runtime.editor(EDITOR).is_none());
++    assert_eq!(text_ink(&list, "Floating"), Some(IDLE));
++    assert_eq!(text_ink(&list, "Hint"), None);
++    let editor = runtime.dom().by_id(EDITOR).unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.node(editor).unwrap().node.is_disabled());
++    assert!(frame.focus_target(editor).is_none());
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index fec8121fb3aa98c3b4109a5d0f59bff1795da270..1a9221f1304497df7d6f1fcae7753d59aa806ffe 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -46,6 +46,7 @@ mod loading_indicator;
+ mod menu_layout;
+ pub mod motion;
+ mod navigation_drawer;
++mod outlined_text_field;
+ mod progress_indicator;
+ mod radio;
+ mod scroll_choice_catalog;
+@@ -176,6 +177,7 @@ pub use menu_layout::{place_menu, MenuAnchor, MenuLayout, MenuPlacement};
+ pub use navigation_drawer::{
+     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
+ };
++pub use outlined_text_field::{OutlinedTextFieldOptions, TextFieldEditability};
+ pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
+ pub use radio::{RadioGroupLayout, RadioGroupOptions, RadioMotion, RadioOptions, RadioPose};
+ pub use scroll_choice_catalog::{
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..3661a9c642f87c2c107209e9350c3ea7d45b574b
+--- /dev/null
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -0,0 +1,481 @@
++//! Single-line Material 3 outlined fields with a stable Runtime editor.
++
++use std::f32::consts::FRAC_PI_2;
++
++use surface::{
++    Color, FillContour, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
++    TextMeasurer, TextScaling, TextStyle,
++};
++use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
++
++use crate::{shape::LayoutDirection, typography, Theme};
++
++const FACE_MIN: f32 = 56.;
++const SIDE: f32 = 16.;
++const NOTCH_PAD: f32 = 4.;
++const DESCRIPTION_GAP: f32 = 4.;
++const CORNER: f32 = 4.;
++
++/// The actions the field allows. Read-only fields can still select and copy.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum TextFieldEditability {
++    #[default]
++    Editable,
++    ReadOnly,
++    Disabled,
++}
++
++/// Caller-owned data and presentation for an outlined text field.
++#[derive(Clone, Copy, Debug)]
++pub struct OutlinedTextFieldOptions<'a> {
++    pub id: &'a str,
++    pub label: &'a str,
++    pub value: &'a str,
++    pub placeholder: Option<&'a str>,
++    pub supporting_text: Option<&'a str>,
++    /// Replaces the supporting text and marks an enabled field invalid.
++    pub error: Option<&'a str>,
++    pub editability: TextFieldEditability,
++    pub direction: LayoutDirection,
++    pub text_scale: f32,
++}
++
++impl<'a> OutlinedTextFieldOptions<'a> {
++    pub fn new(id: &'a str, label: &'a str, value: &'a str) -> Self {
++        Self {
++            id,
++            label,
++            value,
++            placeholder: None,
++            supporting_text: None,
++            error: None,
++            editability: TextFieldEditability::Editable,
++            direction: LayoutDirection::LeftToRight,
++            text_scale: 1.,
++        }
++    }
++}
++
++impl Theme {
++    /// Build an outlined field which uses the width supplied by its parent.
++    ///
++    /// Keep the ID stable across changes to value, validation, theme and scale.
++    /// The label floats when the field has focus or content. An optional hint
++    /// shows only in the focused empty field outside IME composition. A long
++    /// label that cannot fit inside the field stays above the outline.
++    pub fn outlined_text_field<M>(
++        &self,
++        options: OutlinedTextFieldOptions<'_>,
++        on_input: impl Fn(String) -> M + 'static,
++    ) -> Option<View<M>> {
++        self.outlined_text_field_with_submit(options, on_input, || None)
++    }
++
++    /// Also handle a plain, first Enter while the editable field has focus.
++    /// The Runtime gives an active IME composition its keys before submission.
++    pub fn outlined_text_field_with_submit<M>(
++        &self,
++        options: OutlinedTextFieldOptions<'_>,
++        on_input: impl Fn(String) -> M + 'static,
++        on_submit: impl Fn() -> Option<M> + 'static,
++    ) -> Option<View<M>> {
++        let label = visible_text(Some(options.label))?;
++        if options.id.trim().is_empty()
++            || !options.text_scale.is_finite()
++            || options.text_scale <= 0.
++        {
++            return None;
++        }
++        let body = typography::BODY_LARGE.scaled(options.text_scale);
++        let caption = typography::BODY_SMALL.scaled(options.text_scale);
++        let line_height = body.line_height.filter(|height| height.is_finite())?;
++        let caption_height = caption.line_height.filter(|height| height.is_finite())?;
++        let disabled = options.editability == TextFieldEditability::Disabled;
++        let error = visible_text(options.error);
++        let description = error.or_else(|| visible_text(options.supporting_text));
++        let rgba = self.colors;
++        let tokens = FieldColors {
++            disabled,
++            error: error.is_some(),
++            outline: rgba.outline,
++            neutral_label: rgba.on_surface_variant,
++            hover: rgba.on_surface,
++            primary: rgba.primary,
++            error_ink: rgba.error,
++            error_hover: rgba.on_error_container,
++            disabled_outline: translucent(rgba.on_surface, 31),
++            disabled_text: translucent(rgba.on_surface, 97),
++        };
++        let rtl = options.direction == LayoutDirection::RightToLeft;
++        let alignment = if rtl {
++            TextAlignment::Right
++        } else {
++            TextAlignment::Left
++        };
++        let id = options.id;
++        let description_id = format!("{id}-description");
++        let floating_id = format!("{id}-floating-label");
++        let disabled_value = disabled && !options.value.is_empty();
++        let mut input = Node::new(Role::TextInput, label)
++            .id(id)
++            .text(options.value)
++            .disabled(disabled)
++            .invalid(!disabled && error.is_some())
++            .text_scaling(TextScaling::Fixed)
++            .text_input_caret_color(if error.is_some() {
++                rgba.error
++            } else {
++                rgba.primary
++            })
++            .focus_color(Color::TRANSPARENT)
++            .styled(
++                Style::default()
++                    .with_text_style(body.clone())
++                    .foreground(if disabled {
++                        Color::TRANSPARENT
++                    } else {
++                        rgba.on_surface
++                    }),
++            );
++        if description.is_some() {
++            input = input.described_by_text(&description_id);
++        }
++        let mut editor = View::new(input)
++            .text_options(TextOptions {
++                read_only: options.editability == TextFieldEditability::ReadOnly,
++                ..TextOptions::default()
++            })
++            .center_single_line_text()
++            .inset_single_line_text_horizontally(SIDE)
++            .accessibility_scroll_into_view();
++        if !disabled {
++            editor = editor.on_input(on_input).cursor(CursorStyle::Text);
++        }
++        if options.editability == TextFieldEditability::Editable {
++            editor = editor.on_key(move |press| {
++                if press.key == Key::Enter && press.modifiers.is_empty() && !press.repeat {
++                    on_submit()
++                } else {
++                    None
++                }
++            });
++        }
++        if let Some(hint) = visible_text(options.placeholder) {
++            editor = editor.focused_text_input_placeholder(hint, rgba.on_surface_variant);
++        }
++        if rtl {
++            editor = editor.right_align_single_line_text();
++        }
++
++        let outline = View::new(Node::new(Role::Group, "").id(format!("{id}-outline")))
++            .without_interaction(None)
++            .paint_text_input_contour(id, Some(&floating_id), move |state, floating| {
++                let width = state.bounds.width;
++                let height = state.bounds.height;
++                let thickness = if state.is_focused && !disabled {
++                    3.
++                } else {
++                    1.
++                };
++                let gap = floating
++                    .filter(|rect| {
++                        floats(state) && rect.width > 0. && rect.y + rect.height > state.bounds.y
++                    })
++                    .map(|rect| {
++                        let left = rect.x - state.bounds.x;
++                        (left - NOTCH_PAD, left + rect.width + NOTCH_PAD)
++                    });
++                outline_contour(width, height, thickness, gap, tokens.border(state))
++            });
++        let label_view = |id, font, shown: fn(TextInputPaintState) -> bool| {
++            View::new(
++                Node::new(Role::Text, "")
++                    .id(id)
++                    .text(label)
++                    .text_alignment(alignment)
++                    .text_scaling(TextScaling::Fixed)
++                    .styled(Style::default().with_text_style(font)),
++            )
++            .without_interaction(None)
++            .paint_text_input_foreground(options.id, move |state| {
++                shown(state).then(|| tokens.label(state))
++            })
++        };
++        let inline = label_view(format!("{id}-inline-label"), body.clone(), |state| {
++            !floats(state)
++        });
++        let floating = label_view(floating_id, caption.clone(), floats);
++        let fallback = label_view(format!("{id}-above-label"), caption.clone(), |_| true);
++        // Disabled peers have an authored value but do not mount an editor.
++        // Draw their value in the same inset as an enabled single line.
++        let disabled_ink = disabled_value.then(|| {
++            View::new(
++                Node::new(Role::Text, "")
++                    .id(format!("{id}-disabled-value"))
++                    .text(options.value)
++                    .text_alignment(alignment)
++                    .text_scaling(TextScaling::Fixed)
++                    .styled(
++                        Style::default()
++                            .with_text_style(body.clone())
++                            .foreground(tokens.disabled_text)
++                            .clip(true),
++                    ),
++            )
++            .without_interaction(None)
++        });
++        let description_view = description.map(|description| {
++            View::new(
++                Node::new(Role::Text, "")
++                    .id(description_id)
++                    .text(description)
++                    .text_alignment(alignment)
++                    .text_scaling(TextScaling::Fixed)
++                    .styled(
++                        Style::default()
++                            .with_text_style(caption.clone())
++                            .foreground(if disabled {
++                                tokens.disabled_text
++                            } else if error.is_some() {
++                                tokens.error_ink
++                            } else {
++                                tokens.neutral_label
++                            }),
++                    ),
++            )
++        });
++        let validation_status = View::new(
++            Node::new(Role::Status, "")
++                .id(format!("{id}-validation-status"))
++                .text(error.filter(|_| !disabled).unwrap_or_default())
++                .assertive_live_status()
++                .styled(Style::default().foreground(Color::TRANSPARENT)),
++        );
++        let mut shell = Style::column().width(Length::Percent(1.));
++        shell.min_width = FACE_MIN;
++        let layout = FieldLayout {
++            label: label.to_owned(),
++            description: description.map(str::to_owned),
++            body,
++            caption,
++            line_height,
++            caption_height,
++            rtl,
++            disabled_value,
++        };
++        Some(
++            View::new(
++                Node::new(Role::Group, "")
++                    .id(format!("{id}-field"))
++                    .styled(shell)
++                    .measured_group(layout),
++            )
++            .children(
++                [editor, outline, inline, floating, fallback]
++                    .into_iter()
++                    .chain(disabled_ink)
++                    .chain(description_view)
++                    .chain([validation_status]),
++            ),
++        )
++    }
++}
++
++fn visible_text(text: Option<&str>) -> Option<&str> {
++    text.filter(|value| !value.trim().is_empty())
++}
++
++fn floats(state: TextInputPaintState) -> bool {
++    state.is_focused || state.is_composing || !state.is_empty
++}
++
++fn translucent(Color(r, g, b, _): Color, alpha: u8) -> Color {
++    Color(r, g, b, alpha)
++}
++
++#[derive(Clone, Copy)]
++struct FieldColors {
++    disabled: bool,
++    error: bool,
++    outline: Color,
++    neutral_label: Color,
++    hover: Color,
++    primary: Color,
++    error_ink: Color,
++    error_hover: Color,
++    disabled_outline: Color,
++    disabled_text: Color,
++}
++
++impl FieldColors {
++    fn interaction_ink(self, state: TextInputPaintState, normal: Color) -> Color {
++        match (self.error, state.is_focused, state.is_hovered) {
++            (true, false, true) => self.error_hover,
++            (true, _, _) => self.error_ink,
++            (false, true, _) => self.primary,
++            (false, false, true) => self.hover,
++            (false, false, false) => normal,
++        }
++    }
++
++    fn border(self, state: TextInputPaintState) -> Color {
++        if self.disabled {
++            self.disabled_outline
++        } else {
++            self.interaction_ink(state, self.outline)
++        }
++    }
++
++    fn label(self, state: TextInputPaintState) -> Color {
++        if self.disabled {
++            self.disabled_text
++        } else {
++            self.interaction_ink(state, self.neutral_label)
++        }
++    }
++}
++
++#[derive(Debug)]
++struct FieldLayout {
++    label: String,
++    description: Option<String>,
++    body: TextStyle,
++    caption: TextStyle,
++    line_height: f32,
++    caption_height: f32,
++    rtl: bool,
++    disabled_value: bool,
++}
++
++impl FieldLayout {
++    fn rects(&self, width: f32, fonts: &mut dyn TextMeasurer) -> Vec<Rect> {
++        let content_width = (width - 2. * SIDE).max(1.);
++        let (inline_width, inline_height) = fonts.measure_text(&self.label, &self.body, None);
++        let (float_width, float_height) = fonts.measure_text(&self.label, &self.caption, None);
++        let notch_fits = inline_width <= content_width
++            && float_width <= content_width
++            && inline_height <= self.line_height + 0.5
++            && float_height <= self.caption_height + 0.5;
++        let above_height = if notch_fits {
++            0.
++        } else {
++            fonts
++                .measure_text(&self.label, &self.caption, Some(content_width))
++                .1
++                .max(self.caption_height)
++                .ceil()
++        };
++        let top = if notch_fits {
++            self.caption_height / 2.
++        } else {
++            above_height + DESCRIPTION_GAP
++        };
++        let face_height = FACE_MIN.max((self.line_height + 2. * SIDE).ceil());
++        let face = Rect::new(0., top, width, face_height);
++        let empty = Rect::new(0., 0., 0., 0.);
++        let content = Rect::new(
++            SIDE,
++            top + (face_height - self.line_height) / 2.,
++            content_width,
++            self.line_height,
++        );
++        let inline = if notch_fits { content } else { empty };
++        let floating = if notch_fits {
++            let x = if self.rtl {
++                width - SIDE - float_width
++            } else {
++                SIDE
++            };
++            Rect::new(x, 0., float_width, self.caption_height)
++        } else {
++            empty
++        };
++        let above = Rect::new(SIDE, 0., content_width, above_height);
++        let mut rects = vec![face, face, inline, floating, above];
++        if self.disabled_value {
++            rects.push(content);
++        }
++        if let Some(description) = &self.description {
++            let height = fonts
++                .measure_text(description, &self.caption, Some(content_width))
++                .1
++                .max(self.caption_height)
++                .ceil();
++            rects.push(Rect::new(
++                SIDE,
++                top + face_height + DESCRIPTION_GAP,
++                content_width,
++                height,
++            ));
++        }
++        // The live region needs visible geometry even when it is empty.
++        rects.push(Rect::new(1., 0., 1., 1.));
++        rects
++    }
++}
++
++impl MeasuredGroupLayout for FieldLayout {
++    fn measure(
++        &self,
++        _children: &[&Node],
++        available: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let width = available.unwrap_or(280.).max(FACE_MIN);
++        let height = self
++            .rects(width, fonts)
++            .iter()
++            .map(|rect| rect.y + rect.height)
++            .fold(0., f32::max);
++        (width, height)
++    }
++
++    fn place(
++        &self,
++        _children: &[&Node],
++        (width, _height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        self.rects(width, fonts)
++    }
++}
++
++fn outline_contour(
++    width: f32,
++    height: f32,
++    thickness: f32,
++    gap: Option<(f32, f32)>,
++    color: Color,
++) -> Option<FillContour> {
++    if width < 2. * CORNER || height < 2. * CORNER {
++        return None;
++    }
++    // Trace the outer edge clockwise and the inner edge back. For a closed
++    // outline the two edges share one seam, which cancels under even-odd fill.
++    let (left, right) = gap
++        .filter(|&(left, right)| left >= CORNER && right <= width - CORNER && left < right)
++        .unwrap_or((width / 2., width / 2.));
++    let edge = |inset| {
++        let radius = CORNER - inset;
++        let mut points = vec![[right, inset]];
++        for (x, y, start) in [
++            (width - CORNER, CORNER, -FRAC_PI_2),
++            (width - CORNER, height - CORNER, 0.),
++            (CORNER, height - CORNER, FRAC_PI_2),
++            (CORNER, CORNER, 2. * FRAC_PI_2),
++        ] {
++            for step in 0..=4 {
++                let angle = start + step as f32 * FRAC_PI_2 / 4.;
++                points.push([x + radius * angle.cos(), y + radius * angle.sin()]);
++            }
++        }
++        points.push([left, inset]);
++        points
++    };
++    FillContour::new(
++        edge(0.)
++            .into_iter()
++            .chain(edge(thickness).into_iter().rev()),
++        color,
++    )
++}
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..d1a53e2a8a811459f9dd80721df341fc4e2ce156
+--- /dev/null
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -0,0 +1,415 @@
++use std::cell::Cell;
++
++use surface::{
++    Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
++    TextAlignment,
++};
++use surface_app::{Application, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldEditability, Theme,
++};
++use surface_wgpu::TextSystem;
++
++const ID: &str = "project-name";
++const LABEL: &str = "專案名稱";
++const LONG_LABEL: &str = "輸入團隊成員在共用專案清單中容易辨認的完整名稱";
++const HINT: &str = "輸入名稱";
++const SUPPORT: &str = "請輸入中文或英文名稱。";
++const ERROR: &str = "請輸入有效的專案名稱。";
++const AFTER: &str = "after-field";
++
++#[derive(Clone)]
++enum Message {
++    Edit(String),
++    Submit,
++    ChangeAppearance,
++    SetEditability(TextFieldEditability),
++}
++
++struct Form {
++    label: &'static str,
++    value: String,
++    dark: bool,
++    rtl: bool,
++    scale: f32,
++    invalid: bool,
++    editability: TextFieldEditability,
++    edits: Vec<String>,
++    submits: Vec<String>,
++    builds: Cell<usize>,
++}
++
++impl Default for Form {
++    fn default() -> Self {
++        Self {
++            label: LABEL,
++            value: String::new(),
++            dark: false,
++            rtl: false,
++            scale: 1.,
++            invalid: false,
++            editability: TextFieldEditability::Editable,
++            edits: Vec::new(),
++            submits: Vec::new(),
++            builds: Cell::new(0),
++        }
++    }
++}
++
++impl Application for Form {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Edit(value) => {
++                self.edits.push(value.clone());
++                self.value = value;
++            }
++            Message::Submit => self.submits.push(self.value.clone()),
++            Message::ChangeAppearance => {
++                self.dark = !self.dark;
++                self.rtl = !self.rtl;
++                self.scale = 2.;
++                self.invalid = !self.invalid;
++            }
++            Message::SetEditability(editability) => self.editability = editability,
++        }
++    }
++
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++
++    fn view(&self) -> View<Message> {
++        self.builds.set(self.builds.get() + 1);
++        let theme = if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let mut options = OutlinedTextFieldOptions::new(ID, self.label, &self.value);
++        options.placeholder = Some(HINT);
++        options.supporting_text = Some(SUPPORT);
++        options.error = self.invalid.then_some(ERROR);
++        options.editability = self.editability;
++        options.direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        options.text_scale = self.scale;
++        View::new(Node::new(Role::Window, "Form").styled(Style::column().padding(12.).gap(8.)))
++            .children([
++                theme
++                    .outlined_text_field_with_submit(options, Message::Edit, || {
++                        Some(Message::Submit)
++                    })
++                    .expect("valid Material field"),
++                theme.button(AFTER, "Next", Message::ChangeAppearance),
++            ])
++    }
++}
++
++fn render(runtime: &mut Runtime<Form>, width: f32, text: &mut TextSystem) -> ExtendedDisplayList {
++    runtime.render_extended(width, 440., text).unwrap()
++}
++
++fn bounds(runtime: &Runtime<Form>, id: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++}
++
++fn find_outline(list: &ExtendedDisplayList, color: Color, face: Rect) -> &PathFill {
++    list.ops()
++        .iter()
++        .find_map(|op| match op {
++            ExtendedPaintOp::FillPath(path) if path.color() == color && path.rect() == face => {
++                Some(path)
++            }
++            _ => None,
++        })
++        .expect("inside outline contour at the editor bounds")
++}
++
++// The renderer uses even-odd fill. Sample between edges, away from vertices.
++fn covers(path: &PathFill, x: f32, y: f32) -> bool {
++    let points = path.points();
++    path.clip().contains(x, y)
++        && points
++            .iter()
++            .zip(points.iter().cycle().skip(1))
++            .filter(|(a, b)| {
++                (a[1] > y) != (b[1] > y) && x < a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1])
++            })
++            .count()
++            % 2
++            == 1
++}
++
++fn text_run<'a>(list: &'a ExtendedDisplayList, text: &str) -> Option<(&'a PaintOp, TextAlignment)> {
++    list.ops().iter().find_map(|op| {
++        let (run, alignment) = match op {
++            ExtendedPaintOp::Legacy(run) => (run, TextAlignment::Left),
++            ExtendedPaintOp::AlignedText(run) => (run.run(), run.alignment()),
++            _ => return None,
++        };
++        matches!(run, PaintOp::StyledText { text: value, .. } if value == text)
++            .then_some((run, alignment))
++    })
++}
++
++fn tab(runtime: &mut Runtime<Form>) {
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++}
++
++fn enter() -> KeyPress {
++    KeyPress::new(Key::Enter, Modifiers::default())
++}
++
++#[test]
++fn focus_repaints_one_semantic_editor_and_cuts_a_transparent_three_dp_outline() {
++    let mut runtime = Runtime::new(Form::default()).unwrap();
++    let mut text = TextSystem::default();
++    let idle = render(&mut runtime, 400., &mut text);
++    let face = bounds(&runtime, ID);
++    assert_eq!(face.height, 56.);
++    let label = bounds(&runtime, "project-name-floating-label");
++    let notch_x = label.x + label.width / 2.;
++    let colors = Theme::light().colors;
++    let outline = find_outline(&idle, colors.outline, face);
++    assert!(covers(outline, notch_x, face.y + 0.5));
++    assert!(!covers(outline, notch_x, face.y + 1.5));
++    assert_eq!(
++        text_run(&idle, LABEL).unwrap().0.rect(),
++        bounds(&runtime, "project-name-inline-label")
++    );
++    assert!(text_run(&idle, HINT).is_none());
++
++    let builds = runtime.app().builds.get();
++    tab(&mut runtime);
++    let focus = render(&mut runtime, 400., &mut text);
++    assert_eq!(runtime.focused(), Some(ID));
++    assert_eq!(runtime.app().builds.get(), builds);
++    assert_eq!(bounds(&runtime, ID), face);
++    assert_eq!(text_run(&focus, LABEL).unwrap().0.rect(), label);
++    assert!(text_run(&focus, HINT).is_some());
++    let outline = find_outline(&focus, colors.primary, face);
++    assert!(!covers(outline, notch_x, face.y + 0.5));
++    assert!(covers(outline, label.x - 5., face.y + 2.5));
++    assert!(covers(outline, label.x + label.width + 5., face.y + 2.5));
++    assert!(!covers(outline, label.x - 5., face.y + 3.5));
++    assert!(!focus.ops().iter().any(|op| matches!(
++        op,
++        ExtendedPaintOp::Legacy(PaintOp::Quad { rect, color, .. } | PaintOp::Shape { rect, color, .. })
++            if color.3 > 0 && rect.contains(notch_x, face.y + 0.5)
++    )));
++
++    let frame = runtime.accessibility_frame().unwrap();
++    let editor = runtime.dom().by_id(ID).unwrap();
++    let shell = runtime.dom().by_id("project-name-field").unwrap();
++    let description = runtime.dom().by_id("project-name-description").unwrap();
++    let status = runtime
++        .dom()
++        .by_id("project-name-validation-status")
++        .unwrap();
++    assert_eq!(
++        frame.children(shell).collect::<Vec<_>>(),
++        [editor, description, status]
++    );
++    let live = frame.node(status).unwrap().node;
++    assert_eq!(live.role(), Role::Status);
++    assert!(live.is_assertive_live_status());
++    assert_eq!(live.text_value(), Some(""));
++    assert!(frame.focus_target(status).is_none());
++    let projected = frame.node(editor).unwrap().node;
++    assert_eq!(projected.name(), LABEL);
++    assert_eq!(projected.role(), Role::TextInput);
++    assert!(!projected.is_invalid());
++    assert_eq!(frame.description_target(editor), Some(description));
++    assert_eq!(
++        frame.node(description).unwrap().node.text_value(),
++        Some(SUPPORT)
++    );
++    assert_eq!(
++        bounds(&runtime, "project-name-description").y,
++        face.y + face.height + 4.
++    );
++
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄓ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    let composing = render(&mut runtime, 400., &mut text);
++    assert_eq!(runtime.input_snapshot().unwrap().value, "");
++    assert!(text_run(&composing, HINT).is_none());
++    runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
++    assert!(text_run(&render(&mut runtime, 400., &mut text), HINT).is_some());
++    assert_eq!(runtime.app().builds.get(), builds);
++}
++
++#[test]
++fn same_id_theme_scale_and_validation_rebuild_preserve_backward_selection_and_preedit() {
++    let mut runtime = Runtime::new(Form {
++        value: "後界".into(),
++        ..Form::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    render(&mut runtime, 500., &mut text);
++    tab(&mut runtime);
++    runtime
++        .dispatch(Event::Select {
++            anchor: 6,
++            cursor: 3,
++        })
++        .unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Preedit {
++            text: "ㄨㄣ".into(),
++            selection: None,
++        }))
++        .unwrap();
++    runtime.apply(Message::ChangeAppearance).unwrap();
++    let paint = render(&mut runtime, 320., &mut text);
++
++    let input = runtime.input_snapshot().unwrap();
++    assert_eq!((input.id.as_str(), input.value.as_str()), (ID, "後界"));
++    assert_eq!((input.selection.anchor, input.selection.cursor), (6, 3));
++    assert!(input.composing);
++    assert_eq!(
++        runtime.editor(ID).unwrap().composition().unwrap().text,
++        "ㄨㄣ"
++    );
++    assert!(text_run(&paint, HINT).is_none());
++    let frame = runtime.accessibility_frame().unwrap();
++    let editor = runtime.dom().by_id(ID).unwrap();
++    assert!(frame.node(editor).unwrap().node.is_invalid());
++    let description = frame.description_target(editor).unwrap();
++    assert_eq!(
++        frame.node(description).unwrap().node.text_value(),
++        Some(ERROR)
++    );
++    let status = runtime
++        .dom()
++        .by_id("project-name-validation-status")
++        .unwrap();
++    let live = frame.node(status).unwrap().node;
++    assert!(live.is_assertive_live_status());
++    assert_eq!(live.text_value(), Some(ERROR));
++    find_outline(&paint, Theme::dark().colors.error, bounds(&runtime, ID));
++
++    assert!(!runtime.key(&enter()).unwrap());
++    assert!(runtime.app().submits.is_empty());
++    assert!(runtime.app().edits.is_empty());
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("文".into())))
++        .unwrap();
++    assert_eq!(runtime.app().edits, ["後文"]);
++    assert!(!runtime.key(&enter().with_repeat(true)).unwrap());
++    let shifted = KeyPress::new(
++        Key::Enter,
++        Modifiers {
++            shift: true,
++            ..Modifiers::default()
++        },
++    );
++    assert!(!runtime.key(&shifted).unwrap());
++    assert!(runtime.key(&enter()).unwrap());
++    assert_eq!(runtime.app().submits, ["後文"]);
++    assert_eq!(runtime.app().edits, ["後文"]);
++}
++
++#[test]
++fn compact_rtl_long_label_wraps_above_a_closed_outline() {
++    let mut runtime = Runtime::new(Form {
++        label: LONG_LABEL,
++        value: "共用名稱".into(),
++        scale: 2.,
++        rtl: true,
++        dark: true,
++        ..Form::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    render(&mut runtime, 320., &mut text);
++    tab(&mut runtime);
++    let paint = render(&mut runtime, 320., &mut text);
++    let face = bounds(&runtime, ID);
++    let above = bounds(&runtime, "project-name-above-label");
++    assert_eq!(face.width, 296.);
++    assert!(face.height >= 56.);
++    assert_eq!(face.y - above.y - above.height, 4.);
++    assert!(above.height > 32.);
++    assert_eq!(above.x, face.x + 16.);
++    assert_eq!(above.x + above.width, face.x + face.width - 16.);
++    let (caption, alignment) = text_run(&paint, LONG_LABEL).unwrap();
++    assert_eq!(caption.rect(), above);
++    assert_eq!(alignment, TextAlignment::Right);
++    let outline = find_outline(&paint, Theme::dark().colors.primary, face);
++    for fraction in [0.1, 0.5, 0.9] {
++        assert!(covers(
++            outline,
++            face.x + face.width * fraction,
++            face.y + 1.5
++        ));
++    }
++    let caret = runtime.input_snapshot().unwrap().caret.unwrap();
++    assert!(caret.x > face.x + face.width / 2.);
++    assert!(caret.x < face.x + face.width - 16.);
++}
++
++#[test]
++fn read_only_selects_without_edits_and_disabled_leaves_the_tab_order() {
++    let mut runtime = Runtime::new(Form {
++        value: "既有專案".into(),
++        invalid: true,
++        editability: TextFieldEditability::ReadOnly,
++        ..Form::default()
++    })
++    .unwrap();
++    let mut text = TextSystem::default();
++    render(&mut runtime, 320., &mut text);
++    tab(&mut runtime);
++    render(&mut runtime, 320., &mut text);
++    let editor = runtime.dom().by_id(ID).unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.node(editor).unwrap().text_options.unwrap().read_only);
++    assert!(frame.node(editor).unwrap().node.is_invalid());
++    assert!(frame.accepts_focus(editor));
++    runtime
++        .dispatch(Event::Select {
++            anchor: 12,
++            cursor: 0,
++        })
++        .unwrap();
++    assert_eq!(runtime.selected_text().as_deref(), Some("既有專案"));
++    assert!(!runtime.key(&enter()).unwrap());
++    runtime.dispatch(Event::Text("更改".into())).unwrap();
++    runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++    runtime
++        .dispatch(Event::Ime(ImeEvent::Commit("更".into())))
++        .unwrap();
++    assert_eq!(runtime.selected_text().as_deref(), Some("既有專案"));
++    assert!(runtime.app().edits.is_empty());
++    assert!(runtime.app().submits.is_empty());
++
++    runtime
++        .apply(Message::SetEditability(TextFieldEditability::Disabled))
++        .unwrap();
++    render(&mut runtime, 320., &mut text);
++    let editor = runtime.dom().by_id(ID).unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    let node = frame.node(editor).unwrap().node;
++    assert!(node.is_disabled());
++    assert!(!node.is_invalid());
++    assert!(frame.description_target(editor).is_none());
++    assert!(!frame.accepts_focus(editor));
++    assert!(runtime.editor(ID).is_none());
++    tab(&mut runtime);
++    assert_eq!(runtime.focused(), Some(AFTER));
++}
+diff --git a/crates/surface-platform/src/macos_accessibility.rs b/crates/surface-platform/src/macos_accessibility.rs
+index 9b87de2c87c2df1defd7c44dfe3e95ffd763a8df..bc163910629d8a983f8025d7ca72e5f92ce075c4 100644
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -134,7 +134,11 @@ impl Tree {
+                     .copied()
+                     .filter(|_| same_status_scope)
+                     .unwrap_or_else(|| self.allocate());
+-                node.set_live(Live::Polite);
++                node.set_live(if source.node.is_assertive_live_status() {
++                    Live::Assertive
++                } else {
++                    Live::Polite
++                });
+                 status_ids.insert(key.to_owned(), native_id);
+                 native_id
+             } else if same_generation
+@@ -432,7 +436,7 @@ fn describe(source: &AccessibilityNode<'_>, slider_limits: Option<(f64, f64)>) -
+         }
+         _ => authored.name(),
+     };
+-    if !label.is_empty() {
++    if !label.is_empty() && (!authored.is_assertive_live_status() || !label.trim().is_empty()) {
+         node.set_label(label);
+     }
+     if authored.role() == SurfaceRole::TextInput {
+@@ -509,6 +513,7 @@ mod tests {
+     #[derive(Clone, Copy, Default)]
+     struct App {
+         notice: Option<&'static str>,
++        assertive_notice: bool,
+         tooltip: bool,
+         modal: bool,
+         focusable_notice: bool,
+@@ -552,6 +557,11 @@ mod tests {
+                 let mut node = SurfaceNode::new(SurfaceRole::Status, message)
+                     .id("status")
+                     .text(message);
++                if self.assertive_notice {
++                    node = node
++                        .assertive_live_status()
++                        .styled(Style::column().height(Length::Px(20.)));
++                }
+                 if self.focusable_notice {
+                     node = node.tab_index(0);
+                 }
+@@ -2443,6 +2453,69 @@ mod tests {
+         assert_eq!(active_node.live(), None);
+     }
+ 
++    #[test]
++    fn assertive_status_keeps_the_blank_region_and_only_updates_current_scope() {
++        let blank = App {
++            notice: Some(""),
++            assertive_notice: true,
++            ..App::default()
++        };
++        let mut runtime = Runtime::new(blank).unwrap();
++        let mut tree = Tree::default();
++        let initial = update(&mut runtime, &mut tree);
++        let (id, status) = initial
++            .nodes
++            .iter()
++            .find(|(_, node)| node.role() == Role::Status)
++            .expect("the blank live status has a stable identity");
++        let id = *id;
++        assert_eq!(status.live(), Some(Live::Assertive));
++        assert_eq!(status.label(), None);
++        assert!(!status.supports_action(Action::Focus));
++        assert!(!status.supports_action(Action::Click));
++
++        for notice in ["請輸入有效的專案名稱。", "Enter a valid project name."] {
++            let show = App {
++                notice: Some(notice),
++                ..blank
++            };
++            runtime.apply(show).unwrap();
++            let first = update(&mut runtime, &mut tree);
++            let (changed_id, changed) = named(&first, notice);
++            assert_eq!(changed_id, id);
++            assert_eq!(changed.live(), Some(Live::Assertive));
++            runtime.apply(show).unwrap();
++            let rebuilt = update(&mut runtime, &mut tree);
++            let (rebuilt_id, rebuilt_node) = named(&rebuilt, notice);
++            assert_eq!(rebuilt_id, id);
++            assert_eq!(rebuilt_node, changed);
++        }
++
++        runtime.apply(blank).unwrap();
++        let cleared = update(&mut runtime, &mut tree);
++        let cleared_status = &cleared.nodes.iter().find(|(key, _)| *key == id).unwrap().1;
++        assert_eq!(cleared_status.live(), Some(Live::Assertive));
++        assert_eq!(cleared_status.label(), None);
++
++        let show = App {
++            notice: Some("請輸入名稱。"),
++            ..blank
++        };
++        runtime
++            .apply(App {
++                modal: true,
++                ..show
++            })
++            .unwrap();
++        let scoped = update(&mut runtime, &mut tree);
++        assert!(scoped.nodes.iter().all(|(_, node)| node.live().is_none()));
++        runtime.apply(show).unwrap();
++        let restored = update(&mut runtime, &mut tree);
++        let (restored_id, restored_status) = named(&restored, "請輸入名稱。");
++        assert_ne!(restored_id, id);
++        assert_eq!(restored_status.live(), Some(Live::Assertive));
++    }
++
+     #[test]
+     fn hidden_and_out_of_scope_statuses_start_a_new_live_identity_on_return() {
+         let shown = App {
+diff --git a/crates/surface-platform/src/web_accessibility.rs b/crates/surface-platform/src/web_accessibility.rs
+index 089f0262302daa4a88d0cfafbe3622571fa84dbd..c5ea82d50cd31c5cba2da6d15a947430d133c9d1 100644
+--- a/crates/surface-platform/src/web_accessibility.rs
++++ b/crates/surface-platform/src/web_accessibility.rs
+@@ -84,6 +84,7 @@ pub(crate) struct WebAccessibility {
+     targets: Rc<RefCell<BTreeMap<usize, Target>>>,
+     published: Option<Published>,
+     live_status: live_status::LiveStatus,
++    assertive_status: live_status::LiveStatus,
+     follow_focus: bool,
+     projecting_focus: Rc<RefCell<Option<Element>>>,
+     listeners: Vec<(&'static str, EventListener)>,
+@@ -106,14 +107,17 @@ impl WebAccessibility {
+                 "opacity:0;white-space:nowrap;pointer-events:none",
+             ),
+         )?;
+-        let live_status = live_status::LiveStatus::new(browser, &document)?;
++        let live_status = live_status::LiveStatus::new(browser.clone(), &document, false)?;
++        let assertive_status = live_status::LiveStatus::new(browser, &document, true)?;
+         live_status.mount(&root)?;
++        assertive_status.mount(&root)?;
+         let mut bridge = Self {
+             root,
+             document,
+             targets: Rc::default(),
+             published: None,
+             live_status,
++            assertive_status,
+             follow_focus: false,
+             projecting_focus: Rc::default(),
+             listeners: Vec::new(),
+@@ -247,11 +251,19 @@ impl WebAccessibility {
+                 relations.clipped_text.insert(target, text.to_owned());
+             }
+         }
+-        let statuses = visible
++        let mut statuses = BTreeMap::new();
++        let mut assertive = BTreeMap::new();
++        for (key, text, priority) in visible
+             .iter()
+             .filter_map(|id| live_status::message(frame, *id))
+-            .map(|(key, text)| (key.to_owned(), text.to_owned()))
+-            .collect();
++        {
++            let region = if priority {
++                &mut assertive
++            } else {
++                &mut statuses
++            };
++            region.insert(key.to_owned(), text.to_owned());
++        }
+         let focused = frame.focused();
+         let editor = focused.filter(|id| {
+             frame
+@@ -295,13 +307,15 @@ impl WebAccessibility {
+                 placeholder.set_attribute("aria-hidden", "true")?;
+                 tree.append_child(&placeholder)?;
+             }
+-            // Put the live region inside the active modal. A browser may
++            // Put the live regions inside the active modal. A browser may
+             // prune accessibility content outside an aria-modal dialog.
+-            self.live_status.mount(if frame.modal_root().is_some() {
++            let parent = if frame.modal_root().is_some() {
+                 &tree
+             } else {
+                 &self.root
+-            })?;
++            };
++            self.live_status.mount(parent)?;
++            self.assertive_status.mount(parent)?;
+             if let Some(old) = &self.published {
+                 self.root.replace_child(&tree, &old.tree)?;
+             } else {
+@@ -334,6 +348,8 @@ impl WebAccessibility {
+         }
+         self.live_status
+             .publish(frame, &statuses, same_generation)?;
++        self.assertive_status
++            .publish(frame, &assertive, same_generation)?;
+         if keep_focus {
+             let destination = focused
+                 .and_then(|id| {
+@@ -414,7 +430,7 @@ fn project<M>(
+         children.is_empty(),
+         frame.slider_adjustment_bounds(id),
+     )?;
+-    if live_status::message(frame, id).is_some() {
++    if source.node.is_assertive_live_status() || live_status::message(frame, id).is_some() {
+         // Keep this status readable where it was authored. The persistent
+         // region delivers text changes without re-announcing the new tree.
+         element.set_attribute("aria-live", "off")?;
+diff --git a/crates/surface-platform/src/web_accessibility/live_status.rs b/crates/surface-platform/src/web_accessibility/live_status.rs
+index 6b1246c8ee82c17aca001e6ad75ff5f8e6fddc2d..9d08e23b416315efab0eb2bb4cc25dc6ee801f0d 100644
+--- a/crates/surface-platform/src/web_accessibility/live_status.rs
++++ b/crates/surface-platform/src/web_accessibility/live_status.rs
+@@ -14,7 +14,7 @@ use web_sys::{Document, Element, Window};
+ pub(super) fn message<'a, M>(
+     frame: &'a AccessibilityFrame<'_, M>,
+     id: NodeId,
+-) -> Option<(&'a str, &'a str)> {
++) -> Option<(&'a str, &'a str, bool)> {
+     let source = frame.node(id)?;
+     if id == frame.root()
+         || source.node.role() != Role::Status
+@@ -30,7 +30,7 @@ pub(super) fn message<'a, M>(
+     }
+     let key = source.node.stable_id().filter(|key| !key.is_empty())?;
+     let text = source.node.text_value().unwrap_or(source.node.name());
+-    Some((key, text))
++    Some((key, text, source.node.is_assertive_live_status()))
+ }
+ 
+ type Messages = BTreeMap<String, String>;
+@@ -46,9 +46,13 @@ pub(super) struct LiveStatus {
+ }
+ 
+ impl LiveStatus {
+-    pub(super) fn new(window: Window, document: &Document) -> Result<Self, JsValue> {
++    pub(super) fn new(
++        window: Window,
++        document: &Document,
++        assertive: bool,
++    ) -> Result<Self, JsValue> {
+         let element = document.create_element("div")?;
+-        element.set_attribute("aria-live", "polite")?;
++        element.set_attribute("aria-live", if assertive { "assertive" } else { "polite" })?;
+         element.set_attribute("aria-atomic", "true")?;
+         element.set_attribute("aria-relevant", "additions text")?;
+         let pending = Rc::new(RefCell::new(Messages::new()));
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index ac6a64c6e6e13cd03bdc3e96dce1ad6db6f3b731..70bb43fe242495412dede7e8ae32f1140ca6e40c 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -161,6 +161,8 @@ pub struct Node {
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     described_by_text: Option<String>,
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
++    assertive_live_status: bool,
++    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+     alert_dialog: bool,
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     dialog_heading: Option<String>,
+@@ -202,6 +204,8 @@ pub struct Node {
+     pub(crate) role: Role,
+     pub(crate) name: String,
+     pub(crate) text: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    text_input_caret_color: Option<Color>,
+     #[serde(skip)]
+     presented_text_input_placeholder: Option<Arc<(String, Color)>>,
+     #[serde(skip)]
+@@ -268,6 +272,7 @@ impl Node {
+             grid_multiselectable: false,
+             current_date: false,
+             described_by_text: None,
++            assertive_live_status: false,
+             alert_dialog: false,
+             dialog_heading: None,
+             tab_controls: None,
+@@ -290,6 +295,7 @@ impl Node {
+             role,
+             name: name.into(),
+             text: None,
++            text_input_caret_color: None,
+             presented_text_input_placeholder: None,
+             presented_text_input_horizontal_inset: 0.,
+             disabled: false,
+@@ -557,6 +563,20 @@ impl Node {
+             .filter(|_| self.text_value().is_none_or(str::is_empty))
+             .map(|(text, color)| (text.as_str(), *color))
+     }
++
++    /// Set the editable caret's color independently of text and IME ink.
++    /// With no override, or when forced text colors are supplied for paint,
++    /// the caret uses the displayed foreground.
++    pub fn text_input_caret_color(mut self, color: Color) -> Self {
++        if self.role == Role::TextInput {
++            self.text_input_caret_color = Some(color);
++        }
++        self
++    }
++
++    pub(crate) fn resolved_text_input_caret_color(&self) -> Color {
++        self.text_input_caret_color.unwrap_or(self.style.foreground)
++    }
+     /// Draw one closed fill relative to the node's origin after its paths.
+     /// The ancestor clip applies. The fill adds no layout or input area and
+     /// does not create a semantic child.
+@@ -785,6 +805,16 @@ impl Node {
+     pub fn description_text_target(&self) -> Option<&str> {
+         self.described_by_text.as_deref()
+     }
++    /// Request assertive announcements for a passive status in its current
++    /// accessibility scope. Give the status a stable ID and visible bounds
++    /// even when its text is empty. Use this for urgent updates.
++    pub fn assertive_live_status(mut self) -> Self {
++        self.assertive_live_status = self.role == Role::Status;
++        self
++    }
++    pub fn is_assertive_live_status(&self) -> bool {
++        self.assertive_live_status && self.role == Role::Status
++    }
+     /// Ask accessibility hosts to expose this dialog as an alert while it is
+     /// modal. The base role, keyboard behavior, and dismissal policy stay
+     /// with the caller.
+diff --git a/crates/surface/src/paint.rs b/crates/surface/src/paint.rs
+index be605e2b1b4529e4ef8c53b86b27a199bba8f4cf..897a13d09389a8c33f2fc95e43a8dd2af4ccafb0 100644
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -1063,7 +1063,11 @@ fn compile_into<Op: CompileOp>(
+                             rect: caret,
+                             clip,
+                             radius: 0.,
+-                            color: s.foreground,
++                            color: if !editable || selection_colors.is_some() {
++                                s.foreground
++                            } else {
++                                n.resolved_text_input_caret_color()
++                            },
+                         },
+                     );
+                 }
+diff --git a/crates/surface/tests/microdom_contract.rs b/crates/surface/tests/microdom_contract.rs
+index bb2dec90f133165c02099637b597a6b4585fb49f..824573eb4415cafbbeea8a768ee711149e87af91 100644
+--- a/crates/surface/tests/microdom_contract.rs
++++ b/crates/surface/tests/microdom_contract.rs
+@@ -435,3 +435,22 @@ fn from_snapshot_rejects_wrong_parent() {
+         DomError::InvalidTree(2)
+     );
+ }
++#[test]
++fn assertive_live_status_is_an_additive_role_guarded_opt_in() {
++    let plain = Node::new(Role::Status, "Saved").id("notice");
++    assert!(!plain.is_assertive_live_status());
++    let legacy = serde_json::to_value(&plain).unwrap();
++    assert!(legacy.get("assertive_live_status").is_none());
++    assert_eq!(serde_json::from_value::<Node>(legacy).unwrap(), plain);
++
++    let urgent = plain.assertive_live_status();
++    let wire = serde_json::to_value(&urgent).unwrap();
++    assert_eq!(wire["assertive_live_status"], true);
++    let restored: Node = serde_json::from_value(wire).unwrap();
++    assert!(restored.is_assertive_live_status());
++    assert_eq!(restored.role(), Role::Status);
++    assert!(!restored.is_focusable());
++    assert!(!Node::new(Role::Text, "Text")
++        .assertive_live_status()
++        .is_assertive_live_status());
++}
+diff --git a/crates/surface/tests/text_selection_paint.rs b/crates/surface/tests/text_selection_paint.rs
+index 6ed9ab843c5702de12e2ffd7048ef53d23aeaaf1..117bf6a6c4512234d2ab2802ce94eb260d48cc27 100644
+--- a/crates/surface/tests/text_selection_paint.rs
++++ b/crates/surface/tests/text_selection_paint.rs
+@@ -13,6 +13,100 @@ impl TextMeasurer for Metrics {
+     }
+ }
+ 
++#[test]
++fn text_input_caret_override_changes_only_the_caret_in_normal_paint() {
++    let foreground = Color::rgb(18, 28, 39);
++    let accent = Color::rgb(187, 32, 55);
++    let colors = TextSelectionColors {
++        background: Color::rgb(20, 40, 60),
++        foreground: Color::rgb(232, 240, 248),
++    };
++    let node = Node::new(Role::TextInput, "Field").text("入力").styled(
++        Style::column()
++            .width(Length::Px(90.))
++            .height(Length::Px(48.))
++            .foreground(foreground),
++    );
++    let legacy = serde_json::to_value(&node).unwrap();
++    assert!(legacy.get("text_input_caret_color").is_none());
++    let decoded: Node = serde_json::from_value(legacy.clone()).unwrap();
++    assert_eq!(serde_json::to_value(decoded).unwrap(), legacy);
++    let accented = node.clone().text_input_caret_color(accent);
++    let encoded = serde_json::to_value(&accented).unwrap();
++    assert_eq!(
++        encoded["text_input_caret_color"],
++        serde_json::json!([187, 32, 55, 255])
++    );
++    let accented: Node = serde_json::from_value(encoded).unwrap();
++    assert!(
++        serde_json::to_value(Node::new(Role::Text, "").text_input_caret_color(accent))
++            .unwrap()
++            .get("text_input_caret_color")
++            .is_none()
++    );
++
++    let caret = Rect::new(25., 1., 1., 16.);
++    let render = |field| {
++        let mut dom = MicroDom::new(Node::new(Role::Window, ""));
++        let id = dom.append(dom.root(), field).unwrap();
++        let computed = LayoutEngine::default()
++            .compute(&dom, 120., 90., &mut Metrics)
++            .unwrap();
++        let decorations = BTreeMap::from([(
++            id,
++            TextDecoration {
++                caret: Some(caret),
++                selection: vec![Rect::new(0., 1., 24., 16.)],
++                underline: vec![Rect::new(0., 16., 26., 1.)],
++                ..TextDecoration::default()
++            },
++        )]);
++        let interaction = InteractionState::default();
++        let normal =
++            DisplayList::compile_with_interaction(&dom, &computed, None, &decorations, interaction);
++        let forced = ExtendedDisplayList::compile_with_selection_colors(
++            &dom,
++            &computed,
++            None,
++            &decorations,
++            interaction,
++            colors,
++        );
++        (normal, forced)
++    };
++    let (ordinary, forced) = render(node);
++    let (custom, custom_forced) = render(accented);
++    let (last, other) = ordinary.ops.split_last().unwrap();
++    let (custom_last, custom_other) = custom.ops.split_last().unwrap();
++    assert_eq!(other, custom_other);
++    let PaintOp::Quad {
++        rect,
++        clip,
++        radius,
++        color,
++    } = last
++    else {
++        panic!("caret is a quad");
++    };
++    assert_eq!((*rect, *radius, *color), (caret, 0., foreground));
++    assert_eq!(
++        *custom_last,
++        PaintOp::Quad {
++            rect: caret,
++            clip: *clip,
++            radius: 0.,
++            color: accent
++        }
++    );
++    assert!(forced.ops().iter().any(|op| matches!(op,
++        ExtendedPaintOp::TextSelection(paint) if paint.colors() == colors)));
++    assert_eq!(
++        custom_forced.ops(),
++        forced.ops(),
++        "forced text and caret paint take precedence"
++    );
++}
++
+ fn contains(region: TextSelectionRegion, x: u32, y: u32) -> bool {
+     let [left, top, width, height] = region.scissor;
+     x >= left && x < left + width && y >= top && y < top + height
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 5649186f8c0d977712baa0ed139d741838f1217d..d16594a6a5171f64331fefc41c90f675cb94fea8 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -341,10 +341,11 @@
+       "id": "text-fields",
+       "spec": "https://m3.material.io/components/text-fields/overview",
+       "status": "partial",
+-      "variant_review": "pending",
+-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
+-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
+-      "implemented": "Controlled field; Unicode selection and IME editor; CJK font"
++      "variant_review": "Baseline single-line Outlined reviewed against Material 3 text fields revision 3cf2 and Outlined token revision d80a. Filled and optional slot variants remain open.",
++      "desktop_evidence": "Native headless Gallery checks outline pixels, keyboard focus and submit, dark RTL at 200%, long-label placement, and matching Page.screenshot, CLI and MCP PNGs",
++      "web_evidence": "M325–M328 in e2e/src/material_outlined_text_field.rs cover outline and label paint, projected description and invalid status, deduplicated assertive errors, composition during reflow, and read-only and disabled states",
++      "implemented": "The single-line Outlined field has a 56 dp target, floating label and a measured opening in the 1/3 dp border. It offers a hint, supporting text, an error, read-only and disabled modes, and scaled labels in both directions. A long label wraps above a closed border. The editor retains committed Unicode text, selection and IME across appearance changes. Leading and trailing icons, prefix and suffix, counters, multiline, label motion, system contrast and live speech remain open.",
++      "unit_evidence": "crates/surface-material/tests/outlined_text_field.rs and surface-app editor presentation tests cover layout, editor identity, accessible relations, preedit and Enter"
+     },
+     {
+       "id": "toolbars",
+diff --git a/docs/material.md b/docs/material.md
+index 322a3c83f2a3727e4aa48d98959c616bad9e0c52..31df0852a1f95272784625086fd6c43adaa55337 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -203,6 +203,7 @@ does not change application state.
+ | `card_with` / `action_card` | Elevated, filled and outlined kinds with M3 container tokens; action card is a button with focus, press and disabled state; elevated has no shadow yet; no ripple, drag or slots |
+ | `material_card` / `material_action_card` | Elevated, filled and outlined cards with actual shadows, structured content, whole-card selection or independently reachable actions |
+ | `text_field` | Controlled Unicode editing, selection, clipboard and composition |
++| `outlined_text_field` | One single-line editor with a floating label, measured border opening, hint and validation text |
+ | `search_bar` | Inline pill with leading glyph, controlled text input and Clear action |
+ | `search_overlay` / `search_overlay_with_motion` | Contained or Divided Search with adaptive Docked or Full-screen layout, named editor and suggestions, and optional expand and collapse motion |
+ | `snackbar` / `snackbar_with` | Nonmodal status, optional text action and optional Close icon. Measured inline and stacked layouts use the same action IDs in both directions. |
+@@ -1211,6 +1212,31 @@ in headless mode to replay it and capture PNGs without opening a window.
+ [Published tokens](https://m3.material.io/_dsm/data/dsdb-m3/2026-11-19_06-20-01/TOKEN_TABLE.624e8f2da4007fc8.json) ·
+ [Menu button keyboard and semantics](https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/)
+ 
++## Outlined text fields
++
++Use `Theme::outlined_text_field` with `OutlinedTextFieldOptions::new`.
++Pass a stable ID, a visible label and the current value. The field uses
++the width of its parent. It keeps the editor ID while the label floats
++and the border opens around the label. A long label can wrap above the
++closed outline when it needs more room.
++
++Set the layout direction and text scale to match the containing view.
++An empty focused field can show a placeholder. Supporting text has its
++own line and is linked to the accessible editor. An error replaces that
++line and marks the enabled field invalid. The Web and macOS accessibility
++paths expose new errors as assertive updates. A read-only field allows
++selection and copying. A disabled field ignores input.
++
++Use `outlined_text_field_with_submit` to handle an unmodified Enter.
++Input method composition still owns Enter while it is active. Keep the
++committed value in the application and apply the input callback there.
++
++In Material Gallery, choose 動作 and 外框文字欄位. The example shows Chinese
++labels, validation, read-only and disabled fields. It has light and dark
++themes, both directions and a setting for 200% text.
++
++[Material 3 text field specifications](https://m3.material.io/components/text-fields/specs)
++
+ ## Baseline segmented buttons
+ 
+ Use `Theme::baseline_segmented_button` for two to five related choices in
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index dd1a89be53452d77720d84e9ea180b19e007c5aa..76bbc6ef40c471c8e01d5eff2c1e4a43449b2774 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -64,6 +64,8 @@ mod material_lists;
+ mod material_lists_multi;
+ #[path = "material_loading.rs"]
+ mod material_loading;
++#[path = "material_outlined_text_field.rs"]
++mod material_outlined_text_field;
+ #[path = "material_progress.rs"]
+ mod material_progress;
+ #[path = "material_radio.rs"]
+@@ -157,7 +159,7 @@ pub const STEPS: &[&str] = &[
+     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
+     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+-    "M323", "M324",
++    "M323", "M324", "M325", "M326", "M327", "M328",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -289,7 +291,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_vertical_centered_slider::run(env, chrome, &url).await?;
+     material_slider_inset::run(env, chrome, &url).await?;
+     material_buttons::run(env, chrome, &url).await?;
+-    material_segmented::run(env, chrome, &url).await
++    material_segmented::run(env, chrome, &url).await?;
++    material_outlined_text_field::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -520,6 +523,14 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+ 
+ #[cfg(test)]
+ mod tests {
++    #[test]
++    fn outlined_text_field_steps_are_required_by_the_material_case() {
++        let outlined = super::material_outlined_text_field::STEPS;
++        assert!(super::STEPS
++            .windows(outlined.len())
++            .any(|steps| steps == outlined));
++    }
++
+     #[test]
+     fn segmented_steps_are_required_by_the_material_case() {
+         let segmented = super::material_segmented::STEPS;
+diff --git a/e2e/src/material_outlined_text_field.rs b/e2e/src/material_outlined_text_field.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8270c7fcd07497d25f799dd01dbc56b0f0625864
+--- /dev/null
++++ b/e2e/src/material_outlined_text_field.rs
+@@ -0,0 +1,560 @@
++//! Baseline outlined fields through real headless Chrome and WebGPU.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_list_corners::reduced_motion;
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focused, near, projected, resize, Raster,
++};
++use super::{click, focus, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 4] = ["M325", "M326", "M327", "M328"];
++
++const SHOW: &str = "outlined-text-field-demo-show";
++const BACK: &str = "outlined-text-field-demo-back";
++const THEME: &str = "outlined-text-field-demo-theme";
++const RTL: &str = "outlined-text-field-demo-rtl";
++const TEXT: &str = "outlined-text-field-demo-large-text";
++const ERROR: &str = "outlined-text-field-demo-error";
++const EDITABLE: &str = "outlined-text-field-demo-editable";
++const READ_ONLY: &str = "outlined-text-field-demo-read-only";
++const DISABLED: &str = "outlined-text-field-demo-disabled";
++const LONG: &str = "outlined-text-field-demo-long-label";
++const NAME: &str = "專案名稱";
++const ERROR_TEXT: &str = "請輸入有效的專案名稱。";
++const SUPPORT: &str = "請輸入中文或英文名稱。";
++const TEXTAREA: &str = "document.getElementById('surface-text-input')";
++const LIVE_TRACE: &str = "window.outlinedValidationLive";
++const HOME: (u32, u32) = (960, 2400);
++const IDLE: &str = "material-outlined-text-field-idle.png";
++const FOCUSED: &str = "material-outlined-text-field-focused.png";
++const PREEDIT: &str = "material-outlined-text-field-ime-preedit.png";
++const ERROR_PNG: &str = "material-outlined-text-field-error.png";
++const COMPACT: &str = "material-outlined-text-field-compact-dark-rtl-200.png";
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++async fn model(tab: &Tab, condition: &str) -> Result<Value> {
++    until(
++        tab,
++        &format!("(d => {condition})(s.outlined_text_field_demo)"),
++    )
++    .await?;
++    tab.settle().await?;
++    Ok(state(tab).await?["outlined_text_field_demo"].clone())
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, HOME.0, HOME.1).await?;
++    reduced_motion(tab, true).await?;
++    until(
++        tab,
++        "s.section === 0 && !s.outlined_text_field_demo.visible",
++    )
++    .await?;
++    activate(tab, SHOW).await?;
++    model(
++        tab,
++        "d.visible && !d.dark && !d.rtl && d.text_scale === 1 && !d.show_error &&
++         d.value === '' && d.edits === 0 && d.submits === 0 && d.locked_edit_requests === 0",
++    )
++    .await?;
++    resize(tab, 960, 820).await
++}
++
++async fn editor(tab: &Tab, id: &str) -> Result<()> {
++    focus(tab, id, "surface-text-input").await?;
++    tab.settle().await
++}
++
++async fn part(tab: &Tab, id: &str, suffix: &str) -> Result<Rect> {
++    bounds(tab, &format!("{id}-{suffix}")).await
++}
++
++async fn photo(tab: &Tab, env: &Env, name: &str) -> Result<Raster> {
++    tab.settle().await?;
++    let path = env.artifact(name);
++    tab.screenshot(&path).await?;
++    Raster::read(tab, path).await
++}
++
++fn rgb(data: &Value, name: &str) -> Result<Rgb> {
++    let [r, g, b, _]: [u8; 4] = serde_json::from_value(data["palette"][name].clone())
++        .with_context(|| format!("outlined field palette {name}"))?;
++    Ok([r, g, b])
++}
++
++fn color_pixels(raster: &Raster, ink: Rgb, rect: Rect) -> Result<usize> {
++    Ok(raster.colors(rect)?.get(&ink).copied().unwrap_or(0))
++}
++
++fn right(rect: Rect) -> f64 {
++    rect[0] + rect[2]
++}
++
++fn bottom(rect: Rect) -> f64 {
++    rect[1] + rect[3]
++}
++
++fn label_body(rect: Rect) -> Rect {
++    [rect[0], rect[1] + 2., rect[2].min(145.), rect[3] - 4.]
++}
++
++fn stripe(raster: &Raster, face: Rect, x: f64, width: f64, ink: Rgb, paper: Rgb) -> Result<Value> {
++    let mut samples = Vec::new();
++    for depth in [0.5, 1.5, 2.5, 3.5] {
++        let point = [x, face[1] + depth];
++        let actual = raster.sample(point[0], point[1])?;
++        let expected = if depth < width { ink } else { paper };
++        check_eq!(
++            actual,
++            expected,
++            format!("outlined field top stroke at {point:?}")
++        );
++        samples.push(json!({"point":point,"rgb":actual}));
++    }
++    Ok(json!({"width_dp":width,"samples":samples}))
++}
++
++fn notch(
++    raster: &Raster,
++    face: Rect,
++    label: Rect,
++    stroke: Rgb,
++    paper: Rgb,
++    rtl: bool,
++) -> Result<Value> {
++    let leading = if rtl {
++        right(face) - right(label)
++    } else {
++        label[0] - face[0]
++    };
++    check!(
++        label[2] > 0. && label[1] < face[1] && bottom(label) > face[1] && near(leading, 16.),
++        "the floating label intersects the outline at the logical leading inset"
++    );
++    let y = face[1] + 0.5;
++    let mut samples = Vec::new();
++    for (x, expected) in [
++        (label[0] - 6., stroke),
++        (label[0] - 2., paper),
++        (right(label) + 2., paper),
++        (right(label) + 6., stroke),
++    ] {
++        let actual = raster.sample(x, y)?;
++        check_eq!(
++            actual,
++            expected,
++            format!("outline notch padding at ({x},{y})")
++        );
++        samples.push(json!({"point":[x,y],"rgb":actual}));
++    }
++    Ok(json!({"label":label,"face":face,"samples":samples}))
++}
++
++async fn description(tab: &Tab, expected: &str, invalid: bool) -> Result<Value> {
++    let helper = projected(&format!("{EDITABLE}-description"));
++    let observed = tab
++        .eval(&format!(
++            r#"(() => {{
++                const input = {TEXTAREA};
++                const helper = {helper};
++                const refs = input?.getAttribute('aria-describedby')?.split(/\s+/) ?? [];
++                return {{invalid:input?.getAttribute('aria-invalid'), text:helper?.textContent,
++                    linked:refs.some(id => document.getElementById(id) === helper)}};
++            }})()"#,
++        ))
++        .await?;
++    check_eq!(
++        observed,
++        json!({"text":expected,"linked":true,"invalid":invalid.then_some("true")}),
++        "the mounted editor references its own visible helper"
++    );
++    let tree = ax_tree(tab).await?;
++    let field = ax(&tree, "textbox", NAME)?;
++    let spoken = &field["description"]["value"];
++    check!(
++        spoken.as_str().is_some_and(|text| text.contains(expected))
++            && invalid
++                == matches!(ax_property(field, "invalid"), Some(value) if value == &json!(true) || value == &json!("true")),
++        "Chrome AX exposes the expected named field, description and invalid state"
++    );
++    Ok(json!({"dom":observed,"ax_description":spoken}))
++}
++
++async fn rest_and_focus(tab: &Tab, env: &Env) -> Result<Value> {
++    focused(tab, BACK).await?;
++    let data = model(tab, "d.width === 960 && d.value === ''").await?;
++    let face = bounds(tab, EDITABLE).await?;
++    let outline = part(tab, EDITABLE, "outline").await?;
++    let inline = part(tab, EDITABLE, "inline-label").await?;
++    let support = part(tab, EDITABLE, "description").await?;
++    check!(
++        face.into_iter().zip(outline).all(|(a, b)| near(a, b))
++            && near(face[3], 56.)
++            && contains(face, inline)
++            && near(support[1] - bottom(face), 4.),
++        "a measured 56 dp editor owns its outline and the helper starts 4 dp below"
++    );
++    let fine = rgb(&data, "outline")?;
++    let paper = rgb(&data, "background")?;
++    let neutral = rgb(&data, "on_surface_variant")?;
++    let active = rgb(&data, "primary")?;
++    let idle = photo(tab, env, IDLE).await?;
++    let x = face[0] + 0.72 * face[2];
++    let idle_stroke = stripe(&idle, face, x, 1., fine, paper)?;
++    let idle_label_pixels = color_pixels(&idle, neutral, label_body(inline))?;
++    let support_pixels = color_pixels(&idle, neutral, support)?;
++    check!(
++        idle_label_pixels > 12 && support_pixels > 12,
++        "the idle label and support have actual neutral ink"
++    );
++
++    click(tab, EDITABLE).await?;
++    editor(tab, EDITABLE).await?;
++    let data = model(tab, "d.value === '' && d.edits === 0 && d.submits === 0").await?;
++    let float = part(tab, EDITABLE, "floating-label").await?;
++    let focus_frame = photo(tab, env, FOCUSED).await?;
++    let focus_stroke = stripe(&focus_frame, face, x, 3., active, paper)?;
++    let cut = notch(&focus_frame, face, float, active, paper, false)?;
++    let focused_placeholder_pixels = color_pixels(&focus_frame, neutral, label_body(inline))?;
++    let float_pixels = color_pixels(&focus_frame, active, float)?;
++    let helper = description(tab, SUPPORT, false).await?;
++    let mut changed = 0;
++    let [x, y, _, h] = inline;
++    for dx in 0..72 {
++        for dy in 2..(h as usize - 2) {
++            let point = [x + dx as f64 + 0.25, y + dy as f64 + 0.25];
++            let before = idle.sample(point[0], point[1])?;
++            let after = focus_frame.sample(point[0], point[1])?;
++            if before != after && (before == neutral || after == neutral) {
++                changed += 1;
++            }
++        }
++    }
++    check!(
++        focused_placeholder_pixels > 12 && float_pixels > 12 && changed > 16,
++        "focus paints the relocated primary label and different neutral placeholder glyphs"
++    );
++    Ok(
++        json!({"face":face,"inline":inline,"description_bounds":support,
++        "idle":idle_stroke,"focused":focus_stroke,"notch":cut,"label_pixels":idle_label_pixels,
++        "floating_pixels":float_pixels,"placeholder_pixels":focused_placeholder_pixels,
++        "glyph_difference_samples":changed,"description_pixels":support_pixels,"description":helper,
++        "palette":data["palette"],"captures":[IDLE,FOCUSED]}),
++    )
++}
++
++async fn composition(tab: &Tab, env: &Env) -> Result<Value> {
++    editor(tab, EDITABLE).await?;
++    let before = bounds(tab, EDITABLE).await?;
++    let composing = format!(
++        "JSON.parse(window.gallery.export_dom()).text_inputs[{}]?.composing === true",
++        js(EDITABLE),
++    );
++    tab.ime_compose("中文", 2, 2).await?;
++    tab.wait_for(&format!("{composing} && {TEXTAREA}?.value === '中文'"))
++        .await?;
++    let preedit_model = model(tab, "d.edits === 0 && d.value === '' && d.submits === 0").await?;
++    let selection = format!("[{TEXTAREA}.value,{TEXTAREA}.selectionStart,{TEXTAREA}.selectionEnd]");
++    let initial_selection = tab.eval(&selection).await?;
++
++    resize(tab, 480, 820).await?;
++    editor(tab, EDITABLE).await?;
++    tab.wait_for(&format!("{composing} && {TEXTAREA}?.value === '中文'"))
++        .await?;
++    model(
++        tab,
++        "d.width === 480 && d.edits === 0 && d.value === '' && d.submits === 0",
++    )
++    .await?;
++    let after = bounds(tab, EDITABLE).await?;
++    let selection_after = tab.eval(&selection).await?;
++    check!(after[2] < before[2], "preedit crossed a real field reflow");
++    check_eq!(
++        selection_after,
++        initial_selection,
++        "active preedit text and offsets survive reflow"
++    );
++    let frame = photo(tab, env, PREEDIT).await?;
++    let inline = part(tab, EDITABLE, "inline-label").await?;
++    let text_body = label_body(inline);
++    let composing_pixels = color_pixels(&frame, rgb(&preedit_model, "on_surface")?, text_body)?;
++    let placeholder_pixels = color_pixels(
++        &frame,
++        rgb(&preedit_model, "on_surface_variant")?,
++        text_body,
++    )?;
++    check!(
++        composing_pixels > 12 && placeholder_pixels == 0,
++        "the actual Canvas paints composing glyphs without the focused-empty placeholder"
++    );
++
++    tab.press("Enter").await?;
++    editor(tab, EDITABLE).await?;
++    let first = model(
++        tab,
++        "d.submits === 0 && (d.value === '' || d.value === '中文')",
++    )
++    .await?;
++    check!(
++        !tab.eval_str(&format!("{TEXTAREA}.value"))
++            .await?
++            .contains('\n'),
++        "the trusted IME Enter leaves a single-line editor"
++    );
++    let used_insert_text = first["value"] == "";
++    if used_insert_text {
++        // Chromium can end a CDP composition without committing its text.
++        tab.insert_text("中文").await?;
++    }
++    tab.wait_for(&format!("!({composing}) && {TEXTAREA}?.value === '中文'"))
++        .await?;
++    let accepted = model(
++        tab,
++        "d.value === '中文' && d.edits === 1 && d.submits === 0",
++    )
++    .await?;
++    tab.press("Enter").await?;
++    editor(tab, EDITABLE).await?;
++    let submitted = model(
++        tab,
++        "d.value === '中文' && d.edits === 1 && d.submits === 1",
++    )
++    .await?;
++    resize(tab, 960, 820).await?;
++    editor(tab, EDITABLE).await?;
++    Ok(
++        json!({"method":"CDP synthetic composition and trusted Enter keys","before_bounds":before,
++        "after_bounds":after,"before_selection":initial_selection,"after_selection":selection_after,
++        "composing_pixels":composing_pixels,"placeholder_pixels":placeholder_pixels,"first_enter":first,
++        "insert_text_needed":used_insert_text,"settled":accepted,"second_enter":submitted,"capture":PREEDIT}),
++    )
++}
++
++async fn validation_and_locked(tab: &Tab, env: &Env) -> Result<Value> {
++    tab.eval(
++        "(() => {
++            const region = document.querySelector('#surface-accessibility [aria-live=assertive]');
++            if (!region || region.getAttribute('aria-atomic') !== 'true' || region.textContent)
++                throw new Error('expected one primed and blank assertive validation region');
++            const messages = [];
++            const observer = new MutationObserver(() => {
++                if (region.textContent) messages.push(region.textContent);
++            });
++            observer.observe(region, {childList:true,characterData:true,subtree:true});
++            window.outlinedValidationLive = {region, messages, observer};
++        })()",
++    )
++    .await?;
++    activate(tab, ERROR).await?;
++    let data = model(tab, "d.show_error && d.value === '中文' && d.submits === 1").await?;
++    tab.wait_for(&format!(
++        "{LIVE_TRACE}.region.textContent === {}",
++        js(ERROR_TEXT)
++    ))
++    .await?;
++    let authored = projected(&format!("{EDITABLE}-validation-status"));
++    tab.wait_for(&format!("{authored}?.getAttribute('aria-live') === 'off'"))
++        .await?;
++    click(tab, EDITABLE).await?;
++    editor(tab, EDITABLE).await?;
++    let described = description(tab, ERROR_TEXT, true).await?;
++    let face = bounds(tab, EDITABLE).await?;
++    let label = part(tab, EDITABLE, "floating-label").await?;
++    let support = part(tab, EDITABLE, "description").await?;
++    let ink = rgb(&data, "error")?;
++    let paper = rgb(&data, "background")?;
++    let raster = photo(tab, env, ERROR_PNG).await?;
++    let stroke = stripe(&raster, face, face[0] + 0.72 * face[2], 3., ink, paper)?;
++    let cut = notch(&raster, face, label, ink, paper, false)?;
++    let error_pixels = color_pixels(&raster, ink, support)?;
++    check!(
++        error_pixels > 12,
++        "the validation message uses actual error ink"
++    );
++
++    tab.press("Tab").await?;
++    editor(tab, READ_ONLY).await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}?.readOnly && {TEXTAREA}.value === '既有專案'"
++    ))
++    .await?;
++    let tree = ax_tree(tab).await?;
++    let read_only = ax(&tree, "textbox", "唯讀名稱")?;
++    let disabled = ax(&tree, "textbox", "停用名稱")?;
++    check_eq!(
++        ax_property(read_only, "readonly"),
++        Some(&json!(true)),
++        "read-only textbox is selectable"
++    );
++    check_eq!(
++        ax_property(disabled, "disabled"),
++        Some(&json!(true)),
++        "the disabled textbox is unavailable in Chrome"
++    );
++    tab.shortcut("a").await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.selectionStart === 0 && {TEXTAREA}.selectionEnd === 4"
++    ))
++    .await?;
++    tab.insert_text("不能改").await?;
++    tab.press("Backspace").await?;
++    tab.press("Enter").await?;
++    editor(tab, READ_ONLY).await?;
++    tab.wait_for(&format!(
++        "{TEXTAREA}.readOnly && {TEXTAREA}.value === '既有專案'"
++    ))
++    .await?;
++    model(
++        tab,
++        "d.value === '中文' && d.edits === 1 && d.submits === 1 && d.locked_edit_requests === 0",
++    )
++    .await?;
++
++    tab.press("Tab").await?;
++    editor(tab, LONG).await?;
++    click(tab, DISABLED).await?;
++    tab.settle().await?;
++    let unchanged = model(
++        tab,
++        "d.value === '中文' && d.edits === 1 && d.submits === 1 && d.long_edits === 0 &&
++         d.locked_edit_requests === 0",
++    )
++    .await?;
++    until(tab, &format!("s.focused !== {}", js(DISABLED))).await?;
++    check!(
++        tab.eval(&format!(
++            "document.activeElement !== {TEXTAREA} || {TEXTAREA}?.getAttribute('aria-label') !== '停用名稱'",
++        ))
++        .await?.as_bool() == Some(true),
++        "clicking a disabled field never mounts it as the active editor"
++    );
++    check_eq!(
++        tab.eval(&format!("{LIVE_TRACE}.messages")).await?,
++        json!([ERROR_TEXT]),
++        "editing, focus and the disabled click do not repeat the warning"
++    );
++    activate(tab, ERROR).await?;
++    model(tab, "!d.show_error").await?;
++    tab.wait_for(&format!("{LIVE_TRACE}.region.textContent === ''"))
++        .await?;
++    click(tab, EDITABLE).await?;
++    editor(tab, EDITABLE).await?;
++    description(tab, SUPPORT, false).await?;
++    activate(tab, ERROR).await?;
++    model(tab, "d.show_error").await?;
++    tab.wait_for(&format!("{LIVE_TRACE}.messages.length === 2"))
++        .await?;
++    let live_messages = tab.eval(&format!("{LIVE_TRACE}.messages")).await?;
++    check_eq!(
++        live_messages,
++        json!([ERROR_TEXT, ERROR_TEXT]),
++        "the same error can appear again after clearing it"
++    );
++    check_eq!(
++        tab.eval(&format!(
++            "{LIVE_TRACE}.region === document.querySelector('#surface-accessibility [aria-live=assertive]')"
++        ))
++        .await?,
++        json!(true),
++        "the live region stays mounted when the editor updates"
++    );
++    Ok(json!({"description":described,"stroke":stroke,"notch":cut,
++        "error_bounds":support,"error_pixels":error_pixels,"readonly":true,"disabled":true,
++        "tab_skipped_disabled_to":LONG,"model":unchanged,"assertive_messages":live_messages,
++        "capture":ERROR_PNG}))
++}
++
++async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    route(tab, url).await?;
++    for setting in [THEME, RTL, TEXT, ERROR] {
++        activate(tab, setting).await?;
++    }
++    resize(tab, 320, 960).await?;
++    let data = model(
++        tab,
++        "d.width === 320 && d.dark && d.rtl && d.text_scale === 2 && d.show_error",
++    )
++    .await?;
++    click(tab, EDITABLE).await?;
++    editor(tab, EDITABLE).await?;
++    let face = bounds(tab, EDITABLE).await?;
++    let floated = part(tab, EDITABLE, "floating-label").await?;
++    let long = bounds(tab, LONG).await?;
++    let above = part(tab, LONG, "above-label").await?;
++    let unused_notch = part(tab, LONG, "floating-label").await?;
++    let viewport = [0., 0., 320., 960.];
++    check!(
++        near(face[3],80.) && near(long[3],80.) &&
++        [face, floated, long, above].into_iter().all(|part| contains(viewport,part)) &&
++        near(above[0] - long[0],16.) && near(right(long) - right(above),16.) &&
++        above[3] >= 64. && near(long[1] - bottom(above),4.) && unused_notch[2] == 0.,
++        "the wide label wraps above a complete 80 dp editor while the short label retains its notch"
++    );
++    let paper = rgb(&data, "background")?;
++    let error = rgb(&data, "error")?;
++    let outline = rgb(&data, "outline")?;
++    let frame = photo(tab, env, COMPACT).await?;
++    let short_border = stripe(&frame, face, face[0] + 0.3 * face[2], 3., error, paper)?;
++    let short_notch = notch(&frame, face, floated, error, paper, true)?;
++    let long_border = stripe(&frame, long, long[0] + 0.5 * long[2], 1., outline, paper)?;
++    let long_label_pixels = color_pixels(&frame, rgb(&data, "on_surface_variant")?, above)?;
++    let midline = long[1] + long[3] / 2. - 20.;
++    let right_body = [right(long) - 94., midline, 78., 40.];
++    let left_body = [long[0] + 16., midline, 52., 40.];
++    let value = rgb(&data, "on_surface")?;
++    let right_pixels = color_pixels(&frame, value, right_body)?;
++    let left_pixels = color_pixels(&frame, value, left_body)?;
++    check!(
++        long_label_pixels > 40 && right_pixels > 30 && left_pixels == 0,
++        "the uncut long label and right-aligned text paint in the dark compact frame"
++    );
++    let described = description(tab, ERROR_TEXT, true).await?;
++    resize(tab, HOME.0, HOME.1).await?;
++    activate(tab, BACK).await?;
++    model(tab, "!d.visible").await?;
++    focused(tab, SHOW).await?;
++    Ok(
++        json!({"model":data,"short_border":short_border,"short_notch":short_notch,
++        "long_border":long_border,"long_label":above,"long_label_pixels":long_label_pixels,
++        "right_value_bounds":right_body,"right_value_pixels":right_pixels,
++        "left_value_bounds":left_body,"left_value_pixels":left_pixels,
++        "description":described,"back_focus":SHOW,"capture":COMPACT}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 864, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(STEPS[0], "actual idle and focused outlined fields paint the label, placeholder, notch and helper");
++        route(&tab, url).await?;
++        report["paint"] = rest_and_focus(&tab, env).await?;
++        step(STEPS[1], "CDP preedit survives a real reflow and only a separate trusted Enter submits");
++        report["composition"] = composition(&tab, env).await?;
++        step(STEPS[2], "the invalid editor describes its error while read-only and disabled editors stay inert");
++        report["states"] = validation_and_locked(&tab, env).await?;
++        step(STEPS[3], "dark RTL at 200 percent keeps a short notch and a readable long label above its outline");
++        report["compact"] = compact(&tab, env, url).await?;
++        check!(tab.errors().is_empty(), "no outlined text field page errors");
++        Ok(())
++    }
++    .await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact("material-outlined-text-field-failure.png"))
++            .await;
++    }
++    env.write_json("material-outlined-text-field.json", &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index bb6f1fa65872ce564f64f59b920681b919a3a5eb..69f1dc35b7164c1ef06a189e9c15fca12cad9041 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -26,6 +26,7 @@ mod loading_indicator_demo;
+ mod menu_demo;
+ mod modal_wide_navigation_rail_demo;
+ mod navigation_drawer_demo;
++mod outlined_text_field_demo;
+ mod progress_demo;
+ mod radio_demo;
+ mod rail_icons;
+@@ -81,6 +82,7 @@ use loading_indicator_demo::{LoadingDemo, LoadingEvent};
+ use menu_demo::{MenuDemo, MenuDemoEvent};
+ use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
+ use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
++use outlined_text_field_demo::{OutlinedTextFieldDemo, OutlinedTextFieldDemoEvent};
+ use progress_demo::{ProgressDemo, ProgressEvent};
+ use radio_demo::{RadioDemo, RadioDemoEvent};
+ use range_slider_demo::{RangeSliderDemo, RangeSliderDemoEvent};
+@@ -149,6 +151,7 @@ pub struct Gallery {
+     chip_demo: ChipDemo,
+     icon_button_demo: IconButtonDemo,
+     button_demo: ButtonDemo,
++    outlined_text_field_demo: OutlinedTextFieldDemo,
+     segmented_demo: SegmentedDemo,
+     slider_demo: SliderDemo,
+     slider_forms_demo: SliderFormsDemo,
+@@ -227,6 +230,7 @@ impl Default for Gallery {
+             chip_demo: ChipDemo::default(),
+             icon_button_demo: IconButtonDemo::default(),
+             button_demo: ButtonDemo::default(),
++            outlined_text_field_demo: OutlinedTextFieldDemo::default(),
+             segmented_demo: SegmentedDemo::default(),
+             slider_demo: SliderDemo::default(),
+             slider_forms_demo: SliderFormsDemo::default(),
+@@ -350,6 +354,7 @@ pub enum Message {
+     ChipDemo(ChipDemoEvent),
+     IconButtonDemo(IconButtonDemoEvent),
+     ButtonDemo(ButtonDemoEvent),
++    OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
+     SegmentedDemo(SegmentedDemoEvent),
+     SliderDemo(SliderDemoEvent),
+     SliderForms(SliderFormsEvent),
+@@ -538,6 +543,9 @@ impl Application for Gallery {
+         if self.button_demo.visible() {
+             return self.button_demo.text_scale();
+         }
++        if self.outlined_text_field_demo.visible() {
++            return self.outlined_text_field_demo.text_scale();
++        }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.text_scale();
+         }
+@@ -570,6 +578,7 @@ impl Application for Gallery {
+         let chips = self.chip_demo.viewport_changed(width);
+         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
+         let buttons = self.button_demo.viewport_changed(width, height);
++        let outlined_text_field = self.outlined_text_field_demo.viewport_changed(width);
+         let segmented = self.segmented_demo.viewport_changed(width);
+         let sliders = self.slider_demo.viewport_changed(width, height);
+         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
+@@ -640,6 +649,7 @@ impl Application for Gallery {
+             || chips
+             || icon_buttons
+             || buttons
++            || outlined_text_field
+             || segmented
+             || sliders
+             || slider_forms
+@@ -984,6 +994,9 @@ impl Application for Gallery {
+                 if i != button_demo::SECTION {
+                     self.button_demo.leave();
+                 }
++                if i != outlined_text_field_demo::SECTION {
++                    self.outlined_text_field_demo.leave();
++                }
+                 if i != segmented_demo::SECTION {
+                     self.segmented_demo.leave();
+                 }
+@@ -1012,6 +1025,7 @@ impl Application for Gallery {
+             Message::ChipDemo(event) => self.chip_demo.update(event),
+             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
+             Message::ButtonDemo(event) => self.button_demo.update(event),
++            Message::OutlinedTextFieldDemo(event) => self.outlined_text_field_demo.update(event),
+             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
+             Message::SliderDemo(event) => self.slider_demo.update(event),
+             Message::SliderForms(event) => self.slider_forms_demo.update(event),
+@@ -1232,6 +1246,9 @@ impl Application for Gallery {
+         if self.button_demo.visible() {
+             return self.button_demo.view(&t, self.dark);
+         }
++        if self.outlined_text_field_demo.visible() {
++            return self.outlined_text_field_demo.view(&t, self.dark);
++        }
+         if self.segmented_demo.visible() {
+             return self.segmented_demo.view(&t, self.dark);
+         }
+@@ -1361,6 +1378,7 @@ impl Application for Gallery {
+                             SliderInsetDemo::show_button(&t),
+                             ButtonDemo::show_button(&t),
+                             SegmentedDemo::show_button(&t),
++                            OutlinedTextFieldDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -1993,6 +2011,7 @@ mod web {
+         state["chip_demo"] = s.chip_demo.inspect(&theme);
+         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
+         state["button_demo"] = s.button_demo.inspect(&theme, s.dark);
++        state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
+         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
+         state["slider_demo"] = s.slider_demo.inspect(&theme);
+         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
+diff --git a/examples/material-gallery/src/outlined_text_field_demo.rs b/examples/material-gallery/src/outlined_text_field_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5889b965736248e3ff407c66bb07f26394a441e1
+--- /dev/null
++++ b/examples/material-gallery/src/outlined_text_field_demo.rs
+@@ -0,0 +1,288 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, typography, ButtonKind, ChoiceState, OutlinedTextFieldOptions,
++    TextFieldEditability, Theme,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const SHOW: &str = "outlined-text-field-demo-show";
++const BACK: &str = "outlined-text-field-demo-back";
++const THEME: &str = "outlined-text-field-demo-theme";
++const RTL: &str = "outlined-text-field-demo-rtl";
++const LARGE_TEXT: &str = "outlined-text-field-demo-large-text";
++const ERROR: &str = "outlined-text-field-demo-error";
++const EDITABLE: &str = "outlined-text-field-demo-editable";
++const READ_ONLY: &str = "outlined-text-field-demo-read-only";
++const DISABLED: &str = "outlined-text-field-demo-disabled";
++const LONG_LABEL: &str = "outlined-text-field-demo-long-label";
++const TITLE: &str = "外框文字欄位";
++
++#[derive(Clone)]
++pub enum OutlinedTextFieldDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleError,
++    Edit(String),
++    EditLong(String),
++    EditLocked,
++    Submit,
++}
++
++pub(crate) struct OutlinedTextFieldDemo {
++    visible: bool,
++    rtl: bool,
++    large_text: bool,
++    show_error: bool,
++    width: f32,
++    value: String,
++    edits: usize,
++    submits: usize,
++    long_value: String,
++    long_edits: usize,
++    locked_edit_requests: usize,
++}
++
++impl Default for OutlinedTextFieldDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            rtl: false,
++            large_text: false,
++            show_error: false,
++            width: 960.,
++            value: String::new(),
++            edits: 0,
++            submits: 0,
++            long_value: "共用名稱".to_owned(),
++            long_edits: 0,
++            locked_edit_requests: 0,
++        }
++    }
++}
++
++impl OutlinedTextFieldDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        if self.width == width {
++            return false;
++        }
++        self.width = width;
++        self.visible
++    }
++
++    pub(crate) fn update(&mut self, event: OutlinedTextFieldDemoEvent) {
++        use OutlinedTextFieldDemoEvent::*;
++        if !self.visible && !matches!(event, Show) {
++            return;
++        }
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleError => self.show_error = !self.show_error,
++            Edit(value) => {
++                self.value = value;
++                self.edits += 1;
++            }
++            EditLong(value) => {
++                self.long_value = value;
++                self.long_edits += 1;
++            }
++            EditLocked => self.locked_edit_requests += 1,
++            Submit => self.submits += 1,
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                TITLE,
++                ButtonKind::Outlined,
++                false,
++                Message::OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++            .suppress_repeated_activation()
++    }
++
++    fn options<'a>(
++        &self,
++        id: &'a str,
++        label: &'a str,
++        value: &'a str,
++    ) -> OutlinedTextFieldOptions<'a> {
++        let mut options = OutlinedTextFieldOptions::new(id, label, value);
++        options.text_scale = self.text_scale();
++        options.direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        options
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use OutlinedTextFieldDemoEvent::*;
++        let demo = Message::OutlinedTextFieldDemo;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++                .suppress_repeated_activation()
++        };
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", demo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation()
++                .suppress_repeated_activation(),
++            toggle(THEME, "深色", dark, Message::Theme),
++            toggle(RTL, "右起", self.rtl, demo(ToggleDirection)),
++            toggle(LARGE_TEXT, "大字", self.large_text, demo(ToggleLargeText)),
++            toggle(ERROR, "錯誤", self.show_error, demo(ToggleError)),
++        ]);
++
++        let mut editable = self.options(EDITABLE, "專案名稱", &self.value);
++        editable.placeholder = Some("輸入名稱");
++        editable.supporting_text = Some("請輸入中文或英文名稱。");
++        editable.error = self.show_error.then_some("請輸入有效的專案名稱。");
++        let editable = theme
++            .outlined_text_field_with_submit(
++                editable,
++                move |value| demo(Edit(value)),
++                move || Some(demo(Submit)),
++            )
++            .expect("valid editable Gallery field");
++
++        let mut read_only = self.options(READ_ONLY, "唯讀名稱", "既有專案");
++        read_only.editability = TextFieldEditability::ReadOnly;
++        let read_only = theme
++            .outlined_text_field(read_only, move |_| demo(EditLocked))
++            .expect("valid read-only Gallery field");
++
++        let mut disabled = self.options(DISABLED, "停用名稱", "已封存專案");
++        disabled.editability = TextFieldEditability::Disabled;
++        let disabled = theme
++            .outlined_text_field(disabled, move |_| demo(EditLocked))
++            .expect("valid disabled Gallery field");
++
++        let long_label = self.options(
++            LONG_LABEL,
++            "輸入團隊成員在共用專案清單中容易辨認的完整名稱",
++            &self.long_value,
++        );
++        let long_label = theme
++            .outlined_text_field(long_label, move |value| demo(EditLong(value)))
++            .expect("valid long-label Gallery field");
++
++        let status = View::new(
++            Node::new(Role::Status, "")
++                .id("outlined-text-field-demo-status")
++                .text(format!("送出次數：{}", self.submits))
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .with_text_style(typography::BODY_MEDIUM)
++                        .foreground(theme.colors.on_surface),
++                ),
++        );
++        let mut scroll_style = Style::column()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .padding(8.)
++            .gap(20.)
++            .clip(true);
++        scroll_style.max_width = Length::Px(520.);
++
++        let scroll = View::new(
++            Node::new(Role::Group, "文字欄位範例")
++                .id("outlined-text-field-demo-scroll")
++                .styled(scroll_style),
++        )
++        .accessibility_scroll_pages()
++        .children([editable, read_only, disabled, long_label, status]);
++
++        View::new(
++            Node::new(Role::Window, TITLE)
++                .id("outlined-text-field-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("outlined-text-field-demo-title", TITLE),
++            controls,
++            scroll,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let colors = theme.colors;
++        serde_json::json!({
++            "visible": self.visible,
++            "width": self.width,
++            "dark": dark,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "show_error": self.show_error,
++            "value": self.value,
++            "edits": self.edits,
++            "submits": self.submits,
++            "long_value": self.long_value,
++            "long_edits": self.long_edits,
++            "locked_edit_requests": self.locked_edit_requests,
++            "palette": {
++                "background": color(theme.background),
++                "surface": color(colors.surface),
++                "outline": color(colors.outline),
++                "on_surface": color(colors.on_surface),
++                "on_surface_variant": color(colors.on_surface_variant),
++                "primary": color(colors.primary),
++                "error": color(colors.error),
++                "on_error_container": color(colors.on_error_container),
++            },
++        })
++    }
++}

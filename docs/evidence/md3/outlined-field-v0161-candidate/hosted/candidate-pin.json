@@ -1,0 +1,43 @@
+{
+  "version": "0.1.61",
+  "source_manifest_sha256": "3c79ae5ee15bf3b9b786d37452f1e0e5929ac0d31276ca7f6506897462dd9cc8",
+  "source_paths": 668,
+  "candidate_tree": "7c7881f78c3dc44129f52688a079b6874c9a4991",
+  "base_tree": "b9539a68d5993b8c29a9dc17da571b31078c6874",
+  "head": "c6d7d06861d3f6221d06c1c6dd682692fa1984a5",
+  "base": "98c62d31d1646878b1a5393f84aa896e52aa2985",
+  "pr": 237,
+  "runs": {
+    "pull_request": {
+      "id": 45569894616,
+      "attempt": 1,
+      "jobs": {
+        "browser-e2e": 139053680602,
+        "build-and-behavior": 139053680941
+      }
+    },
+    "push": {
+      "id": 45569881486,
+      "attempt": 2,
+      "jobs": {
+        "browser-e2e": 139070770593,
+        "build-and-behavior": 139070770861
+      }
+    }
+  },
+  "first_attempts": {
+    "originals_manifest_sha256": "7fcb4bf1840d52887c6251f50efa1f687eae3ac1b88ec3b1e516ab12bc0840de",
+    "portable_manifest_sha256": "78622ccc66b40e0017bf820a5a8a4d138888883a18b091a5cd15e47dcdbd97ee",
+    "diagnosis_sha256": "dfcb43093f62555c0d57a9563531a3eba49d295cabc8cc9b06f2a55a73444d13",
+    "accepted_pr_artifact_id": 15003353358,
+    "accepted_pr_digest": "sha256:01beec1c1bd51b3cc23a011be1cc441d12cbfa462e299675d047bc2bfbda0f3f",
+    "rejected_push": {
+      "attempt": 1,
+      "job": 139053636506,
+      "build_job": 139053636247,
+      "artifact_id": 15003667072,
+      "digest": "sha256:5812c1e36d96bc394e20bf58d453f773e01cce4a01d2ac318f34ca6d9998e825",
+      "failure": "M287"
+    }
+  }
+}
