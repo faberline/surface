@@ -36,6 +36,7 @@ mod scroll_modal_demo;
 mod scroll_pair_demo;
 mod scroll_popup_demo;
 mod search_overlay_demo;
+mod segmented_demo;
 mod side_sheet_demo;
 mod slider_demo;
 mod slider_forms_demo;
@@ -89,6 +90,7 @@ use scroll_modal_demo::{ScrollModalDemo, ScrollModalDemoEvent};
 use scroll_pair_demo::{ScrollPairDemo, ScrollPairDemoEvent};
 use scroll_popup_demo::{ScrollPopupDemo, ScrollPopupDemoEvent};
 use search_overlay_demo::{SearchOverlayDemo, SearchOverlayDemoEvent};
+use segmented_demo::{SegmentedDemo, SegmentedDemoEvent};
 use side_sheet_demo::{SideSheetDemo, SideSheetEvent};
 use slider_demo::{SliderDemo, SliderDemoEvent};
 use slider_forms_demo::{SliderFormsDemo, SliderFormsEvent};
@@ -147,6 +149,7 @@ pub struct Gallery {
     chip_demo: ChipDemo,
     icon_button_demo: IconButtonDemo,
     button_demo: ButtonDemo,
+    segmented_demo: SegmentedDemo,
     slider_demo: SliderDemo,
     slider_forms_demo: SliderFormsDemo,
     range_slider_demo: RangeSliderDemo,
@@ -224,6 +227,7 @@ impl Default for Gallery {
             chip_demo: ChipDemo::default(),
             icon_button_demo: IconButtonDemo::default(),
             button_demo: ButtonDemo::default(),
+            segmented_demo: SegmentedDemo::default(),
             slider_demo: SliderDemo::default(),
             slider_forms_demo: SliderFormsDemo::default(),
             range_slider_demo: RangeSliderDemo::default(),
@@ -346,6 +350,7 @@ pub enum Message {
     ChipDemo(ChipDemoEvent),
     IconButtonDemo(IconButtonDemoEvent),
     ButtonDemo(ButtonDemoEvent),
+    SegmentedDemo(SegmentedDemoEvent),
     SliderDemo(SliderDemoEvent),
     SliderForms(SliderFormsEvent),
     RangeSliderDemo(RangeSliderDemoEvent),
@@ -533,6 +538,9 @@ impl Application for Gallery {
         if self.button_demo.visible() {
             return self.button_demo.text_scale();
         }
+        if self.segmented_demo.visible() {
+            return self.segmented_demo.text_scale();
+        }
         if self.slider_demo.visible() {
             return self.slider_demo.text_scale();
         }
@@ -562,6 +570,7 @@ impl Application for Gallery {
         let chips = self.chip_demo.viewport_changed(width);
         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
         let buttons = self.button_demo.viewport_changed(width, height);
+        let segmented = self.segmented_demo.viewport_changed(width);
         let sliders = self.slider_demo.viewport_changed(width, height);
         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
         let range_sliders = self.range_slider_demo.viewport_changed(width, height);
@@ -631,6 +640,7 @@ impl Application for Gallery {
             || chips
             || icon_buttons
             || buttons
+            || segmented
             || sliders
             || slider_forms
             || range_sliders
@@ -974,6 +984,9 @@ impl Application for Gallery {
                 if i != button_demo::SECTION {
                     self.button_demo.leave();
                 }
+                if i != segmented_demo::SECTION {
+                    self.segmented_demo.leave();
+                }
                 if i != slider_demo::SECTION {
                     self.slider_demo.leave();
                     self.slider_forms_demo.leave();
@@ -999,6 +1012,7 @@ impl Application for Gallery {
             Message::ChipDemo(event) => self.chip_demo.update(event),
             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
             Message::ButtonDemo(event) => self.button_demo.update(event),
+            Message::SegmentedDemo(event) => self.segmented_demo.update(event),
             Message::SliderDemo(event) => self.slider_demo.update(event),
             Message::SliderForms(event) => self.slider_forms_demo.update(event),
             Message::RangeSliderDemo(event) => self.range_slider_demo.update(event),
@@ -1218,6 +1232,9 @@ impl Application for Gallery {
         if self.button_demo.visible() {
             return self.button_demo.view(&t, self.dark);
         }
+        if self.segmented_demo.visible() {
+            return self.segmented_demo.view(&t, self.dark);
+        }
         if self.slider_demo.visible() {
             return self.slider_demo.view(&t, self.dark);
         }
@@ -1343,6 +1360,7 @@ impl Application for Gallery {
                             VerticalCenteredSliderDemo::show_button(&t),
                             SliderInsetDemo::show_button(&t),
                             ButtonDemo::show_button(&t),
+                            SegmentedDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1975,6 +1993,7 @@ mod web {
         state["chip_demo"] = s.chip_demo.inspect(&theme);
         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
         state["button_demo"] = s.button_demo.inspect(&theme, s.dark);
+        state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
         state["slider_demo"] = s.slider_demo.inspect(&theme);
         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
         state["range_slider_demo"] = s.range_slider_demo.inspect(&theme, s.dark);

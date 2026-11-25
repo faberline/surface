@@ -67,10 +67,11 @@
       "id": "segmented-buttons",
       "spec": "https://m3.material.io/components/segmented-buttons/overview",
       "status": "partial",
-      "variant_review": "pending",
-      "desktop_evidence": "Two-frame native gallery smoke only; variant and interaction qualification open",
-      "web_evidence": "e2e/src/material.rs; e2e/src/ime.rs for text input",
-      "implemented": "Controlled single selection; manual keyboard activation; position-aware segments with a selected check mark for single and multi select. Inner borders are drawn per segment, not shared; no elevation or ripple"
+      "variant_review": "audit baseline outlined segment groups and the Expressive Connected successor against Material 3's published catalog",
+      "desktop_evidence": "The native headless Gallery replay covers light, dark, compact RTL at 200%, keyboard selection, and matching Page.screenshot, CLI and MCP PNGs",
+      "web_evidence": "M320–M323 in e2e/src/material_segmented.rs cover shared outline and seams, projected roles and state, keyboard focus, pointer and touch targets, and narrow RTL scroll",
+      "implemented": "Two to five equal-width Baseline choices with a shared outline, one seam, icon or text, caller-owned radio or checkbox selection, disabled state and a 48 dp minimum hit target. The row grows for large labels and scrolls with a wheel, keyboard focus or accessibility reveal. Direct touch panning, live assistive speech and system contrast remain open. The separate Connected button group provides the Expressive successor.",
+      "unit_evidence": "crates/surface-material/tests/baseline_segmented_button.rs covers layout, paint, validation, roles, selection, accessible activation and focus"
     },
     {
       "id": "split-button",

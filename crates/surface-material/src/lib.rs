@@ -6,6 +6,7 @@ mod app_bar;
 mod app_bar_scroll;
 mod app_bar_search;
 mod badge;
+mod baseline_segmented_button;
 mod basic_dialog;
 mod bottom_sheet;
 mod bottom_sheet_motion;
@@ -83,6 +84,9 @@ pub use app_bar::{AppBarContent, AppBarKind, AppBarOptions};
 pub use app_bar_scroll::{AppBarScroll, AppBarScrollBehavior, AppBarScrollUpdate};
 pub use app_bar_search::{AppBarSearchContent, AppBarSearchOptions};
 pub use badge::{BadgeBoundary, BadgeContent, BadgedAnchorOptions};
+pub use baseline_segmented_button::{
+    BaselineSegmentedButtonOptions, BaselineSegmentedItem, BaselineSegmentedSelection,
+};
 pub use basic_dialog::{BasicDialogContent, BasicDialogMotion, BasicDialogOptions};
 pub use bottom_sheet::{
     BottomSheetContent, BottomSheetHeights, BottomSheetOptions, BottomSheetPresentation,
