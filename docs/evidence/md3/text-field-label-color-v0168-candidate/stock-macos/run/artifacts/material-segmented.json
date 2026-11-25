@@ -1,0 +1,1257 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "wide": {
+    "initial": {
+      "activations": 0,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": false,
+      "filters": [],
+      "palette": {
+        "background": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "focus": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "ink": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "outline": [
+          122,
+          117,
+          127,
+          255
+        ],
+        "selection": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "selection_ink": [
+          30,
+          25,
+          43,
+          255
+        ]
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "view": "segment-grid-view",
+      "visible": true,
+      "width": 960.0
+    },
+    "roles": {
+      "comparison": [
+        {
+          "id": "segment-left-pane",
+          "name": "左側",
+          "role": "radio",
+          "checked": false,
+          "disabled": false
+        },
+        {
+          "id": "segment-right-pane",
+          "name": "右側",
+          "role": "radio",
+          "checked": true,
+          "disabled": false
+        }
+      ],
+      "view": [
+        {
+          "id": "segment-list-view",
+          "name": "清單檢視",
+          "role": "radio",
+          "checked": false,
+          "disabled": false
+        },
+        {
+          "id": "segment-table-view",
+          "name": "表格檢視",
+          "role": "radio",
+          "checked": false,
+          "disabled": true
+        },
+        {
+          "id": "segment-grid-view",
+          "name": "格狀檢視",
+          "role": "radio",
+          "checked": true,
+          "disabled": false
+        }
+      ],
+      "filters": [
+        {
+          "id": "segment-new",
+          "name": "最新",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": false
+        },
+        {
+          "id": "segment-saved",
+          "name": "已儲存",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": false
+        },
+        {
+          "id": "segment-local",
+          "name": "離線",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": true
+        },
+        {
+          "id": "segment-shared",
+          "name": "已分享",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": false
+        },
+        {
+          "id": "segment-archived",
+          "name": "封存",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": false
+        }
+      ]
+    },
+    "rows": [
+      {
+        "id": "segments-comparison",
+        "outline": [
+          21.0,
+          181.0,
+          156.0,
+          40.0
+        ],
+        "segments": [
+          {
+            "id": "segment-left-pane",
+            "rects": {
+              "hit": [
+                21.0,
+                177.0,
+                78.0,
+                48.0
+              ],
+              "face": [
+                21.0,
+                181.0,
+                78.0,
+                40.0
+              ],
+              "focus": [
+                16.0,
+                176.0,
+                88.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-right-pane",
+            "rects": {
+              "hit": [
+                99.0,
+                177.0,
+                78.0,
+                48.0
+              ],
+              "face": [
+                99.0,
+                181.0,
+                78.0,
+                40.0
+              ],
+              "focus": [
+                94.0,
+                176.0,
+                88.0,
+                50.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "segments-view",
+        "outline": [
+          21.0,
+          291.0,
+          318.0,
+          40.0
+        ],
+        "segments": [
+          {
+            "id": "segment-list-view",
+            "rects": {
+              "hit": [
+                21.0,
+                287.0,
+                106.0,
+                48.0
+              ],
+              "face": [
+                21.0,
+                291.0,
+                106.0,
+                40.0
+              ],
+              "focus": [
+                16.0,
+                286.0,
+                116.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-table-view",
+            "rects": {
+              "hit": [
+                127.0,
+                287.0,
+                106.0,
+                48.0
+              ],
+              "face": [
+                127.0,
+                291.0,
+                106.0,
+                40.0
+              ],
+              "focus": [
+                122.0,
+                286.0,
+                116.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-grid-view",
+            "rects": {
+              "hit": [
+                233.0,
+                287.0,
+                106.0,
+                48.0
+              ],
+              "face": [
+                233.0,
+                291.0,
+                106.0,
+                40.0
+              ],
+              "focus": [
+                228.0,
+                286.0,
+                116.0,
+                50.0
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "segments-filters",
+        "outline": [
+          21.0,
+          401.0,
+          460.0,
+          40.0
+        ],
+        "segments": [
+          {
+            "id": "segment-new",
+            "rects": {
+              "hit": [
+                21.0,
+                397.0,
+                92.0,
+                48.0
+              ],
+              "face": [
+                21.0,
+                401.0,
+                92.0,
+                40.0
+              ],
+              "focus": [
+                16.0,
+                396.0,
+                102.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-saved",
+            "rects": {
+              "hit": [
+                113.0,
+                397.0,
+                92.0,
+                48.0
+              ],
+              "face": [
+                113.0,
+                401.0,
+                92.0,
+                40.0
+              ],
+              "focus": [
+                108.0,
+                396.0,
+                102.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-local",
+            "rects": {
+              "hit": [
+                205.0,
+                397.0,
+                92.0,
+                48.0
+              ],
+              "face": [
+                205.0,
+                401.0,
+                92.0,
+                40.0
+              ],
+              "focus": [
+                200.0,
+                396.0,
+                102.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-shared",
+            "rects": {
+              "hit": [
+                297.0,
+                397.0,
+                92.0,
+                48.0
+              ],
+              "face": [
+                297.0,
+                401.0,
+                92.0,
+                40.0
+              ],
+              "focus": [
+                292.0,
+                396.0,
+                102.0,
+                50.0
+              ]
+            }
+          },
+          {
+            "id": "segment-archived",
+            "rects": {
+              "hit": [
+                389.0,
+                397.0,
+                92.0,
+                48.0
+              ],
+              "face": [
+                389.0,
+                401.0,
+                92.0,
+                40.0
+              ],
+              "focus": [
+                384.0,
+                396.0,
+                102.0,
+                50.0
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "seams": [
+      {
+        "rect": [
+          98.5,
+          182.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          99.0,
+          201.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      },
+      {
+        "rect": [
+          126.5,
+          292.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          127.0,
+          311.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      },
+      {
+        "rect": [
+          232.5,
+          292.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          233.0,
+          311.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      },
+      {
+        "rect": [
+          112.5,
+          402.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          113.0,
+          421.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      },
+      {
+        "rect": [
+          204.5,
+          402.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          205.0,
+          421.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      },
+      {
+        "rect": [
+          296.5,
+          402.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          297.0,
+          421.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      },
+      {
+        "rect": [
+          388.5,
+          402.0,
+          1.0,
+          38.0
+        ],
+        "point": [
+          389.0,
+          421.0
+        ],
+        "ink": [
+          122,
+          117,
+          127
+        ]
+      }
+    ],
+    "capture": "material-segmented-wide.png",
+    "selected_point": [
+      286.0,
+      295.0
+    ],
+    "check": [
+      264.0,
+      302.0,
+      18.0,
+      18.0
+    ],
+    "icon": [
+      290.0,
+      302.0,
+      18.0,
+      18.0
+    ]
+  },
+  "keyboard": {
+    "selected": {
+      "activations": 3,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": false,
+      "filters": [
+        "segment-new",
+        "segment-shared"
+      ],
+      "palette": {
+        "background": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "focus": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "ink": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "outline": [
+          122,
+          117,
+          127,
+          255
+        ],
+        "selection": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "selection_ink": [
+          30,
+          25,
+          43,
+          255
+        ]
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "view": "segment-list-view",
+      "visible": true,
+      "width": 960.0
+    },
+    "cleared": {
+      "activations": 5,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": false,
+      "filters": [],
+      "palette": {
+        "background": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "focus": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "ink": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "outline": [
+          122,
+          117,
+          127,
+          255
+        ],
+        "selection": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "selection_ink": [
+          30,
+          25,
+          43,
+          255
+        ]
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "view": "segment-list-view",
+      "visible": true,
+      "width": 960.0
+    },
+    "roles": {
+      "view": [
+        {
+          "id": "segment-list-view",
+          "name": "清單檢視",
+          "role": "radio",
+          "checked": true,
+          "disabled": false
+        },
+        {
+          "id": "segment-table-view",
+          "name": "表格檢視",
+          "role": "radio",
+          "checked": false,
+          "disabled": true
+        },
+        {
+          "id": "segment-grid-view",
+          "name": "格狀檢視",
+          "role": "radio",
+          "checked": false,
+          "disabled": false
+        }
+      ],
+      "filters": [
+        {
+          "id": "segment-new",
+          "name": "最新",
+          "role": "checkbox",
+          "checked": true,
+          "disabled": false
+        },
+        {
+          "id": "segment-saved",
+          "name": "已儲存",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": false
+        },
+        {
+          "id": "segment-local",
+          "name": "離線",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": true
+        },
+        {
+          "id": "segment-shared",
+          "name": "已分享",
+          "role": "checkbox",
+          "checked": true,
+          "disabled": false
+        },
+        {
+          "id": "segment-archived",
+          "name": "封存",
+          "role": "checkbox",
+          "checked": false,
+          "disabled": false
+        }
+      ]
+    },
+    "focus": [
+      292.0,
+      396.0,
+      102.0,
+      50.0
+    ],
+    "focus_pixels": 3500,
+    "capture": "material-segmented-selection.png"
+  },
+  "pointer": {
+    "hold": {
+      "activations": 0,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": false,
+      "filters": [],
+      "palette": {
+        "background": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "focus": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "ink": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "outline": [
+          122,
+          117,
+          127,
+          255
+        ],
+        "selection": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "selection_ink": [
+          30,
+          25,
+          43,
+          255
+        ]
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "view": "segment-grid-view",
+      "visible": true,
+      "width": 960.0
+    },
+    "final": {
+      "activations": 1,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": false,
+      "filters": [
+        "segment-saved"
+      ],
+      "palette": {
+        "background": [
+          253,
+          247,
+          255,
+          255
+        ],
+        "focus": [
+          98,
+          91,
+          113,
+          255
+        ],
+        "ink": [
+          29,
+          27,
+          32,
+          255
+        ],
+        "outline": [
+          122,
+          117,
+          127,
+          255
+        ],
+        "selection": [
+          232,
+          222,
+          248,
+          255
+        ],
+        "selection_ink": [
+          30,
+          25,
+          43,
+          255
+        ]
+      },
+      "rtl": false,
+      "text_scale": 1.0,
+      "view": "segment-grid-view",
+      "visible": true,
+      "width": 960.0
+    },
+    "point": [
+      159.0,
+      398.0
+    ],
+    "capture": "material-segmented-pressed.png"
+  },
+  "compact": {
+    "first": {
+      "hit": [
+        243.3999938964844,
+        690.0,
+        55.599998474121094,
+        174.0
+      ],
+      "face": [
+        243.3999938964844,
+        694.0,
+        55.599998474121094,
+        166.0
+      ],
+      "focus": [
+        238.3999938964844,
+        689.0,
+        65.5999984741211,
+        176.0
+      ]
+    },
+    "last": {
+      "hit": [
+        21.0,
+        690.0,
+        55.599998474121094,
+        174.0
+      ],
+      "face": [
+        21.0,
+        694.0,
+        55.599998474121094,
+        166.0
+      ],
+      "focus": [
+        16.0,
+        689.0,
+        65.5999984741211,
+        176.0
+      ]
+    },
+    "initial": {
+      "activations": 0,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": true,
+      "filters": [],
+      "palette": {
+        "background": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "ink": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "outline": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "selection": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "selection_ink": [
+          232,
+          222,
+          248,
+          255
+        ]
+      },
+      "rtl": true,
+      "text_scale": 2.0,
+      "view": "segment-grid-view",
+      "visible": true,
+      "width": 320.0
+    },
+    "final": {
+      "activations": 1,
+      "after": 0,
+      "comparison": "segment-right-pane",
+      "dark": true,
+      "filters": [
+        "segment-archived"
+      ],
+      "palette": {
+        "background": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "focus": [
+          203,
+          194,
+          219,
+          255
+        ],
+        "ink": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "outline": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "selection": [
+          74,
+          68,
+          88,
+          255
+        ],
+        "selection_ink": [
+          232,
+          222,
+          248,
+          255
+        ]
+      },
+      "rtl": true,
+      "text_scale": 2.0,
+      "view": "segment-grid-view",
+      "visible": true,
+      "width": 240.0
+    },
+    "viewport": [
+      16.0,
+      689.0,
+      208.0,
+      176.0
+    ],
+    "track_before": [
+      -46.0,
+      689.0,
+      270.0,
+      176.0
+    ],
+    "track_after": [
+      16.0,
+      689.0,
+      270.0,
+      176.0
+    ],
+    "compact_pixels": 4758,
+    "focus_pixels": 5067,
+    "archive": {
+      "hit": [
+        21.0,
+        690.0,
+        52.0,
+        174.0
+      ],
+      "face": [
+        21.0,
+        694.0,
+        52.0,
+        166.0
+      ],
+      "focus": [
+        16.0,
+        689.0,
+        62.0,
+        176.0
+      ]
+    },
+    "returned_focus": "segmented-demo-show",
+    "captures": [
+      "material-segmented-rtl-200.png",
+      "material-segmented-scroll-rtl.png"
+    ]
+  },
+  "touch_overflow": {
+    "directions": [
+      {
+        "rtl": false,
+        "capture": "material-segmented-touch-ltr.png",
+        "start": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "preview": [
+          -14.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "canceled": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "end": [
+          -46.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "port": [
+          16.0,
+          689.0,
+          208.0,
+          176.0
+        ],
+        "trailing_target": [
+          167.0,
+          690.0,
+          52.0,
+          174.0
+        ],
+        "tap": {
+          "activations": 1,
+          "after": 0,
+          "comparison": "segment-right-pane",
+          "dark": false,
+          "filters": [
+            "segment-archived"
+          ],
+          "palette": {
+            "background": [
+              253,
+              247,
+              255,
+              255
+            ],
+            "focus": [
+              98,
+              91,
+              113,
+              255
+            ],
+            "ink": [
+              29,
+              27,
+              32,
+              255
+            ],
+            "outline": [
+              122,
+              117,
+              127,
+              255
+            ],
+            "selection": [
+              232,
+              222,
+              248,
+              255
+            ],
+            "selection_ink": [
+              30,
+              25,
+              43,
+              255
+            ]
+          },
+          "rtl": false,
+          "text_scale": 2.0,
+          "view": "segment-grid-view",
+          "visible": true,
+          "width": 240.0
+        }
+      },
+      {
+        "rtl": true,
+        "capture": "material-segmented-touch-rtl.png",
+        "start": [
+          -46.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "preview": [
+          -16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "canceled": [
+          -46.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "end": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "port": [
+          16.0,
+          689.0,
+          208.0,
+          176.0
+        ],
+        "trailing_target": [
+          21.0,
+          690.0,
+          52.0,
+          174.0
+        ],
+        "tap": {
+          "activations": 1,
+          "after": 0,
+          "comparison": "segment-right-pane",
+          "dark": true,
+          "filters": [
+            "segment-archived"
+          ],
+          "palette": {
+            "background": [
+              20,
+              18,
+              24,
+              255
+            ],
+            "focus": [
+              203,
+              194,
+              219,
+              255
+            ],
+            "ink": [
+              230,
+              224,
+              233,
+              255
+            ],
+            "outline": [
+              148,
+              143,
+              153,
+              255
+            ],
+            "selection": [
+              74,
+              68,
+              88,
+              255
+            ],
+            "selection_ink": [
+              232,
+              222,
+              248,
+              255
+            ]
+          },
+          "rtl": true,
+          "text_scale": 2.0,
+          "view": "segment-grid-view",
+          "visible": true,
+          "width": 240.0
+        }
+      }
+    ],
+    "parent": {
+      "start": [
+        16.0,
+        409.0,
+        270.0,
+        176.0
+      ],
+      "preview": [
+        16.0,
+        437.0,
+        270.0,
+        176.0
+      ],
+      "end": [
+        16.0,
+        451.0,
+        270.0,
+        176.0
+      ]
+    }
+  },
+  "touch_capture_loss": {
+    "start": [
+      16.0,
+      689.0,
+      270.0,
+      176.0
+    ],
+    "preview": [
+      -14.0,
+      689.0,
+      270.0,
+      176.0
+    ],
+    "restored": [
+      16.0,
+      689.0,
+      270.0,
+      176.0
+    ],
+    "after_up": [
+      16.0,
+      689.0,
+      270.0,
+      176.0
+    ],
+    "owner": 2,
+    "events": [
+      {
+        "kind": "gotpointercapture",
+        "id": 2
+      },
+      {
+        "kind": "lostpointercapture",
+        "id": 2
+      }
+    ],
+    "browser_focus": "surface",
+    "keyboard_resumed_at": "segment-saved"
+  },
+  "page_errors": []
+}
