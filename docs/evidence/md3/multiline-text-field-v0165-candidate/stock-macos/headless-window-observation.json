@@ -1,0 +1,111 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 4603,
+      "pids": [
+        47030,
+        58616
+      ]
+    },
+    "native_gallery": {
+      "samples": 7,
+      "pids": [
+        59554
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4547,
+      "pids": [
+        47030
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 56,
+      "pids": [
+        58616
+      ],
+      "detached_samples": 50
+    },
+    "native": {
+      "samples": 7,
+      "pids": [
+        59554
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 47030,
+      "ppid": 47011,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=63593",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-multiline-stock-v0165.C31fd1AG/run/tmp/.tmp4hSA7V",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-multiline-stock-v0165.C31fd1AG/run/tmp/.tmp4hSA7V"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 58616,
+      "ppid": 58606,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=65320",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-multiline-stock-v0165.C31fd1AG/run/tmp/.tmpnMDDuC",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-multiline-stock-v0165.C31fd1AG/run/tmp/.tmpnMDDuC"
+    },
+    {
+      "role": "native",
+      "pid": 59554,
+      "ppid": 47011,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}

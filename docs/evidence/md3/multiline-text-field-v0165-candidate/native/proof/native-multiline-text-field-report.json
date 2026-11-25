@@ -1,0 +1,3160 @@
+{
+  "source": {
+    "manifest_sha256": "6a420b56fc090457f9841fc8fda7c1bf0602e27138f586ca3f6b251652b580f2",
+    "files": 681
+  },
+  "binary_manifest_sha256": "85afe8106d75c9c71213b9b098e86e54f8095a34449e089f35bad13072e5cdce",
+  "binaries": {
+    "surface-devtools": "1f85b86f84167a986ceca69afb3c304cbbeaff9b26faed44462c0c18cbbaf9d3",
+    "surface-material-gallery": "0f36fda9a7d8c09182d1510d6a86fc4a5e62e21023b8dc7acd581defe96f48b9"
+  },
+  "schema": "surface.test.text-field-multiline.native.v1",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "replays": [
+    {
+      "wide": {
+        "viewport": [
+          960,
+          900
+        ],
+        "captures": [
+          {
+            "name": "wide-outlined-rest.png",
+            "sha256": "64ed89fffbe28e33989b841adb361c7037d4703b5f235670ea7082a1390ce0c5",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "outlined",
+            "rtl": false,
+            "state": {
+              "value": "第一行",
+              "selection_utf8": [
+                9,
+                9
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "body": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 431.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 136.0
+              },
+              "line_height": 24,
+              "row_count": 1,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 1,
+              "samples": [
+                [
+                  122,
+                  117,
+                  127,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "top_corner": null,
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 122,
+                  "ink": {
+                    "left": 52,
+                    "right": 98,
+                    "top": 165,
+                    "bottom": 181
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                }
+              ],
+              "clear_padding": {
+                "height": 13.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 184.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "3/12",
+              "description": "字數，已輸入 3 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "wide-outlined-grow.png",
+            "sha256": "717467dea9870a263fae0462263787096d92dbe66a7ea397630c29584c35e982",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "outlined",
+            "rtl": false,
+            "state": {
+              "value": "甲甲甲\n甲\n",
+              "selection_utf8": [
+                14,
+                14
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 104.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "body": {
+                "height": 72.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 431.0,
+                "x": 40.0,
+                "y": 252.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 136.0
+              },
+              "line_height": 24,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "top_corner": null,
+              "notch": [
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ]
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 150,
+                  "ink": {
+                    "left": 53,
+                    "right": 97,
+                    "top": 166,
+                    "bottom": 176
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 50,
+                  "ink": {
+                    "left": 53,
+                    "right": 65,
+                    "top": 190,
+                    "bottom": 200
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 24,
+                  "caret": {
+                    "left": 51,
+                    "right": 52,
+                    "top": 208,
+                    "bottom": 232
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 13.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 232.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "6/12",
+              "description": "字數，已輸入 6 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "wide-filled-fixed-top.png",
+            "sha256": "86dd800c832c6468b8b1f8b400357722620662c89a18c649dfcfeaed20924e92",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-fixed",
+            "appearance": "filled",
+            "rtl": false,
+            "state": {
+              "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+              "selection_utf8": [
+                0,
+                0
+              ],
+              "description": "multiline-text-field-demo-fixed-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "editor": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "body": {
+                "height": 72.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 300.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 384.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 284.0
+              },
+              "line_height": 24,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "top_corner": [
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 160,
+                  "ink": {
+                    "left": 41,
+                    "right": 102,
+                    "top": 305,
+                    "bottom": 321
+                  },
+                  "caret_pixels": 24,
+                  "caret": {
+                    "left": 40,
+                    "right": 41,
+                    "top": 300,
+                    "bottom": 324
+                  }
+                },
+                {
+                  "ink_pixels": 154,
+                  "ink": {
+                    "left": 41,
+                    "right": 99,
+                    "top": 329,
+                    "bottom": 345
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 394,
+                  "ink": {
+                    "left": 41,
+                    "right": 188,
+                    "top": 353,
+                    "bottom": 369
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 372.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ]
+            }
+          },
+          {
+            "name": "wide-filled-fixed-bottom.png",
+            "sha256": "8485da59c6eed329d200b9a1556fbfbb34b55e21f167d31a3a985e0f3cee2cfc",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-fixed",
+            "appearance": "filled",
+            "rtl": false,
+            "state": {
+              "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+              "selection_utf8": [
+                105,
+                105
+              ],
+              "description": "multiline-text-field-demo-fixed-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "editor": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "body": {
+                "height": 72.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 300.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 384.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 284.0
+              },
+              "line_height": 24,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "top_corner": [
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 129,
+                  "ink": {
+                    "left": 41,
+                    "right": 87,
+                    "top": 305,
+                    "bottom": 321
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 133,
+                  "ink": {
+                    "left": 41,
+                    "right": 87,
+                    "top": 329,
+                    "bottom": 345
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 24,
+                  "caret": {
+                    "left": 40,
+                    "right": 41,
+                    "top": 348,
+                    "bottom": 372
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 372.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ]
+            }
+          }
+        ],
+        "behavior": {
+          "grow": {
+            "focus_steps": [
+              "multiline-text-field-demo-appearance",
+              "multiline-text-field-demo-theme",
+              "multiline-text-field-demo-rtl",
+              "multiline-text-field-demo-large-text",
+              "multiline-text-field-demo-grow"
+            ],
+            "newline": {
+              "value": "第一行\n",
+              "selection_utf8": [
+                10,
+                10
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "counter": {
+              "ratio": "4/12",
+              "description": "字數，已輸入 4 個字，上限 12 個字。"
+            },
+            "body_heights": [
+              24.0,
+              48.0
+            ]
+          },
+          "fixed_focus_steps": [
+            "multiline-text-field-demo-theme",
+            "multiline-text-field-demo-rtl",
+            "multiline-text-field-demo-large-text",
+            "multiline-text-field-demo-grow",
+            "multiline-text-field-demo-grow-trailing-action",
+            "multiline-text-field-demo-fixed"
+          ],
+          "fixed_up_utf8": [
+            75,
+            28,
+            0
+          ],
+          "fixed_down_utf8": [
+            55,
+            85,
+            105
+          ],
+          "submit_and_locks": {
+            "target": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 24.0,
+              "y": 416.0
+            },
+            "feedback": "草稿已送出。",
+            "outer_revealed_support": {
+              "height": 16.0,
+              "width": 472.0,
+              "x": 40.0,
+              "y": 384.0
+            },
+            "retained": {
+              "multiline-text-field-demo-grow": {
+                "value": "甲甲甲\n甲\n",
+                "selection_utf8": [
+                  14,
+                  14
+                ],
+                "description": "multiline-text-field-demo-grow-description",
+                "disabled": false
+              },
+              "multiline-text-field-demo-fixed": {
+                "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+                "selection_utf8": [
+                  105,
+                  105
+                ],
+                "description": "multiline-text-field-demo-fixed-description",
+                "disabled": false
+              }
+            },
+            "read_only": {
+              "value": "已儲存的第一行\n已儲存的第二行\n",
+              "selection_utf8": [
+                44,
+                44
+              ],
+              "description": "multiline-text-field-demo-read-only-description",
+              "disabled": false
+            },
+            "disabled": {
+              "value": "停用的第一行\n停用的第二行",
+              "disabled": true
+            },
+            "next_focus": "multiline-text-field-demo-back"
+          },
+          "clear_focus_steps": [
+            "multiline-text-field-demo-appearance",
+            "multiline-text-field-demo-theme",
+            "multiline-text-field-demo-rtl",
+            "multiline-text-field-demo-large-text",
+            "multiline-text-field-demo-grow",
+            "multiline-text-field-demo-grow-trailing-action"
+          ],
+          "clear": {
+            "value": "",
+            "selection_utf8": [
+              0,
+              0
+            ],
+            "description": "multiline-text-field-demo-grow-description",
+            "disabled": false
+          },
+          "empty_counter": {
+            "ratio": "0/12",
+            "description": "字數，已輸入 0 個字，上限 12 個字。"
+          }
+        }
+      },
+      "compact": {
+        "viewport": [
+          320,
+          900
+        ],
+        "captures": [
+          {
+            "name": "compact-outlined-grow.png",
+            "sha256": "10c8bb3a269e788cb3196be01b8bbe2d01f9c0783b5a09bb0b48462461af5777",
+            "format": "png",
+            "width": 320,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "outlined",
+            "rtl": true,
+            "state": {
+              "value": "甲甲甲\n甲\n",
+              "selection_utf8": [
+                14,
+                14
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 176.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 328.0
+              },
+              "editor": {
+                "height": 176.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 328.0
+              },
+              "body": {
+                "height": 144.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 344.0
+              },
+              "description": {
+                "height": 64.0,
+                "width": 174.0,
+                "x": 106.0,
+                "y": 508.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 288.0,
+                "x": 16.0,
+                "y": 304.0
+              },
+              "caption": {
+                "height": 32.0,
+                "width": 96.0,
+                "x": 184.0,
+                "y": 312.0
+              },
+              "line_height": 48,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 288.0,
+                  "x": 16.0,
+                  "y": 304.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 344.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 344.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ]
+              ],
+              "paper": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "top_corner": null,
+              "notch": [
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ]
+              ]
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 720,
+                  "ink": {
+                    "left": 168,
+                    "right": 256,
+                    "top": 357,
+                    "bottom": 385
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 240,
+                  "ink": {
+                    "left": 232,
+                    "right": 256,
+                    "top": 405,
+                    "bottom": 433
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 48,
+                  "caret": {
+                    "left": 259,
+                    "right": 260,
+                    "top": 440,
+                    "bottom": 488
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 13.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 488.0
+              },
+              "foreground": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "paper": [
+                20,
+                18,
+                24,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "6/12",
+              "description": "字數，已輸入 6 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "compact-filled-grow.png",
+            "sha256": "5fa9f4af40df13fd604cee373004eab903c7e9ca63c7f793019b07d4e9eee825",
+            "format": "png",
+            "width": 320,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "filled",
+            "rtl": true,
+            "state": {
+              "value": "甲甲甲\n甲\n",
+              "selection_utf8": [
+                14,
+                14
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 192.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 312.0
+              },
+              "editor": {
+                "height": 192.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 312.0
+              },
+              "body": {
+                "height": 144.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 352.0
+              },
+              "description": {
+                "height": 64.0,
+                "width": 174.0,
+                "x": 106.0,
+                "y": 508.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 288.0,
+                "x": 16.0,
+                "y": 304.0
+              },
+              "caption": {
+                "height": 32.0,
+                "width": 96.0,
+                "x": 184.0,
+                "y": 320.0
+              },
+              "line_height": 48,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 288.0,
+                  "x": 16.0,
+                  "y": 304.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 336.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 352.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ],
+              "top_corner": [
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 726,
+                  "ink": {
+                    "left": 168,
+                    "right": 256,
+                    "top": 365,
+                    "bottom": 393
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 242,
+                  "ink": {
+                    "left": 232,
+                    "right": 256,
+                    "top": 413,
+                    "bottom": 441
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 48,
+                  "caret": {
+                    "left": 259,
+                    "right": 260,
+                    "top": 448,
+                    "bottom": 496
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 496.0
+              },
+              "foreground": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "6/12",
+              "description": "字數，已輸入 6 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "compact-filled-fixed-bottom.png",
+            "sha256": "f26108735acfd6d4df6dbefe78a8b824150cdcacc469a5117be4cae7e0acc645",
+            "format": "png",
+            "width": 320,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-fixed",
+            "appearance": "filled",
+            "rtl": true,
+            "state": {
+              "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+              "selection_utf8": [
+                105,
+                105
+              ],
+              "description": "multiline-text-field-demo-fixed-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 192.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 584.0
+              },
+              "editor": {
+                "height": 192.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 584.0
+              },
+              "body": {
+                "height": 144.0,
+                "width": 240.0,
+                "x": 40.0,
+                "y": 624.0
+              },
+              "description": {
+                "height": 64.0,
+                "width": 240.0,
+                "x": 40.0,
+                "y": 780.0
+              },
+              "description_visible": false,
+              "description_clip": {
+                "height": 480.0,
+                "width": 288.0,
+                "x": 16.0,
+                "y": 304.0
+              },
+              "caption": {
+                "height": 32.0,
+                "width": 96.0,
+                "x": 184.0,
+                "y": 592.0
+              },
+              "line_height": 48,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 288.0,
+                  "x": 16.0,
+                  "y": 304.0
+                },
+                "offset_y": 4.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ],
+              "top_corner": [
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 610,
+                  "ink": {
+                    "left": 186,
+                    "right": 278,
+                    "top": 635,
+                    "bottom": 665
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 608,
+                  "ink": {
+                    "left": 186,
+                    "right": 278,
+                    "top": 683,
+                    "bottom": 713
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 48,
+                  "caret": {
+                    "left": 279,
+                    "right": 280,
+                    "top": 720,
+                    "bottom": 768
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 240.0,
+                "x": 40.0,
+                "y": 768.0
+              },
+              "foreground": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ]
+            }
+          }
+        ],
+        "behavior": {
+          "grow": {
+            "focus_steps": [
+              "multiline-text-field-demo-grow"
+            ],
+            "newline": {
+              "value": "第一行\n",
+              "selection_utf8": [
+                10,
+                10
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "counter": {
+              "ratio": "4/12",
+              "description": "字數，已輸入 4 個字，上限 12 個字。"
+            },
+            "body_heights": [
+              48.0,
+              96.0
+            ]
+          },
+          "fixed_focus_steps": [
+            "multiline-text-field-demo-grow-trailing-action",
+            "multiline-text-field-demo-fixed"
+          ],
+          "fixed_up_utf8": [
+            84,
+            54,
+            13
+          ],
+          "fixed_down_utf8": [
+            54,
+            84,
+            105
+          ],
+          "submit_and_locks": {
+            "target": {
+              "height": 48.0,
+              "width": 136.0,
+              "x": 24.0,
+              "y": 728.0
+            },
+            "feedback": "草稿已送出。",
+            "outer_revealed_support": {
+              "height": 64.0,
+              "width": 240.0,
+              "x": 40.0,
+              "y": 648.0
+            },
+            "retained": {
+              "multiline-text-field-demo-grow": {
+                "value": "甲甲甲\n甲\n",
+                "selection_utf8": [
+                  14,
+                  14
+                ],
+                "description": "multiline-text-field-demo-grow-description",
+                "disabled": false
+              },
+              "multiline-text-field-demo-fixed": {
+                "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+                "selection_utf8": [
+                  105,
+                  105
+                ],
+                "description": "multiline-text-field-demo-fixed-description",
+                "disabled": false
+              }
+            },
+            "read_only": {
+              "value": "已儲存的第一行\n已儲存的第二行\n",
+              "selection_utf8": [
+                44,
+                44
+              ],
+              "description": "multiline-text-field-demo-read-only-description",
+              "disabled": false
+            },
+            "disabled": {
+              "value": "停用的第一行\n停用的第二行",
+              "disabled": true
+            },
+            "next_focus": "multiline-text-field-demo-back"
+          },
+          "clear_focus_steps": [
+            "multiline-text-field-demo-appearance",
+            "multiline-text-field-demo-theme",
+            "multiline-text-field-demo-rtl",
+            "multiline-text-field-demo-large-text",
+            "multiline-text-field-demo-grow",
+            "multiline-text-field-demo-grow-trailing-action"
+          ],
+          "clear": {
+            "value": "",
+            "selection_utf8": [
+              0,
+              0
+            ],
+            "description": "multiline-text-field-demo-grow-description",
+            "disabled": false
+          },
+          "empty_counter": {
+            "ratio": "0/12",
+            "description": "字數，已輸入 0 個字，上限 12 個字。"
+          }
+        }
+      }
+    },
+    {
+      "wide": {
+        "viewport": [
+          960,
+          900
+        ],
+        "captures": [
+          {
+            "name": "wide-outlined-rest.png",
+            "sha256": "64ed89fffbe28e33989b841adb361c7037d4703b5f235670ea7082a1390ce0c5",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "outlined",
+            "rtl": false,
+            "state": {
+              "value": "第一行",
+              "selection_utf8": [
+                9,
+                9
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 56.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 56.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "body": {
+                "height": 24.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 431.0,
+                "x": 40.0,
+                "y": 204.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 136.0
+              },
+              "line_height": 24,
+              "row_count": 1,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 1,
+              "samples": [
+                [
+                  122,
+                  117,
+                  127,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "top_corner": null,
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 122,
+                  "ink": {
+                    "left": 52,
+                    "right": 98,
+                    "top": 165,
+                    "bottom": 181
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                }
+              ],
+              "clear_padding": {
+                "height": 13.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 184.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "3/12",
+              "description": "字數，已輸入 3 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "wide-outlined-grow.png",
+            "sha256": "717467dea9870a263fae0462263787096d92dbe66a7ea397630c29584c35e982",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "outlined",
+            "rtl": false,
+            "state": {
+              "value": "甲甲甲\n甲\n",
+              "selection_utf8": [
+                14,
+                14
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "editor": {
+                "height": 104.0,
+                "width": 456.0,
+                "x": 24.0,
+                "y": 144.0
+              },
+              "body": {
+                "height": 72.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 160.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 431.0,
+                "x": 40.0,
+                "y": 252.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 136.0
+              },
+              "line_height": 24,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 480.0,
+                "y": 148.0
+              },
+              "prefix": {
+                "height": 24.0,
+                "width": 9.0,
+                "x": 40.0,
+                "y": 160.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ],
+              "top_corner": null,
+              "notch": [
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ]
+              ]
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 150,
+                  "ink": {
+                    "left": 53,
+                    "right": 97,
+                    "top": 166,
+                    "bottom": 176
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 50,
+                  "ink": {
+                    "left": 53,
+                    "right": 65,
+                    "top": 190,
+                    "bottom": 200
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 24,
+                  "caret": {
+                    "left": 51,
+                    "right": 52,
+                    "top": 208,
+                    "bottom": 232
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 13.0,
+                "width": 425.0,
+                "x": 51.0,
+                "y": 232.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                253,
+                247,
+                255,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "6/12",
+              "description": "字數，已輸入 6 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "wide-filled-fixed-top.png",
+            "sha256": "86dd800c832c6468b8b1f8b400357722620662c89a18c649dfcfeaed20924e92",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-fixed",
+            "appearance": "filled",
+            "rtl": false,
+            "state": {
+              "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+              "selection_utf8": [
+                0,
+                0
+              ],
+              "description": "multiline-text-field-demo-fixed-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "editor": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "body": {
+                "height": 72.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 300.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 384.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 284.0
+              },
+              "line_height": 24,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "top_corner": [
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 160,
+                  "ink": {
+                    "left": 41,
+                    "right": 102,
+                    "top": 305,
+                    "bottom": 321
+                  },
+                  "caret_pixels": 24,
+                  "caret": {
+                    "left": 40,
+                    "right": 41,
+                    "top": 300,
+                    "bottom": 324
+                  }
+                },
+                {
+                  "ink_pixels": 154,
+                  "ink": {
+                    "left": 41,
+                    "right": 99,
+                    "top": 329,
+                    "bottom": 345
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 394,
+                  "ink": {
+                    "left": 41,
+                    "right": 188,
+                    "top": 353,
+                    "bottom": 369
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 372.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ]
+            }
+          },
+          {
+            "name": "wide-filled-fixed-bottom.png",
+            "sha256": "8485da59c6eed329d200b9a1556fbfbb34b55e21f167d31a3a985e0f3cee2cfc",
+            "format": "png",
+            "width": 960,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-fixed",
+            "appearance": "filled",
+            "rtl": false,
+            "state": {
+              "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+              "selection_utf8": [
+                105,
+                105
+              ],
+              "description": "multiline-text-field-demo-fixed-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "editor": {
+                "height": 104.0,
+                "width": 504.0,
+                "x": 24.0,
+                "y": 276.0
+              },
+              "body": {
+                "height": 72.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 300.0
+              },
+              "description": {
+                "height": 16.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 384.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 520.0,
+                "x": 16.0,
+                "y": 128.0
+              },
+              "caption": {
+                "height": 16.0,
+                "width": 48.0,
+                "x": 40.0,
+                "y": 284.0
+              },
+              "line_height": 24,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 520.0,
+                  "x": 16.0,
+                  "y": 128.0
+                },
+                "offset_y": 0.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  101,
+                  85,
+                  143,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "top_corner": [
+                [
+                  253,
+                  247,
+                  255,
+                  255
+                ],
+                [
+                  230,
+                  224,
+                  233,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 129,
+                  "ink": {
+                    "left": 41,
+                    "right": 87,
+                    "top": 305,
+                    "bottom": 321
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 133,
+                  "ink": {
+                    "left": 41,
+                    "right": 87,
+                    "top": 329,
+                    "bottom": 345
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 24,
+                  "caret": {
+                    "left": 40,
+                    "right": 41,
+                    "top": 348,
+                    "bottom": 372
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 472.0,
+                "x": 40.0,
+                "y": 372.0
+              },
+              "foreground": [
+                29,
+                27,
+                32,
+                255
+              ],
+              "paper": [
+                230,
+                224,
+                233,
+                255
+              ]
+            }
+          }
+        ],
+        "behavior": {
+          "grow": {
+            "focus_steps": [
+              "multiline-text-field-demo-appearance",
+              "multiline-text-field-demo-theme",
+              "multiline-text-field-demo-rtl",
+              "multiline-text-field-demo-large-text",
+              "multiline-text-field-demo-grow"
+            ],
+            "newline": {
+              "value": "第一行\n",
+              "selection_utf8": [
+                10,
+                10
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "counter": {
+              "ratio": "4/12",
+              "description": "字數，已輸入 4 個字，上限 12 個字。"
+            },
+            "body_heights": [
+              24.0,
+              48.0
+            ]
+          },
+          "fixed_focus_steps": [
+            "multiline-text-field-demo-theme",
+            "multiline-text-field-demo-rtl",
+            "multiline-text-field-demo-large-text",
+            "multiline-text-field-demo-grow",
+            "multiline-text-field-demo-grow-trailing-action",
+            "multiline-text-field-demo-fixed"
+          ],
+          "fixed_up_utf8": [
+            75,
+            28,
+            0
+          ],
+          "fixed_down_utf8": [
+            55,
+            85,
+            105
+          ],
+          "submit_and_locks": {
+            "target": {
+              "height": 48.0,
+              "width": 80.0,
+              "x": 24.0,
+              "y": 416.0
+            },
+            "feedback": "草稿已送出。",
+            "outer_revealed_support": {
+              "height": 16.0,
+              "width": 472.0,
+              "x": 40.0,
+              "y": 384.0
+            },
+            "retained": {
+              "multiline-text-field-demo-grow": {
+                "value": "甲甲甲\n甲\n",
+                "selection_utf8": [
+                  14,
+                  14
+                ],
+                "description": "multiline-text-field-demo-grow-description",
+                "disabled": false
+              },
+              "multiline-text-field-demo-fixed": {
+                "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+                "selection_utf8": [
+                  105,
+                  105
+                ],
+                "description": "multiline-text-field-demo-fixed-description",
+                "disabled": false
+              }
+            },
+            "read_only": {
+              "value": "已儲存的第一行\n已儲存的第二行\n",
+              "selection_utf8": [
+                44,
+                44
+              ],
+              "description": "multiline-text-field-demo-read-only-description",
+              "disabled": false
+            },
+            "disabled": {
+              "value": "停用的第一行\n停用的第二行",
+              "disabled": true
+            },
+            "next_focus": "multiline-text-field-demo-back"
+          },
+          "clear_focus_steps": [
+            "multiline-text-field-demo-appearance",
+            "multiline-text-field-demo-theme",
+            "multiline-text-field-demo-rtl",
+            "multiline-text-field-demo-large-text",
+            "multiline-text-field-demo-grow",
+            "multiline-text-field-demo-grow-trailing-action"
+          ],
+          "clear": {
+            "value": "",
+            "selection_utf8": [
+              0,
+              0
+            ],
+            "description": "multiline-text-field-demo-grow-description",
+            "disabled": false
+          },
+          "empty_counter": {
+            "ratio": "0/12",
+            "description": "字數，已輸入 0 個字，上限 12 個字。"
+          }
+        }
+      },
+      "compact": {
+        "viewport": [
+          320,
+          900
+        ],
+        "captures": [
+          {
+            "name": "compact-outlined-grow.png",
+            "sha256": "10c8bb3a269e788cb3196be01b8bbe2d01f9c0783b5a09bb0b48462461af5777",
+            "format": "png",
+            "width": 320,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "outlined",
+            "rtl": true,
+            "state": {
+              "value": "甲甲甲\n甲\n",
+              "selection_utf8": [
+                14,
+                14
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 176.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 328.0
+              },
+              "editor": {
+                "height": 176.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 328.0
+              },
+              "body": {
+                "height": 144.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 344.0
+              },
+              "description": {
+                "height": 64.0,
+                "width": 174.0,
+                "x": 106.0,
+                "y": 508.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 288.0,
+                "x": 16.0,
+                "y": 304.0
+              },
+              "caption": {
+                "height": 32.0,
+                "width": 96.0,
+                "x": 184.0,
+                "y": 312.0
+              },
+              "line_height": 48,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 288.0,
+                  "x": 16.0,
+                  "y": 304.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 344.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 344.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ]
+              ],
+              "paper": [
+                20,
+                18,
+                24,
+                255
+              ],
+              "top_corner": null,
+              "notch": [
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ]
+              ]
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 720,
+                  "ink": {
+                    "left": 168,
+                    "right": 256,
+                    "top": 357,
+                    "bottom": 385
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 240,
+                  "ink": {
+                    "left": 232,
+                    "right": 256,
+                    "top": 405,
+                    "bottom": 433
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 48,
+                  "caret": {
+                    "left": 259,
+                    "right": 260,
+                    "top": 440,
+                    "bottom": 488
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 13.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 488.0
+              },
+              "foreground": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "paper": [
+                20,
+                18,
+                24,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "6/12",
+              "description": "字數，已輸入 6 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "compact-filled-grow.png",
+            "sha256": "5fa9f4af40df13fd604cee373004eab903c7e9ca63c7f793019b07d4e9eee825",
+            "format": "png",
+            "width": 320,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-grow",
+            "appearance": "filled",
+            "rtl": true,
+            "state": {
+              "value": "甲甲甲\n甲\n",
+              "selection_utf8": [
+                14,
+                14
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 192.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 312.0
+              },
+              "editor": {
+                "height": 192.0,
+                "width": 224.0,
+                "x": 72.0,
+                "y": 312.0
+              },
+              "body": {
+                "height": 144.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 352.0
+              },
+              "description": {
+                "height": 64.0,
+                "width": 174.0,
+                "x": 106.0,
+                "y": 508.0
+              },
+              "description_visible": true,
+              "description_clip": {
+                "height": 480.0,
+                "width": 288.0,
+                "x": 16.0,
+                "y": 304.0
+              },
+              "caption": {
+                "height": 32.0,
+                "width": 96.0,
+                "x": 184.0,
+                "y": 320.0
+              },
+              "line_height": 48,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 288.0,
+                  "x": 16.0,
+                  "y": 304.0
+                },
+                "offset_y": 0.0
+              },
+              "clear_hit": {
+                "height": 48.0,
+                "width": 48.0,
+                "x": 24.0,
+                "y": 336.0
+              },
+              "prefix": {
+                "height": 48.0,
+                "width": 18.0,
+                "x": 262.0,
+                "y": 352.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ],
+              "top_corner": [
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 726,
+                  "ink": {
+                    "left": 168,
+                    "right": 256,
+                    "top": 365,
+                    "bottom": 393
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 242,
+                  "ink": {
+                    "left": 232,
+                    "right": 256,
+                    "top": 413,
+                    "bottom": 441
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 48,
+                  "caret": {
+                    "left": 259,
+                    "right": 260,
+                    "top": 448,
+                    "bottom": 496
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 184.0,
+                "x": 76.0,
+                "y": 496.0
+              },
+              "foreground": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ]
+            },
+            "counter": {
+              "ratio": "6/12",
+              "description": "字數，已輸入 6 個字，上限 12 個字。"
+            }
+          },
+          {
+            "name": "compact-filled-fixed-bottom.png",
+            "sha256": "f26108735acfd6d4df6dbefe78a8b824150cdcacc469a5117be4cae7e0acc645",
+            "format": "png",
+            "width": 320,
+            "height": 900,
+            "scale": 1.0,
+            "field": "multiline-text-field-demo-fixed",
+            "appearance": "filled",
+            "rtl": true,
+            "state": {
+              "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+              "selection_utf8": [
+                105,
+                105
+              ],
+              "description": "multiline-text-field-demo-fixed-description",
+              "disabled": false
+            },
+            "geometry": {
+              "face": {
+                "height": 192.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 584.0
+              },
+              "editor": {
+                "height": 192.0,
+                "width": 272.0,
+                "x": 24.0,
+                "y": 584.0
+              },
+              "body": {
+                "height": 144.0,
+                "width": 240.0,
+                "x": 40.0,
+                "y": 624.0
+              },
+              "description": {
+                "height": 64.0,
+                "width": 240.0,
+                "x": 40.0,
+                "y": 780.0
+              },
+              "description_visible": false,
+              "description_clip": {
+                "height": 480.0,
+                "width": 288.0,
+                "x": 16.0,
+                "y": 304.0
+              },
+              "caption": {
+                "height": 32.0,
+                "width": 96.0,
+                "x": 184.0,
+                "y": 592.0
+              },
+              "line_height": 48,
+              "row_count": 3,
+              "scroller": {
+                "bounds": {
+                  "height": 480.0,
+                  "width": 288.0,
+                  "x": 16.0,
+                  "y": 304.0
+                },
+                "offset_y": 4.0
+              }
+            },
+            "face_paint": {
+              "stroke_dp": 3,
+              "samples": [
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  207,
+                  189,
+                  254,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ],
+              "top_corner": [
+                [
+                  20,
+                  18,
+                  24,
+                  255
+                ],
+                [
+                  54,
+                  52,
+                  58,
+                  255
+                ]
+              ],
+              "notch": null
+            },
+            "text_paint": {
+              "lines": [
+                {
+                  "ink_pixels": 610,
+                  "ink": {
+                    "left": 186,
+                    "right": 278,
+                    "top": 635,
+                    "bottom": 665
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 608,
+                  "ink": {
+                    "left": 186,
+                    "right": 278,
+                    "top": 683,
+                    "bottom": 713
+                  },
+                  "caret_pixels": 0,
+                  "caret": null
+                },
+                {
+                  "ink_pixels": 0,
+                  "ink": null,
+                  "caret_pixels": 48,
+                  "caret": {
+                    "left": 279,
+                    "right": 280,
+                    "top": 720,
+                    "bottom": 768
+                  }
+                }
+              ],
+              "clear_padding": {
+                "height": 5.0,
+                "width": 240.0,
+                "x": 40.0,
+                "y": 768.0
+              },
+              "foreground": [
+                230,
+                224,
+                233,
+                255
+              ],
+              "paper": [
+                54,
+                52,
+                58,
+                255
+              ]
+            }
+          }
+        ],
+        "behavior": {
+          "grow": {
+            "focus_steps": [
+              "multiline-text-field-demo-grow"
+            ],
+            "newline": {
+              "value": "第一行\n",
+              "selection_utf8": [
+                10,
+                10
+              ],
+              "description": "multiline-text-field-demo-grow-description",
+              "disabled": false
+            },
+            "counter": {
+              "ratio": "4/12",
+              "description": "字數，已輸入 4 個字，上限 12 個字。"
+            },
+            "body_heights": [
+              48.0,
+              96.0
+            ]
+          },
+          "fixed_focus_steps": [
+            "multiline-text-field-demo-grow-trailing-action",
+            "multiline-text-field-demo-fixed"
+          ],
+          "fixed_up_utf8": [
+            84,
+            54,
+            13
+          ],
+          "fixed_down_utf8": [
+            54,
+            84,
+            105
+          ],
+          "submit_and_locks": {
+            "target": {
+              "height": 48.0,
+              "width": 136.0,
+              "x": 24.0,
+              "y": 728.0
+            },
+            "feedback": "草稿已送出。",
+            "outer_revealed_support": {
+              "height": 64.0,
+              "width": 240.0,
+              "x": 40.0,
+              "y": 648.0
+            },
+            "retained": {
+              "multiline-text-field-demo-grow": {
+                "value": "甲甲甲\n甲\n",
+                "selection_utf8": [
+                  14,
+                  14
+                ],
+                "description": "multiline-text-field-demo-grow-description",
+                "disabled": false
+              },
+              "multiline-text-field-demo-fixed": {
+                "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n",
+                "selection_utf8": [
+                  105,
+                  105
+                ],
+                "description": "multiline-text-field-demo-fixed-description",
+                "disabled": false
+              }
+            },
+            "read_only": {
+              "value": "已儲存的第一行\n已儲存的第二行\n",
+              "selection_utf8": [
+                44,
+                44
+              ],
+              "description": "multiline-text-field-demo-read-only-description",
+              "disabled": false
+            },
+            "disabled": {
+              "value": "停用的第一行\n停用的第二行",
+              "disabled": true
+            },
+            "next_focus": "multiline-text-field-demo-back"
+          },
+          "clear_focus_steps": [
+            "multiline-text-field-demo-appearance",
+            "multiline-text-field-demo-theme",
+            "multiline-text-field-demo-rtl",
+            "multiline-text-field-demo-large-text",
+            "multiline-text-field-demo-grow",
+            "multiline-text-field-demo-grow-trailing-action"
+          ],
+          "clear": {
+            "value": "",
+            "selection_utf8": [
+              0,
+              0
+            ],
+            "description": "multiline-text-field-demo-grow-description",
+            "disabled": false
+          },
+          "empty_counter": {
+            "ratio": "0/12",
+            "description": "字數，已輸入 0 個字，上限 12 個字。"
+          }
+        }
+      }
+    }
+  ],
+  "processes": [
+    {
+      "wide": {
+        "pid": 23606,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "grow_focused": 0,
+          "fixed_revealed": 0,
+          "submitted": 0,
+          "closed": 0
+        },
+        "reaped": true
+      },
+      "compact": {
+        "pid": 23926,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "grow_focused": 0,
+          "fixed_revealed": 0,
+          "submitted": 0,
+          "closed": 0
+        },
+        "reaped": true
+      }
+    },
+    {
+      "wide": {
+        "pid": 24167,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "grow_focused": 0,
+          "fixed_revealed": 0,
+          "submitted": 0,
+          "closed": 0
+        },
+        "reaped": true
+      },
+      "compact": {
+        "pid": 24586,
+        "visible_windows": {
+          "ready": 0,
+          "opened": 0,
+          "grow_focused": 0,
+          "fixed_revealed": 0,
+          "submitted": 0,
+          "closed": 0
+        },
+        "reaped": true
+      }
+    }
+  ],
+  "semantics": "Native Runtime DOM and semantic DevTools keys on a headless Gallery"
+}
