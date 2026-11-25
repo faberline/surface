@@ -1,0 +1,74 @@
+{
+  "argv": [
+    "/private/tmp/surface-md3-horizontal-nav-v0173.OEjA5TvP/exact-candidate/web-canonical/debug/surface-e2e",
+    "--chrome",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/run/guards/chrome",
+    "--chrome-arg",
+    "--disable-updater-scheduler",
+    "--web-root",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/bundle/web/release",
+    "--bridge-web",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/bundle/web/devtools/material-gallery",
+    "--jet-bridge",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/run/guards/jet",
+    "--devtools-bin",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/bundle/debug/surface-devtools",
+    "--native-bin",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/run/guards/native",
+    "--compact-bin",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/run/guards/compact",
+    "--artifacts",
+    "/private/tmp/surface-md3-horizontal-nav-stock-v0173.5buwihck/run/artifacts",
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "injected_chrome_flags": [
+    "--disable-updater-scheduler"
+  ],
+  "inputs": {
+    "runner_sha256": "1959bb6f119f56587cfffc7cce14db460540cd64efc850688770358a91c9413d",
+    "app_bundle_seal_sha256": "33b103bc7f5aa0e48fb3def437ab785ea80d63d6018f20e49c78b50abc62ec4d",
+    "focused_proof_sha256": "1418c68a87c151095e0712af83fa42c89af66d31c9df004a725aaf6c4a77a3da",
+    "bundle_files_checked": 16,
+    "stock_files": {
+      "debug/jet-bridge": "1900aa113aac27e2240cd4941bc7a568dcc6ae89f608bf3ba696a5549249e5c9",
+      "debug/surface-devtools": "c3a8ed46e63afa516939010436de75505b4122b306824b15ba9eeae95c5c515a",
+      "debug/surface-e2e": "1959bb6f119f56587cfffc7cce14db460540cd64efc850688770358a91c9413d",
+      "debug/surface-material-gallery": "315c365524dfd512a0cef68c9f623b3d62ce9e70ffe66c01b79ec3113fa08a1b",
+      "web/devtools/material-gallery/index.html": "6972742e32a8eebb448c29701893def7760a974ec5b49020a916a0a8239d60e0",
+      "web/devtools/material-gallery/surface-web.json": "d787309c0576211bff9d1305bdd64cef4ac4512cc5e23ae24e24d42f9e5a8070",
+      "web/devtools/material-gallery/surface_material_gallery-1fe033967265c739.js": "1fe033967265c7399f369d47cd5b5d6482663cdf4904affe7d1fa3917d6756e3",
+      "web/devtools/material-gallery/surface_material_gallery_bg-9dd1ea256f91e487.wasm": "9dd1ea256f91e4879ba107ef7b0380334135cda2ed7df4bd2f1dfce14e16730d",
+      "web/release/material-gallery/index.html": "84b9ffecf6a18485bb71260a9cd501d52ed82265040613d0c94f0658d90a6abe",
+      "web/release/material-gallery/surface-web.json": "001914185fa5df6abda73338e73b7979c77e6c02e9642e36c56acd4c50bcde8f",
+      "web/release/material-gallery/surface_material_gallery-957fdcba8acaca0a.js": "957fdcba8acaca0abc2ea74acdc1db029adba582e898826f483ec74f7d525f4b",
+      "web/release/material-gallery/surface_material_gallery_bg-be45024d4b4b2ef7.wasm": "be45024d4b4b2ef758acf98f70527c9dc723dc212f3333e9c4c61359b1ac7ef6",
+      "web/release/showcase/index.html": "4d6af94b73e23c38db26680cd058ad9e17b6de24bfd1947ad2f88cc5aa49ec06",
+      "web/release/showcase/surface-web.json": "6846ee5d0349910fc32c7a08bb0e89515e31ee0dffc40adbd22d65a136a0c6e2",
+      "web/release/showcase/surface_showcase-4dfcc88593953aa9.js": "4dfcc88593953aa99af5b22b8827dc7210a93313fe27e4aa1be542b973ab898e",
+      "web/release/showcase/surface_showcase_bg-c417e9f250a976e7.wasm": "c417e9f250a976e701289f53b8c522396fccb3dd3fd18dea944798b761ec806b"
+    },
+    "source_manifest_sha256": "72716762c2e2615a92e29dc45c840e0c7278cafbf31d489d165aa92b20556e14",
+    "source_files_checked_per_origin": 692,
+    "reviewed_pins_sha256": "00c57cab4d7ef87483ef9df1a89dfac32d7f79a7d2605394b8829dafa3e4281a",
+    "release": {
+      "version": "0.1.73",
+      "last_material_step": 365,
+      "source_sha256": "72716762c2e2615a92e29dc45c840e0c7278cafbf31d489d165aa92b20556e14",
+      "source_tree": "5d5ab69f57bdb3f31a8db95ae78f9f332789578b",
+      "source_files": 692,
+      "wide_canvas_height": 800,
+      "rtl_canvas_height": 1020
+    }
+  }
+}

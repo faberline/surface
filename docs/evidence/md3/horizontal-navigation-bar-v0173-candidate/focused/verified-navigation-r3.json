@@ -1,0 +1,1790 @@
+{
+  "schema": "surface.test.focused-navigation-bars.v1",
+  "scope": "q73 R3 focused Compact M270–M273 and Horizontal M363–M365",
+  "steps": [
+    "M270",
+    "M271",
+    "M272",
+    "M273",
+    "M363",
+    "M364",
+    "M365"
+  ],
+  "checks": 1041,
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "vendor": "apple",
+    "architecture": "metal-3",
+    "isFallbackAdapter": false
+  },
+  "inputs": {
+    "development_patch_sha256": "8238f6e4a80b4d7a6e888605be5a2d79c4eca391f61e67418d2826a912aa917e",
+    "focused_registry_sha256": "82c2e7a153e08eeae4d7902488daa736b4ef94fa12806c97725f276901062a7a",
+    "focused_source_manifest_sha256": "03b61cdd1e2b7ee5f5a91d9267fe8102883a0a410b226f08cab2363f7277e2e9",
+    "modules": [
+      "material_flexible_navigation_bar",
+      "material_horizontal_navigation_bar"
+    ],
+    "product_source": "/private/tmp/surface-md3-horizontal-nav-v0173.OEjA5TvP/development-r3/source",
+    "product_source_manifest": "/private/tmp/surface-md3-horizontal-nav-v0173.OEjA5TvP/development-r3/source.sha256",
+    "product_source_manifest_sha256": "38cdcd510d2808cd3685691ae0656c25ca1017f7c3cbf8d88af42c08370caa27",
+    "product_tree": "1bfec92f8370dee480c497034be62f09310986ba",
+    "registry_delta": [
+      "e2e/src/material.rs"
+    ],
+    "scope": "q73 R3 focused Compact M270–M273 and Horizontal M363–M365",
+    "source_count": 692,
+    "steps": [
+      "M270",
+      "M271",
+      "M272",
+      "M273",
+      "M363",
+      "M364",
+      "M365"
+    ],
+    "stock_registry_sha256": "6cac4d2d1e98311bee438218847241e83b9261da4c9a0edc02066218f0d12247",
+    "original_gallery": "/private/tmp/surface-md3-horizontal-nav-v0173.OEjA5TvP/web-development",
+    "original_web_manifest": "/private/tmp/surface-md3-horizontal-nav-v0173.OEjA5TvP/web-development.sha256",
+    "web_compatible_test_only_delta": [
+      "e2e/src/material_horizontal_navigation_bar.rs"
+    ],
+    "web_files": {
+      "index.html": "84b9ffecf6a18485bb71260a9cd501d52ed82265040613d0c94f0658d90a6abe",
+      "surface-web.json": "001914185fa5df6abda73338e73b7979c77e6c02e9642e36c56acd4c50bcde8f",
+      "surface_material_gallery-957fdcba8acaca0a.js": "957fdcba8acaca0abc2ea74acdc1db029adba582e898826f483ec74f7d525f4b",
+      "surface_material_gallery_bg-be45024d4b4b2ef7.wasm": "be45024d4b4b2ef758acf98f70527c9dc723dc212f3333e9c4c61359b1ac7ef6"
+    },
+    "web_manifest_sha256": "d4d194543bb95dda8505681fee1a05bdfb9321e0ad458a96a5c9a9a6f803cc69",
+    "web_producer_manifest": "/tmp/surface-md3-horizontal-nav-v0173.OEjA5TvP/development-r2/source.sha256",
+    "web_producer_manifest_sha256": "13716392d80ba252314d2be056d41b7c4812e85347684cca5ee671acd6cf836c",
+    "web_producer_tree": "6f2b29fb151e0544d2d5eeb06ed4e3df07a5cd85",
+    "runner_sha256": "c97429941d2d52ad7a44983b13a758635afbaeeae0c3c2881fad93e173a74152"
+  },
+  "runner_log_sha256": "013c303c3e088c57fde69dca6b9b519cfb67c0f785cb15cf97595e9044ddca05",
+  "headless": {
+    "sha256": "85cec1a441e1a4aaab46c391920ac06f6b32e5dab4d4f1843b2267248a0544ac",
+    "chrome_samples": 58,
+    "visible_windows": 0,
+    "remaining_owned_processes": 0
+  },
+  "compact": {
+    "report_sha256": "4a663cd7489976a25d3f33dee8cd4fadbe1130c2e5ad8b239ec203ad5182f297",
+    "geometry": {
+      "wide": [
+        {
+          "preview": [
+            240.0,
+            0.0,
+            480.0,
+            800.0
+          ],
+          "bar": [
+            240.0,
+            736.0,
+            480.0,
+            64.0
+          ],
+          "scroll": [
+            240.0,
+            80.0,
+            480.0,
+            656.0
+          ],
+          "destinations": [
+            {
+              "id": "navigation-bar-demo-home",
+              "hit": [
+                240.0,
+                736.0,
+                160.0,
+                64.0
+              ],
+              "pill": [
+                292.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                244.0,
+                778.0,
+                152.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-explore",
+              "hit": [
+                400.0,
+                736.0,
+                160.0,
+                64.0
+              ],
+              "pill": [
+                452.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                404.0,
+                778.0,
+                152.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-saved",
+              "hit": [
+                560.0,
+                736.0,
+                160.0,
+                64.0
+              ],
+              "pill": [
+                612.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                564.0,
+                778.0,
+                152.0,
+                16.0
+              ]
+            }
+          ]
+        },
+        {
+          "preview": [
+            240.0,
+            0.0,
+            480.0,
+            800.0
+          ],
+          "bar": [
+            240.0,
+            736.0,
+            480.0,
+            64.0
+          ],
+          "scroll": [
+            240.0,
+            80.0,
+            480.0,
+            656.0
+          ],
+          "destinations": [
+            {
+              "id": "navigation-bar-demo-home",
+              "hit": [
+                240.0,
+                736.0,
+                120.0,
+                64.0
+              ],
+              "pill": [
+                272.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                244.0,
+                778.0,
+                112.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-explore",
+              "hit": [
+                360.0,
+                736.0,
+                120.0,
+                64.0
+              ],
+              "pill": [
+                392.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                364.0,
+                778.0,
+                112.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-saved",
+              "hit": [
+                480.0,
+                736.0,
+                120.0,
+                64.0
+              ],
+              "pill": [
+                512.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                484.0,
+                778.0,
+                112.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-updates",
+              "hit": [
+                600.0,
+                736.0,
+                120.0,
+                64.0
+              ],
+              "pill": [
+                632.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                604.0,
+                778.0,
+                112.0,
+                16.0
+              ]
+            }
+          ]
+        },
+        {
+          "preview": [
+            240.0,
+            0.0,
+            480.0,
+            800.0
+          ],
+          "bar": [
+            240.0,
+            736.0,
+            480.0,
+            64.0
+          ],
+          "scroll": [
+            240.0,
+            80.0,
+            480.0,
+            656.0
+          ],
+          "destinations": [
+            {
+              "id": "navigation-bar-demo-home",
+              "hit": [
+                240.0,
+                736.0,
+                96.0,
+                64.0
+              ],
+              "pill": [
+                260.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                244.0,
+                778.0,
+                88.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-explore",
+              "hit": [
+                336.0,
+                736.0,
+                96.0,
+                64.0
+              ],
+              "pill": [
+                356.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                340.0,
+                778.0,
+                88.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-saved",
+              "hit": [
+                432.0,
+                736.0,
+                96.0,
+                64.0
+              ],
+              "pill": [
+                452.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                436.0,
+                778.0,
+                88.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-updates",
+              "hit": [
+                528.0,
+                736.0,
+                96.0,
+                64.0
+              ],
+              "pill": [
+                548.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                532.0,
+                778.0,
+                88.0,
+                16.0
+              ]
+            },
+            {
+              "id": "navigation-bar-demo-settings",
+              "hit": [
+                624.0,
+                736.0,
+                96.0,
+                64.0
+              ],
+              "pill": [
+                644.0,
+                742.0,
+                56.0,
+                32.0
+              ],
+              "label": [
+                628.0,
+                778.0,
+                88.0,
+                16.0
+              ]
+            }
+          ]
+        }
+      ],
+      "compact": {
+        "preview": [
+          0.0,
+          0.0,
+          320.0,
+          480.0
+        ],
+        "bar": [
+          0.0,
+          368.0,
+          320.0,
+          112.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          320.0,
+          288.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              256.0,
+              368.0,
+              64.0,
+              112.0
+            ],
+            "pill": [
+              260.0,
+              374.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              260.0,
+              410.0,
+              56.0,
+              32.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              192.0,
+              368.0,
+              64.0,
+              112.0
+            ],
+            "pill": [
+              196.0,
+              374.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              196.0,
+              410.0,
+              56.0,
+              64.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              128.0,
+              368.0,
+              64.0,
+              112.0
+            ],
+            "pill": [
+              132.0,
+              374.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              132.0,
+              410.0,
+              56.0,
+              32.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              64.0,
+              368.0,
+              64.0,
+              112.0
+            ],
+            "pill": [
+              68.0,
+              374.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              68.0,
+              410.0,
+              56.0,
+              64.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-settings",
+            "hit": [
+              0.0,
+              368.0,
+              64.0,
+              112.0
+            ],
+            "pill": [
+              4.0,
+              374.0,
+              56.0,
+              32.0
+            ],
+            "label": [
+              4.0,
+              410.0,
+              56.0,
+              32.0
+            ]
+          }
+        ]
+      }
+    },
+    "accessibility": {
+      "landmark": "主要導覽",
+      "roles": [
+        "首頁",
+        "探索路線",
+        "收藏的地點",
+        "最新消息",
+        "設定"
+      ],
+      "disabled": "navigation-bar-demo-explore",
+      "current": "navigation-bar-demo-home",
+      "tab_order": [
+        "navigation-bar-demo-home",
+        "navigation-bar-demo-saved",
+        "navigation-bar-demo-updates",
+        "navigation-bar-demo-settings"
+      ],
+      "shift_tab_order": [
+        "navigation-bar-demo-updates",
+        "navigation-bar-demo-saved",
+        "navigation-bar-demo-home"
+      ],
+      "preactivations": 0
+    },
+    "actions": {
+      "enter": "navigation-bar-demo-saved",
+      "space": "navigation-bar-demo-updates",
+      "disabled_pointer": "navigation-bar-demo-explore",
+      "contact_target": "navigation-bar-demo-settings",
+      "activations": 3,
+      "visible_titles": [
+        [
+          348.0,
+          28.0,
+          32.0,
+          24.0
+        ],
+        [
+          348.0,
+          28.0,
+          64.0,
+          24.0
+        ],
+        [
+          348.0,
+          28.0,
+          32.0,
+          24.0
+        ]
+      ]
+    },
+    "wheel": {
+      "before": [
+        16.0,
+        344.0,
+        288.0,
+        48.0
+      ],
+      "after": [
+        16.0,
+        304.0,
+        288.0,
+        48.0
+      ],
+      "scroll_dp": 40.0,
+      "bar_and_title_pixels_unchanged": true,
+      "focus_after": "navigation-bar-demo-settings",
+      "focus_restored": "navigation-bar-demo-show",
+      "line_pixels": [
+        1158,
+        904
+      ]
+    },
+    "pngs": {
+      "light": {
+        "size": [
+          1920,
+          1688
+        ],
+        "sha256": "0b43e391a8d87ebb6ca3569baae4a42b752f2efedb6ea05a915945ad8e6b065d",
+        "surface_rgb": [
+          242,
+          236,
+          244
+        ],
+        "pill_rgb": [
+          232,
+          222,
+          248
+        ],
+        "corner_rgb": [
+          242,
+          236,
+          244
+        ],
+        "icon_rgb": [
+          30,
+          25,
+          43
+        ],
+        "icon_pixels": 944
+      },
+      "dark": {
+        "size": [
+          1920,
+          1688
+        ],
+        "sha256": "df03f4f3729bdd3c3fef0ee1f99b259f0863605930a4de18fd85e26e68ba054b",
+        "surface_rgb": [
+          33,
+          31,
+          36
+        ],
+        "pill_rgb": [
+          74,
+          68,
+          88
+        ],
+        "corner_rgb": [
+          33,
+          31,
+          36
+        ],
+        "icon_rgb": [
+          232,
+          222,
+          248
+        ],
+        "icon_pixels": 944
+      },
+      "rtl-large": {
+        "size": [
+          640,
+          1048
+        ],
+        "sha256": "19011d41cdfe43fe1151b6ca726dd9a4a7cbd4b8807e08fdde00c5adc7f605c9",
+        "surface_rgb": [
+          33,
+          31,
+          36
+        ],
+        "pill_rgb": [
+          74,
+          68,
+          88
+        ],
+        "corner_rgb": [
+          33,
+          31,
+          36
+        ],
+        "icon_rgb": [
+          232,
+          222,
+          248
+        ],
+        "icon_pixels": 692
+      },
+      "rtl-large-scrolled": {
+        "size": [
+          640,
+          1048
+        ],
+        "sha256": "ec69512d41db8c0ce67ffabac8a06ad0396d4536ea0287f644d98f12ae16ada1",
+        "surface_rgb": [
+          33,
+          31,
+          36
+        ],
+        "pill_rgb": [
+          74,
+          68,
+          88
+        ],
+        "corner_rgb": [
+          33,
+          31,
+          36
+        ],
+        "icon_rgb": [
+          232,
+          222,
+          248
+        ],
+        "icon_pixels": 692
+      }
+    }
+  },
+  "horizontal": {
+    "report_sha256": "e659e7d02ce4fa08e7aa4cfd6ad50714a774d2fabe896af2b79d48d09e24e1f7",
+    "layouts": [
+      {
+        "bar": [
+          0.0,
+          696.0,
+          600.0,
+          64.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          600.0,
+          616.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              132.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              146.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              162.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              190.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              244.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              246.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              262.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              290.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              356.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              370.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              386.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              414.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "bar": [
+          0.0,
+          696.0,
+          600.0,
+          64.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          600.0,
+          616.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              76.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              90.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              106.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              134.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              188.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              190.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              206.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              234.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              300.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              314.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              330.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              358.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              412.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              414.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              430.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              458.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "bar": [
+          0.0,
+          696.0,
+          600.0,
+          64.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          600.0,
+          616.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              20.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              34.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              50.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              78.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              132.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              134.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              150.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              178.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              244.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              258.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              274.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              302.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              356.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              358.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              374.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              402.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-settings",
+            "hit": [
+              468.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              482.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              498.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              526.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "bar": [
+          0.0,
+          696.0,
+          839.0,
+          64.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          839.0,
+          616.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              252.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              266.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              282.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              310.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              364.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              366.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              382.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              410.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              476.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              490.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              506.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              534.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "bar": [
+          0.0,
+          696.0,
+          839.0,
+          64.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          839.0,
+          616.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              196.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              210.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              226.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              254.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              308.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              310.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              326.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              354.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              420.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              434.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              450.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              478.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              532.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              534.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              550.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              578.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          }
+        ]
+      },
+      {
+        "bar": [
+          0.0,
+          696.0,
+          839.0,
+          64.0
+        ],
+        "scroll": [
+          0.0,
+          80.0,
+          839.0,
+          616.0
+        ],
+        "destinations": [
+          {
+            "id": "navigation-bar-demo-home",
+            "hit": [
+              140.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              154.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              170.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              198.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-explore",
+            "hit": [
+              252.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              254.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              270.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              298.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-saved",
+            "hit": [
+              364.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              378.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              394.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              422.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-updates",
+            "hit": [
+              476.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              478.0,
+              708.0,
+              108.0,
+              40.0
+            ],
+            "icon": [
+              494.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              522.0,
+              720.0,
+              48.0,
+              16.0
+            ]
+          },
+          {
+            "id": "navigation-bar-demo-settings",
+            "hit": [
+              588.0,
+              696.0,
+              112.0,
+              64.0
+            ],
+            "pill": [
+              602.0,
+              708.0,
+              84.0,
+              40.0
+            ],
+            "icon": [
+              618.0,
+              716.0,
+              24.0,
+              24.0
+            ],
+            "label": [
+              646.0,
+              720.0,
+              24.0,
+              16.0
+            ]
+          }
+        ]
+      }
+    ],
+    "rtl_layout": {
+      "bar": [
+        0.0,
+        246.0,
+        720.0,
+        104.0
+      ],
+      "scroll": [
+        0.0,
+        80.0,
+        720.0,
+        166.0
+      ],
+      "destinations": [
+        {
+          "id": "navigation-bar-demo-home",
+          "hit": [
+            528.0,
+            246.0,
+            112.0,
+            104.0
+          ],
+          "pill": [
+            530.0,
+            274.0,
+            108.0,
+            48.0
+          ],
+          "icon": [
+            598.0,
+            286.0,
+            24.0,
+            24.0
+          ],
+          "label": [
+            546.0,
+            282.0,
+            48.0,
+            32.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-explore",
+          "hit": [
+            416.0,
+            246.0,
+            112.0,
+            104.0
+          ],
+          "pill": [
+            416.0,
+            258.0,
+            112.0,
+            80.0
+          ],
+          "icon": [
+            488.0,
+            286.0,
+            24.0,
+            24.0
+          ],
+          "label": [
+            432.0,
+            266.0,
+            52.0,
+            64.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-saved",
+          "hit": [
+            304.0,
+            246.0,
+            112.0,
+            104.0
+          ],
+          "pill": [
+            306.0,
+            274.0,
+            108.0,
+            48.0
+          ],
+          "icon": [
+            374.0,
+            286.0,
+            24.0,
+            24.0
+          ],
+          "label": [
+            322.0,
+            282.0,
+            48.0,
+            32.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-updates",
+          "hit": [
+            192.0,
+            246.0,
+            112.0,
+            104.0
+          ],
+          "pill": [
+            192.0,
+            258.0,
+            112.0,
+            80.0
+          ],
+          "icon": [
+            264.0,
+            286.0,
+            24.0,
+            24.0
+          ],
+          "label": [
+            208.0,
+            266.0,
+            52.0,
+            64.0
+          ]
+        },
+        {
+          "id": "navigation-bar-demo-settings",
+          "hit": [
+            80.0,
+            246.0,
+            112.0,
+            104.0
+          ],
+          "pill": [
+            82.0,
+            274.0,
+            108.0,
+            48.0
+          ],
+          "icon": [
+            150.0,
+            286.0,
+            24.0,
+            24.0
+          ],
+          "label": [
+            98.0,
+            282.0,
+            48.0,
+            32.0
+          ]
+        }
+      ]
+    },
+    "rtl_line_ink": [
+      1158,
+      904
+    ],
+    "interaction": {
+      "ax": {
+        "landmark": "主要導覽",
+        "roles": [
+          "首頁",
+          "探索路線",
+          "收藏的地點",
+          "最新消息",
+          "設定"
+        ],
+        "disabled": "navigation-bar-demo-explore",
+        "current": "navigation-bar-demo-home",
+        "tab_order": [
+          "navigation-bar-demo-home",
+          "navigation-bar-demo-saved",
+          "navigation-bar-demo-updates",
+          "navigation-bar-demo-settings"
+        ],
+        "shift_tab_order": [
+          "navigation-bar-demo-updates",
+          "navigation-bar-demo-saved",
+          "navigation-bar-demo-home"
+        ],
+        "preactivations": 0
+      },
+      "actions": {
+        "enter": "navigation-bar-demo-saved",
+        "space": "navigation-bar-demo-updates",
+        "disabled_pointer": "navigation-bar-demo-explore",
+        "contact_target": "navigation-bar-demo-settings",
+        "activations": 3,
+        "visible_titles": [
+          [
+            108.0,
+            28.0,
+            32.0,
+            24.0
+          ],
+          [
+            108.0,
+            28.0,
+            64.0,
+            24.0
+          ],
+          [
+            108.0,
+            28.0,
+            32.0,
+            24.0
+          ]
+        ]
+      },
+      "touch_cancelled": true,
+      "focus": "navigation-bar-demo-saved",
+      "widths": [
+        839,
+        599,
+        600
+      ]
+    },
+    "pngs": {
+      "light": {
+        "size": [
+          1678,
+          1608
+        ],
+        "sha256": "0fe9e6812b07e0c536a6444f87eee05e563b1f36bc929b361aaa798385d96c63",
+        "surface_rgb": [
+          242,
+          236,
+          244
+        ],
+        "pill_rgb": [
+          232,
+          222,
+          248
+        ],
+        "ink_rgb": [
+          30,
+          25,
+          43
+        ],
+        "icon_pixels": 944,
+        "label_pixels": 188
+      },
+      "rtl-large": {
+        "size": [
+          1440,
+          788
+        ],
+        "sha256": "3fe8e5d2cf70dbadc6cdd7f98c2022e7aa95a2aa05ae889be50133711ce02eee",
+        "surface_rgb": [
+          33,
+          31,
+          36
+        ],
+        "pill_rgb": [
+          74,
+          68,
+          88
+        ],
+        "ink_rgb": [
+          232,
+          222,
+          248
+        ],
+        "icon_pixels": 692,
+        "label_pixels": 2062,
+        "focus": {
+          "focused": "navigation-bar-demo-settings",
+          "stroke_dp": 3,
+          "samples_rgb": [
+            [
+              203,
+              194,
+              219
+            ],
+            [
+              203,
+              194,
+              219
+            ],
+            [
+              203,
+              194,
+              219
+            ]
+          ]
+        }
+      },
+      "rtl-large-scrolled": {
+        "size": [
+          1440,
+          788
+        ],
+        "sha256": "cdc0bb3a71538f1be6473aa025a1eb1a09cf9ffc3af7975e3baa57317c5c0843",
+        "surface_rgb": [
+          33,
+          31,
+          36
+        ],
+        "pill_rgb": [
+          74,
+          68,
+          88
+        ],
+        "ink_rgb": [
+          232,
+          222,
+          248
+        ],
+        "icon_pixels": 692,
+        "label_pixels": 2062,
+        "focus": {
+          "focused": "navigation-bar-demo-settings",
+          "stroke_dp": 3,
+          "samples_rgb": [
+            [
+              203,
+              194,
+              219
+            ],
+            [
+              203,
+              194,
+              219
+            ],
+            [
+              203,
+              194,
+              219
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
