@@ -1,6 +1,6 @@
 //! An indexed semantic tree. No browser DOM objects or renderer handles live here.
 use crate::{
-    AdjustableValue, BoxShadow, Color, Corners, Direction, Style, TextAlignment, TextScaling,
+    AdjustableValue, BoxShadow, Color, Corners, Direction, Rect, Style, TextAlignment, TextScaling,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -215,7 +215,11 @@ pub struct Node {
     #[serde(skip)]
     pub(crate) presented_text_input_horizontal_bounds: Option<(f32, f32)>,
     #[serde(skip)]
+    pub(crate) presented_text_input_viewport: Option<Rect>,
+    #[serde(skip)]
     pub(crate) presented_text_input_top_inset: f32,
+    #[serde(skip)]
+    pub(crate) presented_text_input_alignment: Option<TextAlignment>,
     pub(crate) disabled: bool,
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     invalid: bool,
@@ -306,7 +310,9 @@ impl Node {
             presented_text_input_placeholder: None,
             presented_text_input_horizontal_inset: 0.,
             presented_text_input_horizontal_bounds: None,
+            presented_text_input_viewport: None,
             presented_text_input_top_inset: 0.,
+            presented_text_input_alignment: None,
             disabled: false,
             invalid: false,
             checked: None,
@@ -1315,6 +1321,29 @@ impl MicroDom {
         Ok(())
     }
 
+    /// Set the editor text viewport relative to the padded editor box.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_viewport(
+        &mut self,
+        id: NodeId,
+        viewport: Rect,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::TextInput
+            && [viewport.x, viewport.y, viewport.width, viewport.height]
+                .into_iter()
+                .all(|value| value.is_finite() && value >= 0.)
+            && viewport.width > 0.
+            && viewport.height > 0.
+        {
+            node.presented_text_input_viewport = Some(viewport);
+        }
+        Ok(())
+    }
+
     /// Inset the top of the painted editor box on the display copy.
     #[doc(hidden)]
     pub fn set_presented_text_input_top_inset(
@@ -1328,6 +1357,24 @@ impl MicroDom {
             .ok_or(DomError::InvalidNode(id.index()))?;
         if node.role() == Role::TextInput && inset.is_finite() {
             node.presented_text_input_top_inset = inset.max(0.);
+        }
+        Ok(())
+    }
+
+    /// Align the visual lines of a wrapped, styled editor on the display copy.
+    /// Use the same alignment for its text layout and selection geometry.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_alignment(
+        &mut self,
+        id: NodeId,
+        alignment: Option<TextAlignment>,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::TextInput {
+            node.presented_text_input_alignment = alignment;
         }
         Ok(())
     }

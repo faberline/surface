@@ -1,5 +1,5 @@
 use glyphon::{
-    cosmic_text::Align,
+    cosmic_text::{Align, AttrsList, BufferLine, LineEnding},
     fontdb::{Stretch, Style},
 };
 use glyphon::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, Weight, Wrap};
@@ -151,12 +151,18 @@ impl TextSystem {
         );
         buffer.set_size(&mut self.fonts, width.map(|w| w.max(0.01)), None);
         buffer.set_wrap(&mut self.fonts, Wrap::WordOrGlyph);
-        buffer.set_text(
-            &mut self.fonts,
-            text,
-            Attrs::new().family(family).weight(Weight(weight)),
-            Shaping::Advanced,
-        );
+        let attrs = Attrs::new().family(family).weight(Weight(weight));
+        buffer.set_text(&mut self.fonts, text, attrs, Shaping::Advanced);
+        // cosmic-text keeps the terminator on the previous line and omits
+        // the final empty row. Give measure, paint and caret geometry that row.
+        if text.ends_with(['\n', '\r']) {
+            buffer.lines.push(BufferLine::new(
+                "",
+                LineEnding::None,
+                AttrsList::new(attrs),
+                Shaping::Advanced,
+            ));
+        }
         if let Some(alignment) = alignment {
             let align = match alignment {
                 TextAlignment::Left => Align::Left,
@@ -193,23 +199,56 @@ impl TextMeasurer for TextSystem {
         style: &TextStyle,
         width: Option<f32>,
     ) -> TextLayout {
-        let buffer = self.buffer(text, style, width);
-        let mut starts = vec![0];
-        for (i, c) in text.char_indices() {
-            if c == '\n' {
-                starts.push(i + 1);
-            }
-        }
+        self.shaped_text_layout(text, style, width, None)
+    }
+
+    fn text_layout_aligned_styled(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        width: f32,
+        alignment: TextAlignment,
+    ) -> TextLayout {
+        self.shaped_text_layout(text, style, Some(width), Some(alignment))
+    }
+}
+
+impl TextSystem {
+    fn shaped_text_layout(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        width: Option<f32>,
+        alignment: Option<TextAlignment>,
+    ) -> TextLayout {
+        let buffer = self.buffer_with_alignment(text, style, width, alignment);
+        let empty_line_space = (width.unwrap_or_default() - 1.).max(0.);
+        let empty_line_x = match alignment {
+            Some(TextAlignment::Right) => empty_line_space,
+            Some(TextAlignment::Center) => empty_line_space / 2.,
+            _ => 0.,
+        };
+        // Glyph ranges are local to the original paragraph, even on a soft
+        // wrapped row. Count each original terminator's bytes once.
+        let starts: Vec<_> = buffer
+            .lines
+            .iter()
+            .scan(0, |offset, line| {
+                let start = *offset;
+                *offset += line.text().len() + line.ending().as_str().len();
+                Some(start)
+            })
+            .collect();
         let mut clusters = Vec::new();
         let line_height = usable_line_height(style);
         let mut height = line_height;
         for run in buffer.layout_runs() {
-            let base = starts.get(run.line_i).copied().unwrap_or(text.len());
+            let base = starts[run.line_i];
             height = height.max(run.line_top + run.line_height);
             if run.glyphs.is_empty() {
                 clusters.push(TextCluster {
                     bytes: base..base,
-                    bounds: Rect::new(0., run.line_top, 0., run.line_height),
+                    bounds: Rect::new(empty_line_x, run.line_top, 0., run.line_height),
                     rtl: run.rtl,
                 });
             }

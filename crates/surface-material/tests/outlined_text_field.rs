@@ -1,4 +1,5 @@
 use std::cell::Cell;
+use std::num::NonZeroU16;
 
 use surface::{
     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
@@ -6,9 +7,9 @@ use surface::{
 };
 use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
 use surface_material::{
-    shape::LayoutDirection, OutlinedTextFieldOptions, TextFieldAdornments, TextFieldAffix,
-    TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability, TextFieldTrailingAction,
-    Theme, VectorIcon,
+    shape::LayoutDirection, MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldAdornments,
+    TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability,
+    TextFieldTrailingAction, Theme, VectorIcon,
 };
 use surface_wgpu::TextSystem;
 
@@ -44,6 +45,7 @@ struct Form {
     actions: usize,
     adorned: Option<TextFieldAppearance>,
     character_limit: Option<usize>,
+    multiline: Option<MultilineTextFieldSize>,
     builds: Cell<usize>,
 }
 
@@ -62,6 +64,7 @@ impl Default for Form {
             actions: 0,
             adorned: None,
             character_limit: None,
+            multiline: None,
             builds: Cell::new(0),
         }
     }
@@ -130,20 +133,31 @@ impl Application for Form {
                     spoken_name: "每月",
                 }),
             };
-            match self.character_limit {
-                Some(max_graphemes) => theme.text_field_with_counter(
+            let counter = self
+                .character_limit
+                .map(|max_graphemes| TextFieldCounterOptions {
+                    max_graphemes,
+                    over_limit_error: COUNT_ERROR,
+                    describe: &|count, max| format!("已輸入{count}個字元，上限{max}個。"),
+                });
+            match (self.multiline, counter) {
+                (Some(size), counter) => theme.multiline_text_field(
+                    appearance,
+                    options,
+                    size,
+                    adornments,
+                    counter,
+                    Message::Edit,
+                ),
+                (None, Some(counter)) => theme.text_field_with_counter(
                     appearance,
                     options,
                     adornments,
-                    TextFieldCounterOptions {
-                        max_graphemes,
-                        over_limit_error: COUNT_ERROR,
-                        describe: &|count, max| format!("已輸入{count}個字元，上限{max}個。"),
-                    },
+                    counter,
                     Message::Edit,
                     on_submit,
                 ),
-                None => theme.text_field_with_adornments(
+                (None, None) => theme.text_field_with_adornments(
                     appearance,
                     options,
                     adornments,
@@ -217,6 +231,211 @@ fn tab(runtime: &mut Runtime<Form>) {
 
 fn enter() -> KeyPress {
     KeyPress::new(Key::Enter, Modifiers::default())
+}
+
+const BODY: &str = "project-name-value-box";
+const TRAILING: &str = "project-name-trailing-action";
+const HELP: &str = "project-name-description";
+
+#[test]
+fn growing_multiline_preserves_first_row_and_measures_preedit_and_committed_lines() {
+    for (appearance, boundary) in [
+        (TextFieldAppearance::Outlined, "project-name-outline"),
+        (TextFieldAppearance::Filled, "project-name-indicator"),
+    ] {
+        let mut fonts = TextSystem::default();
+        let mut single = Runtime::new(Form {
+            adorned: Some(appearance),
+            ..Form::default()
+        })
+        .unwrap();
+        render(&mut single, 400., &mut fonts);
+        let first_row = bounds(&single, BODY);
+        let baseline_face = bounds(&single, boundary);
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            multiline: Some(MultilineTextFieldSize::Grow),
+            character_limit: Some(8),
+            ..Form::default()
+        })
+        .unwrap();
+        render(&mut runtime, 400., &mut fonts);
+        assert_eq!(bounds(&runtime, BODY), first_row);
+        assert_eq!(bounds(&runtime, boundary), baseline_face);
+        let first_action = bounds(&runtime, TRAILING);
+        let next_y = bounds(&runtime, AFTER).y;
+        let editor = runtime.dom().by_id(ID).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        assert!(frame.node(editor).unwrap().text_options.unwrap().multiline);
+        tab(&mut runtime);
+        assert_eq!(runtime.focused(), Some(ID));
+        assert!(
+            !runtime.key(&enter()).unwrap(),
+            "Enter has no submit binding"
+        );
+        runtime.dispatch(Event::Text("中\n".into())).unwrap();
+        let appended = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(runtime.app().value, "中\n");
+        assert_eq!(runtime.app().edits, ["中\n"]);
+        assert!(runtime.app().submits.is_empty());
+        assert!(text_run(&appended, "2/8").is_some());
+        assert_eq!(bounds(&runtime, BODY).y, first_row.y);
+        assert_eq!(bounds(&runtime, BODY).height, 2. * first_row.height);
+        assert_eq!(
+            bounds(&runtime, boundary).height,
+            baseline_face.height + first_row.height
+        );
+        assert_eq!(bounds(&runtime, AFTER).y, next_y + first_row.height);
+        assert_eq!(bounds(&runtime, TRAILING), first_action);
+        let caret = runtime.input_snapshot().unwrap().caret.unwrap();
+        assert_eq!(caret.y, first_row.y + first_row.height);
+
+        runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+        runtime
+            .dispatch(Event::Ime(ImeEvent::Preedit {
+                text: "文".repeat(60),
+                selection: None,
+            }))
+            .unwrap();
+        let marked = render(&mut runtime, 400., &mut fonts);
+        assert!(bounds(&runtime, BODY).height > 2. * first_row.height);
+        assert!(text_run(&marked, "2/8").is_some());
+        assert_eq!(runtime.app().edits, ["中\n"]);
+        runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+        render(&mut runtime, 400., &mut fonts);
+        assert_eq!(bounds(&runtime, BODY).height, 2. * first_row.height);
+        assert_eq!(runtime.focused(), Some(ID));
+        assert_eq!(
+            runtime.input_snapshot().unwrap().selection.cursor,
+            "中\n".len()
+        );
+    }
+}
+
+#[test]
+fn fixed_rows_clip_body_without_moving_adornments_or_footer() {
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        for rows in [1, 3] {
+            let mut fonts = TextSystem::default();
+            let mut runtime = Runtime::new(Form {
+                adorned: Some(appearance),
+                multiline: Some(MultilineTextFieldSize::FixedRows(
+                    NonZeroU16::new(rows).unwrap(),
+                )),
+                character_limit: Some(100),
+                ..Form::default()
+            })
+            .unwrap();
+            render(&mut runtime, 400., &mut fonts);
+            let body = bounds(&runtime, BODY);
+            let footer = bounds(&runtime, HELP);
+            let action = bounds(&runtime, TRAILING);
+            let field = bounds(&runtime, ID);
+            assert_eq!(body.height, f32::from(rows) * 24.);
+            assert!(footer.y >= field.y + field.height + 4.);
+            assert_eq!(field.intersect(action).width, 0.);
+            tab(&mut runtime);
+            let value = "一\n二\n三\n四\n五\n末";
+            runtime.dispatch(Event::Text(value.into())).unwrap();
+            let display = render(&mut runtime, 400., &mut fonts);
+            assert_eq!(bounds(&runtime, BODY), body);
+            let updated_footer = bounds(&runtime, HELP);
+            assert_eq!(
+                (updated_footer.y, updated_footer.height),
+                (footer.y, footer.height)
+            );
+            assert_eq!(bounds(&runtime, TRAILING), action);
+            assert_eq!(bounds(&runtime, ID), field);
+            let (run, alignment) = text_run(&display, value).unwrap();
+            assert_eq!(alignment, TextAlignment::Left);
+            assert!(matches!(run, PaintOp::StyledText {
+                rect, clip, multiline: true, editable: true, scroll: (_, offset), ..
+            } if *rect == body && *clip == body && *offset == (6. - f32::from(rows)) * 24.));
+            let caret = runtime.input_snapshot().unwrap().caret.unwrap();
+            assert_eq!(caret.y + caret.height, body.y + body.height);
+            tab(&mut runtime);
+            assert_eq!(runtime.focused(), Some(TRAILING));
+        }
+    }
+}
+
+#[test]
+fn narrow_rtl_multiline_relocates_action_and_keeps_disabled_and_read_only_values() {
+    const VALUE: &str = "輸入\n收尾";
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut fonts = TextSystem::default();
+        let mut runtime = Runtime::new(Form {
+            label: LONG_LABEL,
+            value: VALUE.into(),
+            adorned: Some(appearance),
+            multiline: Some(MultilineTextFieldSize::FixedRows(
+                NonZeroU16::new(3).unwrap(),
+            )),
+            character_limit: Some(4),
+            editability: TextFieldEditability::ReadOnly,
+            rtl: true,
+            dark: true,
+            scale: 2.,
+            ..Form::default()
+        })
+        .unwrap();
+        let idle = render(&mut runtime, 136., &mut fonts);
+        let body = bounds(&runtime, BODY);
+        let field = bounds(&runtime, ID);
+        let help = bounds(&runtime, HELP);
+        let count = bounds(&runtime, COUNTER);
+        let action = bounds(&runtime, TRAILING);
+        assert_eq!(field.width, 112.);
+        assert_eq!(body.height, 3. * 48.);
+        assert!(field.y > bounds(&runtime, "project-name-above-label").y);
+        assert!(count.y >= help.y + help.height + 4.);
+        assert!(count.x < body.x + body.width / 2.);
+        assert!(action.y >= count.y + count.height + 4.);
+        assert_eq!(action.x, field.x);
+        assert!(matches!(text_run(&idle, VALUE), Some((
+            PaintOp::StyledText { rect, multiline: true, editable: true, .. },
+            TextAlignment::Right
+        )) if *rect == body));
+        tab(&mut runtime);
+        runtime.dispatch(Event::Text("\n".into())).unwrap();
+        assert_eq!(runtime.app().value, VALUE);
+        assert!(runtime.app().edits.is_empty() && runtime.app().submits.is_empty());
+
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Disabled))
+            .unwrap();
+        let disabled = render(&mut runtime, 136., &mut fonts);
+        let (disabled_rect, disabled_clip) = disabled
+            .ops()
+            .iter()
+            .find_map(|op| match op {
+                ExtendedPaintOp::AlignedText(paint)
+                    if paint.alignment() == TextAlignment::Right =>
+                {
+                    match paint.run() {
+                        PaintOp::StyledText {
+                            rect,
+                            clip,
+                            text,
+                            editable: false,
+                            ..
+                        } if text == VALUE => Some((*rect, *clip)),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            })
+            .expect("right-aligned passive value");
+        assert_eq!(disabled_rect, body);
+        assert_eq!(disabled_clip, body.intersect(disabled.viewport()));
+        let editor = runtime.dom().by_id(ID).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let source = frame.node(editor).unwrap();
+        assert!(source.node.is_disabled());
+        assert!(!source.node.is_invalid());
+        assert_eq!(source.node.text_value(), Some(VALUE));
+        assert!(frame.focus_target(editor).is_none());
+    }
 }
 
 #[test]

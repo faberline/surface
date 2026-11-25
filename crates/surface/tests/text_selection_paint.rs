@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use surface::{
     Color, DisplayList, ExtendedDisplayList, ExtendedPaintOp, Insets, InteractionState,
-    LayoutEngine, Length, MicroDom, Node, PaintOp, Rect, Role, Style, TextDecoration, TextMeasurer,
-    TextSelectionColors, TextSelectionRegion,
+    LayoutEngine, Length, MicroDom, Node, PaintOp, Rect, Role, Style, TextAlignment,
+    TextDecoration, TextMeasurer, TextSelectionColors, TextSelectionRegion, TextStyle,
 };
 
 struct Metrics;
@@ -11,6 +11,84 @@ impl TextMeasurer for Metrics {
     fn measure(&mut self, text: &str, size: f32, _: Option<f32>) -> (f32, f32) {
         (text.len() as f32 * size / 2., size * 1.5)
     }
+}
+
+#[test]
+fn wrapped_alignment_is_opt_in_and_preserves_legacy_selection_serialization() {
+    let mut dom = MicroDom::new(Node::new(Role::Window, ""));
+    let field = dom
+        .append(
+            dom.root(),
+            Node::new(Role::TextInput, "Wrapped").text("ABC").styled(
+                Style::column()
+                    .width(Length::Px(50.))
+                    .height(Length::Px(40.))
+                    .font_weight(500),
+            ),
+        )
+        .unwrap();
+    let authored = serde_json::to_value(dom.get(field).unwrap()).unwrap();
+    let layout = LayoutEngine::default()
+        .compute(&dom, 50., 40., &mut Metrics)
+        .unwrap();
+    let compile = |dom: &MicroDom, multiline| {
+        ExtendedDisplayList::compile_with_selection_colors(
+            dom,
+            &layout,
+            None,
+            &BTreeMap::from([(
+                field,
+                TextDecoration {
+                    selection: vec![Rect::new(12., 0., 30., 10.)],
+                    multiline,
+                    ..TextDecoration::default()
+                },
+            )]),
+            InteractionState::default(),
+            TextSelectionColors {
+                background: Color::rgb(0, 220, 245),
+                foreground: Color::rgb(0, 0, 0),
+            },
+        )
+    };
+    let baseline = compile(&dom, true);
+    let [ExtendedPaintOp::TextSelection(legacy)] = baseline.ops() else {
+        panic!("one selection operation");
+    };
+    let legacy = serde_json::to_value(legacy).unwrap();
+    assert!(legacy.get("alignment").is_none());
+    dom.set_presented_text_input_alignment(field, Some(TextAlignment::Right))
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(dom.get(field).unwrap()).unwrap(),
+        authored
+    );
+    let aligned = compile(&dom, true);
+    let [ExtendedPaintOp::TextSelection(aligned)] = aligned.ops() else {
+        panic!("one aligned selection operation");
+    };
+    assert_eq!(aligned.alignment(), Some(TextAlignment::Right));
+    let mut aligned = serde_json::to_value(aligned).unwrap();
+    assert_eq!(
+        aligned.as_object_mut().unwrap().remove("alignment"),
+        Some(serde_json::json!("Right"))
+    );
+    assert_eq!(aligned, legacy);
+    let single_line = compile(&dom, false);
+    let [ExtendedPaintOp::TextSelection(paint)] = single_line.ops() else {
+        panic!("one single-line selection operation");
+    };
+    assert_eq!(paint.alignment(), None);
+
+    let measured = Metrics.text_layout_aligned_styled(
+        "AB\nC",
+        &TextStyle::new(16.),
+        50.,
+        TextAlignment::Right,
+    );
+    assert_eq!(measured.caret(0).x, 34.);
+    assert_eq!(measured.caret(3).x, 42.);
+    assert_eq!(measured.hit(43., 27.), 3);
 }
 
 #[test]

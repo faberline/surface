@@ -530,7 +530,6 @@ impl Renderer {
                         text.run(),
                         PaintOp::Text { .. }
                             | PaintOp::StyledText {
-                                editable: false,
                                 multiline: true,
                                 ..
                             }
@@ -559,7 +558,14 @@ impl Renderer {
                     if matches!(
                         selection.run(),
                         PaintOp::EditableText { .. } | PaintOp::StyledText { editable: true, .. }
-                    ) =>
+                    ) && (selection.alignment().is_none()
+                        || matches!(
+                            selection.run(),
+                            PaintOp::StyledText {
+                                multiline: true,
+                                ..
+                            }
+                        )) =>
                 {
                     Ok(RenderOp::TextSelection(selection))
                 }
@@ -630,7 +636,7 @@ impl Renderer {
                     self.prepare_text_run(
                         space,
                         &run,
-                        None,
+                        selection.alignment(),
                         regions.into_iter().map(|region| {
                             let ink = if region.selected {
                                 colors.foreground

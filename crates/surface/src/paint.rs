@@ -168,8 +168,8 @@ pub enum TextAlignment {
     Right,
 }
 
-/// Static text with an explicit alignment. The original run retains its
-/// bounds, clip, wrapping and style.
+/// Static text or a wrapped styled editor with explicit alignment. The
+/// original run retains its bounds, clip, wrapping and style.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AlignedTextPaint {
     run: PaintOp,
@@ -281,8 +281,12 @@ trait CompileOp: From<PaintOp> {
         run: PaintOp,
         _colors: TextSelectionColors,
         _selected: Vec<Rect>,
+        alignment: Option<TextAlignment>,
     ) -> Self {
-        run.into()
+        match alignment {
+            Some(alignment) => Self::with_aligned_text(run, alignment),
+            None => run.into(),
+        }
     }
 
     fn push_raster(
@@ -326,8 +330,13 @@ impl CompileOp for ExtendedPaintOp {
         Self::AlignedText(AlignedTextPaint { run, alignment })
     }
 
-    fn with_text_selection(run: PaintOp, colors: TextSelectionColors, selected: Vec<Rect>) -> Self {
-        Self::TextSelection(TextSelectionPaint::new(run, colors, selected))
+    fn with_text_selection(
+        run: PaintOp,
+        colors: TextSelectionColors,
+        selected: Vec<Rect>,
+        alignment: Option<TextAlignment>,
+    ) -> Self {
+        Self::TextSelection(TextSelectionPaint::new(run, colors, selected, alignment))
     }
 
     fn push_raster(
@@ -946,7 +955,14 @@ fn compile_into<Op: CompileOp>(
         if let Some((text, text_color)) = text_run {
             let padded = g.bounds.inset(s.padding);
             let mut rect = padded.inset_horizontal(n.presented_text_input_horizontal_inset);
-            if let Some((offset, width)) = n.presented_text_input_horizontal_bounds {
+            if let Some(viewport) = n.presented_text_input_viewport {
+                rect = padded.intersect(Rect::new(
+                    padded.x + viewport.x,
+                    padded.y + viewport.y,
+                    viewport.width,
+                    viewport.height,
+                ));
+            } else if let Some((offset, width)) = n.presented_text_input_horizontal_bounds {
                 let offset = offset.min(padded.width);
                 rect.x = padded.x + offset;
                 rect.width = width.min(padded.width - offset);
@@ -1015,17 +1031,30 @@ fn compile_into<Op: CompileOp>(
                     color: s.foreground,
                 }
             };
-            let run = match (n.read_only_text_alignment(), selection_colors, decoration) {
-                (Some(alignment), _, _) => Op::with_aligned_text(run, alignment),
-                (None, Some(colors), Some(decoration)) => {
-                    let selected = text_selection::visible_selection(clip, &decoration.selection);
-                    if selected.is_empty() {
-                        run.into()
-                    } else {
-                        Op::with_text_selection(run, colors, selected)
-                    }
+            let alignment = if matches!(
+                run,
+                PaintOp::StyledText {
+                    editable: true,
+                    multiline: true,
+                    ..
                 }
-                _ => run.into(),
+            ) {
+                n.presented_text_input_alignment
+            } else {
+                n.read_only_text_alignment()
+            };
+            let selection = selection_colors
+                .zip(decoration)
+                .and_then(|(colors, decoration)| {
+                    let selected = text_selection::visible_selection(clip, &decoration.selection);
+                    (!selected.is_empty()).then_some((colors, selected))
+                });
+            let run = match (alignment, selection) {
+                (alignment, Some((colors, selected))) => {
+                    Op::with_text_selection(run, colors, selected, alignment)
+                }
+                (Some(alignment), None) => Op::with_aligned_text(run, alignment),
+                (None, None) => run.into(),
             };
             ops.push_owned(*id, run);
             if let Some(d) = decoration {

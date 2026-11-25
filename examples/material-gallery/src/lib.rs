@@ -26,6 +26,7 @@ mod lists_demo;
 mod loading_indicator_demo;
 mod menu_demo;
 mod modal_wide_navigation_rail_demo;
+mod multiline_text_field_demo;
 mod navigation_drawer_demo;
 mod outlined_text_field_demo;
 mod progress_demo;
@@ -85,6 +86,7 @@ use lists_demo::{ListsDemo, ListsEvent};
 use loading_indicator_demo::{LoadingDemo, LoadingEvent};
 use menu_demo::{MenuDemo, MenuDemoEvent};
 use modal_wide_navigation_rail_demo::{ModalWideRailDemo, ModalWideRailEvent};
+use multiline_text_field_demo::{MultilineTextFieldDemo, MultilineTextFieldDemoEvent};
 use navigation_drawer_demo::{DrawerDemo, DrawerDemoEvent};
 use outlined_text_field_demo::{OutlinedTextFieldDemo, OutlinedTextFieldDemoEvent};
 use progress_demo::{ProgressDemo, ProgressEvent};
@@ -161,6 +163,7 @@ pub struct Gallery {
     outlined_text_field_demo: OutlinedTextFieldDemo,
     text_field_adornments_demo: TextFieldAdornmentsDemo,
     text_field_counter_demo: TextFieldCounterDemo,
+    multiline_text_field_demo: MultilineTextFieldDemo,
     segmented_demo: SegmentedDemo,
     slider_demo: SliderDemo,
     slider_forms_demo: SliderFormsDemo,
@@ -243,6 +246,7 @@ impl Default for Gallery {
             outlined_text_field_demo: OutlinedTextFieldDemo::default(),
             text_field_adornments_demo: TextFieldAdornmentsDemo::default(),
             text_field_counter_demo: TextFieldCounterDemo::default(),
+            multiline_text_field_demo: MultilineTextFieldDemo::default(),
             segmented_demo: SegmentedDemo::default(),
             slider_demo: SliderDemo::default(),
             slider_forms_demo: SliderFormsDemo::default(),
@@ -370,6 +374,7 @@ pub enum Message {
     OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
     TextFieldAdornmentsDemo(TextFieldAdornmentsDemoEvent),
     TextFieldCounterDemo(TextFieldCounterDemoEvent),
+    MultilineTextFieldDemo(MultilineTextFieldDemoEvent),
     SegmentedDemo(SegmentedDemoEvent),
     SliderDemo(SliderDemoEvent),
     SliderForms(SliderFormsEvent),
@@ -570,6 +575,9 @@ impl Application for Gallery {
         if self.text_field_counter_demo.visible() {
             return self.text_field_counter_demo.text_scale();
         }
+        if self.multiline_text_field_demo.visible() {
+            return self.multiline_text_field_demo.text_scale();
+        }
         if self.segmented_demo.visible() {
             return self.segmented_demo.text_scale();
         }
@@ -606,6 +614,7 @@ impl Application for Gallery {
         let outlined_text_field = self.outlined_text_field_demo.viewport_changed(width);
         let text_field_adornments = self.text_field_adornments_demo.viewport_changed(width);
         let text_field_counter = self.text_field_counter_demo.viewport_changed(width);
+        let multiline_text_field = self.multiline_text_field_demo.viewport_changed(width);
         let segmented = self.segmented_demo.viewport_changed(width);
         let sliders = self.slider_demo.viewport_changed(width, height);
         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
@@ -680,6 +689,7 @@ impl Application for Gallery {
             || outlined_text_field
             || text_field_adornments
             || text_field_counter
+            || multiline_text_field
             || segmented
             || sliders
             || slider_forms
@@ -1036,6 +1046,9 @@ impl Application for Gallery {
                 if i != text_field_counter_demo::SECTION {
                     self.text_field_counter_demo.leave();
                 }
+                if i != multiline_text_field_demo::SECTION {
+                    self.multiline_text_field_demo.leave();
+                }
                 if i != segmented_demo::SECTION {
                     self.segmented_demo.leave();
                 }
@@ -1070,6 +1083,7 @@ impl Application for Gallery {
                 self.text_field_adornments_demo.update(event)
             }
             Message::TextFieldCounterDemo(event) => self.text_field_counter_demo.update(event),
+            Message::MultilineTextFieldDemo(event) => self.multiline_text_field_demo.update(event),
             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
             Message::SliderDemo(event) => self.slider_demo.update(event),
             Message::SliderForms(event) => self.slider_forms_demo.update(event),
@@ -1302,6 +1316,9 @@ impl Application for Gallery {
         if self.text_field_counter_demo.visible() {
             return self.text_field_counter_demo.view(&t, self.dark);
         }
+        if self.multiline_text_field_demo.visible() {
+            return self.multiline_text_field_demo.view(&t, self.dark);
+        }
         if self.segmented_demo.visible() {
             return self.segmented_demo.view(&t, self.dark);
         }
@@ -1435,6 +1452,7 @@ impl Application for Gallery {
                             FilledTextFieldDemo::show_button(&t),
                             TextFieldAdornmentsDemo::show_button(&t),
                             TextFieldCounterDemo::show_button(&t),
+                            MultilineTextFieldDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -2071,6 +2089,7 @@ mod web {
         state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
         state["text_field_adornments_demo"] = s.text_field_adornments_demo.inspect(&theme, s.dark);
         state["text_field_counter_demo"] = s.text_field_counter_demo.inspect(&theme, s.dark);
+        state["multiline_text_field_demo"] = s.multiline_text_field_demo.inspect(&theme, s.dark);
         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
         state["slider_demo"] = s.slider_demo.inspect(&theme);
         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);

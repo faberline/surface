@@ -140,6 +140,30 @@ impl<A: Application> Runtime<A> {
         let (target, viewport) = with_validation
             .or(outlined)
             .map_or((target, viewport), |bounds| (bounds, room));
+        self.apply_reveal_rect(ancestor, computed, target, viewport)
+    }
+
+    pub(crate) fn reveal_rect_in(
+        &mut self,
+        ancestor: NodeId,
+        computed: &ComputedDom,
+        target: Rect,
+    ) -> Result<bool, AppError> {
+        let padding = self.dom.get(ancestor)?.style().padding;
+        let viewport = computed.nodes[ancestor.index()].bounds.inset(padding);
+        self.apply_reveal_rect(ancestor, computed, target, viewport)
+    }
+
+    fn apply_reveal_rect(
+        &mut self,
+        ancestor: NodeId,
+        computed: &ComputedDom,
+        target: Rect,
+        viewport: Rect,
+    ) -> Result<bool, AppError> {
+        let geometry = &computed.nodes[ancestor.index()];
+        let node = self.dom.get(ancestor)?;
+        let style = node.style();
         let extent = scroll_extent(&self.dom, computed, ancestor)
             .unwrap_or((geometry.bounds.width, geometry.bounds.height));
         let max = (

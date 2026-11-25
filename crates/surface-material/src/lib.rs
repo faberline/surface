@@ -180,7 +180,9 @@ pub use navigation_drawer::{
     ModalNavigationDrawerOptions, NavigationDrawerItem, NavigationDrawerSwipe,
 };
 pub use outlined_text_field::OutlinedTextFieldOptions as TextFieldOptions;
-pub use outlined_text_field::{OutlinedTextFieldOptions, TextFieldEditability};
+pub use outlined_text_field::{
+    MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldEditability,
+};
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
 pub use radio::{RadioGroupLayout, RadioGroupOptions, RadioMotion, RadioOptions, RadioPose};
 pub use scroll_choice_catalog::{

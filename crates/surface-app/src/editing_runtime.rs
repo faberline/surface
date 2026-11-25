@@ -4,8 +4,8 @@ use crate::{
 };
 use std::collections::BTreeMap;
 use surface::{
-    ComputedDom, Length, MicroDom, NodeId, Rect, Role, TextDecoration, TextLayout, TextMeasurer,
-    TextScaling,
+    ComputedDom, Length, MicroDom, NodeId, Rect, Role, TextAlignment, TextDecoration, TextLayout,
+    TextMeasurer, TextScaling,
 };
 
 const CARET_REVEAL_WIDTH: f32 = 2.;
@@ -21,6 +21,17 @@ pub(crate) struct EditingGeometry {
     layout: TextLayout,
     origin: Rect,
     scroll: (f32, f32),
+    multiline: bool,
+    focused: bool,
+    manual_scroll: bool,
+    vertical_goal: Option<f32>,
+    caret: Option<Rect>,
+}
+
+impl EditingGeometry {
+    fn vertical_limit(&self) -> f32 {
+        (self.layout.height - self.origin.height).max(0.)
+    }
 }
 #[derive(Clone, Debug)]
 pub struct InputSnapshot {
@@ -34,6 +45,20 @@ pub struct InputSnapshot {
     pub read_only: bool,
 }
 impl<A: Application> Runtime<A> {
+    /// Whether the focused editor uses Surface's wrapped visual-line keys.
+    pub fn focused_uses_multiline_viewport(&self) -> bool {
+        self.focused_node().is_some_and(|id| {
+            self.in_scope(id)
+                && self
+                    .dom
+                    .get(id)
+                    .is_ok_and(|node| node.role() == Role::TextInput && !node.is_disabled())
+                && self.bindings.get(&id).is_some_and(|binding| {
+                    binding.text_options.multiline && binding.multiline_text_viewport.is_some()
+                })
+        })
+    }
+
     pub fn input_snapshot(&self) -> Option<InputSnapshot> {
         let id = self.focused.as_ref()?;
         let node_id = self.dom.by_id(id)?;
@@ -81,6 +106,8 @@ impl<A: Application> Runtime<A> {
                 .and_then(|id| self.dom.get(id).ok())
                 .is_some_and(|n| n.role() == Role::TextInput && !n.is_disabled())
         });
+        self.text_geometry
+            .retain(|id, geometry| !geometry.multiline || self.editors.contains_key(id));
         for (node_id, node) in self
             .dom
             .iter()
@@ -99,7 +126,13 @@ impl<A: Application> Runtime<A> {
                         self.ime_area = None;
                     }
                 }
-                editor.sync(value);
+                if value != editor.value() {
+                    if let Some(geometry) = self.text_geometry.get_mut(id) {
+                        geometry.manual_scroll = false;
+                        geometry.vertical_goal = None;
+                    }
+                    editor.sync(value);
+                }
             }
         }
     }
@@ -120,7 +153,7 @@ impl<A: Application> Runtime<A> {
             return;
         }
         let (Some(geometry), Some(editor)) =
-            (self.text_geometry.get(&id), self.editors.get_mut(&id))
+            (self.text_geometry.get_mut(&id), self.editors.get_mut(&id))
         else {
             return;
         };
@@ -139,8 +172,102 @@ impl<A: Application> Runtime<A> {
             },
             cursor,
         );
+        geometry.manual_scroll = false;
+        geometry.vertical_goal = None;
         self.text_drag = Some(id);
     }
+
+    pub(crate) fn multiline_scroll_at(
+        &self,
+        computed: &ComputedDom,
+        point: (f32, f32),
+    ) -> Option<NodeId> {
+        self.multiline_viewport_at(computed, point).filter(|&id| {
+            self.multiline_scroll_geometry(id)
+                .is_some_and(|geometry| geometry.vertical_limit() > 0.)
+        })
+    }
+
+    pub(crate) fn multiline_touch_at(
+        &self,
+        computed: &ComputedDom,
+        point: (f32, f32),
+    ) -> Option<NodeId> {
+        self.multiline_viewport_at(computed, point)
+    }
+
+    fn multiline_viewport_at(&self, computed: &ComputedDom, point: (f32, f32)) -> Option<NodeId> {
+        let id = self.raw_hit(point.0, point.1)?;
+        let geometry = self.multiline_scroll_geometry(id)?;
+        let clip = computed.nodes[id.index()].clip;
+        geometry
+            .origin
+            .intersect(clip)
+            .contains(point.0, point.1)
+            .then_some(id)
+    }
+
+    fn multiline_scroll_geometry(&self, id: NodeId) -> Option<&EditingGeometry> {
+        let node = self.dom.get(id).ok()?;
+        let binding = self.bindings.get(&id)?;
+        if node.role() != Role::TextInput
+            || node.is_disabled()
+            || !self.in_scope(id)
+            || !binding.text_options.multiline
+            || binding.multiline_text_viewport.is_none()
+        {
+            return None;
+        }
+        let key = node.stable_id()?;
+        let geometry = self.text_geometry.get(key)?;
+        (geometry.multiline && !self.editors.get(key)?.is_composing()).then_some(geometry)
+    }
+
+    pub(crate) fn multiline_scroll_position(&self, id: NodeId) -> Option<(f32, bool)> {
+        let geometry = self.multiline_scroll_geometry(id)?;
+        Some((geometry.scroll.1, geometry.manual_scroll))
+    }
+
+    pub(crate) fn restore_multiline_scroll(
+        &mut self,
+        id: NodeId,
+        expected: (f32, bool),
+        prior: (f32, bool),
+    ) -> bool {
+        if self.multiline_scroll_position(id) != Some(expected) {
+            return false;
+        }
+        let key = self.dom.get(id).ok().and_then(|node| node.stable_id());
+        let Some(geometry) = key.and_then(|key| self.text_geometry.get_mut(key)) else {
+            return false;
+        };
+        let restored = (prior.0.clamp(0., geometry.vertical_limit()), prior.1);
+        (geometry.scroll.1, geometry.manual_scroll) = restored;
+        restored != expected
+    }
+
+    /// Move the inner text and return the part available to the ancestor.
+    pub(crate) fn scroll_multiline(&mut self, id: NodeId, delta: f32) -> f32 {
+        let Some(key) = self.dom.get(id).ok().and_then(|node| node.stable_id()) else {
+            return delta;
+        };
+        let Some(geometry) = self.text_geometry.get_mut(key) else {
+            return delta;
+        };
+        let offset = geometry.scroll.1;
+        let limit = geometry.vertical_limit();
+        let consumed = delta.clamp(-offset, (limit - offset).max(0.));
+        if consumed != 0. {
+            geometry.scroll.1 = (offset + consumed).clamp(0., limit);
+            geometry.manual_scroll = true;
+        }
+        delta - consumed
+    }
+
+    pub(crate) fn multiline_caret(&self, key: &str) -> Option<Rect> {
+        self.text_geometry.get(key)?.caret
+    }
+
     pub(crate) fn editing_event(&mut self, event: Event) -> Result<bool, AppError> {
         if matches!(event, Event::Blur) {
             self.cancel_composition();
@@ -167,41 +294,75 @@ impl<A: Application> Runtime<A> {
         let stable = node.stable_id().expect("input needs ID").to_owned();
         let binding = self.bindings.get(&id).expect("bound node");
         let options = binding.text_options.clone();
+        let visual_alignment = binding
+            .multiline_text_viewport
+            .as_ref()
+            .filter(|_| options.multiline)
+            .map(|(_, alignment)| *alignment);
         let handler = binding.input.clone();
         let editor = self
             .editors
             .get_mut(&stable)
             .expect("editor was reconciled");
-        let up = matches!(
-            event,
-            Event::Edit {
-                key: EditKey::Up,
-                ..
-            }
-        );
+        let reveal = matches!(event, Event::Edit { .. } | Event::Ime(_));
+        let previous_selection = visual_alignment.map(|_| editor.selection().clone());
+        let mut vertical = false;
         let changed = match event {
             Event::Text(text) => editor.insert(&text, &options),
             Event::Edit {
-                key: EditKey::Up,
+                key: key @ (EditKey::Up | EditKey::Down | EditKey::PageUp | EditKey::PageDown),
                 extend,
                 ..
-            }
-            | Event::Edit {
-                key: EditKey::Down,
-                extend,
-                ..
-            } => {
+            } if visual_alignment.is_some() || matches!(key, EditKey::Up | EditKey::Down) => {
                 if !editor.is_composing() {
-                    if let Some(g) = self.text_geometry.get(&stable) {
+                    if let Some(g) = self.text_geometry.get_mut(&stable) {
                         let caret = g.layout.caret(editor.selection().cursor);
-                        let dy = if up {
-                            -g.layout.line_height
+                        let height = g.layout.line_height;
+                        let lines = if matches!(key, EditKey::PageUp | EditKey::PageDown) {
+                            (g.origin.height / height).floor().max(1.)
                         } else {
-                            g.layout.line_height
+                            1.
                         };
-                        let cursor = g
-                            .layout
-                            .hit(caret.x, caret.y + dy + g.layout.line_height / 2.);
+                        let dy = if matches!(key, EditKey::Up | EditKey::PageUp) {
+                            -lines * height
+                        } else {
+                            lines * height
+                        };
+                        let x = if visual_alignment.is_some() {
+                            vertical = true;
+                            *g.vertical_goal.get_or_insert(caret.x)
+                        } else {
+                            caret.x
+                        };
+                        let cursor = g.layout.hit(x, caret.y + dy + caret.height / 2.);
+                        editor.select(
+                            if extend {
+                                editor.selection().anchor
+                            } else {
+                                cursor
+                            },
+                            cursor,
+                        );
+                    }
+                }
+                false
+            }
+            Event::Edit {
+                key: key @ (EditKey::Home | EditKey::End),
+                extend,
+                by_word: false,
+            } if visual_alignment.is_some() && self.text_geometry.contains_key(&stable) => {
+                if !editor.is_composing() {
+                    if let Some(geometry) = self.text_geometry.get(&stable) {
+                        let caret = geometry.layout.caret(editor.selection().cursor);
+                        let rtl = visual_alignment == Some(TextAlignment::Right);
+                        let right_edge = rtl != (key == EditKey::End);
+                        let x = if right_edge {
+                            geometry.origin.width + 1.
+                        } else {
+                            -1.
+                        };
+                        let cursor = geometry.layout.hit(x, caret.y + caret.height / 2.);
                         editor.select(
                             if extend {
                                 editor.selection().anchor
@@ -233,6 +394,17 @@ impl<A: Application> Runtime<A> {
             }
             _ => return Ok(false),
         };
+        if reveal || changed || previous_selection.is_some_and(|old| &old != editor.selection()) {
+            if let Some(geometry) = self.text_geometry.get_mut(&stable) {
+                geometry.manual_scroll = false;
+                if !vertical {
+                    geometry.vertical_goal = None;
+                }
+            }
+            if visual_alignment.is_some() {
+                self.pending_multiline_caret_reveal = Some(stable);
+            }
+        }
         let value = editor.value().to_owned();
         if changed {
             if let Some(handler) = handler {
@@ -301,10 +473,17 @@ impl<A: Application> Runtime<A> {
                 binding.single_line_text_horizontal_inset
             };
             let padded = g.bounds.inset(node.style().padding);
-            let measured_horizontal = binding
-                .single_line_text_horizontal_bounds
-                .as_deref()
-                .filter(|_| !options.multiline)
+            let multiline_viewport = binding
+                .multiline_text_viewport
+                .as_ref()
+                .filter(|_| options.multiline);
+            let alignment = multiline_viewport.map(|(_, alignment)| *alignment);
+            let reference = if options.multiline {
+                multiline_viewport.map(|(sibling, _)| sibling.as_str())
+            } else {
+                binding.single_line_text_horizontal_bounds.as_deref()
+            };
+            let measured = reference
                 .and_then(|key| display.by_id(key))
                 .filter(|sibling| {
                     *sibling != id
@@ -323,24 +502,34 @@ impl<A: Application> Runtime<A> {
                         && bounds.width > 0.
                         && bounds.x >= padded.x
                         && bounds.x + bounds.width <= padded.x + padded.width
+                        && (!options.multiline
+                            || (bounds.y.is_finite()
+                                && bounds.height.is_finite()
+                                && bounds.height > 0.
+                                && bounds.y >= padded.y
+                                && bounds.y + bounds.height <= padded.y + padded.height))
                 });
             let mut origin = padded.inset_horizontal(content_inset);
-            if let Some(bounds) = measured_horizontal {
+            let measured_viewport = measured.filter(|_| options.multiline);
+            let measured_horizontal = measured.filter(|_| !options.multiline);
+            if let Some(viewport) = measured_viewport {
+                origin = viewport;
+            } else if let Some(bounds) = measured_horizontal {
                 origin.x = bounds.x;
                 origin.width = bounds.width;
             }
             let content_width = origin.width;
             let text = editor.display_value();
             let text_style = node.style().text_style();
-            let layout = measurer.text_layout_styled(
-                &text,
-                &text_style,
-                if options.multiline {
-                    Some(content_width)
-                } else {
-                    None
-                },
-            );
+            let layout = if let Some(alignment) = alignment {
+                measurer.text_layout_aligned_styled(&text, &text_style, content_width, alignment)
+            } else {
+                measurer.text_layout_styled(
+                    &text,
+                    &text_style,
+                    options.multiline.then_some(content_width),
+                )
+            };
             let placement = if options.multiline {
                 SingleLineVerticalPlacement::Top
             } else {
@@ -360,12 +549,9 @@ impl<A: Application> Runtime<A> {
             origin.width -= horizontal_inset;
             origin.y += top_inset + center_inset;
             origin.height -= top_inset + center_inset;
-            let mut scroll = self
-                .text_geometry
-                .get(key)
-                .map(|g| g.scroll)
-                .unwrap_or_default();
-            if horizontal_space.is_some_and(|space| space >= 0.) {
+            let previous = self.text_geometry.get(key);
+            let mut scroll = previous.map(|g| g.scroll).unwrap_or_default();
+            if alignment.is_some() || horizontal_space.is_some_and(|space| space >= 0.) {
                 scroll.0 = 0.;
             }
             if center_inset > 0. || matches!(placement, SingleLineVerticalPlacement::Inset(_)) {
@@ -373,13 +559,26 @@ impl<A: Application> Runtime<A> {
             }
             let selection = editor.display_selection();
             let focused = self.focused.as_ref() == Some(key);
-            if focused {
+            let same_measure = |geometry: &EditingGeometry| {
+                geometry.origin.width == origin.width
+                    && geometry.origin.height == origin.height
+                    && geometry.layout.line_height == layout.line_height
+            };
+            let manual_scroll = alignment.is_some()
+                && previous
+                    .is_some_and(|g| g.manual_scroll && (g.focused || !focused) && same_measure(g));
+            let vertical_goal = previous
+                .filter(|g| g.multiline && g.focused && focused && same_measure(g))
+                .and_then(|g| g.vertical_goal);
+            if focused && !manual_scroll {
                 if let Some(selection) = &selection {
                     let caret = layout.caret(selection.cursor);
-                    if caret.x < scroll.0 {
-                        scroll.0 = caret.x;
-                    } else if caret.x + CARET_REVEAL_WIDTH > scroll.0 + origin.width {
-                        scroll.0 = caret.x + CARET_REVEAL_WIDTH - origin.width;
+                    if alignment.is_none() {
+                        if caret.x < scroll.0 {
+                            scroll.0 = caret.x;
+                        } else if caret.x + CARET_REVEAL_WIDTH > scroll.0 + origin.width {
+                            scroll.0 = caret.x + CARET_REVEAL_WIDTH - origin.width;
+                        }
                     }
                     if caret.y < scroll.1 {
                         scroll.1 = caret.y;
@@ -389,7 +588,11 @@ impl<A: Application> Runtime<A> {
                 }
             }
             scroll.0 = scroll.0.max(0.);
-            scroll.1 = scroll.1.max(0.);
+            scroll.1 = if alignment.is_some() {
+                scroll.1.clamp(0., (layout.height - origin.height).max(0.))
+            } else {
+                scroll.1.max(0.)
+            };
             let translate = |r: Rect| {
                 Rect::new(
                     origin.x + r.x - scroll.0,
@@ -397,6 +600,14 @@ impl<A: Application> Runtime<A> {
                     r.width,
                     r.height,
                 )
+            };
+            let caret_position = |r| {
+                let mut caret = translate(r);
+                if alignment.is_some() {
+                    let right = (origin.x + origin.width - caret.width).max(origin.x);
+                    caret.x = caret.x.clamp(origin.x, right);
+                }
+                caret
             };
             let placeholder = binding.text_input_placeholder.as_ref().filter(|_| {
                 editor.value().is_empty()
@@ -416,6 +627,7 @@ impl<A: Application> Runtime<A> {
                 multiline: options.multiline,
                 ..Default::default()
             };
+            let mut multiline_caret = None;
             if focused {
                 if let Some(selection) = selection {
                     decoration.selection = layout
@@ -423,13 +635,20 @@ impl<A: Application> Runtime<A> {
                         .into_iter()
                         .map(translate)
                         .collect();
+                    let caret = caret_position(layout.caret(selection.cursor));
                     if selection.is_collapsed() {
-                        decoration.caret = Some(translate(layout.caret(selection.cursor)));
+                        decoration.caret = Some(caret);
                     }
-                    self.ime_area = Some(
-                        translate(layout.caret(selection.cursor))
-                            .intersect(origin.intersect(g.clip)),
-                    );
+                    let visible = caret.intersect(origin.intersect(g.clip));
+                    if !manual_scroll || (visible.width > 0. && visible.height > 0.) {
+                        self.ime_area = Some(visible);
+                    }
+                    if alignment.is_some() && !manual_scroll {
+                        let caret = caret.intersect(origin);
+                        if caret.width > 0. && caret.height > 0. {
+                            multiline_caret = Some(caret);
+                        }
+                    }
                 }
                 if let Some(preedit) = editor.preedit_range() {
                     decoration.underline = layout
@@ -445,10 +664,25 @@ impl<A: Application> Runtime<A> {
                     layout,
                     origin,
                     scroll,
+                    multiline: alignment.is_some(),
+                    focused,
+                    manual_scroll,
+                    vertical_goal,
+                    caret: multiline_caret,
                 },
             );
             decorations.insert(id, decoration);
-            if let Some(bounds) = measured_horizontal {
+            if let Some(viewport) = measured_viewport {
+                display.set_presented_text_input_viewport(
+                    id,
+                    Rect::new(
+                        viewport.x - padded.x,
+                        viewport.y - padded.y,
+                        viewport.width,
+                        viewport.height,
+                    ),
+                )?;
+            } else if let Some(bounds) = measured_horizontal {
                 display.set_presented_text_input_horizontal_bounds(
                     id,
                     bounds.x - padded.x,
@@ -462,6 +696,9 @@ impl<A: Application> Runtime<A> {
             }
             if let Some(placeholder) = placeholder {
                 display.set_presented_text_input_placeholder(id, placeholder.clone())?;
+            }
+            if alignment.is_some() {
+                display.set_presented_text_input_alignment(id, alignment)?;
             }
         }
         Ok((display, decorations, computed))

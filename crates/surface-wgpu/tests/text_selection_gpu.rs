@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use surface::{
     Color, DisplayList, ExtendedDisplayList, ExtendedPaintOp, Insets, InteractionState,
-    LayoutEngine, Length, MicroDom, Node, PaintOp, Rect, Role, Style, TextDecoration,
-    TextSelectionColors,
+    LayoutEngine, Length, MicroDom, Node, PaintOp, Rect, Role, Style, TextAlignment,
+    TextDecoration, TextMeasurer, TextSelectionColors,
 };
 use surface_wgpu::{Capture, Renderer};
 
@@ -21,6 +21,156 @@ fn fill(viewport: Rect, color: Color) -> PaintOp {
         radius: 0.,
         color,
     }
+}
+
+#[test]
+#[ignore = "requires a real GPU adapter"]
+fn right_aligned_wrapped_selection_agrees_with_shaped_geometry() {
+    pollster::block_on(async {
+        let instance = wgpu::Instance::default();
+        let adapter = Renderer::request(&instance, None)
+            .await
+            .expect("GPU adapter");
+        eprintln!("Aligned selection GPU evidence: {:?}", adapter.get_info());
+        let mut renderer = Renderer::new(&adapter, wgpu::TextureFormat::Rgba8Unorm)
+            .await
+            .unwrap();
+        let viewport = Rect::new(0., 0., 132., 96.);
+        let mut dom = MicroDom::new(Node::new(Role::Window, ""));
+        let value = "MMMM WWWW\nIi";
+        let style = Style::column()
+            .width(Length::Px(105.))
+            .height(Length::Px(96.))
+            .font_size(20.)
+            .font_weight(600)
+            .foreground(INK);
+        let field = dom
+            .append(
+                dom.root(),
+                Node::new(Role::TextInput, "Wrapped")
+                    .text(value)
+                    .styled(style.clone()),
+            )
+            .unwrap();
+        dom.set_presented_text_input_alignment(field, Some(TextAlignment::Right))
+            .unwrap();
+        let layout = LayoutEngine::default()
+            .compute(&dom, viewport.width, viewport.height, &mut renderer.text)
+            .unwrap();
+        let bounds = layout.nodes[field.index()].bounds;
+        let shaped = renderer.text.text_layout_aligned_styled(
+            value,
+            &style.text_style(),
+            bounds.width,
+            TextAlignment::Right,
+        );
+        let wrapped = shaped.caret(value.find('W').unwrap());
+        let short = shaped.caret(value.find('I').unwrap());
+        assert!(wrapped.y > 0. && short.y > wrapped.y);
+        assert!(short.x > wrapped.x + 20.);
+        assert!(shaped.hit(short.x + 0.25, short.y + 2.) == value.find('I').unwrap());
+        let selection: Vec<_> = shaped
+            .selection(1..value.len() - 1)
+            .into_iter()
+            .map(|r| Rect::new(r.x + bounds.x, r.y + bounds.y, r.width, r.height))
+            .collect();
+
+        let decorated = |selection| {
+            BTreeMap::from([(
+                field,
+                TextDecoration {
+                    selection,
+                    multiline: true,
+                    ..Default::default()
+                },
+            )])
+        };
+        let visible = |list: ExtendedDisplayList, highlight: bool| {
+            let mut ops = vec![ExtendedPaintOp::Legacy(fill(viewport, PAPER))];
+            if highlight {
+                ops.push(ExtendedPaintOp::Legacy(fill(viewport, COLORS.background)));
+            }
+            ops.extend(list.into_ops());
+            ExtendedDisplayList::new(viewport, ops)
+        };
+        let interaction = InteractionState::default();
+        let selected = ExtendedDisplayList::compile_with_selection_colors(
+            &dom,
+            &layout,
+            None,
+            &decorated(selection.clone()),
+            interaction,
+            COLORS,
+        );
+        assert!(matches!(selected.ops(),
+            [ExtendedPaintOp::TextSelection(paint)] if paint.alignment() == Some(TextAlignment::Right)
+        ));
+        let ordinary = ExtendedDisplayList::compile_with_selection_colors(
+            &dom,
+            &layout,
+            None,
+            &decorated(vec![]),
+            interaction,
+            COLORS,
+        );
+        assert!(matches!(ordinary.ops(),
+            [ExtendedPaintOp::AlignedText(paint)] if paint.alignment() == TextAlignment::Right
+        ));
+        dom.set_style(field, style.foreground(COLORS.foreground))
+            .unwrap();
+        let highlight = ExtendedDisplayList::compile_with_selection_colors(
+            &dom,
+            &layout,
+            None,
+            &decorated(vec![]),
+            interaction,
+            COLORS,
+        );
+        let scale = 1.5;
+        let (width, height) = (
+            (viewport.width * scale) as u32,
+            (viewport.height * scale) as u32,
+        );
+        let actual = renderer
+            .capture_extended(&visible(selected, false), width, height, scale)
+            .unwrap();
+        let ordinary = renderer
+            .capture_extended(&visible(ordinary, false), width, height, scale)
+            .unwrap();
+        let highlight = renderer
+            .capture_extended(&visible(highlight, true), width, height, scale)
+            .unwrap();
+        let short_line = short.y * scale;
+        let mut short_ink = [0; 2];
+        let mut painted = [0; 2];
+        for y in 0..height {
+            for x in 0..width {
+                let selected = selection
+                    .iter()
+                    .any(|r| r.contains((x as f32 + 0.5) / scale, (y as f32 + 0.5) / scale));
+                let reference = if selected { &highlight } else { &ordinary };
+                let found = pixel(&actual, x, y);
+                assert_eq!(found, pixel(reference, x, y), "coverage at {x},{y}");
+                let ink = found != pixel(reference, width - 1, y);
+                if ink {
+                    painted[usize::from(selected)] += 1;
+                    if y as f32 > short_line && (y as f32) < short_line + shaped.line_height * scale
+                    {
+                        assert!(
+                            (x as f32) > 0.6 * bounds.width * scale,
+                            "short row ink at {x},{y}"
+                        );
+                        short_ink[usize::from(selected)] += 1;
+                    }
+                }
+            }
+        }
+        assert!(painted.into_iter().all(|pixels| pixels > 10));
+        assert!(short_ink.into_iter().all(|pixels| pixels > 5));
+        eprintln!(
+            "Aligned wrapped glyph pixels ordinary/selected: {painted:?}, short row {short_ink:?}"
+        );
+    });
 }
 
 fn fixture(renderer: &mut Renderer, styled: bool) -> (ExtendedDisplayList, PaintOp, Vec<Rect>) {
