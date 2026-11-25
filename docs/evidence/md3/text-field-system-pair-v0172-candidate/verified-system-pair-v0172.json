@@ -1,0 +1,634 @@
+{
+  "canonical_build_log_sha256": "e20ed9cf79b5b3c3c46541cb4fb94110c2e7fee197e845a7953e16fb1697b700",
+  "focused": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "checks": 1993,
+    "chrome_samples": 233,
+    "decoded_probes": {
+      "compact": 18,
+      "filled": 14,
+      "outlined": 22,
+      "real-dark": 2,
+      "real-light": 2
+    },
+    "distinct_source": "synthetic unequal Field pair scoped to Surface optional probe; real browser Canvas/Button/Highlight/GrayText",
+    "exact_source_delta": [
+      "docs/material-coverage.json"
+    ],
+    "gallery_files": {
+      "index.html": "901b8fafde4ef4e8a63fbb9423b5233c3b7db68a0a5630045aadbe6e36e33ece",
+      "surface-web.json": "302dd987e37a8d2747de366578c26cde59c2f63cabefea03176427eaa440af21",
+      "surface_material_gallery-522fe42723ad36b4.js": "522fe42723ad36b4741d5d995639c957909c4844564fcc30b0633564e6a05180",
+      "surface_material_gallery_bg-920372305c827ba4.wasm": "920372305c827ba42bb38f191d9d83353118a6c92ad7b9119163771486cc05cd"
+    },
+    "inputs": {
+      "development_history": {
+        "r2_to_r3": {
+          "added": [
+            "e2e/src/material_text_field_system_pair.rs"
+          ],
+          "changed": [
+            "e2e/src/material.rs",
+            "e2e/src/material_web_contrast.rs"
+          ],
+          "removed": []
+        },
+        "r3_to_r4": {
+          "added": [],
+          "changed": [
+            "docs/material.md",
+            "examples/material-gallery/src/lib.rs",
+            "examples/material-gallery/src/text_field_placeholder_demo.rs"
+          ],
+          "removed": []
+        },
+        "r4_to_r5": {
+          "added": [],
+          "changed": [
+            "e2e/src/material_text_field_system_pair.rs"
+          ],
+          "removed": []
+        },
+        "r4_to_r6": {
+          "added": [],
+          "changed": [
+            "e2e/src/material_text_field_system_pair.rs",
+            "e2e/src/material_web_contrast_selection.rs"
+          ],
+          "removed": []
+        },
+        "r4_to_r7": {
+          "added": [],
+          "changed": [
+            "e2e/src/material_text_field_system_pair.rs",
+            "e2e/src/material_web_contrast.rs",
+            "e2e/src/material_web_contrast_selection.rs"
+          ],
+          "removed": []
+        },
+        "r4_to_r8": {
+          "added": [],
+          "changed": [
+            "e2e/src/material_text_field_system_pair.rs",
+            "e2e/src/material_web_contrast.rs",
+            "e2e/src/material_web_contrast_selection.rs"
+          ],
+          "removed": []
+        },
+        "r7_to_r8": {
+          "added": [],
+          "changed": [
+            "e2e/src/material_text_field_system_pair.rs"
+          ],
+          "removed": []
+        }
+      },
+      "development_patch_sha256": "10029cedbdb5396eb5712590d87b271489422d74fbfe9c712905083c33317886",
+      "focused_registry_sha256": "058fad7f54a2c732cf9e16fce9f5dd66d0e5e28172e1c00efbe82c85541c6591",
+      "focused_source_manifest_sha256": "9b51973bea8880660c899e9e5e60b9759a5692bd4bb1b97c73b22c9e8783081b",
+      "original_gallery": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/web-development",
+      "original_web_manifest": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/web-development.sha256",
+      "product_source": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/development-r8/source",
+      "product_source_manifest": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/development-r8/source.sha256",
+      "product_source_manifest_sha256": "4a4ad2522f1c080fd870932077619d3c85e2171598e620e93dfbc2065944ea99",
+      "product_tree": "6af2ed5be7232a482d09e5a924dec6ab85536651",
+      "registry_delta": [
+        "e2e/src/material.rs"
+      ],
+      "runner_sha256": "adfa819a63cc2e8a5f6d355d52c3c0c10687c5b593df69c0de7c37dd71faccda",
+      "source_count": 691,
+      "steps": [
+        "M241",
+        "M242",
+        "M243",
+        "M244",
+        "M245",
+        "M246",
+        "M247",
+        "M357",
+        "M358",
+        "M359",
+        "M360",
+        "M361",
+        "M362"
+      ],
+      "stock_registry_sha256": "19f959583d596195d0d3b13002476f78c9961b51eecffd581a7ca3cbaa9cb2c8",
+      "web_compatible_test_only_delta": [
+        "e2e/src/material_text_field_system_pair.rs",
+        "e2e/src/material_web_contrast.rs",
+        "e2e/src/material_web_contrast_selection.rs"
+      ],
+      "web_files": {
+        "index.html": "901b8fafde4ef4e8a63fbb9423b5233c3b7db68a0a5630045aadbe6e36e33ece",
+        "surface-web.json": "302dd987e37a8d2747de366578c26cde59c2f63cabefea03176427eaa440af21",
+        "surface_material_gallery-522fe42723ad36b4.js": "522fe42723ad36b4741d5d995639c957909c4844564fcc30b0633564e6a05180",
+        "surface_material_gallery_bg-920372305c827ba4.wasm": "920372305c827ba42bb38f191d9d83353118a6c92ad7b9119163771486cc05cd"
+      },
+      "web_manifest_sha256": "84359bf859a0582b2da51875f0e6bd279641a0afe28935b0b38ecb2c0cb1f3b1",
+      "web_producer_manifest": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/development-r4/source.sha256",
+      "web_producer_manifest_sha256": "5c342f40941e6f5350411c7787faed8651356f8f739bd64f059bdb65622e8649",
+      "web_producer_tree": "166eeafa32115770dcf9097a63de31aa7d3201a3"
+    },
+    "inputs_sha256": "ff7ffbcb20ff5bb8359f8f8de5e4410f21c31e6b530392dd3e5d32aea8ccc797",
+    "log_sha256": "405fbbecce0cf5f3692e7024aba1c13a08192b9d44eabdeeca5d7b06ffab7615",
+    "png_sha256": {
+      "browser-material-text-field-system-pair-compact-distinct.png": "dd09e81d9636bc6521843db62cf7671f998e7b91d6c35110ac6db5af5eff0b92",
+      "browser-material-text-field-system-pair-compact-malformed-fallback.png": "62d92462756f8d3ab21b026b0fd036ad3664b6c664741e351847ee9be6d688f2",
+      "browser-material-text-field-system-pair-compact-normal.png": "861b0e35c1f97c0fa79f260953940158d3e76a8421194e9245c1214a493cae75",
+      "browser-material-text-field-system-pair-compact-restored.png": "861b0e35c1f97c0fa79f260953940158d3e76a8421194e9245c1214a493cae75",
+      "browser-material-text-field-system-pair-filled-caret.png": "e911c878a88e76f39527d29aae2368e6f6428396106c0e33709199fc1d6f05af",
+      "browser-material-text-field-system-pair-filled-normal.png": "82e30ae08fd3a3769775eb57e1f765c8f44eb1d20d5d73ec6d5a54b34e65c6bc",
+      "browser-material-text-field-system-pair-filled-restored.png": "82e30ae08fd3a3769775eb57e1f765c8f44eb1d20d5d73ec6d5a54b34e65c6bc",
+      "browser-material-text-field-system-pair-filled-selected.png": "78c817a5b57d939af206d28a925be272750b3ccf4d28bc5016bce40ca6f178bf",
+      "browser-material-text-field-system-pair-outlined-caret.png": "3bfaee70eafe13b3434a0147838091870e1868f857a4881ecf86fd334f3a834e",
+      "browser-material-text-field-system-pair-outlined-normal.png": "52a481ffa400ce3677cae40162d32c9859c123af060314d29a6d62c6e251751b",
+      "browser-material-text-field-system-pair-outlined-restored.png": "52a481ffa400ce3677cae40162d32c9859c123af060314d29a6d62c6e251751b",
+      "browser-material-text-field-system-pair-outlined-selected.png": "292e111cb029493d472cf4e4de16554d5f6eabe3dc3707317281e53cf71d57a0",
+      "browser-material-text-field-system-pair-real-dark.png": "7d032e5cdda8671aa61c639c86a1106021c83ebb0dd34489823a810fb012fd4d",
+      "browser-material-text-field-system-pair-real-light.png": "803140fad7110fb025a6355137f4d84b5e9e00f3b386b743e0970a8f4e383e8b"
+    },
+    "real_source": "CDP emulated system CSS with no palette override",
+    "report_sha256": "31dd0b4b84fdfe580e44a84f20a7b0349a5947c8b5bdd6d4d49335794d5c0e29",
+    "retained_disabled_contrast": {
+      "adapter": {
+        "architecture": "metal-3",
+        "isFallbackAdapter": false,
+        "vendor": "apple"
+      },
+      "browser": "Chrome/158.0.8127.37",
+      "ink_pixels": {
+        "adorned": {
+          "forced": 2583,
+          "normal": 2723,
+          "restored": 2723
+        },
+        "counter": {
+          "forced": 2116,
+          "normal": 2297,
+          "restored": 2297
+        },
+        "filled": {
+          "forced": 2607,
+          "normal": 2791,
+          "restored": 2791
+        },
+        "multiline": {
+          "forced": 6064,
+          "normal": 6519,
+          "restored": 6519
+        },
+        "outlined": {
+          "forced": 2434,
+          "normal": 2608,
+          "restored": 2608
+        }
+      },
+      "png_sha256": {
+        "material-text-field-disabled-contrast-adorned-forced.png": "550d1454dd45082d42a04f98ffe13a08418c420561d5790efe537fa07dd91c66",
+        "material-text-field-disabled-contrast-adorned-normal.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+        "material-text-field-disabled-contrast-adorned-restored.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+        "material-text-field-disabled-contrast-counter-forced.png": "a1808c299fbad443c81e6e4ad4acd5f413415a8e36d4bf04550c6d6aaef430e0",
+        "material-text-field-disabled-contrast-counter-normal.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+        "material-text-field-disabled-contrast-counter-restored.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+        "material-text-field-disabled-contrast-filled-forced.png": "4b6355dcf904f353843ff07bf3d3c092f83ab350ec8574277f79b59552c04b6b",
+        "material-text-field-disabled-contrast-filled-normal.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+        "material-text-field-disabled-contrast-filled-restored.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+        "material-text-field-disabled-contrast-multiline-forced.png": "237726d12826a09cdd8f1125653d8493a6b840c79fbe98f0046e7f361d3dff2e",
+        "material-text-field-disabled-contrast-multiline-normal.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+        "material-text-field-disabled-contrast-multiline-restored.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+        "material-text-field-disabled-contrast-outlined-forced.png": "37a37e207a31fda2cb7a81c7b9134c4b56738c875b2a4936f9217b35028ddff4",
+        "material-text-field-disabled-contrast-outlined-normal.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688",
+        "material-text-field-disabled-contrast-outlined-restored.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688"
+      },
+      "report_sha256": "cb7d6688222fb7c8cbffe53fc6fc9c57a3e1182e4cd0f83c1f707b749c94f424"
+    },
+    "steps": [
+      "M241",
+      "M242",
+      "M243",
+      "M244",
+      "M245",
+      "M246",
+      "M247",
+      "M357",
+      "M358",
+      "M359",
+      "M360",
+      "M361",
+      "M362"
+    ],
+    "visible_owned_windows": 0,
+    "window_receipt_sha256": "e1fd65354c5e1636ec94ded4c2b09a5a393142126a43d683bd73e0f79c70b8e9"
+  },
+  "gate_pins_sha256": "84f7490df84184310b62c825ab1d1e4bc54140a2fb63d799b67284936d2dc324",
+  "native": {
+    "host_setting_observed": false,
+    "matching_development_pngs": 16,
+    "runs": {
+      "development-r4": {
+        "binaries": "68d60a3f8fa383646c4889f683b1e6fe1567e7c063dfd2e51edc9c4357a3c4f8",
+        "evidence_manifest_sha256": "579f13921a054236bdae90694b2ba1664e6a544a6cced85b4399811fc1abe838",
+        "original_pngs": 16,
+        "reaped": 4,
+        "scope": "Native synthetic fixed-palette preview",
+        "source": "5c342f40941e6f5350411c7787faed8651356f8f739bd64f059bdb65622e8649",
+        "transports": [
+          "Page.screenshot",
+          "CLI",
+          "MCP"
+        ],
+        "visible_windows": 0,
+        "window_samples": 44
+      },
+      "exact-v0172": {
+        "binaries": "68d60a3f8fa383646c4889f683b1e6fe1567e7c063dfd2e51edc9c4357a3c4f8",
+        "evidence_manifest_sha256": "f0e354d178164ead2a63569b89bea8a849fb3b65d707701a2d195ae4324e7fcb",
+        "original_pngs": 16,
+        "reaped": 4,
+        "scope": "Native synthetic fixed-palette preview",
+        "source": "b3137077ef9753a91a4e86b3c7d9dedc14b479f4aa4e74c95b299a6805543cd9",
+        "transports": [
+          "Page.screenshot",
+          "CLI",
+          "MCP"
+        ],
+        "visible_windows": 0,
+        "window_samples": 44
+      }
+    }
+  },
+  "predecessor": {
+    "archive_sha256": "41d846a3e1f56326e63ddadb607cba6d88a2a3d9255e1698b7fa74a681e92021",
+    "material_steps": 358,
+    "stock_checks": 29384,
+    "tree": "f2b631b0d72830f76b84e71b114018a4410dc813"
+  },
+  "rejected_attempts": {
+    "r4": {
+      "checks": 1669,
+      "chrome_samples": 177,
+      "last_material_step": "M361",
+      "manifest_sha256": "88a59373cf2389a587d5c828196fef2d3856c56b7535749b732d09cb5bf6927e",
+      "physical_rgb_witness": [
+        [
+          151,
+          [
+            248,
+            219,
+            126
+          ]
+        ],
+        [
+          152,
+          [
+            249,
+            220,
+            126
+          ]
+        ],
+        [
+          153,
+          [
+            19,
+            45,
+            47
+          ]
+        ]
+      ],
+      "physical_row": 344,
+      "remaining_owned_processes": [],
+      "retained_disabled_contrast": {
+        "adapter": {
+          "architecture": "metal-3",
+          "isFallbackAdapter": false,
+          "vendor": "apple"
+        },
+        "browser": "Chrome/158.0.8127.37",
+        "ink_pixels": {
+          "adorned": {
+            "forced": 2583,
+            "normal": 2723,
+            "restored": 2723
+          },
+          "counter": {
+            "forced": 2116,
+            "normal": 2297,
+            "restored": 2297
+          },
+          "filled": {
+            "forced": 2607,
+            "normal": 2791,
+            "restored": 2791
+          },
+          "multiline": {
+            "forced": 6064,
+            "normal": 6519,
+            "restored": 6519
+          },
+          "outlined": {
+            "forced": 2434,
+            "normal": 2608,
+            "restored": 2608
+          }
+        },
+        "png_sha256": {
+          "material-text-field-disabled-contrast-adorned-forced.png": "550d1454dd45082d42a04f98ffe13a08418c420561d5790efe537fa07dd91c66",
+          "material-text-field-disabled-contrast-adorned-normal.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+          "material-text-field-disabled-contrast-adorned-restored.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+          "material-text-field-disabled-contrast-counter-forced.png": "a1808c299fbad443c81e6e4ad4acd5f413415a8e36d4bf04550c6d6aaef430e0",
+          "material-text-field-disabled-contrast-counter-normal.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+          "material-text-field-disabled-contrast-counter-restored.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+          "material-text-field-disabled-contrast-filled-forced.png": "4b6355dcf904f353843ff07bf3d3c092f83ab350ec8574277f79b59552c04b6b",
+          "material-text-field-disabled-contrast-filled-normal.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+          "material-text-field-disabled-contrast-filled-restored.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+          "material-text-field-disabled-contrast-multiline-forced.png": "237726d12826a09cdd8f1125653d8493a6b840c79fbe98f0046e7f361d3dff2e",
+          "material-text-field-disabled-contrast-multiline-normal.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+          "material-text-field-disabled-contrast-multiline-restored.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+          "material-text-field-disabled-contrast-outlined-forced.png": "37a37e207a31fda2cb7a81c7b9134c4b56738c875b2a4936f9217b35028ddff4",
+          "material-text-field-disabled-contrast-outlined-normal.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688",
+          "material-text-field-disabled-contrast-outlined-restored.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688"
+        },
+        "report_sha256": "cb7d6688222fb7c8cbffe53fc6fc9c57a3e1182e4cd0f83c1f707b749c94f424"
+      },
+      "run_exit": 1,
+      "scope": "original R4 rejected caret sample",
+      "source_sha256": "5c342f40941e6f5350411c7787faed8651356f8f739bd64f059bdb65622e8649",
+      "visible_windows": 0,
+      "web_sha256": "84359bf859a0582b2da51875f0e6bd279641a0afe28935b0b38ecb2c0cb1f3b1"
+    },
+    "r5": {
+      "checks": 1675,
+      "chrome_samples": 181,
+      "composited_rgb": [
+        8,
+        9,
+        68
+      ],
+      "field_base_rgb": [
+        19,
+        45,
+        47
+      ],
+      "highlight_source_rgba": [
+        5,
+        0,
+        73,
+        204
+      ],
+      "last_material_step": "M361",
+      "manifest_sha256": "d027e29322d0c60f852a6c7706e256794cd4bc27e88367804d889cd45df500e0",
+      "mode": "byte-space source-over",
+      "remaining_owned_processes": [],
+      "retained_disabled_contrast": {
+        "adapter": {
+          "architecture": "metal-3",
+          "isFallbackAdapter": false,
+          "vendor": "apple"
+        },
+        "browser": "Chrome/158.0.8127.37",
+        "ink_pixels": {
+          "adorned": {
+            "forced": 2583,
+            "normal": 2723,
+            "restored": 2723
+          },
+          "counter": {
+            "forced": 2116,
+            "normal": 2297,
+            "restored": 2297
+          },
+          "filled": {
+            "forced": 2607,
+            "normal": 2791,
+            "restored": 2791
+          },
+          "multiline": {
+            "forced": 6064,
+            "normal": 6519,
+            "restored": 6519
+          },
+          "outlined": {
+            "forced": 2434,
+            "normal": 2608,
+            "restored": 2608
+          }
+        },
+        "png_sha256": {
+          "material-text-field-disabled-contrast-adorned-forced.png": "550d1454dd45082d42a04f98ffe13a08418c420561d5790efe537fa07dd91c66",
+          "material-text-field-disabled-contrast-adorned-normal.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+          "material-text-field-disabled-contrast-adorned-restored.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+          "material-text-field-disabled-contrast-counter-forced.png": "a1808c299fbad443c81e6e4ad4acd5f413415a8e36d4bf04550c6d6aaef430e0",
+          "material-text-field-disabled-contrast-counter-normal.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+          "material-text-field-disabled-contrast-counter-restored.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+          "material-text-field-disabled-contrast-filled-forced.png": "4b6355dcf904f353843ff07bf3d3c092f83ab350ec8574277f79b59552c04b6b",
+          "material-text-field-disabled-contrast-filled-normal.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+          "material-text-field-disabled-contrast-filled-restored.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+          "material-text-field-disabled-contrast-multiline-forced.png": "237726d12826a09cdd8f1125653d8493a6b840c79fbe98f0046e7f361d3dff2e",
+          "material-text-field-disabled-contrast-multiline-normal.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+          "material-text-field-disabled-contrast-multiline-restored.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+          "material-text-field-disabled-contrast-outlined-forced.png": "37a37e207a31fda2cb7a81c7b9134c4b56738c875b2a4936f9217b35028ddff4",
+          "material-text-field-disabled-contrast-outlined-normal.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688",
+          "material-text-field-disabled-contrast-outlined-restored.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688"
+        },
+        "report_sha256": "cb7d6688222fb7c8cbffe53fc6fc9c57a3e1182e4cd0f83c1f707b749c94f424"
+      },
+      "run_exit": 1,
+      "sample_physical_xy": [
+        116,
+        330
+      ],
+      "scope": "original R5 rejected opaque Highlight assumption",
+      "source_sha256": "80ae80c08efe8025bd1765154fa32343934cc4dcde8902a42a52cd2ce2ad5683",
+      "visible_windows": 0,
+      "web_sha256": "84359bf859a0582b2da51875f0e6bd279641a0afe28935b0b38ecb2c0cb1f3b1"
+    },
+    "r6": {
+      "log_sha256": "890ae524717f6593ba9ab442b28d97f9f8c7a21b76465e3f409725020185d07d",
+      "scope": "compiler-only rejection before browser"
+    },
+    "r7": {
+      "checks": 1726,
+      "chrome_samples": 463,
+      "inherited_gray_text_png_sha256": {
+        "material-text-field-disabled-contrast-adorned-forced.png": "550d1454dd45082d42a04f98ffe13a08418c420561d5790efe537fa07dd91c66",
+        "material-text-field-disabled-contrast-adorned-normal.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+        "material-text-field-disabled-contrast-adorned-restored.png": "e3d96e6f5bfb1d69bc6d3ab7f4519da8a0d65110243cc5ca06285f8b15999d5a",
+        "material-text-field-disabled-contrast-counter-forced.png": "a1808c299fbad443c81e6e4ad4acd5f413415a8e36d4bf04550c6d6aaef430e0",
+        "material-text-field-disabled-contrast-counter-normal.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+        "material-text-field-disabled-contrast-counter-restored.png": "3b21774592b7fb22d30aa9080112681984f1ca87ededa83d6c1b4927790acbe4",
+        "material-text-field-disabled-contrast-filled-forced.png": "4b6355dcf904f353843ff07bf3d3c092f83ab350ec8574277f79b59552c04b6b",
+        "material-text-field-disabled-contrast-filled-normal.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+        "material-text-field-disabled-contrast-filled-restored.png": "75097083009ba162e07a66a266ca245b5b4a2dc8ad4262aaeacec033f6ce4294",
+        "material-text-field-disabled-contrast-multiline-forced.png": "237726d12826a09cdd8f1125653d8493a6b840c79fbe98f0046e7f361d3dff2e",
+        "material-text-field-disabled-contrast-multiline-normal.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+        "material-text-field-disabled-contrast-multiline-restored.png": "18f8798d5a3f4e5dd23ba2c19395308f67f6acf0d330fb8a27097adbb09ce82d",
+        "material-text-field-disabled-contrast-outlined-forced.png": "37a37e207a31fda2cb7a81c7b9134c4b56738c875b2a4936f9217b35028ddff4",
+        "material-text-field-disabled-contrast-outlined-normal.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688",
+        "material-text-field-disabled-contrast-outlined-restored.png": "04eea362a30ca9b5d5f8b8b4d01e7e70e8e626d4fcd4c5861981a9f3dba5f688"
+      },
+      "launcher_y": 2060,
+      "png_sha256": {
+        "browser-material-text-field-system-pair-failure.png": "74c196e830721e5829d9384e3ceae737a327e1bbc00c76fd5c9a54c482817a32",
+        "browser-material-text-field-system-pair-outlined-caret.png": "3bfaee70eafe13b3434a0147838091870e1868f857a4881ecf86fd334f3a834e",
+        "browser-material-text-field-system-pair-outlined-normal.png": "52a481ffa400ce3677cae40162d32c9859c123af060314d29a6d62c6e251751b",
+        "browser-material-text-field-system-pair-outlined-restored.png": "52a481ffa400ce3677cae40162d32c9859c123af060314d29a6d62c6e251751b",
+        "browser-material-text-field-system-pair-outlined-selected.png": "292e111cb029493d472cf4e4de16554d5f6eabe3dc3707317281e53cf71d57a0",
+        "browser-material-text-field-system-pair-real-dark.png": "7d032e5cdda8671aa61c639c86a1106021c83ebb0dd34489823a810fb012fd4d",
+        "browser-material-text-field-system-pair-real-light.png": "803140fad7110fb025a6355137f4d84b5e9e00f3b386b743e0970a8f4e383e8b"
+      },
+      "report_sha256": "b5eadb44e8850437f698eb2c72c159c4c079cac45081bcce0e114101f88603ce",
+      "scope": "rejected clipped setup launcher",
+      "viewport_height": 2000,
+      "visible_windows": 0
+    }
+  },
+  "rust_metal": {
+    "metal": {
+      "ignored": 0,
+      "log_sha256": "3f657a01be301cfedf695ba269efa1e5d4b355b54d5204bdf5c5f2236f4166ca",
+      "passed": 16
+    },
+    "metal_pngs": {
+      "gpu-basic-dialog-enter.png": "f40ad85bdd72135d2cb59516f9e750e893b61781bb16c626e3f249175e69d85f",
+      "gpu-basic-dialog-exit.png": "cbad23baaa9196d9402fdd42418b53c186e842af8ac1727df9e55bf9598784a7",
+      "gpu-basic-dialog-settled.png": "d98161d10b8ea5e17ca74a7fa3ff077ec4066a2e135ae5c97372fb39a827a352",
+      "gpu-capture.png": "19a4d15af5b4e667547df79ddd1bf7e54f37d27d05a1d608e33b9a45a94346df",
+      "gpu-full-screen-fab-enter.png": "d3a6af8a7fc0dae556d02405700a9e7fca3b1dd83439e8fa5065e9099aa4df32",
+      "gpu-full-screen-fab-exit.png": "a430b648f30c0edb1290b798138137f2c295b1d28100b4bccfa6ee2de4e5f292",
+      "gpu-full-screen-fab-settled.png": "4dee047126cc3095d8ee239262b5d3c206980a1e8050e61a5e447ae41b255ef0",
+      "gpu-list-ripple-early.png": "82ed432514630e9390c3d87a6b9aa0f895d1141156c4ef06ae19256d445c5acb",
+      "gpu-list-ripple-fade.png": "e7baa396d0f20eb2a6df8ed3e33e1409797d4e58479d14e5d44c0af8ecb68743",
+      "gpu-list-ripple-full.png": "c04a54d5026d96e8da0a6323bdf40fc2e25d6daf53e4e75955218b5391b467e9",
+      "gpu-list-ripple-reduced.png": "4f6b940d085f521561cb1b687c706932649e87d0056a57df150675c74adc05ad",
+      "gpu-loading-dark-large.png": "0ee259b1e31513c861e7187caa90e7688957a7f3da99b0d12da13c69e7ebc322",
+      "gpu-loading-light-first.png": "a97b6bbe6ead5617c51d58545c1f166cb9f8c2f0db2996540211e3927f302b23",
+      "gpu-loading-light-middle.png": "6514b85146b4f81283b306818a6f0b71dc451b2335c22cb79c097bdfe742743e",
+      "gpu-motion-midpoint.png": "9577c42e7429804d32dc035dea602048e8e0d009913c86b8ae7c7695d9ef587f",
+      "gpu-offscreen.png": "541272237b44a3f13cb966354fbdc7150d9b76a10593d86bed4c26d84815f035",
+      "gpu-opacity-group.png": "135b816be93b8d7c129f675b78ac3fc8441da3d7878b8e51e99cdd404a2ece88",
+      "gpu-shapes.png": "405d05e7da8801e6c83d1bd3b5ee51ec6b710e0e23d8232fd931ad2e7b04a179",
+      "gpu-text-alignment.png": "e304c4e8fe2ed02bf45ea2f16a0126e932cb401868921ad71b3c80881515e2da",
+      "gpu-transform-crop.png": "b89d45ce7c6c6a8cdff73f49d32fc34b5a3300711725e45b6d4312dc213c9ba7",
+      "gpu-transform-rounded.png": "7326e376b1fe543edcb324554f18f814afde8e05181e2a478cf7aef3f6ccde48"
+    },
+    "metal_total": 18,
+    "supplemental": {
+      "ignored": 0,
+      "log_sha256": "2ef1a1c9867437ff28fc5c16a8c54678f600077fa5a1a0a0e87d33d2192880c5",
+      "passed": 2
+    },
+    "workspace": {
+      "ignored": 20,
+      "log_sha256": "e98275e3e6cf2d2940aa25f326ba0770e08a51f85a4e13a595120d5c4b7dd5e9",
+      "passed": 1593,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_manifest_sha256": "65c1bf0fd49f018b575cf069af016aa46229cff9dc23d521942f0ba0b6465ee2",
+    "base_tree": "f2b631b0d72830f76b84e71b114018a4410dc813",
+    "changed_paths": [
+      "Cargo.lock",
+      "Cargo.toml",
+      "crates/surface-app/src/display_contrast.rs",
+      "crates/surface-app/src/editor_paint.rs",
+      "crates/surface-app/src/lib.rs",
+      "crates/surface-material/src/icon_button.rs",
+      "crates/surface-material/src/outlined_text_field.rs",
+      "crates/surface-material/src/text_field_label_notch.rs",
+      "crates/surface-material/tests/outlined_text_field.rs",
+      "crates/surface-platform/src/web_contrast.rs",
+      "docs/material-coverage.json",
+      "docs/material.md",
+      "e2e/src/material.rs",
+      "e2e/src/material_text_field_system_pair.rs",
+      "e2e/src/material_web_contrast.rs",
+      "e2e/src/material_web_contrast_selection.rs",
+      "examples/material-gallery/src/lib.rs",
+      "examples/material-gallery/src/main.rs",
+      "examples/material-gallery/src/text_field_placeholder_demo.rs"
+    ],
+    "files": 691,
+    "manifest_sha256": "b3137077ef9753a91a4e86b3c7d9dedc14b479f4aa4e74c95b299a6805543cd9",
+    "patch_sha256": "82839f72bf454a8e4bdd22660ecb223684ea7bcd6351158137a9044d1efc3117",
+    "tree": "9333c1f8dba9a7d15aba2ca47dc92c997abf98af"
+  },
+  "status": "verified exact local candidate",
+  "stock": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "browser": "Chrome/158.0.8127.37",
+    "cases": {
+      "bridge-web": {
+        "checks": 94,
+        "steps": 24
+      },
+      "devtools-headless": {
+        "checks": 76,
+        "steps": 3
+      },
+      "ime": {
+        "checks": 77,
+        "steps": 20
+      },
+      "material": {
+        "checks": 29626,
+        "steps": 361
+      },
+      "smoke": {
+        "checks": 34,
+        "steps": 19
+      }
+    },
+    "decoded_pair_probes": {
+      "compact": 18,
+      "filled": 14,
+      "outlined": 22,
+      "real-dark": 2,
+      "real-light": 2
+    },
+    "pair_pngs": {
+      "browser-material-text-field-system-pair-compact-distinct.png": "dd09e81d9636bc6521843db62cf7671f998e7b91d6c35110ac6db5af5eff0b92",
+      "browser-material-text-field-system-pair-compact-malformed-fallback.png": "62d92462756f8d3ab21b026b0fd036ad3664b6c664741e351847ee9be6d688f2",
+      "browser-material-text-field-system-pair-compact-normal.png": "861b0e35c1f97c0fa79f260953940158d3e76a8421194e9245c1214a493cae75",
+      "browser-material-text-field-system-pair-compact-restored.png": "861b0e35c1f97c0fa79f260953940158d3e76a8421194e9245c1214a493cae75",
+      "browser-material-text-field-system-pair-filled-caret.png": "e911c878a88e76f39527d29aae2368e6f6428396106c0e33709199fc1d6f05af",
+      "browser-material-text-field-system-pair-filled-normal.png": "82e30ae08fd3a3769775eb57e1f765c8f44eb1d20d5d73ec6d5a54b34e65c6bc",
+      "browser-material-text-field-system-pair-filled-restored.png": "82e30ae08fd3a3769775eb57e1f765c8f44eb1d20d5d73ec6d5a54b34e65c6bc",
+      "browser-material-text-field-system-pair-filled-selected.png": "78c817a5b57d939af206d28a925be272750b3ccf4d28bc5016bce40ca6f178bf",
+      "browser-material-text-field-system-pair-outlined-caret.png": "3bfaee70eafe13b3434a0147838091870e1868f857a4881ecf86fd334f3a834e",
+      "browser-material-text-field-system-pair-outlined-normal.png": "52a481ffa400ce3677cae40162d32c9859c123af060314d29a6d62c6e251751b",
+      "browser-material-text-field-system-pair-outlined-restored.png": "52a481ffa400ce3677cae40162d32c9859c123af060314d29a6d62c6e251751b",
+      "browser-material-text-field-system-pair-outlined-selected.png": "292e111cb029493d472cf4e4de16554d5f6eabe3dc3707317281e53cf71d57a0",
+      "browser-material-text-field-system-pair-real-dark.png": "7d032e5cdda8671aa61c639c86a1106021c83ebb0dd34489823a810fb012fd4d",
+      "browser-material-text-field-system-pair-real-light.png": "803140fad7110fb025a6355137f4d84b5e9e00f3b386b743e0970a8f4e383e8b"
+    },
+    "remaining_processes": [],
+    "retained_boundary": 33,
+    "retained_decoders": [
+      "checkbox",
+      "chips",
+      "divider",
+      "icons",
+      "ime_cancellation",
+      "menu",
+      "navigation",
+      "radio",
+      "switch",
+      "tabs"
+    ],
+    "retained_gray_text": 15,
+    "retained_label_motion": 34,
+    "retained_placeholder": 58,
+    "total_checks": 29907,
+    "visible_windows": 0
+  }
+}

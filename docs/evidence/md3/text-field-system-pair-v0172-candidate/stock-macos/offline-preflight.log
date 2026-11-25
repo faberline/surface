@@ -1,0 +1,44 @@
+PASS pure guard predicates; no executable started
+{
+  "scope": "offline only; no v0.1.72 stock launch",
+  "verified_predecessor": {
+    "archive_sha256": "41d846a3e1f56326e63ddadb607cba6d88a2a3d9255e1698b7fa74a681e92021",
+    "archive_files": 566,
+    "stock_checks": 29384,
+    "material_steps": 358,
+    "disabled_contrast_pngs": 15
+  },
+  "original_canonical_links_checked": 4,
+  "scoped_intake": {
+    "type": "offline scoped intake",
+    "product_sha256": "4a4ad2522f1c080fd870932077619d3c85e2171598e620e93dfbc2065944ea99",
+    "exact_source_sha256": "b3137077ef9753a91a4e86b3c7d9dedc14b479f4aa4e74c95b299a6805543cd9",
+    "exact_source_tree": "9333c1f8dba9a7d15aba2ca47dc92c997abf98af",
+    "exact_source_files": 691,
+    "exact_patch_sha256": "82839f72bf454a8e4bdd22660ecb223684ea7bcd6351158137a9044d1efc3117",
+    "gallery_sha256": "84359bf859a0582b2da51875f0e6bd279641a0afe28935b0b38ecb2c0cb1f3b1",
+    "scoped_steps": 13,
+    "scoped_checks": 1993,
+    "scoped_headless_samples": 233,
+    "scoped_originals": 14,
+    "actual_retained_disabled_contrast_originals": 15,
+    "rejected_r4_checks": 1669,
+    "rejected_r5_checks": 1675,
+    "verified_actual_scope": true
+  },
+  "negatives": {
+    "prior_stock_steps": "Material steps changed",
+    "prior_has_no_system_pair": "browser-material-text-field-system-pair.json",
+    "missing_m362": "Material steps changed",
+    "development-r4_cannot_pass": "did not finish in its approved scope",
+    "development-r5_cannot_pass": "did not finish in its approved scope",
+    "prior_manifest": "not the v0.1.72 candidate",
+    "wrong_scoped_digest": "Wrong reviewed R8 focused evidence",
+    "wrong_final_delta": "must be exactly the reviewed Material doc",
+    "reject_bundle_as_original": "Different or missing pinned file",
+    "wrong_canonical_digest": "Different or missing pinned file",
+    "shell_missing_pngs": true,
+    "shell_visible_window": true,
+    "shell_wrong_scope_samples": true
+  }
+}

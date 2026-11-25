@@ -1,0 +1,113 @@
+{
+  "argv": [
+    "/private/tmp/surface-md3-field-pair-focused-v0172-r7.B20dFVGG/pins/surface-e2e",
+    "--chrome",
+    "/private/tmp/surface-md3-field-pair-focused-v0172-r7.B20dFVGG/development-r7/guards/chrome",
+    "--chrome-arg",
+    "--disable-updater-scheduler",
+    "--web-root",
+    "/private/tmp/surface-md3-field-pair-focused-v0172-r7.B20dFVGG/web",
+    "--artifacts",
+    "/private/tmp/surface-md3-field-pair-focused-v0172-r7.B20dFVGG/development-r7/artifacts",
+    "material"
+  ],
+  "scope": "q72 R7 focused M241–M247 and M357–M362",
+  "suite_arguments": [
+    "material"
+  ],
+  "injected_chrome_flags": [
+    "--disable-updater-scheduler"
+  ],
+  "inputs": {
+    "development_history": {
+      "r2_to_r3": {
+        "added": [
+          "e2e/src/material_text_field_system_pair.rs"
+        ],
+        "changed": [
+          "e2e/src/material.rs",
+          "e2e/src/material_web_contrast.rs"
+        ],
+        "removed": []
+      },
+      "r3_to_r4": {
+        "added": [],
+        "changed": [
+          "docs/material.md",
+          "examples/material-gallery/src/lib.rs",
+          "examples/material-gallery/src/text_field_placeholder_demo.rs"
+        ],
+        "removed": []
+      },
+      "r4_to_r5": {
+        "added": [],
+        "changed": [
+          "e2e/src/material_text_field_system_pair.rs"
+        ],
+        "removed": []
+      },
+      "r4_to_r6": {
+        "added": [],
+        "changed": [
+          "e2e/src/material_text_field_system_pair.rs",
+          "e2e/src/material_web_contrast_selection.rs"
+        ],
+        "removed": []
+      },
+      "r4_to_r7": {
+        "added": [],
+        "changed": [
+          "e2e/src/material_text_field_system_pair.rs",
+          "e2e/src/material_web_contrast.rs",
+          "e2e/src/material_web_contrast_selection.rs"
+        ],
+        "removed": []
+      }
+    },
+    "development_patch_sha256": "15867f015d17b34e960a5f35f4666eda9d88032640f73d895134a4296a5cc66b",
+    "focused_registry_sha256": "058fad7f54a2c732cf9e16fce9f5dd66d0e5e28172e1c00efbe82c85541c6591",
+    "focused_source_manifest_sha256": "30acef153e870d44361d317768af89b3d63418f095bc84ed96806725962d6d4f",
+    "product_source": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/development-r7/source",
+    "product_source_manifest": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/development-r7/source.sha256",
+    "product_source_manifest_sha256": "6d8d03a89b2e2a95b8c725efe04774badcc5e922b471d51bb5ed8ebdbca40135",
+    "product_tree": "a353a2d2cff5f03489c718e92166beed79acabd7",
+    "registry_delta": [
+      "e2e/src/material.rs"
+    ],
+    "source_count": 691,
+    "steps": [
+      "M241",
+      "M242",
+      "M243",
+      "M244",
+      "M245",
+      "M246",
+      "M247",
+      "M357",
+      "M358",
+      "M359",
+      "M360",
+      "M361",
+      "M362"
+    ],
+    "stock_registry_sha256": "19f959583d596195d0d3b13002476f78c9961b51eecffd581a7ca3cbaa9cb2c8",
+    "original_gallery": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/web-development",
+    "original_web_manifest": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/web-development.sha256",
+    "web_compatible_test_only_delta": [
+      "e2e/src/material_text_field_system_pair.rs",
+      "e2e/src/material_web_contrast.rs",
+      "e2e/src/material_web_contrast_selection.rs"
+    ],
+    "web_files": {
+      "index.html": "901b8fafde4ef4e8a63fbb9423b5233c3b7db68a0a5630045aadbe6e36e33ece",
+      "surface-web.json": "302dd987e37a8d2747de366578c26cde59c2f63cabefea03176427eaa440af21",
+      "surface_material_gallery-522fe42723ad36b4.js": "522fe42723ad36b4741d5d995639c957909c4844564fcc30b0633564e6a05180",
+      "surface_material_gallery_bg-920372305c827ba4.wasm": "920372305c827ba42bb38f191d9d83353118a6c92ad7b9119163771486cc05cd"
+    },
+    "web_manifest_sha256": "84359bf859a0582b2da51875f0e6bd279641a0afe28935b0b38ecb2c0cb1f3b1",
+    "web_producer_manifest": "/private/tmp/surface-md3-field-pair-v0172.SEhFjvMD/development-r4/source.sha256",
+    "web_producer_manifest_sha256": "5c342f40941e6f5350411c7787faed8651356f8f739bd64f059bdb65622e8649",
+    "web_producer_tree": "166eeafa32115770dcf9097a63de31aa7d3201a3",
+    "runner_sha256": "e5ad49db929f696de764d135187c76b9dd504a2879db6e4813e7d6192b7a08aa"
+  }
+}

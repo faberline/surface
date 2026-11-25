@@ -1,0 +1,113 @@
+{
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "stock_exit": 0,
+  "visible_owned_windows": [],
+  "remaining_observed_processes": [],
+  "observations": {
+    "chrome": {
+      "samples": 5015,
+      "pids": [
+        67089,
+        80269
+      ]
+    },
+    "native_gallery": {
+      "samples": 2,
+      "pids": [
+        81166
+      ],
+      "detached_samples": 0
+    }
+  },
+  "launch_observations": {
+    "chrome-primary": {
+      "samples": 4960,
+      "pids": [
+        67089
+      ],
+      "detached_samples": 0
+    },
+    "chrome-bridge": {
+      "samples": 55,
+      "pids": [
+        80269
+      ],
+      "detached_samples": 49
+    },
+    "native": {
+      "samples": 2,
+      "pids": [
+        81166
+      ],
+      "detached_samples": 0
+    }
+  },
+  "guard_events": [
+    {
+      "role": "chrome-primary",
+      "pid": 67089,
+      "ppid": 67082,
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=57318",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-field-pair-stock-v0172-final.qeJADEOL/run/tmp/.tmpHlX7OT",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new",
+        "--disable-updater-scheduler"
+      ],
+      "profile": "/private/tmp/surface-md3-field-pair-stock-v0172-final.qeJADEOL/run/tmp/.tmpHlX7OT"
+    },
+    {
+      "role": "chrome-bridge",
+      "pid": 80269,
+      "ppid": 80252,
+      "allowed": true,
+      "argv": [
+        "--disable-updater-scheduler",
+        "--remote-debugging-port=59451",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-field-pair-stock-v0172-final.qeJADEOL/run/tmp/.tmpeWflXa",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new"
+      ],
+      "profile": "/private/tmp/surface-md3-field-pair-stock-v0172-final.qeJADEOL/run/tmp/.tmpeWflXa"
+    },
+    {
+      "role": "native",
+      "pid": 81166,
+      "ppid": 67082,
+      "allowed": true,
+      "argv": [
+        "--headless",
+        "--width",
+        "720",
+        "--height",
+        "640"
+      ],
+      "profile": null
+    }
+  ],
+  "interval_seconds": 0.05,
+  "problems": []
+}
