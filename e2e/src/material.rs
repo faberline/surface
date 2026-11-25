@@ -10,6 +10,8 @@ mod material_badge;
 mod material_bottom_sheet;
 #[path = "material_button_group.rs"]
 mod material_button_group;
+#[path = "material_buttons.rs"]
+mod material_buttons;
 #[path = "material_card.rs"]
 mod material_card;
 #[path = "material_carousel.rs"]
@@ -152,7 +154,7 @@ pub const STEPS: &[&str] = &[
     "M275", "M276", "M277", "M278", "M279", "M280", "M281", "M282", "M283", "M284", "M285", "M286",
     "M287", "M288", "M289", "M290", "M291", "M292", "M293", "M294", "M295", "M296", "M297", "M298",
     "M299", "M300", "M301", "M302", "M303", "M304", "M305", "M306", "M307", "M308", "M309", "M310",
-    "M311", "M312", "M313", "M314", "M315",
+    "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -282,7 +284,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_slider_forms::run(env, chrome, &url).await?;
     material_range_slider::run(env, chrome, &url).await?;
     material_vertical_centered_slider::run(env, chrome, &url).await?;
-    material_slider_inset::run(env, chrome, &url).await
+    material_slider_inset::run(env, chrome, &url).await?;
+    material_buttons::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -513,6 +516,14 @@ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn common_button_steps_are_required_by_the_material_case() {
+        let buttons = super::material_buttons::STEPS;
+        assert!(super::STEPS
+            .windows(buttons.len())
+            .any(|steps| steps == buttons));
+    }
+
     #[test]
     fn inset_slider_steps_are_required_by_the_material_case() {
         let inset = super::material_slider_inset::STEPS;

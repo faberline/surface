@@ -1,6 +1,7 @@
 mod app_bar_demo;
 mod badge_demo;
 mod bottom_sheet_demo;
+mod button_demo;
 mod button_group_demo;
 mod card_demo;
 mod carousel_demo;
@@ -54,6 +55,7 @@ mod wide_navigation_rail_demo;
 use app_bar_demo::{AppBarDemo, AppBarEvent};
 use badge_demo::{BadgeDemo, BadgeEvent};
 use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
+use button_demo::{ButtonDemo, ButtonDemoEvent};
 use button_group_demo::{ButtonGroupDemo, ButtonGroupEvent};
 use card_demo::{CardDemo, CardEvent};
 use carousel_demo::{CarouselDemo, CarouselEvent};
@@ -144,6 +146,7 @@ pub struct Gallery {
     tabs_demo: TabsDemo,
     chip_demo: ChipDemo,
     icon_button_demo: IconButtonDemo,
+    button_demo: ButtonDemo,
     slider_demo: SliderDemo,
     slider_forms_demo: SliderFormsDemo,
     range_slider_demo: RangeSliderDemo,
@@ -220,6 +223,7 @@ impl Default for Gallery {
             tabs_demo: TabsDemo::default(),
             chip_demo: ChipDemo::default(),
             icon_button_demo: IconButtonDemo::default(),
+            button_demo: ButtonDemo::default(),
             slider_demo: SliderDemo::default(),
             slider_forms_demo: SliderFormsDemo::default(),
             range_slider_demo: RangeSliderDemo::default(),
@@ -341,6 +345,7 @@ pub enum Message {
     TabsDemo(TabsDemoEvent),
     ChipDemo(ChipDemoEvent),
     IconButtonDemo(IconButtonDemoEvent),
+    ButtonDemo(ButtonDemoEvent),
     SliderDemo(SliderDemoEvent),
     SliderForms(SliderFormsEvent),
     RangeSliderDemo(RangeSliderDemoEvent),
@@ -525,6 +530,9 @@ impl Application for Gallery {
         if self.icon_button_demo.visible() {
             return self.icon_button_demo.text_scale();
         }
+        if self.button_demo.visible() {
+            return self.button_demo.text_scale();
+        }
         if self.slider_demo.visible() {
             return self.slider_demo.text_scale();
         }
@@ -553,6 +561,7 @@ impl Application for Gallery {
         let tabs = self.tabs_demo.viewport_changed(width);
         let chips = self.chip_demo.viewport_changed(width);
         let icon_buttons = self.icon_button_demo.viewport_changed(width, height);
+        let buttons = self.button_demo.viewport_changed(width, height);
         let sliders = self.slider_demo.viewport_changed(width, height);
         let slider_forms = self.slider_forms_demo.viewport_changed(width, height);
         let range_sliders = self.range_slider_demo.viewport_changed(width, height);
@@ -621,6 +630,7 @@ impl Application for Gallery {
             || tabs
             || chips
             || icon_buttons
+            || buttons
             || sliders
             || slider_forms
             || range_sliders
@@ -961,6 +971,9 @@ impl Application for Gallery {
                 if i != icon_button_demo::SECTION {
                     self.icon_button_demo.leave();
                 }
+                if i != button_demo::SECTION {
+                    self.button_demo.leave();
+                }
                 if i != slider_demo::SECTION {
                     self.slider_demo.leave();
                     self.slider_forms_demo.leave();
@@ -985,6 +998,7 @@ impl Application for Gallery {
             Message::TabsDemo(event) => self.tabs_demo.update(event, self.queue.as_ref()),
             Message::ChipDemo(event) => self.chip_demo.update(event),
             Message::IconButtonDemo(event) => self.icon_button_demo.update(event),
+            Message::ButtonDemo(event) => self.button_demo.update(event),
             Message::SliderDemo(event) => self.slider_demo.update(event),
             Message::SliderForms(event) => self.slider_forms_demo.update(event),
             Message::RangeSliderDemo(event) => self.range_slider_demo.update(event),
@@ -1201,6 +1215,9 @@ impl Application for Gallery {
         if self.icon_button_demo.visible() {
             return self.icon_button_demo.view(&t, self.dark);
         }
+        if self.button_demo.visible() {
+            return self.button_demo.view(&t, self.dark);
+        }
         if self.slider_demo.visible() {
             return self.slider_demo.view(&t, self.dark);
         }
@@ -1325,6 +1342,7 @@ impl Application for Gallery {
                             RangeSliderDemo::show_button(&t),
                             VerticalCenteredSliderDemo::show_button(&t),
                             SliderInsetDemo::show_button(&t),
+                            ButtonDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -1956,6 +1974,7 @@ mod web {
         state["tabs_demo"] = s.tabs_demo.inspect(&theme);
         state["chip_demo"] = s.chip_demo.inspect(&theme);
         state["icon_button_demo"] = s.icon_button_demo.inspect(&theme);
+        state["button_demo"] = s.button_demo.inspect(&theme, s.dark);
         state["slider_demo"] = s.slider_demo.inspect(&theme);
         state["slider_forms_demo"] = s.slider_forms_demo.inspect(&theme, s.dark);
         state["range_slider_demo"] = s.range_slider_demo.inspect(&theme, s.dark);

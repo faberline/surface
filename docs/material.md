@@ -186,6 +186,7 @@ does not change application state.
 | `chip` | Assist, suggestion, filter and input; input removal has its own action |
 | `chip_with_options` | Flat and elevated Assist, Filter and Suggestion, plus Input with one or two named actions |
 | `chip_in_grid` / `chip_grid` | Measured rows and one Tab entry, with arrows between the individual actions |
+| `button_with_options` | Material 3 Expressive commands and caller-controlled toggles with localized labels and optional vector icons. |
 | `standard_slider` | Horizontal Standard slider. Five track sizes, continuous values or discrete stops, mirrored RTL input, localized value text, and an independent focus outline. |
 | `slider` | Original controlled range and fixed track. Supports pointer drag, arrows, Home/End and Page Up/Down. |
 | `dialog` | Viewport scrim, adaptive panel, focus trap, Escape/outside dismiss, opener restore |
@@ -1053,6 +1054,35 @@ for its value label and more space for large or wrapped text.
 [WAI slider pattern](https://www.w3.org/WAI/ARIA/apg/patterns/slider/) ·
 [WAI vertical slider example](https://www.w3.org/WAI/ARIA/apg/patterns/slider/examples/slider-temperature/) ·
 [WAI multi-thumb sliders](https://www.w3.org/WAI/ARIA/apg/patterns/slider-multithumb/)
+
+## Common buttons
+
+Use `Theme::button_with_options` with `ButtonOptions::new`. Give each
+action a stable ID, a localized label, and the width it can use. The
+builder supports Elevated, Filled, Tonal, Outlined, and Text commands.
+Set `checked` for a toggle in one of the first four appearances. Apply
+the next checked state when the application receives the button message.
+Keep the action name stable as the checked state changes.
+
+Set `size` to ExtraSmall, Small, Medium, Large, or ExtraLarge. The
+minimum face heights are 32, 40, 56, 96, and 136 dp. Every target is at
+least 48 dp high and wide. The measured label can wrap and make the
+face taller at larger text scales. Leave 5 dp around the painted face for
+its focus outline.
+
+Use `ButtonIcon::Leading` or `ButtonIcon::Trailing` for one decorative
+vector icon. Set `direction` to match the container so the icon follows
+the logical side. Set `text_scale` from the current app text size.
+The button exposes one action to accessibility and uses the visible
+label unless you supply a different accessible name.
+
+Round and Square set the resting shape. An on toggle uses the other
+shape. During a pointer hold, the surface follows the pressed shape
+and clips the ripple to its face. Reduce Motion presents the state
+without moving through the spring.
+
+[Material 3 buttons](https://m3.material.io/components/buttons/specs) ·
+[WAI button pattern](https://www.w3.org/WAI/ARIA/apg/patterns/button/)
 
 ## Icon buttons
 
