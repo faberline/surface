@@ -25,6 +25,9 @@ pub(super) fn element(
     if let Some(role) = role {
         element.set_attribute("role", role)?;
     }
+    if role == Some("slider") && node.is_vertical_slider() {
+        element.set_attribute("aria-orientation", "vertical")?;
+    }
     if modal && matches!(role, Some("dialog" | "alertdialog")) {
         element.set_attribute("aria-modal", "true")?;
     }

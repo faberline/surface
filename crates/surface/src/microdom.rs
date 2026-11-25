@@ -218,6 +218,8 @@ pub struct Node {
     range: Option<RangeValue>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     slider_value_text: Option<String>,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    slider_vertical: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     adjustable: Option<Box<AdjustableValue>>,
     #[serde(skip)]
@@ -297,6 +299,7 @@ impl Node {
             mixed: false,
             range: None,
             slider_value_text: None,
+            slider_vertical: false,
             adjustable: None,
             web_adjustable_value_description: false,
             tab_index: None,
@@ -905,6 +908,15 @@ impl Node {
         self.slider_value_text
             .as_deref()
             .filter(|text| self.role == Role::Slider && !text.trim().is_empty())
+    }
+    /// Set the orientation exposed for a slider. The owner must also
+    /// provide vertical layout and input behavior.
+    pub fn with_slider_vertical(mut self, vertical: bool) -> Self {
+        self.slider_vertical = vertical && self.role == Role::Slider;
+        self
+    }
+    pub fn is_vertical_slider(&self) -> bool {
+        self.role == Role::Slider && self.slider_vertical
     }
     /// Expose this named Group as an adjustable control in accessibility
     /// adapters. Slider geometry, pointer hit testing and legacy ranges are

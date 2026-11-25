@@ -286,6 +286,33 @@ fn slider_value_text_is_optional_and_preserves_the_numeric_range() {
 }
 
 #[test]
+fn vertical_slider_orientation_is_role_checked_and_omits_the_legacy_default() {
+    let slider = Node::new(Role::Slider, "Volume").id("volume");
+    let old_wire = serde_json::to_string(&slider).unwrap();
+    assert!(!old_wire.contains("slider_vertical"));
+    let old: Node = serde_json::from_str(&old_wire).unwrap();
+    assert!(!old.is_vertical_slider());
+
+    let authored = old.with_slider_vertical(true);
+    let wire = serde_json::to_value(authored).unwrap();
+    assert_eq!(wire["slider_vertical"], true);
+    let restored: Node = serde_json::from_value(wire).unwrap();
+    assert!(restored.is_vertical_slider());
+    assert_eq!(
+        serde_json::to_string(&restored.with_slider_vertical(false)).unwrap(),
+        old_wire
+    );
+
+    let progress = Node::new(Role::Progress, "Progress").with_slider_vertical(true);
+    assert!(!progress.is_vertical_slider());
+    let mut wire = serde_json::to_value(progress).unwrap();
+    assert!(wire.get("slider_vertical").is_none());
+    wire["slider_vertical"] = true.into();
+    let invalid: Node = serde_json::from_value(wire).unwrap();
+    assert!(!invalid.is_vertical_slider());
+}
+
+#[test]
 fn web_multiselect_listbox_round_trip_keeps_base_roles_and_checked_values() {
     let ordinary = Node::new(Role::Checkbox, "Coffee").checked(true);
     let json = serde_json::to_value(&ordinary).unwrap();

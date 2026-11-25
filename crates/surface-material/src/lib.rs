@@ -206,6 +206,7 @@ pub use split_button_motion::SplitButtonMotion;
 pub use standard_navigation_drawer::{
     StandardNavigationDrawerMode, StandardNavigationDrawerOptions,
 };
+pub use standard_slider::VerticalStandardSliderPlacement;
 pub use standard_slider::{StandardSliderMode, StandardSliderOptions, StandardSliderSize};
 pub use switch::{SwitchIcons, SwitchMotion, SwitchOptions, SwitchPose};
 pub use tab_bar::{

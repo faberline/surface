@@ -1,6 +1,6 @@
 use std::num::NonZeroU16;
 
-use surface::{RangeValue, Rect};
+use surface::RangeValue;
 
 use crate::EditKey;
 
@@ -88,15 +88,22 @@ impl SliderInputOptions {
         })
     }
 
-    pub(crate) fn pointer_value(self, range: RangeValue, rail: Rect, x: f32) -> f64 {
-        let fraction = if x <= rail.x {
+    pub(crate) fn pointer_value(
+        self,
+        range: RangeValue,
+        point: f32,
+        start: f32,
+        length: f32,
+        bottom_to_top: bool,
+    ) -> f64 {
+        let fraction = if point <= start {
             0.
-        } else if x >= rail.x + rail.width {
+        } else if point >= start + length {
             1.
         } else {
-            (f64::from(x) - f64::from(rail.x)) / f64::from(rail.width)
+            (f64::from(point) - f64::from(start)) / f64::from(length)
         };
-        let fraction = if self.reverse_horizontal {
+        let fraction = if bottom_to_top || self.reverse_horizontal {
             1. - fraction
         } else {
             fraction
@@ -160,9 +167,18 @@ mod tests {
             value: 0.,
             step: 1.,
         };
-        let rail = Rect::new(0.2, 0., 0.6, 48.);
+        let start = 0.2;
+        let length = 0.6;
         assert_eq!(
-            input.pointer_value(range, rail, rail.x + rail.width),
+            input.pointer_value(range, start + length, start, length, false),
+            range.max
+        );
+        assert_eq!(
+            input.pointer_value(range, start + length, start, length, true),
+            range.min
+        );
+        assert_eq!(
+            input.pointer_value(range, start, start, length, true),
             range.max
         );
     }
