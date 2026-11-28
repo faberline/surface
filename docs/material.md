@@ -1361,6 +1361,24 @@ An empty disabled field with an above-field label uses the disabled ink.
 
 [Material placeholder transition phases](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/TextFieldImpl.kt#2048)
 
+### Field boundary motion
+
+The Outlined border and Filled indicator keep the Material 3 widths of
+1 dp at rest and 3 dp when focused. The Filled indicator changes width
+with Standard Fast Spatial. The Outlined border changes width with
+Standard Fast Effects. Both use Fast Effects in Oklab for boundary ink.
+Each track keeps its current position and speed if the target changes again.
+
+The border still opens around the measured label. The width changes
+inside the field, so the editor, caret and action stay in their measured
+positions. Disabled fields and Reduce Motion apply width and ink
+immediately. A theme change applies the new boundary ink immediately.
+A re-enabled field uses enabled ink from its first frame.
+
+[Material 3 text field specifications](https://m3.material.io/components/text-fields/specs) ·
+[Filled indicator motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextField.kt#773) ·
+[Outlined border motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextFieldDefaults.kt#1164)
+
 ## Baseline segmented buttons
 
 Use `Theme::baseline_segmented_button` for two to five related choices in

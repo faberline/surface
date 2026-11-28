@@ -639,6 +639,7 @@ pub enum ToggleSpring {
     StandardFastSpatial,
     StandardSlowSpatial,
     StandardDefaultEffects,
+    StandardFastEffects,
 }
 
 impl ToggleSpring {
@@ -648,6 +649,7 @@ impl ToggleSpring {
             Self::StandardFastSpatial => STANDARD_FAST_SPATIAL,
             Self::StandardSlowSpatial => (300., 0.9),
             Self::StandardDefaultEffects => (1600., 1.),
+            Self::StandardFastEffects => (3800., 1.),
         }
     }
 }
@@ -867,7 +869,7 @@ impl<A: Application> Runtime<A> {
         self.animation_request_next
             || ((self.motion.running
                 || self.press_ripple.needs_frame()
-                || self.editor_label_motion.running)
+                || self.editor_motion.running)
                 && !self.motion.reduced)
     }
     pub(crate) fn input_time_ms(&self) -> Option<f64> {

@@ -28,7 +28,7 @@ type Rect = [f64; 4];
 type Rgb = [u8; 3];
 
 #[derive(Clone, Copy)]
-enum Field {
+pub(super) enum Field {
     Outlined,
     Filled,
 }
@@ -41,21 +41,21 @@ impl Field {
         }
     }
 
-    fn model(self) -> &'static str {
+    pub(super) fn model(self) -> &'static str {
         match self {
             Self::Outlined => "outlined_text_field_demo",
             Self::Filled => "filled_text_field_demo",
         }
     }
 
-    fn appearance(self) -> &'static str {
+    pub(super) fn appearance(self) -> &'static str {
         match self {
             Self::Outlined => "outlined",
             Self::Filled => "filled",
         }
     }
 
-    fn id(self, suffix: &str) -> String {
+    pub(super) fn id(self, suffix: &str) -> String {
         format!("{}-{suffix}", self.prefix())
     }
 }
@@ -181,7 +181,7 @@ fn bottom(rect: Rect) -> f64 {
     rect[1] + rect[3]
 }
 
-async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Value> {
+pub(super) async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Value> {
     tab.goto(url).await?;
     crate::smoke::ready(tab, "gallery").await?;
     resize(tab, 960, 2500).await?;
@@ -207,6 +207,7 @@ async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Valu
             && model["text_scale"] == if compact { 2. } else { 1. },
         "the scene begins with an untouched empty field and the required theme"
     );
+    super::material_list_corners::leave_rows(tab).await?;
     reduced_motion(tab, false).await?;
     freeze(tab).await?;
     tab.eval(r#"(() => {
@@ -219,19 +220,24 @@ async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Valu
     Ok(model)
 }
 
-async fn enter(tab: &Tab, field: Field) -> Result<()> {
+pub(super) async fn enter(tab: &Tab, field: Field) -> Result<()> {
     tab.press("Tab").await?;
     focus(tab, &field.id("editable"), "surface-text-input").await?;
     tab.settle().await
 }
 
-async fn leave(tab: &Tab, field: Field) -> Result<()> {
+pub(super) async fn leave(tab: &Tab, field: Field) -> Result<()> {
     tab.press("Shift+Tab").await?;
     focused(tab, &field.id("error")).await?;
     tab.settle().await
 }
 
-async fn textbox(tab: &Tab, label: &str, focused: bool, help: Option<&str>) -> Result<Value> {
+pub(super) async fn textbox(
+    tab: &Tab,
+    label: &str,
+    focused: bool,
+    help: Option<&str>,
+) -> Result<Value> {
     let tree = ax_tree(tab).await?;
     let node = ax(&tree, "textbox", label)?;
     let count = tree
@@ -375,13 +381,14 @@ struct Shot {
     gap_columns: usize,
     notch: Option<[Rgb; 2]>,
     outline_sides: Option<[Rgb; 3]>,
+    outline_rgb: Option<Rgb>,
 }
 
 impl Shot {
     fn report(&self, ms: u16) -> Value {
         json!({"png":self.name,"ms":ms,"label":self.glyphs.bounds,"label_pixels":self.glyphs.pixels,
             "label_rgb":self.glyphs.color,"placeholder_pixels":self.placeholder,"gap_pixel_columns":self.gap_columns,
-            "notch":self.notch,"outline_sides":self.outline_sides})
+            "notch":self.notch,"outline_sides":self.outline_sides,"outline_rgb":self.outline_rgb})
     }
 }
 
@@ -417,17 +424,16 @@ fn sample(
     paint: LabelPaint<'_>,
     name: String,
     image: &Raster,
+    border: Option<Rgb>,
 ) -> Result<Shot> {
-    let (label, active, placeholder) = match paint {
-        LabelPaint::Idle(color) => (color, false, 0),
-        LabelPaint::Focused(color) => (
-            color,
-            true,
-            color_pixels(image, geometry.clearance(), ink.label)?,
-        ),
+    let (label, placeholder) = match paint {
+        LabelPaint::Idle(color) => (color, 0),
+        LabelPaint::Focused(color) => {
+            (color, color_pixels(image, geometry.clearance(), ink.label)?)
+        }
         LabelPaint::FirstFocus(rest) => {
             assert_same_color_mask(rest, image, geometry.clearance(), ink.label)?;
-            (ink.label, true, 0)
+            (ink.label, 0)
         }
     };
     let gap = matches!(geometry.field, Field::Outlined);
@@ -441,15 +447,10 @@ fn sample(
             0
         },
         notch: gap.then(|| notch_sample(image, geometry)).transpose()?,
-        outline_sides: gap
-            .then(|| {
-                sides(
-                    image,
-                    geometry.face,
-                    if active { ink.primary } else { ink.outline },
-                )
-            })
+        outline_sides: border
+            .map(|color| sides(image, geometry.face, color))
             .transpose()?,
+        outline_rgb: border,
     })
 }
 
@@ -460,10 +461,11 @@ async fn capture(
     ink: Ink,
     paint: LabelPaint<'_>,
     name: &str,
+    border: Option<Rgb>,
 ) -> Result<Shot> {
     geometry.assert_stable(tab).await?;
     let (name, image) = photo(tab, env, name).await?;
-    sample(geometry, ink, paint, name, &image)
+    sample(geometry, ink, paint, name, &image, border)
 }
 
 async fn outlined(
@@ -488,7 +490,14 @@ async fn outlined(
     let ink = Ink::read(&model, field)?;
     geometry.assert_stable(tab).await?;
     let (name, neutral) = photo(tab, env, "outlined-rest").await?;
-    let rest = sample(&geometry, ink, LabelPaint::Idle(ink.label), name, &neutral)?;
+    let rest = sample(
+        &geometry,
+        ink,
+        LabelPaint::Idle(ink.label),
+        name,
+        &neutral,
+        Some(ink.outline),
+    )?;
     let proxy = textbox(tab, TITLE, false, Some(HELP)).await?;
     enter(tab, field).await?;
     let active = textbox(tab, TITLE, true, Some(HELP)).await?;
@@ -503,6 +512,7 @@ async fn outlined(
         ink,
         LabelPaint::FirstFocus(&neutral),
         "outlined-first",
+        Some(ink.outline),
     )
     .await?;
     check_eq!(
@@ -515,19 +525,36 @@ async fn outlined(
         "the first frame has a closed top and no overlapping placeholder"
     );
     tick(tab, EARLY).await?;
-    let early = capture(
-        tab,
-        env,
+    geometry.assert_stable(tab).await?;
+    let (early_name, early_image) = photo(tab, env, "outlined-early").await?;
+    let early_outline = golden::between(ink.outline, ink.primary, EARLY);
+    let early = sample(
         &geometry,
         ink,
         LabelPaint::Focused(golden::between(ink.label, ink.primary, EARLY)),
-        "outlined-early",
-    )
-    .await?;
-    check_eq!(
-        early.notch,
-        Some([ink.paper, ink.primary]),
-        "the early gap removes only the upper part of the three-dp stroke"
+        early_name,
+        &early_image,
+        Some(early_outline),
+    )?;
+    let y = geometry.face[1];
+    let gap_x = geometry.anchor() - 2.;
+    let full_x = geometry.face[0] + geometry.face[2] * 0.75;
+    let shallow = [0.25, 0.75, 1.25].map(|depth| [gap_x, y + depth]);
+    let uncut = shallow.map(|[_, y]| [full_x, y]);
+    let scan = |points: [[f64; 2]; 3]| {
+        points
+            .map(|[x, y]| early_image.sample(x, y))
+            .into_iter()
+            .collect::<Result<Vec<_>>>()
+    };
+    let cut_rgb = scan(shallow)?;
+    let full_rgb = scan(uncut)?;
+    check!(
+        cut_rgb[0] == ink.paper
+            && full_rgb[0] == early_outline
+            && cut_rgb[1..].iter().any(|sample| *sample != ink.paper)
+            && full_rgb[2] != ink.paper,
+        "the early cut clears the exterior and leaves residual inside the now-thinner line: {cut_rgb:?} vs {full_rgb:?}"
     );
     tick(tab, MIDDLE).await?;
     let mid = capture(
@@ -537,6 +564,7 @@ async fn outlined(
         ink,
         LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
         "outlined-middle",
+        Some(golden::between(ink.outline, ink.primary, MIDDLE)),
     )
     .await?;
     tick(tab, SETTLED).await?;
@@ -547,6 +575,7 @@ async fn outlined(
         ink,
         LabelPaint::Focused(ink.primary),
         "outlined-settled",
+        Some(ink.primary),
     )
     .await?;
     check!(
@@ -570,7 +599,8 @@ async fn outlined(
     );
     report["outlined"] = json!({"face":geometry.face,"inline":geometry.inline,"floated":geometry.floated,
         "helper":geometry.help,"palette":model["palette"],"proxy":proxy,"active":active,
-        "frames":[rest.report(0),first.report(0),early.report(EARLY),mid.report(MIDDLE),settled.report(SETTLED)]});
+        "frames":[rest.report(0),first.report(0),early.report(EARLY),mid.report(MIDDLE),settled.report(SETTLED)],
+        "early_shallow":{"cut_points":shallow,"uncut_points":uncut,"cut_rgb":cut_rgb,"uncut_rgb":full_rgb}});
     Ok((geometry, ink, settled))
 }
 
@@ -587,6 +617,7 @@ async fn reversal(
     let proxy = textbox(tab, TITLE, false, Some(HELP)).await?;
     tick(tab, turn).await?;
     let falling_color = golden::between(ink.primary, ink.label, MIDDLE);
+    let falling_outline = golden::between(ink.primary, ink.outline, MIDDLE);
     let falling = capture(
         tab,
         env,
@@ -594,6 +625,7 @@ async fn reversal(
         ink,
         LabelPaint::Idle(falling_color),
         "outlined-falling",
+        Some(falling_outline),
     )
     .await?;
     check!(
@@ -609,6 +641,7 @@ async fn reversal(
         ink,
         LabelPaint::Focused(falling_color),
         "outlined-retarget",
+        Some(falling_outline),
     )
     .await?;
     check_eq!(
@@ -624,6 +657,7 @@ async fn reversal(
         ink,
         LabelPaint::Focused(ink.primary),
         "outlined-reduced",
+        Some(ink.primary),
     )
     .await?;
     check_eq!(
@@ -667,7 +701,14 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     let geometry = Geometry::read(tab, field, false).await?;
     let ink = Ink::read(&model, field)?;
     let (name, neutral) = photo(tab, env, "filled-rest").await?;
-    let rest = sample(&geometry, ink, LabelPaint::Idle(ink.label), name, &neutral)?;
+    let rest = sample(
+        &geometry,
+        ink,
+        LabelPaint::Idle(ink.label),
+        name,
+        &neutral,
+        None,
+    )?;
     enter(tab, field).await?;
     let active = textbox(tab, TITLE, true, Some(HELP)).await?;
     let start = capture(
@@ -677,6 +718,7 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
         ink,
         LabelPaint::FirstFocus(&neutral),
         "filled-first",
+        None,
     )
     .await?;
     tick(tab, MIDDLE).await?;
@@ -687,6 +729,7 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
         ink,
         LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
         "filled-middle",
+        None,
     )
     .await?;
     check!(
@@ -730,6 +773,7 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
         ink,
         LabelPaint::Focused(ink.primary),
         "filled-settled",
+        None,
     )
     .await?;
     check!(
@@ -863,7 +907,7 @@ async fn draft_ax(tab: &Tab, active: bool, invalid: bool) -> Result<Value> {
     Ok(node)
 }
 
-async fn toggle_error(tab: &Tab, field: Field, enabled: bool) -> Result<()> {
+pub(super) async fn toggle_error(tab: &Tab, field: Field, enabled: bool) -> Result<()> {
     leave(tab, field).await?;
     tab.press("Enter").await?;
     until(
@@ -1042,6 +1086,7 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
         ink,
         LabelPaint::Idle(ink.label),
         "rtl-rest",
+        Some(ink.outline),
     )
     .await?;
     enter(tab, field).await?;
@@ -1053,6 +1098,7 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
         ink,
         LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
         "rtl-middle",
+        Some(golden::between(ink.outline, ink.primary, MIDDLE)),
     )
     .await?;
     check!(
@@ -1201,7 +1247,7 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
 // The test uses the CSS Color 4 reference path through XYZ D65, independent
 // of the direct sRGB/Oklab matrices in Surface. All fixture label inks are
 // opaque. https://www.w3.org/TR/css-color-4/#color-conversion-code
-mod golden {
+pub(super) mod golden {
     use super::Rgb;
 
     type Color = [f64; 3];
@@ -1280,20 +1326,20 @@ mod golden {
         })
     }
 
-    pub(super) struct Pose {
+    pub(in crate::material) struct Pose {
         position: Color,
         velocity: Color,
     }
 
     impl Pose {
-        pub(super) fn at(rgb: Rgb) -> Self {
+        pub(in crate::material) fn at(rgb: Rgb) -> Self {
             Self {
                 position: to_lab(rgb),
                 velocity: [0.; 3],
             }
         }
 
-        pub(super) fn towards(&self, rgb: Rgb, ms: u16) -> Self {
+        pub(in crate::material) fn towards(&self, rgb: Rgb, ms: u16) -> Self {
             let target = to_lab(rgb);
             let seconds = f64::from(ms) / 1000.;
             let omega = 3800_f64.sqrt();
@@ -1312,12 +1358,12 @@ mod golden {
             }
         }
 
-        pub(super) fn rgb(&self) -> Rgb {
+        pub(in crate::material) fn rgb(&self) -> Rgb {
             to_srgb(self.position)
         }
     }
 
-    pub(super) fn between(from: Rgb, to: Rgb, ms: u16) -> Rgb {
+    pub(in crate::material) fn between(from: Rgb, to: Rgb, ms: u16) -> Rgb {
         Pose::at(from).towards(to, ms).rgb()
     }
 

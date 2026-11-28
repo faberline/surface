@@ -37,6 +37,27 @@ pub struct TextInputLabelMotion {
 pub(crate) type TextInputLabelContour =
     Box<dyn Fn(TextInputPaintState, Rect, Option<TextInputLabelMotion>) -> Option<FillContour>>;
 
+/// Motion for the paint of a text-input border or bottom indicator.
+pub struct TextInputBoundaryMotion<'a> {
+    /// The unfocused and focused widths, in that order, in logical pixels.
+    pub widths: [f32; 2],
+    pub width_spring: ToggleSpring,
+    /// The theme's boundary colors. Changing the palette settles the ink.
+    pub palette: &'a [Color],
+}
+
+type BoundaryContour =
+    Box<dyn Fn(Rect, Option<TextInputLabelMotion>, f32, Color) -> Option<FillContour>>;
+
+pub(crate) struct Boundary {
+    pub(crate) label: Option<String>,
+    pub(crate) widths: [f32; 2],
+    pub(crate) width_spring: ToggleSpring,
+    pub(crate) palette: Box<[Color]>,
+    pub(crate) color: Box<dyn Fn(TextInputPaintState) -> Color>,
+    pub(crate) paint: BoundaryContour,
+}
+
 pub(crate) struct LabelColorMotion {
     pub(crate) fallback: String,
     pub(crate) palette: Box<[Color]>,
@@ -59,6 +80,7 @@ pub(crate) enum Effect {
         label: String,
         paint: TextInputLabelContour,
     },
+    Boundary(Boundary),
 }
 
 pub(crate) struct Binding {
@@ -73,20 +95,92 @@ pub(crate) struct PaintBindings {
 }
 
 #[derive(Default)]
-pub(crate) struct LabelMotions {
-    tracks: BTreeMap<(String, String), LabelTrack>,
+pub(crate) struct EditorMotions {
+    labels: BTreeMap<(String, String), LabelTrack>,
+    boundaries: BTreeMap<(String, String), BoundaryTrack>,
     pub(crate) running: bool,
 }
 
 struct LabelTrack {
     spatial: ToggleMotion,
-    color: Option<LabelColorTrack>,
+    color: Option<PaintColorTrack>,
     placeholder: Option<PlaceholderMotion>,
 }
 
-struct LabelColorTrack {
+struct PaintColorTrack {
     spring: ColorSpring,
     palette: Box<[Color]>,
+}
+
+impl PaintColorTrack {
+    fn new(ink: Color, palette: &[Color]) -> Self {
+        Self {
+            spring: ColorSpring::new(ink),
+            palette: palette.into(),
+        }
+    }
+
+    fn sample(
+        &mut self,
+        ink: Color,
+        palette: &[Color],
+        now: Option<f64>,
+        snap: bool,
+    ) -> (Color, bool) {
+        let palette_changed = self.palette.as_ref() != palette;
+        if palette_changed {
+            self.palette = palette.into();
+        }
+        self.spring.sample(ink, now, snap || palette_changed)
+    }
+}
+
+struct BoundaryTrack {
+    width: ToggleMotion,
+    width_spec: ([f32; 2], ToggleSpring),
+    color: Option<PaintColorTrack>,
+}
+
+impl BoundaryTrack {
+    fn new(boundary: &Boundary, focused: bool, ink: Color) -> Self {
+        Self {
+            width: ToggleMotion::new(focused),
+            width_spec: (boundary.widths, boundary.width_spring),
+            color: Some(PaintColorTrack::new(ink, &boundary.palette)),
+        }
+    }
+
+    fn sample(
+        &mut self,
+        boundary: &Boundary,
+        focused: bool,
+        ink: Color,
+        now: Option<f64>,
+        snap: bool,
+        enabled: bool,
+    ) -> (f32, Color, bool) {
+        let width_spec = (boundary.widths, boundary.width_spring);
+        let width_changed = self.width_spec != width_spec;
+        self.width_spec = width_spec;
+        let (progress, width_running) =
+            self.width
+                .sample(focused, now, snap || width_changed, boundary.width_spring);
+        let (ink, ink_running) = if enabled {
+            self.color
+                .get_or_insert_with(|| PaintColorTrack::new(ink, &boundary.palette))
+                .sample(ink, &boundary.palette, now, snap)
+        } else {
+            self.color = None;
+            (ink, false)
+        };
+        let [idle, focus] = boundary.widths;
+        let width = match progress {
+            0. => idle,
+            1. => focus,
+            _ => interpolate(idle, focus, progress),
+        };
+        (width, ink, width_running || ink_running)
+    }
 }
 
 #[derive(Default)]
@@ -242,10 +336,10 @@ impl<A: Application> Runtime<A> {
         computed: &ComputedDom,
         hovered: Option<NodeId>,
         fonts: &mut impl TextMeasurer,
-        mut previous: LabelMotions,
+        previous: &mut EditorMotions,
         frame: &mut EditorPaint,
-    ) -> LabelMotions {
-        let mut next = LabelMotions::default();
+    ) -> EditorMotions {
+        let mut next = EditorMotions::default();
         for (label, binding) in &self.paint_bindings.text_inputs {
             let Effect::Label {
                 resting,
@@ -294,7 +388,7 @@ impl<A: Application> Runtime<A> {
             };
             let enabled = !editor_node.is_disabled();
             let active = enabled && self.in_scope(editor);
-            let (key, mut track) = previous.tracks.remove_entry(&key).unwrap_or_else(|| {
+            let (key, mut track) = previous.labels.remove_entry(&key).unwrap_or_else(|| {
                 (
                     key,
                     LabelTrack {
@@ -318,17 +412,10 @@ impl<A: Application> Runtime<A> {
                 .as_ref()
                 .filter(|_| enabled && fallback.is_some());
             let (ink, color_running) = if let Some(motion) = animated_color {
-                let color = track.color.get_or_insert_with(|| LabelColorTrack {
-                    spring: ColorSpring::new(target_color),
-                    palette: motion.palette.clone(),
-                });
-                let palette_changed = color.palette != motion.palette;
-                if palette_changed {
-                    color.palette.clone_from(&motion.palette);
-                }
-                color
-                    .spring
-                    .sample(target_color, now, snap || palette_changed)
+                track
+                    .color
+                    .get_or_insert_with(|| PaintColorTrack::new(target_color, &motion.palette))
+                    .sample(target_color, &motion.palette, now, snap)
             } else {
                 track.color = None;
                 (target_color, false)
@@ -342,7 +429,7 @@ impl<A: Application> Runtime<A> {
                 &mut track.placeholder,
             );
             next.running |= spatial_running || color_running || hint_running;
-            next.tracks.insert(key, track);
+            next.labels.insert(key, track);
 
             if let Some(fallback) = fallback {
                 if !has_endpoints {
@@ -511,16 +598,16 @@ impl<A: Application> Runtime<A> {
         fonts: &mut impl TextMeasurer,
     ) -> Vec<(NodeId, ResolvedPaint)> {
         if self.paint_bindings.text_inputs.is_empty() {
-            self.editor_label_motion = LabelMotions::default();
+            self.editor_motion = EditorMotions::default();
             return Vec::new();
         }
         let hovered = self
             .pointer_position
             .and_then(|(x, y)| computed.hit_test_where(&self.dom, x, y, |id| self.in_scope(id)));
-        let previous = std::mem::take(&mut self.editor_label_motion);
+        let mut previous = std::mem::take(&mut self.editor_motion);
         let mut frame = EditorPaint::default();
-        self.editor_label_motion =
-            self.resolve_text_input_labels(computed, hovered, fonts, previous, &mut frame);
+        let mut next =
+            self.resolve_text_input_labels(computed, hovered, fonts, &mut previous, &mut frame);
         for (id, binding) in &self.paint_bindings.text_inputs {
             if matches!(binding.effect, Effect::Label { .. }) {
                 continue;
@@ -563,6 +650,49 @@ impl<A: Application> Runtime<A> {
                     paint(state, computed.nodes[id.index()].bounds, pose)
                         .map(ResolvedPaint::Contour)
                 }
+                Effect::Boundary(boundary) => {
+                    let editor = self.dom.by_id(&binding.editor);
+                    let geometry = &computed.nodes[id.index()];
+                    let pose = editor
+                        .zip(
+                            boundary
+                                .label
+                                .as_deref()
+                                .and_then(|label| self.dom.by_id(label)),
+                        )
+                        .and_then(|key| frame.labels.get(&key).copied());
+                    let ink = (boundary.color)(state);
+                    let (width, ink) = if let Some(name) =
+                        self.dom.get(*id).ok().and_then(surface::Node::stable_id)
+                    {
+                        let key = (binding.editor.clone(), name.to_owned());
+                        let mut track = previous
+                            .boundaries
+                            .remove(&key)
+                            .unwrap_or_else(|| BoundaryTrack::new(boundary, state.is_focused, ink));
+                        let enabled = editor.is_some_and(|editor| {
+                            self.dom.get(editor).is_ok_and(|node| !node.is_disabled())
+                        });
+                        let active = enabled && editor.is_some_and(|editor| self.in_scope(editor));
+                        let snap = self.reduced_motion()
+                            || !active
+                            || !has_area(geometry.bounds.intersect(geometry.clip));
+                        let (width, ink, running) = track.sample(
+                            boundary,
+                            state.is_focused,
+                            ink,
+                            self.input_time_ms(),
+                            snap,
+                            enabled,
+                        );
+                        next.running |= running;
+                        next.boundaries.insert(key, track);
+                        (width, ink)
+                    } else {
+                        (boundary.widths[usize::from(state.is_focused)], ink)
+                    };
+                    (boundary.paint)(geometry.bounds, pose, width, ink).map(ResolvedPaint::Contour)
+                }
                 Effect::Label { .. } => unreachable!("label paint was resolved before contours"),
             };
             if let Some(paint) = paint {
@@ -571,6 +701,7 @@ impl<A: Application> Runtime<A> {
                 frame.hidden.push(*id);
             }
         }
+        self.editor_motion = next;
         if !frame.hidden.is_empty() {
             let mut mask = vec![false; self.dom.len()];
             for id in frame.hidden {
