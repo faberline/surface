@@ -1,0 +1,67 @@
+--- a/crates/surface-app/src/editor_paint.rs
++++ b/crates/surface-app/src/editor_paint.rs
+@@ -250,7 +250,8 @@
+             let from = resting_geometry.bounds;
+             let to = floating_geometry.bounds;
+             let has_endpoints = has_area(from) && has_area(to);
+-            let parent = self.dom.get(editor).expect("validated text input").parent();
++            let editor_node = self.dom.get(editor).expect("validated text input");
++            let parent = editor_node.parent();
+             let fallback = color_motion
+                 .as_ref()
+                 .and_then(|motion| self.dom.by_id(&motion.fallback))
+@@ -274,8 +275,8 @@
+                     has_area(geometry.bounds.intersect(geometry.clip))
+                 })
+             };
+-            let active =
+-                self.in_scope(editor) && self.dom.get(editor).is_ok_and(|node| !node.is_disabled());
++            let enabled = !editor_node.is_disabled();
++            let active = enabled && self.in_scope(editor);
+             let (key, mut track) = previous.tracks.remove_entry(&key).unwrap_or_else(|| {
+                 (
+                     key,
+@@ -294,23 +295,26 @@
+                 ToggleSpring::StandardFastSpatial,
+             );
+             let target_color = color(state);
+-            let (ink, color_running) =
+-                if let Some((motion, _)) = color_motion.as_ref().zip(fallback) {
+-                    let color = track.color.get_or_insert_with(|| LabelColorTrack {
+-                        spring: ColorSpring::new(target_color),
+-                        palette: motion.palette.clone(),
+-                    });
+-                    let palette_changed = color.palette != motion.palette;
+-                    if palette_changed {
+-                        color.palette.clone_from(&motion.palette);
+-                    }
+-                    color
+-                        .spring
+-                        .sample(target_color, now, snap || palette_changed)
+-                } else {
+-                    track.color = None;
+-                    (target_color, false)
+-                };
++            // Never carry muted disabled ink into the first enabled frame.
++            let animated_color = color_motion
++                .as_ref()
++                .filter(|_| enabled && fallback.is_some());
++            let (ink, color_running) = if let Some(motion) = animated_color {
++                let color = track.color.get_or_insert_with(|| LabelColorTrack {
++                    spring: ColorSpring::new(target_color),
++                    palette: motion.palette.clone(),
++                });
++                let palette_changed = color.palette != motion.palette;
++                if palette_changed {
++                    color.palette.clone_from(&motion.palette);
++                }
++                color
++                    .spring
++                    .sample(target_color, now, snap || palette_changed)
++            } else {
++                track.color = None;
++                (target_color, false)
++            };
+             next.running |= spatial_running || color_running;
+             next.tracks.insert(key, track);
+ 
