@@ -1092,6 +1092,8 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     let probes = solid_probes(&idle, above, ink.label)?;
     tab.press("Tab").await?;
     focus(tab, &long, "surface-text-input").await?;
+    // Paint the focus change at the locked time before sampling the spring.
+    tab.settle().await?;
     tick(tab, SETTLED + MIDDLE).await?;
     let color = golden::between(ink.label, ink.primary, MIDDLE);
     let (mid_name, middle) = photo(tab, env, "rtl-above-label-middle").await?;
