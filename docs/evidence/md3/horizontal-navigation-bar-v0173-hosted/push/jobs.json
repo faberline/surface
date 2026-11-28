@@ -1,0 +1,253 @@
+{
+  "jobs": [
+    {
+      "check_run_url": "https://api.github.com/repos/faberline/surface/check-runs/141015132629",
+      "completed_at": "2026-11-28T14:58:53Z",
+      "conclusion": "success",
+      "created_at": "2026-11-28T14:51:27Z",
+      "head_branch": "codex/md3-horizontal-flexible-navigation-bar-v0173",
+      "head_sha": "c2571a3d818ddaf0cb7874998d1c39f0ffc7b1f2",
+      "html_url": "https://github.com/faberline/surface/actions/runs/46156800398/job/141015132629",
+      "id": 141015132629,
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "name": "build-and-behavior",
+      "node_id": "CR_kwDOVhkn5c8AAAAg1Sgp1Q",
+      "run_attempt": 1,
+      "run_id": 46156800398,
+      "run_url": "https://api.github.com/repos/faberline/surface/actions/runs/46156800398",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions",
+      "runner_id": 1000076990,
+      "runner_name": "GitHub Actions 1000076990",
+      "started_at": "2026-11-28T14:51:29Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completed_at": "2026-11-28T14:51:31Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "started_at": "2026-11-28T14:51:30Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:32Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "started_at": "2026-11-28T14:51:31Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:41Z",
+          "conclusion": "success",
+          "name": "Run dtolnay/rust-toolchain@1.96.1",
+          "number": 3,
+          "started_at": "2026-11-28T14:51:32Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:49Z",
+          "conclusion": "success",
+          "name": "Run sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev",
+          "number": 4,
+          "started_at": "2026-11-28T14:51:41Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:56Z",
+          "conclusion": "success",
+          "name": "Run cargo xtask provenance",
+          "number": 5,
+          "started_at": "2026-11-28T14:51:49Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:59Z",
+          "conclusion": "success",
+          "name": "Run cargo fmt --all --check",
+          "number": 6,
+          "started_at": "2026-11-28T14:51:56Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:53:40Z",
+          "conclusion": "success",
+          "name": "Run cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "number": 7,
+          "started_at": "2026-11-28T14:51:59Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:58:10Z",
+          "conclusion": "success",
+          "name": "Run cargo test --locked --workspace --all-features",
+          "number": 8,
+          "started_at": "2026-11-28T14:53:40Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:58:45Z",
+          "conclusion": "success",
+          "name": "Run cargo check --locked --target wasm32-unknown-unknown -p surface-showcase -p surface-material-gallery --all-features --lib",
+          "number": 9,
+          "started_at": "2026-11-28T14:58:10Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:58:50Z",
+          "conclusion": "success",
+          "name": "Run cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --all-features --lib --test consumer_contract",
+          "number": 10,
+          "started_at": "2026-11-28T14:58:45Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:58:50Z",
+          "conclusion": "success",
+          "name": "Run cargo check --locked --target wasm32-unknown-unknown -p ui-runtime --no-default-features --lib --test consumer_contract",
+          "number": 11,
+          "started_at": "2026-11-28T14:58:50Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:58:50Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 22,
+          "started_at": "2026-11-28T14:58:50Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:58:50Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 23,
+          "started_at": "2026-11-28T14:58:50Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://api.github.com/repos/faberline/surface/actions/jobs/141015132629",
+      "workflow_name": "Rust"
+    },
+    {
+      "check_run_url": "https://api.github.com/repos/faberline/surface/check-runs/141015132793",
+      "completed_at": "2026-11-28T15:28:39Z",
+      "conclusion": "success",
+      "created_at": "2026-11-28T14:51:27Z",
+      "head_branch": "codex/md3-horizontal-flexible-navigation-bar-v0173",
+      "head_sha": "c2571a3d818ddaf0cb7874998d1c39f0ffc7b1f2",
+      "html_url": "https://github.com/faberline/surface/actions/runs/46156800398/job/141015132793",
+      "id": 141015132793,
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "name": "browser-e2e",
+      "node_id": "CR_kwDOVhkn5c8AAAAg1SgqeQ",
+      "run_attempt": 1,
+      "run_id": 46156800398,
+      "run_url": "https://api.github.com/repos/faberline/surface/actions/runs/46156800398",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions",
+      "runner_id": 1000076991,
+      "runner_name": "GitHub Actions 1000076991",
+      "started_at": "2026-11-28T14:51:29Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completed_at": "2026-11-28T14:51:32Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "started_at": "2026-11-28T14:51:30Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:36Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v4",
+          "number": 2,
+          "started_at": "2026-11-28T14:51:32Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:51:45Z",
+          "conclusion": "success",
+          "name": "Run dtolnay/rust-toolchain@1.96.1",
+          "number": 3,
+          "started_at": "2026-11-28T14:51:36Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:52:07Z",
+          "conclusion": "success",
+          "name": "Run sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libwayland-dev xvfb libxkbcommon-x11-0 mesa-vulkan-drivers libvulkan1",
+          "number": 4,
+          "started_at": "2026-11-28T14:51:45Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:53:20Z",
+          "conclusion": "success",
+          "name": "Install wasm-bindgen CLI",
+          "number": 5,
+          "started_at": "2026-11-28T14:52:07Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:53:21Z",
+          "conclusion": "success",
+          "name": "Install wasm-opt",
+          "number": 6,
+          "started_at": "2026-11-28T14:53:20Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T14:53:29Z",
+          "conclusion": "success",
+          "name": "Run browser-actions/setup-chrome@v1",
+          "number": 7,
+          "started_at": "2026-11-28T14:53:21Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T15:28:31Z",
+          "conclusion": "success",
+          "name": "Run surface-e2e",
+          "number": 8,
+          "started_at": "2026-11-28T14:53:29Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T15:28:36Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@v4",
+          "number": 9,
+          "started_at": "2026-11-28T15:28:31Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T15:28:36Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@v4",
+          "number": 18,
+          "started_at": "2026-11-28T15:28:36Z",
+          "status": "completed"
+        },
+        {
+          "completed_at": "2026-11-28T15:28:36Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "started_at": "2026-11-28T15:28:36Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://api.github.com/repos/faberline/surface/actions/jobs/141015132793",
+      "workflow_name": "Rust"
+    }
+  ],
+  "total_count": 2
+}
