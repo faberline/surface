@@ -1,0 +1,231 @@
+diff --git a/docs/provenance.json b/docs/provenance.json
+--- a/docs/provenance.json
++++ b/docs/provenance.json
+@@ -68,7 +68,7 @@
+     "archive_sha256": "123828ceeec755b05255e3976cb0852993202de98a0626c97dd8d34246991f84",
+     "license": "MIT OR Apache-2.0; node.rs includes Chromium BSD-licensed code",
+     "local_path": "third-party/accesskit-macos",
+-    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders and spin buttons keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. Progress indicators expose a read-only AXValue in the legacy AppKit settable query. Grids publish their rows and selected cells through AXRows and AXSelectedChildren. Grid cells with selection state expose read-only AXSelected. AXTabs follows scroll areas owned by a tab list and stops at nested tab lists and other semantic groups. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
++    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders and spin buttons keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. Checked menu radio and checkbox items expose AXMenuItemMarkChar while retaining their numeric AXValue. Progress indicators expose a read-only AXValue in the legacy AppKit settable query. Grids publish their rows and selected cells through AXRows and AXSelectedChildren. Grid cells with selection state expose read-only AXSelected. AXTabs follows scroll areas owned by a tab list and stops at nested tab lists and other semantic groups. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
+   },
+   "accesskit_winit": {
+     "repository": "https://github.com/AccessKit/accesskit",
+diff --git a/third-party/accesskit-macos/Cargo.toml b/third-party/accesskit-macos/Cargo.toml
+--- a/third-party/accesskit-macos/Cargo.toml
++++ b/third-party/accesskit-macos/Cargo.toml
+@@ -27,6 +27,12 @@
+ [lib]
+ name = "accesskit_macos"
+ path = "src/lib.rs"
++
++# AppKit needs the process main thread, outside the default test harness.
++[[test]]
++name = "menu_item_mark_char"
++path = "tests/menu_item_mark_char.rs"
++harness = false
+ 
+ [dependencies.accesskit]
+ version = "0.25.2"
+diff --git a/third-party/accesskit-macos/src/node.rs b/third-party/accesskit-macos/src/node.rs
+--- a/third-party/accesskit-macos/src/node.rs
++++ b/third-party/accesskit-macos/src/node.rs
+@@ -407,6 +407,11 @@
+         self.0.value().map(Value::String).or(numeric)
+     }
+ 
++    fn exposes_menu_item_mark_char(&self) -> bool {
++        matches!(self.0.role(), Role::MenuItemCheckBox | Role::MenuItemRadio)
++            && self.0.toggled().is_some()
++    }
++
+     pub(crate) fn value_description(&self) -> Option<&str> {
+         if matches!(self.0.role(), Role::Slider | Role::SpinButton)
+             && self.0.numeric_value().is_some()
+@@ -1179,6 +1184,14 @@
+             {
+                 attributes = unsafe { attributes.arrayByAddingObject(current) };
+             }
++            let mark_char = ns_string!("AXMenuItemMarkChar");
++            if self
++                .resolve(|node| NodeWrapper(node).exposes_menu_item_mark_char())
++                .unwrap_or(false)
++                && !unsafe { attributes.containsObject(mark_char) }
++            {
++                attributes = unsafe { attributes.arrayByAddingObject(mark_char) };
++            }
+             attributes
+         }
+ 
+@@ -1209,6 +1222,12 @@
+                 }
+                 if attr == ns_string!("AXARIACurrent") {
+                     return NodeWrapper(node).aria_current_value().map(NSString::from_str);
++                }
++                if attr == ns_string!("AXMenuItemMarkChar") {
++                    // Core-AAM exposes a checkmark only for aria-checked=true.
++                    return (NodeWrapper(node).exposes_menu_item_mark_char()
++                        && node.toggled() == Some(Toggled::True))
++                        .then(|| NSString::from_str("✓"));
+                 }
+                 if attr == ns_string!("AXBrailleLabel") && node.has_braille_label() {
+                     return Some(NSString::from_str(node.braille_label().unwrap()))
+@@ -1426,13 +1445,18 @@
+                     return node.is_dialog();
+                 }
+                 if selector == sel!(accessibilityAttributeNames) {
+-                    return node.data().invalid().is_some() || NodeWrapper(node).aria_current_value().is_some();
++                    let wrapper = NodeWrapper(node);
++                    return node.data().invalid().is_some()
++                        || wrapper.aria_current_value().is_some()
++                        || wrapper.exposes_menu_item_mark_char();
+                 }
+                 if selector == sel!(accessibilityAttributeValue:) {
++                    let wrapper = NodeWrapper(node);
+                     return node.has_braille_label()
+                         || node.has_braille_role_description()
+                         || node.data().invalid().is_some()
+-                        || NodeWrapper(node).aria_current_value().is_some()
++                        || wrapper.aria_current_value().is_some()
++                        || wrapper.exposes_menu_item_mark_char()
+                         || node.has_html_id()
+                 }
+                 if selector == sel!(accessibilityURL) {
+diff --git a/third-party/accesskit-macos/tests/menu_item_mark_char.rs b/third-party/accesskit-macos/tests/menu_item_mark_char.rs
+new file mode 100644
+--- /dev/null
++++ b/third-party/accesskit-macos/tests/menu_item_mark_char.rs
+@@ -0,0 +1,134 @@
++// Copyright 2022 The AccessKit Authors. All rights reserved.
++// Licensed under the Apache License, Version 2.0 (found in
++// the LICENSE-APACHE file) or the MIT license (found in
++// the LICENSE-MIT file), at your option.
++
++use accesskit::{
++    Action, ActionHandler, ActionRequest, ActivationHandler, Node, NodeId, Role, Toggled, TreeId,
++    TreeInfo, TreeUpdate,
++};
++use accesskit_macos::Adapter;
++use objc2::{
++    msg_send, msg_send_id,
++    rc::{Id, autoreleasepool},
++    sel,
++};
++use objc2_app_kit::NSView;
++use objc2_foundation::{MainThreadMarker, NSArray, NSNumber, NSObject, NSObjectProtocol, NSString};
++
++struct InitialTree(Option<TreeUpdate>);
++
++impl ActivationHandler for InitialTree {
++    fn request_initial_tree(&mut self) -> Option<TreeUpdate> {
++        self.0.take()
++    }
++}
++
++struct NoActions;
++
++impl ActionHandler for NoActions {
++    fn do_action(&mut self, _request: ActionRequest) {
++        panic!("reading attributes must not send an action");
++    }
++}
++
++fn check_mark(
++    view: &NSView,
++    role: Role,
++    toggled: Option<(Toggled, i32)>,
++    disabled: bool,
++    expected_attribute: bool,
++    expected_mark: Option<&str>,
++) {
++    let id = NodeId(1);
++    let mut node = Node::new(role);
++    node.set_label("Choice");
++    if let Some((state, _)) = toggled {
++        node.set_toggled(state);
++    }
++    if disabled {
++        node.set_disabled();
++    } else {
++        node.add_action(Action::Click);
++    }
++    let mut initial = InitialTree(Some(TreeUpdate {
++        nodes: vec![(id, node)],
++        tree: Some(TreeInfo::new(id)),
++        tree_id: TreeId::ROOT,
++        focus: id,
++    }));
++    // The detached view lives through the adapter and all its AppKit queries.
++    let mut adapter =
++        unsafe { Adapter::new((view as *const NSView).cast_mut().cast(), false, NoActions) };
++    let children = adapter.view_children(&mut initial);
++    // The adapter returns an autoreleased array which remains valid inside main's pool.
++    let item = unsafe { children.as_ref() }.unwrap().first().unwrap();
++    let ax_role: Id<NSString> = unsafe { msg_send_id![item, accessibilityRole] };
++    let expected_role = match role {
++        Role::CheckBox => "AXCheckBox",
++        Role::RadioButton => "AXRadioButton",
++        _ => "AXMenuItem",
++    };
++    assert_eq!(ax_role.to_string(), expected_role);
++    for selector in [
++        sel!(accessibilityAttributeNames),
++        sel!(accessibilityAttributeValue:),
++    ] {
++        let allowed: bool = unsafe { msg_send![item, isAccessibilitySelectorAllowed: selector] };
++        assert_eq!(allowed, expected_attribute, "{role:?}, {toggled:?}");
++    }
++    let attribute = NSString::from_str("AXMenuItemMarkChar");
++    let names: Id<NSArray<NSString>> = unsafe { msg_send_id![item, accessibilityAttributeNames] };
++    let count = (0..names.len())
++        .filter(|&index| names.get(index) == Some(&*attribute))
++        .count();
++    assert_eq!(
++        count,
++        usize::from(expected_attribute),
++        "{role:?}, {toggled:?}"
++    );
++
++    let mark: Option<Id<NSString>> =
++        unsafe { msg_send_id![item, accessibilityAttributeValue: &*attribute] };
++    let mark = mark.map(|value| value.to_string());
++    assert_eq!(mark.as_deref(), expected_mark, "{role:?}, {toggled:?}");
++
++    let value: Option<Id<NSObject>> = unsafe { msg_send_id![item, accessibilityValue] };
++    let number = value.as_deref().map(|value| {
++        assert!(value.is_kind_of::<NSNumber>());
++        let number: i32 = unsafe { msg_send![value, intValue] };
++        number
++    });
++    assert_eq!(
++        number,
++        toggled.map(|(_, value)| value),
++        "{role:?}, {toggled:?}"
++    );
++    let enabled: bool = unsafe { msg_send![item, isAccessibilityEnabled] };
++    let press_allowed: bool =
++        unsafe { msg_send![item, isAccessibilitySelectorAllowed: sel!(accessibilityPerformPress)] };
++    assert_eq!(enabled, !disabled);
++    assert_eq!(press_allowed, !disabled);
++}
++
++fn main() {
++    autoreleasepool(|_| {
++        let mtm = MainThreadMarker::new().expect("run on the AppKit main thread");
++        let view = unsafe { NSView::new(mtm) };
++        for role in [Role::MenuItemCheckBox, Role::MenuItemRadio] {
++            for (state, value, mark) in [
++                (Toggled::True, 1, Some("✓")),
++                (Toggled::False, 0, None),
++                (Toggled::Mixed, 2, None),
++            ] {
++                check_mark(&view, role, Some((state, value)), false, true, mark);
++            }
++            check_mark(&view, role, Some((Toggled::True, 1)), true, true, Some("✓"));
++            check_mark(&view, role, None, false, false, None);
++        }
++        for role in [Role::MenuItem, Role::CheckBox, Role::RadioButton] {
++            check_mark(&view, role, Some((Toggled::True, 1)), false, false, None);
++        }
++        check_mark(&view, Role::MenuItem, None, false, false, None);
++    });
++}
