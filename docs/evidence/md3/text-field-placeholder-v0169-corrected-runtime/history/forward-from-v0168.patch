@@ -1,0 +1,2600 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index e138dadb43c3be304f3444db812cf65909e9f1fd..1aa0faa8238bf77ef32d458fbb8ed0bba91f5fa1 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.68"
++version = "0.1.69"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index ee0856bf05be253395e4b83ad30be94d2d239942..afa7b37544b2fa8ba9ab9ddf956ccebdc3e28613 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.68"
++version = "0.1.69"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/editing_runtime.rs b/crates/surface-app/src/editing_runtime.rs
+index 8f178ab41270390d3dcfa3a2c86a30c3250778cb..04e082b8316845dfeb3890770a1b2be28e030a73 100644
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -1,6 +1,6 @@
+ use crate::{
+-    AppError, Application, EditKey, Event, ImeEvent, Runtime, SingleLineVerticalPlacement,
+-    TextEditor, TextSelection,
++    AppError, Application, EditKey, Event, ImeEvent, PlaceholderPresentation, Runtime,
++    SingleLineVerticalPlacement, TextEditor, TextSelection,
+ };
+ use std::collections::BTreeMap;
+ use surface::{
+@@ -17,6 +17,35 @@ fn right_alignment_space(content_width: f32, layout: &TextLayout) -> f32 {
+     content_width - text_right - CARET_REVEAL_WIDTH
+ }
+ 
++fn hint_bounds(
++    layout: &TextLayout,
++    viewport: Rect,
++    clip: Rect,
++    scroll: (f32, f32),
++) -> Option<Rect> {
++    let clip = clip.intersect(viewport);
++    let x = viewport.x - scroll.0;
++    let y = viewport.y - scroll.1.min(0.);
++    layout
++        .clusters
++        .iter()
++        .map(|cluster| {
++            let bounds = cluster.bounds;
++            Rect::new(bounds.x + x, bounds.y + y, bounds.width, bounds.height).intersect(clip)
++        })
++        .filter(|bounds| bounds.width > 0. && bounds.height > 0.)
++        .reduce(|a, b| {
++            let x = a.x.min(b.x);
++            let y = a.y.min(b.y);
++            Rect::new(
++                x,
++                y,
++                (a.x + a.width).max(b.x + b.width) - x,
++                (a.y + a.height).max(b.y + b.height) - y,
++            )
++        })
++}
++
+ pub(crate) struct EditingGeometry {
+     layout: TextLayout,
+     origin: Rect,
+@@ -26,6 +55,7 @@ pub(crate) struct EditingGeometry {
+     manual_scroll: bool,
+     vertical_goal: Option<f32>,
+     caret: Option<Rect>,
++    hint_bounds: Option<Rect>,
+ }
+ 
+ impl EditingGeometry {
+@@ -275,6 +305,10 @@ impl<A: Application> Runtime<A> {
+         Some(line)
+     }
+ 
++    pub(crate) fn text_input_hint_bounds(&self, key: &str) -> Option<Rect> {
++        self.text_geometry.get(key)?.hint_bounds
++    }
++
+     pub(crate) fn editing_event(&mut self, event: Event) -> Result<bool, AppError> {
+         if matches!(event, Event::Blur) {
+             self.cancel_composition();
+@@ -548,6 +582,14 @@ impl<A: Application> Runtime<A> {
+                 SingleLineVerticalPlacement::Center => (0., extra_height / 2.),
+                 SingleLineVerticalPlacement::Inset(inset) => (inset.min(extra_height), 0.),
+             };
++            // Keep the unshifted paint viewport. An empty right-aligned
++            // editor's caret width does not describe the hint's extent.
++            let hint_viewport = Rect::new(
++                origin.x,
++                origin.y + top_inset,
++                origin.width,
++                origin.height - top_inset,
++            );
+             let right_aligned = binding.right_align_single_line_text && !options.multiline;
+             let horizontal_space =
+                 right_aligned.then(|| right_alignment_space(content_width, &layout));
+@@ -619,13 +661,41 @@ impl<A: Application> Runtime<A> {
+             let placeholder = binding.text_input_placeholder.as_ref().filter(|_| {
+                 editor.value().is_empty()
+                     && !editor.is_composing()
+-                    && (!binding.focused_placeholder || self.focused() == Some(key.as_str()))
++                    && (binding.placeholder_presentation != PlaceholderPresentation::Focused
++                        || focused)
+             });
+-            let paint_scroll_x = if let (true, Some(hint)) = (right_aligned, placeholder) {
+-                let hint_layout = measurer.text_layout_styled(&hint.0, &text_style, None);
+-                -right_alignment_space(content_width, &hint_layout).max(0.)
+-            } else {
+-                scroll.0 - horizontal_inset
++            let animated = binding.placeholder_presentation == PlaceholderPresentation::Animated;
++            let hint_layout = placeholder
++                .filter(|_| right_aligned || animated)
++                .map(|hint| {
++                    if let Some(alignment) = alignment {
++                        measurer.text_layout_aligned_styled(
++                            &hint.0,
++                            &text_style,
++                            content_width,
++                            alignment,
++                        )
++                    } else {
++                        measurer.text_layout_styled(
++                            &hint.0,
++                            &text_style,
++                            options.multiline.then_some(content_width),
++                        )
++                    }
++                });
++            let paint_scroll_x = match &hint_layout {
++                Some(layout) if right_aligned => {
++                    let space = right_alignment_space(content_width, layout);
++                    if animated && space < -CARET_REVEAL_WIDTH {
++                        // An overflowing right-aligned hint starts at the
++                        // right edge of the clip. Short hints keep caret room.
++                        -space - CARET_REVEAL_WIDTH
++                    } else {
++                        -space.max(0.)
++                    }
++                }
++                Some(_) if animated => 0.,
++                _ => scroll.0 - horizontal_inset,
+             };
+             let mut decoration = TextDecoration {
+                 // Paint already uses the fixed top inset. Signed scroll
+@@ -676,6 +746,12 @@ impl<A: Application> Runtime<A> {
+                     manual_scroll,
+                     vertical_goal,
+                     caret: multiline_caret,
++                    hint_bounds: hint_layout
++                        .as_ref()
++                        .filter(|_| animated)
++                        .and_then(|layout| {
++                            hint_bounds(layout, hint_viewport, g.clip, decoration.scroll)
++                        }),
+                 },
+             );
+             decorations.insert(id, decoration);
+@@ -701,7 +777,7 @@ impl<A: Application> Runtime<A> {
+             if top_inset > 0. {
+                 display.set_presented_text_input_top_inset(id, top_inset)?;
+             }
+-            if let Some(placeholder) = placeholder {
++            if let Some(placeholder) = placeholder.filter(|_| !animated) {
+                 display.set_presented_text_input_placeholder(id, placeholder.clone())?;
+             }
+             if alignment.is_some() {
+diff --git a/crates/surface-app/src/editor_paint.rs b/crates/surface-app/src/editor_paint.rs
+index 60dca81844b7783d0cf2ddbb5ffaa46ad6d2f772..ec4947d152c8b875485c7133e9f87e0d3b40de5f 100644
+--- a/crates/surface-app/src/editor_paint.rs
++++ b/crates/surface-app/src/editor_paint.rs
+@@ -1,7 +1,9 @@
+ use crate::{
+-    color_spring::ColorSpring, Application, ContourPainter, Runtime, ToggleMotion, ToggleSpring,
++    color_spring::ColorSpring,
++    placeholder_motion::{PlaceholderMotion, PlaceholderPhase},
++    Application, ContourPainter, PlaceholderPresentation, Runtime, ToggleMotion, ToggleSpring,
+ };
+-use std::collections::BTreeMap;
++use std::{collections::BTreeMap, sync::Arc};
+ use surface::{
+     Color, ComputedDom, DomError, FillContour, MicroDom, NodeId, Rect, Role, TextAlignment,
+     TextMeasurer, TextStyle,
+@@ -79,6 +81,7 @@ pub(crate) struct LabelMotions {
+ struct LabelTrack {
+     spatial: ToggleMotion,
+     color: Option<LabelColorTrack>,
++    placeholder: Option<PlaceholderMotion>,
+ }
+ 
+ struct LabelColorTrack {
+@@ -93,6 +96,16 @@ struct EditorPaint {
+     labels: BTreeMap<(NodeId, NodeId), TextInputLabelMotion>,
+ }
+ 
++impl EditorPaint {
++    fn place_hint(&mut self, editor: NodeId, hint: Option<(Rect, ResolvedPaint)>, label: Rect) {
++        if let Some((bounds, paint)) = hint {
++            if !has_area(bounds.intersect(label)) {
++                self.paints.push((editor, paint));
++            }
++        }
++    }
++}
++
+ pub(crate) enum ResolvedPaint {
+     Foreground(Color),
+     Contour(FillContour),
+@@ -102,6 +115,7 @@ pub(crate) enum ResolvedPaint {
+         color: Color,
+     },
+     ClearPlaceholder,
++    Placeholder(Arc<(String, Color)>, Color),
+ }
+ 
+ impl ResolvedPaint {
+@@ -127,6 +141,9 @@ impl ResolvedPaint {
+                 display.set_presented_text_paint_bounds(id, bounds)
+             }
+             Self::ClearPlaceholder => display.clear_presented_text_input_placeholder(id),
++            Self::Placeholder(content, ink) => {
++                display.set_presented_text_input_placeholder_ink(id, content, ink)
++            }
+         }
+     }
+ }
+@@ -283,6 +300,7 @@ impl<A: Application> Runtime<A> {
+                     LabelTrack {
+                         spatial: ToggleMotion::new(target),
+                         color: None,
++                        placeholder: None,
+                     },
+                 )
+             });
+@@ -315,7 +333,15 @@ impl<A: Application> Runtime<A> {
+                 track.color = None;
+                 (target_color, false)
+             };
+-            next.running |= spatial_running || color_running;
++            let (hint, hint_running) = self.resolve_hint(
++                editor,
++                &binding.editor,
++                state,
++                has_endpoints,
++                active,
++                &mut track.placeholder,
++            );
++            next.running |= spatial_running || color_running || hint_running;
+             next.tracks.insert(key, track);
+ 
+             if let Some(fallback) = fallback {
+@@ -324,6 +350,7 @@ impl<A: Application> Runtime<A> {
+                     frame
+                         .paints
+                         .push((fallback, ResolvedPaint::Foreground(ink)));
++                    frame.place_hint(editor, hint, computed.nodes[fallback.index()].bounds);
+                     continue;
+                 }
+                 frame.hidden.push(fallback);
+@@ -375,6 +402,7 @@ impl<A: Application> Runtime<A> {
+             {
+                 frame.paints.push((editor, ResolvedPaint::ClearPlaceholder));
+             }
++            frame.place_hint(editor, hint, bounds);
+             frame.labels.insert(
+                 (editor, *label),
+                 TextInputLabelMotion {
+@@ -387,6 +415,56 @@ impl<A: Application> Runtime<A> {
+         next
+     }
+ 
++    fn resolve_hint(
++        &self,
++        editor: NodeId,
++        key: &str,
++        state: TextInputPaintState,
++        expands: bool,
++        active: bool,
++        track: &mut Option<PlaceholderMotion>,
++    ) -> (Option<(Rect, ResolvedPaint)>, bool) {
++        let content = self.bindings.get(&editor).and_then(|binding| {
++            (binding.placeholder_presentation == PlaceholderPresentation::Animated)
++                .then_some(binding.text_input_placeholder.as_ref())
++                .flatten()
++        });
++        let Some(content) = content else {
++            *track = None;
++            return (None, false);
++        };
++        let phase = if state.is_focused {
++            PlaceholderPhase::Focused
++        } else if state.is_empty {
++            PlaceholderPhase::UnfocusedEmpty
++        } else {
++            PlaceholderPhase::UnfocusedNotEmpty
++        };
++        let visible = active && has_area(state.bounds.intersect(state.clip));
++        let (opacity, running) = track
++            .get_or_insert_with(|| PlaceholderMotion::new(phase, expands))
++            .sample(
++                phase,
++                expands,
++                self.input_time_ms(),
++                self.reduced_motion() || !visible,
++            );
++        // Keep the phase current while text or preedit owns the viewport.
++        let Color(red, green, blue, alpha) = content.1;
++        let alpha = (f32::from(alpha) * opacity).round() as u8;
++        let hint = if visible && state.is_empty && !state.is_composing && alpha > 0 {
++            self.text_input_hint_bounds(key).map(|bounds| {
++                (
++                    bounds,
++                    ResolvedPaint::Placeholder(content.clone(), Color(red, green, blue, alpha)),
++                )
++            })
++        } else {
++            None
++        };
++        (hint, running)
++    }
++
+     fn label_nodes(
+         &self,
+         label: NodeId,
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index f091e9ba4ba5aecc955fc8aeff55aa13d6d75e3f..4e3a32d246e9792239b7bd51dc4990fd9c1867d8 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -22,6 +22,7 @@ mod keys;
+ mod motion;
+ #[cfg(feature = "devtools")]
+ mod paint_export;
++mod placeholder_motion;
+ mod press_ripple;
+ mod scroll_control;
+ mod slider;
+@@ -85,6 +86,13 @@ enum SingleLineVerticalPlacement {
+     Inset(f32),
+ }
+ 
++#[derive(Clone, Copy, PartialEq, Eq)]
++enum PlaceholderPresentation {
++    Always,
++    Focused,
++    Animated,
++}
++
+ pub use editor_paint::TextInputPaintState;
+ 
+ /// One view of application state. Messages return through `Application::update`.
+@@ -105,7 +113,7 @@ pub struct View<M> {
+     multiline_text_viewport: Option<(String, TextAlignment)>,
+     text_input_hover_action: Option<String>,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+-    focused_placeholder: bool,
++    placeholder_presentation: PlaceholderPresentation,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_slider_adjustment: bool,
+     slider_input: Option<SliderInputOptions>,
+@@ -201,7 +209,7 @@ impl<M> View<M> {
+             multiline_text_viewport: None,
+             text_input_hover_action: None,
+             text_input_placeholder: None,
+-            focused_placeholder: false,
++            placeholder_presentation: PlaceholderPresentation::Always,
+             value: None,
+             accessible_slider_adjustment: false,
+             slider_input: None,
+@@ -675,7 +683,7 @@ impl<M> View<M> {
+     pub fn text_input_placeholder(mut self, text: impl Into<String>, color: Color) -> Self {
+         let text = text.into();
+         self.text_input_placeholder = (!text.is_empty()).then(|| Arc::new((text, color)));
+-        self.focused_placeholder = false;
++        self.placeholder_presentation = PlaceholderPresentation::Always;
+         self
+     }
+ 
+@@ -683,7 +691,17 @@ impl<M> View<M> {
+     /// An active composition keeps the hint hidden, even with empty preedit.
+     pub fn focused_text_input_placeholder(self, text: impl Into<String>, color: Color) -> Self {
+         let mut view = self.text_input_placeholder(text, color);
+-        view.focused_placeholder = true;
++        view.placeholder_presentation = PlaceholderPresentation::Focused;
++        view
++    }
++
++    /// Animate an empty editor's hint with its sibling label. An expanding
++    /// label hides the hint at rest. An above-field label leaves room for it.
++    /// Link the label to this editor with [`Self::animate_text_input_label_with_fallback`].
++    /// Input and IME composition take paint priority over the hint.
++    pub fn animated_text_input_placeholder(self, text: impl Into<String>, color: Color) -> Self {
++        let mut view = self.text_input_placeholder(text, color);
++        view.placeholder_presentation = PlaceholderPresentation::Animated;
+         view
+     }
+     /// Bind a slider value or an opted-in adjustable Group.
+@@ -1352,7 +1370,7 @@ struct Binding<M> {
+     multiline_text_viewport: Option<(String, TextAlignment)>,
+     text_input_hover_action: Option<String>,
+     text_input_placeholder: Option<Arc<(String, Color)>>,
+-    focused_placeholder: bool,
++    placeholder_presentation: PlaceholderPresentation,
+     value: Option<Rc<dyn Fn(f64) -> M>>,
+     accessible_slider_adjustment: bool,
+     slider_input: Option<SliderInputOptions>,
+@@ -1894,7 +1912,7 @@ impl<A: Application> Runtime<A> {
+                     multiline_text_viewport: view.multiline_text_viewport,
+                     text_input_hover_action: view.text_input_hover_action,
+                     text_input_placeholder: view.text_input_placeholder,
+-                    focused_placeholder: view.focused_placeholder,
++                    placeholder_presentation: view.placeholder_presentation,
+                     value: view.value,
+                     accessible_slider_adjustment: view.accessible_slider_adjustment,
+                     slider_input: view.slider_input,
+diff --git a/crates/surface-app/src/placeholder_motion.rs b/crates/surface-app/src/placeholder_motion.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..7c4a279862e8425cd2a3e7ad9c80ace56290342f
+--- /dev/null
++++ b/crates/surface-app/src/placeholder_motion.rs
+@@ -0,0 +1,259 @@
++//! The retained Material placeholder opacity. The caller owns draw eligibility.
++
++use crate::motion::ScalarSpring;
++
++// AndroidX 26065e0db6b4c61d1779c89ad388ea75ce98235a, StandardMotionTokens.kt.
++const FAST_EFFECTS: f32 = 3800.;
++const SLOW_EFFECTS: f32 = 800.;
++
++/// The current editor phase. Focus has priority over committed text.
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++pub(crate) enum PlaceholderPhase {
++    Focused,
++    UnfocusedEmpty,
++    UnfocusedNotEmpty,
++}
++
++impl PlaceholderPhase {
++    fn opacity(self, expands: bool) -> f64 {
++        match self {
++            Self::Focused => 1.,
++            Self::UnfocusedEmpty if !expands => 1.,
++            _ => 0.,
++        }
++    }
++
++    // TextFieldImpl.kt, Transition<InputPhase>.placeholderOpacity, at the
++    // pinned AndroidX revision. The preceding target phase supplies the
++    // transition rule, including when it did not change the opacity target.
++    fn stiffness_to(self, next: Self) -> f32 {
++        match (self, next) {
++            (Self::UnfocusedEmpty, Self::Focused)
++            | (Self::UnfocusedNotEmpty, Self::UnfocusedEmpty) => SLOW_EFFECTS,
++            _ => FAST_EFFECTS,
++        }
++    }
++}
++
++pub(crate) struct PlaceholderMotion {
++    phase: PlaceholderPhase,
++    target: f64,
++    spring: Option<ScalarSpring>,
++    last_time_ms: Option<f64>,
++}
++
++impl PlaceholderMotion {
++    /// Start settled. An expanded label hides the unfocused empty hint.
++    pub(crate) fn new(phase: PlaceholderPhase, expands: bool) -> Self {
++        Self {
++            phase,
++            target: phase.opacity(expands),
++            spring: None,
++            last_time_ms: None,
++        }
++    }
++
++    /// Return a clamped alpha and whether another frame is needed.
++    ///
++    /// Text, active composition and label overlap affect draw eligibility
++    /// separately. They do not select a different alpha or restart its spring.
++    /// A snap or missing, nonfinite, or backwards time settles immediately.
++    pub(crate) fn sample(
++        &mut self,
++        phase: PlaceholderPhase,
++        expands: bool,
++        now_ms: Option<f64>,
++        snap: bool,
++    ) -> (f32, bool) {
++        let stiffness = self.phase.stiffness_to(phase);
++        self.phase = phase;
++        let target = phase.opacity(expands);
++        let Some(now_ms) = now_ms.filter(|time| {
++            time.is_finite() && !snap && self.last_time_ms.is_none_or(|last| *time >= last)
++        }) else {
++            self.target = target;
++            self.spring = None;
++            self.last_time_ms = None;
++            return (target as f32, false);
++        };
++        self.last_time_ms = Some(now_ms);
++
++        if target != self.target {
++            let [position, velocity] = self.pose(now_ms).unwrap_or([self.target, 0.]);
++            self.spring = Some(ScalarSpring::new(
++                stiffness,
++                1.,
++                [1. + (position - target), velocity],
++                now_ms,
++            ));
++            self.target = target;
++        }
++
++        if let Some([position, _]) = self.pose(now_ms) {
++            (position.clamp(0., 1.) as f32, true)
++        } else {
++            self.spring = None;
++            (self.target as f32, false)
++        }
++    }
++
++    fn pose(&self, now_ms: f64) -> Option<[f64; 2]> {
++        let [position, velocity] = self.spring?.sample(now_ms)?;
++        Some([self.target + (position - 1.), velocity])
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::{PlaceholderMotion, PlaceholderPhase::*};
++
++    fn near(actual: (f32, bool), expected: f32) {
++        assert!(actual.1);
++        assert!((actual.0 - expected).abs() < 1e-6, "{actual:?}");
++    }
++
++    #[test]
++    fn expanding_label_uses_slow_focus_and_fast_blur() {
++        let mut motion = PlaceholderMotion::new(UnfocusedEmpty, true);
++        assert_eq!(motion.sample(Focused, true, Some(100.), false), (0., true));
++        // Direct critically damped response, 1 - (1 + sqrt(k)*t)*exp(-sqrt(k)*t).
++        near(
++            motion.sample(Focused, true, Some(114.), false),
++            0.060_477_268,
++        );
++        near(
++            motion.sample(Focused, true, Some(144.), false),
++            0.353_396_27,
++        );
++        assert_eq!(motion.sample(Focused, true, Some(800.), false), (1., false));
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, true, Some(850.), false),
++            (1., true)
++        );
++        near(
++            motion.sample(UnfocusedEmpty, true, Some(894.), false),
++            0.246_429_53,
++        );
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, true, Some(1500.), false),
++            (0., false)
++        );
++    }
++
++    #[test]
++    fn above_label_reveals_an_unfocused_clear_slowly() {
++        let mut motion = PlaceholderMotion::new(UnfocusedNotEmpty, false);
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, false, Some(100.), false),
++            (0., true)
++        );
++        near(
++            motion.sample(UnfocusedEmpty, false, Some(144.), false),
++            0.353_396_27,
++        );
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, false, Some(800.), false),
++            (1., false)
++        );
++        // An above-label field keeps the same opacity across focus changes.
++        assert_eq!(
++            motion.sample(Focused, false, Some(810.), false),
++            (1., false)
++        );
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, false, Some(820.), false),
++            (1., false)
++        );
++    }
++
++    #[test]
++    fn same_target_phase_changes_count_and_do_not_restart_the_track() {
++        let mut motion = PlaceholderMotion::new(UnfocusedEmpty, true);
++        // Both unfocused phases target zero for the expanding-label field.
++        assert_eq!(
++            motion.sample(UnfocusedNotEmpty, true, Some(100.), false),
++            (0., false)
++        );
++        assert_eq!(motion.sample(Focused, true, Some(110.), false), (0., true));
++        // UnfocusedNotEmpty -> Focused uses Fast Effects.
++        near(
++            motion.sample(Focused, true, Some(154.), false),
++            0.753_570_44,
++        );
++        motion.sample(Focused, true, Some(800.), false);
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, true, Some(900.), false),
++            (1., true)
++        );
++        near(
++            motion.sample(UnfocusedNotEmpty, true, Some(914.), false),
++            0.785_982_9,
++        );
++        near(
++            motion.sample(UnfocusedEmpty, true, Some(944.), false),
++            0.246_429_53,
++        );
++    }
++
++    #[test]
++    fn reversal_reuses_position_and_velocity() {
++        let mut motion = PlaceholderMotion::new(UnfocusedEmpty, true);
++        motion.sample(Focused, true, Some(100.), false);
++        let original = motion.sample(Focused, true, Some(144.), false);
++        let before = motion.pose(144.).unwrap();
++        assert!(before[1] > 0.);
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, true, Some(144.), false),
++            original
++        );
++        let after = motion.pose(144.).unwrap();
++        assert!((before[0] - after[0]).abs() < 1e-12);
++        assert_eq!(before[1], after[1]);
++        assert!(motion.sample(UnfocusedEmpty, true, Some(145.), false).0 > original.0);
++        assert!(motion.sample(UnfocusedEmpty, true, Some(190.), false).0 < original.0);
++    }
++
++    #[test]
++    fn layout_changes_update_the_same_unfocused_empty_target() {
++        let mut motion = PlaceholderMotion::new(UnfocusedEmpty, false);
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, true, Some(100.), false),
++            (1., true)
++        );
++        near(
++            motion.sample(UnfocusedEmpty, true, Some(144.), false),
++            0.246_429_53,
++        );
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, false, Some(150.), true),
++            (1., false)
++        );
++    }
++
++    #[test]
++    fn reduce_motion_and_unusable_clock_settle_the_exact_target() {
++        let mut motion = PlaceholderMotion::new(UnfocusedEmpty, true);
++        motion.sample(Focused, true, Some(100.), false);
++        near(
++            motion.sample(Focused, true, Some(144.), false),
++            0.353_396_27,
++        );
++        assert_eq!(motion.sample(Focused, true, Some(144.), true), (1., false));
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, true, None, false),
++            (0., false)
++        );
++        assert_eq!(
++            motion.sample(UnfocusedEmpty, false, Some(f64::NAN), false),
++            (1., false)
++        );
++        assert_eq!(
++            motion.sample(UnfocusedNotEmpty, false, Some(200.), false),
++            (1., true)
++        );
++        assert_eq!(
++            motion.sample(UnfocusedNotEmpty, false, Some(199.), false),
++            (0., false)
++        );
++    }
++}
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+index 3b9a44d2da7b72bfc0c785850f187d8750c1503c..15356bf6e31847fbf5ef5af8975ecb64b3a96327 100644
+--- a/crates/surface-material/src/outlined_text_field.rs
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -309,7 +309,14 @@ impl Theme {
+             suffix: adornments.suffix.and_then(affix_text),
+         };
+         let has_value_box = multiline.is_some() || field_adornments.has_slots();
+-        let disabled_value = disabled && !options.value.is_empty();
++        let hint = visible_text(options.placeholder);
++        let disabled_text = if !disabled {
++            None
++        } else if !options.value.is_empty() {
++            Some((DisabledText::Value, options.value))
++        } else {
++            hint.map(|hint| (DisabledText::Hint, hint))
++        };
+         let mut input = Node::new(Role::TextInput, label)
+             .id(id)
+             .text(options.value)
+@@ -382,8 +389,8 @@ impl Theme {
+                 }
+             });
+         }
+-        if let Some(hint) = visible_text(options.placeholder) {
+-            editor = editor.focused_text_input_placeholder(hint, rgba.on_surface_variant);
++        if let Some(hint) = hint.filter(|_| !disabled) {
++            editor = editor.animated_text_input_placeholder(hint, rgba.on_surface_variant);
+         }
+ 
+         let boundary_part = if filled { "indicator" } else { "outline" };
+@@ -455,13 +462,17 @@ impl Theme {
+                 move |state| tokens.label(state),
+             );
+         let fallback = label_view(fallback_id, caption.clone());
+-        // Disabled peers have an authored value but do not mount an editor.
+-        // Draw their value in the same viewport as an enabled field.
+-        let disabled_ink = disabled_value.then(|| {
+-            View::new(
++        // A disabled peer has no editor. Use the same viewport for its value
++        // or for a hint when its label is placed above the field.
++        let disabled_ink = disabled_text.map(|(kind, text)| {
++            let part = match kind {
++                DisabledText::Value => "disabled-value",
++                DisabledText::Hint => "disabled-placeholder",
++            };
++            let art = View::new(
+                 Node::new(Role::Text, "")
+-                    .id(format!("{id}-disabled-value"))
+-                    .text(options.value)
++                    .id(format!("{id}-{part}"))
++                    .text(text)
+                     .text_alignment(alignment)
+                     .text_scaling(TextScaling::Fixed)
+                     .styled(
+@@ -471,7 +482,18 @@ impl Theme {
+                             .clip(true),
+                     ),
+             )
+-            .without_interaction(None)
++            .without_interaction(None);
++            if matches!(kind, DisabledText::Hint) && multiline.is_none() {
++                View::new(
++                    Node::new(Role::Group, "")
++                        .styled(Style::column().clip(true))
++                        .measured_group(ClippedSingleLineHint { line_height, rtl }),
++                )
++                .children([art])
++                .without_interaction(None)
++            } else {
++                art
++            }
+         });
+         let supporting_color = if disabled {
+             tokens.disabled_text
+@@ -650,7 +672,7 @@ impl Theme {
+             line_height,
+             caption_height,
+             rtl,
+-            disabled_value,
++            disabled_text: disabled_text.map(|(kind, _)| kind),
+             adornments: field_adornments,
+         };
+         let filled_backgrounds = filled.then(|| {
+@@ -754,6 +776,50 @@ impl FieldColors {
+     }
+ }
+ 
++#[derive(Clone, Copy, Debug)]
++enum DisabledText {
++    Value,
++    Hint,
++}
++
++/// Shape the passive hint at its natural width and clip it to the value area.
++/// A one-row value area must not wrap the next word into a hidden second row.
++#[derive(Debug)]
++struct ClippedSingleLineHint {
++    line_height: f32,
++    rtl: bool,
++}
++
++impl MeasuredGroupLayout for ClippedSingleLineHint {
++    fn measure(
++        &self,
++        _children: &[&Node],
++        available_width: Option<f32>,
++        _fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        (available_width.unwrap_or_default(), self.line_height)
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let child = children[0];
++        let natural = child.text_value().map_or(0., |hint| {
++            fonts
++                .measure_text(hint, &child.style().text_style(), None)
++                .0
++        });
++        vec![physical(
++            Rect::new(0., 0., width.max(natural), height),
++            width,
++            self.rtl,
++        )]
++    }
++}
++
+ #[derive(Debug)]
+ struct FieldLayout {
+     appearance: TextFieldAppearance,
+@@ -766,7 +832,7 @@ struct FieldLayout {
+     line_height: f32,
+     caption_height: f32,
+     rtl: bool,
+-    disabled_value: bool,
++    disabled_text: Option<DisabledText>,
+     adornments: FieldAdornments,
+ }
+ 
+@@ -871,8 +937,12 @@ impl FieldLayout {
+             rects.extend([face, face]);
+         }
+         rects.extend([editor, face, inline, floating, above]);
+-        if self.disabled_value {
+-            rects.push(value);
++        if let Some(text) = self.disabled_text {
++            rects.push(match text {
++                DisabledText::Value => value,
++                DisabledText::Hint if !label_fits => value,
++                DisabledText::Hint => empty,
++            });
+         }
+         let (description, count) = supporting_row(
+             fonts,
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+index 31f0b42a07989ce9349dbf5010388d0360aecd1e..4a14c3d38da5341c8a8ff8321811ef4a72a901ca 100644
+--- a/crates/surface-material/tests/outlined_text_field.rs
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -3,7 +3,7 @@ use std::num::NonZeroU16;
+ 
+ use surface::{
+     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
+-    TextAlignment,
++    TextAlignment, TextMeasurer,
+ };
+ use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+ use surface_material::{
+@@ -35,6 +35,7 @@ enum Message {
+ 
+ struct Form {
+     label: &'static str,
++    hint: &'static str,
+     value: String,
+     dark: bool,
+     rtl: bool,
+@@ -54,6 +55,7 @@ impl Default for Form {
+     fn default() -> Self {
+         Self {
+             label: LABEL,
++            hint: HINT,
+             value: String::new(),
+             dark: false,
+             rtl: false,
+@@ -105,7 +107,7 @@ impl Application for Form {
+             Theme::light()
+         };
+         let mut options = OutlinedTextFieldOptions::new(ID, self.label, &self.value);
+-        options.placeholder = Some(HINT);
++        options.placeholder = Some(self.hint);
+         options.supporting_text = Some(SUPPORT);
+         options.error = self.invalid.then_some(ERROR);
+         options.editability = self.editability;
+@@ -268,6 +270,218 @@ fn label_color(list: &ExtendedDisplayList, label: &str) -> Color {
+     *color
+ }
+ 
++fn hint_alpha(list: &ExtendedDisplayList) -> Option<u8> {
++    let (PaintOp::StyledText { color, .. }, _) = text_run(list, HINT)? else {
++        unreachable!("a hint uses styled text");
++    };
++    Some(color.3)
++}
++
++#[test]
++fn expanding_label_hints_fade_without_overlapping_or_painting_during_ime() {
++    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
++        let mut runtime = Runtime::new(Form {
++            adorned: Some(appearance),
++            dark: true,
++            rtl: true,
++            scale: 2.,
++            ..Form::default()
++        })
++        .unwrap();
++        let mut fonts = TextSystem::default();
++        runtime.set_time(0.);
++        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
++        let editor = bounds(&runtime, ID);
++        tab(&mut runtime);
++        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
++
++        runtime.set_time(8.);
++        // The slow spring has positive alpha. The label still covers the
++        // right-aligned hint, including the part left of the caret.
++        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
++        runtime.set_time(180.);
++        assert_eq!(
++            hint_alpha(&render(&mut runtime, 400., &mut fonts)),
++            Some(245)
++        );
++        assert_eq!(bounds(&runtime, ID), editor);
++        let id = runtime.dom().by_id(ID).unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        let input = frame.node(id).unwrap().node;
++        assert_eq!(input.name(), LABEL);
++        assert_eq!(input.text_value(), Some(""));
++
++        runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
++        assert!(runtime.input_snapshot().unwrap().composing);
++        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
++        runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
++        assert_eq!(
++            hint_alpha(&render(&mut runtime, 400., &mut fonts)),
++            Some(245)
++        );
++
++        runtime.set_reduced_motion(true);
++        assert_eq!(
++            hint_alpha(&render(&mut runtime, 400., &mut fonts)),
++            Some(255)
++        );
++        tab(&mut runtime);
++        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
++    }
++}
++
++#[test]
++fn above_label_shows_empty_idle_hint_and_fades_after_unfocused_clear() {
++    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
++        let mut runtime = Runtime::new(Form {
++            label: LONG_LABEL,
++            adorned: Some(appearance),
++            dark: true,
++            rtl: true,
++            scale: 2.,
++            ..Form::default()
++        })
++        .unwrap();
++        let mut fonts = TextSystem::default();
++        runtime.set_time(0.);
++        let idle = render(&mut runtime, 320., &mut fonts);
++        let pose = label_pose(&idle, LONG_LABEL);
++        assert_eq!(runtime.focused(), None);
++        assert_eq!(hint_alpha(&idle), Some(255));
++
++        runtime.apply(Message::Edit("已填".into())).unwrap();
++        assert_eq!(hint_alpha(&render(&mut runtime, 320., &mut fonts)), None);
++        runtime.set_time(400.);
++        render(&mut runtime, 320., &mut fonts);
++        runtime.apply(Message::Edit(String::new())).unwrap();
++        assert_eq!(hint_alpha(&render(&mut runtime, 320., &mut fonts)), None);
++        runtime.set_time(444.);
++        let rising = render(&mut runtime, 320., &mut fonts);
++        assert_eq!(hint_alpha(&rising), Some(90));
++        assert_eq!(label_pose(&rising, LONG_LABEL), pose);
++
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Disabled))
++            .unwrap();
++        let disabled = render(&mut runtime, 320., &mut fonts);
++        assert_eq!(hint_alpha(&disabled), Some(97));
++        let id = runtime.dom().by_id(ID).unwrap();
++        let frame = runtime.accessibility_frame().unwrap();
++        let input = frame.node(id).unwrap().node;
++        assert_eq!(input.text_value(), Some(""));
++        assert!(frame
++            .node(
++                runtime
++                    .dom()
++                    .by_id("project-name-disabled-placeholder")
++                    .unwrap()
++            )
++            .is_none());
++    }
++}
++
++#[test]
++fn disabled_above_label_hint_keeps_single_line_clipping() {
++    const OVERFLOW_HINT: &str = "Monitor Keyboard";
++    let visible_clusters = |list: &ExtendedDisplayList, fonts: &mut TextSystem| {
++        let Some((
++            PaintOp::StyledText {
++                rect,
++                clip,
++                text,
++                style,
++                scroll,
++                multiline,
++                ..
++            },
++            alignment,
++        )) = text_run(list, OVERFLOW_HINT)
++        else {
++            panic!("an empty above-label field paints its hint");
++        };
++        assert!(
++            fonts.measure_text("Keyboard", style, None).0 <= clip.width,
++            "the second word alone fits in the visible row"
++        );
++        // Shape with the same width and origin as the display run. A true
++        // line break can move a whole word out of the one visible row.
++        let layout = if *multiline {
++            fonts.text_layout_aligned_styled(text, style, rect.width, alignment)
++        } else {
++            fonts.text_layout_styled(text, style, None)
++        };
++        layout
++            .clusters
++            .into_iter()
++            .filter_map(|cluster| {
++                let bounds = cluster.bounds;
++                let visible = Rect::new(
++                    rect.x - scroll.0 + bounds.x,
++                    rect.y - scroll.1 + bounds.y,
++                    bounds.width,
++                    bounds.height,
++                )
++                .intersect(*clip);
++                (visible.width > 0. && visible.height > 0.).then_some(cluster.bytes.start)
++            })
++            .collect::<Vec<_>>()
++    };
++
++    for (appearance, rtl) in [
++        (TextFieldAppearance::Outlined, false),
++        (TextFieldAppearance::Filled, false),
++        (TextFieldAppearance::Outlined, true),
++        (TextFieldAppearance::Filled, true),
++    ] {
++        let mut fonts = TextSystem::default();
++        let mut runtime = Runtime::new(Form {
++            label: LONG_LABEL,
++            hint: OVERFLOW_HINT,
++            rtl,
++            adorned: Some(appearance),
++            ..Form::default()
++        })
++        .unwrap();
++        runtime.set_time(0.);
++        let idle = render(&mut runtime, 260., &mut fonts);
++        assert_eq!(bounds(&runtime, "project-name-floating-label").width, 0.);
++        let field = bounds(&runtime, ID);
++        let expected = visible_clusters(&idle, &mut fonts);
++        if rtl {
++            assert!(
++                expected.contains(&(OVERFLOW_HINT.len() - 1)) && !expected.contains(&0),
++                "the RTL value area keeps the physical-right end: {expected:?}"
++            );
++        } else {
++            assert!(
++                expected.contains(&"Monitor ".len())
++                    && !expected.contains(&(OVERFLOW_HINT.len() - 1)),
++                "the LTR value area clips the end of the second word: {expected:?}"
++            );
++        }
++
++        runtime.set_time(16.);
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Disabled))
++            .unwrap();
++        let disabled = render(&mut runtime, 260., &mut fonts);
++        assert_eq!(bounds(&runtime, ID), field);
++        assert_eq!(
++            visible_clusters(&disabled, &mut fonts),
++            expected,
++            "{appearance:?} rtl={rtl} disabled hint preserves the visible part of the same line"
++        );
++
++        runtime.set_time(32.);
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Editable))
++            .unwrap();
++        let enabled = render(&mut runtime, 260., &mut fonts);
++        assert_eq!(bounds(&runtime, ID), field);
++        assert_eq!(visible_clusters(&enabled, &mut fonts), expected);
++    }
++}
++
+ #[test]
+ fn floating_label_reverses_from_the_same_pose_and_reduced_motion_settles_it() {
+     for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index 107b0b6316486c5a6e1da1bc7f4b4088a1dadead..440e2db88e7ab363b1390855e8b0760640f7f682 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -124,6 +124,13 @@ pub(crate) struct PresentedPressRipple {
+     pub(crate) opacity: f32,
+ }
+ 
++#[derive(Clone, Debug, PartialEq)]
++struct PresentedPlaceholder {
++    content: Arc<(String, Color)>,
++    ink: Color,
++    use_horizontal_offset: bool,
++}
++
+ #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+ pub struct Node {
+     #[serde(default, skip_serializing_if = "no_box_shadows")]
+@@ -209,7 +216,7 @@ pub struct Node {
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     text_input_caret_color: Option<Color>,
+     #[serde(skip)]
+-    presented_text_input_placeholder: Option<Arc<(String, Color)>>,
++    presented_text_input_placeholder: Option<PresentedPlaceholder>,
+     #[serde(skip)]
+     pub(crate) presented_text_paint_bounds: Option<Rect>,
+     #[serde(skip)]
+@@ -575,11 +582,17 @@ impl Node {
+         self.text_alignment.filter(|_| self.role != Role::TextInput)
+     }
+ 
+-    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
++    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color, bool)> {
+         self.presented_text_input_placeholder
+-            .as_deref()
++            .as_ref()
+             .filter(|_| self.text_value().is_none_or(str::is_empty))
+-            .map(|(text, color)| (text.as_str(), *color))
++            .map(|hint| {
++                (
++                    hint.content.0.as_str(),
++                    hint.ink,
++                    hint.use_horizontal_offset,
++                )
++            })
+     }
+ 
+     /// Set the editable caret's color independently of text and IME ink.
+@@ -1272,13 +1285,40 @@ impl MicroDom {
+         &mut self,
+         id: NodeId,
+         placeholder: Arc<(String, Color)>,
++    ) -> Result<(), DomError> {
++        let ink = placeholder.1;
++        self.set_presented_placeholder(id, placeholder, ink, false)
++    }
++
++    /// Set the sampled ink without cloning or changing the authored hint.
++    /// Use the explicit horizontal offset computed for the hint in this frame.
++    #[doc(hidden)]
++    pub fn set_presented_text_input_placeholder_ink(
++        &mut self,
++        id: NodeId,
++        placeholder: Arc<(String, Color)>,
++        ink: Color,
++    ) -> Result<(), DomError> {
++        self.set_presented_placeholder(id, placeholder, ink, true)
++    }
++
++    fn set_presented_placeholder(
++        &mut self,
++        id: NodeId,
++        content: Arc<(String, Color)>,
++        ink: Color,
++        use_horizontal_offset: bool,
+     ) -> Result<(), DomError> {
+         let node = self
+             .nodes
+             .get_mut(id.index())
+             .ok_or(DomError::InvalidNode(id.index()))?;
+-        if node.role() == Role::TextInput && !placeholder.0.is_empty() {
+-            node.presented_text_input_placeholder = Some(placeholder);
++        if node.role() == Role::TextInput && !content.0.is_empty() {
++            node.presented_text_input_placeholder = Some(PresentedPlaceholder {
++                content,
++                ink,
++                use_horizontal_offset,
++            });
+         }
+         Ok(())
+     }
+diff --git a/crates/surface/src/paint.rs b/crates/surface/src/paint.rs
+index 77c5d45380a147767109caa6be570219b8b5d913..55aaa8157183a796e6baebddd69da1d41f181e26 100644
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -961,7 +961,9 @@ fn compile_into<Op: CompileOp>(
+             focus.push(*id, &mut ops);
+         }
+         let placeholder = n.text_input_placeholder();
+-        let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
++        let text_run = placeholder
++            .map(|(text, ink, _)| (text, ink))
++            .or_else(|| n.text_value().map(|text| (text, s.foreground)));
+         if let Some((text, text_color)) = text_run {
+             let padded = g.bounds.inset(s.padding);
+             let mut rect = padded.inset_horizontal(n.presented_text_input_horizontal_inset);
+@@ -999,10 +1001,15 @@ fn compile_into<Op: CompileOp>(
+             }
+             let text_style = s.text_style();
+             let (scroll_x, scroll_y) = decoration.map(|d| d.scroll).unwrap_or_default();
+-            let scroll = if placeholder.is_some() {
++            let scroll = if let Some((_, _, use_horizontal_offset)) = placeholder {
+                 // A cleared field can retain scroll from its previous value.
+-                // Keep negative insets used for single-line alignment.
+-                (scroll_x.min(0.), scroll_y.min(0.))
++                // Retain positive scroll only when it was measured for the hint.
++                let x = if use_horizontal_offset {
++                    scroll_x
++                } else {
++                    scroll_x.min(0.)
++                };
++                (x, scroll_y.min(0.))
+             } else {
+                 (scroll_x, scroll_y)
+             };
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 8a4920ac6ef6c1db8ad2f1bfe81a04b119f849c3..ef3457b62b449334e6bdb0a76fb3b76774053cb6 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -342,10 +342,10 @@
+       "spec": "https://m3.material.io/components/text-fields/overview",
+       "status": "partial",
+       "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Leading and trailing icons and text affixes checked against both token sets. The counter follows the supporting-row dimensions for both appearances. Grow and FixedRows cover the two multiline layouts with the same field tokens.",
+-      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints.",
+-      "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. The composition proof uses CDP.",
+-      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. A long placeholder can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. Placeholder opacity, boundary motion, system contrast, live speech and operating-system composition remain open.",
+-      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry."
++      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints. Two placeholder replays add 40 matching PNGs through Page.screenshot, CLI and MCP. They check focus, blur and idle above-label hints in both appearances, including dark 320 dp RTL at 200% text.",
++      "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. M351–M353 compare 58 paired WebGPU originals to verify the two placeholder spring rates, reversal, RTL alignment, Reduce Motion, immediate suppression during marked and empty composition, and the unfocused above-label clear transition. CDP delivers real marked text; an explicitly synthetic empty composition start exercises the same Runtime bridge.",
++      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. With an expanding label, an empty field fades the hint in on focus using Standard Slow Effects and out on blur using Fast Effects. Above-field labels leave the hint visible at rest, including in a disabled field with disabled ink. Clearing an unfocused above-field editor fades the hint back in. Committed text, active composition and overlap with the moving label suppress the hint independently of its opacity. A long hint can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. Boundary motion, system contrast, live speech and operating-system composition remain open.",
++      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry. The same-ID overflow regression checks that Outlined and Filled single-line hints keep the same visible text as the field disables and re-enables in LTR and RTL."
+     },
+     {
+       "id": "toolbars",
+diff --git a/docs/material.md b/docs/material.md
+index f541dbb159e2a849ca542115aba7341a4a4261d8..92667dd07de7cf47e7c584a82435004d492a8ec2 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1225,7 +1225,7 @@ and the border opens around the label. A long label can wrap above the
+ closed outline when it needs more room.
+ 
+ Set the layout direction and text scale to match the containing view.
+-An empty focused field can show a placeholder. Supporting text has its
++An empty field can show a placeholder in its value area. Supporting text has its
+ own line and is linked to the accessible editor. An error replaces that
+ line and marks the enabled field invalid. The Web and macOS accessibility
+ paths expose new errors as assertive updates. A read-only field allows
+@@ -1346,6 +1346,21 @@ The above-field label shares that color during a resize.
+ Reduce Motion, a disabled field, or a new theme settles the color
+ immediately. The validation state and its description update at once.
+ 
++### Placeholder motion
++
++An expanding label reveals the hint when an empty field gains focus.
++The Material Standard Slow Effects spring fades it in. The Fast Effects
++spring fades it out on blur. A label that wraps above leaves space for
++the hint at rest. Clearing an unfocused above-label field fades the hint
++back in. Reduce Motion applies each endpoint immediately.
++
++The hint uses the existing value area and its own painted opacity.
++Committed text or active composition hides it immediately. This also
++applies to an empty composition. The editor keeps its value and name.
++An empty disabled field with an above-field label uses the disabled ink.
++
++[Material placeholder transition phases](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/TextFieldImpl.kt#2048)
++
+ ## Baseline segmented buttons
+ 
+ Use `Theme::baseline_segmented_button` for two to five related choices in
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 4e999a8db2d086f1831f9b549b0995401d704fb5..463fba138f967fb8aa11b8f9489e0f537559656a 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -116,6 +116,8 @@ mod material_text_field_adornments;
+ mod material_text_field_counter;
+ #[path = "material_text_field_label_motion.rs"]
+ mod material_text_field_label_motion;
++#[path = "material_text_field_placeholder.rs"]
++mod material_text_field_placeholder;
+ #[path = "material_time_baseline.rs"]
+ mod material_time_baseline;
+ #[path = "material_time_dial.rs"]
+@@ -171,7 +173,7 @@ pub const STEPS: &[&str] = &[
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+-    "M347", "M348", "M349", "M350",
++    "M347", "M348", "M349", "M350", "M351", "M352", "M353",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -309,7 +311,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_text_field_adornments::run(env, chrome, &url).await?;
+     material_text_field_counter::run(env, chrome, &url).await?;
+     material_multiline_text_field::run(env, chrome, &url).await?;
+-    material_text_field_label_motion::run(env, chrome, &url).await
++    material_text_field_label_motion::run(env, chrome, &url).await?;
++    material_text_field_placeholder::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -558,7 +561,12 @@ mod tests {
+ 
+     #[test]
+     fn text_field_label_motion_steps_are_required_by_the_material_case() {
+-        assert!(super::STEPS.ends_with(&super::material_text_field_label_motion::STEPS));
++        let label = super::material_text_field_label_motion::STEPS;
++        let placeholder = super::material_text_field_placeholder::STEPS;
++        assert!(super::STEPS
++            .windows(label.len() + placeholder.len())
++            .any(|scope| { scope[..label.len()] == label && scope[label.len()..] == placeholder }));
++        assert!(super::STEPS.ends_with(&placeholder));
+     }
+ 
+     #[test]
+diff --git a/e2e/src/material_text_field_placeholder.rs b/e2e/src/material_text_field_placeholder.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..fb75925c3c3c831b715d72e80f453d005c426cf0
+--- /dev/null
++++ b/e2e/src/material_text_field_placeholder.rs
+@@ -0,0 +1,814 @@
++//! Test the Material hint against the same painted field with no authored hint.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++use std::collections::BTreeMap;
++
++use super::material_list_corners::{freeze, reduced_motion, tick};
++use super::material_time_input::{
++    activate, ax, ax_tree, bounds, contains, focus_projected, focused, resize, Raster,
++};
++use super::{focus, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M351", "M352", "M353"];
++const TITLE: &str = "名稱";
++const ABOVE_TITLE: &str = "輸入團隊成員在共用專案清單中容易辨認的完整名稱";
++const TEXTAREA: &str = "document.getElementById('surface-text-input')";
++const MODEL: &str = "text_field_placeholder_demo";
++const PREFIX: &str = "material-text-field-placeholder";
++const FIELD: &str = "text-field-placeholder-demo-editor";
++const CLEAR: &str = "text-field-placeholder-demo-clear";
++const SLOW_EFFECTS: f64 = 800.;
++const FAST_EFFECTS: f64 = 3800.;
++const DPI: f64 = 2.;
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++type Pair = [f64; 2];
++
++#[derive(Clone, Copy)]
++enum Journey {
++    Outlined,
++    FilledRtl,
++    AboveRtl,
++}
++
++impl Journey {
++    fn name(self) -> &'static str {
++        match self {
++            Self::Outlined => "outlined",
++            Self::FilledRtl => "filled-rtl",
++            Self::AboveRtl => "above-rtl",
++        }
++    }
++
++    fn compact(self) -> bool {
++        !matches!(self, Self::Outlined)
++    }
++
++    fn filled(self) -> bool {
++        matches!(self, Self::FilledRtl)
++    }
++
++    fn above(self) -> bool {
++        matches!(self, Self::AboveRtl)
++    }
++}
++
++fn setting(suffix: &str) -> String {
++    format!("text-field-placeholder-demo-{suffix}")
++}
++
++#[derive(Debug, PartialEq)]
++struct Layout {
++    editor: Rect,
++    crop: Rect,
++    label: Rect,
++    filled: bool,
++    rtl: bool,
++    foreground: Rgb,
++    paper: Rgb,
++}
++
++impl Layout {
++    fn placement_report(&self) -> Value {
++        json!({
++            "editor": self.editor, "crop": self.crop, "label": self.label,
++            "filled": self.filled, "rtl": self.rtl,
++            "foreground": self.foreground, "paper": self.paper
++        })
++    }
++
++    fn coordinates(&self) -> impl Iterator<Item = Pair> {
++        let [x, y, w, h] = self.crop;
++        let left = (x * DPI).ceil() as usize;
++        let right = ((x + w) * DPI).floor() as usize;
++        let top = (y * DPI).ceil() as usize;
++        let bottom = ((y + h) * DPI).floor() as usize;
++        (top..bottom).flat_map(move |row| {
++            (left..right).map(move |col| [(col as f64 + 0.5) / DPI, (row as f64 + 0.5) / DPI])
++        })
++    }
++}
++
++fn token(model: &Value, name: &str) -> Result<Rgb> {
++    let [r, g, b, a]: [u8; 4] =
++        serde_json::from_value(model["palette"][name].clone()).context("hint palette bytes")?;
++    check_eq!(a, 255, "the hint fixture uses opaque palette endpoints");
++    Ok([r, g, b])
++}
++
++async fn scene(tab: &Tab, url: &str, journey: Journey, without_hint: bool) -> Result<Layout> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 2500).await?;
++    reduced_motion(tab, true).await?;
++    activate(tab, &setting("show")).await?;
++    until(tab, &format!("s.{MODEL}.visible")).await?;
++    for (enabled, option) in [
++        (journey.filled(), "filled"),
++        (journey.compact(), "theme"),
++        (journey.compact(), "rtl"),
++        (journey.compact(), "large"),
++        (journey.above(), "above"),
++        (without_hint, "no-hint"),
++    ] {
++        if enabled {
++            activate(tab, &setting(option)).await?;
++        }
++    }
++    let viewport = if journey.compact() {
++        resize(tab, 320, 960).await?;
++        [0., 0., 320., 960.]
++    } else {
++        resize(tab, 960, 820).await?;
++        [0., 0., 960., 820.]
++    };
++    focus_projected(tab, CLEAR).await?;
++    let model = state(tab).await?[MODEL].clone();
++    check!(
++        model["visible"] == true
++            && model["without_hint"] == without_hint
++            && model["above"] == journey.above()
++            && model["dark"] == journey.compact()
++            && model["rtl"] == journey.compact()
++            && model["filled"] == journey.filled()
++            && model["text_scale"] == if journey.compact() { 2. } else { 1. }
++            && model["value"] == "",
++        "the fixture starts in the expected empty phase"
++    );
++    let editor = bounds(tab, FIELD).await?;
++    let [x, y, w, h] = editor;
++    // Exclude outline strokes and the empty caret at either logical start.
++    // Keep the full interior where any physically misplaced hint could draw.
++    let crop = [x + 19., y + 5., w - 38., h - 10.];
++    let name = if journey.above() {
++        "above-label"
++    } else {
++        "floating-label"
++    };
++    let label = bounds(tab, &format!("{FIELD}-{name}")).await?;
++    check!(
++        contains(viewport, editor)
++            && contains(viewport, crop)
++            && contains(viewport, label)
++            && crop[2] > 0.
++            && crop[3] > 0.,
++        "the label, editor and measured region fit the actual viewport"
++    );
++    if journey.above() {
++        check!(
++            label[3] >= 64. && label[1] + label[3] + 3.5 <= editor[1],
++            "the wrapped caption stays fully above the dark compact editor"
++        );
++        check_eq!(
++            bounds(tab, &format!("{FIELD}-floating-label")).await?[2],
++            0.,
++            "the compact editor has no floating outline slot"
++        );
++    }
++    reduced_motion(tab, false).await?;
++    freeze(tab).await?;
++    Ok(Layout {
++        editor,
++        crop,
++        label,
++        filled: journey.filled(),
++        rtl: journey.compact(),
++        foreground: token(&model, "hint")?,
++        paper: token(&model, "paper")?,
++    })
++}
++
++async fn enter(tab: &Tab) -> Result<()> {
++    tab.press("Tab").await?;
++    focus(tab, FIELD, "surface-text-input").await
++}
++
++async fn leave(tab: &Tab) -> Result<()> {
++    tab.press("Shift+Tab").await?;
++    focused(tab, CLEAR).await
++}
++
++async fn textbox(tab: &Tab, label: &str, value: &str, active: bool) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let node = ax(&tree, "textbox", label)?;
++    check_eq!(
++        tree.iter()
++            .filter(|node| node["ignored"] == false
++                && node["role"]["value"] == "textbox"
++                && node["name"]["value"] == label)
++            .count(),
++        1,
++        "Chrome exposes one named textbox"
++    );
++    check_eq!(
++        node["value"]["value"].as_str().unwrap_or(""),
++        value,
++        "the Chrome textbox exposes committed value rather than the placeholder"
++    );
++    check_eq!(
++        tab.eval(&format!("document.activeElement === {TEXTAREA}"))
++            .await?,
++        active,
++        "only the active editor uses the actual textarea"
++    );
++    Ok(json!({"name": label,"value": value,"active":active,"backend":node["backendDOMNodeId"]}))
++}
++
++struct Frame {
++    name: String,
++    phase_ms: u16,
++    pixels: Vec<Rgb>,
++    above_label_pixels: usize,
++}
++
++struct Series {
++    layout: Layout,
++    frames: BTreeMap<&'static str, Frame>,
++}
++
++impl Series {
++    async fn take(
++        &mut self,
++        tab: &Tab,
++        env: &Env,
++        journey: Journey,
++        without_hint: bool,
++        phase: &'static str,
++        phase_ms: u16,
++    ) -> Result<()> {
++        tick(tab, phase_ms).await?;
++        check_eq!(
++            bounds(tab, FIELD).await?,
++            self.layout.editor,
++            "placeholder motion and caller value preserve the editor rectangle"
++        );
++        let treatment = if without_hint { "control" } else { "hint" };
++        let name = format!("{PREFIX}-{}-{treatment}-{phase}.png", journey.name());
++        let path = env.artifact(&name);
++        tab.screenshot(&path).await?;
++        let raster = Raster::read(tab, path).await?;
++        let above_label_pixels = if journey.above() && phase == "idle-above" {
++            raster
++                .colors(self.layout.label)?
++                .get(&self.layout.foreground)
++                .copied()
++                .unwrap_or(0)
++        } else {
++            0
++        };
++        let pixels = self
++            .layout
++            .coordinates()
++            .map(|[x, y]| raster.sample(x, y))
++            .collect::<Result<Vec<_>>>()?;
++        check!(
++            !pixels.is_empty()
++                && self
++                    .frames
++                    .insert(
++                        phase,
++                        Frame {
++                            name,
++                            phase_ms,
++                            pixels,
++                            above_label_pixels,
++                        }
++                    )
++                    .is_none(),
++            "one nonempty original crop per phase"
++        );
++        Ok(())
++    }
++}
++
++async fn outlined(tab: &Tab, env: &Env, url: &str, without_hint: bool) -> Result<(Series, Value)> {
++    let journey = Journey::Outlined;
++    let layout = scene(tab, url, journey, without_hint).await?;
++    let mut series = Series {
++        layout,
++        frames: BTreeMap::new(),
++    };
++    let idle = textbox(tab, TITLE, "", false).await?;
++    series
++        .take(tab, env, journey, without_hint, "idle", 0)
++        .await?;
++    enter(tab).await?;
++    let active = textbox(tab, TITLE, "", true).await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-start", 0)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-overlap", 14)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-alpha-96", 96)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-alpha-144", 144)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-settled", 800)
++        .await?;
++    leave(tab).await?;
++    series
++        .take(tab, env, journey, without_hint, "blur-start", 800)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "blur-alpha-12", 812)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "blur-alpha-20", 820)
++        .await?;
++    enter(tab).await?;
++    series
++        .take(tab, env, journey, without_hint, "reverse-start", 820)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "reverse-alpha-6", 826)
++        .await?;
++    reduced_motion(tab, true).await?;
++    series
++        .take(tab, env, journey, without_hint, "reduced", 826)
++        .await?;
++    check!(
++        idle["backend"] != active["backend"],
++        "the live editor replaces its named proxy"
++    );
++    Ok((series, json!({"idle":idle,"focused":active})))
++}
++
++async fn filled_ime(
++    tab: &Tab,
++    env: &Env,
++    url: &str,
++    without_hint: bool,
++) -> Result<(Series, Value)> {
++    let journey = Journey::FilledRtl;
++    let layout = scene(tab, url, journey, without_hint).await?;
++    let mut series = Series {
++        layout,
++        frames: BTreeMap::new(),
++    };
++    enter(tab).await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-start", 0)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-overlap", 14)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "focus-settled", 800)
++        .await?;
++    let input = format!(
++        "JSON.parse(window.gallery.export_dom()).text_inputs[{}]",
++        js(FIELD)
++    );
++    tab.ime_compose("中文", 2, 2).await?;
++    tab.wait_for(&format!(
++        "{input}.composing && {input}.value === '' && {TEXTAREA}.value === '中文'"
++    ))
++    .await?;
++    series
++        .take(tab, env, journey, without_hint, "marked", 800)
++        .await?;
++    tab.press("Escape").await?;
++    if tab.eval(&format!("{input}.composing")).await? == true {
++        tab.ime_compose("", 0, 0).await?;
++    }
++    tab.wait_for(&format!("!{input}.composing && {TEXTAREA}.value === ''"))
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "cancelled-marked", 800)
++        .await?;
++
++    // Chrome's CDP empty update ends a composition. To exercise the
++    // separate Runtime Begin while both values are empty, deliver a
++    // synthetic DOM event through the real focused host and bridge.
++    let begin = tab.eval(&format!(
++        "(() => {{ const event = new CompositionEvent('compositionstart', {{bubbles:true,data:''}});
++           {TEXTAREA}.dispatchEvent(event); return {{trusted:event.isTrusted,data:event.data}}; }})()"
++    )).await?;
++    check_eq!(
++        begin,
++        json!({"trusted":false,"data":""}),
++        "explicit synthetic empty composition start"
++    );
++    tab.wait_for(&format!(
++        "{input}.composing && {input}.value === '' && {TEXTAREA}.value === ''"
++    ))
++    .await?;
++    series
++        .take(tab, env, journey, without_hint, "empty-composition", 800)
++        .await?;
++    tab.eval(&format!(
++        "{TEXTAREA}.dispatchEvent(new CompositionEvent('compositionend', {{bubbles:true,data:''}}))"
++    ))
++    .await?;
++    tab.wait_for(&format!("!{input}.composing && {TEXTAREA}.value === ''"))
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "cancelled-empty", 800)
++        .await?;
++    check_eq!(
++        state(tab).await?[MODEL]["edits"],
++        0,
++        "composition does not commit a fixture edit"
++    );
++    let ax = textbox(tab, TITLE, "", true).await?;
++
++    tab.insert_text("草稿").await?;
++    until(
++        tab,
++        &format!("s.{MODEL}.value === '草稿' && s.{MODEL}.edits === 1"),
++    )
++    .await?;
++    series
++        .take(tab, env, journey, without_hint, "typed", 800)
++        .await?;
++    tab.shortcut("A").await?;
++    tab.press("Backspace").await?;
++    until(
++        tab,
++        &format!("s.{MODEL}.value === '' && s.{MODEL}.edits === 2"),
++    )
++    .await?;
++    series
++        .take(tab, env, journey, without_hint, "cleared", 800)
++        .await?;
++    Ok((
++        series,
++        json!({"synthetic_empty_begin":begin,"host_after_cancel":ax,"actual_cdp_marked":"中文"}),
++    ))
++}
++
++async fn above(tab: &Tab, env: &Env, url: &str, without_hint: bool) -> Result<(Series, Value)> {
++    let journey = Journey::AboveRtl;
++    let layout = scene(tab, url, journey, without_hint).await?;
++    let mut series = Series {
++        layout,
++        frames: BTreeMap::new(),
++    };
++    let idle = textbox(tab, ABOVE_TITLE, "", false).await?;
++    series
++        .take(tab, env, journey, without_hint, "idle-above", 0)
++        .await?;
++    enter(tab).await?;
++    series
++        .take(tab, env, journey, without_hint, "focused-above", 0)
++        .await?;
++    leave(tab).await?;
++    series
++        .take(tab, env, journey, without_hint, "blurred-above", 0)
++        .await?;
++
++    activate(tab, &setting("set")).await?;
++    until(
++        tab,
++        &format!("s.{MODEL}.value === '範例' && s.{MODEL}.authored_writes === 1"),
++    )
++    .await?;
++    series
++        .take(tab, env, journey, without_hint, "nonempty", 800)
++        .await?;
++    let seeded = textbox(tab, ABOVE_TITLE, "範例", false).await?;
++    activate(tab, CLEAR).await?;
++    until(
++        tab,
++        &format!("s.{MODEL}.value === '' && s.{MODEL}.authored_writes === 2"),
++    )
++    .await?;
++    focused(tab, CLEAR).await?;
++    series
++        .take(tab, env, journey, without_hint, "clear-start", 800)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "clear-alpha-44", 844)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "clear-alpha-96", 896)
++        .await?;
++    series
++        .take(tab, env, journey, without_hint, "clear-settled", 1600)
++        .await?;
++    let cleared = textbox(tab, ABOVE_TITLE, "", false).await?;
++    check_eq!(
++        state(tab).await?[MODEL]["edits"],
++        0,
++        "authored clearing is not a user edit"
++    );
++    Ok((
++        series,
++        json!({"idle":idle,"seeded":seeded,"cleared":cleared}),
++    ))
++}
++
++fn motion_level(stiffness: f64, ms: u16) -> f64 {
++    let phase = stiffness.sqrt() * f64::from(ms) / 1000.;
++    (1. + phase) * (-phase).exp()
++}
++
++fn resumed_focus_alpha(blur_ms: u16, focus_ms: u16) -> f64 {
++    let blur_seconds = f64::from(blur_ms) / 1000.;
++    let blur_rate = FAST_EFFECTS.sqrt();
++    let velocity = -FAST_EFFECTS * blur_seconds * (-blur_rate * blur_seconds).exp();
++    let offset = motion_level(FAST_EFFECTS, blur_ms) - 1.;
++    let focus_seconds = f64::from(focus_ms) / 1000.;
++    let focus_rate = SLOW_EFFECTS.sqrt();
++    1. + (offset + (velocity + focus_rate * offset) * focus_seconds)
++        * (-focus_rate * focus_seconds).exp()
++}
++
++fn composite(paper: Rgb, foreground: Rgb, opacity: f64, linear: bool) -> Rgb {
++    let alpha = (opacity * 255.).round() / 255.;
++    let decode = |sample: u8| {
++        let channel = f64::from(sample) / 255.;
++        if !linear {
++            channel
++        } else if channel <= 0.04045 {
++            channel / 12.92
++        } else {
++            ((channel + 0.055) / 1.055).powf(2.4)
++        }
++    };
++    std::array::from_fn(|i| {
++        let srgb = decode(paper[i]) * (1. - alpha) + decode(foreground[i]) * alpha;
++        let encoded = if !linear {
++            srgb
++        } else if srgb <= 0.0031308 {
++            12.92 * srgb
++        } else {
++            1.055 * srgb.powf(1. / 2.4) - 0.055
++        };
++        (255. * encoded).round() as u8
++    })
++}
++
++fn nearby(left: Rgb, right: Rgb) -> bool {
++    left.into_iter().zip(right).all(|(a, b)| a.abs_diff(b) <= 2)
++}
++
++struct Masks<'a> {
++    hint: &'a Series,
++    control: &'a Series,
++    probes: Vec<(usize, Pair)>,
++    rgb_models: [bool; 2],
++    receipts: BTreeMap<&'static str, Value>,
++}
++
++impl<'a> Masks<'a> {
++    fn new(hint: &'a Series, control: &'a Series, settled: &'static str) -> Result<Self> {
++        check_eq!(
++            hint.layout,
++            control.layout,
++            "the positive and hint-free control differ only in paint"
++        );
++        let layout = &hint.layout;
++        let measured = &hint.frames[settled];
++        let blank = &control.frames[settled];
++        let mask = layout
++            .coordinates()
++            .zip(measured.pixels.iter().zip(&blank.pixels))
++            .enumerate()
++            .filter(|(_, (_, (ink, paper)))| **ink == layout.foreground && **paper == layout.paper)
++            .map(|(index, (position, _))| (index, position))
++            .collect::<Vec<_>>();
++        check!(
++            mask.len() > 80,
++            "the settled original contains solid hint pixels"
++        );
++        let logical_edge = if layout.rtl {
++            layout.editor[0] + layout.editor[2] - 16.
++        } else {
++            layout.editor[0] + 16.
++        };
++        let painted_edge = if layout.rtl {
++            mask.iter()
++                .map(|(_, [x, _])| *x)
++                .fold(f64::NEG_INFINITY, f64::max)
++        } else {
++            mask.iter()
++                .map(|(_, [x, _])| *x)
++                .fold(f64::INFINITY, f64::min)
++        };
++        check!(
++            (logical_edge - painted_edge).abs() <= 10.,
++            "the observed hint uses the field's actual logical-start alignment"
++        );
++        // Use distinct solid glyphs past the short caption. This isolates
++        // hint ink while the caption follows its own path and color clock.
++        let mut far = mask
++            .into_iter()
++            .filter(|(_, [x, _])| (x - logical_edge).abs() > if layout.rtl { 110. } else { 65. })
++            .collect::<Vec<_>>();
++        far.sort_by(|(_, [x, _]), (_, [y, _])| x.total_cmp(y));
++        check!(
++            far.len() >= 32,
++            "the hint has a separate solid suffix to sample"
++        );
++        let probes = (1..=4).map(|i| far[far.len() * i / 5]).collect();
++        Ok(Self {
++            hint,
++            control,
++            probes,
++            rgb_models: [true, true],
++            receipts: BTreeMap::new(),
++        })
++    }
++
++    fn sample(&mut self, phase: &'static str, opacity: f64) -> Result<()> {
++        let layout = &self.hint.layout;
++        let hint = &self.hint.frames[phase];
++        let control = &self.control.frames[phase];
++        check_eq!(
++            hint.phase_ms,
++            control.phase_ms,
++            "paired crops share the exact held frame time"
++        );
++        check_eq!(
++            hint.pixels.len(),
++            control.pixels.len(),
++            "paired crop inventory"
++        );
++        let changed = hint
++            .pixels
++            .iter()
++            .zip(&control.pixels)
++            .filter(|(a, b)| a != b)
++            .count();
++        let actual = self
++            .probes
++            .iter()
++            .map(|(index, _)| hint.pixels[*index])
++            .collect::<Vec<_>>();
++        let mut expected = [layout.paper; 2];
++        if opacity == 0. {
++            check_eq!(
++                changed,
++                0,
++                format!("{phase}: the full glyph region matches its no-hint control")
++            );
++        } else {
++            check!(
++                changed > 32,
++                format!("{phase}: actual hint stroke pixels must differ from the control")
++            );
++            for (choice, linear) in [false, true].into_iter().enumerate() {
++                expected[choice] = composite(layout.paper, layout.foreground, opacity, linear);
++                self.rgb_models[choice] &= actual
++                    .iter()
++                    .all(|sample| nearby(*sample, expected[choice]));
++            }
++            check!(
++                self.rgb_models.into_iter().any(|plausible| plausible)
++                    && self.probes.iter().all(|(index, _)| control.pixels[*index] == layout.paper),
++                format!("{phase}: actual original hint RGB {actual:?}, expected {expected:?} at opacity {opacity}")
++            );
++            if opacity == 1. {
++                check!(
++                    actual.iter().all(|sample| *sample == layout.foreground),
++                    "the settled hint uses the exact ink token"
++                );
++            }
++        }
++        self.receipts.insert(phase, json!({
++            "ms":hint.phase_ms,"opacity":opacity,"hint_png":hint.name,"control_png":control.name,
++            "changed_pixels":changed,"actual_probe_rgb":actual,"expected_composite_rgb":expected,
++        }));
++        Ok(())
++    }
++
++    fn report(self, hint_ax: Value, control_ax: Value) -> Value {
++        let probes = self
++            .probes
++            .iter()
++            .map(|(_, point)| *point)
++            .collect::<Vec<_>>();
++        json!({
++            "layout": self.hint.layout.placement_report(),"probe_points":probes,
++            "frames":self.receipts, "accepted_blend_models":self.rgb_models,
++            "hint_ax":hint_ax, "control_ax":control_ax
++        })
++    }
++}
++
++async fn outlined_proof(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    let (hint, hint_ax) = outlined(tab, env, url, false).await?;
++    let (control, control_ax) = outlined(tab, env, url, true).await?;
++    let mut proof = Masks::new(&hint, &control, "focus-settled")?;
++    for stage in ["idle", "focus-start", "focus-overlap"] {
++        proof.sample(stage, 0.)?;
++    }
++    proof.sample("focus-alpha-96", 1. - motion_level(SLOW_EFFECTS, 96))?;
++    proof.sample("focus-alpha-144", 1. - motion_level(SLOW_EFFECTS, 144))?;
++    proof.sample("focus-settled", 1.)?;
++    proof.sample("blur-start", 1.)?;
++    proof.sample("blur-alpha-12", motion_level(FAST_EFFECTS, 12))?;
++    let turn = motion_level(FAST_EFFECTS, 20);
++    proof.sample("blur-alpha-20", turn)?;
++    proof.sample("reverse-start", turn)?;
++    proof.sample("reverse-alpha-6", resumed_focus_alpha(20, 6))?;
++    proof.sample("reduced", 1.)?;
++    Ok(proof.report(hint_ax, control_ax))
++}
++
++async fn filled_ime_proof(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    let (hint, hint_ax) = filled_ime(tab, env, url, false).await?;
++    let (control, control_ax) = filled_ime(tab, env, url, true).await?;
++    let mut proof = Masks::new(&hint, &control, "focus-settled")?;
++    for phase in [
++        "focus-start",
++        "focus-overlap",
++        "marked",
++        "empty-composition",
++        "typed",
++    ] {
++        proof.sample(phase, 0.)?;
++    }
++    for phase in [
++        "focus-settled",
++        "cancelled-marked",
++        "cancelled-empty",
++        "cleared",
++    ] {
++        proof.sample(phase, 1.)?;
++    }
++    let model = state(tab).await?[MODEL].clone();
++    let text = token(&model, "text")?;
++    let painted = hint.frames["marked"]
++        .pixels
++        .iter()
++        .filter(|p| **p == text)
++        .count();
++    check!(
++        painted > 12,
++        "actual marked glyphs remain present with the hint fully hidden"
++    );
++    let mut report = proof.report(hint_ax, control_ax);
++    report["marked_ink_pixels"] = json!(painted);
++    Ok(report)
++}
++
++async fn above_proof(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
++    let (hint, hint_ax) = above(tab, env, url, false).await?;
++    let (control, control_ax) = above(tab, env, url, true).await?;
++    let mut proof = Masks::new(&hint, &control, "clear-settled")?;
++    for phase in [
++        "idle-above",
++        "focused-above",
++        "blurred-above",
++        "clear-settled",
++    ] {
++        proof.sample(phase, 1.)?;
++    }
++    proof.sample("nonempty", 0.)?;
++    proof.sample("clear-start", 0.)?;
++    proof.sample("clear-alpha-44", 1. - motion_level(SLOW_EFFECTS, 44))?;
++    proof.sample("clear-alpha-96", 1. - motion_level(SLOW_EFFECTS, 96))?;
++    let label_pixels = hint.frames["idle-above"].above_label_pixels;
++    check!(
++        label_pixels > 40 && label_pixels == control.frames["idle-above"].above_label_pixels,
++        "the wrapped idle label is visibly separate from its hint in both originals"
++    );
++    let mut report = proof.report(hint_ax, control_ax);
++    report["idle_above_label_pixels"] = json!(label_pixels);
++    Ok(report)
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 864, DPI).await?;
++    let mut report = json!({"browser":chrome.version,"clock":"controlled performance.now",
++        "dpr":DPI,"stiffness":{"slow":SLOW_EFFECTS,"fast":FAST_EFFECTS},"damping_ratio":1});
++    let result: Result<()> = async {
++        step(STEPS[0], "the whole outline preserves hidden hint pixels and measures unequal focus and blur curves");
++        report["outlined"] = outlined_proof(&tab, env, url).await?;
++        report["adapter"] = tab.eval(r#"(async () => {
++            const {info} = await navigator.gpu.requestAdapter();
++            const {vendor,architecture,isFallbackAdapter}=info;
++            return {vendor,architecture,isFallbackAdapter};
++        })()"#).await?;
++        check!(
++            report["adapter"]["vendor"].is_string() && report["adapter"]["architecture"].is_string()
++                && report["adapter"]["isFallbackAdapter"].is_boolean(),
++            "the test records the actual WebGPU adapter"
++        );
++        step(STEPS[1], "dark RTL at 200 percent keeps the hint aligned and hides every hint pixel during IME");
++        report["filled_rtl"] = filled_ime_proof(&tab, env, url).await?;
++        step(STEPS[2], "a wrapped above-caption shows its idle hint and slowly reveals after an unfocused authored clear");
++        report["above_rtl"] = above_proof(&tab, env, url).await?;
++        check!(tab.errors().is_empty(), "no placeholder motion page errors");
++        Ok(())
++    }.await;
++    report["page_errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact(&format!("{PREFIX}-failure.png")))
++            .await;
++    }
++    env.write_json(&format!("{PREFIX}.json"), &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index eb753f29220dc1cc9d576337632eb06fbe825829..4b3d85cb598aa1602663a5b3381c39009670546d 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -50,6 +50,7 @@ mod switch_demo;
+ mod tabs_demo;
+ mod text_field_adornments_demo;
+ mod text_field_counter_demo;
++mod text_field_placeholder_demo;
+ mod time_dial_demo;
+ mod time_input_demo;
+ mod time_scroll_demo;
+@@ -118,6 +119,7 @@ use switch_demo::{SwitchDemo, SwitchDemoEvent};
+ use tabs_demo::{TabsDemo, TabsDemoEvent};
+ use text_field_adornments_demo::{TextFieldAdornmentsDemo, TextFieldAdornmentsDemoEvent};
+ use text_field_counter_demo::{TextFieldCounterDemo, TextFieldCounterDemoEvent};
++use text_field_placeholder_demo::{TextFieldPlaceholderDemo, TextFieldPlaceholderDemoEvent};
+ use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
+ use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
+ use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
+@@ -163,6 +165,7 @@ pub struct Gallery {
+     outlined_text_field_demo: OutlinedTextFieldDemo,
+     text_field_adornments_demo: TextFieldAdornmentsDemo,
+     text_field_counter_demo: TextFieldCounterDemo,
++    text_field_placeholder_demo: TextFieldPlaceholderDemo,
+     multiline_text_field_demo: MultilineTextFieldDemo,
+     segmented_demo: SegmentedDemo,
+     slider_demo: SliderDemo,
+@@ -246,6 +249,7 @@ impl Default for Gallery {
+             outlined_text_field_demo: OutlinedTextFieldDemo::default(),
+             text_field_adornments_demo: TextFieldAdornmentsDemo::default(),
+             text_field_counter_demo: TextFieldCounterDemo::default(),
++            text_field_placeholder_demo: TextFieldPlaceholderDemo::default(),
+             multiline_text_field_demo: MultilineTextFieldDemo::default(),
+             segmented_demo: SegmentedDemo::default(),
+             slider_demo: SliderDemo::default(),
+@@ -374,6 +378,7 @@ pub enum Message {
+     OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
+     TextFieldAdornmentsDemo(TextFieldAdornmentsDemoEvent),
+     TextFieldCounterDemo(TextFieldCounterDemoEvent),
++    TextFieldPlaceholderDemo(TextFieldPlaceholderDemoEvent),
+     MultilineTextFieldDemo(MultilineTextFieldDemoEvent),
+     SegmentedDemo(SegmentedDemoEvent),
+     SliderDemo(SliderDemoEvent),
+@@ -575,6 +580,9 @@ impl Application for Gallery {
+         if self.text_field_counter_demo.visible() {
+             return self.text_field_counter_demo.text_scale();
+         }
++        if self.text_field_placeholder_demo.visible() {
++            return self.text_field_placeholder_demo.text_scale();
++        }
+         if self.multiline_text_field_demo.visible() {
+             return self.multiline_text_field_demo.text_scale();
+         }
+@@ -1046,6 +1054,9 @@ impl Application for Gallery {
+                 if i != text_field_counter_demo::SECTION {
+                     self.text_field_counter_demo.leave();
+                 }
++                if i != text_field_placeholder_demo::SECTION {
++                    self.text_field_placeholder_demo.leave();
++                }
+                 if i != multiline_text_field_demo::SECTION {
+                     self.multiline_text_field_demo.leave();
+                 }
+@@ -1083,6 +1094,9 @@ impl Application for Gallery {
+                 self.text_field_adornments_demo.update(event)
+             }
+             Message::TextFieldCounterDemo(event) => self.text_field_counter_demo.update(event),
++            Message::TextFieldPlaceholderDemo(event) => {
++                self.text_field_placeholder_demo.update(event)
++            }
+             Message::MultilineTextFieldDemo(event) => self.multiline_text_field_demo.update(event),
+             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
+             Message::SliderDemo(event) => self.slider_demo.update(event),
+@@ -1316,6 +1330,9 @@ impl Application for Gallery {
+         if self.text_field_counter_demo.visible() {
+             return self.text_field_counter_demo.view(&t, self.dark);
+         }
++        if self.text_field_placeholder_demo.visible() {
++            return self.text_field_placeholder_demo.view(&t, self.dark);
++        }
+         if self.multiline_text_field_demo.visible() {
+             return self.multiline_text_field_demo.view(&t, self.dark);
+         }
+@@ -1453,6 +1470,7 @@ impl Application for Gallery {
+                             TextFieldAdornmentsDemo::show_button(&t),
+                             TextFieldCounterDemo::show_button(&t),
+                             MultilineTextFieldDemo::show_button(&t),
++                            TextFieldPlaceholderDemo::show_button(&t),
+                         ],
+                     ),
+                 );
+@@ -2089,6 +2107,7 @@ mod web {
+         state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
+         state["text_field_adornments_demo"] = s.text_field_adornments_demo.inspect(&theme, s.dark);
+         state["text_field_counter_demo"] = s.text_field_counter_demo.inspect(&theme, s.dark);
++        state["text_field_placeholder_demo"] = s.text_field_placeholder_demo.inspect(&theme, s.dark);
+         state["multiline_text_field_demo"] = s.multiline_text_field_demo.inspect(&theme, s.dark);
+         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
+         state["slider_demo"] = s.slider_demo.inspect(&theme);
+diff --git a/examples/material-gallery/src/text_field_placeholder_demo.rs b/examples/material-gallery/src/text_field_placeholder_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..640d67761fe532f48c02464eab5e74c0f4e1d070
+--- /dev/null
++++ b/examples/material-gallery/src/text_field_placeholder_demo.rs
+@@ -0,0 +1,243 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, ButtonKind, ChoiceState, OutlinedTextFieldOptions, Theme,
++};
++
++use crate::{scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 0;
++const SHOW: &str = "text-field-placeholder-demo-show";
++const BACK: &str = "text-field-placeholder-demo-back";
++const TITLE: &str = "提示文字淡入淡出";
++const EDITOR: &str = "text-field-placeholder-demo-editor";
++const SHORT_LABEL: &str = "名稱";
++const LONG_LABEL: &str = "輸入團隊成員在共用專案清單中容易辨認的完整名稱";
++const HINT: &str = "請輸入完整名稱";
++const SEED: &str = "範例";
++
++#[derive(Clone)]
++pub enum TextFieldPlaceholderDemoEvent {
++    Show,
++    Back,
++    ToggleFilled,
++    ToggleRtl,
++    ToggleLargeText,
++    ToggleAbove,
++    ToggleHint,
++    SetValue,
++    ClearValue,
++    Edit(String),
++}
++
++#[derive(Default)]
++pub(crate) struct TextFieldPlaceholderDemo {
++    visible: bool,
++    filled: bool,
++    rtl: bool,
++    large_text: bool,
++    above: bool,
++    without_hint: bool,
++    value: String,
++    edits: usize,
++    authored_writes: usize,
++}
++
++impl TextFieldPlaceholderDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn update(&mut self, event: TextFieldPlaceholderDemoEvent) {
++        use TextFieldPlaceholderDemoEvent::*;
++        if !self.visible && !matches!(event, Show) {
++            return;
++        }
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleFilled => self.filled = !self.filled,
++            ToggleRtl => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            ToggleAbove => self.above = !self.above,
++            ToggleHint => self.without_hint = !self.without_hint,
++            SetValue => {
++                self.value = SEED.to_owned();
++                self.authored_writes += 1;
++            }
++            ClearValue => {
++                self.value.clear();
++                self.authored_writes += 1;
++            }
++            Edit(value) => {
++                self.value = value;
++                self.edits += 1;
++            }
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                TITLE,
++                ButtonKind::Outlined,
++                false,
++                Message::TextFieldPlaceholderDemo(TextFieldPlaceholderDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++            .suppress_repeated_activation()
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use TextFieldPlaceholderDemoEvent::*;
++
++        let wrap = Message::TextFieldPlaceholderDemo;
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(
++                    id,
++                    label,
++                    ChoiceState {
++                        selected,
++                        disabled: false,
++                    },
++                    message,
++                )
++                .accessible_activation()
++                .suppress_repeated_activation()
++        };
++        let command = |id, label, event| {
++            theme
++                .tonal_button(id, label, wrap(event))
++                .accessible_activation()
++                .suppress_repeated_activation()
++        };
++        let view = control_row(vec![
++            command(BACK, "返回", Back).restore_focus_on_removal(SHOW),
++            toggle(
++                "text-field-placeholder-demo-theme",
++                "深色",
++                dark,
++                Message::Theme,
++            ),
++            toggle(
++                "text-field-placeholder-demo-filled",
++                "填色",
++                self.filled,
++                wrap(ToggleFilled),
++            ),
++            toggle(
++                "text-field-placeholder-demo-rtl",
++                "右起",
++                self.rtl,
++                wrap(ToggleRtl),
++            ),
++            toggle(
++                "text-field-placeholder-demo-large",
++                "大字",
++                self.large_text,
++                wrap(ToggleLargeText),
++            ),
++            toggle(
++                "text-field-placeholder-demo-above",
++                "長標籤",
++                self.above,
++                wrap(ToggleAbove),
++            ),
++            toggle(
++                "text-field-placeholder-demo-no-hint",
++                "隱去提示",
++                self.without_hint,
++                wrap(ToggleHint),
++            ),
++        ]);
++        let value = control_row(vec![
++            command("text-field-placeholder-demo-set", "填入範例", SetValue),
++            command("text-field-placeholder-demo-clear", "清空範例", ClearValue),
++        ]);
++
++        let label = if self.above { LONG_LABEL } else { SHORT_LABEL };
++        let mut options = OutlinedTextFieldOptions::new(EDITOR, label, &self.value);
++        options.placeholder = (!self.without_hint).then_some(HINT);
++        options.direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        options.text_scale = self.text_scale();
++        let field = if self.filled {
++            theme.filled_text_field(options, move |value| wrap(Edit(value)))
++        } else {
++            theme.outlined_text_field(options, move |value| wrap(Edit(value)))
++        }
++        .expect("valid placeholder demo");
++        let mut body = Style::column().width(Length::Percent(1.));
++        body.max_width = Length::Px(480.);
++        let field = View::new(Node::new(Role::Group, "").styled(body)).children([field]);
++
++        View::new(
++            Node::new(Role::Window, TITLE)
++                .id("text-field-placeholder-demo-route")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.background)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([
++            theme.heading("text-field-placeholder-demo-title", TITLE),
++            view,
++            value,
++            field,
++        ])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme, dark: bool) -> serde_json::Value {
++        let color = |surface::Color(r, g, b, a)| [r, g, b, a];
++        let palette = theme.colors;
++        let paper = if self.filled {
++            palette.surface_container_highest
++        } else {
++            theme.background
++        };
++        serde_json::json!({
++            "visible": self.visible,
++            "dark": dark,
++            "filled": self.filled,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "above": self.above,
++            "without_hint": self.without_hint,
++            "value": self.value,
++            "edits": self.edits,
++            "authored_writes": self.authored_writes,
++            "palette": {
++                "paper": color(paper),
++                "hint": color(palette.on_surface_variant),
++                "text": color(palette.on_surface),
++                "primary": color(palette.primary),
++            },
++        })
++    }
++}

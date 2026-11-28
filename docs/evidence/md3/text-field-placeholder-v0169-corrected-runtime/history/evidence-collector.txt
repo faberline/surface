@@ -1,0 +1,20 @@
+Surface v0.1.69 evidence collector
+
+This is a disposable /tmp evidence helper. It does not change source files or publish anything.
+
+Run the no-package preflight now:
+
+  python3 -B /tmp/surface-md3-v0169-evidence.wI7nO0eV/collect.py \
+    --preflight \
+    --native-run /tmp/surface-md3-v0169-replay.WfBRFHlH/native-run
+
+This checks the exact source pins, 1,584 workspace test results, all 21 manifested Metal originals from 18 passing GPU tests, and the native report plus all 40 PNGs against its exact SHA256SUMS. It creates no package.
+
+After the guarded Browser run is complete, create the package with a fresh output path:
+
+  python3 -B /tmp/surface-md3-v0169-evidence.wI7nO0eV/collect.py \
+    --native-run /tmp/surface-md3-v0169-replay.WfBRFHlH/native-run \
+    --browser-run /tmp/<completed-browser-run> \
+    --out /tmp/surface-md3-v0169-evidence-final.<fresh-suffix>
+
+Package mode stops if Browser receipts are incomplete. It runs the exact `verify-placeholder.py --artifacts` pixel check. It packages all 58 reported browser PNGs if their combined size is under 15 MiB. Otherwise, it packages four named PNGs from the actual report. It includes all 40 native PNGs and their exact seal, all 21 Metal PNGs and source seal, exact source and build hash manifests, logs, the forward patch from v0.1.68, and a portable readback guide. It writes a tar.gz and a SHA-256 sidecar. No publishing step is included.
