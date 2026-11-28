@@ -3,6 +3,7 @@ mod accessibility;
 #[cfg(feature = "bridge")]
 mod bridge;
 mod captured_drag;
+mod color_spring;
 mod context;
 mod controls;
 mod cursor;
@@ -288,6 +289,35 @@ impl<M> View<M> {
             editor_id,
             editor_paint::Effect::Label {
                 resting: resting_label.into(),
+                color_motion: None,
+                alignment,
+                color: Box::new(color),
+            },
+        )
+    }
+
+    /// Move this passive label between its measured positions and animate its color.
+    /// Use the passive fallback when either position has no area. All three labels
+    /// share the editor's immediate parent, text and color motion. The fallback
+    /// stays at its measured position. Pass the theme's background and label
+    /// colors as `palette` so a theme change settles the color immediately.
+    pub fn animate_text_input_label_with_fallback(
+        self,
+        editor_id: impl Into<String>,
+        resting_label: impl Into<String>,
+        fallback_label: impl Into<String>,
+        palette: &[Color],
+        alignment: TextAlignment,
+        color: impl Fn(TextInputPaintState) -> Color + 'static,
+    ) -> Self {
+        self.with_text_input_paint(
+            editor_id,
+            editor_paint::Effect::Label {
+                resting: resting_label.into(),
+                color_motion: Some(editor_paint::LabelColorMotion {
+                    fallback: fallback_label.into(),
+                    palette: palette.into(),
+                }),
                 alignment,
                 color: Box::new(color),
             },

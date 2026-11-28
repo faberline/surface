@@ -1338,6 +1338,14 @@ needs more space wraps above the field and keeps the outline closed.
 While an empty label moves out of the value row, the hint waits for
 that row to clear.
 
+The Material Standard Fast Effects spring changes the label color in
+both appearances. It blends the colors in Oklab, a color space that
+makes changes in color more even to the eye. The spring keeps its
+current color and speed when focus or validation changes again.
+The above-field label shares that color during a resize.
+Reduce Motion, a disabled field, or a new theme settles the color
+immediately. The validation state and its description update at once.
+
 ## Baseline segmented buttons
 
 Use `Theme::baseline_segmented_button` for two to five related choices in
