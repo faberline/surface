@@ -6,7 +6,9 @@ use surface::{
     Color, FillContour, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
     TextMeasurer, TextScaling, TextStyle,
 };
-use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
+use surface_app::{
+    CursorStyle, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions, ToggleSpring, View,
+};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::{
@@ -80,9 +82,9 @@ impl Theme {
     /// Build an outlined field which uses the width supplied by its parent.
     ///
     /// Keep the ID stable across changes to value, validation, theme and scale.
-    /// The label floats when the field has focus or content. An optional hint
-    /// shows only in the focused empty field outside IME composition. A long
-    /// label that cannot fit inside the field stays above the outline.
+    /// The label floats when the field has focus or content. A long label
+    /// that cannot fit inside the field stays above the outline. The optional
+    /// hint can show in an empty field when the label leaves its value area.
     pub fn outlined_text_field<M>(
         &self,
         options: OutlinedTextFieldOptions<'_>,
@@ -394,40 +396,54 @@ impl Theme {
         }
 
         let boundary_part = if filled { "indicator" } else { "outline" };
-        let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
-            .without_interaction(None);
-        let stroke = move |state: TextInputPaintState| {
-            if state.is_focused && !disabled {
-                3.
-            } else {
-                1.
-            }
-        };
         let direction = options.direction;
-        let boundary = if filled {
-            boundary.paint_text_input_contour_with_bounds(id, None, move |state, face, _| {
-                let top = face.height - stroke(state);
-                FillContour::new(
-                    [
-                        [0., top],
-                        [face.width, top],
-                        [face.width, face.height],
-                        [0., face.height],
+        let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
+            .without_interaction(None)
+            .animate_text_input_boundary(
+                id,
+                (!filled).then_some(floating_id.as_str()),
+                TextInputBoundaryMotion {
+                    widths: [1., 3.],
+                    // Filled uses Fast Spatial for width. Outlined uses
+                    // Fast Effects for both its width and color.
+                    width_spring: if filled {
+                        ToggleSpring::StandardFastSpatial
+                    } else {
+                        ToggleSpring::StandardFastEffects
+                    },
+                    palette: &[
+                        tokens.boundary,
+                        tokens.boundary_hover,
+                        tokens.primary,
+                        tokens.error_ink,
+                        tokens.error_hover,
+                        tokens.disabled_boundary,
                     ],
-                    tokens.boundary(state),
-                )
-            })
-        } else {
-            boundary.paint_text_input_label_outline(id, &floating_id, move |state, face, pose| {
-                let notch = pose.map(|pose| LabelNotch {
-                    progress: pose.progress,
-                    measured_size: (pose.bounds.width, pose.bounds.height),
-                    minimized: pose.floated_bounds,
-                    direction,
-                });
-                outline_contour(face, stroke(state), notch, tokens.boundary(state))
-            })
-        };
+                },
+                move |state| tokens.boundary(state),
+                move |face, pose, width, color| {
+                    if filled {
+                        let top = face.height - width;
+                        FillContour::new(
+                            [
+                                [0., top],
+                                [face.width, top],
+                                [face.width, face.height],
+                                [0., face.height],
+                            ],
+                            color,
+                        )
+                    } else {
+                        let notch = pose.map(|pose| LabelNotch {
+                            progress: pose.progress,
+                            measured_size: (pose.bounds.width, pose.bounds.height),
+                            minimized: pose.floated_bounds,
+                            direction,
+                        });
+                        outline_contour(face, width, notch, color)
+                    }
+                },
+            );
         let label_view = |id, font| {
             View::new(
                 Node::new(Role::Text, "")

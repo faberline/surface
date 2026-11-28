@@ -51,7 +51,7 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
-pub use editor_paint::TextInputLabelMotion;
+pub use editor_paint::{TextInputBoundaryMotion, TextInputLabelMotion};
 pub use frame_input::{
     FrameInput, FramePress, FramePressPhase, InputAnimationUpdate, TouchContact,
 };
@@ -347,6 +347,31 @@ impl<M> View<M> {
                 label: label_id.into(),
                 paint: Box::new(painter),
             },
+        )
+    }
+
+    /// Paint a boundary with retained width and color outside the editor's layout.
+    /// Give the boundary and its sibling editor stable IDs. An optional label
+    /// supplies the same measured pose used by its own paint. The contour
+    /// receives the boundary's global bounds and returns local points.
+    pub fn animate_text_input_boundary(
+        self,
+        editor_id: impl Into<String>,
+        label_id: Option<&str>,
+        motion: TextInputBoundaryMotion<'_>,
+        color: impl Fn(TextInputPaintState) -> Color + 'static,
+        paint: impl Fn(Rect, Option<TextInputLabelMotion>, f32, Color) -> Option<FillContour> + 'static,
+    ) -> Self {
+        self.with_text_input_paint(
+            editor_id,
+            editor_paint::Effect::Boundary(editor_paint::Boundary {
+                label: label_id.map(str::to_owned),
+                widths: motion.widths,
+                width_spring: motion.width_spring,
+                palette: motion.palette.into(),
+                color: Box::new(color),
+                paint: Box::new(paint),
+            }),
         )
     }
 
@@ -1478,7 +1503,7 @@ pub struct Runtime<A: Application> {
     scroll_state: scroll_control::State,
     editors: BTreeMap<String, TextEditor>,
     text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
-    editor_label_motion: editor_paint::LabelMotions,
+    editor_motion: editor_paint::EditorMotions,
     pending_multiline_caret_reveal: Option<String>,
     ime_area: Option<surface::Rect>,
     text_drag: Option<String>,
@@ -1529,7 +1554,7 @@ impl<A: Application> Runtime<A> {
             scroll_state: scroll_control::State::default(),
             editors: BTreeMap::new(),
             text_geometry: BTreeMap::new(),
-            editor_label_motion: editor_paint::LabelMotions::default(),
+            editor_motion: editor_paint::EditorMotions::default(),
             pending_multiline_caret_reveal: None,
             ime_area: None,
             text_drag: None,

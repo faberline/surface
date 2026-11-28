@@ -215,6 +215,27 @@ fn covers(path: &PathFill, x: f32, y: f32) -> bool {
             == 1
 }
 
+fn bottom_boundary(list: &ExtendedDisplayList, face: Rect) -> &PathFill {
+    let mut paths = list.ops().iter().filter_map(|op| match op {
+        ExtendedPaintOp::FillPath(path)
+            if covers(path, face.x + face.width / 2., face.y + face.height - 0.25) =>
+        {
+            Some(path)
+        }
+        _ => None,
+    });
+    let path = paths.next().expect("boundary covers the bottom edge");
+    assert!(paths.next().is_none(), "exactly one path covers that edge");
+    path
+}
+
+fn assert_bottom_width(path: &PathFill, face: Rect, width: f32) {
+    let x = face.x + face.width / 2.;
+    let inner = face.y + face.height - width;
+    assert!(covers(path, x, inner + 0.012), "stroke width under {width}");
+    assert!(!covers(path, x, inner - 0.012), "stroke width over {width}");
+}
+
 fn text_run<'a>(list: &'a ExtendedDisplayList, text: &str) -> Option<(&'a PaintOp, TextAlignment)> {
     list.ops().iter().find_map(|op| {
         let (run, alignment) = match op {
@@ -558,10 +579,11 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
     let frame = render(&mut runtime, 360., &mut fonts);
     let face = bounds(&runtime, "project-name-outline");
     let left = bounds(&runtime, "project-name-floating-label").x;
-    let outline = find_outline(&frame, Theme::light().colors.primary, face);
+    let outline = bottom_boundary(&frame, face);
     assert!(label_pose(&frame, LABEL).0.y < resting.0.y);
     assert!(!covers(outline, left, face.y + 0.1), "start of the cutout");
-    assert!(covers(outline, left, face.y + 2.6), "lower stroke remains");
+    assert!(covers(outline, left, face.y + 0.95), "lower stroke remains");
+    assert!(!covers(outline, left, face.y + 1.25));
     assert!(
         covers(outline, face.x + face.width / 2., face.y + 0.1),
         "outside the cutout"
@@ -610,7 +632,7 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
     let focused = render(&mut rtl, 320., &mut fonts);
     assert_eq!(label_pose(&focused, LONG_LABEL), before);
     let face = bounds(&rtl, "project-name-outline");
-    let outline = find_outline(&focused, Theme::dark().colors.primary, face);
+    let outline = bottom_boundary(&focused, face);
     assert!(covers(outline, face.x + face.width / 2., face.y + 1.));
     assert!(rtl.needs_frame(), "the fallback still animates label color");
     let ink = label_color(&focused, LONG_LABEL);
@@ -634,11 +656,237 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
     rtl.apply(Message::ChangeAppearance).unwrap();
     let light = render(&mut rtl, 320., &mut fonts);
     assert_eq!(label_color(&light, LONG_LABEL), Theme::light().colors.error);
+    assert_eq!(
+        bottom_boundary(&light, bounds(&rtl, "project-name-outline")).color(),
+        Theme::light().colors.error
+    );
     // The separate Next button can still animate its own theme colors.
     rtl.set_time(750.);
     let light = render(&mut rtl, 320., &mut fonts);
     assert_eq!(label_color(&light, LONG_LABEL), Theme::light().colors.error);
     assert!(!rtl.needs_frame());
+}
+
+#[test]
+fn field_boundaries_follow_distinct_width_curves_and_reverse_from_the_presented_pose() {
+    let colors = Theme::light().colors;
+    // Independent analytic Standard motion samples at 24 and 48 ms.
+    for (appearance, boundary, idle_ink, at_24, at_48) in [
+        (
+            TextFieldAppearance::Outlined,
+            "project-name-outline",
+            colors.outline,
+            1.870_553,
+            2.589_262,
+        ),
+        (
+            TextFieldAppearance::Filled,
+            "project-name-indicator",
+            colors.on_surface_variant,
+            1.473_985,
+            2.139_934,
+        ),
+    ] {
+        let mut fonts = TextSystem::default();
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            value: "欄位內容".into(),
+            ..Form::default()
+        })
+        .unwrap();
+        runtime.set_time(0.);
+        let idle = render(&mut runtime, 400., &mut fonts);
+        let face = bounds(&runtime, boundary);
+        let editor_bounds = bounds(&runtime, ID);
+        let editor_id = runtime.dom().by_id(ID).unwrap();
+        let idle_path = bottom_boundary(&idle, face);
+        assert_eq!(idle_path.color(), idle_ink);
+        assert_bottom_width(idle_path, face, 1.);
+
+        tab(&mut runtime);
+        let first = render(&mut runtime, 400., &mut fonts);
+        let first_path = bottom_boundary(&first, face);
+        assert_eq!(first_path.points(), idle_path.points());
+        assert_eq!(first_path.color(), idle_ink);
+        assert!(runtime.needs_frame());
+        runtime.set_time(24.);
+        let rising = render(&mut runtime, 400., &mut fonts);
+        let rising_path = bottom_boundary(&rising, face);
+        assert_bottom_width(rising_path, face, at_24);
+        assert_ne!(rising_path.color(), idle_ink);
+        assert_ne!(rising_path.color(), colors.primary);
+        assert_eq!(bounds(&runtime, ID), editor_bounds);
+        assert_eq!(runtime.dom().by_id(ID), Some(editor_id));
+        assert_eq!(runtime.focused(), Some(ID));
+
+        runtime.set_time(48.);
+        let later = render(&mut runtime, 400., &mut fonts);
+        let later_path = bottom_boundary(&later, face);
+        assert_bottom_width(later_path, face, at_48);
+        assert_ne!(later_path.color(), rising_path.color());
+        tab(&mut runtime);
+        let reversal = render(&mut runtime, 400., &mut fonts);
+        let reversal_path = bottom_boundary(&reversal, face);
+        assert_eq!(reversal_path.points(), later_path.points());
+        assert_eq!(reversal_path.color(), later_path.color());
+        runtime.set_time(100.);
+        let falling = render(&mut runtime, 400., &mut fonts);
+        let falling_path = bottom_boundary(&falling, face);
+        assert!(covers(
+            falling_path,
+            face.x + 30.,
+            face.y + face.height - 1.02
+        ));
+        assert!(!covers(
+            falling_path,
+            face.x + 30.,
+            face.y + face.height - at_48
+        ));
+        runtime.set_time(650.);
+        let settled = render(&mut runtime, 400., &mut fonts);
+        let settled_path = bottom_boundary(&settled, face);
+        assert_eq!(settled_path.points(), idle_path.points());
+        assert_eq!(settled_path.color(), idle_ink);
+        assert!(!runtime.needs_frame());
+    }
+}
+
+#[test]
+fn field_boundaries_use_hover_and_error_ink_and_snap_on_disable_or_reduced_motion() {
+    let colors = Theme::light().colors;
+    for (appearance, boundary, disabled_alpha) in [
+        (TextFieldAppearance::Outlined, "project-name-outline", 31),
+        (TextFieldAppearance::Filled, "project-name-indicator", 97),
+    ] {
+        let mut fonts = TextSystem::default();
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            ..Form::default()
+        })
+        .unwrap();
+        runtime.set_time(0.);
+        render(&mut runtime, 400., &mut fonts);
+        let face = bounds(&runtime, boundary);
+        runtime
+            .dispatch(Event::PointerMove {
+                x: face.x + 8.,
+                y: face.y + face.height / 2.,
+            })
+            .unwrap();
+        render(&mut runtime, 400., &mut fonts);
+        runtime.set_time(350.);
+        let hover = render(&mut runtime, 400., &mut fonts);
+        let hover_path = bottom_boundary(&hover, face);
+        assert_eq!(hover_path.color(), colors.on_surface);
+        assert_bottom_width(hover_path, face, 1.);
+
+        runtime.apply(Message::SetInvalid(true)).unwrap();
+        let error_start = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(
+            bottom_boundary(&error_start, face).color(),
+            colors.on_surface
+        );
+        runtime.set_time(410.);
+        let error_middle = render(&mut runtime, 400., &mut fonts);
+        let error_ink = bottom_boundary(&error_middle, face).color();
+        assert_ne!(error_ink, colors.on_surface);
+        assert_ne!(error_ink, colors.on_error_container);
+        runtime.set_time(650.);
+        let error_hover = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(
+            bottom_boundary(&error_hover, face).color(),
+            colors.on_error_container
+        );
+
+        tab(&mut runtime);
+        render(&mut runtime, 400., &mut fonts);
+        runtime.set_time(674.);
+        let moving = render(&mut runtime, 400., &mut fonts);
+        assert_ne!(bottom_boundary(&moving, face).color(), colors.error);
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Disabled))
+            .unwrap();
+        let disabled = render(&mut runtime, 400., &mut fonts);
+        let disabled_path = bottom_boundary(&disabled, face);
+        let Color(r, g, b, _) = colors.on_surface;
+        assert_eq!(disabled_path.color(), Color(r, g, b, disabled_alpha));
+        assert_bottom_width(disabled_path, face, 1.);
+        assert_ne!(runtime.focused(), Some(ID));
+        assert!(!runtime
+            .accessibility_frame()
+            .unwrap()
+            .node(runtime.dom().by_id(ID).unwrap())
+            .unwrap()
+            .node
+            .is_invalid());
+
+        let mut reduced = Runtime::new(Form {
+            adorned: Some(appearance),
+            invalid: true,
+            ..Form::default()
+        })
+        .unwrap();
+        reduced.set_time(0.);
+        reduced.set_reduced_motion(true);
+        render(&mut reduced, 400., &mut fonts);
+        tab(&mut reduced);
+        let focused = render(&mut reduced, 400., &mut fonts);
+        let path = bottom_boundary(&focused, face);
+        assert_eq!(path.color(), colors.error);
+        assert_bottom_width(path, face, 3.);
+        tab(&mut reduced);
+        let blurred = render(&mut reduced, 400., &mut fonts);
+        assert_bottom_width(bottom_boundary(&blurred, face), face, 1.);
+        assert!(!reduced.needs_frame());
+    }
+}
+
+#[test]
+fn field_boundary_uses_enabled_ink_on_first_frame_after_reenable() {
+    let colors = Theme::light().colors;
+    for (appearance, boundary, idle_ink) in [
+        (
+            TextFieldAppearance::Outlined,
+            "project-name-outline",
+            colors.outline,
+        ),
+        (
+            TextFieldAppearance::Filled,
+            "project-name-indicator",
+            colors.on_surface_variant,
+        ),
+    ] {
+        for invalid in [false, true] {
+            let mut fonts = TextSystem::default();
+            let mut runtime = Runtime::new(Form {
+                adorned: Some(appearance),
+                invalid,
+                ..Form::default()
+            })
+            .unwrap();
+            runtime.set_time(0.);
+            render(&mut runtime, 400., &mut fonts);
+            let face = bounds(&runtime, boundary);
+            runtime
+                .apply(Message::SetEditability(TextFieldEditability::Disabled))
+                .unwrap();
+            let disabled = render(&mut runtime, 400., &mut fonts);
+            let disabled_ink = bottom_boundary(&disabled, face).color();
+            runtime.set_time(16.);
+            runtime
+                .apply(Message::SetEditability(TextFieldEditability::Editable))
+                .unwrap();
+            let enabled = render(&mut runtime, 400., &mut fonts);
+            let expected = if invalid { colors.error } else { idle_ink };
+            assert_ne!(disabled_ink, expected);
+            assert_eq!(
+                bottom_boundary(&enabled, face).color(),
+                expected,
+                "{appearance:?}, invalid={invalid}: enabled ink on first frame"
+            );
+            assert_bottom_width(bottom_boundary(&enabled, face), face, 1.);
+        }
+    }
 }
 
 #[test]
