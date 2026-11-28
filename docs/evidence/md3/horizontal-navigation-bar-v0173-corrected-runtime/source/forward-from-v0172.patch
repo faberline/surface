@@ -1,0 +1,1686 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index c91c8f5166d867e1644e28ec2cd0e4b770fdfbf8..beb25442f77aaef64b57dfffdfad6c1997aaaa68 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.72"
++version = "0.1.73"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 54cce6b6d191cd1bc48d426ef6c2164e515ca3ba..4335f095f8710f8662f828dd4abb7444f3f63d4b 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.72"
++version = "0.1.73"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/flexible_navigation_bar.rs b/crates/surface-material/src/flexible_navigation_bar.rs
+index cc9ca5697a7d90bc2a45bd40a7ca03c316252834..5acf8bb399235f951c8b18c4446c671e967008af 100644
+--- a/crates/surface-material/src/flexible_navigation_bar.rs
++++ b/crates/surface-material/src/flexible_navigation_bar.rs
+@@ -1,11 +1,19 @@
+-//! Compact Material 3 Expressive navigation with vertical destinations.
++//! Compact and medium Material 3 Expressive navigation bars.
+ 
+-use surface::{Align, Color, Length, Node, Role, Style, TextAlignment};
++use surface::{
++    Align, Color, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
++    TextMeasurer, TextStyle,
++};
+ use surface_app::{CursorStyle, View};
+ 
+ use crate::{
+-    adaptive::WindowWidthSizeClass, components::navigation_indicator, shape::LayoutDirection,
+-    typography, vector_icon::VectorIconSize, Elevation, NavigationRailItem, Theme,
++    adaptive::WindowWidthSizeClass,
++    components::navigation_indicator,
++    motion::STATE_CHANGE,
++    shape::{self, LayoutDirection},
++    typography,
++    vector_icon::VectorIconSize,
++    ChoiceState, Elevation, NavigationRailItem, Theme,
+ };
+ 
+ const MIN_HEIGHT: f32 = 64.;
+@@ -14,8 +22,14 @@ const VERTICAL_PADDING: f32 = 6.;
+ const LABEL_GAP: f32 = 4.;
+ const LABEL_INSET: f32 = 4.;
+ const DISABLED_ALPHA: u8 = 97;
++const HORIZONTAL_CELL_WIDTH: f32 = 112.;
++const HORIZONTAL_ICON_SIZE: f32 = 24.;
++const HORIZONTAL_PILL_INSET: f32 = 16.;
++const HORIZONTAL_PILL_Y_PADDING: f32 = 8.;
++const HORIZONTAL_BAR_Y_PADDING: f32 = 12.;
++const HORIZONTAL_ART_WIDTH: f32 = 2. * HORIZONTAL_PILL_INSET + HORIZONTAL_ICON_SIZE + LABEL_GAP;
+ 
+-/// The stable identity and compact layout of a flexible navigation bar.
++/// The stable identity and layout of a flexible navigation bar.
+ pub struct FlexibleNavigationBarOptions<'a> {
+     pub id: &'a str,
+     /// The localized accessible name for the navigation landmark.
+@@ -51,27 +65,66 @@ impl Theme {
+             return None;
+         }
+ 
++        let bar = self.flexible_bar_node(&options, Align::Start);
++        let fraction = 1. / items.len() as f32;
++        let label_width = width * fraction - 2. * LABEL_INSET;
++        Some(
++            View::new(bar).children(
++                items
++                    .into_iter()
++                    .map(|item| self.flexible_navigation_destination(item, fraction, label_width)),
++            ),
++        )
++    }
++
++    /// Build a centered Expressive bar with logical-leading icons in medium windows.
++    ///
++    /// Supply three to five destinations in reading order and let the caller
++    /// own the current page. Each enabled destination has its own Tab stop.
++    /// The 112 dp hit cells stay fixed as the outer margins grow. A long label
++    /// wraps within its pill and can increase the height of the bar.
++    /// Returns `None` below 600 dp, at 840 dp or above, or for an invalid item count.
++    pub fn horizontal_flexible_navigation_bar<'a, M: 'a>(
++        &self,
++        options: FlexibleNavigationBarOptions<'_>,
++        items: impl IntoIterator<Item = NavigationRailItem<'a, M>>,
++    ) -> Option<View<M>> {
++        if WindowWidthSizeClass::from_dp(options.available_width)
++            != Some(WindowWidthSizeClass::Medium)
++        {
++            return None;
++        }
++        let items: Vec<_> = items.into_iter().take(6).collect();
++        if !(3..=5).contains(&items.len()) {
++            return None;
++        }
++        let bar = self.flexible_bar_node(&options, Align::Center);
++        Some(
++            View::new(bar).children(
++                items
++                    .into_iter()
++                    .map(|item| self.horizontal_flexible_destination(item, options.direction)),
++            ),
++        )
++    }
++
++    fn flexible_bar_node(
++        &self,
++        options: &FlexibleNavigationBarOptions<'_>,
++        justify: Align,
++    ) -> Node {
+         let mut style = Style::row()
+-            .width(Length::Px(width))
++            .width(Length::Px(options.available_width))
+             .align(Align::Stretch)
++            .justify(justify)
+             .background(self.colors.surface_container);
+         style.min_height = MIN_HEIGHT;
+-        let bar = Node::new(Role::Navigation, options.name)
+-            .id(options.id)
+-            .styled(style)
+-            .box_shadows(self.elevation(Elevation::Level2));
+-        let bar = match options.direction {
+-            LayoutDirection::LeftToRight => bar,
+-            LayoutDirection::RightToLeft => bar.reverse_row(),
+-        };
+-        let fraction = 1. / items.len() as f32;
+-        let label_width = width * fraction - 2. * LABEL_INSET;
+-        Some(
+-            View::new(bar).children(
+-                items
+-                    .into_iter()
+-                    .map(|item| self.flexible_navigation_destination(item, fraction, label_width)),
+-            ),
++        physical_row(
++            Node::new(Role::Navigation, options.name)
++                .id(options.id)
++                .styled(style)
++                .box_shadows(self.elevation(Elevation::Level2)),
++            options.direction,
+         )
+     }
+ 
+@@ -81,14 +134,128 @@ impl Theme {
+         width_fraction: f32,
+         label_width: f32,
+     ) -> View<M> {
+-        let state = item.state;
++        let (icon_ink, label_ink, caption) =
++            self.flexible_destination_ink(item.state, self.colors.secondary);
++        let indicator = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-indicator", item.id))
++                .styled(
++                    navigation_indicator(self, INDICATOR_WIDTH, item.state.selected)
++                        .state_layer(self.colors.on_secondary_container),
++                )
++                .state_layer_alphas(20, 26, 26),
++        )
++        .children([item.icon.view(VectorIconSize::Dp24, icon_ink)])
++        .without_interaction(None);
++        let label = View::new(
++            Node::new(Role::Text, "")
++                .id(format!("{}-label", item.id))
++                .text(item.label)
++                .text_alignment(TextAlignment::Center)
++                .styled(
++                    Style::column()
++                        .width(Length::Px(label_width))
++                        .with_text_style(caption)
++                        .foreground(label_ink),
++                ),
++        )
++        .without_interaction(None);
++        self.flexible_destination_button(
++            item,
++            Style::column()
++                .align(Align::Center)
++                .width(Length::Percent(width_fraction)),
++            [
++                spacer(VERTICAL_PADDING),
++                indicator,
++                spacer(LABEL_GAP),
++                label,
++                spacer(VERTICAL_PADDING),
++            ],
++        )
++    }
++
++    fn horizontal_flexible_destination<M>(
++        &self,
++        item: NavigationRailItem<'_, M>,
++        direction: LayoutDirection,
++    ) -> View<M> {
++        let (icon_ink, label_ink, caption) =
++            self.flexible_destination_ink(item.state, self.colors.on_secondary_container);
++        let fill = if item.state.selected {
++            self.colors.secondary_container
++        } else {
++            Color::TRANSPARENT
++        };
++        let icon = View::new(
++            Node::new(Role::Group, "")
++                .styled(
++                    Style::row()
++                        .width(Length::Px(HORIZONTAL_ICON_SIZE))
++                        .height(Length::Px(HORIZONTAL_ICON_SIZE))
++                        .clip(true),
++                )
++                .fill_contour(
++                    item.icon
++                        .contour_dp(HORIZONTAL_ICON_SIZE, icon_ink)
++                        .expect("validated icon contour"),
++                ),
++        );
++        let label = View::new(
++            Node::new(Role::Text, "")
++                .id(format!("{}-label", item.id))
++                .text(item.label)
++                .text_alignment(match direction {
++                    LayoutDirection::LeftToRight => TextAlignment::Left,
++                    LayoutDirection::RightToLeft => TextAlignment::Right,
++                })
++                .styled(
++                    Style::column()
++                        .with_text_style(caption)
++                        .foreground(label_ink),
++                ),
++        );
++        let indicator = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-indicator", item.id))
++                .styled(
++                    Style::row()
++                        .corners(shape::FULL)
++                        .background(fill)
++                        .state_layer(self.colors.on_secondary_container)
++                        .transition(STATE_CHANGE),
++                )
++                .state_layer_alphas(20, 26, 26)
++                .measured_group(HorizontalPill { direction }),
++        )
++        .children([icon, label])
++        .without_interaction(None);
++        self.flexible_destination_button(
++            item,
++            Style::column()
++                .align(Align::Center)
++                .justify(Align::Center)
++                .width(Length::Px(HORIZONTAL_CELL_WIDTH)),
++            [
++                spacer(HORIZONTAL_BAR_Y_PADDING),
++                indicator,
++                spacer(HORIZONTAL_BAR_Y_PADDING),
++            ],
++        )
++    }
++
++    fn flexible_destination_ink(
++        &self,
++        state: ChoiceState,
++        active_label: Color,
++    ) -> (Color, Color, TextStyle) {
+         let inactive = self.colors.on_surface_variant;
+-        let (icon_ink, label_ink) = if state.disabled {
++        let (icon, label) = if state.disabled {
+             let Color(red, green, blue, _) = inactive;
+             let disabled = Color(red, green, blue, DISABLED_ALPHA);
+             (disabled, disabled)
+         } else if state.selected {
+-            (self.colors.on_secondary_container, self.colors.secondary)
++            (self.colors.on_secondary_container, active_label)
+         } else {
+             (inactive, inactive)
+         };
+@@ -97,30 +264,16 @@ impl Theme {
+         } else {
+             typography::LABEL_MEDIUM
+         };
+-        let indicator = View::new(
+-            Node::new(Role::Group, "")
+-                .id(format!("{}-indicator", item.id))
+-                .styled(
+-                    navigation_indicator(self, INDICATOR_WIDTH, state.selected)
+-                        .state_layer(self.colors.on_secondary_container),
+-                )
+-                .state_layer_alphas(20, 26, 26),
+-        )
+-        .children([item.icon.view(VectorIconSize::Dp24, icon_ink)])
+-        .without_interaction(None);
+-        let label = View::new(
+-            Node::new(Role::Text, "")
+-                .id(format!("{}-label", item.id))
+-                .text(item.label)
+-                .text_alignment(TextAlignment::Center)
+-                .styled(
+-                    Style::column()
+-                        .width(Length::Px(label_width))
+-                        .with_text_style(caption)
+-                        .foreground(label_ink),
+-                ),
+-        )
+-        .without_interaction(None);
++        (icon, label, caption)
++    }
++
++    fn flexible_destination_button<M>(
++        &self,
++        item: NavigationRailItem<'_, M>,
++        style: Style,
++        children: impl IntoIterator<Item = View<M>>,
++    ) -> View<M> {
++        let state = item.state;
+         let destination = View::new(
+             Node::new(Role::Button, item.name())
+                 .id(item.id)
+@@ -129,19 +282,9 @@ impl Theme {
+                 .disabled(state.disabled)
+                 .focus_color(self.colors.secondary)
+                 .focus_outline_width(3.)
+-                .styled(
+-                    Style::column()
+-                        .align(Align::Center)
+-                        .width(Length::Percent(width_fraction)),
+-                ),
++                .styled(style),
+         )
+-        .children([
+-            spacer(VERTICAL_PADDING),
+-            indicator,
+-            spacer(LABEL_GAP),
+-            label,
+-            spacer(VERTICAL_PADDING),
+-        ]);
++        .children(children);
+         if state.disabled {
+             destination
+         } else {
+@@ -154,6 +297,108 @@ impl Theme {
+     }
+ }
+ 
++fn physical_row(node: Node, direction: LayoutDirection) -> Node {
++    match direction {
++        LayoutDirection::LeftToRight => node,
++        LayoutDirection::RightToLeft => node.reverse_row(),
++    }
++}
++
++#[derive(Debug)]
++struct HorizontalPill {
++    direction: LayoutDirection,
++}
++
++impl MeasuredGroupLayout for HorizontalPill {
++    fn measure(
++        &self,
++        children: &[&Node],
++        _available_width: Option<f32>,
++        fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        let label = children[1];
++        let text = label.text_value().unwrap_or_default();
++        let styles = both_weights(label);
++        let text_width = styles
++            .iter()
++            .map(|style| fonts.measure_text(text, style, None).0)
++            .fold(0., f32::max)
++            .ceil()
++            .min(HORIZONTAL_CELL_WIDTH - HORIZONTAL_ART_WIDTH);
++        let text_height = label_height(text, &styles, text_width, fonts);
++        (
++            HORIZONTAL_ART_WIDTH + text_width,
++            HORIZONTAL_ICON_SIZE.max(text_height) + 2. * HORIZONTAL_PILL_Y_PADDING,
++        )
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let label = children[1];
++        let text_width = (width - HORIZONTAL_ART_WIDTH).max(0.);
++        let text_height = label_height(
++            label.text_value().unwrap_or_default(),
++            &both_weights(label),
++            text_width,
++            fonts,
++        );
++        let (icon_x, label_x) = match self.direction {
++            LayoutDirection::LeftToRight => (
++                HORIZONTAL_PILL_INSET,
++                HORIZONTAL_PILL_INSET + HORIZONTAL_ICON_SIZE + LABEL_GAP,
++            ),
++            LayoutDirection::RightToLeft => (
++                width - HORIZONTAL_PILL_INSET - HORIZONTAL_ICON_SIZE,
++                HORIZONTAL_PILL_INSET,
++            ),
++        };
++        vec![
++            Rect::new(
++                icon_x,
++                (height - HORIZONTAL_ICON_SIZE) / 2.,
++                HORIZONTAL_ICON_SIZE,
++                HORIZONTAL_ICON_SIZE,
++            ),
++            Rect::new(
++                label_x,
++                (height - text_height) / 2.,
++                text_width,
++                text_height,
++            ),
++        ]
++    }
++}
++
++fn both_weights(label: &Node) -> [TextStyle; 2] {
++    let scaled = label.style().text_style();
++    // Reserve space for either weight so choosing a destination cannot reflow it.
++    [
++        typography::LABEL_MEDIUM.weight,
++        typography::LABEL_MEDIUM_EMPHASIZED.weight,
++    ]
++    .map(|weight| TextStyle {
++        weight,
++        ..scaled.clone()
++    })
++}
++
++fn label_height(
++    text: &str,
++    styles: &[TextStyle; 2],
++    width: f32,
++    fonts: &mut dyn TextMeasurer,
++) -> f32 {
++    styles
++        .iter()
++        .map(|style| fonts.measure_text(text, style, Some(width.max(1.))).1)
++        .fold(0., f32::max)
++        .ceil()
++}
++
+ fn spacer<M>(height: f32) -> View<M> {
+     View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(height))))
+         .without_interaction(None)
+diff --git a/crates/surface-material/tests/flexible_navigation_bar.rs b/crates/surface-material/tests/flexible_navigation_bar.rs
+index f54271dd2519e201795f90379a0487f7185f9600..023fd468cfc6376fd3da064c27d205c4d32ec7fe 100644
+--- a/crates/surface-material/tests/flexible_navigation_bar.rs
++++ b/crates/surface-material/tests/flexible_navigation_bar.rs
+@@ -14,6 +14,7 @@ const ITEMS: [&str; 6] = ["home", "explore", "saved", "alerts", "settings", "ext
+ const LONG_LABEL: &str = "收藏項目與閱讀清單";
+ 
+ struct Page {
++    horizontal: bool,
+     dark: bool,
+     direction: LayoutDirection,
+     width: f32,
+@@ -29,6 +30,7 @@ struct Page {
+ impl Default for Page {
+     fn default() -> Self {
+         Self {
++            horizontal: false,
+             dark: false,
+             direction: LayoutDirection::LeftToRight,
+             width: 320.,
+@@ -68,15 +70,17 @@ impl Page {
+                 },
+                 message: index,
+             });
+-        theme.flexible_navigation_bar(
+-            FlexibleNavigationBarOptions {
+-                id: BAR,
+-                name: "主要導覽",
+-                available_width: self.width,
+-                direction: self.direction,
+-            },
+-            items,
+-        )
++        let options = FlexibleNavigationBarOptions {
++            id: BAR,
++            name: "主要導覽",
++            available_width: self.width,
++            direction: self.direction,
++        };
++        if self.horizontal {
++            theme.horizontal_flexible_navigation_bar(options, items)
++        } else {
++            theme.flexible_navigation_bar(options, items)
++        }
+     }
+ }
+ 
+@@ -101,6 +105,15 @@ impl Application for Page {
+             1.
+         }
+     }
++
++    fn viewport_changed(&mut self, width: f32, _height: f32) -> bool {
++        if self.horizontal && self.width != width {
++            self.width = width;
++            true
++        } else {
++            false
++        }
++    }
+ }
+ 
+ struct Fonts;
+@@ -451,3 +464,284 @@ fn accessible_buttons_exclude_decoration_and_block_disabled_activation() {
+     assert!(runtime.activate("explore").is_err());
+     assert!(runtime.app().received.is_empty());
+ }
++
++fn medium(width: f32) -> Page {
++    Page {
++        horizontal: true,
++        width,
++        ..Page::default()
++    }
++}
++
++fn right(rect: Rect) -> f32 {
++    rect.x + rect.width
++}
++
++fn bottom(rect: Rect) -> f32 {
++    rect.y + rect.height
++}
++
++fn horizontal_icon(runtime: &Runtime<Page>, indicator: &str) -> Rect {
++    let icon = runtime
++        .dom()
++        .children(id(runtime, indicator))
++        .next()
++        .unwrap();
++    runtime.computed().unwrap().nodes[icon.index()].bounds
++}
++
++#[test]
++fn medium_bar_accepts_only_medium_width_and_three_to_five_destinations() {
++    for (count, width, valid) in [
++        (2, 600., false),
++        (3, 599., false),
++        (3, 600., true),
++        (4, 720., true),
++        (5, 839., true),
++        (5, 839.5, true),
++        (5, 840., false),
++        (6, 720., false),
++        (5, f32::NAN, false),
++        (5, f32::INFINITY, false),
++    ] {
++        assert_eq!(
++            Page {
++                count,
++                ..medium(width)
++            }
++            .bar()
++            .is_some(),
++            valid,
++            "{count} at {width}"
++        );
++    }
++}
++
++#[test]
++fn medium_cells_keep_their_width_and_center_as_the_window_changes() {
++    for count in [3, 4, 5] {
++        for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++            let mut runtime = Runtime::new(Page {
++                count,
++                direction,
++                ..medium(600.)
++            })
++            .unwrap();
++            let mut preceding = None;
++            for width in [600., 720., 839.] {
++                runtime.render_extended(width, 300., &mut Fonts).unwrap();
++                let bar = rect(&runtime, BAR);
++                assert_eq!(bar, Rect::new(0., 0., width, 64.));
++                let mut cells = ITEMS[..count]
++                    .iter()
++                    .map(|key| rect(&runtime, key))
++                    .collect::<Vec<_>>();
++                if direction == LayoutDirection::RightToLeft {
++                    cells.reverse();
++                }
++                let centered = (width - 112. * count as f32) / 2.;
++                let leading = cells[0].x;
++                let trailing = right(bar) - right(*cells.last().unwrap());
++                assert!((leading - centered).abs() <= 0.5 && (trailing - centered).abs() <= 0.5);
++                assert!(cells
++                    .iter()
++                    .all(|cell| cell.width == 112. && cell.y == 0. && cell.height == 64.));
++                assert!(cells.windows(2).all(|pair| right(pair[0]) == pair[1].x));
++                if let Some(other) = preceding {
++                    assert!(leading > other);
++                }
++                preceding = Some(leading);
++            }
++        }
++    }
++}
++
++#[test]
++fn medium_active_label_and_icon_share_the_pill_color_and_mirror() {
++    for (dark, direction) in [
++        (false, LayoutDirection::LeftToRight),
++        (true, LayoutDirection::RightToLeft),
++    ] {
++        let theme = if dark { Theme::dark() } else { Theme::light() };
++        let mut runtime = Runtime::new(Page {
++            dark,
++            direction,
++            ..medium(720.)
++        })
++        .unwrap();
++        let draw = runtime.render_extended(720., 300., &mut Fonts).unwrap();
++        assert_eq!(
++            node(&runtime, BAR).style().background,
++            theme.colors.surface_container
++        );
++        assert_eq!(
++            node(&runtime, BAR).box_shadow_layers(),
++            theme.elevation(Elevation::Level2)
++        );
++        for key in ["home", "explore", "saved"] {
++            let cell = rect(&runtime, key);
++            let indicator = format!("{key}-indicator");
++            let pill = rect(&runtime, &indicator);
++            let icon = horizontal_icon(&runtime, &indicator);
++            let label = rect(&runtime, &format!("{key}-label"));
++            assert!(pill.width < cell.width);
++            assert_eq!(pill.height, 40.);
++            assert_eq!(pill.y - cell.y, 12.);
++            assert_eq!(bottom(cell) - bottom(pill), 12.);
++            assert_eq!((icon.width, icon.height), (24., 24.));
++            assert_eq!(icon.y - pill.y, 8.);
++            let alignment = match direction {
++                LayoutDirection::LeftToRight => {
++                    assert_eq!(icon.x - pill.x, 16.);
++                    assert_eq!(label.x - right(icon), 4.);
++                    assert_eq!(right(pill) - right(label), 16.);
++                    TextAlignment::Left
++                }
++                LayoutDirection::RightToLeft => {
++                    assert_eq!(right(pill) - right(icon), 16.);
++                    assert_eq!(icon.x - right(label), 4.);
++                    assert_eq!(label.x - pill.x, 16.);
++                    TextAlignment::Right
++                }
++            };
++            assert_eq!(
++                ink_at(&draw, pill, theme.colors.secondary_container, 20.),
++                key == "home"
++            );
++            let Color(r, g, b, _) = theme.colors.on_surface_variant;
++            let ink = match key {
++                "home" => theme.colors.on_secondary_container,
++                "explore" => Color(r, g, b, 97),
++                _ => theme.colors.on_surface_variant,
++            };
++            assert!(draw.ops().iter().any(|op| matches!(op, ExtendedPaintOp::FillPath(path)
++                if path.color() == ink && path.rect() == Rect::new(icon.x + 2., icon.y + 2., 20., 20.))));
++            assert!(draw.ops().iter().any(|op| matches!(op, ExtendedPaintOp::AlignedText(text)
++                if text.alignment() == alignment && matches!(text.run(), PaintOp::StyledText { rect, color, style, .. }
++                    if *rect == label && *color == ink && *style == if key == "home" {
++                        typography::LABEL_MEDIUM_EMPHASIZED
++                    } else { typography::LABEL_MEDIUM }))));
++        }
++    }
++}
++
++#[test]
++fn medium_large_rtl_names_wrap_without_reflow_on_selection() {
++    let mut runtime = Runtime::new(Page {
++        dark: true,
++        direction: LayoutDirection::RightToLeft,
++        enlarged: true,
++        long_label: true,
++        ..medium(600.)
++    })
++    .unwrap();
++    let mut fonts = TextSystem::default();
++    let draw = runtime.render_extended(600., 500., &mut fonts).unwrap();
++    let bar = rect(&runtime, BAR);
++    let cell = rect(&runtime, "saved");
++    let label = rect(&runtime, "saved-label");
++    let pill = rect(&runtime, "saved-indicator");
++    assert!(bar.height > 64. && label.height >= 64. && label.width <= 52.);
++    assert_eq!(bar.intersect(cell), cell);
++    assert_eq!(cell.intersect(pill), pill);
++    assert_eq!(pill.intersect(label), label);
++    assert_eq!(pill.x + 16., label.x);
++    assert_eq!(pill.y - cell.y, 12.);
++    assert_eq!(bottom(cell) - bottom(pill), 12.);
++    let screen = runtime.accessibility_frame().unwrap();
++    let bar_id = id(&runtime, BAR);
++    assert_eq!(screen.node(bar_id).unwrap().node.role(), Role::Navigation);
++    assert_eq!(screen.children(bar_id).count(), 5);
++    let saved = id(&runtime, "saved");
++    assert_eq!(screen.node(saved).unwrap().node.name(), LONG_LABEL);
++    assert!(screen.children(saved).next().is_none());
++    assert!(draw.ops().iter().any(|op| matches!(op, ExtendedPaintOp::AlignedText(aligned)
++        if aligned.alignment() == TextAlignment::Right && matches!(aligned.run(), PaintOp::StyledText { text, style, clip, .. }
++            if text == LONG_LABEL && style.font_size == 24. && style.line_height == Some(32.)
++                && clip.intersect(label) == label))));
++    runtime.activate("saved").unwrap();
++    runtime.render_extended(600., 500., &mut fonts).unwrap();
++    assert_eq!(rect(&runtime, BAR), bar);
++    assert_eq!(rect(&runtime, "saved"), cell);
++    assert_eq!(rect(&runtime, "saved-label"), label);
++    assert_eq!(rect(&runtime, "saved-indicator"), pill);
++    assert_eq!(node(&runtime, "saved").is_current_page(), Some(true));
++    assert_eq!(node(&runtime, "home").is_current_page(), Some(false));
++}
++
++#[test]
++fn medium_reuses_trusted_focus_pointer_and_controlled_state() {
++    let mut runtime = Runtime::new(Page {
++        accept: false,
++        ..medium(600.)
++    })
++    .unwrap();
++    runtime.render_extended(600., 300., &mut Fonts).unwrap();
++    for target in ["home", "saved", "alerts"] {
++        runtime
++            .dispatch(Event::FocusNext { reverse: false })
++            .unwrap();
++        assert_eq!(runtime.focused(), Some(target));
++        assert_eq!(runtime.app().selected, 0);
++    }
++    runtime
++        .dispatch(Event::FocusNext { reverse: true })
++        .unwrap();
++    assert_eq!(runtime.focused(), Some("saved"));
++    runtime.render_extended(839., 300., &mut Fonts).unwrap();
++    assert_eq!(runtime.focused(), Some("saved"));
++    assert_eq!(runtime.app().selected, 0);
++    let draw = runtime.render_extended(839., 300., &mut Fonts).unwrap();
++    let saved = rect(&runtime, "saved");
++    assert!(draw.ops().iter().any(
++        |op| matches!(op, ExtendedPaintOp::Legacy(PaintOp::Stroke { rect, width, .. })
++        if *rect == saved && *width == 3.)
++    ));
++    let key = KeyPress::new(Key::Space, Modifiers::default());
++    let action = runtime
++        .accessibility_frame()
++        .unwrap()
++        .focus_target(id(&runtime, "saved"))
++        .unwrap();
++    assert!(runtime
++        .accessibility_key(&action, &key, Event::Activate)
++        .unwrap());
++    assert_eq!(runtime.app().received, [2]);
++    runtime.render_extended(839., 300., &mut Fonts).unwrap();
++    let action = runtime
++        .accessibility_frame()
++        .unwrap()
++        .focus_target(id(&runtime, "saved"))
++        .unwrap();
++    assert!(runtime
++        .accessibility_key(&action, &key.with_repeat(true), Event::Activate)
++        .unwrap());
++    assert_eq!(runtime.app().received, [2]);
++    let disabled = rect(&runtime, "explore");
++    assert!(runtime.activate("explore").is_err());
++    runtime
++        .dispatch(Event::PointerDown {
++            x: disabled.x + 5.,
++            y: disabled.y + 5.,
++        })
++        .unwrap();
++    runtime
++        .dispatch(Event::PointerUp {
++            x: disabled.x + 5.,
++            y: disabled.y + 5.,
++        })
++        .unwrap();
++    assert_eq!(runtime.app().received, [2]);
++    let hit = rect(&runtime, "alerts");
++    let (x, y) = (right(hit) - 2., bottom(hit) - 2.);
++    assert!(!rect(&runtime, "alerts-indicator").contains(x, y));
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.cancel_pointer().unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().received, [2]);
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().received, [2, 3]);
++    assert_eq!(runtime.focused(), Some("alerts"));
++    assert_eq!(runtime.app().selected, 0);
++}
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index e8bfed1b5fa93f1ed5dc6ce3f4523d019c265830..fd87b25c1ff4cea070be9260b3f4a82a2ef447e0 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -128,10 +128,10 @@
+       "spec": "https://m3.material.io/components/navigation-bar/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Native headless Metal checks light and dark, controlled selection, Tab and focus return, and 320 dp dark RTL with 200% text. Two replays reproduce two PNGs through Page.screenshot, CLI and MCP.",
+-      "web_evidence": "Chrome WebGPU M270–M273 cover equal 3/4/5 destination layouts, light and dark pixels, named landmark and current-page semantics, trusted Tab/Enter/Space, disabled pointer input, and 320 dp RTL at 200%. The bar, page title, and focus stay in place as the separate page scrolls.",
+-      "implemented": "Baseline 80 dp bar with a 64 × 32 dp indicator, arrow focus, and optional vector icons and badges. Compact Expressive bar with three to five equal vertical destinations, 64 dp minimum height, a 56 × 32 dp indicator, controlled selection, individual Tab focus, disabled behavior, RTL and labels that wrap to 200% text. Horizontal destinations and medium arrangements remain open.",
+-      "unit_evidence": "Material and Runtime tests check exact token geometry, selected and inactive colors, real CJK label wrapping, fixed icon size, current-page state, repeated activation and disabled input. Existing navigation and consumer contract tests cover the Baseline APIs."
++      "desktop_evidence": "Native headless Metal checks light and dark, controlled selection, Tab and focus return, and 320 dp dark RTL with 200% text. Two replays reproduce two PNGs through Page.screenshot, CLI and MCP. The Medium Gallery also repeats wide Light and dark RTL at 200%. Four original PNGs match through Page.screenshot, CLI and MCP. They verify separate selected paint and an adjacent 3 dp focus ring.",
++      "web_evidence": "Chrome WebGPU M270–M273 cover equal 3/4/5 destination layouts, light and dark pixels, named landmark and current-page semantics, trusted Tab/Enter/Space, disabled pointer input, and 320 dp RTL at 200%. The bar, page title, and focus stay in place as the separate page scrolls. M363–M365 check genuine Medium pixels, fixed cells from 600 to 839 dp, the named landmark and disabled item, trusted keys and touch, focus across 599/600 dp, and a pinned dark RTL bar with wrapped labels as the page scrolls.",
++      "implemented": "Baseline 80 dp bar with a 64 × 32 dp indicator, arrow focus, and optional vector icons and badges. Compact Expressive bar with three to five equal vertical destinations, 64 dp minimum height, a 56 × 32 dp indicator, controlled selection, individual Tab focus, disabled behavior, RTL and labels that wrap to 200% text. Medium Expressive bar starts at 600 dp and ends before 840 dp. It has fixed 112 dp hit cells, centered outer margins, a logical-leading icon with adjoining label inside its pill, and retained current page and focus across the Compact handoff. Wrapped large labels grow the bar.",
++      "unit_evidence": "Material and Runtime tests check exact token geometry, selected and inactive colors, real CJK label wrapping, fixed icon size, current-page state, repeated activation and disabled input. Existing navigation and consumer contract tests cover the Baseline APIs. Medium cases check 3/4/5 fixed cells, width limits, color roles and stable geometry across selection, plus RTL and 200% measured Chinese labels."
+     },
+     {
+       "id": "navigation-drawer",
+diff --git a/docs/material.md b/docs/material.md
+index 063eeabe5650f384c2cacdbc89cfce3b2d92109b..abc0f5774136da3f398f41b10746ff57790eba6f 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -168,6 +168,7 @@ does not change application state.
+ | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
+ | `navigation_bar` / `navigation_bar_item` | Baseline 80 dp bar with a 64 × 32 dp active indicator and arrow-key focus. Destination builders also support vector icons and badges. |
+ | `flexible_navigation_bar` | Compact Expressive bar with three to five equal destinations, Tab focus and labels that grow with text |
++| `horizontal_flexible_navigation_bar` | Medium Expressive bar with fixed hit cells and leading icons beside labels |
+ | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
+ | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
+ | `icon_button_with_options` | Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes, three widths, and two resting shapes. |
+@@ -384,7 +385,18 @@ the selection and page. The chosen destination exposes the current page.
+ 
+ Open **彈性導覽列** in the Gallery's **色彩** tab. Try three, four and five
+ destinations with large text and right-to-left layout.
++
++Use `Theme::horizontal_flexible_navigation_bar` from 600 dp to less than 840 dp.
++It takes the same options and destinations. Surface uses fixed 112 dp
++hit cells. The remaining width stays at the two outer ends. The active
++pill starts at 40 dp high. It holds a logical-leading 24 dp icon and the
++label with a 4 dp gap. The active label and icon use On Secondary
++Container. Large labels wrap inside the pill and grow the bar.
++
++Open **橫向導覽列** in the same tab. Resize across 600 dp to see the
++layout switch while the current page and destination IDs stay the same.
+ [Material 3 Navigation Bar specifications](https://m3.material.io/components/navigation-bar/specs) ·
++[Material 3 Navigation Bar guidelines](https://m3.material.io/components/navigation-bar/guidelines) ·
+ [Accessibility](https://m3.material.io/components/navigation-bar/accessibility)
+ 
+ ## Navigation drawers
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index a7e33c595d62dfdd7f3707932734afd17fa9fda9..5cce869a6fe5193586829a6c9e52cc46644b1c1b 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -46,6 +46,8 @@ mod material_fab_menu;
+ mod material_filled_text_field;
+ #[path = "material_flexible_navigation_bar.rs"]
+ mod material_flexible_navigation_bar;
++#[path = "material_horizontal_navigation_bar.rs"]
++mod material_horizontal_navigation_bar;
+ #[path = "material_icon_buttons.rs"]
+ mod material_icon_buttons;
+ #[path = "material_list_actions.rs"]
+@@ -180,7 +182,7 @@ pub const STEPS: &[&str] = &[
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+-    "M359", "M360", "M361", "M362",
++    "M359", "M360", "M361", "M362", "M363", "M364", "M365",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -322,7 +324,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_text_field_placeholder::run(env, chrome, &url).await?;
+     material_text_field_boundary_motion::run(env, chrome, &url).await?;
+     material_text_field_disabled_contrast::run(env, chrome, &url).await?;
+-    material_text_field_system_pair::run(env, chrome, &url).await
++    material_text_field_system_pair::run(env, chrome, &url).await?;
++    material_horizontal_navigation_bar::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -579,8 +582,17 @@ mod tests {
+         let boundary = super::material_text_field_boundary_motion::STEPS;
+         let disabled_contrast = super::material_text_field_disabled_contrast::STEPS;
+         let system_field_pair = super::material_text_field_system_pair::STEPS;
+-        assert!(super::STEPS
+-            .ends_with(&[placeholder, boundary, disabled_contrast, system_field_pair].concat()));
++        let horizontal_bar = super::material_horizontal_navigation_bar::STEPS;
++        assert!(super::STEPS.ends_with(
++            &[
++                placeholder,
++                boundary,
++                disabled_contrast,
++                system_field_pair,
++                horizontal_bar
++            ]
++            .concat()
++        ));
+     }
+ 
+     #[test]
+diff --git a/e2e/src/material_flexible_navigation_bar.rs b/e2e/src/material_flexible_navigation_bar.rs
+index 61a426c30624b8f7d04517c660c0e201dc2a4106..ff0978a307c1f591924f20d5eec4b7ad3d12cf9f 100644
+--- a/e2e/src/material_flexible_navigation_bar.rs
++++ b/e2e/src/material_flexible_navigation_bar.rs
+@@ -279,7 +279,7 @@ async fn counts_and_colors(env: &Env, tab: &Tab) -> Result<Value> {
+     )
+ }
+ 
+-async fn selection(tab: &Tab, id: &str, page: &str, activations: usize) -> Result<()> {
++pub(super) async fn selection(tab: &Tab, id: &str, page: &str, activations: usize) -> Result<()> {
+     until(
+         tab,
+         &format!(
+@@ -296,7 +296,7 @@ async fn selection(tab: &Tab, id: &str, page: &str, activations: usize) -> Resul
+     .await
+ }
+ 
+-async fn projection_and_tab(tab: &Tab) -> Result<Value> {
++pub(super) async fn projection_and_tab(tab: &Tab) -> Result<Value> {
+     selection(tab, HOME, "首頁", 0).await?;
+     let tree = ax_tree(tab).await?;
+     let bar = ax(&tree, "navigation", "主要導覽")?;
+@@ -384,7 +384,7 @@ async fn screen(tab: &Tab, id: &str, edge: bool) -> Result<(f64, f64)> {
+     })
+ }
+ 
+-async fn activate_with_keys_and_contact(tab: &Tab) -> Result<Value> {
++pub(super) async fn activate_with_keys_and_contact(tab: &Tab) -> Result<Value> {
+     focused(tab, HOME).await?;
+     tab.press("Tab").await?;
+     focused(tab, SAVED).await?;
+diff --git a/e2e/src/material_horizontal_navigation_bar.rs b/e2e/src/material_horizontal_navigation_bar.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..90a56b0b6d72c2d37939c4286e2bcc38cc368811
+--- /dev/null
++++ b/e2e/src/material_horizontal_navigation_bar.rs
+@@ -0,0 +1,401 @@
++//! Render the medium Expressive bar through the Gallery Runtime.
++
++use anyhow::{Context, Result};
++use serde::Serialize;
++use serde_json::{json, Value};
++
++use super::{
++    material_flexible_navigation_bar::{
++        activate_with_keys_and_contact, projection_and_tab, selection,
++    },
++    material_time_input::{
++        activate, bounds, contains, focus_projected, focused, near, resize, Raster,
++    },
++    state, until,
++};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M363", "M364", "M365"];
++const SHOW: &str = "navigation-bar-medium-demo-show";
++const BACK: &str = "navigation-bar-demo-back";
++const PREVIEW: &str = "navigation-bar-demo-preview";
++const BAR: &str = "navigation-bar-demo-bar";
++const SCROLL: &str = "navigation-bar-demo-scroll";
++const LAST_ENTRY: &str = "navigation-bar-demo-entry-2";
++const HOME: &str = "navigation-bar-demo-home";
++const SAVED: &str = "navigation-bar-demo-saved";
++const UPDATES: &str = "navigation-bar-demo-updates";
++const SETTINGS: &str = "navigation-bar-demo-settings";
++const IDS: [&str; 5] = [
++    HOME,
++    "navigation-bar-demo-explore",
++    SAVED,
++    UPDATES,
++    SETTINGS,
++];
++const STEM: &str = "material-horizontal-navigation-bar";
++const CELL: f64 = 112.;
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++#[derive(Debug, PartialEq, Serialize)]
++struct Destination {
++    id: &'static str,
++    hit: Rect,
++    pill: Rect,
++    icon: Rect,
++    label: Rect,
++}
++
++#[derive(Debug, PartialEq, Serialize)]
++struct Layout {
++    bar: Rect,
++    scroll: Rect,
++    destinations: Vec<Destination>,
++}
++
++fn right(rect: Rect) -> f64 {
++    rect[0] + rect[2]
++}
++
++fn bottom(rect: Rect) -> f64 {
++    rect[1] + rect[3]
++}
++
++async fn medium(tab: &Tab, width: u32, height: u32) -> Result<()> {
++    resize(tab, width, height).await?;
++    until(
++        tab,
++        &format!("s.navigation_bar.horizontal && s.navigation_bar.preview_width === {width}"),
++    )
++    .await
++}
++
++async fn geometry(tab: &Tab, count: usize, width: f64, rtl: bool, large: bool) -> Result<Layout> {
++    let preview = bounds(tab, PREVIEW).await?;
++    let bar = bounds(tab, BAR).await?;
++    let scroll = bounds(tab, SCROLL).await?;
++    check_eq!(bar[2], width, "the medium bar fills the window preview");
++    check_eq!(bottom(bar), bottom(preview), "the bar is anchored");
++    check_eq!(bottom(scroll), bar[1], "the page scrolls above the bar");
++    check!(
++        if large { bar[3] > 64. } else { bar[3] == 64. },
++        "the bar height follows the tallest label"
++    );
++    let start = bar[0] + (width - CELL * count as f64) / 2.;
++    let mut destinations = Vec::with_capacity(count);
++    for (index, id) in IDS[..count].iter().copied().enumerate() {
++        let hit = bounds(tab, id).await?;
++        let pill = bounds(tab, &format!("{id}-indicator")).await?;
++        let label = bounds(tab, &format!("{id}-label")).await?;
++        let visual = if rtl { count - 1 - index } else { index };
++        check!(
++            near(hit[0], start + CELL * visual as f64)
++                && near(hit[1], bar[1])
++                && near(hit[2], CELL)
++                && near(hit[3], bar[3]),
++            "{id} keeps one full fixed-width hit target in visual order"
++        );
++        check!(
++            contains(hit, pill)
++                && contains(pill, label)
++                && near(pill[0] + pill[2] / 2., hit[0] + CELL / 2.)
++                && near(pill[1] + pill[3] / 2., hit[1] + hit[3] / 2.)
++                && near(pill[2], 60. + label[2])
++                && label[2] <= 52.
++                && near(pill[3], 24_f64.max(label[3]) + 16.),
++            "{id} keeps its centered pill, insets and complete measured label"
++        );
++        let icon = [
++            if rtl {
++                right(pill) - 40.
++            } else {
++                pill[0] + 16.
++            },
++            pill[1] + (pill[3] - 24.) / 2.,
++            24.,
++            24.,
++        ];
++        let gap = if rtl {
++            icon[0] - right(label)
++        } else {
++            label[0] - right(icon)
++        };
++        check!(
++            near(gap, 4.) && contains(pill, icon),
++            "{id} mirrors the leading icon and gap"
++        );
++        destinations.push(Destination {
++            id,
++            hit,
++            pill,
++            icon,
++            label,
++        });
++    }
++    Ok(Layout {
++        bar,
++        scroll,
++        destinations,
++    })
++}
++
++fn palette(model: &Value, name: &str) -> Result<Rgb> {
++    let [red, green, blue, alpha]: [u8; 4] =
++        serde_json::from_value(model["navigation_bar"]["palette"][name].clone())
++            .with_context(|| format!("navigation palette {name}"))?;
++    check_eq!(alpha, 255, "sampled navigation tokens are opaque");
++    Ok([red, green, blue])
++}
++
++async fn paint(
++    env: &Env,
++    tab: &Tab,
++    tag: &str,
++    layout: &Layout,
++    id: &str,
++    focus_id: Option<&str>,
++) -> Result<Value> {
++    tab.settle().await?;
++    let model = state(tab).await?;
++    let surface = palette(&model, "surface_container")?;
++    let fill = palette(&model, "secondary_container")?;
++    let ink = palette(&model, "on_secondary_container")?;
++    let target = layout
++        .destinations
++        .iter()
++        .find(|target| target.id == id)
++        .context("the current item belongs to the bar")?;
++    let image = env.artifact(&format!("{STEM}-{tag}.png"));
++    tab.screenshot(&image).await?;
++    let raster = Raster::read(tab, image).await?;
++    let [x, y, _, height] = target.pill;
++    check_eq!(
++        raster.sample(layout.bar[0] + 3., y + height / 2.)?,
++        surface,
++        "outer space shows the bar token"
++    );
++    check_eq!(
++        raster.sample(x + 6., y + height / 2.)?,
++        fill,
++        "the selected pill paints its paired face"
++    );
++    check_eq!(
++        raster.sample(x, y)?,
++        surface,
++        "the pill leaves its rounded corner clear"
++    );
++    let icon_ink = raster
++        .colors(target.icon)?
++        .get(&ink)
++        .copied()
++        .unwrap_or_default();
++    let label_ink = raster
++        .colors(target.label)?
++        .get(&ink)
++        .copied()
++        .unwrap_or_default();
++    check!(
++        icon_ink > 24 && label_ink > 16,
++        "actual selected icon and label share OnSecondaryContainer"
++    );
++    let focus = if let Some(focus_id) = focus_id {
++        let [left, top, width, _] = layout
++            .destinations
++            .iter()
++            .find(|item| item.id == focus_id)
++            .context("the focused destination remains in the bar")?
++            .hit;
++        let focus_ink = palette(&model, "secondary")?;
++        for depth in [0.75, 1.75, 2.75] {
++            check_eq!(
++                raster.sample(left + width / 2., top + depth)?,
++                focus_ink,
++                "the adjacent focused cell paints its 3 dp Secondary ring"
++            );
++        }
++        Some(focus_ink)
++    } else {
++        None
++    };
++    Ok(
++        json!({"image":format!("{STEM}-{tag}.png"),"surface":surface,"indicator":fill,
++              "ink":ink,"icon_pixels":icon_ink,"label_pixels":label_ink,"focus_ink":focus}),
++    )
++}
++
++async fn initial_layouts(env: &Env, tab: &Tab) -> Result<Value> {
++    let mut layouts = Vec::new();
++    for width in [600_u32, 839] {
++        medium(tab, width, 760).await?;
++        for count in [3, 4, 5] {
++            activate(tab, &format!("navigation-bar-demo-count-{count}")).await?;
++            until(tab, &format!("s.navigation_bar.count === {count}")).await?;
++            layouts.push(geometry(tab, count, f64::from(width), false, false).await?);
++        }
++    }
++    let light = paint(env, tab, "light", &layouts[5], HOME, None).await?;
++    Ok(json!({"layouts":layouts,"paint":light}))
++}
++
++async fn check_enabled_order(tab: &Tab) -> Result<()> {
++    focused(tab, SAVED).await?;
++    tab.press("Shift+Tab").await?;
++    focused(tab, HOME).await?;
++    tab.press("Tab").await?;
++    focused(tab, SAVED).await?;
++    tab.press("Tab").await?;
++    focused(tab, UPDATES).await?;
++    tab.press("Shift+Tab").await?;
++    focused(tab, SAVED).await?;
++    selection(tab, SETTINGS, "設定", 3).await
++}
++
++async fn navigation(tab: &Tab) -> Result<Value> {
++    let before = geometry(tab, 5, 839., false, false).await?;
++    let ax = projection_and_tab(tab).await?;
++    let actions = activate_with_keys_and_contact(tab).await?;
++    let after = geometry(tab, 5, 839., false, false).await?;
++    check_eq!(
++        before,
++        after,
++        "selection preserves every measured destination rectangle"
++    );
++    let hit = bounds(tab, HOME).await?;
++    let [left, top, _, _] = tab.canvas_box().await?;
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({
++            "type":"touchStart","touchPoints":[{"x":left+hit[0]+4.,"y":top+hit[1]+5.,"id":1}]
++        }),
++    )
++    .await?;
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":"touchCancel","touchPoints":[]}),
++    )
++    .await?;
++    selection(tab, SETTINGS, "設定", 3).await?;
++    medium(tab, 600, 760).await?;
++    focus_projected(tab, SAVED).await?;
++    selection(tab, SETTINGS, "設定", 3).await?;
++    check_enabled_order(tab).await?;
++    resize(tab, 599, 760).await?;
++    until(
++        tab,
++        "!s.navigation_bar.horizontal && s.navigation_bar.preview_width === 599",
++    )
++    .await?;
++    selection(tab, SETTINGS, "設定", 3).await?;
++    focused(tab, SAVED).await?;
++    check_enabled_order(tab).await?;
++    let compact = bounds(tab, &format!("{SAVED}-indicator")).await?;
++    check_eq!(
++        [compact[2], compact[3]],
++        [56., 32.],
++        "599 dp uses the existing vertical pill"
++    );
++    medium(tab, 600, 760).await?;
++    selection(tab, SETTINGS, "設定", 3).await?;
++    focused(tab, SAVED).await?;
++    check_enabled_order(tab).await?;
++    geometry(tab, 5, 600., false, false).await?;
++    Ok(
++        json!({"ax":ax,"actions":actions,"touch_cancelled":true,"focus":SAVED,"widths":[839,600,599,600]}),
++    )
++}
++
++async fn enlarged_rtl(env: &Env, tab: &Tab) -> Result<Value> {
++    for control in ["theme", "rtl", "large-text"] {
++        activate(tab, &format!("navigation-bar-demo-{control}")).await?;
++    }
++    until(
++        tab,
++        "s.dark && s.navigation_bar.rtl && s.navigation_bar.text_scale === 2",
++    )
++    .await?;
++    medium(tab, 720, 350).await?;
++    focus_projected(tab, UPDATES).await?;
++    tab.press("Space").await?;
++    selection(tab, UPDATES, "最新消息", 4).await?;
++    focused(tab, UPDATES).await?;
++    tab.press("Tab").await?;
++    focused(tab, SETTINGS).await?;
++    let before = geometry(tab, 5, 720., true, true).await?;
++    check!(
++        before.destinations[3].label[3] >= 64.,
++        "the four-character name wraps at 200% text size"
++    );
++    let initial = paint(env, tab, "rtl-large", &before, UPDATES, Some(SETTINGS)).await?;
++    let old_page = bounds(tab, LAST_ENTRY).await?;
++    let [x, y, w, h] = before.scroll;
++    let [left, top, _, _] = tab.canvas_box().await?;
++    tab.mouse_move(left + x + w / 2., top + y + h / 2.).await?;
++    tab.wheel(0., 800.).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({LAST_ENTRY:?})[1] < {}",
++        old_page[1]
++    ))
++    .await?;
++    let after = geometry(tab, 5, 720., true, true).await?;
++    check_eq!(
++        before,
++        after,
++        "a real page scroll keeps the medium bar and its targets fixed"
++    );
++    focused(tab, SETTINGS).await?;
++    selection(tab, UPDATES, "最新消息", 4).await?;
++    let scrolled = paint(
++        env,
++        tab,
++        "rtl-large-scrolled",
++        &after,
++        UPDATES,
++        Some(SETTINGS),
++    )
++    .await?;
++    Ok(
++        json!({"layout":after,"initial":initial,"scrolled":scrolled,"current":UPDATES,"focus":SETTINGS}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1844, 2.).await?;
++    tab.cdp(
++        "Emulation.setEmulatedMedia",
++        json!({"features":[{"name":"prefers-reduced-motion","value":"reduce"}]}),
++    )
++    .await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(&tab, "gallery").await?;
++    resize(&tab, 960, 1800).await?;
++    activate(&tab, "section-3").await?;
++    until(&tab, "s.section === 3").await?;
++    activate(&tab, SHOW).await?;
++    focused(&tab, BACK).await?;
++    step(
++        STEPS[0],
++        "600–839 dp centers fixed-width horizontal targets and pairs the icon and label ink",
++    );
++    let layout = initial_layouts(env, &tab).await?;
++    step(
++        STEPS[1],
++        "real keyboard, touch and current page survive the 599 to 600 dp handoff",
++    );
++    let interaction = navigation(&tab).await?;
++    step(
++        STEPS[2],
++        "dark RTL 200% wraps labels and keeps the focused bar pinned during page scroll",
++    );
++    let rtl = enlarged_rtl(env, &tab).await?;
++    activate(&tab, BACK).await?;
++    focused(&tab, SHOW).await?;
++    let proof = json!({"layout":layout,"interaction":interaction,"rtl":rtl});
++    std::fs::write(
++        env.artifact(&format!("{STEM}.json")),
++        serde_json::to_vec_pretty(&proof)?,
++    )?;
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/flexible_navigation_bar_demo.rs b/examples/material-gallery/src/flexible_navigation_bar_demo.rs
+index 106187ec405c7cb9519005e09cb88b675bd8f3b1..82444d111bdce8868fcbe4101c8eeb86bd1159d7 100644
+--- a/examples/material-gallery/src/flexible_navigation_bar_demo.rs
++++ b/examples/material-gallery/src/flexible_navigation_bar_demo.rs
+@@ -3,20 +3,22 @@ use std::sync::OnceLock;
+ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ use surface_material::{
+-    shape::LayoutDirection, typography, ButtonKind, ChoiceState, FlexibleNavigationBarOptions,
+-    NavigationRailItem, Theme, VectorIcon,
++    adaptive::WindowWidthSizeClass, shape::LayoutDirection, typography, ButtonKind, ChoiceState,
++    FlexibleNavigationBarOptions, NavigationRailItem, Theme, VectorIcon,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+ 
+ pub(crate) const SECTION: usize = 3;
+ const SHOW: &str = "navigation-bar-demo-show";
++const SHOW_MEDIUM: &str = "navigation-bar-medium-demo-show";
+ const BACK: &str = "navigation-bar-demo-back";
+ const PREVIEW: &str = "navigation-bar-demo-preview";
+ const SCROLL: &str = "navigation-bar-demo-scroll";
+ const BAR: &str = "navigation-bar-demo-bar";
+ const PAGE: &str = "navigation-bar-demo-page";
+ const PREVIEW_WIDTH: f32 = 480.;
++const MEDIUM_PREVIEW_WIDTH: f32 = 839.;
+ const DISABLED: usize = 1;
+ const IDS: [&str; 5] = [
+     "navigation-bar-demo-home",
+@@ -38,6 +40,7 @@ const CONTENT: [[&str; 3]; 5] = [
+ #[derive(Clone)]
+ pub enum FlexibleNavigationBarDemoEvent {
+     Show,
++    ShowMedium,
+     Back,
+     ToggleDirection,
+     ToggleLargeText,
+@@ -47,7 +50,8 @@ pub enum FlexibleNavigationBarDemoEvent {
+ 
+ pub(crate) struct FlexibleNavigationBarDemo {
+     visible: bool,
+-    preview_width: f32,
++    medium_preview: bool,
++    viewport_width: f32,
+     rtl: bool,
+     large_text: bool,
+     count: usize,
+@@ -59,7 +63,8 @@ impl Default for FlexibleNavigationBarDemo {
+     fn default() -> Self {
+         Self {
+             visible: false,
+-            preview_width: PREVIEW_WIDTH,
++            medium_preview: false,
++            viewport_width: PREVIEW_WIDTH,
+             rtl: false,
+             large_text: false,
+             count: IDS.len(),
+@@ -79,10 +84,23 @@ impl FlexibleNavigationBarDemo {
+     }
+ 
+     pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
+-        let preview_width = width.min(PREVIEW_WIDTH);
+-        let changed = self.preview_width != preview_width;
+-        self.preview_width = preview_width;
+-        self.visible && changed
++        let previous = self.preview_width();
++        self.viewport_width = width;
++        self.visible && previous != self.preview_width()
++    }
++
++    fn preview_width(&self) -> f32 {
++        self.viewport_width.min(if self.medium_preview {
++            MEDIUM_PREVIEW_WIDTH
++        } else {
++            PREVIEW_WIDTH
++        })
++    }
++
++    fn horizontal(&self) -> bool {
++        self.medium_preview
++            && WindowWidthSizeClass::from_dp(self.preview_width())
++                == Some(WindowWidthSizeClass::Medium)
+     }
+ 
+     pub(crate) fn text_scale(&self) -> f32 {
+@@ -96,7 +114,10 @@ impl FlexibleNavigationBarDemo {
+     pub(crate) fn update(&mut self, event: FlexibleNavigationBarDemoEvent) {
+         use FlexibleNavigationBarDemoEvent::*;
+         match event {
+-            Show => self.visible = true,
++            Show | ShowMedium => {
++                self.visible = true;
++                self.medium_preview = matches!(event, ShowMedium);
++            }
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+@@ -115,13 +136,36 @@ impl FlexibleNavigationBarDemo {
+     }
+ 
+     pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        Self::launcher(
++            theme,
++            SHOW,
++            "彈性導覽列",
++            FlexibleNavigationBarDemoEvent::Show,
++        )
++    }
++
++    pub(crate) fn show_medium_button(theme: &Theme) -> View<Message> {
++        Self::launcher(
++            theme,
++            SHOW_MEDIUM,
++            "橫向導覽列",
++            FlexibleNavigationBarDemoEvent::ShowMedium,
++        )
++    }
++
++    fn launcher(
++        theme: &Theme,
++        id: &str,
++        label: &str,
++        event: FlexibleNavigationBarDemoEvent,
++    ) -> View<Message> {
+         theme
+             .button_with(
+-                SHOW,
+-                "彈性導覽列",
++                id,
++                label,
+                 ButtonKind::Outlined,
+                 false,
+-                Message::FlexibleNavigationBarDemo(FlexibleNavigationBarDemoEvent::Show),
++                Message::FlexibleNavigationBarDemo(event),
+             )
+             .restore_focus_on_removal(BACK)
+             .accessible_activation()
+@@ -131,6 +175,12 @@ impl FlexibleNavigationBarDemo {
+         use FlexibleNavigationBarDemoEvent::*;
+         let event = Message::FlexibleNavigationBarDemo;
+         let selected_label = LABELS[self.selected];
++        let preview_width = self.preview_width();
++        let launcher = if self.medium_preview {
++            SHOW_MEDIUM
++        } else {
++            SHOW
++        };
+         let header = Node::new(Role::Group, "")
+             .id("navigation-bar-demo-header")
+             .styled(
+@@ -148,7 +198,7 @@ impl FlexibleNavigationBarDemo {
+         let header = View::new(header).children([
+             theme
+                 .tonal_button(BACK, "返回", event(Back))
+-                .restore_focus_on_removal(SHOW)
++                .restore_focus_on_removal(launcher)
+                 .accessible_activation(),
+             View::new(
+                 Node::new(Role::Heading, selected_label)
+@@ -216,33 +266,36 @@ impl FlexibleNavigationBarDemo {
+         )
+         .accessibility_scroll_pages()
+         .children([controls, counts, page]);
+-        let bar = theme.flexible_navigation_bar(
+-            FlexibleNavigationBarOptions {
+-                id: BAR,
+-                name: "主要導覽",
+-                available_width: self.preview_width,
+-                direction: if self.rtl {
+-                    LayoutDirection::RightToLeft
+-                } else {
+-                    LayoutDirection::LeftToRight
+-                },
++        let options = FlexibleNavigationBarOptions {
++            id: BAR,
++            name: "主要導覽",
++            available_width: preview_width,
++            direction: if self.rtl {
++                LayoutDirection::RightToLeft
++            } else {
++                LayoutDirection::LeftToRight
+             },
+-            (0..self.count).map(|index| NavigationRailItem {
+-                id: IDS[index],
+-                label: LABELS[index],
+-                accessible_name: NAMES[index],
+-                icon: icon(index, self.selected == index),
+-                state: ChoiceState {
+-                    selected: self.selected == index,
+-                    disabled: index == DISABLED,
+-                },
+-                message: event(Choose(index)),
+-            }),
+-        );
++        };
++        let destinations = (0..self.count).map(|index| NavigationRailItem {
++            id: IDS[index],
++            label: LABELS[index],
++            accessible_name: NAMES[index],
++            icon: icon(index, self.selected == index),
++            state: ChoiceState {
++                selected: self.selected == index,
++                disabled: index == DISABLED,
++            },
++            message: event(Choose(index)),
++        });
++        let bar = if self.horizontal() {
++            theme.horizontal_flexible_navigation_bar(options, destinations)
++        } else {
++            theme.flexible_navigation_bar(options, destinations)
++        };
+         let preview = View::new(
+             Node::new(Role::Group, "").id(PREVIEW).styled(
+                 Style::column()
+-                    .width(Length::Px(self.preview_width))
++                    .width(Length::Px(preview_width))
+                     .height(Length::Percent(1.))
+                     .background(theme.background),
+             ),
+@@ -270,7 +323,8 @@ impl FlexibleNavigationBarDemo {
+             "visible": self.visible,
+             "rtl": self.rtl,
+             "text_scale": self.text_scale(),
+-            "preview_width": self.preview_width,
++            "preview_width": self.preview_width(),
++            "horizontal": self.horizontal(),
+             "count": self.count,
+             "destinations": &IDS[..self.count],
+             "disabled": IDS[DISABLED],
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 17e39a69b649f0d8bb09ca6d4b1f5186794bc738..6fd10d29e984b3aa33bd920a90d66562e9224515 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1927,6 +1927,7 @@ impl Application for Gallery {
+                     swatch("error-swatch", "Error", t.colors.error, t.colors.on_error),
+                 ]);
+                 children.push(FlexibleNavigationBarDemo::show_button(&t));
++                children.push(FlexibleNavigationBarDemo::show_medium_button(&t));
+             }
+         }
+         children.extend(self.snackbar_demo.layer(&t));
