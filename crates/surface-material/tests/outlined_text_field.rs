@@ -29,6 +29,7 @@ enum Message {
     Submit,
     Action,
     ChangeAppearance,
+    SetInvalid(bool),
     SetEditability(TextFieldEditability),
 }
 
@@ -87,6 +88,7 @@ impl Application for Form {
                 self.scale = 2.;
                 self.invalid = !self.invalid;
             }
+            Message::SetInvalid(invalid) => self.invalid = invalid,
             Message::SetEditability(editability) => self.editability = editability,
         }
     }
@@ -259,6 +261,13 @@ fn label_pose(list: &ExtendedDisplayList, label: &str) -> (Rect, f32) {
     pose
 }
 
+fn label_color(list: &ExtendedDisplayList, label: &str) -> Color {
+    let Some((PaintOp::StyledText { color, .. }, _)) = text_run(list, label) else {
+        panic!("expected painted field label");
+    };
+    *color
+}
+
 #[test]
 fn floating_label_reverses_from_the_same_pose_and_reduced_motion_settles_it() {
     for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
@@ -389,7 +398,90 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
     let face = bounds(&rtl, "project-name-outline");
     let outline = find_outline(&focused, Theme::dark().colors.primary, face);
     assert!(covers(outline, face.x + face.width / 2., face.y + 1.));
+    assert!(rtl.needs_frame(), "the fallback still animates label color");
+    let ink = label_color(&focused, LONG_LABEL);
+    let widened = render(&mut rtl, 1000., &mut fonts);
+    assert_eq!(label_color(&widened, LONG_LABEL), ink);
+    assert_eq!(
+        label_pose(&widened, LONG_LABEL).0,
+        bounds(&rtl, "project-name-floating-label")
+    );
+    let narrowed = render(&mut rtl, 320., &mut fonts);
+    assert_eq!(label_pose(&narrowed, LONG_LABEL), before);
+    assert_eq!(label_color(&narrowed, LONG_LABEL), ink);
+    rtl.set_time(350.);
+    let settled = render(&mut rtl, 320., &mut fonts);
+    assert_eq!(label_pose(&settled, LONG_LABEL), before);
+    assert_eq!(
+        label_color(&settled, LONG_LABEL),
+        Theme::dark().colors.primary
+    );
     assert!(!rtl.needs_frame());
+    rtl.apply(Message::ChangeAppearance).unwrap();
+    let light = render(&mut rtl, 320., &mut fonts);
+    assert_eq!(label_color(&light, LONG_LABEL), Theme::light().colors.error);
+    // The separate Next button can still animate its own theme colors.
+    rtl.set_time(750.);
+    let light = render(&mut rtl, 320., &mut fonts);
+    assert_eq!(label_color(&light, LONG_LABEL), Theme::light().colors.error);
+    assert!(!rtl.needs_frame());
+}
+
+#[test]
+fn label_color_retargets_on_focus_and_error_without_changing_its_pose() {
+    let colors = Theme::light().colors;
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut fonts = TextSystem::default();
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            value: "欄位內容".into(),
+            ..Form::default()
+        })
+        .unwrap();
+        runtime.set_time(0.);
+        let idle = render(&mut runtime, 400., &mut fonts);
+        let pose = label_pose(&idle, LABEL);
+        assert_eq!(label_color(&idle, LABEL), colors.on_surface_variant);
+
+        tab(&mut runtime);
+        let focus = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(label_color(&focus, LABEL), colors.on_surface_variant);
+        runtime.set_time(24.);
+        let rising = render(&mut runtime, 400., &mut fonts);
+        let ink = label_color(&rising, LABEL);
+        assert_ne!(ink, colors.on_surface_variant);
+        assert_ne!(ink, colors.primary);
+        assert_eq!(label_pose(&rising, LABEL), pose);
+        assert!(runtime.needs_frame());
+
+        runtime.apply(Message::SetInvalid(true)).unwrap();
+        let retargeted = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(label_color(&retargeted, LABEL), ink);
+        runtime.set_time(46.);
+        let invalid = render(&mut runtime, 400., &mut fonts);
+        assert_ne!(label_color(&invalid, LABEL), colors.error);
+        assert_ne!(label_color(&invalid, LABEL), ink);
+        assert_eq!(label_pose(&invalid, LABEL), pose);
+        let editor = runtime.dom().by_id(ID).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let input = frame.node(editor).unwrap().node;
+        assert!(input.is_invalid());
+        assert_eq!(input.name(), LABEL);
+        assert_eq!(input.text_value(), Some("欄位內容"));
+
+        runtime.set_reduced_motion(true);
+        let reduced = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(label_color(&reduced, LABEL), colors.error);
+        assert!(!runtime.needs_frame());
+        runtime.set_reduced_motion(false);
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Disabled))
+            .unwrap();
+        let disabled = render(&mut runtime, 400., &mut fonts);
+        let Color(r, g, b, _) = colors.on_surface;
+        assert_eq!(label_color(&disabled, LABEL), Color(r, g, b, 97));
+        assert!(!runtime.needs_frame());
+    }
 }
 
 #[test]

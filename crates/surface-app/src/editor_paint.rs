@@ -1,4 +1,6 @@
-use crate::{Application, ContourPainter, Runtime, ToggleMotion, ToggleSpring};
+use crate::{
+    color_spring::ColorSpring, Application, ContourPainter, Runtime, ToggleMotion, ToggleSpring,
+};
 use std::collections::BTreeMap;
 use surface::{
     Color, ComputedDom, DomError, FillContour, MicroDom, NodeId, Rect, Role, TextAlignment,
@@ -33,6 +35,11 @@ pub struct TextInputLabelMotion {
 pub(crate) type TextInputLabelContour =
     Box<dyn Fn(TextInputPaintState, Rect, Option<TextInputLabelMotion>) -> Option<FillContour>>;
 
+pub(crate) struct LabelColorMotion {
+    pub(crate) fallback: String,
+    pub(crate) palette: Box<[Color]>,
+}
+
 pub(crate) enum Effect {
     Visibility(Box<dyn Fn(TextInputPaintState) -> bool>),
     Foreground(Box<dyn Fn(TextInputPaintState) -> Option<Color>>),
@@ -42,6 +49,7 @@ pub(crate) enum Effect {
     },
     Label {
         resting: String,
+        color_motion: Option<LabelColorMotion>,
         alignment: TextAlignment,
         color: Box<dyn Fn(TextInputPaintState) -> Color>,
     },
@@ -64,8 +72,18 @@ pub(crate) struct PaintBindings {
 
 #[derive(Default)]
 pub(crate) struct LabelMotions {
-    tracks: BTreeMap<(String, String), ToggleMotion>,
+    tracks: BTreeMap<(String, String), LabelTrack>,
     pub(crate) running: bool,
+}
+
+struct LabelTrack {
+    spatial: ToggleMotion,
+    color: Option<LabelColorTrack>,
+}
+
+struct LabelColorTrack {
+    spring: ColorSpring,
+    palette: Box<[Color]>,
 }
 
 #[derive(Default)]
@@ -214,6 +232,7 @@ impl<A: Application> Runtime<A> {
         for (label, binding) in &self.paint_bindings.text_inputs {
             let Effect::Label {
                 resting,
+                color_motion,
                 alignment,
                 color,
             } = &binding.effect
@@ -230,7 +249,13 @@ impl<A: Application> Runtime<A> {
             let floating_geometry = &computed.nodes[label.index()];
             let from = resting_geometry.bounds;
             let to = floating_geometry.bounds;
-            if !has_area(from) || !has_area(to) {
+            let has_endpoints = has_area(from) && has_area(to);
+            let parent = self.dom.get(editor).expect("validated text input").parent();
+            let fallback = color_motion
+                .as_ref()
+                .and_then(|motion| self.dom.by_id(&motion.fallback))
+                .filter(|id| *id != resting && *id != *label && self.label_art(*id, parent, text));
+            if !has_endpoints && fallback.is_none() {
                 frame.hidden.extend([resting, *label]);
                 continue;
             }
@@ -240,25 +265,65 @@ impl<A: Application> Runtime<A> {
                 continue;
             };
             let target = state.is_focused || state.is_composing || !state.is_empty;
-            let visible = has_area(from.intersect(resting_geometry.clip))
-                || has_area(to.intersect(floating_geometry.clip));
+            let visible = if has_endpoints {
+                has_area(from.intersect(resting_geometry.clip))
+                    || has_area(to.intersect(floating_geometry.clip))
+            } else {
+                fallback.is_some_and(|id| {
+                    let geometry = &computed.nodes[id.index()];
+                    has_area(geometry.bounds.intersect(geometry.clip))
+                })
+            };
             let active =
                 self.in_scope(editor) && self.dom.get(editor).is_ok_and(|node| !node.is_disabled());
-            let (key, mut track) = previous
-                .tracks
-                .remove_entry(&key)
-                .unwrap_or_else(|| (key, ToggleMotion::new(target)));
+            let (key, mut track) = previous.tracks.remove_entry(&key).unwrap_or_else(|| {
+                (
+                    key,
+                    LabelTrack {
+                        spatial: ToggleMotion::new(target),
+                        color: None,
+                    },
+                )
+            });
             let snap = self.reduced_motion() || !active || !visible;
-            let (progress, running) = track.sample(
+            let now = self.input_time_ms();
+            let (progress, spatial_running) = track.spatial.sample(
                 target,
-                self.input_time_ms(),
-                snap,
+                now,
+                snap || !has_endpoints,
                 ToggleSpring::StandardFastSpatial,
             );
-            next.running |= running;
+            let target_color = color(state);
+            let (ink, color_running) =
+                if let Some((motion, _)) = color_motion.as_ref().zip(fallback) {
+                    let color = track.color.get_or_insert_with(|| LabelColorTrack {
+                        spring: ColorSpring::new(target_color),
+                        palette: motion.palette.clone(),
+                    });
+                    let palette_changed = color.palette != motion.palette;
+                    if palette_changed {
+                        color.palette.clone_from(&motion.palette);
+                    }
+                    color
+                        .spring
+                        .sample(target_color, now, snap || palette_changed)
+                } else {
+                    track.color = None;
+                    (target_color, false)
+                };
+            next.running |= spatial_running || color_running;
             next.tracks.insert(key, track);
 
-            let ink = color(state);
+            if let Some(fallback) = fallback {
+                if !has_endpoints {
+                    frame.hidden.extend([resting, *label]);
+                    frame
+                        .paints
+                        .push((fallback, ResolvedPaint::Foreground(ink)));
+                    continue;
+                }
+                frame.hidden.push(fallback);
+            }
             let bounds = if progress == 0. {
                 frame.hidden.push(*label);
                 frame.paints.push((resting, ResolvedPaint::Foreground(ink)));
@@ -328,21 +393,14 @@ impl<A: Application> Runtime<A> {
         let input = self.dom.get(editor_id).ok()?;
         let parent = input.parent()?;
         let resting_id = self.dom.by_id(resting)?;
-        let resting = self.dom.get(resting_id).ok()?;
         let floating = self.dom.get(label).ok()?;
         let name = floating.stable_id()?;
         let text = floating.text_value()?;
         (input.role() == Role::TextInput
             && label != resting_id
-            && resting.text_value() == Some(text)
-            && [(label, floating), (resting_id, resting)]
+            && [label, resting_id]
                 .into_iter()
-                .all(|(id, node)| {
-                    node.role() == Role::Text
-                        && node.parent() == Some(parent)
-                        && self.dom.children(id).next().is_none()
-                        && !self.has_interaction_binding(id)
-                }))
+                .all(|id| self.label_art(id, Some(parent), text)))
         .then(|| {
             (
                 editor_id,
@@ -350,6 +408,16 @@ impl<A: Application> Runtime<A> {
                 (editor.to_owned(), name.to_owned()),
                 text,
             )
+        })
+    }
+
+    fn label_art(&self, id: NodeId, parent: Option<NodeId>, text: &str) -> bool {
+        self.dom.get(id).is_ok_and(|node| {
+            node.role() == Role::Text
+                && node.parent() == parent
+                && node.text_value() == Some(text)
+                && self.dom.children(id).next().is_none()
+                && !self.has_interaction_binding(id)
         })
     }
 

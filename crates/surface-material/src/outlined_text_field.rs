@@ -433,14 +433,28 @@ impl Theme {
             .without_interaction(None)
         };
         let inline = label_view(inline_id.clone(), body.clone());
-        let floating = label_view(floating_id, caption.clone()).animate_text_input_label(
-            id,
-            inline_id,
-            alignment,
-            move |state| tokens.label(state),
-        );
-        let fallback = label_view(format!("{id}-above-label"), caption.clone())
-            .paint_text_input_foreground(id, move |state| Some(tokens.label(state)));
+        let fallback_id = format!("{id}-above-label");
+        let floating = label_view(floating_id, caption.clone())
+            .animate_text_input_label_with_fallback(
+                id,
+                inline_id,
+                &fallback_id,
+                &[
+                    if filled {
+                        rgba.surface_container_highest
+                    } else {
+                        rgba.surface
+                    },
+                    rgba.on_surface,
+                    rgba.on_surface_variant,
+                    rgba.primary,
+                    rgba.error,
+                    rgba.on_error_container,
+                ],
+                alignment,
+                move |state| tokens.label(state),
+            );
+        let fallback = label_view(fallback_id, caption.clone());
         // Disabled peers have an authored value but do not mount an editor.
         // Draw their value in the same viewport as an enabled field.
         let disabled_ink = disabled_value.then(|| {

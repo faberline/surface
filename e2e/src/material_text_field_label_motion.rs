@@ -17,6 +17,8 @@ const REPORT: &str = "material-text-field-label-motion.json";
 const PREFIX: &str = "material-text-field-label-motion";
 const TITLE: &str = "專案名稱";
 const HELP: &str = "請輸入中文或英文名稱。";
+const ERROR_HELP: &str = "請輸入有效的專案名稱。";
+const DRAFT: &str = "草稿";
 const TEXTAREA: &str = "document.getElementById('surface-text-input')";
 const EARLY: u16 = 14;
 const MIDDLE: u16 = 44;
@@ -43,6 +45,13 @@ impl Field {
         match self {
             Self::Outlined => "outlined_text_field_demo",
             Self::Filled => "filled_text_field_demo",
+        }
+    }
+
+    fn appearance(self) -> &'static str {
+        match self {
+            Self::Outlined => "outlined",
+            Self::Filled => "filled",
         }
     }
 
@@ -135,6 +144,7 @@ struct Ink {
     label: Rgb,
     primary: Rgb,
     outline: Rgb,
+    error: Rgb,
     text: Rgb,
 }
 
@@ -157,6 +167,7 @@ impl Ink {
             label: color(model, "on_surface_variant")?,
             primary: color(model, "primary")?,
             outline: color(model, "outline")?,
+            error: color(model, "error")?,
             text: color(model, "on_surface")?,
         })
     }
@@ -201,7 +212,7 @@ async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Valu
     tab.eval(r#"(() => {
         window.labelMotionKeys = [];
         window.addEventListener("keydown", event => {
-            if (event.isTrusted && (event.key === "Tab" || event.key === "Escape"))
+            if (event.isTrusted && (event.key === "Tab" || event.key === "Escape" || event.key === "Enter"))
                 window.labelMotionKeys.push({key:event.key, shift:event.shiftKey,id:event.target?.id ?? ""});
         }, {capture:true,passive:true});
     })()"#).await?;
@@ -245,9 +256,16 @@ async fn textbox(tab: &Tab, label: &str, focused: bool, help: Option<&str>) -> R
             "the description survives the handoff"
         );
     }
-    Ok(
-        json!({"label":label,"backend":node["backendDOMNodeId"],"description":node["description"]["value"],"focused":focused}),
-    )
+    let invalid = node["properties"].as_array().is_some_and(|properties| {
+        properties.iter().any(|property| {
+            property["name"] == "invalid"
+                && (property["value"]["value"] == true || property["value"]["value"] == "true")
+        })
+    });
+    Ok(json!({
+        "label":label,"backend":node["backendDOMNodeId"],"description":node["description"]["value"],
+        "focused":focused,"value":node["value"]["value"],"invalid":invalid,"named_textboxes":count
+    }))
 }
 
 async fn photo(tab: &Tab, env: &Env, suffix: &str) -> Result<(String, Raster)> {
@@ -261,6 +279,7 @@ async fn photo(tab: &Tab, env: &Env, suffix: &str) -> Result<(String, Raster)> {
 struct Glyphs {
     bounds: Rect,
     pixels: usize,
+    color: Rgb,
 }
 
 fn glyphs(image: &Raster, geometry: &Geometry, color: Rgb) -> Result<Glyphs> {
@@ -294,7 +313,10 @@ fn glyphs(image: &Raster, geometry: &Geometry, color: Rgb) -> Result<Glyphs> {
             }
         }
     }
-    check!(pixels > 12, "the moving label has real glyph ink");
+    check!(
+        pixels > 12,
+        format!("the label has real {color:?} glyph ink; found {pixels} pixels")
+    );
     Ok(Glyphs {
         bounds: [
             min[0] - 0.25,
@@ -303,6 +325,7 @@ fn glyphs(image: &Raster, geometry: &Geometry, color: Rgb) -> Result<Glyphs> {
             max[1] - min[1] + 0.5,
         ],
         pixels,
+        color,
     })
 }
 
@@ -357,9 +380,77 @@ struct Shot {
 impl Shot {
     fn report(&self, ms: u16) -> Value {
         json!({"png":self.name,"ms":ms,"label":self.glyphs.bounds,"label_pixels":self.glyphs.pixels,
-            "placeholder_pixels":self.placeholder,"gap_pixel_columns":self.gap_columns,
+            "label_rgb":self.glyphs.color,"placeholder_pixels":self.placeholder,"gap_pixel_columns":self.gap_columns,
             "notch":self.notch,"outline_sides":self.outline_sides})
     }
+}
+
+enum LabelPaint<'a> {
+    Idle(Rgb),
+    Focused(Rgb),
+    FirstFocus(&'a Raster),
+}
+
+fn assert_same_color_mask(base: &Raster, frame: &Raster, rect: Rect, color: Rgb) -> Result<()> {
+    // At 0 ms the label and placeholder have the same RGB token.
+    // Compare their exact masks against the inactive photo, where the
+    // placeholder is hidden, rather than counting the idle label as a hint.
+    let mut changes = 0;
+    for row in (rect[1] * DPI).ceil() as usize..(bottom(rect) * DPI).floor() as usize {
+        let y = (row as f64 + 0.5) / DPI;
+        for column in (rect[0] * DPI).ceil() as usize..(right(rect) * DPI).floor() as usize {
+            let x = (column as f64 + 0.5) / DPI;
+            changes += usize::from((base.sample(x, y)? == color) != (frame.sample(x, y)? == color));
+        }
+    }
+    check_eq!(
+        changes,
+        0,
+        "first focus paints no new placeholder pixels at the idle label color"
+    );
+    Ok(())
+}
+
+fn sample(
+    geometry: &Geometry,
+    ink: Ink,
+    paint: LabelPaint<'_>,
+    name: String,
+    image: &Raster,
+) -> Result<Shot> {
+    let (label, active, placeholder) = match paint {
+        LabelPaint::Idle(color) => (color, false, 0),
+        LabelPaint::Focused(color) => (
+            color,
+            true,
+            color_pixels(image, geometry.clearance(), ink.label)?,
+        ),
+        LabelPaint::FirstFocus(rest) => {
+            assert_same_color_mask(rest, image, geometry.clearance(), ink.label)?;
+            (ink.label, true, 0)
+        }
+    };
+    let gap = matches!(geometry.field, Field::Outlined);
+    Ok(Shot {
+        name,
+        glyphs: glyphs(image, geometry, label)?,
+        placeholder,
+        gap_columns: if gap {
+            top_paper(image, geometry, ink.paper)?
+        } else {
+            0
+        },
+        notch: gap.then(|| notch_sample(image, geometry)).transpose()?,
+        outline_sides: gap
+            .then(|| {
+                sides(
+                    image,
+                    geometry.face,
+                    if active { ink.primary } else { ink.outline },
+                )
+            })
+            .transpose()?,
+    })
 }
 
 async fn capture(
@@ -367,37 +458,12 @@ async fn capture(
     env: &Env,
     geometry: &Geometry,
     ink: Ink,
-    active: bool,
+    paint: LabelPaint<'_>,
     name: &str,
 ) -> Result<Shot> {
     geometry.assert_stable(tab).await?;
     let (name, image) = photo(tab, env, name).await?;
-    let label = if active { ink.primary } else { ink.label };
-    let gap = matches!(geometry.field, Field::Outlined);
-    Ok(Shot {
-        name,
-        glyphs: glyphs(&image, geometry, label)?,
-        placeholder: if active {
-            color_pixels(&image, geometry.clearance(), ink.label)?
-        } else {
-            0
-        },
-        gap_columns: if gap {
-            top_paper(&image, geometry, ink.paper)?
-        } else {
-            0
-        },
-        notch: gap.then(|| notch_sample(&image, geometry)).transpose()?,
-        outline_sides: gap
-            .then(|| {
-                sides(
-                    &image,
-                    geometry.face,
-                    if active { ink.primary } else { ink.outline },
-                )
-            })
-            .transpose()?,
-    })
+    sample(geometry, ink, paint, name, &image)
 }
 
 async fn outlined(
@@ -420,7 +486,9 @@ async fn outlined(
     );
     let geometry = Geometry::read(tab, field, false).await?;
     let ink = Ink::read(&model, field)?;
-    let rest = capture(tab, env, &geometry, ink, false, "outlined-rest").await?;
+    geometry.assert_stable(tab).await?;
+    let (name, neutral) = photo(tab, env, "outlined-rest").await?;
+    let rest = sample(&geometry, ink, LabelPaint::Idle(ink.label), name, &neutral)?;
     let proxy = textbox(tab, TITLE, false, Some(HELP)).await?;
     enter(tab, field).await?;
     let active = textbox(tab, TITLE, true, Some(HELP)).await?;
@@ -428,7 +496,15 @@ async fn outlined(
         proxy["backend"] != active["backend"],
         "focus hands the stable name to the textarea"
     );
-    let first = capture(tab, env, &geometry, ink, true, "outlined-first").await?;
+    let first = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::FirstFocus(&neutral),
+        "outlined-first",
+    )
+    .await?;
     check_eq!(
         first.glyphs.bounds,
         rest.glyphs.bounds,
@@ -439,16 +515,40 @@ async fn outlined(
         "the first frame has a closed top and no overlapping placeholder"
     );
     tick(tab, EARLY).await?;
-    let early = capture(tab, env, &geometry, ink, true, "outlined-early").await?;
+    let early = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Focused(golden::between(ink.label, ink.primary, EARLY)),
+        "outlined-early",
+    )
+    .await?;
     check_eq!(
         early.notch,
         Some([ink.paper, ink.primary]),
         "the early gap removes only the upper part of the three-dp stroke"
     );
     tick(tab, MIDDLE).await?;
-    let mid = capture(tab, env, &geometry, ink, true, "outlined-middle").await?;
+    let mid = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
+        "outlined-middle",
+    )
+    .await?;
     tick(tab, SETTLED).await?;
-    let settled = capture(tab, env, &geometry, ink, true, "outlined-settled").await?;
+    let settled = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Focused(ink.primary),
+        "outlined-settled",
+    )
+    .await?;
     check!(
         early.gap_columns >= 8 && mid.gap_columns > early.gap_columns + 6,
         "the real shallow gap grows across the top edge"
@@ -486,25 +586,57 @@ async fn reversal(
     leave(tab, field).await?;
     let proxy = textbox(tab, TITLE, false, Some(HELP)).await?;
     tick(tab, turn).await?;
-    let falling = capture(tab, env, geometry, ink, false, "outlined-falling").await?;
+    let falling_color = golden::between(ink.primary, ink.label, MIDDLE);
+    let falling = capture(
+        tab,
+        env,
+        geometry,
+        ink,
+        LabelPaint::Idle(falling_color),
+        "outlined-falling",
+    )
+    .await?;
     check!(
         falling.glyphs.bounds[1] > settled.glyphs.bounds[1] + 2.
             && falling.glyphs.bounds[1] < geometry.inline[1] + 8.,
         "the falling label has an intermediate painted position"
     );
     enter(tab, field).await?;
-    let retarget = capture(tab, env, geometry, ink, true, "outlined-retarget").await?;
+    let retarget = capture(
+        tab,
+        env,
+        geometry,
+        ink,
+        LabelPaint::Focused(falling_color),
+        "outlined-retarget",
+    )
+    .await?;
     check_eq!(
         retarget.glyphs.bounds,
         falling.glyphs.bounds,
         "reversal starts from the exact current glyph pose"
     );
     reduced_motion(tab, true).await?;
-    let snapped = capture(tab, env, geometry, ink, true, "outlined-reduced").await?;
+    let snapped = capture(
+        tab,
+        env,
+        geometry,
+        ink,
+        LabelPaint::Focused(ink.primary),
+        "outlined-reduced",
+    )
+    .await?;
     check_eq!(
         snapped.glyphs.bounds,
         settled.glyphs.bounds,
         "Reduce Motion snaps to the settled glyph pose at the same time"
+    );
+    check!(
+        falling.glyphs.color != ink.label
+            && falling.glyphs.color != ink.primary
+            && retarget.glyphs.color == falling.glyphs.color
+            && snapped.glyphs.color == ink.primary,
+        "reversal keeps the current color and Reduce Motion snaps at the same clock"
     );
     check_eq!(
         snapped.notch,
@@ -534,11 +666,29 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     let model = scene(tab, url, field, false).await?;
     let geometry = Geometry::read(tab, field, false).await?;
     let ink = Ink::read(&model, field)?;
+    let (name, neutral) = photo(tab, env, "filled-rest").await?;
+    let rest = sample(&geometry, ink, LabelPaint::Idle(ink.label), name, &neutral)?;
     enter(tab, field).await?;
     let active = textbox(tab, TITLE, true, Some(HELP)).await?;
-    let start = capture(tab, env, &geometry, ink, true, "filled-first").await?;
+    let start = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::FirstFocus(&neutral),
+        "filled-first",
+    )
+    .await?;
     tick(tab, MIDDLE).await?;
-    let middle = capture(tab, env, &geometry, ink, true, "filled-middle").await?;
+    let middle = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
+        "filled-middle",
+    )
+    .await?;
     check!(
         start.glyphs.bounds[1] > middle.glyphs.bounds[1]
             && start.placeholder == 0
@@ -573,7 +723,15 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     tab.wait_for(&format!("!{input}.composing && {TEXTAREA}.value === ''"))
         .await?;
     tick(tab, SETTLED).await?;
-    let end = capture(tab, env, &geometry, ink, true, "filled-settled").await?;
+    let end = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Focused(ink.primary),
+        "filled-settled",
+    )
+    .await?;
     check!(
         end.glyphs.bounds[1] < middle.glyphs.bounds[1] && end.placeholder > 12,
         "the settled filled caption clears the placeholder after cancel"
@@ -592,8 +750,284 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     Ok(
         json!({"face":geometry.face,"inline":geometry.inline,"floated":geometry.floated,"palette":model["palette"],
         "ax":after,"preedit":{"png":preedit_name,"ms":MIDDLE,"ink_pixels":actual,"placeholder_pixels":placeholder},
-        "frames":[start.report(0),middle.report(MIDDLE),end.report(SETTLED)]}),
+        "rest":rest.report(0),"frames":[start.report(0),middle.report(MIDDLE),end.report(SETTLED)]}),
     )
+}
+
+fn solid_probes(image: &Raster, rect: Rect, color: Rgb) -> Result<[[f64; 2]; 4]> {
+    // Find separate pixels of opaque glyph interior. Later frames must
+    // actually paint the predicted color at the same points.
+    let columns = (rect[0] * DPI).ceil() as usize..(right(rect) * DPI).floor() as usize;
+    let rows = (rect[1] * DPI).ceil() as usize..(bottom(rect) * DPI).floor() as usize;
+    let mut probes: Vec<[f64; 2]> = Vec::new();
+    for column in columns {
+        let x = (column as f64 + 0.5) / DPI;
+        if probes.last().is_some_and(|[previous, _]| x - previous < 3.) {
+            continue;
+        }
+        for row in rows.clone() {
+            let y = (row as f64 + 0.5) / DPI;
+            if image.sample(x, y)? == color
+                && image.sample(x - 0.5, y)? == color
+                && image.sample(x + 0.5, y)? == color
+            {
+                probes.push([x, y]);
+                break;
+            }
+        }
+        if probes.len() == 4 {
+            break;
+        }
+    }
+    probes
+        .try_into()
+        .ok()
+        .context("four separated solid label glyph samples")
+}
+
+fn fixed_label_frame(
+    name: String,
+    image: &Raster,
+    geometry: &Geometry,
+    clock: u16,
+    color: Rgb,
+    probes: &[[f64; 2]; 4],
+) -> Result<Value> {
+    let glyphs = glyphs(image, geometry, color)?;
+    let actual = probes
+        .iter()
+        .map(|&[x, y]| image.sample(x, y))
+        .collect::<Result<Vec<_>>>()?;
+    check!(
+        actual.iter().all(|pixel| *pixel == color),
+        format!("unchanged glyph positions paint golden {color:?}, got {actual:?}")
+    );
+    Ok(json!({
+        "png":name,"ms":clock,"label":glyphs.bounds,"label_rgb":color,
+        "label_pixels":glyphs.pixels,"solid_probe_rgb":actual
+    }))
+}
+
+async fn fixed_photo(
+    tab: &Tab,
+    env: &Env,
+    geometry: &Geometry,
+    clock: u16,
+    color: Rgb,
+    probes: &[[f64; 2]; 4],
+    phase: &str,
+) -> Result<Value> {
+    geometry.assert_stable(tab).await?;
+    check_eq!(
+        bounds(tab, &geometry.field.id("editable-floating-label")).await?,
+        geometry.floated,
+        "color-only motion preserves the floating label geometry"
+    );
+    let suffix = format!("{}-color-{phase}", geometry.field.appearance());
+    let (name, image) = photo(tab, env, &suffix).await?;
+    fixed_label_frame(name, &image, geometry, clock, color, probes)
+}
+
+async fn draft_ax(tab: &Tab, active: bool, invalid: bool) -> Result<Value> {
+    let expected = if invalid { ERROR_HELP } else { HELP };
+    let node = textbox(tab, TITLE, active, None).await?;
+    check_eq!(
+        node["invalid"],
+        invalid,
+        "validation semantics are already current"
+    );
+    check_eq!(
+        node["value"],
+        DRAFT,
+        "label recoloring never changes the Chrome AX value"
+    );
+    check!(
+        node["description"]
+            .as_str()
+            .is_some_and(|text| text.contains(expected)),
+        "Chrome already describes the expected validation or supporting text"
+    );
+    if active {
+        check_eq!(
+            tab.eval(&format!("{TEXTAREA}.value")).await?,
+            DRAFT,
+            "the sole editing host keeps the draft"
+        );
+        check_eq!(
+            tab.eval(&format!("{TEXTAREA}.getAttribute('aria-invalid')"))
+                .await?,
+            json!(invalid.then_some("true")),
+            "the actual textarea applies error semantics without waiting for ink"
+        );
+    }
+    Ok(node)
+}
+
+async fn toggle_error(tab: &Tab, field: Field, enabled: bool) -> Result<()> {
+    leave(tab, field).await?;
+    tab.press("Enter").await?;
+    until(
+        tab,
+        &format!("s.{}.show_error === {enabled}", field.model()),
+    )
+    .await?;
+    tab.settle().await
+}
+
+async fn fixed_label_color(tab: &Tab, env: &Env, url: &str, field: Field) -> Result<Value> {
+    let model = scene(tab, url, field, false).await?;
+    let geometry = Geometry::read(tab, field, false).await?;
+    let ink = Ink::read(&model, field)?;
+    enter(tab, field).await?;
+    tab.insert_text(DRAFT).await?;
+    until(tab, &format!("s.{}.value === {}", field.model(), js(DRAFT))).await?;
+    tick(tab, SETTLED).await?;
+    leave(tab, field).await?;
+    let at_rest = 2 * SETTLED;
+    tick(tab, at_rest).await?;
+
+    let rest_ax = draft_ax(tab, false, false).await?;
+    let suffix = format!("{}-color-rest", field.appearance());
+    let (name, image) = photo(tab, env, &suffix).await?;
+    let glyphs = glyphs(&image, &geometry, ink.label)?;
+    let probes = solid_probes(&image, glyphs.bounds, ink.label)?;
+    let rest = fixed_label_frame(name, &image, &geometry, at_rest, ink.label, &probes)?;
+
+    enter(tab, field).await?;
+    let active_ax = draft_ax(tab, true, false).await?;
+    let focus_at = at_rest + MIDDLE;
+    tick(tab, focus_at).await?;
+    let focus_pose = golden::Pose::at(ink.label).towards(ink.primary, MIDDLE);
+    let focus_color = focus_pose.rgb();
+    check!(
+        focus_color != ink.label && focus_color != ink.primary,
+        "the expected focused ink is intermediate"
+    );
+    let focus_mid = fixed_photo(
+        tab,
+        env,
+        &geometry,
+        focus_at,
+        focus_color,
+        &probes,
+        "focus-mid",
+    )
+    .await?;
+
+    toggle_error(tab, field, true).await?;
+    let error_proxy = draft_ax(tab, false, true).await?;
+    enter(tab, field).await?;
+    let error_ax = draft_ax(tab, true, true).await?;
+    let error_first = fixed_photo(
+        tab,
+        env,
+        &geometry,
+        focus_at,
+        focus_color,
+        &probes,
+        "error-first",
+    )
+    .await?;
+    let error_at = focus_at + MIDDLE;
+    tick(tab, error_at).await?;
+    let error_color = focus_pose.towards(ink.error, MIDDLE).rgb();
+    check!(
+        error_color != focus_color && error_color != ink.error,
+        "the expected error ink is intermediate"
+    );
+    let error_mid = fixed_photo(
+        tab,
+        env,
+        &geometry,
+        error_at,
+        error_color,
+        &probes,
+        "error-mid",
+    )
+    .await?;
+    tick(tab, error_at + SETTLED).await?;
+    let invalid_settled = fixed_photo(
+        tab,
+        env,
+        &geometry,
+        error_at + SETTLED,
+        ink.error,
+        &probes,
+        "error-settled",
+    )
+    .await?;
+
+    // Clear the error, let the ink move toward focus, then reverse before
+    // settling. Error semantics update immediately in both directions.
+    let return_at = error_at + SETTLED + MIDDLE;
+    toggle_error(tab, field, false).await?;
+    enter(tab, field).await?;
+    let clear_ax = draft_ax(tab, true, false).await?;
+    tick(tab, return_at).await?;
+    let clearing_pose = golden::Pose::at(ink.error).towards(ink.primary, MIDDLE);
+    let clearing = fixed_photo(
+        tab,
+        env,
+        &geometry,
+        return_at,
+        clearing_pose.rgb(),
+        &probes,
+        "clearing",
+    )
+    .await?;
+    toggle_error(tab, field, true).await?;
+    enter(tab, field).await?;
+    let reversed_ax = draft_ax(tab, true, true).await?;
+    let reversed = fixed_photo(
+        tab,
+        env,
+        &geometry,
+        return_at,
+        clearing_pose.rgb(),
+        &probes,
+        "reversed",
+    )
+    .await?;
+    reduced_motion(tab, true).await?;
+    let snapped = fixed_photo(
+        tab, env, &geometry, return_at, ink.error, &probes, "reduced",
+    )
+    .await?;
+
+    check!(
+        error_proxy["backend"] != active_ax["backend"]
+            && [&error_ax, &clear_ax, &reversed_ax]
+                .into_iter()
+                .all(|node| node["backend"] == active_ax["backend"])
+            && active_ax["backend"] != rest_ax["backend"],
+        "color and validation keep one editor backend distinct from inactive proxies"
+    );
+    let after = state(tab).await?[field.model()].clone();
+    check!(
+        after["value"] == DRAFT
+            && after["edits"] == 1
+            && after["submits"] == 0
+            && after["show_error"] == true,
+        "one caller edit survives real focus and validation changes"
+    );
+    let keys = tab.eval("window.labelMotionKeys").await?;
+    check_eq!(
+        keys.as_array()
+            .context("trusted fixture keys")?
+            .iter()
+            .filter(|key| key["key"] == "Enter")
+            .count(),
+        3,
+        "trusted keys change validation three times"
+    );
+    Ok(json!({
+        "face":geometry.face,"floated":geometry.floated,"helper":geometry.help,
+        "palette":model["palette"],"probe_points":probes,
+        "frames":[rest,focus_mid,error_first,error_mid,invalid_settled,clearing,reversed,snapped],
+        "ax":{"rest":rest_ax,"focused":active_ax,"error_proxy":error_proxy,"error":error_ax,
+            "cleared":clear_ax,"reversed":reversed_ax},
+        "trusted":keys,"model":{"value":after["value"],"edits":after["edits"],"submits":after["submits"],"error":after["show_error"]}
+    }))
 }
 
 async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
@@ -601,10 +1035,26 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     let model = scene(tab, url, field, true).await?;
     let geometry = Geometry::read(tab, field, true).await?;
     let ink = Ink::read(&model, field)?;
-    let closed = capture(tab, env, &geometry, ink, false, "rtl-rest").await?;
+    let closed = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Idle(ink.label),
+        "rtl-rest",
+    )
+    .await?;
     enter(tab, field).await?;
     tick(tab, MIDDLE).await?;
-    let moving = capture(tab, env, &geometry, ink, true, "rtl-middle").await?;
+    let moving = capture(
+        tab,
+        env,
+        &geometry,
+        ink,
+        LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
+        "rtl-middle",
+    )
+    .await?;
     check!(
         geometry.face[2] <= 320.
             && (right(geometry.face) - geometry.anchor() - 16.).abs() <= 0.5
@@ -620,11 +1070,10 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
     tick(tab, SETTLED).await?;
     tab.press("Tab").await?;
     focus(tab, &field.id("read-only"), "surface-text-input").await?;
-    tab.press("Tab").await?;
     let long = field.id("long-label");
-    focus(tab, &long, "surface-text-input").await?;
     let face = bounds(tab, &long).await?;
-    let above = bounds(tab, &field.id("long-label-above-label")).await?;
+    let above_id = field.id("long-label-above-label");
+    let above = bounds(tab, &above_id).await?;
     let floated = bounds(tab, &field.id("long-label-floating-label")).await?;
     check!(
         contains(geometry.viewport, face)
@@ -634,6 +1083,46 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
             && floated[2] == 0.,
         "the long label wraps above the complete narrow editor"
     );
+    let (idle_name, idle) = photo(tab, env, "rtl-above-label-rest").await?;
+    let idle_pixels = color_pixels(&idle, above, ink.label)?;
+    check!(
+        idle_pixels > 40,
+        "the dark above-label fallback paints the idle ink"
+    );
+    let probes = solid_probes(&idle, above, ink.label)?;
+    tab.press("Tab").await?;
+    focus(tab, &long, "surface-text-input").await?;
+    tick(tab, SETTLED + MIDDLE).await?;
+    let color = golden::between(ink.label, ink.primary, MIDDLE);
+    let (mid_name, middle) = photo(tab, env, "rtl-above-label-middle").await?;
+    let mid_pixels = color_pixels(&middle, above, color)?;
+    let probe_colors = probes
+        .iter()
+        .map(|&[x, y]| middle.sample(x, y))
+        .collect::<Result<Vec<_>>>()?;
+    check!(
+        color != ink.label
+            && color != ink.primary
+            && mid_pixels > 40
+            && probe_colors.iter().all(|sample| *sample == color),
+        "the wrapped fallback changes only ink at the same glyph positions"
+    );
+    check_eq!(
+        bounds(tab, &long).await?,
+        face,
+        "the dark fallback editor keeps its full bounds"
+    );
+    check_eq!(
+        bounds(tab, &above_id).await?,
+        above,
+        "the wrapped label keeps its layout bounds"
+    );
+    check_eq!(
+        bounds(tab, &field.id("long-label-floating-label")).await?,
+        floated,
+        "focus leaves the compact floating slot collapsed"
+    );
+    tick(tab, 2 * SETTLED).await?;
     let (name, frame) = photo(tab, env, "rtl-above-label").await?;
     let above_pixels = color_pixels(&frame, above, ink.primary)?;
     let top_point = [face[0] + face[2] / 2., face[1] + 0.5];
@@ -652,7 +1141,13 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
         json!({"face":geometry.face,"anchor":geometry.anchor(),"floated":geometry.floated,
         "palette":model["palette"],"frames":[closed.report(0),moving.report(MIDDLE)],
         "fallback":{"png":name,"ms":SETTLED,"face":face,"above":above,"pixels":above_pixels,
-            "solid_top":top_point,"float":floated,"ax":ax}}),
+            "solid_top":top_point,"float":floated,"ax":ax,
+            "label_rgb":ink.primary,"probe_points":probes,
+            "color_frames":[
+                {"png":idle_name,"ms":0,"label_rgb":ink.label,"label_pixels":idle_pixels},
+                {"png":mid_name,"ms":MIDDLE,"label_rgb":color,"label_pixels":mid_pixels,
+                    "solid_probe_rgb":probe_colors}
+            ]}}),
     )
 }
 
@@ -673,9 +1168,14 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
         report["reversal"] = reversal(&tab, env, &geometry, ink, &settled).await?;
         step(
             STEPS[2],
-            "Filled label shares one editor and keeps placeholder out of marked text",
+            "Filled label protects marked text and both appearances retarget independent label ink",
         );
         report["filled"] = filled(&tab, env, url).await?;
+        report["label_color"] = json!({
+            "space":"Oklab","spring":{"stiffness":3800,"damping_ratio":1},
+            "outlined":fixed_label_color(&tab, env, url, Field::Outlined).await?,
+            "filled":fixed_label_color(&tab, env, url, Field::Filled).await?
+        });
         step(
             STEPS[3],
             "Dark 320 dp RTL at 200 percent keeps the right anchor and the closed fallback",
@@ -694,4 +1194,145 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
     }
     env.write_json(REPORT, &report)?;
     result
+}
+
+// The test uses the CSS Color 4 reference path through XYZ D65, independent
+// of the direct sRGB/Oklab matrices in Surface. All fixture label inks are
+// opaque. https://www.w3.org/TR/css-color-4/#color-conversion-code
+mod golden {
+    use super::Rgb;
+
+    type Color = [f64; 3];
+
+    fn matrix(rows: [[f64; 3]; 3], color: Color) -> Color {
+        rows.map(|[a, b, c]| a * color[0] + b * color[1] + c * color[2])
+    }
+
+    fn to_lab(rgb: Rgb) -> Color {
+        let linear = rgb.map(|byte| {
+            let x = f64::from(byte) / 255.;
+            if x <= 0.04045 {
+                x / 12.92
+            } else {
+                ((x + 0.055) / 1.055).powf(2.4)
+            }
+        });
+        let xyz = matrix(
+            [
+                [0.412_390_799_3, 0.357_584_339_4, 0.180_480_788_4],
+                [0.212_639_005_9, 0.715_168_678_8, 0.072_192_315_4],
+                [0.019_330_818_7, 0.119_194_779_8, 0.950_532_152_2],
+            ],
+            linear,
+        );
+        let lms = matrix(
+            [
+                [0.819_022_438, 0.361_906_260_1, -0.128_873_781_5],
+                [0.032_983_653_9, 0.929_286_861_6, 0.036_144_666_4],
+                [0.048_177_189_4, 0.264_239_531_8, 0.633_547_828_5],
+            ],
+            xyz,
+        );
+        matrix(
+            [
+                [0.210_454_268_3, 0.793_617_774_7, -0.004_072_043],
+                [1.977_998_532_4, -2.428_592_242, 0.450_593_709_6],
+                [0.025_904_042_5, 0.782_771_712_5, -0.808_675_754_9],
+            ],
+            lms.map(f64::cbrt),
+        )
+    }
+
+    fn to_srgb(lab: Color) -> Rgb {
+        let lms = matrix(
+            [
+                [1., 0.396_337_777_4, 0.215_803_757_3],
+                [1., -0.105_561_345_8, -0.063_854_172_8],
+                [1., -0.089_484_177_5, -1.291_485_548],
+            ],
+            lab,
+        );
+        let xyz = matrix(
+            [
+                [1.226_879_875_8, -0.557_814_994_5, 0.281_391_045_7],
+                [-0.040_575_745_2, 1.112_286_803_3, -0.071_711_058_1],
+                [-0.076_372_936_7, -0.421_493_332_4, 1.586_924_019_8],
+            ],
+            lms.map(|channel| channel.powi(3)),
+        );
+        matrix(
+            [
+                [3.240_969_941_9, -1.537_383_177_6, -0.498_610_760_3],
+                [-0.969_243_636_3, 1.875_967_501_5, 0.041_555_057_4],
+                [0.055_630_079_7, -0.203_976_958_9, 1.056_971_514_2],
+            ],
+            xyz,
+        )
+        .map(|linear| {
+            let channel = if linear <= 0.003_130_8 {
+                12.92 * linear
+            } else {
+                1.055 * linear.powf(1. / 2.4) - 0.055
+            };
+            (channel.clamp(0., 1.) * 255.).round() as u8
+        })
+    }
+
+    pub(super) struct Pose {
+        position: Color,
+        velocity: Color,
+    }
+
+    impl Pose {
+        pub(super) fn at(rgb: Rgb) -> Self {
+            Self {
+                position: to_lab(rgb),
+                velocity: [0.; 3],
+            }
+        }
+
+        pub(super) fn towards(&self, rgb: Rgb, ms: u16) -> Self {
+            let target = to_lab(rgb);
+            let seconds = f64::from(ms) / 1000.;
+            let omega = 3800_f64.sqrt();
+            let decay = (-omega * seconds).exp();
+            // Analytic solution for a critically damped spring. Retarget
+            // from unrounded position and velocity, not displayed bytes.
+            let coefficient: Color =
+                std::array::from_fn(|i| self.velocity[i] + omega * (self.position[i] - target[i]));
+            Self {
+                position: std::array::from_fn(|i| {
+                    target[i] + (self.position[i] - target[i] + coefficient[i] * seconds) * decay
+                }),
+                velocity: std::array::from_fn(|i| {
+                    (self.velocity[i] - omega * coefficient[i] * seconds) * decay
+                }),
+            }
+        }
+
+        pub(super) fn rgb(&self) -> Rgb {
+            to_srgb(self.position)
+        }
+    }
+
+    pub(super) fn between(from: Rgb, to: Rgb, ms: u16) -> Rgb {
+        Pose::at(from).towards(to, ms).rgb()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn retained_color_is_not_a_byte_mix_or_a_fresh_spring() {
+            let idle = [73, 69, 78];
+            let focus = [101, 85, 143];
+            let error = [186, 26, 26];
+            assert_eq!(between(idle, focus, 14), [79, 73, 92]);
+            let mid = Pose::at(idle).towards(focus, 44);
+            assert_eq!(mid.rgb(), [94, 81, 127]);
+            assert_eq!(mid.towards(error, 0).rgb(), mid.rgb());
+            assert_ne!(mid.towards(error, 44).rgb(), between(mid.rgb(), error, 44));
+        }
+    }
 }
