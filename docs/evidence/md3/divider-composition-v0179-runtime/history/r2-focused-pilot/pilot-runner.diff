@@ -1,0 +1,29 @@
+diff --git a/e2e/src/main.rs b/e2e/src/main.rs
+index 4710aa28b9503de74243664e1d74980166247ab6..bf81c1d984f4c8f6e8a02b7057c6d63508a14a0b 100644
+--- a/e2e/src/main.rs
++++ b/e2e/src/main.rs
+@@ -192,6 +192,9 @@ fn expected_steps(suite: &str) -> &'static [&'static str] {
+     match suite {
+         "smoke" => smoke::STEPS,
+         "ime" => ime::STEPS,
++        "material" if std::env::var_os("SURFACE_DIVIDER_DIAGNOSTIC").is_some() => {
++            &["M264", "M265", "M266", "M381", "M382"]
++        }
+         "material" => material::STEPS,
+         "bridge-native" => bridge::NATIVE_STEPS,
+         "bridge-native-compact" => bridge::NATIVE_OVERFLOW_STEPS,
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 8351b625f92ceae5b576f9cf713fa8cdfdf1d92d..94243c911a3f2e7f1a9b48632235c1cc2a7f8373 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -247,6 +247,10 @@ async fn focus(tab: &Tab, id: &str, host: &str) -> Result<()> {
+ 
+ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     let (_server, url) = env.serve("material-gallery")?;
++    if std::env::var_os("SURFACE_DIVIDER_DIAGNOSTIC").is_some() {
++        material_divider::run(env, chrome, &url).await?;
++        return material_divider_composition::run(env, chrome, &url).await;
++    }
+     let tab = chrome.page(1100, 1100, 2.0).await?;
+     tab.goto(&url).await?;
+     let result = journey(env, chrome, &tab).await;

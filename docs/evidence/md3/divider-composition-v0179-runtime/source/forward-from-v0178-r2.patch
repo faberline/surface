@@ -1,0 +1,1135 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 1ab6fc875a5555af60f7cfff77bb4861f2afcac6..d06f72285536e19e502d158b279d5d4ce366b9cc 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.78"
++version = "0.1.79"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 84c7f4f0af2a51b850d8f997934b22b736ce436c..9a4d627672f7c64564ca9daae42001334144708d 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.78"
++version = "0.1.79"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/list.rs b/crates/surface-material/src/list.rs
+index cf60146fec80e5ec5dfaba431a2863538ae75299..f9d00695ec38b17817c275cf966a1b3db3ab11cf 100644
+--- a/crates/surface-material/src/list.rs
++++ b/crates/surface-material/src/list.rs
+@@ -19,7 +19,7 @@ use crate::{
+     date_picker::{button, disabled_ink, text},
+     motion,
+     shape::{self, LayoutDirection},
+-    typography, Theme, VectorIcon,
++    typography, DividerKind, DividerLayout, Theme, VectorIcon,
+ };
+ 
+ const SLOT_GAP: f32 = 12.;
+@@ -177,6 +177,19 @@ impl Theme {
+         &self,
+         options: ListOptions<'a>,
+         items: impl IntoIterator<Item = ListItem<'a, M>>,
++    ) -> View<M> {
++        self.list_with_dividers(options, items, |_| None)
++    }
++
++    /// Build one list with optional decorative dividers between its rows.
++    /// Return a stable divider ID and layout for each row that needs a
++    /// divider below it. The final row has no divider. Dividers follow the
++    /// list direction and do not change its keyboard or accessibility order.
++    pub fn list_with_dividers<'a, M>(
++        &self,
++        options: ListOptions<'a>,
++        items: impl IntoIterator<Item = ListItem<'a, M>>,
++        divider_after: impl FnMut(&str) -> Option<(&'a str, DividerKind)>,
+     ) -> View<M> {
+         let interaction = match options.mode {
+             ListMode::Passive => ListInteraction::Passive,
+@@ -192,6 +205,7 @@ impl Theme {
+                 interaction,
+             },
+             items,
++            divider_after,
+         )
+     }
+ 
+@@ -216,6 +230,7 @@ impl Theme {
+                 interaction: ListInteraction::MultiSelect(options.is_selected),
+             },
+             items,
++            |_| None,
+         )
+     }
+ 
+@@ -225,19 +240,28 @@ impl Theme {
+         name: &str,
+         options: ListPresentation<'_>,
+         items: impl IntoIterator<Item = ListItem<'a, M>>,
++        mut divider_after: impl FnMut(&str) -> Option<(&'a str, DividerKind)>,
+     ) -> View<M> {
+         let items: Vec<_> = items.into_iter().collect();
+         let last = items.len().saturating_sub(1);
+-        self.list_container(
+-            id,
+-            name,
+-            options,
+-            Length::Percent(1.),
+-            items
+-                .into_iter()
+-                .enumerate()
+-                .map(|(index, item)| self.list_row(options, item, index == 0, index == last)),
+-        )
++        let rows = items.into_iter().enumerate().flat_map(|(index, item)| {
++            let divider = if index < last {
++                divider_after(item.id).map(|(id, kind)| {
++                    self.decorative_divider(
++                        id,
++                        DividerLayout::Horizontal {
++                            kind,
++                            direction: options.direction,
++                        },
++                    )
++                })
++            } else {
++                None
++            };
++            let row = self.list_row(options, item, index == 0, index == last);
++            std::iter::once(row).chain(divider)
++        });
++        self.list_container(id, name, options, Length::Percent(1.), rows)
+     }
+ 
+     fn list_container<M>(
+diff --git a/crates/surface-material/tests/list.rs b/crates/surface-material/tests/list.rs
+index 8b26cb6a1252ce1d552997a5830075bf48aa5982..55e88eaffb0daa83c407095b7a703b950cec6b62 100644
+--- a/crates/surface-material/tests/list.rs
++++ b/crates/surface-material/tests/list.rs
+@@ -7,8 +7,8 @@ use surface::{
+ use surface_app::{AccessibilityActivationResult, Application, EditKey, Event, Runtime, View};
+ use surface_material::{
+     shape::{self, LayoutDirection},
+-    typography, ListItem, ListLines, ListMode, ListOptions, ListStyle, MultiSelectListOptions,
+-    Theme, VectorIcon,
++    typography, DividerKind, ListItem, ListLines, ListMode, ListOptions, ListStyle,
++    MultiSelectListOptions, Theme, VectorIcon,
+ };
+ 
+ #[derive(Clone)]
+@@ -23,6 +23,7 @@ enum Message {
+ struct App {
+     mode: ListMode<'static>,
+     checked: Option<BTreeSet<&'static str>>,
++    dividers: bool,
+     style: ListStyle,
+     rows: Vec<&'static str>,
+     direction: LayoutDirection,
+@@ -39,6 +40,7 @@ impl App {
+             style,
+             mode,
+             checked: None,
++            dividers: false,
+             rows: vec!["a", "b", "c"],
+             direction: LayoutDirection::LeftToRight,
+             scale: 1.,
+@@ -136,16 +138,22 @@ impl Application for App {
+                 items,
+             )
+         } else {
+-            theme.list(
+-                ListOptions {
+-                    id: "list",
+-                    name: "專案",
+-                    style: self.style,
+-                    mode: self.mode,
+-                    direction: self.direction,
+-                },
+-                items,
+-            )
++            let options = ListOptions {
++                id: "list",
++                name: "專案",
++                style: self.style,
++                mode: self.mode,
++                direction: self.direction,
++            };
++            if self.dividers {
++                theme.list_with_dividers(options, items, |id| match id {
++                    "a" => Some(("first-rule", DividerKind::Inset)),
++                    "c" => Some(("tail-rule", DividerKind::Full)),
++                    _ => None,
++                })
++            } else {
++                theme.list(options, items)
++            }
+         };
+         let boundary = |id| {
+             View::new(
+@@ -392,6 +400,43 @@ fn action_uses_one_named_button_and_keeps_gap_and_clipped_content_inert() {
+     assert_eq!(runtime.app().presses, ["a", "c"]);
+ }
+ 
++#[test]
++fn decorative_divider_keeps_interactive_rows_in_one_named_list() {
++    let mut app = App::new(ListStyle::Baseline, ListMode::Action);
++    app.rows = vec!["a", "c"];
++    app.direction = LayoutDirection::RightToLeft;
++    app.dividers = true;
++    let mut runtime = runtime(app);
++    let first = bounds(&runtime, "a");
++    let rule = bounds(&runtime, "first-rule");
++    let last = bounds(&runtime, "c");
++    assert_eq!(rule.x, first.x);
++    assert_eq!(rule.width, first.width - 16.);
++    assert_eq!(rule.y, first.y + first.height);
++    assert_eq!(rule.height, 1.);
++    assert_eq!(last.y, rule.y + rule.height);
++    assert!(runtime.dom().by_id("tail-rule").is_none());
++
++    let frame = runtime.accessibility_frame().unwrap();
++    let list = id(&runtime, "list");
++    assert_eq!(frame.node(list).unwrap().node.name(), "專案");
++    for item in ["a", "c"] {
++        let row = node(&runtime, item).parent().unwrap();
++        assert_eq!(runtime.dom().get(row).unwrap().parent(), Some(list));
++    }
++    assert!(frame.node(id(&runtime, "first-rule")).is_none());
++
++    tap(&mut runtime, rule.x + 1., rule.y + 0.5);
++    assert!(runtime.app().presses.is_empty());
++    tab(&mut runtime, false, "before");
++    tab(&mut runtime, false, "a");
++    navigate(&mut runtime, EditKey::Down, "c");
++    assert!(runtime.dispatch(Event::Activate).unwrap());
++    render(&mut runtime);
++    assert_eq!(runtime.app().presses, ["c"]);
++    tab(&mut runtime, false, "after");
++}
++
+ #[test]
+ fn compact_rtl_contains_wrapped_copy_and_mirrors_the_typed_slots() {
+     let mut app = App::new(ListStyle::Segmented, ListMode::Action);
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index bd63f25d97802787115701e0e0fac1c2da6f7f47..643c68b49ea6f8c78af4ad13df70bde66b33a87d 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -246,10 +246,10 @@
+       "id": "divider",
+       "spec": "https://m3.material.io/components/divider/overview",
+       "status": "partial",
+-      "variant_review": "pending",
++      "variant_review": "Reviewed Google's first-party Divider guidance for 1 dp Regular, 8 dp Heavy, related-content inset, unrelated-content full width, and caller-side 16 dp spacing around Heavy. System contrast and integrated runtime evidence remain open.",
+       "desktop_evidence": "Two native headless Metal replays verify all four Regular layouts, 320 dp dark RTL at 200% text, 1 dp paint, focus return, and identical PNGs from Page.screenshot, CLI and MCP. https://github.com/faberline/surface/tree/f68cf8c02cf501ef0fc9624b1b10c8f6baf662ee/docs/evidence/md3/divider-after-dialog-current",
+       "web_evidence": "Chrome WebGPU M264 and M265 verify Regular divider color, one-dp thickness, RTL inset, keyboard focus and omission of decorative lines from the accessibility tree. https://github.com/faberline/surface/tree/f68cf8c02cf501ef0fc9624b1b10c8f6baf662ee/docs/evidence/md3/divider-after-dialog-current M266 exercises Heavy in both themes and all four layouts, then checks return to Regular.",
+-      "implemented": "Decorative full-width, leading-inset, middle-inset and vertical dividers. Regular uses 1 dp. Heavy uses 8 dp. Both use outline variant. Single insets mirror in right-to-left layouts and tiny parents clip safely. The semantic separator builders remain compatible. List and sheet integration and system contrast qualification remain open.",
++      "implemented": "Decorative full-width, leading-inset, middle-inset and vertical dividers. Regular uses 1 dp. Heavy uses 8 dp. Both use outline variant. Single insets mirror in right-to-left layouts and tiny parents clip safely. The semantic separator builders remain compatible. Gallery source composes inset dividers between named related Baseline list rows, full dividers before unrelated content, and Heavy with 16 dp caller-side spacing. A named modal SideSheet contains another named list and both divider types. This source composition has not yet received integrated runtime evidence. System contrast qualification remains open.",
+       "unit_evidence": "Material Runtime tests cover both weights, tiny-parent clipping, palette, RTL geometry, pointer and focus exclusion, the shared accessibility frame, and existing semantic separators."
+     },
+     {
+diff --git a/docs/material.md b/docs/material.md
+index 118a0ea7a63adddce7bbb0960a69c6cbe7a641af..d4f487a05d6a5ecc0925ee12daa7010aafc701fc 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -2031,10 +2031,11 @@ uses its Standard or Vibrant palette.
+ ## Dividers
+ 
+ Use `Theme::decorative_divider` to separate adjacent content with a 1 dp
+-line. For an 8 dp line, pass `DividerWeight::Heavy` to
++line. Use an inset divider between related content. Use a full divider between
++unrelated content or major regions. For an 8 dp line, pass `DividerWeight::Heavy` to
+ `Theme::decorative_divider_with_weight`. Both weights draw with
+ `outline_variant` and support the same `DividerLayout` values.
+-[Google Material layout specs](https://m3.material.io/components/divider/specs) · [Google Material Heavy style](https://github.com/material-components/material-components-android/blob/6061a69915d04f11230dbf6f417bc27d9c3056ad/docs/components/Divider.md#adding-heavy-divider)
++[Google Material layout specs](https://m3.material.io/components/divider/specs) · [Google Material divider guidance](https://github.com/material-components/material-components-android/blob/master/docs/components/Divider.md)
+ 
+ For horizontal lines, `Full` spans the parent. `Inset` leaves 16 dp at
+ the leading edge and follows the layout direction. `MiddleInset` leaves
+@@ -2042,10 +2043,15 @@ the leading edge and follows the layout direction. `MiddleInset` leaves
+ Use headings to label content groups. Decorative lines stay out of the
+ focus order and accessibility tree. The existing semantic separator
+ builders remain available for callers that need a separator role.
++Give Heavy dividers 16 dp of caller-side space above and below. This marks a
++major break without making the line part of the divider's own geometry.
+ 
+ Open **分隔線** in the Gallery's **色彩** tab. Toggle **粗線** to compare both
+ weights in the same layout. The scene supports light and dark colors,
+-right-to-left layout and 200% text.
++right-to-left layout and 200% text. The composition also shows named Baseline
++lists, a modal SideSheet, an inset between related rows, a full divider before
++unrelated content, and a Heavy major break. Open the sheet to inspect its
++list and divider examples. Closing it returns focus to the opener.
+ 
+ ## Dialogs
+ 
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index f0980f324eb59cfadd9629f16d86e6efed4d43bf..8351b625f92ceae5b576f9cf713fa8cdfdf1d92d 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -40,6 +40,8 @@ mod material_date_range_picker;
+ mod material_dialog;
+ #[path = "material_divider.rs"]
+ mod material_divider;
++#[path = "material_divider_composition.rs"]
++mod material_divider_composition;
+ #[path = "material_docked_date_picker.rs"]
+ mod material_docked_date_picker;
+ #[path = "material_drawer.rs"]
+@@ -191,7 +193,7 @@ pub const STEPS: &[&str] = &[
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+-    "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380",
++    "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380", "M381", "M382",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -339,7 +341,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_command_menu::run_vertical(env, chrome, &url).await?;
+     material_choice_menu::run(env, chrome, &url).await?;
+     material_command_menu_submenus::run(env, chrome, &url).await?;
+-    material_choice_menu_forced::run(env, chrome, &url).await
++    material_choice_menu_forced::run(env, chrome, &url).await?;
++    material_divider_composition::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -614,6 +617,7 @@ mod tests {
+                 choice_menu.as_slice(),
+                 submenu_menu.as_slice(),
+                 forced_choice_menu.as_slice(),
++                super::material_divider_composition::STEPS.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_divider_composition.rs b/e2e/src/material_divider_composition.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..43f644d8cd9d48f4531dea0f313f1c577b5bf553
+--- /dev/null
++++ b/e2e/src/material_divider_composition.rs
+@@ -0,0 +1,349 @@
++//! Divider compositions and forced colors in the real Browser host.
++
++use super::material_time_input::{
++    activate, ax, ax_tree, bounds, contains, focus_projected, focused, projected, resize, Raster,
++};
++use super::material_web_contrast::{contrast, media_scheme, palette_with_disabled};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++pub(super) const STEPS: [&str; 2] = ["M381", "M382"];
++const OPEN: &str = "divider-demo-sheet-open";
++const CLOSE: &str = "divider-demo-sheet-panel-close";
++const REGULAR: &str = "divider-demo-unrelated-divider";
++const HEAVY: &str = "divider-demo-heavy-major-break";
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 960).await?;
++    activate(tab, "section-3").await?;
++    until(tab, "s.section === 3").await?;
++    activate(tab, "divider-demo-show").await?;
++    focused(tab, "divider-demo-back").await
++}
++
++async fn semantics(tab: &Tab, sheet: bool) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let names: &[(&str, &str)] = if sheet {
++        &[
++            ("dialog", "分隔線細節"),
++            ("list", "草稿細節"),
++            ("button", "草稿名稱"),
++            ("button", "草稿位置"),
++            ("heading", "其他資料"),
++        ]
++    } else {
++        &[
++            ("group", "相關項目範例"),
++            ("group", "不相關項目範例"),
++            ("group", "主要區段分隔線範例"),
++            ("list", "相關項目"),
++            ("button", "草稿設定"),
++            ("button", "草稿版本"),
++            ("heading", "其他內容"),
++            ("heading", "目前工作"),
++            ("heading", "封存工作"),
++        ]
++    };
++    let list_name = if sheet {
++        "草稿細節"
++    } else {
++        "相關項目"
++    };
++    check_eq!(
++        tree.iter()
++            .filter(|node| node["ignored"] == false
++                && node["role"]["value"] == "list"
++                && node["name"]["value"] == list_name)
++            .count(),
++        1,
++        "exactly one named list contains the related rows"
++    );
++    let mut nodes = Vec::new();
++    for &(role, name) in names {
++        nodes.push(ax(&tree, role, name)?.clone());
++    }
++    for id in [
++        REGULAR,
++        HEAVY,
++        "divider-demo-related-rule",
++        "divider-demo-sheet-inset",
++        "divider-demo-sheet-full",
++    ] {
++        check_eq!(
++            tab.eval(&format!("{} === null", projected(id))).await?,
++            true,
++            "decorative {id} is not an accessibility stop"
++        );
++    }
++    Ok(json!(nodes))
++}
++
++async fn capture(env: &Env, tab: &Tab, profile: &str, mode: &str, rgb: [u8; 3]) -> Result<Value> {
++    let mut lines = Vec::new();
++    let path = env.artifact(&format!(
++        "material-divider-composition-{profile}-{mode}.png"
++    ));
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    for (id, thickness) in [
++        ("divider-demo-related-rule", 1.),
++        (REGULAR, 1.),
++        (HEAVY, 8.),
++    ] {
++        let rect = bounds(tab, id).await?;
++        check_eq!(rect[3], thickness, "{id} retains authored thickness");
++        check!(rect[2] > 4., "{id} has visible width");
++        check!(
++            contains(bounds(tab, "divider-demo-scroll").await?, rect),
++            "painted divider lies inside the scroll clip"
++        );
++        for x in [
++            rect[0] + 1.5,
++            rect[0] + rect[2] / 2.,
++            rect[0] + rect[2] - 1.5,
++        ] {
++            for depth in 0..(thickness as u32) {
++                check_eq!(
++                    raster.sample(x, rect[1] + f64::from(depth) + 0.5)?,
++                    rgb,
++                    "{id} paints expected ink"
++                );
++            }
++        }
++        lines.push(json!({"id":id,"bounds":rect,"rgb":rgb}));
++    }
++    Ok(
++        json!({"file":format!("material-divider-composition-{profile}-{mode}.png"),"canvas":tab.canvas_box().await?,"device_pixel_ratio":tab.eval("devicePixelRatio").await?,"lines":lines}),
++    )
++}
++
++async fn profile(env: &Env, tab: &Tab, compact: bool) -> Result<Value> {
++    let profile = if compact {
++        "compact-dark-rtl-200"
++    } else {
++        "wide-light"
++    };
++    let authored = if compact {
++        [73, 69, 78]
++    } else {
++        [202, 196, 207]
++    };
++    let viewport = if compact { [320., 1360.] } else { [960., 960.] };
++    let scroll = bounds(tab, "divider-demo-scroll").await?;
++    let canvas = tab.canvas_box().await?;
++    tab.mouse_move(
++        canvas[0] + scroll[0] + scroll[2] / 2.,
++        canvas[1] + scroll[1] + scroll[3] / 2.,
++    )
++    .await?;
++    tab.wheel(0., 3000.).await?;
++    tab.settle().await?;
++    let original = state(tab).await?["divider_demo"]["outline_variant"].clone();
++    check_eq!(
++        original,
++        json!([authored[0], authored[1], authored[2], 255]),
++        "authored outline variant matches this theme"
++    );
++    let accessibility = semantics(tab, false).await?;
++    focus_projected(tab, "divider-demo-related-a").await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, "divider-demo-related-b").await?;
++    let related_before = state(tab).await?["divider_demo"]["related_activations"]
++        .as_u64()
++        .context("related activation count")?;
++    tab.press("Enter").await?;
++    until(
++        tab,
++        &format!(
++            "s.divider_demo.related_activations === {}",
++            related_before + 1
++        ),
++    )
++    .await?;
++    let item_a = bounds(tab, "divider-demo-related-a").await?;
++    let item_b = bounds(tab, "divider-demo-related-b").await?;
++    let related_rule = bounds(tab, "divider-demo-related-rule").await?;
++    let related_list = bounds(tab, "divider-demo-related-list").await?;
++    check_eq!(
++        related_list[2] - related_rule[2],
++        16.,
++        "related rule has a 16 dp inset"
++    );
++    check_eq!(
++        related_rule[0] - related_list[0],
++        if compact { 0. } else { 16. },
++        "related rule uses the logical leading inset"
++    );
++    let heavy = bounds(tab, HEAVY).await?;
++    let heading_before = bounds(tab, "divider-demo-heavy-before").await?;
++    let heading_after = bounds(tab, "divider-demo-heavy-after").await?;
++    check_eq!(
++        heavy[1] - heading_before[1] - heading_before[3],
++        16.,
++        "heavy divider has 16 dp before"
++    );
++    check_eq!(
++        heading_after[1] - heavy[1] - heavy[3],
++        16.,
++        "heavy divider has 16 dp after"
++    );
++    for rect in [related_rule, heavy] {
++        check!(
++            contains([0., 0., viewport[0], viewport[1]], rect),
++            "sample is visible in the viewport"
++        );
++    }
++    check!(
++        item_a[1] + item_a[3] <= related_rule[1] && related_rule[1] + related_rule[3] <= item_b[1],
++        "related divider sits between the two related items"
++    );
++    let before = capture(env, tab, profile, "before", authored).await?;
++    media_scheme(
++        tab,
++        true,
++        false,
++        Some(if compact { "dark" } else { "light" }),
++    )
++    .await?;
++    let forced = contrast(tab, "forced").await?;
++    let css = palette_with_disabled(tab, &forced).await?;
++    let ink: [u8; 4] = serde_json::from_value(css["pairs"]["canvas"]["foreground"].clone())
++        .context("CanvasText RGBA")?;
++    check_eq!(ink[3], 255, "CanvasText is opaque");
++    check_eq!(
++        state(tab).await?["divider_demo"]["outline_variant"],
++        json!(ink),
++        "forced outline variant uses independent CanvasText"
++    );
++    let during = capture(env, tab, profile, "forced", [ink[0], ink[1], ink[2]]).await?;
++    media_scheme(
++        tab,
++        false,
++        false,
++        Some(if compact { "dark" } else { "light" }),
++    )
++    .await?;
++    let normal = contrast(tab, "normal").await?;
++    check_eq!(
++        normal["system_colors"],
++        Value::Null,
++        "forced palette is cleared"
++    );
++    check_eq!(
++        state(tab).await?["divider_demo"]["outline_variant"],
++        original,
++        "authored outline variant returns after forced colors"
++    );
++    let after = capture(env, tab, profile, "after", authored).await?;
++    activate(tab, OPEN).await?;
++    until(tab, "s.divider_demo.sheet_open").await?;
++    tab.wait_for(&format!("{} !== null", projected(CLOSE)))
++        .await?;
++    focused(tab, CLOSE).await?;
++    let sheet = semantics(tab, true).await?;
++    let inset = bounds(tab, "divider-demo-sheet-inset").await?;
++    let full = bounds(tab, "divider-demo-sheet-full").await?;
++    let list = bounds(tab, "divider-demo-sheet-list").await?;
++    let panel = bounds(tab, "divider-demo-sheet-panel").await?;
++    check_eq!(list[2] - inset[2], 16., "sheet list has 16 dp inset");
++    check_eq!(
++        inset[0] - list[0],
++        if compact { 0. } else { 16. },
++        "sheet divider uses logical leading inset"
++    );
++    check!(
++        contains(panel, inset) && contains(panel, full),
++        "sheet contains both visible dividers"
++    );
++    check!(
++        contains([0., 0., viewport[0], viewport[1]], inset)
++            && contains([0., 0., viewport[0], viewport[1]], full),
++        "sheet dividers lie inside screenshot"
++    );
++    let sheet_path = env.artifact(&format!("material-divider-composition-{profile}-sheet.png"));
++    tab.screenshot(&sheet_path).await?;
++    let sheet_raster = Raster::read(tab, sheet_path).await?;
++    let heading = bounds(tab, "divider-demo-sheet-unrelated-heading").await?;
++    check!(
++        contains(panel, heading) && contains([0., 0., viewport[0], viewport[1]], heading),
++        "sheet heading is visible inside the panel and screenshot"
++    );
++    let on_surface: [u8; 4] = serde_json::from_value(normal["theme"]["on_surface"].clone())
++        .context("authored on-surface color")?;
++    check_eq!(on_surface[3], 255, "heading on-surface color is opaque");
++    let heading_rgb = [on_surface[0], on_surface[1], on_surface[2]];
++    let heading_pixels = sheet_raster
++        .colors(heading)?
++        .get(&heading_rgb)
++        .copied()
++        .unwrap_or(0);
++    check!(
++        heading_pixels > 8,
++        "sheet heading paints visible on-surface text pixels"
++    );
++    for rect in [inset, full] {
++        for x in [
++            rect[0] + 1.5,
++            rect[0] + rect[2] / 2.,
++            rect[0] + rect[2] - 1.5,
++        ] {
++            check_eq!(
++                sheet_raster.sample(x, rect[1] + 0.5)?,
++                authored,
++                "sheet screenshot paints the authored divider"
++            );
++        }
++    }
++    focused(tab, CLOSE).await?;
++    tab.press("Tab").await?;
++    focused(tab, "divider-demo-sheet-item-a").await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, "divider-demo-sheet-item-b").await?;
++    let sheet_before = state(tab).await?["divider_demo"]["sheet_activations"]
++        .as_u64()
++        .context("sheet activation count")?;
++    tab.press("Enter").await?;
++    until(
++        tab,
++        &format!("s.divider_demo.sheet_activations === {}", sheet_before + 1),
++    )
++    .await?;
++    focused(tab, "divider-demo-sheet-item-b").await?;
++    tab.press("Escape").await?;
++    until(tab, "!s.divider_demo.sheet_open").await?;
++    tab.wait_for(&format!("{} === null", projected(CLOSE)))
++        .await?;
++    focused(tab, OPEN).await?;
++    Ok(
++        json!({"profile":profile,"accessibility":accessibility,"sheet_accessibility":sheet,"sheet":{"file":format!("material-divider-composition-{profile}-sheet.png"),"canvas":tab.canvas_box().await?,"device_pixel_ratio":tab.eval("devicePixelRatio").await?,"panel":panel,"list":list,"inset":inset,"full":full,"rgb":authored,"heading":{"bounds":heading,"rgba":on_surface,"ink_pixels":heading_pixels},"focus_return":OPEN},"before":before,"forced":during,"after":after,"forced_appearance":forced,"css_canvas":css["pairs"]["canvas"],"related_geometry":{"first":item_a,"rule":related_rule,"second":item_b,"list":related_list,"heavy_before":heading_before,"heavy":heavy,"heavy_after":heading_after},"authored_outline_variant":original,"normal_appearance":normal}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1004, 2.).await?;
++    let mut report = json!({"browser":chrome.version,"steps":STEPS});
++    let result: Result<()> = async {
++        step(STEPS[0],"wide light divider compositions and modal sheet use forced color paint");
++        route(&tab,url).await?;
++        report["adapter"]=tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter();if(!a)return null;const {isFallbackAdapter,vendor,architecture}=a.info;return {isFallbackAdapter,vendor,architecture};})()").await?;
++        report["wide"]=profile(env,&tab,false).await?;
++        step(STEPS[1],"compact dark RTL at 200 percent retains divider and sheet behavior");
++        for id in ["divider-demo-theme","divider-demo-rtl","divider-demo-large-text"] { activate(&tab,id).await?; }
++        resize(&tab,320,1360).await?;
++        report["compact"]=profile(env,&tab,true).await?;
++        check!(tab.errors().is_empty(),"no Browser errors: {:?}",tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++    }
++    env.write_json("browser-material-divider-composition.json", &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/divider_demo.rs b/examples/material-gallery/src/divider_demo.rs
+index d70ba8a14ac208fe3770dcffc0b4541c38799c27..d904467fb97c14ab746cde396de6c04817ac62c0 100644
+--- a/examples/material-gallery/src/divider_demo.rs
++++ b/examples/material-gallery/src/divider_demo.rs
+@@ -2,7 +2,8 @@ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ use surface_material::{
+     shape::LayoutDirection, typography, ButtonKind, ChoiceState, DividerKind, DividerLayout,
+-    DividerWeight, Theme,
++    DividerWeight, ListItem, ListLines, ListMode, ListOptions, ListStyle, SideSheetContent,
++    SideSheetEdge, SideSheetOptions, SideSheetPresentation, SideSheetStyle, Theme,
+ };
+ 
+ use crate::{scroll_field_demo::control_row, Message};
+@@ -18,6 +19,10 @@ pub enum DividerDemoEvent {
+     ToggleDirection,
+     ToggleLargeText,
+     ToggleWeight,
++    OpenSheet,
++    DismissSheet,
++    ActivateRelated,
++    ActivateSheet,
+ }
+ 
+ #[derive(Default)]
+@@ -26,6 +31,9 @@ pub(crate) struct DividerDemo {
+     rtl: bool,
+     large_text: bool,
+     heavy: bool,
++    sheet_open: bool,
++    related_activations: usize,
++    sheet_activations: usize,
+ }
+ 
+ impl DividerDemo {
+@@ -35,6 +43,7 @@ impl DividerDemo {
+ 
+     pub(crate) fn leave(&mut self) {
+         self.visible = false;
++        self.sheet_open = false;
+     }
+ 
+     pub(crate) fn text_scale(&self) -> f32 {
+@@ -46,13 +55,20 @@ impl DividerDemo {
+     }
+ 
+     pub(crate) fn update(&mut self, event: DividerDemoEvent) {
+-        use DividerDemoEvent::{Back, Show, ToggleDirection, ToggleLargeText, ToggleWeight};
++        use DividerDemoEvent::{
++            ActivateRelated, ActivateSheet, Back, DismissSheet, OpenSheet, Show, ToggleDirection,
++            ToggleLargeText, ToggleWeight,
++        };
+         match event {
+             Show => self.visible = true,
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+             ToggleWeight => self.heavy = !self.heavy,
++            OpenSheet => self.sheet_open = true,
++            DismissSheet => self.sheet_open = false,
++            ActivateRelated => self.related_activations += 1,
++            ActivateSheet => self.sheet_activations += 1,
+         }
+     }
+ 
+@@ -70,7 +86,10 @@ impl DividerDemo {
+     }
+ 
+     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+-        use DividerDemoEvent::{Back, ToggleDirection, ToggleLargeText, ToggleWeight};
++        use DividerDemoEvent::{
++            ActivateRelated, ActivateSheet, Back, DismissSheet, OpenSheet, ToggleDirection,
++            ToggleLargeText, ToggleWeight,
++        };
+         let direction = if self.rtl {
+             LayoutDirection::RightToLeft
+         } else {
+@@ -118,6 +137,104 @@ impl DividerDemo {
+             ),
+             theme.text("divider-demo-notes", "備註"),
+         ]);
++        let item = |id, headline, event| ListItem {
++            id,
++            headline,
++            overline: None,
++            supporting: None,
++            leading: None,
++            trailing: None,
++            lines: ListLines::One,
++            disabled: false,
++            on_activate: Some(Message::DividerDemo(event)),
++        };
++        let named_heading = |id, label| {
++            View::new(
++                Node::new(Role::Heading, label).id(id).text(label).styled(
++                    Style::column()
++                        .with_text_style(typography::TITLE_MEDIUM)
++                        .foreground(theme.colors.on_surface),
++                ),
++            )
++        };
++        let related_list = theme.list_with_dividers(
++            ListOptions {
++                id: "divider-demo-related-list",
++                name: "相關項目",
++                style: ListStyle::Baseline,
++                mode: ListMode::Action,
++                direction,
++            },
++            [
++                item("divider-demo-related-a", "草稿設定", ActivateRelated),
++                item("divider-demo-related-b", "草稿版本", ActivateRelated),
++            ],
++            |id| {
++                (id == "divider-demo-related-a")
++                    .then_some(("divider-demo-related-rule", DividerKind::Inset))
++            },
++        );
++        let related =
++            View::new(Node::new(Role::Group, "相關項目範例").styled(Style::column().gap(8.)))
++                .children([
++                    named_heading("divider-demo-related-heading", "相關項目"),
++                    related_list,
++                ]);
++        let unrelated =
++            View::new(Node::new(Role::Group, "不相關項目範例").styled(Style::column().gap(8.)))
++                .children([
++                    named_heading("divider-demo-unrelated-heading", "其他內容"),
++                    theme.decorative_divider(
++                        "divider-demo-unrelated-divider",
++                        DividerLayout::Horizontal {
++                            kind: DividerKind::Full,
++                            direction,
++                        },
++                    ),
++                    theme.text("divider-demo-unrelated-copy", "這一區與上方草稿項目無關。"),
++                ]);
++        let heavy_break = View::new(
++            Node::new(Role::Group, "主要區段分隔線範例")
++                .id("divider-demo-heavy-break-group")
++                .styled(Style::column().gap(16.)),
++        )
++        .children([
++            named_heading("divider-demo-heavy-before", "目前工作"),
++            theme.decorative_divider_with_weight(
++                "divider-demo-heavy-major-break",
++                DividerLayout::Horizontal {
++                    kind: DividerKind::Full,
++                    direction,
++                },
++                DividerWeight::Heavy,
++            ),
++            named_heading("divider-demo-heavy-after", "封存工作"),
++        ]);
++        let composition = View::new(
++            Node::new(Role::Group, "清單與側邊面板中的分隔線")
++                .id("divider-demo-composition")
++                .styled(Style::column().gap(16.)),
++        )
++        .children([
++            named_heading("divider-demo-composition-heading", "清單與側邊面板"),
++            related,
++            unrelated,
++            heavy_break,
++            theme.text(
++                "divider-demo-activation-status",
++                format!(
++                    "清單操作 {} 次；面板操作 {} 次",
++                    self.related_activations, self.sheet_activations
++                ),
++            ),
++            theme
++                .tonal_button(
++                    "divider-demo-sheet-open",
++                    "開啟分隔線細節",
++                    Message::DividerDemo(OpenSheet),
++                )
++                .accessible_activation(),
++        ]);
+         let toggle = |id, label, selected, event| {
+             theme
+                 .segmented_button(
+@@ -131,33 +248,45 @@ impl DividerDemo {
+                 )
+                 .accessible_activation()
+         };
+-        theme.page([
+-            theme.heading("divider-demo-title", "分隔線"),
+-            control_row(vec![
+-                theme
+-                    .tonal_button(BACK, "返回", Message::DividerDemo(Back))
+-                    .restore_focus_on_removal(SHOW)
+-                    .accessible_activation(),
+-                theme
+-                    .switch(
+-                        "divider-demo-theme",
+-                        "深色",
+-                        ChoiceState {
+-                            selected: dark,
+-                            disabled: false,
+-                        },
+-                        Message::Theme,
+-                    )
+-                    .accessible_activation(),
+-                toggle("divider-demo-rtl", "右起", self.rtl, ToggleDirection),
+-                toggle(
+-                    "divider-demo-large-text",
+-                    "大字",
+-                    self.large_text,
+-                    ToggleLargeText,
+-                ),
+-                toggle("divider-demo-weight", "粗線", self.heavy, ToggleWeight),
+-            ]),
++        let controls = control_row(vec![
++            theme
++                .tonal_button(BACK, "返回", Message::DividerDemo(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            theme
++                .switch(
++                    "divider-demo-theme",
++                    "深色",
++                    ChoiceState {
++                        selected: dark,
++                        disabled: false,
++                    },
++                    Message::Theme,
++                )
++                .accessible_activation(),
++            toggle("divider-demo-rtl", "右起", self.rtl, ToggleDirection),
++            toggle(
++                "divider-demo-large-text",
++                "大字",
++                self.large_text,
++                ToggleLargeText,
++            ),
++            toggle("divider-demo-weight", "粗線", self.heavy, ToggleWeight),
++        ]);
++        let scroll = View::new(
++            Node::new(Role::Group, "分隔線範例")
++                .id("divider-demo-scroll")
++                .styled(Style {
++                    height: Length::Px(0.),
++                    min_height: 140.,
++                    max_height: Length::Percent(1.),
++                    grow: 1.,
++                    clip: true,
++                    ..Style::column()
++                }),
++        )
++        .accessibility_scroll_pages()
++        .children([
+             sample(
+                 "divider-demo-full-label",
+                 "全寬",
+@@ -174,6 +303,98 @@ impl DividerDemo {
+                 horizontal("divider-demo-middle", DividerKind::MiddleInset),
+             ),
+             sample("divider-demo-vertical-label", "垂直", vertical),
+-        ])
++            composition,
++        ]);
++        let body = View::new(
++            Node::new(Role::Group, "分隔線")
++                .id("divider-demo-body")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .padding(28.)
++                        .gap(24.)
++                        .clip(true)
++                        .background(theme.colors.surface)
++                        .foreground(theme.colors.on_surface),
++                ),
++        )
++        .children([
++            theme.heading("divider-demo-title", "分隔線"),
++            controls,
++            scroll,
++        ]);
++        let sheet = theme.side_sheet(
++            SideSheetOptions {
++                id: "divider-demo-sheet-panel",
++                title: "分隔線細節",
++                close_label: "關閉分隔線細節",
++                restore_focus_to: "divider-demo-sheet-open",
++                presentation: SideSheetPresentation::Modal,
++                style: SideSheetStyle::Docked,
++                edge: SideSheetEdge::End,
++                direction,
++            },
++            self.sheet_open,
++            SideSheetContent {
++                body,
++                panel: View::new(
++                    Node::new(Role::Group, "分隔線細節面板").styled(Style::column().gap(12.)),
++                )
++                .children([
++                    theme.list_with_dividers(
++                        ListOptions {
++                            id: "divider-demo-sheet-list",
++                            name: "草稿細節",
++                            style: ListStyle::Baseline,
++                            mode: ListMode::Action,
++                            direction,
++                        },
++                        [
++                            item("divider-demo-sheet-item-a", "草稿名稱", ActivateSheet),
++                            item("divider-demo-sheet-item-b", "草稿位置", ActivateSheet),
++                        ],
++                        |id| {
++                            (id == "divider-demo-sheet-item-a")
++                                .then_some(("divider-demo-sheet-inset", DividerKind::Inset))
++                        },
++                    ),
++                    theme.decorative_divider_with_weight(
++                        "divider-demo-sheet-full",
++                        DividerLayout::Horizontal {
++                            kind: DividerKind::Full,
++                            direction,
++                        },
++                        DividerWeight::Regular,
++                    ),
++                    named_heading("divider-demo-sheet-unrelated-heading", "其他資料"),
++                    theme.text(
++                        "divider-demo-sheet-unrelated-copy",
++                        "此處內容與草稿設定無關。",
++                    ),
++                ]),
++                on_dismiss: Message::DividerDemo(DismissSheet),
++            },
++        );
++        View::new(
++            Node::new(Role::Window, "分隔線").id("surface-page").styled(
++                Style::column()
++                    .width(Length::Percent(1.))
++                    .height(Length::Percent(1.))
++                    .clip(true)
++                    .background(theme.colors.surface),
++            ),
++        )
++        .children([sheet])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++        serde_json::json!({
++            "sheet_open": self.sheet_open,
++            "related_activations": self.related_activations,
++            "sheet_activations": self.sheet_activations,
++            "outline_variant": theme.colors.outline_variant,
++        })
+     }
+ }
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 91e031a9064d5d337b3b27846b525daf9c56ad37..7a1dfabda2d2ce33b98a5fae3e92eecca1497c7f 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -2137,6 +2137,7 @@ mod web {
+         });
+         state["display_contrast"] = inspect_contrast(runtime.display_contrast(), &theme);
+         state["lists"] = s.lists_demo.inspect(&runtime, &theme);
++        state["divider_demo"] = s.divider_demo.inspect(&theme);
+         state["loading"] = s.loading_demo.inspect(&theme);
+         state["scroll_field"] = s.scroll_field_demo.inspect(&runtime, &theme);
+         state["scroll_choice"] = s.scroll_choice_demo.inspect(&runtime, &theme);
