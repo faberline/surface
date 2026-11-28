@@ -1,0 +1,3614 @@
+{
+  "adapter": {
+    "architecture": "metal-3",
+    "isFallbackAdapter": false,
+    "vendor": "apple"
+  },
+  "browser": "Chrome/158.0.8127.37",
+  "cases": {
+    "bridge-web": {
+      "checks": 94,
+      "steps": 24
+    },
+    "devtools-headless": {
+      "checks": 76,
+      "steps": 3
+    },
+    "ime": {
+      "checks": 77,
+      "steps": 20
+    },
+    "material": {
+      "checks": 24995,
+      "steps": 349
+    },
+    "smoke": {
+      "checks": 34,
+      "steps": 19
+    }
+  },
+  "chips_pngs": {
+    "material-chips-compact-dark-rtl-200.png": {
+      "sha256": "9addb856b293d043030ea78ccf8e822cacb704cfacacb30cecd4e64f4798a0c3",
+      "size": [
+        640,
+        2128
+      ]
+    },
+    "material-chips-wide-focus.png": {
+      "sha256": "1cc8780e65beeb1da705c42035ebceb41a471b5debf5f3d33ca56f0192a1c85a",
+      "size": [
+        1920,
+        1688
+      ]
+    },
+    "material-chips-wide-light.png": {
+      "sha256": "890c6608b470b79e0f45b17f46aaf8ee7bebcaa15d231c3ca9c83852adced16f",
+      "size": [
+        1920,
+        1688
+      ]
+    },
+    "material-chips-wide-pressed.png": {
+      "sha256": "4ebe375cfc2aee382acbaeba4d48e1e69ab79df3e74fbd2ad62f1a733889219c",
+      "size": [
+        1920,
+        1688
+      ]
+    }
+  },
+  "chips_report_sha256": "145bae449ae359392a31992363d64c7d8bd36ac5cf82e265c5919f22e51304db",
+  "common_buttons": {
+    "browser": "Chrome/158.0.8127.37",
+    "captures": {
+      "material-buttons-checked.png": {
+        "decoded_rgb_sha256": "4aedd64750b5f60781ef62ccbf2cf490c46de00555744b17b7f05506cb4a8fb0",
+        "sha256": "0c7ed90b5f3ff954892633501c36856a52a2059b54650d982dea5e55249a58f8",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "a537af260b6157124020a6d990b6baf4e36c2e0f7d1c1a44fdbe74c1a2918c9f",
+        "sha256": "aec1c85fcabfbbf6cd8db5371195d5c8370bcfc3305d1278ecd4d84b2cd2f6b4",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-buttons-held.png": {
+        "decoded_rgb_sha256": "0d13f2903be1a8b6cfeb420f644c9e9eb4b4e5525a0d59a4f76f359d9b6f497d",
+        "sha256": "692bd63a3ba3c21f81c6f09601230b67fbd2985f725ed2c3ee362b23a6d3f3fc",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-light.png": {
+        "decoded_rgb_sha256": "ba75e30b28a54a9f5391489e54a2e930103100e7327935df9710198c5bc0ea3b",
+        "sha256": "ea364bfc1c76a22cea0ca2849e27d5cee247db877659fdd3a8e2b61980a49069",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-motion-early.png": {
+        "decoded_rgb_sha256": "df8c44c29e8242b3ca3dff1ce6de4f1e576da22e562085f1a4e167eda6eb1c3b",
+        "sha256": "d78c1231a7a3f0638dba53c4250cc6482d302c1a036b653221046c4edfc42f79",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-motion-reduced.png": {
+        "decoded_rgb_sha256": "09ac73ed8413fc128441777ef9eeb4987153a5162b4268db633e9b712068d483",
+        "sha256": "d85261e29cb76279edafc106f433637e5c6def589436b3be781b13c2d94e7a1c",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-buttons-motion-rest.png": {
+        "decoded_rgb_sha256": "08b911bfbcb56af019b1d777a0f96cafbd8a263100cf978a18f37d65a9aaa435",
+        "sha256": "e00c79877de93c8236658bb68fe296f69a4a35930a0153a1ee0a72d978a20605",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "checked_pixels": {
+      "button-demo-toggle-elevated": {
+        "fill": [
+          101,
+          85,
+          143
+        ],
+        "label_ink": 279
+      },
+      "button-demo-toggle-filled": {
+        "fill": [
+          101,
+          85,
+          143
+        ],
+        "label_ink": 260
+      },
+      "button-demo-toggle-outlined": {
+        "fill": [
+          50,
+          47,
+          53
+        ],
+        "label_ink": 307
+      },
+      "button-demo-toggle-tonal": {
+        "fill": [
+          98,
+          91,
+          113
+        ],
+        "label_ink": 239
+      }
+    },
+    "command_pixels": {
+      "button-demo-command-elevated": {
+        "fill": [
+          248,
+          242,
+          250
+        ],
+        "label_ink": 273
+      },
+      "button-demo-command-filled": {
+        "fill": [
+          101,
+          85,
+          143
+        ],
+        "label_ink": 247
+      },
+      "button-demo-command-outlined": {
+        "fill": [
+          253,
+          247,
+          255
+        ],
+        "label_ink": 483
+      },
+      "button-demo-command-text": {
+        "fill": [
+          253,
+          247,
+          255
+        ],
+        "label_ink": 273
+      },
+      "button-demo-command-tonal": {
+        "fill": [
+          232,
+          222,
+          248
+        ],
+        "label_ink": 222
+      }
+    },
+    "compact": {
+      "back_focus": "button-demo-show",
+      "label_pixels": 12643,
+      "ring_pixels": 5280,
+      "tab_order": [
+        "button-demo-size-xs",
+        "button-demo-size-s",
+        "button-demo-size-m",
+        "button-demo-size-l",
+        "button-demo-size-xl",
+        "button-demo-command-elevated",
+        "button-demo-command-filled",
+        "button-demo-command-tonal",
+        "button-demo-command-outlined",
+        "button-demo-command-text",
+        "button-demo-toggle-elevated",
+        "button-demo-toggle-filled",
+        "button-demo-toggle-tonal",
+        "button-demo-toggle-outlined",
+        "button-demo-leading",
+        "button-demo-trailing",
+        "button-demo-wrapped"
+      ]
+    },
+    "corner_pixels": [
+      466,
+      504,
+      623,
+      623
+    ],
+    "page_errors": 0,
+    "report_sha256": "f5de67e681f57fb675c34a21fa2675ecd7f0fc7bc92e21b721418d86d6bb899d",
+    "scope": "stock-feature",
+    "size_icon_pixels": [
+      324,
+      324,
+      512,
+      860,
+      1300
+    ],
+    "steps": [
+      "M316",
+      "M317",
+      "M318",
+      "M319"
+    ]
+  },
+  "filled_text_field": {
+    "assertive_messages": [
+      "請輸入有效的專案名稱。",
+      "請輸入有效的專案名稱。"
+    ],
+    "blend_spaces": [
+      "encoded"
+    ],
+    "browser": "Chrome/158.0.8127.37",
+    "compact": {
+      "above_label_height_dp": 96.0,
+      "back_focus": "filled-text-field-demo-show",
+      "face_height_dp": 96.0,
+      "lower_right_value_pixels": 3180
+    },
+    "disabled_skipped": true,
+    "indicator_dp": {
+      "focused": 3,
+      "hover": 1,
+      "idle": 1,
+      "invalid_focused": 3
+    },
+    "pngs": {
+      "material-filled-text-field-compact-dark-rtl-200.png": {
+        "sha256": "2839fa74ed90dda56fa1ef9dd26fe11570f8038762a87ef7e06973b558132f05",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-filled-text-field-error.png": {
+        "sha256": "50f262939a64f2b1ae3952daea6e2d1c0f7f1c82c670cd7e28e4f9c3a47be124",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-filled-text-field-focused.png": {
+        "sha256": "204df2161145f2e3a4139e878a33dafc7041d9b3cf5d94b77b7026f040d0681a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-filled-text-field-hover.png": {
+        "sha256": "32daffb01a27b28c4e2f2585b759444140e760158317d30967f1a9be86a94222",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-filled-text-field-idle.png": {
+        "sha256": "2c19c1450754ac4cb066249bfec496968bae94405c3462df0ddf9d589fcd19a9",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-filled-text-field-ime-preedit.png": {
+        "sha256": "2e5bd8749c59862791e638ea89ef375e831569a713c25dba7d750b69f4fa22d0",
+        "size": [
+          960,
+          1728
+        ]
+      }
+    },
+    "readonly_preserved": true,
+    "report_sha256": "b38fb649cf9882ee06dfa64b36ca3f603598020da9f50f6edb6f63cf8dc25002",
+    "synthetic_composition": {
+      "enter_keys": [
+        {
+          "dom_composing": true,
+          "trusted": true
+        },
+        {
+          "dom_composing": false,
+          "trusted": true
+        }
+      ],
+      "first_enter_submits": 0,
+      "insert_text_needed": true,
+      "second_enter_submits": 1,
+      "selection_preserved": true
+    }
+  },
+  "guard_and_window_checks": "passed",
+  "headless_transport_pngs": {
+    "bridge-web.png": {
+      "sha256": "fe083f9371717ce631436af4a581b2fccc0654d3352a7d94f83a326eec047fdc",
+      "size": [
+        756,
+        469
+      ]
+    },
+    "devtools-headless-screenshot.png": {
+      "sha256": "21f5950edf4757f5bc836638407ea620b371961d4de8de61073feebfbd9d2ff5",
+      "size": [
+        720,
+        640
+      ]
+    }
+  },
+  "historical_byte_comparison": {
+    "byte_identical": 34,
+    "compared": 34,
+    "differences": {}
+  },
+  "icons_pngs": {
+    "material-icon-buttons-compact-dark-rtl-200.png": {
+      "sha256": "e2bd5f7e024bc9edf6777b0e39e7bf154428b0343fc968d1bddf06ff8cbe9cf7",
+      "size": [
+        640,
+        1608
+      ]
+    },
+    "material-icon-buttons-pressed.png": {
+      "sha256": "088cdab41fae850ec26beba34c33172dec63467ef6a668bff36537b0c2560591",
+      "size": [
+        1920,
+        1688
+      ]
+    },
+    "material-icon-buttons-selected-focus.png": {
+      "sha256": "6f06cd45943e8161e77bb8b356e533f76137191385d1f36970a89c3a6ebcee7f",
+      "size": [
+        1920,
+        1688
+      ]
+    },
+    "material-icon-buttons-wide-light.png": {
+      "sha256": "6ea72c50868a596c6dfe8811e2b8a070f603a7db79b42f71edb48d7824df6355",
+      "size": [
+        1920,
+        1688
+      ]
+    }
+  },
+  "icons_report_sha256": "0b81b42e88e2b9e41976a91094a414e256bf3ce5347231c5588b023b8059c90e",
+  "inputs": {
+    "harness_manifest_sha256": "5e883b18779244e515fa1e07d619676982e5585471a7ace2cd669602389610ba",
+    "native_binary_manifest_sha256": "4e68692d2b6de8ed7c854b5a427dcb45b264334909d819b14bdff162b3d5f4f5",
+    "original_r2_stock_manifest_sha256": "bcf203bdc573567a3cfa66919491d5e4ae849b3f5f881f16e48e41a8d1d0df46",
+    "product_source_sha256": "086f06d98a7c2f3728b67c9524b15ed8b380fb078d42c48bb80b1f082c24580c",
+    "product_tree": "72ae6c3eb56e9554532f428b3308aadd8358a242",
+    "release": {
+      "last_material_step": 350,
+      "rtl_canvas_height": 1020,
+      "source_files": 685,
+      "source_sha256": "4bced93c36065b03879ea12060d36d0ce7eb88ebfa43ce4a139fc28200219bd8",
+      "source_tree": "9d3ce235f8efde1459fd41862cd918367fc85207",
+      "version": "0.1.68",
+      "wide_canvas_height": 800
+    },
+    "runner_build_log_sha256": "70218a21feabebe34334f4c3d437e98cdb219efc214ec7bdec629266906effd4",
+    "runner_manifest_sha256": "3b61a424352e6be5f22675093b988720074b1e5a4a2afc0a9916a4b941178a81",
+    "runner_sha256": "915e4ea70968e34f8724e80341cb69f5b679d6d7795c0f66d13a9d6f1ce61096",
+    "runner_source_sha256": "4bced93c36065b03879ea12060d36d0ce7eb88ebfa43ce4a139fc28200219bd8",
+    "runner_tree": "9d3ce235f8efde1459fd41862cd918367fc85207",
+    "stock_files": {
+      "debug/jet-bridge": "1abde0ad9422d93496bd4e88d2935e3106df252ecdf015043f66432f56536632",
+      "debug/surface-devtools": "bc3095721c60359d50e315c47f3b5399e7346cfdc749b8dc28e059d37c804346",
+      "debug/surface-e2e": "915e4ea70968e34f8724e80341cb69f5b679d6d7795c0f66d13a9d6f1ce61096",
+      "debug/surface-material-gallery": "f069c7fd160e72c155f7995d04eda1953370ac5c3a1a268de8fe5aa900a7ad81",
+      "web/devtools/material-gallery/index.html": "c02e75a2e7b2ef3bd685ba206b8836644dd53cfff8c44ede91c1814ad1ab0b8d",
+      "web/devtools/material-gallery/surface-web.json": "d67eb2aa493e9526a8ea8334ca9243d6210230b1f687668e294ee359cf6885e6",
+      "web/devtools/material-gallery/surface_material_gallery-c72ba888e2d895e8.js": "c72ba888e2d895e8d0d47adcaf5c1f710be4d81e2192baddf8da6c3d020dc24a",
+      "web/devtools/material-gallery/surface_material_gallery_bg-9cb57e51805aae84.wasm": "9cb57e51805aae84abd816c8bc96c8d042a0b1d722140699feb588c7833fc4a8",
+      "web/release/material-gallery/index.html": "d4c849947eca5e058f71419891f61e46506c2143224f8ba5e300312fcb206b5f",
+      "web/release/material-gallery/surface-web.json": "d458df5b8ac0d6a4904228cb61772b44d113486d45dbce2e1a68242ac5e79121",
+      "web/release/material-gallery/surface_material_gallery-547841ace0567995.js": "547841ace05679959239796da2a4e6275d45616fe6fb88e833adc52830f95595",
+      "web/release/material-gallery/surface_material_gallery_bg-fc9bf1e8470de5b7.wasm": "fc9bf1e8470de5b73e8418cc633f185db4a656749abb180a4c03fca874cf8eb1",
+      "web/release/showcase/index.html": "5dccf251c7aaaff761ef662c7bc5087d1ed3c497cbb771b42af5f17b99550b1a",
+      "web/release/showcase/surface-web.json": "9df0291fc96a5bb30486cde6592ffc23d7609b36588a58deb8f07bb9a0de009c",
+      "web/release/showcase/surface_showcase-e4e48789c404c978.js": "e4e48789c404c978092c85cc1f9a1dd4db4e1eabe23e30989173e54406373ea7",
+      "web/release/showcase/surface_showcase_bg-f9cb7737a0ab32f0.wasm": "f9cb7737a0ab32f0228ea9631efcc822c118526ba8324494cc1b8bbff93dc6b4"
+    },
+    "test_only_patch_sha256": "de0899c86af932cbf6c12ed9c7ee30d7d4454856a502e83f7b3cc345de50a84b",
+    "test_only_path": "e2e/src/material_text_field_label_motion.rs"
+  },
+  "m350": {
+    "actual_probe_rgb": [
+      [
+        206,
+        191,
+        243
+      ],
+      [
+        206,
+        191,
+        243
+      ],
+      [
+        206,
+        191,
+        243
+      ],
+      [
+        206,
+        191,
+        243
+      ]
+    ],
+    "expected_rgb": [
+      206,
+      191,
+      243
+    ],
+    "ms": 44,
+    "original_png_sha256": "e73d42ca05c7f1cc8ad251ba58b52a5a49800c0bcac3b35ba4a933dd83bb3f14",
+    "probe_positions": [
+      [
+        42.25,
+        737.25
+      ],
+      [
+        45.25,
+        737.25
+      ],
+      [
+        48.25,
+        737.25
+      ],
+      [
+        51.25,
+        740.75
+      ]
+    ],
+    "whole_original_label_pixels": 12125
+  },
+  "multiline_text_field": {
+    "compact": {
+      "clear_action": [
+        24.0,
+        336.0,
+        48.0,
+        48.0
+      ],
+      "filled": {
+        "body": [
+          40.0,
+          532.0,
+          240.0,
+          144.0
+        ],
+        "glyph_pixels": 10137,
+        "help": [
+          40.0,
+          688.0,
+          240.0,
+          64.0
+        ],
+        "help_glyph_pixels": 5898,
+        "surface": [
+          54,
+          52,
+          58
+        ]
+      },
+      "outlined": {
+        "body": [
+          40.0,
+          524.0,
+          240.0,
+          144.0
+        ],
+        "glyph_pixels": 10137,
+        "help": [
+          40.0,
+          688.0,
+          240.0,
+          64.0
+        ],
+        "help_glyph_pixels": 5898,
+        "surface": [
+          20,
+          18,
+          24
+        ]
+      }
+    },
+    "editing": {
+      "marked_grow_pixels": 724,
+      "new_row_dp": 24.0,
+      "paint": {
+        "wide_filled_preedit": {
+          "body": [
+            40.0,
+            252.0,
+            472.0,
+            72.0
+          ],
+          "glyph_pixels": 2347,
+          "help": [
+            40.0,
+            336.0,
+            472.0,
+            16.0
+          ],
+          "help_glyph_pixels": 925,
+          "surface": [
+            230,
+            224,
+            233
+          ]
+        },
+        "wide_outlined": {
+          "body": [
+            40.0,
+            284.0,
+            472.0,
+            72.0
+          ],
+          "glyph_pixels": 2347,
+          "help": [
+            40.0,
+            376.0,
+            472.0,
+            16.0
+          ],
+          "help_glyph_pixels": 925,
+          "surface": [
+            253,
+            247,
+            255
+          ]
+        }
+      },
+      "separate_submits": 1,
+      "used_cdp_cancel": true
+    },
+    "locked_ax": {
+      "active_textarea": true,
+      "disabled": true,
+      "readonly": true,
+      "skipped_disabled": true
+    },
+    "page_keys": {
+      "backward": [
+        0,
+        26,
+        "backward"
+      ],
+      "body": [
+        40.0,
+        260.0,
+        472.0,
+        72.0
+      ],
+      "fourth_row_utf16_unit": 26,
+      "fourth_row_utf8_byte": 55,
+      "overlap_pixel_changes": 0,
+      "pixel_changes": 339
+    },
+    "pngs": {
+      "material-multiline-text-field-compact-filled.png": {
+        "sha256": "fae677b6094e442945066761d56c233eb7c34bd07a34be206b0b6c9454813fb6",
+        "size": [
+          640,
+          1888
+        ]
+      },
+      "material-multiline-text-field-compact-outlined.png": {
+        "sha256": "5b7319dff1a04d834e70e12ef0cd4c2b96bebba86fbbd2661ddfb8e235d4bf7a",
+        "size": [
+          640,
+          1888
+        ]
+      },
+      "material-multiline-text-field-page-down.png": {
+        "sha256": "8f4a6675bf65fcc5611505f9e7d14c19987c8e8105c23f4f1cba3fb6e4584d68",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-before.png": {
+        "sha256": "c30afbf36c751aaefdbc31a330a9061c8af7e768dbaa1cd4e6bbc783015d64bd",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-held.png": {
+        "sha256": "90eeb1ce42b85a0b3d2ce245f94b2a1d699c99dc08beb69a3212a073cc52fd8b",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-touch-restored.png": {
+        "sha256": "c30afbf36c751aaefdbc31a330a9061c8af7e768dbaa1cd4e6bbc783015d64bd",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-before.png": {
+        "sha256": "597b687b1f4da522e3b073c7764b940d5d53345b445cfa758a45b391f38afd28",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-inner.png": {
+        "sha256": "e32f91b5dabc8e1e03c35c44bacd61cf7bed17f7874c1a9657c5d87d1a384023",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-residual.png": {
+        "sha256": "678c884d6b8ecfb6d971f773e5d9b0367cdc1ce9b1c0d83bc667a46b5da5302a",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wheel-restored.png": {
+        "sha256": "597b687b1f4da522e3b073c7764b940d5d53345b445cfa758a45b391f38afd28",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wide-filled-preedit.png": {
+        "sha256": "18c135370555b517e6cc2cb6a009ec604c0bb710de2317c2bd8242ff605028b2",
+        "size": [
+          1920,
+          1768
+        ]
+      },
+      "material-multiline-text-field-wide-outlined.png": {
+        "sha256": "90992621a9accb9024e4d4c46460b01f6a641dfe2325f9790b24c3897d847dea",
+        "size": [
+          1920,
+          1768
+        ]
+      }
+    },
+    "report_sha256": "16328d2119ca5c243c6a707de9001ea04b59030b653b33322a37312aefaf7b08",
+    "touch": {
+      "events": [
+        "pointerdown",
+        "gotpointercapture",
+        "pointermove",
+        "pointermove",
+        "lostpointercapture",
+        "pointermove",
+        "pointerup"
+      ],
+      "id": 2,
+      "offsets": [
+        0.0,
+        56.0,
+        0.0
+      ],
+      "pixel_changes": [
+        238,
+        0
+      ]
+    },
+    "wheel": {
+      "cdp_deltas": [
+        96.0,
+        320.0,
+        -416.0
+      ],
+      "logical_deltas": [
+        48,
+        160,
+        -208
+      ],
+      "offsets": [
+        0.0,
+        0.0,
+        64.0,
+        0.0
+      ],
+      "overlap_pixel_changes": 0,
+      "pixel_changes": [
+        311,
+        242,
+        0
+      ]
+    }
+  },
+  "outlined_text_field": {
+    "assertive_messages": [
+      "請輸入有效的專案名稱。",
+      "請輸入有效的專案名稱。"
+    ],
+    "browser": "Chrome/158.0.8127.37",
+    "compact_back_focus": "outlined-text-field-demo-show",
+    "disabled_skipped": true,
+    "outline_dp": {
+      "focused": 3,
+      "idle": 1,
+      "invalid_focused": 3
+    },
+    "pngs": {
+      "material-outlined-text-field-compact-dark-rtl-200.png": {
+        "sha256": "db416ad7c8a32711f9895eb75df55e8a16e72101470014f1c0cc78b1ac1eb33d",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-outlined-text-field-error.png": {
+        "sha256": "5328b8b3bb46d5d65c19cd35df007c700c7a0e605347532e69050e87baf46d6d",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-outlined-text-field-focused.png": {
+        "sha256": "f0d740384c5e757159789130a3c33d02aa4c753158b413758ca40f0c7379a57a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-outlined-text-field-idle.png": {
+        "sha256": "f09c900784f9ef67546953afd44ddf77504e8fb57808a5ebda9b1869f178e1ec",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-outlined-text-field-ime-preedit.png": {
+        "sha256": "80fe052d33d3c8c5cedaa03ae8c6528ee9ef2c318c516d9c4b4167bee869bdee",
+        "size": [
+          960,
+          1728
+        ]
+      }
+    },
+    "readonly_preserved": true,
+    "report_sha256": "9db1280cfcf50bc39639d5bee20c18ffbd6b3530a142b7b7ddbe072b98779782",
+    "synthetic_composition": {
+      "first_enter_submits": 0,
+      "insert_text_needed": true,
+      "second_enter_submits": 1,
+      "selection_preserved": true
+    }
+  },
+  "page_errors": 0,
+  "range_slider": {
+    "captures": {
+      "material-range-slider-compact-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "719091ab1a54070aa66370a1fb9475f89e445e8288f629ebe44a6f002c9e98a3",
+        "sha256": "88153a27f888466040346d4c0bbfbdbe100fdb04c48530ea762d8556657fd575",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-range-slider-held-loss.png": {
+        "decoded_rgb_sha256": "d37bcc6490bdde83eed544c7160416ddbe41459ae8ac2e042dd9e5218f3c5234",
+        "sha256": "03a4de7c1f292b036157d10c75eb342a7b15e281736976e64cfe191e4d5a3f63",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-range-slider-overlap-focus.png": {
+        "decoded_rgb_sha256": "87f22f2e3656e732b3bacef8589966c0a043de49ebf880414073e29d79622981",
+        "sha256": "66a9812b0c998f90d478ed2e4cef4fa931bd94a446cd98953fbad94e67ef75ff",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-range-slider-wide-light.png": {
+        "decoded_rgb_sha256": "571941acc0c7bf7a16c49f5d21a7aa362f5171292fa06b4e6fba4fcf0eaf7fab",
+        "sha256": "2c59d2c8f80a965ed53f857197b844ea1e386724a2f5f60b426c10d9dd5ddcbb",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "events": {
+      "after": [
+        39.99999923322668,
+        85.99999969329068
+      ],
+      "foreign_touch": 2,
+      "fresh": [
+        39.99999923322668,
+        90.00000306709327
+      ],
+      "held": [
+        39.99999923322668,
+        85.99999969329068
+      ],
+      "mouse_owner": 1
+    },
+    "indicators": {
+      "capture_loss": {
+        "fill": 8495,
+        "focus": 1114,
+        "text": 149
+      },
+      "compact": {
+        "fill": 27113,
+        "focus": 1272,
+        "text": 1421
+      },
+      "overlap": {
+        "fill": 8526,
+        "focus": 1268,
+        "text": 167
+      }
+    },
+    "report_sha256": "1a1eca91861511b3e3c0447117a2fdb9f3273e52962b9164ea994c5e310e57f6",
+    "wide": {
+      "active_colors": [
+        [
+          101,
+          85,
+          143
+        ],
+        [
+          101,
+          85,
+          143
+        ],
+        null,
+        [
+          168,
+          163,
+          170
+        ]
+      ],
+      "fixture_count": 4,
+      "handle_count": 8
+    }
+  },
+  "runner_log_sha256": "d55e58b71125e7abce72d07d2a81652328638c42306fe2f5e6190c3041ea78d2",
+  "segmented": {
+    "browser": "Chrome/158.0.8127.37",
+    "captures": {
+      "material-segmented-pressed.png": {
+        "decoded_rgb_sha256": "6766847849c087c257035f02c84179f1a54832416c3dfe01b7b209c27bd924a4",
+        "sha256": "46d69262c7b43792fdae99e5e5a91a41c4e06ff77123a7e3aeab7420b5e6ebb9",
+        "size": [
+          1920,
+          1848
+        ]
+      },
+      "material-segmented-rtl-200.png": {
+        "decoded_rgb_sha256": "0e8dd58d2f5b9f40a59ee995f6a1b4db84b5c55e6628f61ad902926b6f9381a1",
+        "sha256": "f115ef1ca953fb219a3b5dbee3d52d1d88ca41238b5f851ae3e0b27018b95a31",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-segmented-scroll-rtl.png": {
+        "decoded_rgb_sha256": "f74cb0592acbf0a9e11cf3caec4b21d457487ed4ba228d9232f7dd562a63d3aa",
+        "sha256": "32b1fde84f3b8aa4bf0d78302d0ffe03847daae07fdeaf811255b7c8b4a02c58",
+        "size": [
+          480,
+          1848
+        ]
+      },
+      "material-segmented-selection.png": {
+        "decoded_rgb_sha256": "6fb8e0e4f91a3d0040d5b005a19bc40104ed046442df3fe56026b7d345ea6d4a",
+        "sha256": "a6dc61aae7371c2448f0d8471ac111ee2ea9f5c9a15ddd4b8112249b48599be0",
+        "size": [
+          1920,
+          1848
+        ]
+      },
+      "material-segmented-touch-ltr.png": {
+        "decoded_rgb_sha256": "b7093bf42af50d8e1749fa32698728497f3a4b32fcc79804fef1e676f2791cb9",
+        "sha256": "1196abef45a5ff7efdfe8e847f06f5c4926dd1582d01593eaa7b66c735f4f91b",
+        "size": [
+          480,
+          1848
+        ]
+      },
+      "material-segmented-touch-rtl.png": {
+        "decoded_rgb_sha256": "e2042d34b19c7d1275d8ac66e287d5b6e128aee2389da1e959f158cf10158fb4",
+        "sha256": "15c08b21b9f5a34263ad658ae10e19ce500d220d54f24e864de1f078f6e9d359",
+        "size": [
+          480,
+          1848
+        ]
+      },
+      "material-segmented-wide.png": {
+        "decoded_rgb_sha256": "577aca58834669183d1ef9d7c2faf1676014e1cf5f66c275be9ac0e27b4af45f",
+        "sha256": "3533a153ee99d3fe1104f7c59b6acaf4c477821f4800c72adacbce8989aaf065",
+        "size": [
+          1920,
+          1848
+        ]
+      }
+    },
+    "keyboard_focus_pixels": 3500,
+    "page_errors": 0,
+    "report_sha256": "bc2c77ba828c05de0d216281b9eca1f181be37ce44417c3604a9cbd0b52bba2c",
+    "rtl": {
+      "focus_pixels": [
+        4758,
+        5067
+      ],
+      "returned_focus": "segmented-demo-show",
+      "track_delta": 62.0
+    },
+    "scope": "stock-feature",
+    "steps": [
+      "M320",
+      "M321",
+      "M322",
+      "M323",
+      "M324"
+    ],
+    "touch": {
+      "held_rgb": [
+        230,
+        225,
+        232
+      ],
+      "point": [
+        159.0,
+        398.0
+      ],
+      "rest_rgb": [
+        253,
+        247,
+        255
+      ],
+      "target": "segment-saved"
+    },
+    "touch_scroll": {
+      "capture_loss": {
+        "after_up": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ],
+        "browser_focus": "surface",
+        "events": [
+          {
+            "id": 2,
+            "kind": "gotpointercapture"
+          },
+          {
+            "id": 2,
+            "kind": "lostpointercapture"
+          }
+        ],
+        "keyboard_resumed_at": "segment-saved",
+        "owner": 2,
+        "restored": [
+          16.0,
+          689.0,
+          270.0,
+          176.0
+        ]
+      },
+      "directions": [
+        {
+          "activations": 1,
+          "outline_pixels": 1140,
+          "preview_dp": 30.0,
+          "release_dp": 62.0,
+          "rtl": false,
+          "text_ink_pixels": 1313,
+          "trailing_hit": [
+            167.0,
+            690.0,
+            52.0,
+            174.0
+          ]
+        },
+        {
+          "activations": 1,
+          "outline_pixels": 1140,
+          "preview_dp": 30.0,
+          "release_dp": 62.0,
+          "rtl": true,
+          "text_ink_pixels": 1313,
+          "trailing_hit": [
+            21.0,
+            690.0,
+            52.0,
+            174.0
+          ]
+        }
+      ],
+      "vertical_dp": {
+        "preview": 28.0,
+        "release": 42.0
+      }
+    },
+    "wide": {
+      "check_and_artwork_pixels": [
+        115,
+        400
+      ],
+      "painted_seams": 7,
+      "rows": {
+        "comparison": {
+          "slots": 2,
+          "width": 78.0
+        },
+        "filters": {
+          "slots": 5,
+          "width": 92.0
+        },
+        "view": {
+          "slots": 3,
+          "width": 106.0
+        }
+      }
+    }
+  },
+  "slider_forms": {
+    "captures": {
+      "material-slider-forms-centered-keys.png": {
+        "decoded_rgb_sha256": "98f50770d8d3b45aa9668d71f94a662b3e6bb5a7f49069a997c2589b86c6386f",
+        "sha256": "2526473de7584f964f7cda04a547aa1bd66bd25f854b5fae20474e866dbfe052",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-slider-forms-centered-light.png": {
+        "decoded_rgb_sha256": "c434405db9f8f9517165f8dcdd628e815b87bb23ccc4e9e0f5d7f2c9fc03efa8",
+        "sha256": "8f2eb33477b6808b93264242f148088c39afdcd047572f38e9bae6aa6a2e5f7b",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-slider-forms-vertical-compact-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "314f5a9c943f9de449319f84083928c452ebf0dfb2bc1eaf3e156509d599b073",
+        "sha256": "39d111c0238238a5fc1c8b814377fe894eefbe82e44a077c1ed804379600e4b8",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-slider-forms-vertical-light.png": {
+        "decoded_rgb_sha256": "82e8e870c6a1b8c8d8b91e0bf9006b66c77d0495de5cc242819eac1fafdd31b4",
+        "sha256": "5ad89e599fd8389611649737f05db24424b1cd042b5e18e64e15bb3985d83c2c",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "centered_label_pixels": 189,
+    "centered_ring_pixels": 1272,
+    "centered_stops": 8,
+    "compact_dark_focus_ink": 1268,
+    "compact_dark_label_fill": 18032,
+    "compact_dark_label_ink": 1008,
+    "report_sha256": "2f899b43a965d04c11e3b3986e2a644ad8de066f4a1b905e227cadb7bf679d74",
+    "wide_vertical_value": 72.99999660915799
+  },
+  "slider_refinements": {
+    "captures": {
+      "material-slider-inset-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "b7d9c91051addb798deff5e4c7708e4b6097c6268229cc4508f07c4ee3e57999",
+        "sha256": "3f8b1c62afae63db14d72103438e5d1c392b50b8698ebcecc688df0e5e8f569f",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-slider-inset-light.png": {
+        "decoded_rgb_sha256": "f3de5ad68abfc57c141a035e62107dbac77e977c1e200486850ee3d5d660eeb6",
+        "sha256": "0689890db54be1f1d44d104a4106798033dc8d4b94a49f738699e73cfa8d941c",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-slider-inset-muted.png": {
+        "decoded_rgb_sha256": "d88b8e73ff2e456fbeefaaec4bb9cc7cf0ae4b243022fb2c6de6a15f09d99fb6",
+        "sha256": "0d5f99efe067d75080ea70919a6f1ab1cc3aa5137d653934873f54759284d3f6",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-slider-inset-quiet.png": {
+        "decoded_rgb_sha256": "baa3211c769d274ac6267a18cddb13fab93826730912d68f744cfdb297f1784e",
+        "sha256": "99a9a34b0a5b509ae28902b40eb9f6b48e5d4b7c63fef4574f59d45da5cab1fe",
+        "size": [
+          1920,
+          2168
+        ]
+      },
+      "material-vertical-centered-dark-rtl-200.png": {
+        "decoded_rgb_sha256": "7c93917612d8a0c18a6865008219279f0fd3d588b36e600a8e5a966a9df93a09",
+        "sha256": "03edce5b9d225d819281341e5b416cadd63f793854064aa7f42d4f432c0c9880",
+        "size": [
+          640,
+          1848
+        ]
+      },
+      "material-vertical-centered-keyboard.png": {
+        "decoded_rgb_sha256": "e8edb9fc176588c44f476a30d8d8478447d80ea591205dbd4517d182ff2b7871",
+        "sha256": "474630f445e45eb246b0568f24499ea9aff4e3b527a21cb903294f1a73440670",
+        "size": [
+          1920,
+          2408
+        ]
+      },
+      "material-vertical-centered-light.png": {
+        "decoded_rgb_sha256": "19605d3a401e431e1acd2eec6189f65be181a52fd7ca7d7d4dfbf58023000e46",
+        "sha256": "fa4d51bda6b52a54e53503c9be13b727ccc74b557d017ead20f5181bfd9d9820",
+        "size": [
+          1920,
+          2408
+        ]
+      }
+    },
+    "inset": {
+      "compact": {
+        "glyph_ink": 460,
+        "label_ink": 1043,
+        "ring_ink": 1274
+      },
+      "contours": {
+        "muted": 484,
+        "quiet": 460
+      },
+      "enabled_wide_glyph_pixels": {
+        "horizontal-large": 484,
+        "horizontal-medium": 460,
+        "horizontal-xl": 790,
+        "vertical-large": 484,
+        "vertical-medium": 460,
+        "vertical-xl": 790
+      }
+    },
+    "report_sha256": {
+      "material-slider-inset.json": "0a2f4ae152b5f806b3a693ab2c54061f920693b80dae95a31e7e200ee15beeb5",
+      "material-vertical-centered-slider.json": "24311e81a02072b9a73a385e3544f64c25fd94e9c278916a888abcd154fcccae"
+    },
+    "vertical_centered": {
+      "indicators": {
+        "compact": {
+          "focus_ink": 1268,
+          "label_fill": 21633,
+          "text_ink": 1160
+        },
+        "keys": {
+          "focus_ink": 1268,
+          "label_fill": 9887,
+          "text_ink": 186
+        }
+      },
+      "signed_active_pixels": [
+        4192,
+        0,
+        4192,
+        1600
+      ]
+    }
+  },
+  "sliders_pngs": {
+    "material-standard-slider-compact-dark-rtl-200.png": {
+      "sha256": "ca0156b2beb62c6d954f9fe29138077b8258f7151a87a080d76d833f37e869c9",
+      "size": [
+        640,
+        1848
+      ]
+    },
+    "material-standard-slider-keyboard.png": {
+      "sha256": "e1f1c99e0fafe176f0d5d1f8b1dd847ca16e41b065e1c425061c9cd1acb0f30e",
+      "size": [
+        1920,
+        2168
+      ]
+    },
+    "material-standard-slider-live-drag.png": {
+      "sha256": "f5604e84a441f700ba3ab7bf83fe07797cec70ac461af21f398cbb85295b3096",
+      "size": [
+        1920,
+        2168
+      ]
+    },
+    "material-standard-slider-wide-light.png": {
+      "sha256": "c0d39586f628cecf8721b80029d26b263eb2fc7cbaed431b76a3db302acadb78",
+      "size": [
+        1920,
+        2168
+      ]
+    }
+  },
+  "sliders_report_sha256": "5f1dd1d021ac04cee4113090d8b6fa677992d0ff508009f2a3ee55992a050ca2",
+  "suite_arguments": [
+    "smoke",
+    "ime",
+    "material",
+    "bridge-web",
+    "devtools-headless"
+  ],
+  "text_field_adornments": {
+    "description_cases": 3,
+    "ghost_icon_pixels": 0,
+    "pngs": {
+      "material-text-field-adornments-compact-dark-rtl-200.png": {
+        "sha256": "bcc0dc4667c3b713f55688e1fc84cc0eae09fc1c61fdeec2b57330f9da0e54b9",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-adornments-fallback-112.png": {
+        "sha256": "eed16151801f1c978a46fb1d67993698da218750b0d1bc2edc110d0a939ff3ff",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-adornments-filled-focused.png": {
+        "sha256": "285c5d42c3dc85f4f8a84a9eb5b23051be8397382b5897e1bf955d355b3925d6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-adornments-ime-preedit.png": {
+        "sha256": "1616b4886464b9798640eed4a1f66f66fe70c82fdeb62a34350c9223f5557a44",
+        "size": [
+          960,
+          1728
+        ]
+      },
+      "material-text-field-adornments-outlined-focused.png": {
+        "sha256": "2992e6f0969a42c95dd7a626370ee8c9e6083664fd6c32bcb4653f98f4793ab7",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-adornments-outlined-idle.png": {
+        "sha256": "4f12772f87d282eb41dc1c137868291ee5ff75227bb1690ae4228cced31435d0",
+        "size": [
+          1920,
+          1728
+        ]
+      }
+    },
+    "report_sha256": "98c6c072563ad1b91f4f669fcaf5c3e86bdb4fba8231b35b07d35fde6f103884",
+    "synthetic_composition": {
+      "cancel_needed_cdp": true,
+      "commit_needed_insert_text": true
+    },
+    "trusted_action_events": 5
+  },
+  "text_field_counter": {
+    "pngs": {
+      "material-text-field-counter-compact-rtl-200.png": {
+        "count": [
+          40.0,
+          468.0,
+          37.0,
+          32.0
+        ],
+        "count_ink": 492,
+        "help_height": 160.0,
+        "help_ink": 14129,
+        "sha256": "c9a599a763f18db0429447446ed7e7622ff278e0207eabffb855bbdb757fc1a5",
+        "size": [
+          640,
+          2568
+        ],
+        "stacked": false
+      },
+      "material-text-field-counter-fallback-filled-112.png": {
+        "count": [
+          40.0,
+          636.0,
+          37.0,
+          32.0
+        ],
+        "count_ink": 492,
+        "help_height": 96.0,
+        "help_ink": 3632,
+        "sha256": "05c72dbfd9b5e17ae8a34a63fbf11a4bb6ee9eedd2db296275ea84611e509e61",
+        "size": [
+          640,
+          2568
+        ],
+        "stacked": true
+      },
+      "material-text-field-counter-fallback-outlined-112.png": {
+        "count": [
+          40.0,
+          876.0,
+          37.0,
+          32.0
+        ],
+        "count_ink": 492,
+        "help_height": 352.0,
+        "help_ink": 14164,
+        "sha256": "bc4d65a05c757c91e55556350d652fc3ee62063c4a52e8fe77a45162a7209415",
+        "size": [
+          640,
+          2568
+        ],
+        "stacked": true
+      },
+      "material-text-field-counter-ime-preedit.png": {
+        "count": [
+          421.0,
+          196.0,
+          19.0,
+          16.0
+        ],
+        "count_ink": 71,
+        "help_height": 32.0,
+        "help_ink": 2249,
+        "sha256": "2540a3887aab580140c26bc7c89c32457ed23b04087d937e14a2bd18fd48e67e",
+        "size": [
+          960,
+          1728
+        ],
+        "stacked": false
+      },
+      "material-text-field-counter-wide-filled-manual.png": {
+        "count": [
+          493.0,
+          196.0,
+          19.0,
+          16.0
+        ],
+        "count_ink": 71,
+        "help_height": 16.0,
+        "help_ink": 598,
+        "sha256": "583455965c4e9ea91ac8033fa9c6f7d3e5074a93d0165b14aa89c47ac4bb99aa",
+        "size": [
+          1920,
+          1728
+        ],
+        "stacked": false
+      },
+      "material-text-field-counter-wide-outlined-normal.png": {
+        "count": [
+          493.0,
+          204.0,
+          19.0,
+          16.0
+        ],
+        "count_ink": 62,
+        "help_height": 16.0,
+        "help_ink": 2249,
+        "sha256": "6e8a567b5b88fbe6ac530eac73fe4f43a0557270bb1c17dcacf213802d720529",
+        "size": [
+          1920,
+          1728
+        ],
+        "stacked": false
+      },
+      "material-text-field-counter-wide-outlined-overflow.png": {
+        "count": [
+          493.0,
+          204.0,
+          19.0,
+          16.0
+        ],
+        "count_ink": 65,
+        "help_height": 16.0,
+        "help_ink": 629,
+        "sha256": "bec147873d10f5091740f8a031c01b6379c18064bc7313bcbf25e8c266fa4cd9",
+        "size": [
+          1920,
+          1728
+        ],
+        "stacked": false
+      }
+    },
+    "report_sha256": "bbb4a44e64a972e8638af5b6ef22aa4bfe6e8856823875bd55339195975eeafc",
+    "synthetic_composition": {
+      "cancel_needed_cdp": true,
+      "commit_needed_insert_text": true
+    },
+    "validation_messages": [
+      "請輸入最多 5 個字。",
+      "這個標籤已存在。"
+    ]
+  },
+  "text_field_label_motion": {
+    "clock": "controlled performance.now",
+    "compact_dark_rtl_200": {
+      "anchor": 280.0,
+      "face": [
+        24.0,
+        328.0,
+        272.0,
+        80.0
+      ],
+      "fallback": {
+        "above": [
+          40.0,
+          728.0,
+          240.0,
+          96.0
+        ],
+        "ax": {
+          "backend": 1273,
+          "description": null,
+          "focused": true,
+          "invalid": false,
+          "label": "輸入團隊成員在共用專案清單中容易辨認的完整名稱",
+          "named_textboxes": 1,
+          "value": "共用名稱"
+        },
+        "color_frames": [
+          {
+            "label_pixels": 12125,
+            "label_rgb": [
+              202,
+              196,
+              207
+            ],
+            "ms": 0,
+            "png": "material-text-field-label-motion-rtl-above-label-rest.png"
+          },
+          {
+            "label_pixels": 12125,
+            "label_rgb": [
+              206,
+              191,
+              243
+            ],
+            "ms": 44,
+            "png": "material-text-field-label-motion-rtl-above-label-middle.png",
+            "solid_probe_rgb": [
+              [
+                206,
+                191,
+                243
+              ],
+              [
+                206,
+                191,
+                243
+              ],
+              [
+                206,
+                191,
+                243
+              ],
+              [
+                206,
+                191,
+                243
+              ]
+            ]
+          }
+        ],
+        "face": [
+          24.0,
+          828.0,
+          272.0,
+          80.0
+        ],
+        "float": [
+          24.0,
+          728.0,
+          0.0,
+          0.0
+        ],
+        "label_rgb": [
+          207,
+          189,
+          254
+        ],
+        "ms": 800,
+        "pixels": 12125,
+        "png": "material-text-field-label-motion-rtl-above-label.png",
+        "probe_points": [
+          [
+            42.25,
+            737.25
+          ],
+          [
+            45.25,
+            737.25
+          ],
+          [
+            48.25,
+            737.25
+          ],
+          [
+            51.25,
+            740.75
+          ]
+        ],
+        "solid_top": [
+          160.0,
+          828.5
+        ]
+      },
+      "floated": [
+        184.0,
+        312.0,
+        96.0,
+        32.0
+      ],
+      "frames": [
+        {
+          "gap_pixel_columns": 0,
+          "label": [
+            153.5,
+            355.5,
+            124.5,
+            29.5
+          ],
+          "label_pixels": 4316,
+          "label_rgb": [
+            202,
+            196,
+            207
+          ],
+          "ms": 0,
+          "notch": [
+            [
+              148,
+              143,
+              153
+            ],
+            [
+              20,
+              18,
+              24
+            ]
+          ],
+          "outline_sides": [
+            [
+              148,
+              143,
+              153
+            ],
+            [
+              148,
+              143,
+              153
+            ],
+            [
+              148,
+              143,
+              153
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-rtl-rest.png"
+        },
+        {
+          "gap_pixel_columns": 132,
+          "label": [
+            170.0,
+            335.5,
+            108.0,
+            26.0
+          ],
+          "label_pixels": 3174,
+          "label_rgb": [
+            206,
+            191,
+            243
+          ],
+          "ms": 44,
+          "notch": [
+            [
+              20,
+              18,
+              24
+            ],
+            [
+              20,
+              18,
+              24
+            ]
+          ],
+          "outline_sides": [
+            [
+              207,
+              189,
+              254
+            ],
+            [
+              207,
+              189,
+              254
+            ],
+            [
+              207,
+              189,
+              254
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-rtl-middle.png"
+        }
+      ],
+      "palette": {
+        "background": [
+          20,
+          18,
+          24,
+          255
+        ],
+        "error": [
+          255,
+          180,
+          171,
+          255
+        ],
+        "on_error_container": [
+          255,
+          218,
+          214,
+          255
+        ],
+        "on_surface": [
+          230,
+          224,
+          233,
+          255
+        ],
+        "on_surface_variant": [
+          202,
+          196,
+          207,
+          255
+        ],
+        "outline": [
+          148,
+          143,
+          153,
+          255
+        ],
+        "primary": [
+          207,
+          189,
+          254,
+          255
+        ],
+        "surface": [
+          20,
+          18,
+          24,
+          255
+        ]
+      }
+    },
+    "filled": {
+      "active_ax": {
+        "backend": 195,
+        "description": "請輸入中文或英文名稱。",
+        "focused": true,
+        "invalid": false,
+        "label": "專案名稱",
+        "named_textboxes": 1,
+        "value": null
+      },
+      "frames": [
+        {
+          "gap_pixel_columns": 0,
+          "label": [
+            42.0,
+            157.5,
+            61.5,
+            15.0
+          ],
+          "label_pixels": 835,
+          "label_rgb": [
+            73,
+            69,
+            78
+          ],
+          "ms": 0,
+          "notch": null,
+          "outline_sides": null,
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-filled-first.png"
+        },
+        {
+          "gap_pixel_columns": 0,
+          "label": [
+            42.0,
+            152.0,
+            53.0,
+            12.5
+          ],
+          "label_pixels": 489,
+          "label_rgb": [
+            94,
+            81,
+            127
+          ],
+          "ms": 44,
+          "notch": null,
+          "outline_sides": null,
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-filled-middle.png"
+        },
+        {
+          "gap_pixel_columns": 0,
+          "label": [
+            42.0,
+            147.0,
+            45.5,
+            11.0
+          ],
+          "label_pixels": 367,
+          "label_rgb": [
+            101,
+            85,
+            143
+          ],
+          "ms": 800,
+          "notch": null,
+          "outline_sides": null,
+          "placeholder_pixels": 714,
+          "png": "material-text-field-label-motion-filled-settled.png"
+        }
+      ],
+      "rest": {
+        "gap_pixel_columns": 0,
+        "label": [
+          42.0,
+          157.5,
+          61.5,
+          15.0
+        ],
+        "label_pixels": 835,
+        "label_rgb": [
+          73,
+          69,
+          78
+        ],
+        "ms": 0,
+        "notch": null,
+        "outline_sides": null,
+        "placeholder_pixels": 0,
+        "png": "material-text-field-label-motion-filled-rest.png"
+      },
+      "synthetic_cdp_preedit": {
+        "ink_pixels": 441,
+        "ms": 44,
+        "placeholder_pixels": 0,
+        "png": "material-text-field-label-motion-filled-preedit.png"
+      }
+    },
+    "label_color": {
+      "filled": {
+        "ax": {
+          "cleared": {
+            "backend": 765,
+            "description": "請輸入中文或英文名稱。",
+            "focused": true,
+            "invalid": false,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "error": {
+            "backend": 765,
+            "description": "請輸入有效的專案名稱。",
+            "focused": true,
+            "invalid": true,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "error_proxy": {
+            "backend": 912,
+            "description": "請輸入有效的專案名稱。",
+            "focused": false,
+            "invalid": true,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "focused": {
+            "backend": 765,
+            "description": "請輸入中文或英文名稱。",
+            "focused": true,
+            "invalid": false,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "rest": {
+            "backend": 767,
+            "description": "請輸入中文或英文名稱。",
+            "focused": false,
+            "invalid": false,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "reversed": {
+            "backend": 765,
+            "description": "請輸入有效的專案名稱。",
+            "focused": true,
+            "invalid": true,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          }
+        },
+        "face": [
+          24.0,
+          136.0,
+          504.0,
+          56.0
+        ],
+        "floated": [
+          40.0,
+          144.0,
+          48.0,
+          16.0
+        ],
+        "frames": [
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 367,
+            "label_rgb": [
+              73,
+              69,
+              78
+            ],
+            "ms": 1600,
+            "png": "material-text-field-label-motion-filled-color-rest.png",
+            "solid_probe_rgb": [
+              [
+                73,
+                69,
+                78
+              ],
+              [
+                73,
+                69,
+                78
+              ],
+              [
+                73,
+                69,
+                78
+              ],
+              [
+                73,
+                69,
+                78
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 367,
+            "label_rgb": [
+              94,
+              81,
+              127
+            ],
+            "ms": 1644,
+            "png": "material-text-field-label-motion-filled-color-focus-mid.png",
+            "solid_probe_rgb": [
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 367,
+            "label_rgb": [
+              94,
+              81,
+              127
+            ],
+            "ms": 1644,
+            "png": "material-text-field-label-motion-filled-color-error-first.png",
+            "solid_probe_rgb": [
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 367,
+            "label_rgb": [
+              166,
+              55,
+              64
+            ],
+            "ms": 1688,
+            "png": "material-text-field-label-motion-filled-color-error-mid.png",
+            "solid_probe_rgb": [
+              [
+                166,
+                55,
+                64
+              ],
+              [
+                166,
+                55,
+                64
+              ],
+              [
+                166,
+                55,
+                64
+              ],
+              [
+                166,
+                55,
+                64
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              29.0
+            ],
+            "label_pixels": 431,
+            "label_rgb": [
+              186,
+              26,
+              26
+            ],
+            "ms": 2488,
+            "png": "material-text-field-label-motion-filled-color-error-settled.png",
+            "solid_probe_rgb": [
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 367,
+            "label_rgb": [
+              124,
+              80,
+              120
+            ],
+            "ms": 2532,
+            "png": "material-text-field-label-motion-filled-color-clearing.png",
+            "solid_probe_rgb": [
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 367,
+            "label_rgb": [
+              124,
+              80,
+              120
+            ],
+            "ms": 2532,
+            "png": "material-text-field-label-motion-filled-color-reversed.png",
+            "solid_probe_rgb": [
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              147.0,
+              45.5,
+              29.0
+            ],
+            "label_pixels": 431,
+            "label_rgb": [
+              186,
+              26,
+              26
+            ],
+            "ms": 2532,
+            "png": "material-text-field-label-motion-filled-color-reduced.png",
+            "solid_probe_rgb": [
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ]
+            ]
+          }
+        ],
+        "helper": [
+          40.0,
+          196.0,
+          472.0,
+          16.0
+        ],
+        "model": {
+          "edits": 1,
+          "error": true,
+          "submits": 0,
+          "value": "草稿"
+        },
+        "palette": {
+          "background": [
+            253,
+            247,
+            255,
+            255
+          ],
+          "error": [
+            186,
+            26,
+            26,
+            255
+          ],
+          "on_error_container": [
+            65,
+            0,
+            2,
+            255
+          ],
+          "on_surface": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "on_surface_alpha_38": [
+            29,
+            27,
+            32,
+            97
+          ],
+          "on_surface_alpha_4": [
+            29,
+            27,
+            32,
+            10
+          ],
+          "on_surface_alpha_8": [
+            29,
+            27,
+            32,
+            20
+          ],
+          "on_surface_variant": [
+            73,
+            69,
+            78,
+            255
+          ],
+          "outline": [
+            122,
+            117,
+            127,
+            255
+          ],
+          "primary": [
+            101,
+            85,
+            143,
+            255
+          ],
+          "surface": [
+            253,
+            247,
+            255,
+            255
+          ],
+          "surface_container_highest": [
+            230,
+            224,
+            233,
+            255
+          ]
+        },
+        "probe_points": [
+          [
+            42.25,
+            148.25
+          ],
+          [
+            45.25,
+            148.25
+          ],
+          [
+            48.25,
+            148.25
+          ],
+          [
+            53.75,
+            148.25
+          ]
+        ],
+        "trusted": [
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Enter",
+            "shift": false
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Enter",
+            "shift": false
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Enter",
+            "shift": false
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          }
+        ]
+      },
+      "outlined": {
+        "ax": {
+          "cleared": {
+            "backend": 257,
+            "description": "請輸入中文或英文名稱。",
+            "focused": true,
+            "invalid": false,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "error": {
+            "backend": 257,
+            "description": "請輸入有效的專案名稱。",
+            "focused": true,
+            "invalid": true,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "error_proxy": {
+            "backend": 404,
+            "description": "請輸入有效的專案名稱。",
+            "focused": false,
+            "invalid": true,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "focused": {
+            "backend": 257,
+            "description": "請輸入中文或英文名稱。",
+            "focused": true,
+            "invalid": false,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "rest": {
+            "backend": 259,
+            "description": "請輸入中文或英文名稱。",
+            "focused": false,
+            "invalid": false,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          },
+          "reversed": {
+            "backend": 257,
+            "description": "請輸入有效的專案名稱。",
+            "focused": true,
+            "invalid": true,
+            "label": "專案名稱",
+            "named_textboxes": 1,
+            "value": "草稿"
+          }
+        },
+        "face": [
+          24.0,
+          144.0,
+          504.0,
+          56.0
+        ],
+        "floated": [
+          40.0,
+          136.0,
+          48.0,
+          16.0
+        ],
+        "frames": [
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 252,
+            "label_rgb": [
+              73,
+              69,
+              78
+            ],
+            "ms": 1600,
+            "png": "material-text-field-label-motion-outlined-color-rest.png",
+            "solid_probe_rgb": [
+              [
+                73,
+                69,
+                78
+              ],
+              [
+                73,
+                69,
+                78
+              ],
+              [
+                73,
+                69,
+                78
+              ],
+              [
+                73,
+                69,
+                78
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 252,
+            "label_rgb": [
+              94,
+              81,
+              127
+            ],
+            "ms": 1644,
+            "png": "material-text-field-label-motion-outlined-color-focus-mid.png",
+            "solid_probe_rgb": [
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 252,
+            "label_rgb": [
+              94,
+              81,
+              127
+            ],
+            "ms": 1644,
+            "png": "material-text-field-label-motion-outlined-color-error-first.png",
+            "solid_probe_rgb": [
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ],
+              [
+                94,
+                81,
+                127
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 252,
+            "label_rgb": [
+              166,
+              55,
+              64
+            ],
+            "ms": 1688,
+            "png": "material-text-field-label-motion-outlined-color-error-mid.png",
+            "solid_probe_rgb": [
+              [
+                166,
+                55,
+                64
+              ],
+              [
+                166,
+                55,
+                64
+              ],
+              [
+                166,
+                55,
+                64
+              ],
+              [
+                166,
+                55,
+                64
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              45.0
+            ],
+            "label_pixels": 348,
+            "label_rgb": [
+              186,
+              26,
+              26
+            ],
+            "ms": 2488,
+            "png": "material-text-field-label-motion-outlined-color-error-settled.png",
+            "solid_probe_rgb": [
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 252,
+            "label_rgb": [
+              124,
+              80,
+              120
+            ],
+            "ms": 2532,
+            "png": "material-text-field-label-motion-outlined-color-clearing.png",
+            "solid_probe_rgb": [
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              11.0
+            ],
+            "label_pixels": 252,
+            "label_rgb": [
+              124,
+              80,
+              120
+            ],
+            "ms": 2532,
+            "png": "material-text-field-label-motion-outlined-color-reversed.png",
+            "solid_probe_rgb": [
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ],
+              [
+                124,
+                80,
+                120
+              ]
+            ]
+          },
+          {
+            "label": [
+              42.0,
+              139.0,
+              45.5,
+              45.0
+            ],
+            "label_pixels": 348,
+            "label_rgb": [
+              186,
+              26,
+              26
+            ],
+            "ms": 2532,
+            "png": "material-text-field-label-motion-outlined-color-reduced.png",
+            "solid_probe_rgb": [
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ],
+              [
+                186,
+                26,
+                26
+              ]
+            ]
+          }
+        ],
+        "helper": [
+          40.0,
+          204.0,
+          472.0,
+          16.0
+        ],
+        "model": {
+          "edits": 1,
+          "error": true,
+          "submits": 0,
+          "value": "草稿"
+        },
+        "palette": {
+          "background": [
+            253,
+            247,
+            255,
+            255
+          ],
+          "error": [
+            186,
+            26,
+            26,
+            255
+          ],
+          "on_error_container": [
+            65,
+            0,
+            2,
+            255
+          ],
+          "on_surface": [
+            29,
+            27,
+            32,
+            255
+          ],
+          "on_surface_variant": [
+            73,
+            69,
+            78,
+            255
+          ],
+          "outline": [
+            122,
+            117,
+            127,
+            255
+          ],
+          "primary": [
+            101,
+            85,
+            143,
+            255
+          ],
+          "surface": [
+            253,
+            247,
+            255,
+            255
+          ]
+        },
+        "probe_points": [
+          [
+            42.25,
+            140.25
+          ],
+          [
+            45.25,
+            140.25
+          ],
+          [
+            48.25,
+            140.25
+          ],
+          [
+            53.75,
+            140.25
+          ]
+        ],
+        "trusted": [
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Enter",
+            "shift": false
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Enter",
+            "shift": false
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          },
+          {
+            "id": "surface-text-input",
+            "key": "Tab",
+            "shift": true
+          },
+          {
+            "id": "",
+            "key": "Enter",
+            "shift": false
+          },
+          {
+            "id": "",
+            "key": "Tab",
+            "shift": false
+          }
+        ]
+      },
+      "space": "Oklab",
+      "spring": {
+        "damping_ratio": 1,
+        "stiffness": 3800
+      }
+    },
+    "outlined": {
+      "active_ax": {
+        "backend": 5,
+        "description": "請輸入中文或英文名稱。",
+        "focused": true,
+        "invalid": false,
+        "label": "專案名稱",
+        "named_textboxes": 1,
+        "value": null
+      },
+      "frames": [
+        {
+          "gap_pixel_columns": 0,
+          "label": [
+            42.0,
+            165.5,
+            61.5,
+            15.0
+          ],
+          "label_pixels": 835,
+          "label_rgb": [
+            73,
+            69,
+            78
+          ],
+          "ms": 0,
+          "notch": [
+            [
+              122,
+              117,
+              127
+            ],
+            [
+              253,
+              247,
+              255
+            ]
+          ],
+          "outline_sides": [
+            [
+              122,
+              117,
+              127
+            ],
+            [
+              122,
+              117,
+              127
+            ],
+            [
+              122,
+              117,
+              127
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-outlined-rest.png"
+        },
+        {
+          "gap_pixel_columns": 0,
+          "label": [
+            42.0,
+            165.5,
+            61.5,
+            15.0
+          ],
+          "label_pixels": 835,
+          "label_rgb": [
+            73,
+            69,
+            78
+          ],
+          "ms": 0,
+          "notch": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "outline_sides": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-outlined-first.png"
+        },
+        {
+          "gap_pixel_columns": 28,
+          "label": [
+            42.0,
+            163.0,
+            59.5,
+            14.5
+          ],
+          "label_pixels": 739,
+          "label_rgb": [
+            79,
+            73,
+            92
+          ],
+          "ms": 14,
+          "notch": [
+            [
+              253,
+              247,
+              255
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "outline_sides": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-outlined-early.png"
+        },
+        {
+          "gap_pixel_columns": 74,
+          "label": [
+            42.0,
+            152.0,
+            53.0,
+            12.5
+          ],
+          "label_pixels": 489,
+          "label_rgb": [
+            94,
+            81,
+            127
+          ],
+          "ms": 44,
+          "notch": [
+            [
+              253,
+              247,
+              255
+            ],
+            [
+              253,
+              247,
+              255
+            ]
+          ],
+          "outline_sides": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-outlined-middle.png"
+        },
+        {
+          "gap_pixel_columns": 63,
+          "label": [
+            42.0,
+            139.0,
+            45.5,
+            11.0
+          ],
+          "label_pixels": 252,
+          "label_rgb": [
+            101,
+            85,
+            143
+          ],
+          "ms": 800,
+          "notch": [
+            [
+              253,
+              247,
+              255
+            ],
+            [
+              253,
+              247,
+              255
+            ]
+          ],
+          "outline_sides": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "placeholder_pixels": 714,
+          "png": "material-text-field-label-motion-outlined-settled.png"
+        }
+      ],
+      "geometry": {
+        "face": [
+          24.0,
+          144.0,
+          504.0,
+          56.0
+        ],
+        "floated": [
+          40.0,
+          136.0,
+          48.0,
+          16.0
+        ],
+        "helper": [
+          40.0,
+          204.0,
+          472.0,
+          16.0
+        ],
+        "inline": [
+          40.0,
+          160.0,
+          472.0,
+          24.0
+        ]
+      },
+      "inactive_ax": {
+        "backend": 8,
+        "description": "請輸入中文或英文名稱。",
+        "focused": false,
+        "invalid": false,
+        "label": "專案名稱",
+        "named_textboxes": 1,
+        "value": null
+      }
+    },
+    "pngs": {
+      "material-text-field-label-motion-filled-color-clearing.png": {
+        "sha256": "6e89a57f6a36c882c8448c003480a2c9bf8acdc9754904952ff2230986df3cd0",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-error-first.png": {
+        "sha256": "af6f3f7fc2cd14458e8661cb702c775c5741c227739704c45624f9fe71ee1411",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-error-mid.png": {
+        "sha256": "f438b61814655413dbd572ab8ae64ab3b4cf09b2330b66f221c6037472e3ba46",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-error-settled.png": {
+        "sha256": "e5f9567555b4c930a3f2a380f7a030d5d237fb936f7cd7bebbcc13b5aa286372",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-focus-mid.png": {
+        "sha256": "e568380502e9a93f0daddb45e0f1010d034fb6474fa2157c156029346a90258e",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-reduced.png": {
+        "sha256": "e5f9567555b4c930a3f2a380f7a030d5d237fb936f7cd7bebbcc13b5aa286372",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-rest.png": {
+        "sha256": "172633c43c4dbd09a0b50d0fa76b91fa457caa4359ddc305831467cce3ec0ae6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-color-reversed.png": {
+        "sha256": "2e063964ae2bcd8462309a3819d16c31e4572193175a5c203f324cafe98b3b78",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-first.png": {
+        "sha256": "517ff2917e0d4fba35683172bfa45dcfe4b188fe0fe4df2ad79ccd45bda39ddb",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-middle.png": {
+        "sha256": "ecea6ec2b039a12043b5abaa21315be0ba6cc67bf7918513aae681b178c0e1d6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-preedit.png": {
+        "sha256": "7be908dcaae6624402efd8d593c0cc2e673aa751af2b39cb304e0b26939d3dc0",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-rest.png": {
+        "sha256": "edc4a5bfd7d470ff9f700d42a05ea97a506cd9e93b106f243bda1a16e943e109",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-filled-settled.png": {
+        "sha256": "204df2161145f2e3a4139e878a33dafc7041d9b3cf5d94b77b7026f040d0681a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-clearing.png": {
+        "sha256": "642044eb78ca0ec8575acca13a003ac661c61f36e36ee328e916bf5995ac232c",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-error-first.png": {
+        "sha256": "bc927c064b06a834a38b4c3194160f6032f5969be91cca4dddd877a2a75d4f74",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-error-mid.png": {
+        "sha256": "5ef7baab2e6b9671613d2bd381631f3e7ebb4f4a06ec4071cedf220f127eade6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-error-settled.png": {
+        "sha256": "d9dab880cb65d0a9e7ec616d0053c697fc5bda8f494e75c9b89f70e8f9dae16a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-focus-mid.png": {
+        "sha256": "3fc332d88fc184799ccf8f1f71f710eb6e4ac0c67b8ee19b1ef313832e1706f6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-reduced.png": {
+        "sha256": "d9dab880cb65d0a9e7ec616d0053c697fc5bda8f494e75c9b89f70e8f9dae16a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-rest.png": {
+        "sha256": "bc0c060cd9ddb967c57cc063b1716ee7d735913648684246e7c320a459a95ae1",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-color-reversed.png": {
+        "sha256": "b9f18473788776dbf8672810a776f26b171633fe3d427410a883d71aad38653d",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-early.png": {
+        "sha256": "4c1955bf4723f0a36284acb1974f952743b5324d72d73ba73fa7f72e3228a05a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-falling.png": {
+        "sha256": "e78db5106edd615341c534520b4d2dec3633546bebd27cd9d228fdcc6b21d013",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-first.png": {
+        "sha256": "ee691ca4526f6459afca7e5ae4de8efb45a7da9159037862f290e5c0e831aa89",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-middle.png": {
+        "sha256": "c13cd30b1255f282f6a0fb42b0f904ccd65ded7d9e91a92fe2e8a3eb915c2391",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-reduced.png": {
+        "sha256": "f0d740384c5e757159789130a3c33d02aa4c753158b413758ca40f0c7379a57a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-rest.png": {
+        "sha256": "6d7bfb8a97618a3c318098b816a8daa0c912537ed02455cea4705f1b6f516ad6",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-retarget.png": {
+        "sha256": "c9bdd49804db60ef538062d27331d3b7b1502892d25e8bc0ff3ef1f65254657f",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-outlined-settled.png": {
+        "sha256": "f0d740384c5e757159789130a3c33d02aa4c753158b413758ca40f0c7379a57a",
+        "size": [
+          1920,
+          1728
+        ]
+      },
+      "material-text-field-label-motion-rtl-above-label-middle.png": {
+        "sha256": "e73d42ca05c7f1cc8ad251ba58b52a5a49800c0bcac3b35ba4a933dd83bb3f14",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-label-motion-rtl-above-label-rest.png": {
+        "sha256": "bdcebb405b6382408a432e7d47a63d589febebf45043b8e7a5e6cd792a57b4fc",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-label-motion-rtl-above-label.png": {
+        "sha256": "67f7aa634920a0bcf5d97fcc17ca5458ae60aa82a9fbbbd7147dad68d1a14e15",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-label-motion-rtl-middle.png": {
+        "sha256": "269692d0f31cd6f393256ce2f6250d6ae7f2bf91dacd786516f3f46ed1d9eff6",
+        "size": [
+          640,
+          2008
+        ]
+      },
+      "material-text-field-label-motion-rtl-rest.png": {
+        "sha256": "4d958818baf406bffb164af449b236c6b6bc26cddab5ab21866d0c5b5db406a2",
+        "size": [
+          640,
+          2008
+        ]
+      }
+    },
+    "report_sha256": "9a9ba2f1f0a450c39f8d4804bf6ede6bb796253832ab8039b1fe1ace139efa38",
+    "reversal": {
+      "blurred": {
+        "backend": 106,
+        "description": "請輸入中文或英文名稱。",
+        "focused": false,
+        "invalid": false,
+        "label": "專案名稱",
+        "named_textboxes": 1,
+        "value": null
+      },
+      "frames": [
+        {
+          "gap_pixel_columns": 70,
+          "label": [
+            42.0,
+            152.0,
+            53.5,
+            13.0
+          ],
+          "label_pixels": 525,
+          "label_rgb": [
+            80,
+            73,
+            94
+          ],
+          "ms": 844,
+          "notch": [
+            [
+              253,
+              247,
+              255
+            ],
+            [
+              253,
+              247,
+              255
+            ]
+          ],
+          "outline_sides": [
+            [
+              122,
+              117,
+              127
+            ],
+            [
+              122,
+              117,
+              127
+            ],
+            [
+              122,
+              117,
+              127
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-outlined-falling.png"
+        },
+        {
+          "gap_pixel_columns": 70,
+          "label": [
+            42.0,
+            152.0,
+            53.5,
+            13.0
+          ],
+          "label_pixels": 525,
+          "label_rgb": [
+            80,
+            73,
+            94
+          ],
+          "ms": 844,
+          "notch": [
+            [
+              253,
+              247,
+              255
+            ],
+            [
+              253,
+              247,
+              255
+            ]
+          ],
+          "outline_sides": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "placeholder_pixels": 0,
+          "png": "material-text-field-label-motion-outlined-retarget.png"
+        },
+        {
+          "gap_pixel_columns": 63,
+          "label": [
+            42.0,
+            139.0,
+            45.5,
+            11.0
+          ],
+          "label_pixels": 252,
+          "label_rgb": [
+            101,
+            85,
+            143
+          ],
+          "ms": 844,
+          "notch": [
+            [
+              253,
+              247,
+              255
+            ],
+            [
+              253,
+              247,
+              255
+            ]
+          ],
+          "outline_sides": [
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ],
+            [
+              101,
+              85,
+              143
+            ]
+          ],
+          "placeholder_pixels": 714,
+          "png": "material-text-field-label-motion-outlined-reduced.png"
+        }
+      ],
+      "trusted": [
+        {
+          "id": "",
+          "key": "Tab",
+          "shift": false
+        },
+        {
+          "id": "surface-text-input",
+          "key": "Tab",
+          "shift": true
+        },
+        {
+          "id": "",
+          "key": "Tab",
+          "shift": false
+        }
+      ]
+    }
+  },
+  "textbox_values": {
+    "active_handoff": {
+      "backend_dom_node": 870,
+      "description": "井字號 字數，已輸入 3 個字，上限 12 個字。 請簡短記錄這次的變更。",
+      "label": "多行備註",
+      "multiline": true
+    },
+    "inactive_ax": {
+      "after": {
+        "label": "多行備註",
+        "multiline": true,
+        "value": "第一行\n修訂 á"
+      },
+      "before": {
+        "label": "多行備註",
+        "multiline": true,
+        "value": "第一行"
+      },
+      "disabled": {
+        "label": "停用內容",
+        "multiline": true,
+        "value": "停用的第一行\n停用的第二行"
+      },
+      "fixed": {
+        "label": "詳細說明",
+        "multiline": true,
+        "value": "第一行😀\n第二行 á\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n"
+      },
+      "readonly": {
+        "label": "唯讀內容",
+        "multiline": true,
+        "value": "已儲存的第一行\n已儲存的第二行\n"
+      },
+      "single_line": {
+        "label": "標籤名稱",
+        "multiline": false,
+        "value": "中á👍🏽"
+      }
+    },
+    "no_ax_children": {
+      "after": true,
+      "before": true,
+      "disabled": true,
+      "fixed": true,
+      "readonly": true,
+      "single_line": true
+    },
+    "report_sha256": "16328d2119ca5c243c6a707de9001ea04b59030b653b33322a37312aefaf7b08"
+  },
+  "total_checks": 25276,
+  "window_receipt_sha256": "6bf83504f00b975ce4820c9c6aff671017f0a5322baf308b4be87f4dd38f533e"
+}
