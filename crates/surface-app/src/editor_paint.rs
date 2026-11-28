@@ -60,6 +60,7 @@ pub(crate) struct Boundary {
 
 pub(crate) struct LabelColorMotion {
     pub(crate) fallback: String,
+    pub(crate) fallback_ink: Option<Color>,
     pub(crate) palette: Box<[Color]>,
 }
 
@@ -434,6 +435,10 @@ impl<A: Application> Runtime<A> {
             if let Some(fallback) = fallback {
                 if !has_endpoints {
                     frame.hidden.extend([resting, *label]);
+                    let ink = color_motion
+                        .as_ref()
+                        .and_then(|motion| motion.fallback_ink)
+                        .unwrap_or(ink);
                     frame
                         .paints
                         .push((fallback, ResolvedPaint::Foreground(ink)));

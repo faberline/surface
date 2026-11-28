@@ -1,7 +1,7 @@
 //! Resolve browser contrast preferences for application-owned canvas paint.
 
 use surface::Color;
-use surface_app::{DisplayContrast, SystemContrastColors};
+use surface_app::{DisplayContrast, SystemColorPair, SystemContrastColors};
 
 fn preference<E>(
     forced: bool,
@@ -44,6 +44,22 @@ fn css_color(css: &str) -> Option<Color> {
     components.next().is_none().then_some(Color(r, g, b, alpha))
 }
 
+fn with_field_css(
+    colors: SystemContrastColors,
+    background: Option<&str>,
+    foreground: Option<&str>,
+) -> SystemContrastColors {
+    let pair = background
+        .and_then(css_color)
+        .zip(foreground.and_then(css_color));
+    pair.map_or(colors, |(background, foreground)| {
+        colors.with_field(SystemColorPair {
+            background,
+            foreground,
+        })
+    })
+}
+
 fn read_rgb<'a>(components: &mut impl Iterator<Item = &'a str>, max: f32) -> Option<[u8; 3]> {
     Some([
         byte(components.next()?, max)?,
@@ -75,7 +91,7 @@ mod browser {
         Document, Event, EventTarget, HtmlCanvasElement, HtmlElement, MediaQueryList, Window,
     };
 
-    use super::{css_color, preference, SystemContrastColors};
+    use super::{css_color, preference, with_field_css, SystemContrastColors};
 
     const FORCED: &str = "(forced-colors: active)";
     const MORE: &str = "(prefers-contrast: more)";
@@ -86,6 +102,7 @@ mod browser {
         ("button", "ButtonFace", "ButtonText"),
         ("highlight", "Highlight", "HighlightText"),
     ];
+    const FIELD: (&str, &str, &str) = ("field", "Field", "FieldText");
 
     pub(crate) struct DisplayContrastWatch {
         window: Window,
@@ -250,6 +267,7 @@ mod browser {
     struct ColorProbe {
         root: HtmlElement,
         pairs: [HtmlElement; 3],
+        field: Option<HtmlElement>,
         gray_text_supported: bool,
         scheme: String,
     }
@@ -274,9 +292,9 @@ mod browser {
                 && style
                     .get_property_value("color")
                     .is_ok_and(|value| !value.is_empty());
-            let pair = |(name, background, foreground)| -> Result<HtmlElement, JsValue> {
+            let pair = |(name, background, foreground), marker| -> Result<HtmlElement, JsValue> {
                 let element: HtmlElement = document.create_element("span")?.dyn_into()?;
-                element.set_attribute("data-surface-system-pair", name)?;
+                element.set_attribute(marker, name)?;
                 let style = element.style();
                 for (property, keyword) in [("background-color", background), ("color", foreground)]
                 {
@@ -291,7 +309,13 @@ mod browser {
                 Ok(element)
             };
             let [canvas_pair, button, highlight] = PAIRS;
-            let pairs = [pair(canvas_pair)?, pair(button)?, pair(highlight)?];
+            let required = "data-surface-system-pair";
+            let pairs = [
+                pair(canvas_pair, required)?,
+                pair(button, required)?,
+                pair(highlight, required)?,
+            ];
+            let field = pair(FIELD, "data-surface-optional-system-pair").ok();
             let parent = canvas
                 .parent_element()
                 .or_else(|| document.body().map(Into::into))
@@ -300,6 +324,7 @@ mod browser {
             Ok(Self {
                 root,
                 pairs,
+                field,
                 gray_text_supported,
                 scheme,
             })
@@ -337,7 +362,18 @@ mod browser {
                 .flatten()
                 .and_then(|style| style.get_property_value("color").ok())
                 .and_then(|color| css_color(&color));
-            Ok(gray_text.map_or(colors, |ink| colors.with_disabled_text(ink)))
+            let colors = gray_text.map_or(colors, |ink| colors.with_disabled_text(ink));
+            let field_style = self
+                .field
+                .as_ref()
+                .filter(|element| element.is_connected())
+                .and_then(|element| window.get_computed_style(element).ok().flatten());
+            let read_field = |property| field_style.as_ref()?.get_property_value(property).ok();
+            Ok(with_field_css(
+                colors,
+                read_field("background-color").as_deref(),
+                read_field("color").as_deref(),
+            ))
         }
     }
 
@@ -351,7 +387,6 @@ mod browser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use surface_app::SystemColorPair;
 
     #[test]
     fn browser_serializations_preserve_srgb_and_alpha() {
@@ -411,5 +446,68 @@ mod tests {
         assert_eq!(old, DisplayContrast::Forced(palette(204)));
         assert_eq!(changed, DisplayContrast::Forced(palette(255)));
         assert_ne!(old, changed);
+    }
+
+    fn base_colors_with_gray_text() -> SystemContrastColors {
+        let pair = |background, foreground| SystemColorPair {
+            background,
+            foreground,
+        };
+        SystemContrastColors::new(
+            pair(Color::rgb(255, 255, 255), Color::rgb(0, 0, 0)),
+            pair(Color::rgb(230, 230, 230), Color::rgb(32, 24, 40)),
+            pair(Color::rgb(55, 0, 110), Color::rgb(255, 255, 255)),
+        )
+        .with_disabled_text(Color::rgb(96, 0, 0))
+    }
+
+    #[test]
+    fn field_probe_requires_both_halves_without_losing_other_colors() {
+        let base = base_colors_with_gray_text();
+        assert_eq!(base.field, None);
+        let valid = Some("rgb(12, 24, 36)");
+        for (background, foreground) in [
+            (None, None),
+            (None, valid),
+            (valid, None),
+            (Some(""), valid),
+            (valid, Some("")),
+            (Some("Field"), valid),
+            (valid, Some("FieldText")),
+            (Some("rgb(12, 24)"), valid),
+            (valid, Some("rgb(12, 24, 256)")),
+        ] {
+            let resolve = || Ok::<_, ()>(with_field_css(base, background, foreground));
+            assert_eq!(
+                preference(true, true, resolve),
+                Ok(DisplayContrast::Forced(base)),
+                "{background:?}, {foreground:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn field_probe_refresh_replaces_or_removes_the_pair_atomically() {
+        let base = base_colors_with_gray_text();
+        let background = Some("rgba(19, 45, 47, 0.8)");
+        let initial = with_field_css(base, background, Some("rgb(249, 220, 126)"));
+        let updated = with_field_css(base, background, Some("rgb(238 228 190 / 50%)"));
+        let unavailable = with_field_css(base, background, None);
+        assert_eq!(
+            initial,
+            base.with_field(SystemColorPair {
+                background: Color(19, 45, 47, 204),
+                foreground: Color(249, 220, 126, 255),
+            })
+        );
+        assert_eq!(
+            updated,
+            base.with_field(SystemColorPair {
+                background: Color(19, 45, 47, 204),
+                foreground: Color(238, 228, 190, 128),
+            })
+        );
+        assert_ne!(initial, updated);
+        assert_eq!(unavailable, base);
     }
 }

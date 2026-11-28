@@ -20,6 +20,52 @@ use crate::check::step;
 use crate::{check, check_eq, Env};
 use pixels::{intersection, CanvasPng, Rect, Rgb};
 
+#[derive(Clone, Copy)]
+pub(super) enum Blend {
+    ByteSpace,
+    LinearLight,
+}
+
+impl Blend {
+    pub(super) fn name(self) -> &'static str {
+        match self {
+            Self::ByteSpace => "byte-space source-over",
+            Self::LinearLight => "linear-light source-over",
+        }
+    }
+
+    pub(super) fn over(self, base: Rgb, highlight: [u8; 4]) -> Rgb {
+        let alpha = f64::from(highlight[3]) / 255.;
+        std::array::from_fn(|i| {
+            let from = f64::from(base[i]) / 255.;
+            let to = f64::from(highlight[i]) / 255.;
+            let channel = match self {
+                Self::ByteSpace => from * (1. - alpha) + to * alpha,
+                Self::LinearLight => {
+                    encode_srgb(decode_srgb(from) * (1. - alpha) + decode_srgb(to) * alpha)
+                }
+            };
+            (channel * 255.).round() as u8
+        })
+    }
+}
+
+fn decode_srgb(value: f64) -> f64 {
+    if value <= 0.04045 {
+        value / 12.92
+    } else {
+        ((value + 0.055) / 1.055).powf(2.4)
+    }
+}
+
+fn encode_srgb(value: f64) -> f64 {
+    if value <= 0.0031308 {
+        value * 12.92
+    } else {
+        1.055 * value.powf(1. / 2.4) - 0.055
+    }
+}
+
 const POPUP_SHOW: &str = "scroll-popup-demo-show";
 const POPUP: &str = "scroll-popup-demo-dialog";
 const BODY: &str = "scroll-popup-demo-body";
@@ -42,7 +88,7 @@ const TEXTAREA: &str = "document.getElementById('surface-text-input')";
 // Resolve browser keywords independently of the application's probe. Convert
 // the owner's canonical sRGB CSS strings directly to bytes. Reading pixels
 // back through an alpha-premultiplied 2D buffer would round Highlight twice.
-const CSS_WITNESS: &str = r#"(() => {
+pub(super) const CSS_WITNESS: &str = r#"(() => {
     const canvas = document.getElementById("surface");
     const owner = canvas.ownerDocument;
     const view = owner.defaultView;
@@ -72,49 +118,76 @@ const CSS_WITNESS: &str = r#"(() => {
     };
     try {
         const pairs = {}, raw = {};
+        const sample = (background, foreground) => {
+            const item = owner.createElement("span");
+            item.style.setProperty("background-color", background, "important");
+            item.style.setProperty("color", foreground, "important");
+            if (!item.style.getPropertyValue("background-color") || !item.style.getPropertyValue("color"))
+                return null;
+            witness.appendChild(item);
+            const css = view.getComputedStyle(item);
+            const raw = {background:css.backgroundColor,foreground:css.color};
+            if (!raw.background || !raw.foreground) return null;
+            return {raw,pair:{background:rgba(raw.background),foreground:rgba(raw.foreground)}};
+        };
         for (const [key, background, foreground] of [
             ["canvas","Canvas","CanvasText"],
             ["button","ButtonFace","ButtonText"],
             ["highlight","Highlight","HighlightText"]
         ]) {
-            const item = owner.createElement("span");
-            item.style.setProperty("background-color", background, "important");
-            item.style.setProperty("color", foreground, "important");
-            witness.appendChild(item);
-            const css = view.getComputedStyle(item);
-            raw[key] = {background:css.backgroundColor,foreground:css.color};
-            pairs[key] = {background:rgba(raw[key].background),foreground:rgba(raw[key].foreground)};
+            const measured = sample(background,foreground);
+            if (!measured) throw Error("Missing required CSS system pair " + key);
+            raw[key] = measured.raw;
+            pairs[key] = measured.pair;
         }
+        const field = sample("Field", "FieldText");
         const disabled = owner.createElement("span");
         disabled.style.setProperty("color", "GrayText", "important");
         witness.appendChild(disabled);
         const grayCss = disabled.style.getPropertyValue("color")
             ? view.getComputedStyle(disabled).getPropertyValue("color") : null;
-        return {scheme, pairs, raw, disabled_text: grayCss === null ? null :
-            {css: grayCss, rgba: rgba(grayCss)} };
+        return {scheme,pairs,raw,field:field?.pair ?? null,field_raw:field?.raw ?? null,
+            disabled_text: grayCss === null ? null : {css: grayCss, rgba: rgba(grayCss)} };
     } finally {
         witness.remove();
     }
 })()"#;
 
 pub(super) async fn media(tab: &Tab, forced: bool, more: bool) -> Result<()> {
+    media_scheme(tab, forced, more, None).await
+}
+
+pub(super) async fn media_scheme(
+    tab: &Tab,
+    forced: bool,
+    more: bool,
+    scheme: Option<&str>,
+) -> Result<()> {
     let forced_value = if forced { "active" } else { "none" };
     let contrast_value = if more { "more" } else { "no-preference" };
-    tab.cdp(
-        "Emulation.setEmulatedMedia",
-        json!({"features":[
-            {"name":"forced-colors","value":forced_value},
-            {"name":"prefers-contrast","value":contrast_value},
-            {"name":"prefers-reduced-motion","value":"reduce"}
-        ]}),
-    )
-    .await?;
+    let mut features = vec![
+        json!({"name":"forced-colors","value":forced_value}),
+        json!({"name":"prefers-contrast","value":contrast_value}),
+        json!({"name":"prefers-reduced-motion","value":"reduce"}),
+    ];
+    if let Some(scheme) = scheme {
+        features.push(json!({"name":"prefers-color-scheme","value":scheme}));
+    }
+    tab.cdp("Emulation.setEmulatedMedia", json!({"features":features}))
+        .await?;
     tab.wait_for(&format!(
         "matchMedia('(forced-colors: active)').matches === {forced} &&
          matchMedia('(prefers-contrast: more)').matches === {more} &&
          matchMedia('(prefers-reduced-motion: reduce)').matches"
     ))
-    .await
+    .await?;
+    if let Some(scheme) = scheme {
+        tab.wait_for(&format!(
+            "matchMedia('(prefers-color-scheme: {scheme})').matches"
+        ))
+        .await?;
+    }
+    Ok(())
 }
 
 pub(super) async fn contrast(tab: &Tab, mode: &str) -> Result<Value> {
@@ -138,8 +211,8 @@ pub(super) async fn palette_with_disabled(tab: &Tab, appearance: &Value) -> Resu
     check_eq!(
         appearance["system_colors"],
         json!({"canvas":pairs["canvas"],"button":pairs["button"],"highlight":pairs["highlight"],
-            "disabled_text":css["disabled_text"]["rgba"]}),
-        "the three accepted system pairs and optional GrayText match independent browser measurements"
+            "field":css["field"],"disabled_text":css["disabled_text"]["rgba"]}),
+        "required pairs and optional Field and GrayText match independent browser measurements"
     );
     for (role, source) in [
         ("surface", &pairs["canvas"]["background"]),
@@ -166,7 +239,7 @@ async fn no_probe(tab: &Tab) -> Result<()> {
         .await
 }
 
-async fn hidden_probe(tab: &Tab) -> Result<()> {
+pub(super) async fn hidden_probe(tab: &Tab, has_field: bool) -> Result<()> {
     tab.wait_for(
         r#"(() => {
             const roots = document.querySelectorAll("[data-surface-system-colors]");
@@ -187,7 +260,7 @@ async fn hidden_probe(tab: &Tab) -> Result<()> {
         .cdp(
             "DOM.querySelectorAll",
             json!({"nodeId":node_id,
-                "selector":"[data-surface-system-colors], [data-surface-system-pair]"}),
+                "selector":"[data-surface-system-colors], [data-surface-system-pair], [data-surface-optional-system-pair='field']"}),
         )
         .await?;
     let probes = nodes["nodeIds"]
@@ -195,8 +268,8 @@ async fn hidden_probe(tab: &Tab) -> Result<()> {
         .context("hidden probe DOM nodes")?;
     check_eq!(
         probes.len(),
-        4,
-        "one DOM probe owns exactly three sample children"
+        4 + usize::from(has_field),
+        "one hidden DOM root owns three required samples and the resolved optional Field sample"
     );
     let tree = ax_tree(tab).await?;
     for node in probes {
@@ -225,7 +298,7 @@ async fn initial_preferences(tab: &Tab, url: &str) -> Result<Value> {
     );
     let startup = contrast(tab, "forced").await?;
     let startup_css = palette(tab, &startup).await?;
-    hidden_probe(tab).await?;
+    hidden_probe(tab, startup_css["field"].is_object()).await?;
 
     media(tab, false, true).await?;
     let increased = contrast(tab, "increased").await?;
@@ -244,7 +317,7 @@ async fn initial_preferences(tab: &Tab, url: &str) -> Result<Value> {
     media(tab, true, true).await?;
     let forced = contrast(tab, "forced").await?;
     let ending_css = palette(tab, &forced).await?;
-    hidden_probe(tab).await?;
+    hidden_probe(tab, ending_css["field"].is_object()).await?;
     Ok(json!({"modes":["forced","increased","normal","forced"],
         "startup":{"css":startup_css,"theme":startup["theme"]},
         "ending":{"css":ending_css,"theme":forced["theme"]},

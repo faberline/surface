@@ -2,7 +2,7 @@ use surface::{
     Align, Color, Corners, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style,
     TextMeasurer,
 };
-use surface_app::{CursorStyle, View};
+use surface_app::{CursorStyle, SystemColorPair, View};
 
 use crate::{IconButtonKind, Theme, VectorIcon};
 
@@ -88,6 +88,7 @@ impl Theme {
         name: &str,
         disabled: bool,
         field_icon_ink: Color,
+        pair: Option<SystemColorPair>,
         message: M,
     ) -> Option<View<M>> {
         self.build_icon_button(
@@ -101,7 +102,10 @@ impl Theme {
                 shape: IconButtonShape::Round,
                 disabled,
             },
-            IconButtonArtwork::FieldAdornment(field_icon_ink),
+            IconButtonArtwork::FieldAdornment {
+                ink: field_icon_ink,
+                pair,
+            },
             message,
         )
     }
@@ -115,12 +119,17 @@ impl Theme {
         if options.id.trim().is_empty() || options.name.trim().is_empty() {
             return None;
         }
-        let (asset, checked, field_ink) = match artwork {
-            IconButtonArtwork::Glyph(MaterialIcon::Command(asset)) => (Some(asset), None, None),
-            IconButtonArtwork::Glyph(MaterialIcon::Toggle { checked, off, on }) => {
-                (Some(if checked { on } else { off }), Some(checked), None)
+        let (asset, checked, field_ink, field_pair) = match artwork {
+            IconButtonArtwork::Glyph(MaterialIcon::Command(asset)) => {
+                (Some(asset), None, None, None)
             }
-            IconButtonArtwork::FieldAdornment(ink) => (None, None, Some(ink)),
+            IconButtonArtwork::Glyph(MaterialIcon::Toggle { checked, off, on }) => (
+                Some(if checked { on } else { off }),
+                Some(checked),
+                None,
+                None,
+            ),
+            IconButtonArtwork::FieldAdornment { ink, pair } => (None, None, Some(ink), pair),
         };
         let tokens = options.size.tokens();
         let [narrow, default, wide] = tokens.widths;
@@ -186,6 +195,14 @@ impl Theme {
                 ..Insets::default()
             });
         }
+        let backing = field_pair.map(|pair| {
+            View::new(
+                Node::new(Role::Group, "")
+                    .id(format!("{}-system-face", options.id))
+                    .styled(focus_style.clone().background(pair.background)),
+            )
+            .without_interaction(None)
+        });
         let focus = View::new(
             Node::new(Role::Group, "")
                 .id(format!("{}-focus", options.id))
@@ -195,7 +212,7 @@ impl Theme {
                 .interaction_corners_from_parent()
                 .animate_interaction_corners_with_spring(CORNER_STIFFNESS, CORNER_DAMPING_RATIO)
                 .focus_outline_from_parent()
-                .focus_color(self.colors.secondary)
+                .focus_color(field_pair.map_or(self.colors.secondary, |pair| pair.foreground))
                 .focus_outline_width(FOCUS_STROKE),
         )
         .without_interaction(None);
@@ -213,9 +230,13 @@ impl Theme {
             action = action.described_by_text(target);
         }
         if field_ink.is_some() {
-            action = action.measured_group(FieldActionLayout { width, height });
+            action = action.measured_group(FieldActionLayout {
+                width,
+                height,
+                has_backing: backing.is_some(),
+            });
         }
-        let mut view = View::new(action).children([face, focus]);
+        let mut view = View::new(action).children(backing.into_iter().chain([face, focus]));
         if options.disabled {
             return Some(view);
         }
@@ -236,13 +257,17 @@ impl Theme {
 
 enum IconButtonArtwork<'a> {
     Glyph(MaterialIcon<'a>),
-    FieldAdornment(Color),
+    FieldAdornment {
+        ink: Color,
+        pair: Option<SystemColorPair>,
+    },
 }
 
 #[derive(Debug)]
 struct FieldActionLayout {
     width: f32,
     height: f32,
+    has_backing: bool,
 }
 
 impl MeasuredGroupLayout for FieldActionLayout {
@@ -258,15 +283,18 @@ impl MeasuredGroupLayout for FieldActionLayout {
     ) -> Vec<Rect> {
         let x = (width - self.width) / 2.;
         let y = (height - self.height) / 2.;
-        vec![
-            Rect::new(x, y, self.width, self.height),
-            Rect::new(
-                x - FOCUS_OUTSET,
-                y - FOCUS_OUTSET,
-                self.width + 2. * FOCUS_OUTSET,
-                self.height + 2. * FOCUS_OUTSET,
-            ),
-        ]
+        let face = Rect::new(x, y, self.width, self.height);
+        let focus = Rect::new(
+            x - FOCUS_OUTSET,
+            y - FOCUS_OUTSET,
+            self.width + 2. * FOCUS_OUTSET,
+            self.height + 2. * FOCUS_OUTSET,
+        );
+        self.has_backing
+            .then_some(focus)
+            .into_iter()
+            .chain([face, focus])
+            .collect()
     }
 }
 
@@ -374,7 +402,14 @@ mod tests {
 
         fn view(&self) -> View<()> {
             let action = Theme::light()
-                .text_field_trailing_icon_button("trailing", "清除文字", self.disabled, INK, ())
+                .text_field_trailing_icon_button(
+                    "trailing",
+                    "清除文字",
+                    self.disabled,
+                    INK,
+                    None,
+                    (),
+                )
                 .unwrap();
             View::new(Node::new(Role::Window, "Test").styled(Style::row().align(Align::Center)))
                 .children([
@@ -400,7 +435,7 @@ mod tests {
     #[test]
     fn trailing_action_retains_the_icon_button_target_without_an_internal_glyph() {
         assert!(Theme::light()
-            .text_field_trailing_icon_button("trailing", " ", false, INK, ())
+            .text_field_trailing_icon_button("trailing", " ", false, INK, None, ())
             .is_none());
         for disabled in [false, true] {
             let mut rt = Runtime::new(Field {

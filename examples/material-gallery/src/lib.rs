@@ -1347,7 +1347,11 @@ impl Application for Gallery {
             );
         }
         if self.text_field_placeholder_demo.visible() {
-            return self.text_field_placeholder_demo.view(&t, self.dark);
+            return self.text_field_placeholder_demo.view(
+                &t,
+                t.text_fields_for(self.display_contrast),
+                self.dark,
+            );
         }
         if self.multiline_text_field_demo.visible() {
             return self.multiline_text_field_demo.view(
@@ -2034,6 +2038,7 @@ mod web {
                     "button": pair(colors.button),
                     "highlight": pair(colors.highlight),
                     "disabled_text": colors.disabled_text,
+                    "field": colors.field.map(pair),
                 })),
             ),
             _ => ("unsupported", None),

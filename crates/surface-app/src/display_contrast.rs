@@ -30,6 +30,8 @@ pub struct SystemContrastColors {
     pub button: SystemColorPair,
     /// Selected background and its text.
     pub highlight: SystemColorPair,
+    /// Input field face and its text, when the host can resolve both.
+    pub field: Option<SystemColorPair>,
     /// System disabled text ink, when the host can resolve it.
     pub disabled_text: Option<Color>,
 }
@@ -44,7 +46,16 @@ impl SystemContrastColors {
             canvas,
             button,
             highlight,
+            field: None,
             disabled_text: None,
+        }
+    }
+
+    /// Attach the complete system input field pair without changing either color.
+    pub const fn with_field(self, field: SystemColorPair) -> Self {
+        Self {
+            field: Some(field),
+            ..self
         }
     }
 

@@ -1,7 +1,8 @@
 use surface::{Align, Length, Node, Role, Style};
 use surface_app::View;
 use surface_material::{
-    shape::LayoutDirection, ButtonKind, ChoiceState, OutlinedTextFieldOptions, Theme,
+    shape::LayoutDirection, ButtonKind, ChoiceState, OutlinedTextFieldOptions, TextFieldAdornments,
+    TextFieldAppearance, TextFieldTheme, Theme,
 };
 
 use crate::{scroll_field_demo::control_row, Message};
@@ -102,7 +103,12 @@ impl TextFieldPlaceholderDemo {
             .suppress_repeated_activation()
     }
 
-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+    pub(crate) fn view(
+        &self,
+        theme: &Theme,
+        fields: TextFieldTheme<'_>,
+        dark: bool,
+    ) -> View<Message> {
         use TextFieldPlaceholderDemoEvent::*;
 
         let wrap = Message::TextFieldPlaceholderDemo;
@@ -179,12 +185,21 @@ impl TextFieldPlaceholderDemo {
             LayoutDirection::LeftToRight
         };
         options.text_scale = self.text_scale();
-        let field = if self.filled {
-            theme.filled_text_field(options, move |value| wrap(Edit(value)))
+        let appearance = if self.filled {
+            TextFieldAppearance::Filled
         } else {
-            theme.outlined_text_field(options, move |value| wrap(Edit(value)))
-        }
-        .expect("valid placeholder demo");
+            TextFieldAppearance::Outlined
+        };
+        let field = fields
+            .single_line(
+                appearance,
+                options,
+                TextFieldAdornments::default(),
+                None,
+                move |value| wrap(Edit(value)),
+                || None,
+            )
+            .expect("valid placeholder demo");
         let mut body = Style::column().width(Length::Percent(1.));
         body.max_width = Length::Px(480.);
         let field = View::new(Node::new(Role::Group, "").styled(body)).children([field]);

@@ -50,12 +50,13 @@ fn headless_options(arguments: &[String]) -> Result<HeadlessOptions, Box<dyn std
                 options.height = args.next().ok_or("missing value for --height")?.parse()?;
             }
             "--forced-colors" => {
-                let dark = match args.next().map(String::as_str) {
-                    Some("light") => false,
-                    Some("dark") => true,
-                    _ => return Err("--forced-colors expects light or dark".into()),
+                let contrast = match args.next().map(String::as_str) {
+                    Some("light") => preview_contrast(false),
+                    Some("dark") => preview_contrast(true),
+                    Some("field-pair") => field_pair_preview(),
+                    _ => return Err("--forced-colors expects light, dark, or field-pair".into()),
                 };
-                options.contrast = Some(preview_contrast(dark));
+                options.contrast = Some(contrast);
             }
             flag => return Err(format!("unexpected headless argument {flag}").into()),
         }
@@ -90,6 +91,29 @@ fn preview_contrast(dark: bool) -> surface_app::DisplayContrast {
         foreground: background,
     };
     DisplayContrast::Forced(
-        SystemContrastColors::new(canvas, canvas, selection).with_disabled_text(disabled),
+        SystemContrastColors::new(canvas, canvas, selection)
+            .with_disabled_text(disabled)
+            .with_field(canvas),
+    )
+}
+
+#[cfg(all(feature = "devtools", not(target_arch = "wasm32")))]
+fn field_pair_preview() -> surface_app::DisplayContrast {
+    use surface::Color;
+    use surface_app::{DisplayContrast, SystemColorPair, SystemContrastColors};
+
+    // Synthetic palette for identifying each pair in a headless screenshot.
+    let pair = |[br, bg, bb]: [u8; 3], [fr, fg, fb]: [u8; 3]| SystemColorPair {
+        background: Color::rgb(br, bg, bb),
+        foreground: Color::rgb(fr, fg, fb),
+    };
+    DisplayContrast::Forced(
+        SystemContrastColors::new(
+            pair([248, 247, 250], [28, 23, 38]),
+            pair([92, 35, 45], [255, 232, 216]),
+            pair([63, 24, 97], [237, 239, 254]),
+        )
+        .with_disabled_text(Color::rgb(119, 56, 71))
+        .with_field(pair([19, 45, 47], [249, 220, 126])),
     )
 }
