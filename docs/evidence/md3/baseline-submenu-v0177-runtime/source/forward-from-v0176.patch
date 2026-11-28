@@ -1,0 +1,2084 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index de696a1..7f807a9 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.76"
++version = "0.1.77"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index d6c4d3a..bb0276b 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.76"
++version = "0.1.77"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/controls.rs b/crates/surface-app/src/controls.rs
+index 994c8fa..3e10bf4 100644
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -765,7 +765,13 @@ impl<A: Application> Runtime<A> {
+                 ModalDismissal::Escape => matches!(input, ModalDismissInput::Escape),
+                 ModalDismissal::ActionOnly => false,
+             })
+-            .and_then(|binding| binding.dismiss.clone());
++            .and_then(|binding| match input {
++                ModalDismissInput::Escape => binding
++                    .modal_escape
++                    .clone()
++                    .or_else(|| binding.dismiss.clone()),
++                ModalDismissInput::Outside => binding.dismiss.clone(),
++            });
+         self.message(message).map(|_| true)
+     }
+     /// Deliver the top scope's opt-in dismiss message. Consume the key if
+@@ -839,7 +845,7 @@ impl<A: Application> Runtime<A> {
+             let id = self.stable(id).expect("slider has ID");
+             return self.set_value(&id, value);
+         }
+-        if self.in_scope(id) && node.is_focusable() && !self.has_pending_composition() {
++        if self.in_scope(id) && self.focus_eligible(id) && !self.has_pending_composition() {
+             if let Some(navigation) = self.bindings[&id]
+                 .focus_navigation
+                 .as_ref()
+@@ -847,7 +853,10 @@ impl<A: Application> Runtime<A> {
+             {
+                 return self.apply_focus_navigation(navigation);
+             }
+-            if let Some(range) = node.accessibility_adjustable() {
++            if let Some(range) = node
++                .accessibility_adjustable()
++                .filter(|_| node.is_focusable())
++            {
+                 let action = match key {
+                     EditKey::Up => Some(AccessibilityAdjustment::Increment),
+                     EditKey::Down => Some(AccessibilityAdjustment::Decrement),
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 873f467..9408d9a 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -102,6 +102,7 @@ pub struct View<M> {
+     paint_contour: Option<ContourPainter>,
+     text_input_paint: Option<editor_paint::Binding>,
+     activate: Option<M>,
++    focus_after_activation: Option<String>,
+     suppress_repeated_activation: bool,
+     focus_disabled_menu_item: bool,
+     input: Option<Rc<dyn Fn(String) -> M>>,
+@@ -121,6 +122,7 @@ pub struct View<M> {
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+     dismiss: Option<M>,
++    modal_escape: Option<M>,
+     modal_dismissal: ModalDismissal,
+     block_application_shortcuts: bool,
+     dismiss_on_tab: bool,
+@@ -199,6 +201,7 @@ impl<M> View<M> {
+             paint_contour: None,
+             text_input_paint: None,
+             activate: None,
++            focus_after_activation: None,
+             suppress_repeated_activation: false,
+             focus_disabled_menu_item: false,
+             input: None,
+@@ -218,6 +221,7 @@ impl<M> View<M> {
+             accessible_step: None,
+             roving: None,
+             dismiss: None,
++            modal_escape: None,
+             modal_dismissal: ModalDismissal::default(),
+             block_application_shortcuts: false,
+             dismiss_on_tab: false,
+@@ -456,6 +460,16 @@ impl<M> View<M> {
+         self.activate = Some(message);
+         self
+     }
++    /// Send a message when this control is activated, then focus `target` if
++    /// the message mounts it inside the active scope. Pointer, keyboard and
++    /// accessibility activation use the same path. Disabled controls cannot
++    /// activate. This method also preserves active text composition.
++    pub fn on_press_then_focus(mut self, message: M, target: impl Into<String>) -> Self {
++        self.activate = Some(message);
++        self.focus_after_activation = Some(target.into());
++        self.protect_composition_on_press = true;
++        self
++    }
+     /// Ignore held Enter or Space repeats for this control's default press.
+     /// Focused key handlers and scoped shortcuts take precedence. Text
+     /// inputs keep their normal key behavior.
+@@ -989,6 +1003,7 @@ impl<M> View<M> {
+ 
+     /// Handle navigation from this focused control. The message may mount
+     /// the named target. The runtime moves focus after the resulting rebuild.
++    /// A disabled menu item that accepts focus can still handle navigation.
+     pub fn on_focus_navigation(
+         self,
+         handler: impl Fn(EditKey) -> Option<FocusNavigation<M>> + 'static,
+@@ -1168,6 +1183,13 @@ impl<M> View<M> {
+         self.modal_dismissal = policy;
+         self
+     }
++    /// Use this message for Escape while this view owns the active modal
++    /// scope. The configured `ModalDismissal` policy must allow Escape.
++    /// Outside presses continue to use the ordinary modal dismiss message.
++    pub fn modal_escape_with(mut self, message: M) -> Self {
++        self.modal_escape = Some(message);
++        self
++    }
+ 
+     /// Keep matched application-wide shortcuts in the active modal scope.
+     /// The modal and its nested panels consume those chords without sending their global
+@@ -1415,6 +1437,7 @@ pub enum AppError {
+ }
+ struct Binding<M> {
+     activate: Option<M>,
++    focus_after_activation: Option<String>,
+     suppress_repeated_activation: bool,
+     // None is the ordinary path. Some remembers the authored Tab eligibility
+     // before applying disabled, which still blocks every activation path.
+@@ -1437,6 +1460,7 @@ struct Binding<M> {
+     accessible_step: Option<Rc<dyn Fn(bool) -> M>>,
+     roving: Option<controls::RovingGroup>,
+     dismiss: Option<M>,
++    modal_escape: Option<M>,
+     modal_dismissal: ModalDismissal,
+     block_application_shortcuts: bool,
+     dismiss_on_tab: bool,
+@@ -1961,6 +1985,7 @@ impl<A: Application> Runtime<A> {
+                 id,
+                 Binding {
+                     activate: view.activate,
++                    focus_after_activation: view.focus_after_activation,
+                     suppress_repeated_activation: view.suppress_repeated_activation,
+                     disabled_menu_tab_stop,
+                     input: view.input,
+@@ -1981,6 +2006,7 @@ impl<A: Application> Runtime<A> {
+                     accessible_step: view.accessible_step,
+                     roving: view.roving,
+                     dismiss: view.dismiss,
++                    modal_escape: view.modal_escape,
+                     modal_dismissal: view.modal_dismissal,
+                     block_application_shortcuts: view.block_application_shortcuts,
+                     dismiss_on_tab: view.dismiss_on_tab,
+@@ -2540,11 +2566,22 @@ impl<A: Application> Runtime<A> {
+             self.cancel_composition();
+         }
+         self.focused = Some(stable_id.to_owned());
+-        let message = self.bindings.get(&id).and_then(|b| b.activate.clone());
++        let (message, focus_target) = self.bindings.get(&id).map_or((None, None), |binding| {
++            (
++                binding.activate.clone(),
++                binding.focus_after_activation.clone(),
++            )
++        });
+         #[cfg(feature = "devtools")]
+         self.trace_source(stable_id, trace::Handler::Press);
+-        self.message(message)
+-            .map(|changed| changed || focus_changed)
++        match (message, focus_target) {
++            (Some(message), Some(target)) => {
++                self.apply_focus_navigation(FocusNavigation { target, message })
++            }
++            (message, _) => self
++                .message(message)
++                .map(|changed| changed || focus_changed),
++        }
+     }
+     pub fn dispatch(&mut self, event: Event) -> Result<bool, AppError> {
+         self.dispatch_with(event, Self::dispatch_observed_event)
+diff --git a/crates/surface-app/tests/modal_submenu_support.rs b/crates/surface-app/tests/modal_submenu_support.rs
+new file mode 100644
+index 0000000..6b38ef4
+--- /dev/null
++++ b/crates/surface-app/tests/modal_submenu_support.rs
+@@ -0,0 +1,192 @@
++use surface::{Insets, Length, Node, Role, Style, TextMeasurer};
++use surface_app::{Application, Event, ModalDismissal, Runtime, View};
++
++#[derive(Clone, Copy)]
++enum Message {
++    Toggle,
++    OpenSubmenu,
++    CloseSubmenu,
++    Dismiss,
++    RunChild,
++}
++
++#[derive(Default)]
++struct App {
++    open: bool,
++    submenu_open: bool,
++    dismissal: ModalDismissal,
++    dismissals: usize,
++    child_activations: usize,
++}
++
++impl Application for App {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Toggle => self.open = !self.open,
++            Message::OpenSubmenu => self.submenu_open = true,
++            Message::CloseSubmenu => self.submenu_open = false,
++            Message::Dismiss => {
++                self.open = false;
++                self.submenu_open = false;
++                self.dismissals += 1;
++            }
++            Message::RunChild => self.child_activations += 1,
++        }
++    }
++
++    fn view(&self) -> View<Message> {
++        let trigger = button("trigger", "Trigger", Message::Toggle, 32.);
++        let menu = self.open.then(|| {
++            let mut style = Style::column()
++                .width(Length::Px(180.))
++                .height(Length::Px(100.))
++                .fixed(Insets {
++                    left: Length::Px(100.),
++                    top: Length::Px(50.),
++                    ..Insets::default()
++                });
++            style.z_index = 10;
++            let submenu = View::new(
++                Node::new(Role::MenuItem, "More").id("submenu").styled(
++                    Style::row()
++                        .width(Length::Percent(1.))
++                        .height(Length::Px(40.)),
++                ),
++            )
++            .on_press_then_focus(Message::OpenSubmenu, "child");
++            let mut children = vec![submenu];
++            if self.submenu_open {
++                let child = button("child", "Child action", Message::RunChild, 40.);
++                children.push(
++                    View::new(Node::new(Role::Group, "Submenu rows").id("child-rows"))
++                        .children([child])
++                        .restore_focus_in_subtree_on_removal("submenu"),
++                );
++            }
++            let mut menu = View::new(Node::new(Role::Menu, "Commands").id("menu").styled(style))
++                .children(children)
++                .modal_overlay(Message::Dismiss)
++                .modal_dismissal(self.dismissal)
++                .modal_initial_focus("submenu")
++                .modal_focus_fallback("trigger");
++            if self.submenu_open {
++                menu = menu.modal_escape_with(Message::CloseSubmenu);
++            }
++            menu
++        });
++        View::new(Node::new(Role::Window, "Test").styled(Style::column()))
++            .children(std::iter::once(trigger).chain(menu))
++    }
++}
++
++fn button(id: &str, label: &str, message: Message, height: f32) -> View<Message> {
++    View::new(
++        Node::new(Role::Button, label)
++            .id(id)
++            .styled(Style::row().height(Length::Px(height))),
++    )
++    .on_press(message)
++}
++
++struct Metrics;
++
++impl TextMeasurer for Metrics {
++    fn measure(&mut self, _: &str, _: f32, _: Option<f32>) -> (f32, f32) {
++        (0., 0.)
++    }
++}
++
++fn render(runtime: &mut Runtime<App>) {
++    runtime.render(320., 240., &mut Metrics).unwrap();
++}
++
++fn open_menu() -> Runtime<App> {
++    let mut runtime = Runtime::new(App {
++        open: true,
++        ..App::default()
++    })
++    .unwrap();
++    render(&mut runtime);
++    runtime
++}
++
++#[test]
++fn activation_mounts_and_focuses_the_submenu_target() {
++    let mut runtime = open_menu();
++
++    assert!(runtime.activate("submenu").unwrap());
++    assert!(runtime.app().submenu_open);
++    assert_eq!(runtime.focused(), Some("child"));
++    assert_eq!(runtime.app().child_activations, 0);
++}
++
++#[test]
++fn pointer_activation_mounts_and_focuses_the_submenu_target() {
++    let mut runtime = open_menu();
++
++    assert!(runtime
++        .dispatch(Event::PointerDown { x: 120., y: 65. })
++        .unwrap());
++    assert!(runtime
++        .dispatch(Event::PointerUp { x: 120., y: 65. })
++        .unwrap());
++
++    assert!(runtime.app().submenu_open);
++    assert_eq!(runtime.focused(), Some("child"));
++    assert_eq!(runtime.app().child_activations, 0);
++}
++
++#[test]
++fn modal_escape_override_closes_child_before_generic_dismiss() {
++    let mut runtime = open_menu();
++    runtime.activate("submenu").unwrap();
++    assert_eq!(runtime.focused(), Some("child"));
++
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert!(runtime.app().open);
++    assert!(!runtime.app().submenu_open);
++    assert_eq!(runtime.focused(), Some("submenu"));
++    assert_eq!(runtime.app().dismissals, 0);
++
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert!(!runtime.app().open);
++    assert_eq!(runtime.focused(), Some("trigger"));
++    assert_eq!(runtime.app().dismissals, 1);
++}
++
++#[test]
++fn outside_press_still_uses_generic_dismiss_and_does_not_activate_trigger() {
++    let mut runtime = open_menu();
++    runtime.activate("submenu").unwrap();
++    render(&mut runtime);
++    let trigger = runtime.dom().by_id("trigger").unwrap();
++    let bounds = runtime.computed().unwrap().nodes[trigger.index()].bounds;
++    let (x, y) = (bounds.x + bounds.width / 2., bounds.y + bounds.height / 2.);
++
++    assert!(runtime.dispatch(Event::PointerDown { x, y }).unwrap());
++    assert!(runtime.dispatch(Event::PointerUp { x, y }).unwrap());
++
++    assert!(!runtime.app().open);
++    assert_eq!(runtime.app().dismissals, 1);
++    assert_eq!(runtime.focused(), Some("trigger"));
++}
++
++#[test]
++fn action_only_policy_blocks_the_custom_escape_message() {
++    let mut runtime = Runtime::new(App {
++        open: true,
++        submenu_open: true,
++        dismissal: ModalDismissal::ActionOnly,
++        ..App::default()
++    })
++    .unwrap();
++    render(&mut runtime);
++
++    // A modal Cancel is consumed even when its dismissal policy blocks it.
++    assert!(runtime.dispatch(Event::Cancel).unwrap());
++    assert!(runtime.app().open);
++    assert!(runtime.app().submenu_open);
++    assert_eq!(runtime.app().dismissals, 0);
++}
+diff --git a/crates/surface-material/src/command_menu.rs b/crates/surface-material/src/command_menu.rs
+index 91c9ce9..a23e5a5 100644
+--- a/crates/surface-material/src/command_menu.rs
++++ b/crates/surface-material/src/command_menu.rs
+@@ -1,5 +1,6 @@
+ //! Baseline Material 3 menu for commands launched by a button.
+ 
++mod submenu;
+ mod vertical;
+ 
+ use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style, TextAlignment};
+@@ -10,6 +11,7 @@ use crate::{
+     shape::{self, LayoutDirection},
+     typography, Elevation, Theme, VectorIcon,
+ };
++pub use submenu::{CommandMenuRow, CommandMenuSubmenu, CommandMenuWithSubmenusOptions};
+ pub use vertical::{
+     VerticalChoiceMenuGroup, VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
+ };
+@@ -119,31 +121,16 @@ impl Theme {
+     where
+         M: 'a,
+     {
+-        let scope = View::new(
+-            Node::new(Role::Group, "")
+-                .id(format!("{}-scope", options.id))
+-                .styled(Style::column()),
+-        );
++        let scope = command_menu_scope(options.id);
+         let Some(anchor) = measurement.anchor.filter(|_| options.open) else {
+             return scope.children([trigger.menu_expanded(false)]);
+         };
+         let entries: Vec<_> = entries.into_iter().collect();
+-        let first = entries.iter().find_map(|entry| match entry {
+-            CommandMenuEntry::Item(item) => Some(item.id),
+-            CommandMenuEntry::Separator { .. } => None,
+-        });
++        let first = entries.iter().find_map(entry_id);
+         let Some(first) = first else {
+             return scope.children([trigger.menu_expanded(false)]);
+         };
+-        let minimum_height = 2. * OUTER_PADDING
+-            + entries
+-                .iter()
+-                .map(|entry| match entry {
+-                    CommandMenuEntry::Item(_) => MIN_ITEM_HEIGHT,
+-                    CommandMenuEntry::Separator { .. } => 2. * SEPARATOR_SPACE + SEPARATOR_HEIGHT,
+-                })
+-                .sum::<f32>();
+-        let desired_height = measurement.content_height.unwrap_or(0.).max(minimum_height);
++        let desired_height = desired_height(entries.iter().map(entry_height), measurement);
+         let Some(layout) = place_menu(
+             anchor,
+             (options.preferred_width, desired_height),
+@@ -151,7 +138,10 @@ impl Theme {
+         ) else {
+             return scope.children([trigger.menu_expanded(false)]);
+         };
+-        let menu = self.command_menu_panel(&options, entries, layout.bounds);
++        let rows = entries
++            .into_iter()
++            .map(|entry| self.flat_command_menu_row(entry, options.direction));
++        let menu = self.command_menu_panel(&options, rows, layout.bounds);
+         scope
+             .children([trigger.menu_expanded(true), menu])
+             .modal_overlay_descendants(on_dismiss)
+@@ -160,15 +150,12 @@ impl Theme {
+             .dismiss_modal_on_tab()
+     }
+ 
+-    fn command_menu_panel<'a, M>(
++    fn command_menu_panel<M>(
+         &self,
+         options: &CommandMenuOptions<'_>,
+-        entries: impl IntoIterator<Item = CommandMenuEntry<'a, M>>,
++        rows: impl IntoIterator<Item = View<M>>,
+         bounds: Rect,
+-    ) -> View<M>
+-    where
+-        M: 'a,
+-    {
++    ) -> View<M> {
+         let contents = View::new(
+             Node::new(Role::Group, "")
+                 .id(content_id(options.id))
+@@ -176,10 +163,7 @@ impl Theme {
+         )
+         .children(
+             std::iter::once(spacer(OUTER_PADDING))
+-                .chain(entries.into_iter().map(|entry| match entry {
+-                    CommandMenuEntry::Item(item) => self.command_menu_item(item, options.direction),
+-                    CommandMenuEntry::Separator { id } => self.command_menu_separator(id),
+-                }))
++                .chain(rows)
+                 .chain(std::iter::once(spacer(OUTER_PADDING))),
+         );
+         let style = Style::column()
+@@ -204,10 +188,31 @@ impl Theme {
+         .accessibility_scroll_pages()
+     }
+ 
++    fn flat_command_menu_row<M>(
++        &self,
++        entry: CommandMenuEntry<'_, M>,
++        direction: LayoutDirection,
++    ) -> View<M> {
++        match entry {
++            CommandMenuEntry::Item(item) => self.command_menu_item(item, direction),
++            CommandMenuEntry::Separator { id } => self.command_menu_separator(id),
++        }
++    }
++
+     fn command_menu_item<M>(
+         &self,
+         item: CommandMenuItem<'_, M>,
+         direction: LayoutDirection,
++    ) -> View<M> {
++        let row = self.command_menu_item_view(&item, direction, None);
++        bind_command_item(row, item.disabled, item.on_press)
++    }
++
++    fn command_menu_item_view<M>(
++        &self,
++        item: &CommandMenuItem<'_, M>,
++        direction: LayoutDirection,
++        submenu_expanded: Option<bool>,
+     ) -> View<M> {
+         let label_ink = self.colors.on_surface;
+         let (label_ink, icon_ink) = if item.disabled {
+@@ -228,6 +233,11 @@ impl Theme {
+             .disabled(item.disabled)
+             .focus_color(self.colors.secondary)
+             .styled(style);
++        let control = if let Some(expanded) = submenu_expanded {
++            control.submenu_expanded(expanded)
++        } else {
++            control
++        };
+         let (control, alignment) = match direction {
+             LayoutDirection::LeftToRight => (control, TextAlignment::Left),
+             LayoutDirection::RightToLeft => (control.reverse_row(), TextAlignment::Right),
+@@ -248,14 +258,18 @@ impl Theme {
+         .without_interaction(None);
+         let leading = item
+             .leading_icon
++            .as_ref()
+             .map(|icon| icon_view(format!("{}-leading", item.id), icon, icon_ink, ICON_SIZE));
+-        let trailing = item
+-            .trailing_icon
+-            .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink, ICON_SIZE));
+-        let control = View::new(control)
++        let trailing = if submenu_expanded.is_some() {
++            Some(submenu::chevron(item.id, direction, icon_ink))
++        } else {
++            item.trailing_icon
++                .as_ref()
++                .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink, ICON_SIZE))
++        };
++        View::new(control)
+             .children(leading.into_iter().chain([text]).chain(trailing))
+-            .accessibility_scroll_into_view();
+-        bind_command_item(control, item.disabled, item.on_press)
++            .accessibility_scroll_into_view()
+     }
+ 
+     fn command_menu_separator<M>(&self, id: &str) -> View<M> {
+@@ -277,6 +291,33 @@ impl Theme {
+     }
+ }
+ 
++fn command_menu_scope<M>(menu_id: &str) -> View<M> {
++    View::new(
++        Node::new(Role::Group, "")
++            .id(format!("{menu_id}-scope"))
++            .styled(Style::column()),
++    )
++}
++
++fn entry_id<'a, M>(entry: &CommandMenuEntry<'a, M>) -> Option<&'a str> {
++    match entry {
++        CommandMenuEntry::Item(item) => Some(item.id),
++        CommandMenuEntry::Separator { .. } => None,
++    }
++}
++
++fn entry_height<M>(entry: &CommandMenuEntry<'_, M>) -> f32 {
++    match entry {
++        CommandMenuEntry::Item(_) => MIN_ITEM_HEIGHT,
++        CommandMenuEntry::Separator { .. } => 2. * SEPARATOR_SPACE + SEPARATOR_HEIGHT,
++    }
++}
++
++fn desired_height(rows: impl Iterator<Item = f32>, measurement: &CommandMenuMeasurement) -> f32 {
++    let minimum = 2. * OUTER_PADDING + rows.sum::<f32>();
++    measurement.content_height.unwrap_or(0.).max(minimum)
++}
++
+ fn bind_command_item<M>(view: View<M>, disabled: bool, on_press: M) -> View<M> {
+     if disabled {
+         view.focus_disabled_menu_item()
+@@ -296,7 +337,7 @@ fn spacer<M>(height: f32) -> View<M> {
+     View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(height))))
+ }
+ 
+-fn icon_view<M>(id: String, icon: VectorIcon, ink: Color, size: f32) -> View<M> {
++fn icon_view<M>(id: String, icon: &VectorIcon, ink: Color, size: f32) -> View<M> {
+     View::new(
+         Node::new(Role::Group, "")
+             .id(id)
+diff --git a/crates/surface-material/src/command_menu/submenu.rs b/crates/surface-material/src/command_menu/submenu.rs
+new file mode 100644
+index 0000000..602b25e
+--- /dev/null
++++ b/crates/surface-material/src/command_menu/submenu.rs
+@@ -0,0 +1,215 @@
++use surface::{Color, Length, Node, Role, Style};
++use surface_app::{CursorStyle, EditKey, FocusNavigation, View};
++
++use super::{
++    command_menu_scope, desired_height, entry_height, entry_id, CommandMenuEntry, CommandMenuItem,
++    CommandMenuMeasurement, CommandMenuOptions, ICON_SIZE,
++};
++use crate::{
++    menu_layout::{place_menu, place_submenu, MIN_ITEM_HEIGHT},
++    shape::LayoutDirection,
++    vector_icon::chevron_contour,
++    Theme, VectorIcon,
++};
++
++/// A command, separator, or a row that opens a child menu.
++pub enum CommandMenuRow<'a, M> {
++    Entry(CommandMenuEntry<'a, M>),
++    Submenu(CommandMenuSubmenu<'a, M>),
++}
++
++/// One named child menu with flat command rows.
++pub struct CommandMenuSubmenu<'a, M> {
++    /// Stable ID of the row in the parent menu.
++    pub id: &'a str,
++    /// Stable ID of the child menu panel.
++    pub panel_id: &'a str,
++    /// Localized label of the parent row and its child menu.
++    pub label: &'a str,
++    pub leading_icon: Option<VectorIcon>,
++    pub preferred_width: f32,
++    pub entries: Vec<CommandMenuEntry<'a, M>>,
++    /// Measure with the panel ID and parent row ID on each animation frame.
++    pub measurement: &'a CommandMenuMeasurement,
++    /// The application sets `active_submenu` to this row ID.
++    pub on_open: M,
++    /// The application clears `active_submenu` and keeps the parent open.
++    pub on_close: M,
++}
++
++/// Options for a Baseline command menu with first-level submenus.
++pub struct CommandMenuWithSubmenusOptions<'a> {
++    pub menu: CommandMenuOptions<'a>,
++    /// The stable parent row ID of the one open child menu.
++    pub active_submenu: Option<&'a str>,
++}
++
++struct OpenSubmenu<M> {
++    panel: View<M>,
++    on_close: M,
++}
++
++impl Theme {
++    /// Build a Baseline menu with an optional child menu.
++    /// Down and Up stay within the current menu. The logical trailing arrow
++    /// opens a child, and the leading arrow or Escape returns to its row.
++    /// Tab and an outside click dismiss both menus through `on_dismiss`.
++    /// Command handlers decide when the application clears the open state.
++    pub fn command_menu_with_submenus<'a, M: Clone + 'static>(
++        &self,
++        options: CommandMenuWithSubmenusOptions<'_>,
++        trigger: View<M>,
++        rows: impl IntoIterator<Item = CommandMenuRow<'a, M>>,
++        on_dismiss: M,
++        measurement: &CommandMenuMeasurement,
++    ) -> View<M> {
++        let menu = options.menu;
++        let scope = command_menu_scope(menu.id);
++        let Some(anchor) = measurement.anchor().filter(|_| menu.open) else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let rows: Vec<_> = rows.into_iter().collect();
++        let Some(first) = rows.iter().find_map(|row| match row {
++            CommandMenuRow::Entry(entry) => entry_id(entry),
++            CommandMenuRow::Submenu(submenu) => Some(submenu.id),
++        }) else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let height = desired_height(
++            rows.iter().map(|row| match row {
++                CommandMenuRow::Entry(entry) => entry_height(entry),
++                CommandMenuRow::Submenu(_) => MIN_ITEM_HEIGHT,
++            }),
++            measurement,
++        );
++        let Some(layout) = place_menu(anchor, (menu.preferred_width, height), menu.direction)
++        else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let mut on_escape = None;
++        let mut panel_rows = Vec::with_capacity(rows.len() + 1);
++        for row in rows {
++            match row {
++                CommandMenuRow::Entry(entry) => {
++                    panel_rows.push(self.flat_command_menu_row(entry, menu.direction));
++                }
++                CommandMenuRow::Submenu(submenu) => {
++                    let open = on_escape.is_none() && options.active_submenu == Some(submenu.id);
++                    let (row, child) = self.submenu_row(submenu, menu.direction, open);
++                    panel_rows.push(row);
++                    if let Some(child) = child {
++                        panel_rows.push(child.panel);
++                        on_escape = Some(child.on_close);
++                    }
++                }
++            }
++        }
++        let panel = self.command_menu_panel(&menu, panel_rows, layout.bounds);
++        let scope = scope
++            .children([trigger.menu_expanded(true), panel])
++            .modal_overlay_descendants(on_dismiss)
++            .modal_initial_focus(first)
++            .modal_focus_fallback(menu.restore_focus_to.unwrap_or(menu.trigger_id))
++            .dismiss_modal_on_tab();
++        if let Some(on_close) = on_escape {
++            scope.modal_escape_with(on_close)
++        } else {
++            scope
++        }
++    }
++
++    fn submenu_row<M: Clone + 'static>(
++        &self,
++        submenu: CommandMenuSubmenu<'_, M>,
++        direction: LayoutDirection,
++        open: bool,
++    ) -> (View<M>, Option<OpenSubmenu<M>>) {
++        let height = desired_height(
++            submenu.entries.iter().map(entry_height),
++            submenu.measurement,
++        );
++        let bounds = submenu
++            .measurement
++            .anchor()
++            .and_then(|anchor| place_submenu(anchor, (submenu.preferred_width, height), direction));
++        let target = submenu.entries.iter().find_map(entry_id);
++        let available = target.zip(bounds);
++        let item = CommandMenuItem {
++            id: submenu.id,
++            label: submenu.label,
++            leading_icon: submenu.leading_icon,
++            trailing_icon: None,
++            disabled: available.is_none(),
++            on_press: submenu.on_open,
++        };
++        let row = self.command_menu_item_view(&item, direction, Some(open && available.is_some()));
++        let Some((first, bounds)) = available else {
++            return (row.focus_disabled_menu_item(), None);
++        };
++        let (open_key, close_key) = match direction {
++            LayoutDirection::LeftToRight => (EditKey::Right, EditKey::Left),
++            LayoutDirection::RightToLeft => (EditKey::Left, EditKey::Right),
++        };
++        let first = first.to_owned();
++        let open_message = item.on_press.clone();
++        let row = row
++            .on_press_then_focus(item.on_press, first.clone())
++            .accessible_activation()
++            .suppress_repeated_activation()
++            .cursor(CursorStyle::Pointer)
++            .on_focus_navigation(move |key| {
++                (key == open_key).then(|| FocusNavigation {
++                    target: first.clone(),
++                    message: open_message.clone(),
++                })
++            });
++        let child = open.then(|| {
++            let options = CommandMenuOptions {
++                id: submenu.panel_id,
++                label: submenu.label,
++                trigger_id: submenu.id,
++                open: true,
++                direction,
++                preferred_width: submenu.preferred_width,
++                restore_focus_to: None,
++            };
++            let rows = submenu.entries.into_iter().map(|entry| {
++                let is_item = entry_id(&entry).is_some();
++                let row = self.flat_command_menu_row(entry, direction);
++                if is_item {
++                    let return_to = submenu.id.to_owned();
++                    let close = submenu.on_close.clone();
++                    row.on_focus_navigation(move |key| {
++                        (key == close_key).then(|| FocusNavigation {
++                            target: return_to.clone(),
++                            message: close.clone(),
++                        })
++                    })
++                } else {
++                    row
++                }
++            });
++            let panel = self.command_menu_panel(&options, rows, bounds);
++            OpenSubmenu {
++                panel: panel.restore_focus_in_subtree_on_removal(submenu.id),
++                on_close: submenu.on_close,
++            }
++        });
++        (row, child)
++    }
++}
++
++pub(super) fn chevron<M>(id: &str, direction: LayoutDirection, ink: Color) -> View<M> {
++    let angle = match direction {
++        LayoutDirection::LeftToRight => -90.,
++        LayoutDirection::RightToLeft => 90.,
++    };
++    let size = Length::Px(ICON_SIZE);
++    View::new(
++        Node::new(Role::Group, "")
++            .id(format!("{id}-trailing"))
++            .styled(Style::column().width(size).height(size))
++            .fill_contour(chevron_contour(ICON_SIZE, angle, ink).expect("valid chevron")),
++    )
++    .without_interaction(None)
++}
+diff --git a/crates/surface-material/src/command_menu/vertical.rs b/crates/surface-material/src/command_menu/vertical.rs
+index a7a9b93..052eb44 100644
+--- a/crates/surface-material/src/command_menu/vertical.rs
++++ b/crates/surface-material/src/command_menu/vertical.rs
+@@ -480,11 +480,11 @@ impl Theme {
+             ))
+         } else {
+             item.leading_icon
+-                .map(|icon| icon_view(leading_id(), icon, icon_ink, ICON_SIZE))
++                .map(|icon| icon_view(leading_id(), &icon, icon_ink, ICON_SIZE))
+         };
+         let trailing = item
+             .trailing_icon
+-            .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink, ICON_SIZE));
++            .map(|icon| icon_view(format!("{}-trailing", item.id), &icon, icon_ink, ICON_SIZE));
+         let mut row = Node::new(Role::Group, "").styled(
+             Style::row()
+                 .width(Length::Px(0.))
+@@ -563,7 +563,7 @@ fn choice_leading<M>(id: String, icon: Option<VectorIcon>, checked: bool, ink: C
+         icon
+     };
+     if let Some(artwork) = artwork {
+-        return icon_view(id, artwork, ink, ICON_SIZE);
++        return icon_view(id, &artwork, ink, ICON_SIZE);
+     }
+     let edge = Length::Px(ICON_SIZE);
+     View::new(
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index b65d1d0..366221e 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -113,8 +113,9 @@ pub use checkbox::{CheckboxMotion, CheckboxOptions, CheckboxPose};
+ pub use chip::{ChipContent, ChipLeading, ChipOptions, ChipRemove, ChipStyle, ChipTrailing};
+ pub use chip_group::ChipGridLayout;
+ pub use command_menu::{
+-    CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
+-    VerticalChoiceMenuGroup, VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
++    CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, CommandMenuRow,
++    CommandMenuSubmenu, CommandMenuWithSubmenusOptions, VerticalChoiceMenuGroup,
++    VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
+ };
+ pub use components::{
+     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
+diff --git a/crates/surface-material/src/menu_layout.rs b/crates/surface-material/src/menu_layout.rs
+index 942c37b..107dd2e 100644
+--- a/crates/surface-material/src/menu_layout.rs
++++ b/crates/surface-material/src/menu_layout.rs
+@@ -141,6 +141,39 @@ pub fn place_menu(
+     })
+ }
+ 
++pub(super) fn place_submenu(
++    anchor: MenuAnchor,
++    preferred_size: (f32, f32),
++    direction: LayoutDirection,
++) -> Option<Rect> {
++    let fallback = place_menu(anchor, preferred_size, direction)?;
++    let safe = anchor.viewport.inset(VIEWPORT_INSET);
++    let trigger = anchor.trigger.intersect(anchor.viewport);
++    let right_start = trigger.x + trigger.width + ANCHOR_GAP;
++    let left_end = trigger.x - ANCHOR_GAP;
++    let right_room = safe.x + safe.width - right_start;
++    let left_room = left_end - safe.x;
++    let sides = match direction {
++        LayoutDirection::LeftToRight => [(true, right_room), (false, left_room)],
++        LayoutDirection::RightToLeft => [(false, left_room), (true, right_room)],
++    };
++    let width = preferred_size.0.clamp(MIN_WIDTH, MAX_WIDTH).min(safe.width);
++    let height = preferred_size.1.min(safe.height);
++    let last_y = (safe.y + safe.height - height).max(safe.y);
++    let y = trigger.y.clamp(safe.y, last_y);
++    let side = sides
++        .iter()
++        .find(|(_, room)| *room >= width)
++        .or_else(|| sides.iter().find(|(_, room)| *room >= MIN_WIDTH));
++    if let Some(&(right, room)) = side {
++        let width = width.min(room);
++        let x = if right { right_start } else { left_end - width };
++        Some(Rect::new(x, y, width, height))
++    } else {
++        Some(fallback.bounds)
++    }
++}
++
+ fn valid(rect: Rect) -> bool {
+     positive(rect.width)
+         && positive(rect.height)
+diff --git a/crates/surface-material/tests/command_menu.rs b/crates/surface-material/tests/command_menu.rs
+index bd7d02f..dea4b31 100644
+--- a/crates/surface-material/tests/command_menu.rs
++++ b/crates/surface-material/tests/command_menu.rs
+@@ -3,7 +3,7 @@ use surface_app::{AnimationFrame, AnimationUpdate, Application, EditKey, Event,
+ use surface_material::{
+     shape::{self, LayoutDirection},
+     ButtonKind, CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
+-    Theme, VectorIcon,
++    CommandMenuRow, CommandMenuSubmenu, CommandMenuWithSubmenusOptions, Theme, VectorIcon,
+ };
+ use surface_wgpu::TextSystem;
+ 
+@@ -14,6 +14,8 @@ enum Message {
+     Choose(u8),
+     Background,
+     HideTrigger,
++    OpenSubmenu,
++    CloseSubmenu,
+ }
+ 
+ struct Demo {
+@@ -24,9 +26,13 @@ struct Demo {
+     scale: f32,
+     wrapped: bool,
+     chosen: Option<u8>,
++    choices: usize,
+     dismissed: usize,
+     background: usize,
+     measurement: CommandMenuMeasurement,
++    with_submenu: bool,
++    submenu_open: bool,
++    submenu_measurement: CommandMenuMeasurement,
+ }
+ 
+ impl Default for Demo {
+@@ -39,9 +45,13 @@ impl Default for Demo {
+             scale: 1.,
+             wrapped: false,
+             chosen: None,
++            choices: 0,
+             dismissed: 0,
+             background: 0,
+             measurement: CommandMenuMeasurement::default(),
++            with_submenu: false,
++            submenu_open: false,
++            submenu_measurement: CommandMenuMeasurement::default(),
+         }
+     }
+ }
+@@ -54,17 +64,22 @@ impl Application for Demo {
+             Message::Toggle => self.open = !self.open,
+             Message::Dismiss => {
+                 self.open = false;
++                self.submenu_open = false;
+                 self.dismissed += 1;
+             }
+             Message::Choose(index) => {
+                 self.open = false;
++                self.submenu_open = false;
+                 self.chosen = Some(index);
++                self.choices += 1;
+             }
+             Message::Background => self.background += 1,
+             Message::HideTrigger => {
+                 self.hide = true;
+                 self.open = false;
+             }
++            Message::OpenSubmenu => self.submenu_open = true,
++            Message::CloseSubmenu => self.submenu_open = false,
+         }
+     }
+ 
+@@ -73,7 +88,15 @@ impl Application for Demo {
+     }
+ 
+     fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
+-        self.measurement.advance("commands", "trigger", &frame)
++        let mut update = self.measurement.advance("commands", "trigger", &frame);
++        if self.with_submenu {
++            let child = self
++                .submenu_measurement
++                .advance("export-menu", "export", &frame);
++            update.rebuild |= child.rebuild;
++            update.request_next |= child.request_next;
++        }
++        update
+     }
+ 
+     fn view(&self) -> View<Message> {
+@@ -124,6 +147,34 @@ impl Application for Demo {
+             restore_focus_to: Some("after"),
+         };
+         let menu = (!self.hide).then(|| {
++            if self.with_submenu {
++                return theme.command_menu_with_submenus(
++                    CommandMenuWithSubmenusOptions {
++                        menu: options,
++                        active_submenu: self.submenu_open.then_some("export"),
++                    },
++                    open_button,
++                    [
++                        CommandMenuRow::Entry(item("first", ordinary, icon(), icon(), false, 1)),
++                        CommandMenuRow::Submenu(CommandMenuSubmenu {
++                            id: "export",
++                            panel_id: "export-menu",
++                            label: "匯出",
++                            leading_icon: None,
++                            preferred_width: 170.,
++                            entries: vec![
++                                item("pdf", "PDF", None, None, false, 4),
++                                item("plain-text", "純文字", None, None, true, 5),
++                            ],
++                            measurement: &self.submenu_measurement,
++                            on_open: Message::OpenSubmenu,
++                            on_close: Message::CloseSubmenu,
++                        }),
++                    ],
++                    Message::Dismiss,
++                    &self.measurement,
++                );
++            }
+             theme.command_menu(
+                 options,
+                 open_button,
+@@ -360,6 +411,105 @@ fn menu_dismissal_restores_focus_or_continues_tab_and_never_clicks_through() {
+     assert_eq!(app.focused(), Some("after"));
+ }
+ 
++#[test]
++fn submenu_keys_and_escape_close_only_the_child_before_the_parent() {
++    for rtl in [false, true] {
++        let viewport = if rtl { (320., 420.) } else { (640., 600.) };
++        let mut app = Runtime::new(Demo {
++            rtl,
++            with_submenu: true,
++            ..Demo::default()
++        })
++        .unwrap();
++        open(&mut app, viewport);
++        assert_eq!(node(&app, "export").expanded_state(), Some(false));
++        assert!(node(&app, "export").has_menu_popup());
++        edit(&mut app, EditKey::Down);
++        assert_eq!(app.focused(), Some("export"));
++        let (open_key, close_key) = if rtl {
++            (EditKey::Left, EditKey::Right)
++        } else {
++            (EditKey::Right, EditKey::Left)
++        };
++        edit(&mut app, open_key);
++        settle(&mut app, viewport);
++        assert_eq!(app.focused(), Some("pdf"));
++        assert_eq!(node(&app, "export").expanded_state(), Some(true));
++        let child_id = app.dom().by_id("export-menu").unwrap();
++        let child = node(&app, "export-menu");
++        assert_eq!(child.role(), Role::Menu);
++        assert_eq!(child.name(), "匯出");
++        let command_rows = app.dom().by_id("commands-content").unwrap();
++        assert_eq!(child.parent(), Some(command_rows));
++        let child_bounds = bounds(&app, "export-menu");
++        let safe = Rect::new(8., 8., viewport.0 - 16., viewport.1 - 16.);
++        assert_eq!(child_bounds, child_bounds.intersect(safe));
++        if !rtl {
++            let trigger = bounds(&app, "export");
++            assert_eq!(child_bounds.x, trigger.x + trigger.width + 4.);
++        }
++        assert!(app.accessibility_frame().unwrap().node(child_id).is_some());
++        edit(&mut app, EditKey::Down);
++        assert_eq!(app.focused(), Some("plain-text"));
++        assert!(!app.dispatch(Event::Activate).unwrap());
++        assert_eq!(app.app().choices, 0);
++        edit(&mut app, close_key);
++        assert!(app.app().open);
++        assert!(!app.app().submenu_open);
++        assert_eq!(app.focused(), Some("export"));
++        app.dispatch(Event::Activate).unwrap();
++        assert_eq!(app.focused(), Some("pdf"));
++        app.dispatch(Event::Cancel).unwrap();
++        assert!(app.app().open);
++        assert_eq!(app.focused(), Some("export"));
++        app.dispatch(Event::Cancel).unwrap();
++        assert!(!app.app().open);
++        assert_eq!(app.focused(), Some("trigger"));
++    }
++}
++
++#[test]
++fn submenu_pointer_activation_and_dismissals_stay_inside_the_menu_scope() {
++    let viewport = (640., 600.);
++    let mut app = Runtime::new(Demo {
++        with_submenu: true,
++        ..Demo::default()
++    })
++    .unwrap();
++    open(&mut app, viewport);
++    let export_bounds = bounds(&app, "export");
++    click(&mut app, export_bounds);
++    assert_eq!(app.focused(), Some("pdf"));
++    settle(&mut app, viewport);
++    let disabled_bounds = bounds(&app, "plain-text");
++    click(&mut app, disabled_bounds);
++    assert!(app.app().submenu_open);
++    assert_eq!(app.app().choices, 0);
++    let child_bounds = bounds(&app, "pdf");
++    click(&mut app, child_bounds);
++    assert_eq!(app.app().chosen, Some(4));
++    assert_eq!(app.app().choices, 1);
++    assert_eq!(app.focused(), Some("trigger"));
++
++    open(&mut app, viewport);
++    click(&mut app, export_bounds);
++    settle(&mut app, viewport);
++    let outside = bounds(&app, "after");
++    click(&mut app, outside);
++    assert!(!app.app().open);
++    assert!(!app.app().submenu_open);
++    assert_eq!(app.app().dismissed, 1);
++    assert_eq!(app.app().background, 0);
++    assert_eq!(app.focused(), Some("trigger"));
++
++    open(&mut app, viewport);
++    click(&mut app, export_bounds);
++    tab(&mut app, false);
++    assert!(!app.app().open);
++    assert_eq!(app.app().dismissed, 2);
++    assert_eq!(app.focused(), Some("after"));
++}
++
+ #[test]
+ fn natural_content_size_responds_to_wrapping_and_constraints_without_losing_focus() {
+     let mut app = Runtime::new(Demo {
+diff --git a/crates/surface-platform/src/macos_accessibility.rs b/crates/surface-platform/src/macos_accessibility.rs
+index 7bbeeea..2421906 100644
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -565,6 +565,16 @@ mod tests {
+                             .text("Details"),
+                     )
+                     .disclosure_expanded(expanded),
++                    View::new(SurfaceNode::new(SurfaceRole::Menu, "Export choices")).children([
++                        View::new(
++                            SurfaceNode::new(SurfaceRole::MenuItem, "Export")
++                                .id("export")
++                                .text("Export")
++                                .submenu_expanded(expanded),
++                        )
++                        .on_press(*self)
++                        .accessible_activation(),
++                    ]),
+                 ]
+             });
+             let status = self.notice.map(|message| {
+@@ -2358,6 +2368,10 @@ mod tests {
+             let disclosure = named(&view, "Details").1;
+             assert_eq!(disclosure.is_expanded(), Some(open));
+             assert_eq!(disclosure.has_popup(), None);
++            let submenu = named(&view, "Export").1;
++            assert_eq!(submenu.role(), Role::MenuItem);
++            assert_eq!(submenu.is_expanded(), Some(open));
++            assert_eq!(submenu.has_popup(), Some(HasPopup::Menu));
+         }
+     }
+ 
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index 0c04545..f7908ac 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -935,15 +935,23 @@ impl Node {
+         self.disclosure = false;
+         self
+     }
+-    /// The open or closed state of a button, if declared.
++    /// Mark a menu item as the trigger for its child menu.
++    pub fn submenu_expanded(mut self, value: bool) -> Self {
++        if self.role == Role::MenuItem {
++            self.expanded = Some(value);
++            self.disclosure = false;
++        }
++        self
++    }
++    /// The authored expansion state of a button or submenu item.
+     pub fn expanded_state(&self) -> Option<bool> {
+-        if self.role == Role::Button {
++        if matches!(self.role, Role::Button | Role::MenuItem) {
+             self.expanded
+         } else {
+             None
+         }
+     }
+-    /// Whether this button opens a menu.
++    /// Whether this button or menu item opens a menu.
+     pub fn has_menu_popup(&self) -> bool {
+         !self.disclosure && self.expanded_state().is_some()
+     }
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 96e167e..76bffe4 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -269,8 +269,8 @@
+       "variant_review": "pending",
+       "desktop_evidence": "Headless Metal covers keyboard action, focus return, disabled commands, and scroll at 320 dp with 200% RTL text. The Baseline replay verified five PNGs. The vertical menu replay verified eight PNGs across two passes, including Standard in light, Vibrant in light, and Vibrant at both scroll positions in dark. Page.screenshot, CLI, and MCP produced matching PNG bytes. The choice-menu replay retained eight PNGs across Page.screenshot, CLI and MCP. It covers Standard, Vibrant and narrow dark RTL. https://github.com/faberline/surface/tree/30e48829f84afd381e4a7ee7f18d6bc3c3200750/docs/evidence/md3/vertical-choice-menu-v0176-corrected-runtime",
+       "web_evidence": "Chrome WebGPU M267–M269 cover Baseline semantics, keys, pointer input, and compact scrolling. M370–M372 cover two vertical palettes, named groups, a single action per click, focus on reopen, Tab, focus outside Surface, dark RTL overflow, and repositioning on resize. The six scoped steps passed 276 checks and verified six PNGs in headless Chrome. M373–M375 verify named radio and checkbox groups, a real disabled-row click that preserves focus and selection, independent toggles, and dark RTL at 200% text with rounded paint and Escape focus return. https://github.com/faberline/surface/tree/30e48829f84afd381e4a7ee7f18d6bc3c3200750/docs/evidence/md3/vertical-choice-menu-v0176-corrected-runtime",
+-      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Vertical menus also support named command, single-choice, and multiple-choice groups. Single choices expose radio-menu state. Multiple choices expose checkbox-menu state. The caller owns the values. Keyboard movement keeps values unchanged until activation. Disabled choices preserve their checked state and cannot send actions. Submenus, system high contrast, and live screen-reader speech remain open.",
+-      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection. Vertical menu tests cover both palettes, accessibility group order, pointer activation and focus return, and scrollbar geometry after resizing. Choice-menu tests cover named independent radio groups, retained focus and open state in multiple-choice groups, stable logical-leading checkmarks in both palettes, and disabled action rejection. Core tests verify that menu-radio metadata preserves the existing MenuItem role and serialization. macOS tests verify its separate accessibility role and action."
++      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Vertical menus also support named command, single-choice, and multiple-choice groups. Single choices expose radio-menu state. Multiple choices expose checkbox-menu state. The caller owns the values. Keyboard movement keeps values unchanged until activation. Disabled choices preserve their checked state and cannot send actions. Baseline command menus can open one child menu next to its parent row. Pointer and logical arrow activation move focus to the child. The opposite arrow and Escape return focus to the parent row. System high contrast and live screen-reader speech remain open.",
++      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection. Vertical menu tests cover both palettes, accessibility group order, pointer activation and focus return, and scrollbar geometry after resizing. Choice-menu tests cover named independent radio groups, retained focus and open state in multiple-choice groups, stable logical-leading checkmarks in both palettes, and disabled action rejection. Core tests verify that menu-radio metadata preserves the existing MenuItem role and serialization. macOS tests verify its separate accessibility role and action. Submenu tests cover the two arrow directions, disabled children, one pointer activation, Escape per layer, Tab, outside dismissal and popup expansion in macOS AccessKit."
+     },
+     {
+       "id": "radio-button",
+diff --git a/docs/material.md b/docs/material.md
+index 3223fd0..e38875c 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -147,6 +147,7 @@ does not change application state.
+ | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
+ | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
+ | `command_menu` | Baseline M3 commands anchored to a caller's button, with grouped rows, keyboard focus, and scrolling |
++| `command_menu_with_submenus` | Baseline command menu with first-level child menus |
+ | `vertical_choice_menu` | Expressive Standard and Vibrant menus with named single-choice or multiple-choice groups |
+ | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+ | `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
+@@ -197,7 +198,7 @@ does not change application state.
+ | `basic_dialog` / `basic_dialog_with_motion` | Measured Basic or alert dialog with a scrolling body, fixed actions, focus management and optional fade |
+ | `full_screen_dialog` / `full_screen_dialog_with_motion` | Full viewport dialog with a fixed Close and Save header, scrolling body and optional transform from a floating action button |
+ | `menu_at` / `menu_item` | Viewport popup, vertical keyboard navigation, disabled skip and dismiss |
+-| `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state; no submenus or checkmark yet |
++| `menu_item_with` | Menu item with optional leading glyph, trailing text, selected and disabled state |
+ | `divider` | One-pixel semantic separator |
+ | `decorative_divider` / `decorative_divider_with_weight` | Full, leading-inset, middle-inset and vertical Material lines. Regular is 1 dp. Heavy is 8 dp. Both use `outline_variant`. |
+ | `divider_with` / `vertical_divider` | Earlier named semantic separators. |
+@@ -1957,6 +1958,26 @@ with right-to-left layout and large text.
+ [Material 3 Menu specifications](https://m3.material.io/components/menus/specs) ·
+ [WAI menu keyboard guidance](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/#keyboard-interaction)
+ 
++### Baseline submenus
++
++Use `Theme::command_menu_with_submenus` for rows that open a child menu.
++Pass regular commands and separators as `CommandMenuRow::Entry` values.
++Give each `CommandMenuSubmenu` a stable row ID, a stable panel ID, and a
++localized name. Put commands and separators in the child panel.
++
++Measure each child with `advance(panel_id, row_id, &frame)`. Run that
++measurement while the parent menu is open so the submenu can open next
++to its visible row. Combine its `AnimationUpdate` with the parent update.
++Set `active_submenu` to the row ID on the open message. Clear it on the
++child's close message. Clear both open states on dismissal.
++
++Click a submenu row or press Enter to focus its first command. In a
++left-to-right menu, Right Arrow opens the child and Left Arrow closes it.
++A right-to-left menu mirrors these arrows. Escape closes the child and
++returns focus to its row. A second Escape closes the parent. Tab and
++outside clicks dismiss the whole menu.
++[WAI menu and submenu guidance](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/)
++
+ ### Vertical Expressive command menus
+ 
+ Use `Theme::vertical_command_menu` with the same button, options, and
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index fbee07f..4486a46 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -26,6 +26,8 @@ mod material_chips;
+ mod material_choice_menu;
+ #[path = "material_command_menu.rs"]
+ mod material_command_menu;
++#[path = "material_command_menu_submenus.rs"]
++mod material_command_menu_submenus;
+ #[path = "material_date_picker.rs"]
+ mod material_date_picker;
+ #[path = "material_date_picker_gestures.rs"]
+@@ -187,7 +189,7 @@ pub const STEPS: &[&str] = &[
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+-    "M371", "M372", "M373", "M374", "M375",
++    "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -333,7 +335,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_horizontal_navigation_bar::run(env, chrome, &url).await?;
+     material_adaptive_navigation_scaffold::run(env, chrome, &url).await?;
+     material_command_menu::run_vertical(env, chrome, &url).await?;
+-    material_choice_menu::run(env, chrome, &url).await
++    material_choice_menu::run(env, chrome, &url).await?;
++    material_command_menu_submenus::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -594,6 +597,7 @@ mod tests {
+         let adaptive_navigation = super::material_adaptive_navigation_scaffold::STEPS;
+         let vertical_menu = super::material_command_menu::VERTICAL_STEPS;
+         let choice_menu = super::material_choice_menu::STEPS;
++        let submenu_menu = super::material_command_menu_submenus::STEPS;
+         assert!(super::STEPS.ends_with(
+             &[
+                 placeholder.as_slice(),
+@@ -604,6 +608,7 @@ mod tests {
+                 adaptive_navigation.as_slice(),
+                 vertical_menu.as_slice(),
+                 choice_menu.as_slice(),
++                submenu_menu.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_command_menu_submenus.rs b/e2e/src/material_command_menu_submenus.rs
+new file mode 100644
+index 0000000..12d55d5
+--- /dev/null
++++ b/e2e/src/material_command_menu_submenus.rs
+@@ -0,0 +1,436 @@
++//! One-level Baseline command submenu coverage.
++
++use anyhow::{bail, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, projected,
++    resize,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const SHOW: &str = "menu-demo-submenus-show";
++const BACK: &str = "menu-demo-back";
++const OPENER: &str = "menu-demo-opener";
++const MENU: &str = "menu-demo-panel";
++const SUBMENU: &str = "menu-demo-export-panel";
++const SUBMENU_ROW: &str = "menu-demo-export";
++const PDF: &str = "menu-demo-export-pdf";
++const DISABLED: &str = "menu-demo-export-csv";
++const OUTSIDE: &str = "menu-demo-list";
++
++pub(super) const STEPS: [&str; 4] = ["M376", "M377", "M378", "M379"];
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 2040).await?;
++    activate(tab, "section-2").await?;
++    until(tab, "s.section === 2").await?;
++    activate(tab, SHOW).await?;
++    until(tab, "s.menu_demo.submenus").await?;
++    focused(tab, BACK).await?;
++    resize(tab, 960, 800).await
++}
++
++async fn open(tab: &Tab) -> Result<()> {
++    focus_projected(tab, OPENER).await?;
++    tab.press("Enter").await?;
++    until(tab, "s.menu_demo.open").await?;
++    focused(tab, SUBMENU_ROW).await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-haspopup') === 'menu'",
++        projected(SUBMENU_ROW)
++    ))
++    .await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-disabled') !== 'true'",
++        projected(SUBMENU_ROW)
++    ))
++    .await
++}
++
++async fn open_child(tab: &Tab, key: &str) -> Result<()> {
++    tab.press(key).await?;
++    until(tab, "s.menu_demo.active_submenu === 'menu-demo-export'").await?;
++    focused(tab, PDF).await?;
++    Ok(())
++}
++
++async fn focused_from_pointer(tab: &Tab, id: &str) -> Result<Value> {
++    until(tab, &format!("s.focused === {}", json!(id))).await?;
++    let element = projected(id);
++    let canvas_active = "document.activeElement === document.querySelector('canvas')";
++    let projected_active = format!("{element} !== null && document.activeElement === {element}");
++    tab.wait_for(&format!("({projected_active}) || {canvas_active}"))
++        .await?;
++    tab.settle().await?;
++    let active = tab
++        .eval(&format!(
++            "{canvas_active} ? 'canvas' : (({projected_active}) ? 'projected' : null)"
++        ))
++        .await?;
++    check!(
++        active.is_string(),
++        "pointer focus remains in Surface for {id}"
++    );
++    check_eq!(
++        state(tab).await?["focused"],
++        id,
++        "runtime focus stays on {id}"
++    );
++    Ok(active)
++}
++
++async fn screenshot_witness(tab: &Tab) -> Result<Value> {
++    Ok(json!({
++        "menu": bounds(tab, MENU).await?,
++        "submenu": bounds(tab, SUBMENU).await?,
++        "first": bounds(tab, PDF).await?,
++        "canvas": tab.canvas_box().await?,
++        "device_pixel_ratio": tab.eval("window.devicePixelRatio").await?,
++        "surface": state(tab).await?["menu_demo"]["baseline_surface"],
++    }))
++}
++
++async fn outside_point(tab: &Tab) -> Result<(f64, f64)> {
++    let list = bounds(tab, OUTSIDE).await?;
++    let menu = bounds(tab, MENU).await?;
++    let child = bounds(tab, SUBMENU).await?;
++    let [left, top, _, _] = tab.canvas_box().await?;
++    for fraction in [0.5, 0.1, 0.9] {
++        let x = left + list[0] + list[2] * fraction;
++        let y = top + list[1] + list[3] * 0.5;
++        let point = [x - left, y - top, 0., 0.];
++        let inside = [menu, child].into_iter().any(|panel| {
++            point[0] >= panel[0]
++                && point[0] < panel[0] + panel[2]
++                && point[1] >= panel[1]
++                && point[1] < panel[1] + panel[3]
++        });
++        if !inside {
++            return Ok((x, y));
++        }
++    }
++    bail!("the list has no tested point outside both menu panels")
++}
++
++async fn journey(env: &Env, tab: &Tab) -> Result<Value> {
++    step(
++        "M376",
++        "keyboard opens a named child and Chrome exposes its state",
++    );
++    open(tab).await?;
++    let tree = ax_tree(tab).await?;
++    let parent = ax(&tree, "menuitem", "匯出選項")?;
++    check_eq!(
++        ax_property(parent, "hasPopup"),
++        Some(&json!("menu")),
++        "Chrome identifies the submenu row as a menu disclosure"
++    );
++    check_eq!(
++        ax_property(parent, "expanded"),
++        Some(&json!(false)),
++        "Chrome sees the closed child menu"
++    );
++    check!(
++        ax(&tree, "menu", "檔案動作").is_ok(),
++        "parent menu is named"
++    );
++    check!(
++        ax(&tree, "menu", "匯出選項").is_err(),
++        "child starts closed"
++    );
++
++    open_child(tab, "ArrowRight").await?;
++    let tree = ax_tree(tab).await?;
++    let parent = ax(&tree, "menuitem", "匯出選項")?;
++    check_eq!(
++        ax_property(parent, "expanded"),
++        Some(&json!(true)),
++        "Chrome sees the child open"
++    );
++    let child_menu = ax(&tree, "menu", "匯出選項")?;
++    check_eq!(
++        parent["parentId"],
++        child_menu["parentId"],
++        "the parent row and child menu are siblings in Chrome's accessibility tree"
++    );
++    ax(&tree, "menuitem", "匯出 PDF")?;
++    let disabled = ax(&tree, "menuitem", "匯出 CSV（無法使用）")?;
++    check_eq!(
++        ax_property(disabled, "disabled"),
++        Some(&json!(true)),
++        "the child action exposes its disabled state"
++    );
++    let mut report = screenshot_witness(tab).await?;
++    tab.screenshot(&env.artifact("material-command-menu-submenu.png"))
++        .await?;
++    report["parent"] = json!(parent);
++    report["child_items"] = json!(2);
++    report["keyboard"] = json!("ArrowRight");
++    Ok(report)
++}
++
++async fn pointer(tab: &Tab) -> Result<Value> {
++    step(
++        "M377",
++        "pointer opens the child and activates one enabled action once",
++    );
++    tab.press("Escape").await?;
++    until(
++        tab,
++        "s.menu_demo.open && s.menu_demo.active_submenu === null",
++    )
++    .await?;
++    focused(tab, SUBMENU_ROW).await?;
++    tab.press("Escape").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OPENER).await?;
++
++    open(tab).await?;
++    let [x, y, width, height] = bounds(tab, SUBMENU_ROW).await?;
++    let [left, top, _, _] = tab.canvas_box().await?;
++    tab.click(left + x + width * 0.5, top + y + height * 0.5)
++        .await?;
++    until(tab, "s.menu_demo.active_submenu === 'menu-demo-export'").await?;
++    let pointer_open_focus = focused_from_pointer(tab, PDF).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-expanded')",
++            projected(SUBMENU_ROW)
++        ))
++        .await?,
++        "true",
++        "the projected submenu row reports pointer opening"
++    );
++
++    let parent_panel = bounds(tab, MENU).await?;
++    let child_panel = bounds(tab, SUBMENU).await?;
++    let pdf = bounds(tab, PDF).await?;
++    let click_x = left + pdf[0] + pdf[2] * 0.5;
++    let click_y = top + pdf[1] + pdf[3] * 0.5;
++    check!(
++        click_x - left < parent_panel[0]
++            || click_x - left >= parent_panel[0] + parent_panel[2]
++            || click_y - top < parent_panel[1]
++            || click_y - top >= parent_panel[1] + parent_panel[3],
++        "the child action point is outside the parent panel box"
++    );
++    check!(
++        child_panel[0] + child_panel[2] <= parent_panel[0]
++            || child_panel[0] >= parent_panel[0] + parent_panel[2]
++            || child_panel[1] + child_panel[3] <= parent_panel[1]
++            || child_panel[1] >= parent_panel[1] + parent_panel[3],
++        "child panel extends beyond the parent panel bounds"
++    );
++
++    let before = state(tab).await?["menu_demo"]["commands_executed"]
++        .as_u64()
++        .unwrap_or(0);
++    let disabled = bounds(tab, DISABLED).await?;
++    tab.click(
++        left + disabled[0] + disabled[2] * 0.5,
++        top + disabled[1] + disabled[3] * 0.5,
++    )
++    .await?;
++    until(
++        tab,
++        "s.menu_demo.open && s.menu_demo.active_submenu === 'menu-demo-export'",
++    )
++    .await?;
++    check_eq!(
++        state(tab).await?["menu_demo"]["commands_executed"],
++        json!(before),
++        "the disabled child does not run"
++    );
++
++    tab.press("ArrowDown").await?;
++    let pointer_disabled_focus = focused_from_pointer(tab, DISABLED).await?;
++    tab.press("ArrowLeft").await?;
++    until(
++        tab,
++        "s.menu_demo.open && s.menu_demo.active_submenu === null",
++    )
++    .await?;
++    let pointer_return_focus = focused_from_pointer(tab, SUBMENU_ROW).await?;
++
++    let [x, y, width, height] = bounds(tab, SUBMENU_ROW).await?;
++    tab.click(left + x + width * 0.5, top + y + height * 0.5)
++        .await?;
++    until(tab, "s.menu_demo.active_submenu === 'menu-demo-export'").await?;
++    let pointer_reopen_focus = focused_from_pointer(tab, PDF).await?;
++
++    let parent_panel = bounds(tab, MENU).await?;
++    let pdf = bounds(tab, PDF).await?;
++    let click_x = left + pdf[0] + pdf[2] * 0.5;
++    let click_y = top + pdf[1] + pdf[3] * 0.5;
++    check!(
++        click_x - left < parent_panel[0]
++            || click_x - left >= parent_panel[0] + parent_panel[2]
++            || click_y - top < parent_panel[1]
++            || click_y - top >= parent_panel[1] + parent_panel[3],
++        "the trusted child action click is outside the parent panel box"
++    );
++    tab.click(click_x, click_y).await?;
++    until(
++        tab,
++        "!s.menu_demo.open && s.menu_demo.commands_executed === 1 && s.menu_demo.submenu_exported",
++    )
++    .await?;
++    let pointer_dismiss_focus = focused_from_pointer(tab, OPENER).await?;
++    check_eq!(
++        state(tab).await?["menu_demo"]["active_submenu"],
++        Value::Null,
++        "selection clears the submenu owner state"
++    );
++    Ok(
++        json!({"disabled_actions":0,"export_actions":1,"pointer_focus":{
++            "open":pointer_open_focus,"disabled":pointer_disabled_focus,"return":pointer_return_focus,
++            "reopen":pointer_reopen_focus,"dismiss":pointer_dismiss_focus,
++        }}),
++    )
++}
++
++async fn dismissal(tab: &Tab) -> Result<Value> {
++    step(
++        "M378",
++        "Escape closes one layer, Tab exits, and outside clicks do not pass through",
++    );
++    open(tab).await?;
++    open_child(tab, "ArrowRight").await?;
++    tab.press("Escape").await?;
++    until(
++        tab,
++        "s.menu_demo.open && s.menu_demo.active_submenu === null",
++    )
++    .await?;
++    focused(tab, SUBMENU_ROW).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-expanded')",
++            projected(SUBMENU_ROW)
++        ))
++        .await?,
++        "false",
++        "the parent row reports the child as closed"
++    );
++    tab.press("Escape").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OPENER).await?;
++
++    open(tab).await?;
++    open_child(tab, "ArrowRight").await?;
++    tab.press("Tab").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OUTSIDE).await?;
++
++    open(tab).await?;
++    open_child(tab, "ArrowRight").await?;
++    let (x, y) = outside_point(tab).await?;
++    tab.click(x, y).await?;
++    until(
++        tab,
++        "!s.menu_demo.open && s.menu_demo.outside_actions === 0",
++    )
++    .await?;
++    let outside_focus = focused_from_pointer(tab, OPENER).await?;
++    check_eq!(
++        state(tab).await?["menu_demo"]["active_submenu"],
++        Value::Null,
++        "outside dismissal clears the submenu owner state"
++    );
++    Ok(
++        json!({"escape_layers":2,"tab_target":OUTSIDE,"outside_action":0,
++        "outside_focus":outside_focus}),
++    )
++}
++
++async fn compact_dark_rtl(env: &Env, tab: &Tab) -> Result<Value> {
++    step(
++        "M379",
++        "dark RTL submenu opens on its logical trailing side at narrow width",
++    );
++    activate(tab, "menu-demo-theme").await?;
++    activate(tab, "menu-demo-rtl").await?;
++    until(tab, "s.dark && s.menu_demo.rtl").await?;
++    resize(tab, 320, 480).await?;
++    open(tab).await?;
++    open_child(tab, "ArrowLeft").await?;
++
++    let menu = bounds(tab, MENU).await?;
++    let child = bounds(tab, SUBMENU).await?;
++    check!(
++        contains([8., 8., 304., 464.], menu) && contains([8., 8., 304., 464.], child),
++        "both dark RTL panels fit the narrow safe viewport"
++    );
++    let tree = ax_tree(tab).await?;
++    let parent = ax(&tree, "menuitem", "匯出選項")?;
++    check_eq!(
++        ax_property(parent, "expanded"),
++        Some(&json!(true)),
++        "Chrome retains the expanded submenu state in RTL"
++    );
++    tab.press("ArrowRight").await?;
++    until(
++        tab,
++        "s.menu_demo.open && s.menu_demo.active_submenu === null",
++    )
++    .await?;
++    focused(tab, SUBMENU_ROW).await?;
++    open_child(tab, "ArrowLeft").await?;
++    let menu = bounds(tab, MENU).await?;
++    let child = bounds(tab, SUBMENU).await?;
++    check!(
++        contains([8., 8., 304., 464.], menu) && contains([8., 8., 304., 464.], child),
++        "both dark RTL panels fit the narrow safe viewport"
++    );
++    let mut report = screenshot_witness(tab).await?;
++    tab.screenshot(&env.artifact("material-command-menu-submenu-dark-rtl.png"))
++        .await?;
++    let count = state(tab).await?["menu_demo"]["commands_executed"]
++        .as_u64()
++        .unwrap_or(0);
++    tab.press("Enter").await?;
++    until(
++        tab,
++        &format!(
++            "!s.menu_demo.open && s.menu_demo.commands_executed === {}",
++            count + 1
++        ),
++    )
++    .await?;
++    report["viewport"] = json!([320, 480]);
++    report["dark"] = json!(true);
++    report["rtl"] = json!(true);
++    Ok(report)
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(1100, 1100, 2.0).await?;
++    route(&tab, url).await?;
++    let keyboard = journey(env, &tab).await?;
++    let pointer = pointer(&tab).await?;
++    let dismissal = dismissal(&tab).await?;
++    let compact = compact_dark_rtl(env, &tab).await?;
++    let report = json!({
++        "browser": chrome.version,
++        "steps": STEPS,
++        "keyboard": keyboard,
++        "pointer": pointer,
++        "dismissal": dismissal,
++        "compact": compact,
++        "state": state(&tab).await?["menu_demo"],
++        "errors": tab.errors(),
++    });
++    check!(
++        report["errors"].as_array().is_some_and(Vec::is_empty),
++        "browser errors: {}",
++        report["errors"]
++    );
++    env.write_json("browser-material-command-menu-submenus.json", &report)?;
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 110a5bc..aeb6f0f 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1911,6 +1911,7 @@ impl Application for Gallery {
+                 children.push(MenuDemo::show_button(&t));
+                 children.push(MenuDemo::show_vertical_button(&t));
+                 children.push(MenuDemo::show_choices_button(&t));
++                children.push(MenuDemo::show_submenus_button(&t));
+             }
+             _ => {
+                 children.push(CardDemo::show_button(&t));
+diff --git a/examples/material-gallery/src/menu_demo.rs b/examples/material-gallery/src/menu_demo.rs
+index 847b657..9807d43 100644
+--- a/examples/material-gallery/src/menu_demo.rs
++++ b/examples/material-gallery/src/menu_demo.rs
+@@ -4,8 +4,8 @@ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::{AnimationFrame, AnimationUpdate, View};
+ use surface_material::{
+     shape::LayoutDirection, ButtonKind, ChoiceState, CommandMenuEntry, CommandMenuItem,
+-    CommandMenuMeasurement, CommandMenuOptions, Theme, VerticalCommandMenuGroup,
+-    VerticalMenuPalette,
++    CommandMenuMeasurement, CommandMenuOptions, CommandMenuRow, CommandMenuSubmenu,
++    CommandMenuWithSubmenusOptions, Theme, VerticalCommandMenuGroup, VerticalMenuPalette,
+ };
+ 
+ use crate::{
+@@ -19,9 +19,12 @@ pub(crate) const SECTION: usize = 2;
+ const SHOW: &str = "menu-demo-show";
+ const SHOW_VERTICAL: &str = "menu-demo-vertical-show";
+ const SHOW_CHOICES: &str = "menu-demo-choice-show";
++const SHOW_SUBMENUS: &str = "menu-demo-submenus-show";
+ const BACK: &str = "menu-demo-back";
+ const OPENER: &str = "menu-demo-opener";
+ const MENU: &str = "menu-demo-panel";
++const SUBMENU: &str = "menu-demo-export-panel";
++const SUBMENU_ROW: &str = "menu-demo-export";
+ const BOTTOM_BODY: &str = "menu-demo-preview-scroll";
+ const FOOTER_CLEARANCE: f32 = 8.;
+ 
+@@ -30,6 +33,7 @@ pub enum MenuDemoEvent {
+     Show,
+     ShowVertical,
+     ShowChoices,
++    ShowSubmenus,
+     Back,
+     ToggleDirection,
+     ToggleLargeText,
+@@ -41,6 +45,8 @@ pub enum MenuDemoEvent {
+     Choose(&'static str),
+     ChangeChoice(choices::MenuChoice),
+     OpenList,
++    OpenExport,
++    CloseExport,
+ }
+ 
+ #[derive(Default, PartialEq, Eq)]
+@@ -50,11 +56,14 @@ enum MenuPreview {
+     Commands,
+     Vertical,
+     Choices,
++    Submenus,
+ }
+ 
+ #[derive(Default)]
+ pub(crate) struct MenuDemo {
+     measurement: CommandMenuMeasurement,
++    submenu_measurement: CommandMenuMeasurement,
++    active_submenu: Option<&'static str>,
+     preview: MenuPreview,
+     choices: MenuChoices,
+     open: bool,
+@@ -77,6 +86,8 @@ impl MenuDemo {
+         self.preview = MenuPreview::Hidden;
+         self.open = false;
+         self.measurement = CommandMenuMeasurement::default();
++        self.submenu_measurement = CommandMenuMeasurement::default();
++        self.active_submenu = None;
+     }
+ 
+     pub(crate) fn text_scale(&self) -> f32 {
+@@ -93,6 +104,7 @@ impl MenuDemo {
+             Show => self.show(MenuPreview::Commands),
+             ShowVertical => self.show(MenuPreview::Vertical),
+             ShowChoices => self.show(MenuPreview::Choices),
++            ShowSubmenus => self.show(MenuPreview::Submenus),
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+@@ -100,11 +112,15 @@ impl MenuDemo {
+             ToggleGroups => self.grouped = !self.grouped,
+             ToggleVibrant => self.vibrant = !self.vibrant,
+             ToggleOpen => self.open = !self.open,
+-            Dismiss => self.open = false,
++            Dismiss => {
++                self.open = false;
++                self.active_submenu = None;
++            }
+             Choose(label) => {
+                 self.last = Some(label);
+                 self.commands_executed += 1;
+                 self.open = false;
++                self.active_submenu = None;
+             }
+             ChangeChoice(choice) => {
+                 if self.choices.change(choice) {
+@@ -112,11 +128,16 @@ impl MenuDemo {
+                 }
+             }
+             OpenList => self.outside_actions += 1,
++            OpenExport => self.active_submenu = Some(SUBMENU_ROW),
++            CloseExport => self.active_submenu = None,
+         }
+     }
+ 
+     fn show(&mut self, preview: MenuPreview) {
+         self.grouped = preview == MenuPreview::Vertical;
++        self.open = false;
++        self.active_submenu = None;
++        self.submenu_measurement = CommandMenuMeasurement::default();
+         self.preview = preview;
+     }
+ 
+@@ -125,6 +146,13 @@ impl MenuDemo {
+             return AnimationUpdate::default();
+         }
+         let mut update = self.measurement.advance(MENU, OPENER, frame);
++        if self.preview == MenuPreview::Submenus {
++            let submenu = self
++                .submenu_measurement
++                .advance(SUBMENU, SUBMENU_ROW, frame);
++            update.rebuild |= submenu.rebuild;
++            update.request_next |= submenu.request_next;
++        }
+         if self.open && frame.layout.is_some() && self.measurement.anchor().is_none() {
+             self.open = false;
+             update.rebuild = true;
+@@ -171,6 +199,19 @@ impl MenuDemo {
+             .accessible_activation()
+     }
+ 
++    pub(crate) fn show_submenus_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW_SUBMENUS,
++                "含子選單的命令",
++                ButtonKind::Outlined,
++                false,
++                Message::MenuDemo(MenuDemoEvent::ShowSubmenus),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
+     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+         use MenuDemoEvent::*;
+         let direction = if self.rtl {
+@@ -244,7 +285,38 @@ impl MenuDemo {
+         } else {
+             VerticalMenuPalette::Standard
+         };
+-        let menu = if self.preview == MenuPreview::Choices {
++        let menu = if self.preview == MenuPreview::Submenus {
++            let child_entries = vec![
++                CommandMenuEntry::Item(item("menu-demo-export-pdf", "匯出 PDF", None, None, false)),
++                CommandMenuEntry::Item(item(
++                    "menu-demo-export-csv",
++                    "匯出 CSV（無法使用）",
++                    None,
++                    None,
++                    true,
++                )),
++            ];
++            theme.command_menu_with_submenus(
++                CommandMenuWithSubmenusOptions {
++                    menu: options,
++                    active_submenu: self.active_submenu,
++                },
++                trigger,
++                [CommandMenuRow::Submenu(CommandMenuSubmenu {
++                    id: SUBMENU_ROW,
++                    panel_id: SUBMENU,
++                    label: "匯出選項",
++                    leading_icon: Some(Destination::Archive.icon().clone()),
++                    preferred_width: 208.,
++                    entries: child_entries,
++                    measurement: &self.submenu_measurement,
++                    on_open: Message::MenuDemo(OpenExport),
++                    on_close: Message::MenuDemo(CloseExport),
++                })],
++                Message::MenuDemo(Dismiss),
++                &self.measurement,
++            )
++        } else if self.preview == MenuPreview::Choices {
+             self.choices
+                 .menu(theme, options, palette, trigger, &self.measurement)
+         } else if self.preview == MenuPreview::Vertical {
+@@ -321,6 +393,7 @@ impl MenuDemo {
+                 .restore_focus_on_removal(match self.preview {
+                     MenuPreview::Vertical => SHOW_VERTICAL,
+                     MenuPreview::Choices => SHOW_CHOICES,
++                    MenuPreview::Submenus => SHOW_SUBMENUS,
+                     _ => SHOW,
+                 })
+                 .accessible_activation(),
+@@ -371,6 +444,7 @@ impl MenuDemo {
+                 match self.preview {
+                     MenuPreview::Vertical => "直向分組選單",
+                     MenuPreview::Choices => "選取清單選項",
++                    MenuPreview::Submenus => "匯出子選單",
+                     _ => "命令選單",
+                 },
+             ),
+@@ -446,6 +520,10 @@ impl MenuDemo {
+             "outside_actions": self.outside_actions,
+             "choice": (self.preview == MenuPreview::Choices)
+                 .then(|| self.choices.inspect(theme, self.vibrant)),
++            "submenus": self.preview == MenuPreview::Submenus,
++            "active_submenu": self.active_submenu,
++            "submenu_exported": self.last == Some("匯出 PDF"),
++            "baseline_surface": theme.colors.surface_container,
+         })
+     }
+ }

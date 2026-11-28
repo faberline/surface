@@ -1,0 +1,129 @@
+diff --git a/e2e/src/material_command_menu_submenus.rs b/e2e/src/material_command_menu_submenus.rs
+index 79647ab..12d55d5 100644
+--- a/e2e/src/material_command_menu_submenus.rs
++++ b/e2e/src/material_command_menu_submenus.rs
+@@ -60,6 +60,31 @@ async fn open_child(tab: &Tab, key: &str) -> Result<()> {
+     Ok(())
+ }
+ 
++async fn focused_from_pointer(tab: &Tab, id: &str) -> Result<Value> {
++    until(tab, &format!("s.focused === {}", json!(id))).await?;
++    let element = projected(id);
++    let canvas_active = "document.activeElement === document.querySelector('canvas')";
++    let projected_active = format!("{element} !== null && document.activeElement === {element}");
++    tab.wait_for(&format!("({projected_active}) || {canvas_active}"))
++        .await?;
++    tab.settle().await?;
++    let active = tab
++        .eval(&format!(
++            "{canvas_active} ? 'canvas' : (({projected_active}) ? 'projected' : null)"
++        ))
++        .await?;
++    check!(
++        active.is_string(),
++        "pointer focus remains in Surface for {id}"
++    );
++    check_eq!(
++        state(tab).await?["focused"],
++        id,
++        "runtime focus stays on {id}"
++    );
++    Ok(active)
++}
++
+ async fn screenshot_witness(tab: &Tab) -> Result<Value> {
+     Ok(json!({
+         "menu": bounds(tab, MENU).await?,
+@@ -161,8 +186,10 @@ async fn pointer(tab: &Tab) -> Result<Value> {
+         "s.menu_demo.open && s.menu_demo.active_submenu === null",
+     )
+     .await?;
++    focused(tab, SUBMENU_ROW).await?;
+     tab.press("Escape").await?;
+     until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OPENER).await?;
+ 
+     open(tab).await?;
+     let [x, y, width, height] = bounds(tab, SUBMENU_ROW).await?;
+@@ -170,7 +197,16 @@ async fn pointer(tab: &Tab) -> Result<Value> {
+     tab.click(left + x + width * 0.5, top + y + height * 0.5)
+         .await?;
+     until(tab, "s.menu_demo.active_submenu === 'menu-demo-export'").await?;
+-    focused(tab, PDF).await?;
++    let pointer_open_focus = focused_from_pointer(tab, PDF).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-expanded')",
++            projected(SUBMENU_ROW)
++        ))
++        .await?,
++        "true",
++        "the projected submenu row reports pointer opening"
++    );
+ 
+     let parent_panel = bounds(tab, MENU).await?;
+     let child_panel = bounds(tab, SUBMENU).await?;
+@@ -213,21 +249,20 @@ async fn pointer(tab: &Tab) -> Result<Value> {
+     );
+ 
+     tab.press("ArrowDown").await?;
+-    until(tab, "s.focused === 'menu-demo-export-csv'").await?;
+-    focused(tab, DISABLED).await?;
++    let pointer_disabled_focus = focused_from_pointer(tab, DISABLED).await?;
+     tab.press("ArrowLeft").await?;
+     until(
+         tab,
+         "s.menu_demo.open && s.menu_demo.active_submenu === null",
+     )
+     .await?;
+-    focused(tab, SUBMENU_ROW).await?;
++    let pointer_return_focus = focused_from_pointer(tab, SUBMENU_ROW).await?;
+ 
+     let [x, y, width, height] = bounds(tab, SUBMENU_ROW).await?;
+     tab.click(left + x + width * 0.5, top + y + height * 0.5)
+         .await?;
+     until(tab, "s.menu_demo.active_submenu === 'menu-demo-export'").await?;
+-    focused(tab, PDF).await?;
++    let pointer_reopen_focus = focused_from_pointer(tab, PDF).await?;
+ 
+     let parent_panel = bounds(tab, MENU).await?;
+     let pdf = bounds(tab, PDF).await?;
+@@ -246,12 +281,18 @@ async fn pointer(tab: &Tab) -> Result<Value> {
+         "!s.menu_demo.open && s.menu_demo.commands_executed === 1 && s.menu_demo.submenu_exported",
+     )
+     .await?;
++    let pointer_dismiss_focus = focused_from_pointer(tab, OPENER).await?;
+     check_eq!(
+         state(tab).await?["menu_demo"]["active_submenu"],
+         Value::Null,
+         "selection clears the submenu owner state"
+     );
+-    Ok(json!({"disabled_actions":0,"export_actions":1}))
++    Ok(
++        json!({"disabled_actions":0,"export_actions":1,"pointer_focus":{
++            "open":pointer_open_focus,"disabled":pointer_disabled_focus,"return":pointer_return_focus,
++            "reopen":pointer_reopen_focus,"dismiss":pointer_dismiss_focus,
++        }}),
++    )
+ }
+ 
+ async fn dismissal(tab: &Tab) -> Result<Value> {
+@@ -296,13 +337,16 @@ async fn dismissal(tab: &Tab) -> Result<Value> {
+         "!s.menu_demo.open && s.menu_demo.outside_actions === 0",
+     )
+     .await?;
+-    focused(tab, OPENER).await?;
++    let outside_focus = focused_from_pointer(tab, OPENER).await?;
+     check_eq!(
+         state(tab).await?["menu_demo"]["active_submenu"],
+         Value::Null,
+         "outside dismissal clears the submenu owner state"
+     );
+-    Ok(json!({"escape_layers":2,"tab_target":OUTSIDE,"outside_action":0}))
++    Ok(
++        json!({"escape_layers":2,"tab_target":OUTSIDE,"outside_action":0,
++        "outside_focus":outside_focus}),
++    )
+ }
+ 
+ async fn compact_dark_rtl(env: &Env, tab: &Tab) -> Result<Value> {

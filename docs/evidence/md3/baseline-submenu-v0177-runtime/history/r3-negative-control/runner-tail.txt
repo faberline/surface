@@ -1,0 +1,24 @@
+  [M359] Both lines and supporting text of the disabled multiline field use the same visible system ink
+  [M360] The real light and dark browser CSS Field pairs match the standard Canvas pairs
+  [M361] An unequal Field pair paints both fields, with independent selection and exact restoration
+  [M362] The compact RTL field keeps canvas captions and rejects an incomplete Field pair
+  [M363] 600–839 dp centers fixed-width horizontal targets and pairs the icon and label ink
+  [M364] real keyboard, touch and current page survive the 599 to 600 dp handoff
+  [M365] dark RTL 200% wraps labels and keeps the focused bar pinned during page scroll
+  [M366] real keys and the current page survive the compact to medium bar
+  [M367] 839 to 840 dp moves navigation to a leading rail with arrow focus
+  [M368] the same live draft, keyboard focus and backward selection survive all three layouts
+  [M369] dark RTL short rail reveals focused destinations without scrolling the page
+  [M370] Standard uses three named groups and two gaps with real keyboard navigation
+  [M371] Vibrant paints one group, takes a trusted click and returns Tab focus to the page
+  [M372] short dark RTL removes gaps and shows a scrollbar that follows trusted keys
+  [M373] Standard checkable menu exposes named radio and checkbox groups and selects once
+  [M374] Vibrant menu toggles independent choices by key, mouse and real touch and stays open
+  [M375] short dark RTL checkable menu reveals a wrapped selected row and keeps state on Escape
+  [M376] keyboard opens a named child and Chrome exposes its state
+  [M377] pointer opens the child and activates one enabled action once
+case material ... FAILED after 603.4s: timed out after 30s waiting for `(s => !s.menu_demo.open)(JSON.parse(window.gallery.inspect()))`
+  last step: M377
+
+e2e result: 0 passed; 1 failed; 31001 checks; artifacts in /private/tmp/surface-md3-v0177-submenus.P7WLBuVn/browser-run-r3/artifacts
+no case passed
