@@ -1319,6 +1319,12 @@ can use the remaining movement.
 
 In Material Gallery, choose 動作 and 多行文字欄位 to try both appearances.
 
+Inactive textboxes keep their committed value in the Web accessibility
+tree, including disabled fields. Chrome checks confirm that this value
+preserves line breaks and spaces. When an enabled field gains focus,
+its active editor provides the value and keeps the same name and
+descriptions.
+
 ## Baseline segmented buttons
 
 Use `Theme::baseline_segmented_button` for two to five related choices in

@@ -12,7 +12,7 @@ use crate::browser::{js, Chrome, Tab};
 use crate::check::step;
 use crate::{check, check_eq, Env};
 
-pub(super) const STEPS: [&str; 5] = ["M341", "M342", "M343", "M344", "M345"];
+pub(super) const STEPS: [&str; 6] = ["M341", "M342", "M343", "M344", "M345", "M346"];
 
 const SHOW: &str = "multiline-text-field-demo-show";
 const BACK: &str = "multiline-text-field-demo-back";
@@ -31,6 +31,7 @@ const GROW_HELP: &str = "請簡短記錄這次的變更。";
 const FIXED_HELP: &str = "內容會在固定高度內捲動。";
 const READ_ONLY_HELP: &str = "這段文字可以選取和複製。";
 const READ_ONLY_TEXT: &str = "已儲存的第一行\n已儲存的第二行\n";
+const DISABLED_TEXT: &str = "停用的第一行\n停用的第二行";
 const INITIAL: &str = "第一行";
 const FIXED_TEXT: &str =
     "第一行😀\n第二行 a\u{301}\n第三行 ABC 中文文字\n第四行\n第五行\n第六行\n第七行\n第八行\n";
@@ -782,6 +783,88 @@ async fn locked_ax(tab: &Tab) -> Result<Value> {
         "active":active,"readonly_value":READ_ONLY_TEXT,"skipped_disabled":true}))
 }
 
+async fn inactive_value(
+    tab: &Tab,
+    id: &str,
+    label: &str,
+    value: &str,
+    multiline: bool,
+) -> Result<Value> {
+    tab.wait_for(&format!("{} !== null", projected(id))).await?;
+    let tree = ax_tree(tab).await?;
+    let node = ax(&tree, "textbox", label)?;
+    check_eq!(
+        node["value"]["value"],
+        value,
+        "{label} exposes its committed value"
+    );
+    check_eq!(
+        tree.iter()
+            .filter(|node| node["ignored"] == false
+                && node["role"]["value"] == "textbox"
+                && node["name"]["value"] == label)
+            .count(),
+        1,
+        "{label} has one accessible textbox"
+    );
+    check_eq!(
+        ax_property(node, "multiline"),
+        Some(&json!(multiline)),
+        "{label} retains its line mode"
+    );
+    check!(
+        !tree.iter().any(|child| child["parentId"] == node["nodeId"]
+            && child["ignored"] == false
+            && child["role"]["value"] == "StaticText"),
+        "{label} has no separate readable value child"
+    );
+    Ok(node.clone())
+}
+
+async fn textbox_values(tab: &Tab) -> Result<Value> {
+    const UPDATED: &str = "第一行\n修訂 a\u{301}";
+    let before = inactive_value(tab, GROW, "多行備註", INITIAL, true).await?;
+    let fixed = inactive_value(tab, FIXED, "詳細說明", FIXED_TEXT, true).await?;
+    tab.eval(&format!("{}.focus()", projected(GROW))).await?;
+    focus(tab, GROW, "surface-text-input").await?;
+    let active = ax_editor(tab, GROW, "多行備註", GROW_HELP).await?;
+    textarea(tab, INITIAL).await?;
+    tab.shortcut("a").await?;
+    tab.insert_text(UPDATED).await?;
+    textarea(tab, UPDATED).await?;
+    model(
+        tab,
+        &format!("d.grow.value === {} && d.submits === 0", js(UPDATED)),
+    )
+    .await?;
+    tab.press("Tab").await?;
+    until(tab, &format!("s.focused === {}", js(ACTION))).await?;
+    let after = inactive_value(tab, GROW, "多行備註", UPDATED, true).await?;
+    for (node, count) in [(&before, 3), (&after, 8)] {
+        let description = node["description"]["value"]
+            .as_str()
+            .context("inactive AX description")?;
+        check!(
+            description.contains("井字號")
+                && description.contains(GROW_HELP)
+                && description.contains(&format!("已輸入 {count} 個字")),
+            "the inactive description includes the affix, help and current count"
+        );
+    }
+
+    let scroll = bounds(tab, SCROLL).await?;
+    wheel(tab, [scroll[0], scroll[1], 8., scroll[3]], 720.).await?;
+    let readonly = inactive_value(tab, READ_ONLY, "唯讀內容", READ_ONLY_TEXT, true).await?;
+    let disabled = inactive_value(tab, DISABLED, "停用內容", DISABLED_TEXT, true).await?;
+    check!(
+        ax_property(&readonly, "readonly") == Some(&json!(true))
+            && ax_property(&disabled, "disabled") == Some(&json!(true)),
+        "inactive locked boxes keep their accessibility states"
+    );
+    Ok(json!({"before":before,"fixed":fixed,"active":active,
+        "after":after,"readonly":readonly,"disabled":disabled}))
+}
+
 pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
     let tab = chrome.page(WIDE.0, WIDE.1 + 44, 2.).await?;
     let mut report = json!({"browser":chrome.version});
@@ -831,6 +914,21 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
         report["page_keys"] = page_keys(&tab, env).await?;
         report["touch"] = touch_loss(&tab, env).await?;
         report["locked_ax"] = locked_ax(&tab).await?;
+        step(
+            STEPS[5],
+            "Inactive textboxes expose their committed text in Chrome",
+        );
+        route(&tab, url).await?;
+        report["inactive_ax"] = textbox_values(&tab).await?;
+        super::material_text_field_counter::route(&tab, url).await?;
+        report["inactive_ax"]["single_line"] = inactive_value(
+            &tab,
+            "text-field-counter-demo-editable",
+            "標籤名稱",
+            "中a\u{301}👍🏽",
+            false,
+        )
+        .await?;
         check!(tab.errors().is_empty(), "no multiline page errors");
         Ok(())
     }
