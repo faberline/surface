@@ -1,0 +1,95 @@
+   Compiling syn v3.0.9
+   Compiling bitflags v2.13.2
+   Compiling log v0.4.35
+   Compiling hashbrown v0.17.1
+   Compiling smallvec v1.16.4
+   Compiling indexmap v2.14.2
+   Compiling syn v2.0.119
+   Compiling thiserror-impl v2.0.21
+   Compiling bytemuck_derive v1.12.1
+   Compiling thiserror v2.0.21
+   Compiling core-foundation-sys v0.8.7
+   Compiling core-foundation v0.9.4
+   Compiling bytemuck v1.25.2
+   Compiling strum_macros v0.26.4
+   Compiling foreign-types-macros v0.2.4
+   Compiling foreign-types v0.5.0
+   Compiling parking_lot_core v0.9.12
+   Compiling font-types v0.7.3
+   Compiling strum v0.26.3
+   Compiling core-graphics-types v0.1.3
+   Compiling metal v0.31.0
+   Compiling naga v24.0.0
+   Compiling read-fonts v0.22.7
+   Compiling parking_lot v0.12.5
+   Compiling num-traits v0.2.19
+   Compiling serde_derive v1.0.229
+   Compiling wgpu-types v24.0.0
+   Compiling profiling v1.0.18
+   Compiling zerocopy v0.8.63
+   Compiling serde v1.0.229
+   Compiling wgpu-hal v24.0.4
+   Compiling skrifa v0.22.3
+   Compiling either v1.19.0
+   Compiling rustybuzz v0.14.1
+   Compiling swash v0.1.19
+   Compiling fontdb v0.16.2
+   Compiling rayon v1.12.0
+   Compiling wgpu-core v24.0.5
+   Compiling euclid v0.22.14
+   Compiling surface v0.1.74 (/private/tmp/surface-md3-v0174-corrected.gP1uy0FW/source/crates/surface)
+   Compiling etagere v0.2.15
+   Compiling ahash v0.8.12
+   Compiling cosmic-text v0.12.1
+   Compiling wgpu v24.0.5
+   Compiling surface-app v0.1.74 (/private/tmp/surface-md3-v0174-corrected.gP1uy0FW/source/crates/surface-app)
+   Compiling glyphon v0.8.0
+   Compiling material-colors v0.4.2
+   Compiling surface-material v0.1.74 (/private/tmp/surface-md3-v0174-corrected.gP1uy0FW/source/crates/surface-material)
+   Compiling surface-wgpu v0.1.74 (/private/tmp/surface-md3-v0174-corrected.gP1uy0FW/source/crates/surface-wgpu)
+    Finished `test` profile [unoptimized] target(s) in 30.19s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/it.rs (/tmp/cargo-target/surface-surface-md3-v0174-corrected.gP1uy0FW-source/debug/deps/it-a4e7eac869db2472)
+
+running 16 tests
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU Full-screen FAB evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU Basic motion evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+GPU transformed-group evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+test gpu_offscreen_bottom_corners_are_not_swapped ... ok
+test gpu_offscreen_per_corner_shapes ... ok
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+test gpu_offscreen_paints_clips_rounding_text_and_order ... ok
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+scale 0.5: visible ink [155, 280], clipped ink [143, 82]
+test gpu_offscreen_capture_reads_rgba_in_both_formats ... ok
+GPU opacity evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+Rgba8Unorm: crop [205, 39, 78, 255], clip [0, 0, 0, 255], corner AA [75, 14, 28, 255], alpha midpoint [128, 128, 128, 255]
+scale 1: visible ink [482, 947], clipped ink [431, 232]
+test gpu_offscreen_motion_animates_color_and_corners ... ok
+scale 2: visible ink [1720, 3322], clipped ink [1514, 860]
+test opacity_group::gpu_offscreen_opacity_groups_reject_invalid_ranges ... ok
+Ripple photo RGB at 0/40/225/300/375 ms: [200, 120, 50, 255] [191, 115, 49, 255] [183, 111, 48, 255] [191, 116, 49, 255] [200, 120, 50, 255]
+test gpu_offscreen_scaled_text_keeps_both_clipped_lines ... ok
+GPU text alignment evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+test isolated_transform::gpu_offscreen_transform_groups_scale_crop_round_and_composite_in_device_pixels ... ok
+test list_ripple::gpu_offscreen_list_ripple_keeps_photo_focus_and_clip_in_order ... ok
+Bgra8UnormSrgb: crop [205, 39, 78, 255], clip [0, 0, 0, 255], corner AA [130, 21, 46, 255], alpha midpoint [188, 188, 188, 255]
+test gpu_offscreen_raster_preserves_crop_clip_alpha_and_draw_order_in_both_formats ... ok
+Seven distinct native masks, pixel counts: [604, 690, 663, 748, 640, 676, 668]
+test isolated_transform::gpu_offscreen_transform_identity_matches_direct_and_opacity_and_rejects_invalid_groups ... ok
+test loading_indicator::gpu_offscreen_loading_indicator_paints_each_shape_and_reduced_motion ... ok
+test text_alignment::gpu_offscreen_text_alignment_uses_each_visual_line ... ok
+test basic_dialog_motion::gpu_offscreen_basic_dialog_motion_blends_scrim_and_isolated_panel ... ok
+test full_screen_dialog_motion::gpu_offscreen_full_screen_fab_moves_and_clips_real_dialog_pixels ... ok
+test opacity_group::gpu_offscreen_opacity_groups_composite_once_and_preserve_draw_lanes ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 8 filtered out; finished in 0.28s
+

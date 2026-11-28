@@ -1,0 +1,15 @@
+   Compiling surface-wgpu v0.1.74 (/private/tmp/surface-md3-v0174-corrected.gP1uy0FW/source/crates/surface-wgpu)
+    Finished `test` profile [unoptimized] target(s) in 1.19s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/text_selection_gpu.rs (/tmp/cargo-target/surface-surface-md3-v0174-corrected.gP1uy0FW-source/debug/deps/text_selection_gpu-7b22f9863ed0645a)
+
+running 2 tests
+GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+Aligned selection GPU evidence: AdapterInfo { name: "Apple M1 Max", vendor: 0, device: 0, device_type: IntegratedGpu, driver: "", driver_info: "", backend: Metal }
+Aligned wrapped glyph pixels ordinary/selected: [329, 2034], short row [65, 88]
+test right_aligned_wrapped_selection_agrees_with_shaped_geometry ... ok
+test paired_selection_matches_single_draw_references_at_fractional_clip_edges ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
