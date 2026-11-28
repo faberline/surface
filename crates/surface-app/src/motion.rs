@@ -865,7 +865,10 @@ impl<A: Application> Runtime<A> {
     /// Hosts should render again on the next frame while this is true.
     pub fn needs_frame(&self) -> bool {
         self.animation_request_next
-            || ((self.motion.running || self.press_ripple.needs_frame()) && !self.motion.reduced)
+            || ((self.motion.running
+                || self.press_ripple.needs_frame()
+                || self.editor_label_motion.running)
+                && !self.motion.reduced)
     }
     pub(crate) fn input_time_ms(&self) -> Option<f64> {
         self.motion.now

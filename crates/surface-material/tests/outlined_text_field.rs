@@ -237,6 +237,161 @@ const BODY: &str = "project-name-value-box";
 const TRAILING: &str = "project-name-trailing-action";
 const HELP: &str = "project-name-description";
 
+fn label_pose(list: &ExtendedDisplayList, label: &str) -> (Rect, f32) {
+    let mut labels = list.ops().iter().filter_map(|op| {
+        let run = match op {
+            ExtendedPaintOp::Legacy(run) => run,
+            ExtendedPaintOp::AlignedText(run) => run.run(),
+            _ => return None,
+        };
+        match run {
+            PaintOp::StyledText {
+                text, rect, style, ..
+            } if text == label => Some((*rect, style.font_size)),
+            _ => None,
+        }
+    });
+    let pose = labels.next().expect("one painted label");
+    assert!(
+        labels.next().is_none(),
+        "the transition paints only one label"
+    );
+    pose
+}
+
+#[test]
+fn floating_label_reverses_from_the_same_pose_and_reduced_motion_settles_it() {
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            ..Form::default()
+        })
+        .unwrap();
+        let mut fonts = TextSystem::default();
+        runtime.set_time(0.);
+        let start = render(&mut runtime, 400., &mut fonts);
+        let resting = label_pose(&start, LABEL);
+        let editor = bounds(&runtime, ID);
+        let target = bounds(&runtime, "project-name-floating-label");
+        let action = bounds(&runtime, TRAILING);
+
+        tab(&mut runtime);
+        let first = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(label_pose(&first, LABEL), resting);
+        assert!(
+            text_run(&first, HINT).is_none(),
+            "the resting label still owns the value row"
+        );
+        assert!(runtime.needs_frame());
+        runtime.set_time(27.);
+        let rising = render(&mut runtime, 400., &mut fonts);
+        let moving = label_pose(&rising, LABEL);
+        assert!(moving.0.y < resting.0.y && moving.0.y > target.y);
+        assert!(moving.1 < resting.1 && moving.1 > 12.);
+        assert_eq!(bounds(&runtime, ID), editor);
+        assert_eq!(bounds(&runtime, TRAILING), action);
+        assert_eq!(bounds(&runtime, "project-name-floating-label"), target);
+        let frame = runtime.accessibility_frame().unwrap();
+        assert_eq!(
+            frame
+                .node(runtime.dom().by_id(ID).unwrap())
+                .unwrap()
+                .node
+                .name(),
+            LABEL
+        );
+        assert!(frame
+            .node(runtime.dom().by_id("project-name-floating-label").unwrap())
+            .is_none());
+
+        tab(&mut runtime);
+        let reversal = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(label_pose(&reversal, LABEL), moving);
+        runtime.set_time(78.);
+        let falling = render(&mut runtime, 400., &mut fonts);
+        assert!(label_pose(&falling, LABEL).0.y > moving.0.y);
+
+        runtime
+            .dispatch(Event::FocusNext { reverse: true })
+            .unwrap();
+        let _ = render(&mut runtime, 400., &mut fonts);
+        runtime.set_reduced_motion(true);
+        let reduced = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(label_pose(&reduced, LABEL), (target, 12.));
+        assert!(text_run(&reduced, HINT).is_some());
+        assert!(!runtime.needs_frame());
+    }
+}
+
+#[test]
+fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback() {
+    let mut fonts = TextSystem::default();
+    let mut runtime = Runtime::new(Form::default()).unwrap();
+    runtime.set_time(0.);
+    let resting = label_pose(&render(&mut runtime, 360., &mut fonts), LABEL);
+    tab(&mut runtime);
+    render(&mut runtime, 360., &mut fonts);
+    runtime.set_time(8.);
+    let frame = render(&mut runtime, 360., &mut fonts);
+    let face = bounds(&runtime, "project-name-outline");
+    let left = bounds(&runtime, "project-name-floating-label").x;
+    let outline = find_outline(&frame, Theme::light().colors.primary, face);
+    assert!(label_pose(&frame, LABEL).0.y < resting.0.y);
+    assert!(!covers(outline, left, face.y + 0.1), "start of the cutout");
+    assert!(covers(outline, left, face.y + 2.6), "lower stroke remains");
+    assert!(
+        covers(outline, face.x + face.width / 2., face.y + 0.1),
+        "outside the cutout"
+    );
+
+    runtime.dispatch(Event::Text("中".into())).unwrap();
+    let edited = render(&mut runtime, 360., &mut fonts);
+    assert!(
+        text_run(&edited, "中").is_some(),
+        "input can paint during motion"
+    );
+    assert!(text_run(&edited, HINT).is_none());
+
+    let mut short_rtl = Runtime::new(Form {
+        dark: true,
+        rtl: true,
+        scale: 2.,
+        adorned: Some(TextFieldAppearance::Outlined),
+        ..Form::default()
+    })
+    .unwrap();
+    short_rtl.set_time(0.);
+    let start = label_pose(&render(&mut short_rtl, 320., &mut fonts), LABEL).0;
+    let end = bounds(&short_rtl, "project-name-floating-label");
+    tab(&mut short_rtl);
+    render(&mut short_rtl, 320., &mut fonts);
+    short_rtl.set_time(26.);
+    let (middle, font) = label_pose(&render(&mut short_rtl, 320., &mut fonts), LABEL);
+    assert!(middle.x + middle.width > start.x + start.width);
+    assert!(middle.x + middle.width < end.x + end.width);
+    assert!(font > 24. && font < 32.);
+
+    let mut rtl = Runtime::new(Form {
+        label: LONG_LABEL,
+        dark: true,
+        rtl: true,
+        scale: 2.,
+        ..Form::default()
+    })
+    .unwrap();
+    rtl.set_time(0.);
+    let before = label_pose(&render(&mut rtl, 320., &mut fonts), LONG_LABEL);
+    tab(&mut rtl);
+    render(&mut rtl, 320., &mut fonts);
+    rtl.set_time(31.);
+    let focused = render(&mut rtl, 320., &mut fonts);
+    assert_eq!(label_pose(&focused, LONG_LABEL), before);
+    let face = bounds(&rtl, "project-name-outline");
+    let outline = find_outline(&focused, Theme::dark().colors.primary, face);
+    assert!(covers(outline, face.x + face.width / 2., face.y + 1.));
+    assert!(!rtl.needs_frame());
+}
+
 #[test]
 fn growing_multiline_preserves_first_row_and_measures_preedit_and_committed_lines() {
     for (appearance, boundary) in [

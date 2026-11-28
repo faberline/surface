@@ -268,6 +268,13 @@ impl<A: Application> Runtime<A> {
         self.text_geometry.get(key)?.caret
     }
 
+    pub(crate) fn first_text_line(&self, key: &str) -> Option<Rect> {
+        let geometry = self.text_geometry.get(key)?;
+        let mut line = geometry.origin;
+        line.height = line.height.min(geometry.layout.line_height);
+        Some(line)
+    }
+
     pub(crate) fn editing_event(&mut self, event: Event) -> Result<bool, AppError> {
         if matches!(event, Event::Blur) {
             self.cancel_composition();

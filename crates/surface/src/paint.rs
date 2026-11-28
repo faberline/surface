@@ -800,7 +800,17 @@ fn compile_into<Op: CompileOp>(
             next_group = pending_groups.next();
         }
         let n = dom.get(*id).expect("computed node belongs to DOM");
-        let g = &computed.nodes[id.index()];
+        let authored = &computed.nodes[id.index()];
+        let presented;
+        let g = if let Some(bounds) = n.presented_text_paint_bounds {
+            presented = crate::layout::ComputedNode {
+                bounds,
+                ..authored.clone()
+            };
+            &presented
+        } else {
+            authored
+        };
         let s = n.style();
         let visible = has_area(g.bounds.intersect(g.clip));
         let corners = n

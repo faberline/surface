@@ -69,6 +69,7 @@ mod switch;
 mod tab_bar;
 mod text_field_adornments;
 mod text_field_counter;
+mod text_field_label_notch;
 mod time_dial;
 mod time_dial_state;
 mod time_input;
