@@ -1,8 +1,8 @@
 use surface::{Align, Length, Node, Role, Style};
 use surface_app::View;
 use surface_material::{
-    shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldEditability,
-    TextFieldOptions, Theme,
+    shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
+    TextFieldAppearance, TextFieldEditability, TextFieldOptions, TextFieldTheme, Theme,
 };
 
 use crate::{scroll_field_demo::control_row, Message};
@@ -139,7 +139,12 @@ impl FilledTextFieldDemo {
         options
     }
 
-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+    pub(crate) fn view(
+        &self,
+        theme: &Theme,
+        fields: TextFieldTheme<'_>,
+        dark: bool,
+    ) -> View<Message> {
         use FilledTextFieldDemoEvent::*;
         let demo = Message::FilledTextFieldDemo;
         let toggle = |id, label, selected, message| {
@@ -168,13 +173,17 @@ impl FilledTextFieldDemo {
             toggle(ERROR, "錯誤", self.show_error, demo(ToggleError)),
         ]);
 
+        let appearance = TextFieldAppearance::Filled;
         let mut editable = self.options(EDITABLE, "專案名稱", &self.value);
         editable.placeholder = Some("輸入名稱");
         editable.supporting_text = Some("請輸入中文或英文名稱。");
         editable.error = self.show_error.then_some("請輸入有效的專案名稱。");
-        let editable = theme
-            .filled_text_field_with_submit(
+        let editable = fields
+            .single_line(
+                appearance,
                 editable,
+                TextFieldAdornments::default(),
+                None,
                 move |value| demo(Edit(value)),
                 move || Some(demo(Submit)),
             )
@@ -182,14 +191,28 @@ impl FilledTextFieldDemo {
 
         let mut read_only = self.options(READ_ONLY, "唯讀名稱", "既有專案");
         read_only.editability = TextFieldEditability::ReadOnly;
-        let read_only = theme
-            .filled_text_field(read_only, move |_| demo(EditLocked))
+        let read_only = fields
+            .single_line(
+                appearance,
+                read_only,
+                TextFieldAdornments::default(),
+                None,
+                move |_| demo(EditLocked),
+                || None,
+            )
             .expect("valid read-only Gallery field");
 
         let mut disabled = self.options(DISABLED, "停用名稱", "已封存專案");
         disabled.editability = TextFieldEditability::Disabled;
-        let disabled = theme
-            .filled_text_field(disabled, move |_| demo(EditLocked))
+        let disabled = fields
+            .single_line(
+                appearance,
+                disabled,
+                TextFieldAdornments::default(),
+                None,
+                move |_| demo(EditLocked),
+                || None,
+            )
             .expect("valid disabled Gallery field");
 
         let long_label = self.options(
@@ -197,8 +220,15 @@ impl FilledTextFieldDemo {
             "輸入團隊成員在共用專案清單中容易辨認的完整名稱",
             &self.long_value,
         );
-        let long_label = theme
-            .filled_text_field(long_label, move |value| demo(EditLong(value)))
+        let long_label = fields
+            .single_line(
+                appearance,
+                long_label,
+                TextFieldAdornments::default(),
+                None,
+                move |value| demo(EditLong(value)),
+                || None,
+            )
             .expect("valid long-label Gallery field");
 
         let status = View::new(

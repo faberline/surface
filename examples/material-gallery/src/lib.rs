@@ -1319,22 +1319,42 @@ impl Application for Gallery {
             return self.button_demo.view(&t, self.dark);
         }
         if self.filled_text_field_demo.visible() {
-            return self.filled_text_field_demo.view(&t, self.dark);
+            return self.filled_text_field_demo.view(
+                &t,
+                t.text_fields_for(self.display_contrast),
+                self.dark,
+            );
         }
         if self.outlined_text_field_demo.visible() {
-            return self.outlined_text_field_demo.view(&t, self.dark);
+            return self.outlined_text_field_demo.view(
+                &t,
+                t.text_fields_for(self.display_contrast),
+                self.dark,
+            );
         }
         if self.text_field_adornments_demo.visible() {
-            return self.text_field_adornments_demo.view(&t, self.dark);
+            return self.text_field_adornments_demo.view(
+                &t,
+                t.text_fields_for(self.display_contrast),
+                self.dark,
+            );
         }
         if self.text_field_counter_demo.visible() {
-            return self.text_field_counter_demo.view(&t, self.dark);
+            return self.text_field_counter_demo.view(
+                &t,
+                t.text_fields_for(self.display_contrast),
+                self.dark,
+            );
         }
         if self.text_field_placeholder_demo.visible() {
             return self.text_field_placeholder_demo.view(&t, self.dark);
         }
         if self.multiline_text_field_demo.visible() {
-            return self.multiline_text_field_demo.view(&t, self.dark);
+            return self.multiline_text_field_demo.view(
+                &t,
+                t.text_fields_for(self.display_contrast),
+                self.dark,
+            );
         }
         if self.segmented_demo.visible() {
             return self.segmented_demo.view(&t, self.dark);
@@ -2013,6 +2033,7 @@ mod web {
                     "canvas": pair(colors.canvas),
                     "button": pair(colors.button),
                     "highlight": pair(colors.highlight),
+                    "disabled_text": colors.disabled_text,
                 })),
             ),
             _ => ("unsupported", None),

@@ -5,7 +5,10 @@ use surface::{
     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
     TextAlignment, TextMeasurer,
 };
-use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+use surface_app::{
+    Application, DisplayContrast, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime,
+    SystemColorPair, SystemContrastColors, View,
+};
 use surface_material::{
     shape::LayoutDirection, MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldAdornments,
     TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability,
@@ -48,6 +51,8 @@ struct Form {
     adorned: Option<TextFieldAppearance>,
     character_limit: Option<usize>,
     multiline: Option<MultilineTextFieldSize>,
+    field_contrast: Option<DisplayContrast>,
+    trailing_disabled: bool,
     builds: Cell<usize>,
 }
 
@@ -68,6 +73,8 @@ impl Default for Form {
             adorned: None,
             character_limit: None,
             multiline: None,
+            field_contrast: None,
+            trailing_disabled: false,
             builds: Cell::new(0),
         }
     }
@@ -99,6 +106,14 @@ impl Application for Form {
         self.scale
     }
 
+    fn display_contrast_changed(&mut self, contrast: DisplayContrast) -> bool {
+        if let Some(current) = &mut self.field_contrast {
+            *current = contrast;
+            return true;
+        }
+        false
+    }
+
     fn view(&self) -> View<Message> {
         self.builds.set(self.builds.get() + 1);
         let theme = if self.dark {
@@ -125,7 +140,7 @@ impl Application for Form {
                 trailing_action: Some(TextFieldTrailingAction {
                     icon: &icon,
                     name: "套用金額",
-                    disabled: false,
+                    disabled: self.trailing_disabled,
                     on_press: Message::Action,
                 }),
                 prefix: Some(TextFieldAffix {
@@ -144,8 +159,8 @@ impl Application for Form {
                     over_limit_error: COUNT_ERROR,
                     describe: &|count, max| format!("已輸入{count}個字元，上限{max}個。"),
                 });
-            match (self.multiline, counter) {
-                (Some(size), counter) => theme.multiline_text_field(
+            match (self.field_contrast, self.multiline, counter) {
+                (Some(contrast), Some(size), counter) => theme.text_fields_for(contrast).multiline(
                     appearance,
                     options,
                     size,
@@ -153,7 +168,7 @@ impl Application for Form {
                     counter,
                     Message::Edit,
                 ),
-                (None, Some(counter)) => theme.text_field_with_counter(
+                (Some(contrast), None, counter) => theme.text_fields_for(contrast).single_line(
                     appearance,
                     options,
                     adornments,
@@ -161,7 +176,23 @@ impl Application for Form {
                     Message::Edit,
                     on_submit,
                 ),
-                (None, None) => theme.text_field_with_adornments(
+                (None, Some(size), counter) => theme.multiline_text_field(
+                    appearance,
+                    options,
+                    size,
+                    adornments,
+                    counter,
+                    Message::Edit,
+                ),
+                (None, None, Some(counter)) => theme.text_field_with_counter(
+                    appearance,
+                    options,
+                    adornments,
+                    counter,
+                    Message::Edit,
+                    on_submit,
+                ),
+                (None, None, None) => theme.text_field_with_adornments(
                     appearance,
                     options,
                     adornments,
@@ -285,10 +316,23 @@ fn label_pose(list: &ExtendedDisplayList, label: &str) -> (Rect, f32) {
 }
 
 fn label_color(list: &ExtendedDisplayList, label: &str) -> Color {
-    let Some((PaintOp::StyledText { color, .. }, _)) = text_run(list, label) else {
-        panic!("expected painted field label");
-    };
-    *color
+    let mut colors = list.ops().iter().filter_map(|op| {
+        let run = match op {
+            ExtendedPaintOp::Legacy(run) => run,
+            ExtendedPaintOp::AlignedText(run) => run.run(),
+            _ => return None,
+        };
+        match run {
+            PaintOp::StyledText { text, color, .. } if text == label && color.3 > 0 => Some(*color),
+            _ => None,
+        }
+    });
+    let color = colors.next().expect("expected visible field text");
+    assert!(
+        colors.next().is_none(),
+        "expected one visible run for {label}"
+    );
+    color
 }
 
 fn hint_alpha(list: &ExtendedDisplayList) -> Option<u8> {
@@ -296,6 +340,166 @@ fn hint_alpha(list: &ExtendedDisplayList) -> Option<u8> {
         unreachable!("a hint uses styled text");
     };
     Some(color.3)
+}
+
+fn force_contrast(disabled_text: Option<Color>) -> DisplayContrast {
+    let pair = SystemColorPair {
+        background: Color::rgb(255, 255, 255),
+        foreground: Color::rgb(0, 0, 0),
+    };
+    let colors = SystemContrastColors::new(pair, pair, pair);
+    DisplayContrast::Forced(disabled_text.map_or(colors, |ink| colors.with_disabled_text(ink)))
+}
+
+fn assert_glyph_ink(list: &ExtendedDisplayList, bounds: Rect, ink: Color) {
+    assert!(list.ops().iter().any(|op| matches!(
+        op,
+        ExtendedPaintOp::FillPath(path) if path.color() == ink
+            && covers(path, bounds.x + bounds.width / 2., bounds.y + bounds.height / 2.)
+    )));
+}
+
+#[test]
+fn system_disabled_ink_reaches_both_field_appearances_and_row_layouts() {
+    const SYSTEM_INK: Color = Color(57, 142, 91, 173);
+    const VALUE: &str = "數值";
+    let colors = Theme::light().colors;
+    let Color(r, g, b, _) = colors.on_surface;
+    let mut fonts = TextSystem::default();
+    for (appearance, border) in [
+        (TextFieldAppearance::Outlined, "project-name-outline"),
+        (TextFieldAppearance::Filled, "project-name-indicator"),
+    ] {
+        for multiline in [
+            None,
+            Some(MultilineTextFieldSize::FixedRows(
+                NonZeroU16::new(2).unwrap(),
+            )),
+        ] {
+            let mut runtime = Runtime::new(Form {
+                value: VALUE.into(),
+                adorned: Some(appearance),
+                character_limit: Some(8),
+                multiline,
+                invalid: true,
+                editability: TextFieldEditability::Disabled,
+                field_contrast: Some(DisplayContrast::Normal),
+                ..Form::default()
+            })
+            .unwrap();
+            runtime.set_display_contrast(force_contrast(None)).unwrap();
+            let fallback = render(&mut runtime, 400., &mut fonts);
+            assert_eq!(label_color(&fallback, VALUE), Color(r, g, b, 97));
+            let face = bounds(&runtime, border);
+            let editor = bounds(&runtime, ID);
+            runtime
+                .dispatch(Event::PointerMove {
+                    x: editor.x + editor.width / 2.,
+                    y: editor.y + editor.height / 2.,
+                })
+                .unwrap();
+            runtime
+                .set_display_contrast(force_contrast(Some(SYSTEM_INK)))
+                .unwrap();
+            let forced = render(&mut runtime, 400., &mut fonts);
+            for text in [LABEL, VALUE, ERROR, "2/8", "€", "/月"] {
+                assert_eq!(label_color(&forced, text), SYSTEM_INK, "{text}");
+            }
+            for icon in ["project-name-leading-icon", "project-name-trailing-icon"] {
+                assert_glyph_ink(&forced, bounds(&runtime, icon), SYSTEM_INK);
+            }
+            assert_eq!(bounds(&runtime, border), face);
+            assert_eq!(bounds(&runtime, ID), editor);
+            let before = bottom_boundary(&fallback, face);
+            let after = bottom_boundary(&forced, face);
+            assert_eq!(after.points(), before.points());
+            assert_eq!(after.color(), before.color());
+            let id = runtime.dom().by_id(ID).unwrap();
+            let frame = runtime.accessibility_frame().unwrap();
+            let semantic = frame.node(id).unwrap().node;
+            assert!(semantic.is_disabled());
+            assert!(!semantic.is_invalid());
+            assert_eq!(semantic.text_value(), Some(VALUE));
+            assert!(!frame.accepts_focus(id));
+        }
+    }
+}
+
+#[test]
+fn system_disabled_ink_reaches_an_empty_hint_and_an_independently_disabled_action() {
+    const SYSTEM_INK: Color = Color::rgb(57, 142, 91);
+    const VALUE: &str = "數值";
+    let colors = Theme::light().colors;
+    let mut fonts = TextSystem::default();
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut disabled = Runtime::new(Form {
+            adorned: Some(appearance),
+            label: LONG_LABEL,
+            editability: TextFieldEditability::Disabled,
+            rtl: true,
+            scale: 2.,
+            field_contrast: Some(DisplayContrast::Normal),
+            ..Form::default()
+        })
+        .unwrap();
+        disabled
+            .set_display_contrast(force_contrast(Some(SYSTEM_INK)))
+            .unwrap();
+        let compact = render(&mut disabled, 320., &mut fonts);
+        assert_eq!(label_color(&compact, HINT), SYSTEM_INK);
+        assert_eq!(label_color(&compact, LONG_LABEL), SYSTEM_INK);
+        let hint = disabled
+            .dom()
+            .by_id("project-name-disabled-placeholder")
+            .unwrap();
+        assert!(disabled.accessibility_frame().unwrap().node(hint).is_none());
+
+        let mut read_only = Runtime::new(Form {
+            value: VALUE.into(),
+            adorned: Some(appearance),
+            trailing_disabled: true,
+            editability: TextFieldEditability::ReadOnly,
+            invalid: true,
+            field_contrast: Some(DisplayContrast::Normal),
+            ..Form::default()
+        })
+        .unwrap();
+        render(&mut read_only, 400., &mut fonts);
+        tab(&mut read_only);
+        assert_eq!(read_only.focused(), Some(ID));
+        read_only
+            .set_display_contrast(force_contrast(Some(SYSTEM_INK)))
+            .unwrap();
+        render(&mut read_only, 400., &mut fonts);
+        let action = bounds(&read_only, TRAILING);
+        read_only
+            .dispatch(Event::PointerMove {
+                x: action.x + action.width / 2.,
+                y: action.y + action.height / 2.,
+            })
+            .unwrap();
+        let focused = render(&mut read_only, 400., &mut fonts);
+        assert_eq!(label_color(&focused, VALUE), colors.on_surface);
+        assert_eq!(label_color(&focused, LABEL), colors.error);
+        assert_glyph_ink(
+            &focused,
+            bounds(&read_only, "project-name-trailing-icon"),
+            SYSTEM_INK,
+        );
+        assert_glyph_ink(
+            &focused,
+            bounds(&read_only, "project-name-leading-icon"),
+            colors.on_surface_variant,
+        );
+        let editor = read_only.dom().by_id(ID).unwrap();
+        let action = read_only.dom().by_id(TRAILING).unwrap();
+        let frame = read_only.accessibility_frame().unwrap();
+        assert!(frame.node(editor).unwrap().text_options.unwrap().read_only);
+        assert!(frame.node(editor).unwrap().node.is_invalid());
+        assert!(frame.node(action).unwrap().node.is_disabled());
+        assert!(!frame.accepts_focus(action));
+        assert_eq!(read_only.focused(), Some(ID));
+    }
 }
 
 #[test]

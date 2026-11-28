@@ -4,7 +4,7 @@ use surface::{Align, Length, Node, Role, Style};
 use surface_app::View;
 use surface_material::{
     shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
-    TextFieldAffix, TextFieldAppearance, TextFieldEditability, TextFieldOptions,
+    TextFieldAffix, TextFieldAppearance, TextFieldEditability, TextFieldOptions, TextFieldTheme,
     TextFieldTrailingAction, Theme, VectorIcon,
 };
 
@@ -189,7 +189,7 @@ impl TextFieldAdornmentsDemo {
             .suppress_repeated_activation()
     }
 
-    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
+    fn field(&self, fields: TextFieldTheme<'_>, sample: Sample) -> View<Message> {
         use TextFieldAdornmentsDemoEvent::*;
         let demo = Message::TextFieldAdornmentsDemo;
         let (id, label, value, editability, action_name, icon, action) = match sample {
@@ -252,11 +252,12 @@ impl TextFieldAdornmentsDemo {
                 spoken_name: "每月",
             }),
         };
-        let field = theme
-            .text_field_with_adornments(
+        let field = fields
+            .single_line(
                 self.appearance,
                 options,
                 adornments,
+                None,
                 move |value| demo(if editable { Edit(value) } else { EditLocked }),
                 move || editable.then(|| demo(Submit)),
             )
@@ -273,7 +274,12 @@ impl TextFieldAdornmentsDemo {
         }
     }
 
-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+    pub(crate) fn view(
+        &self,
+        theme: &Theme,
+        fields: TextFieldTheme<'_>,
+        dark: bool,
+    ) -> View<Message> {
         use TextFieldAdornmentsDemoEvent::*;
         let demo = Message::TextFieldAdornmentsDemo;
         let toggle = |id, label, selected, message| {
@@ -335,9 +341,9 @@ impl TextFieldAdornmentsDemo {
         )
         .accessibility_scroll_pages()
         .children([
-            self.field(theme, Sample::Editable),
-            self.field(theme, Sample::ReadOnly),
-            self.field(theme, Sample::Disabled),
+            self.field(fields, Sample::Editable),
+            self.field(fields, Sample::ReadOnly),
+            self.field(fields, Sample::Disabled),
             feedback,
         ]);
         View::new(

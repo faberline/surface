@@ -182,7 +182,7 @@ pub use navigation_drawer::{
 };
 pub use outlined_text_field::OutlinedTextFieldOptions as TextFieldOptions;
 pub use outlined_text_field::{
-    MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldEditability,
+    MultilineTextFieldSize, OutlinedTextFieldOptions, TextFieldEditability, TextFieldTheme,
 };
 pub use progress_indicator::{ProgressIndicatorOptions, ProgressShape, ProgressState};
 pub use radio::{RadioGroupLayout, RadioGroupOptions, RadioMotion, RadioOptions, RadioPose};

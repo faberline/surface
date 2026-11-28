@@ -1379,6 +1379,23 @@ A re-enabled field uses enabled ink from its first frame.
 [Filled indicator motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextField.kt#773) ·
 [Outlined border motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextFieldDefaults.kt#1164)
 
+### System colors for disabled field text
+
+Build fields with `theme.text_fields_for(contrast)` when the application
+already follows the host's display preference. Use `single_line` or
+`multiline` on the returned builder. In forced colors, both appearances use
+the host's disabled ink for their captions, values, hints, supporting text,
+counters and disabled glyphs. When the host does not supply that color,
+the field uses its Material disabled ink.
+
+On the Web, Surface resolves the browser's `GrayText` system color. For a
+repeatable native preview, run the headless Gallery with
+`--forced-colors light` or `--forced-colors dark`. The preview uses the
+fixed testing palettes in the CSS Color Adjustment specification.
+
+[W3C system colors](https://www.w3.org/TR/css-color-4/#css-system-colors) ·
+[Forced colors mode test palettes](https://www.w3.org/TR/css-color-adjust-1/#forced-colors-mode-color-palettes)
+
 ## Baseline segmented buttons
 
 Use `Theme::baseline_segmented_button` for two to five related choices in
