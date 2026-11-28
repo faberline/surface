@@ -124,6 +124,13 @@ pub(crate) struct PresentedPressRipple {
     pub(crate) opacity: f32,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+struct PresentedPlaceholder {
+    content: Arc<(String, Color)>,
+    ink: Color,
+    use_horizontal_offset: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Node {
     #[serde(default, skip_serializing_if = "no_box_shadows")]
@@ -209,7 +216,7 @@ pub struct Node {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     text_input_caret_color: Option<Color>,
     #[serde(skip)]
-    presented_text_input_placeholder: Option<Arc<(String, Color)>>,
+    presented_text_input_placeholder: Option<PresentedPlaceholder>,
     #[serde(skip)]
     pub(crate) presented_text_paint_bounds: Option<Rect>,
     #[serde(skip)]
@@ -575,11 +582,17 @@ impl Node {
         self.text_alignment.filter(|_| self.role != Role::TextInput)
     }
 
-    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
+    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color, bool)> {
         self.presented_text_input_placeholder
-            .as_deref()
+            .as_ref()
             .filter(|_| self.text_value().is_none_or(str::is_empty))
-            .map(|(text, color)| (text.as_str(), *color))
+            .map(|hint| {
+                (
+                    hint.content.0.as_str(),
+                    hint.ink,
+                    hint.use_horizontal_offset,
+                )
+            })
     }
 
     /// Set the editable caret's color independently of text and IME ink.
@@ -1273,12 +1286,39 @@ impl MicroDom {
         id: NodeId,
         placeholder: Arc<(String, Color)>,
     ) -> Result<(), DomError> {
+        let ink = placeholder.1;
+        self.set_presented_placeholder(id, placeholder, ink, false)
+    }
+
+    /// Set the sampled ink without cloning or changing the authored hint.
+    /// Use the explicit horizontal offset computed for the hint in this frame.
+    #[doc(hidden)]
+    pub fn set_presented_text_input_placeholder_ink(
+        &mut self,
+        id: NodeId,
+        placeholder: Arc<(String, Color)>,
+        ink: Color,
+    ) -> Result<(), DomError> {
+        self.set_presented_placeholder(id, placeholder, ink, true)
+    }
+
+    fn set_presented_placeholder(
+        &mut self,
+        id: NodeId,
+        content: Arc<(String, Color)>,
+        ink: Color,
+        use_horizontal_offset: bool,
+    ) -> Result<(), DomError> {
         let node = self
             .nodes
             .get_mut(id.index())
             .ok_or(DomError::InvalidNode(id.index()))?;
-        if node.role() == Role::TextInput && !placeholder.0.is_empty() {
-            node.presented_text_input_placeholder = Some(placeholder);
+        if node.role() == Role::TextInput && !content.0.is_empty() {
+            node.presented_text_input_placeholder = Some(PresentedPlaceholder {
+                content,
+                ink,
+                use_horizontal_offset,
+            });
         }
         Ok(())
     }

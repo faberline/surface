@@ -1,7 +1,9 @@
 use crate::{
-    color_spring::ColorSpring, Application, ContourPainter, Runtime, ToggleMotion, ToggleSpring,
+    color_spring::ColorSpring,
+    placeholder_motion::{PlaceholderMotion, PlaceholderPhase},
+    Application, ContourPainter, PlaceholderPresentation, Runtime, ToggleMotion, ToggleSpring,
 };
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 use surface::{
     Color, ComputedDom, DomError, FillContour, MicroDom, NodeId, Rect, Role, TextAlignment,
     TextMeasurer, TextStyle,
@@ -79,6 +81,7 @@ pub(crate) struct LabelMotions {
 struct LabelTrack {
     spatial: ToggleMotion,
     color: Option<LabelColorTrack>,
+    placeholder: Option<PlaceholderMotion>,
 }
 
 struct LabelColorTrack {
@@ -93,6 +96,16 @@ struct EditorPaint {
     labels: BTreeMap<(NodeId, NodeId), TextInputLabelMotion>,
 }
 
+impl EditorPaint {
+    fn place_hint(&mut self, editor: NodeId, hint: Option<(Rect, ResolvedPaint)>, label: Rect) {
+        if let Some((bounds, paint)) = hint {
+            if !has_area(bounds.intersect(label)) {
+                self.paints.push((editor, paint));
+            }
+        }
+    }
+}
+
 pub(crate) enum ResolvedPaint {
     Foreground(Color),
     Contour(FillContour),
@@ -102,6 +115,7 @@ pub(crate) enum ResolvedPaint {
         color: Color,
     },
     ClearPlaceholder,
+    Placeholder(Arc<(String, Color)>, Color),
 }
 
 impl ResolvedPaint {
@@ -127,6 +141,9 @@ impl ResolvedPaint {
                 display.set_presented_text_paint_bounds(id, bounds)
             }
             Self::ClearPlaceholder => display.clear_presented_text_input_placeholder(id),
+            Self::Placeholder(content, ink) => {
+                display.set_presented_text_input_placeholder_ink(id, content, ink)
+            }
         }
     }
 }
@@ -283,6 +300,7 @@ impl<A: Application> Runtime<A> {
                     LabelTrack {
                         spatial: ToggleMotion::new(target),
                         color: None,
+                        placeholder: None,
                     },
                 )
             });
@@ -315,7 +333,15 @@ impl<A: Application> Runtime<A> {
                 track.color = None;
                 (target_color, false)
             };
-            next.running |= spatial_running || color_running;
+            let (hint, hint_running) = self.resolve_hint(
+                editor,
+                &binding.editor,
+                state,
+                has_endpoints,
+                active,
+                &mut track.placeholder,
+            );
+            next.running |= spatial_running || color_running || hint_running;
             next.tracks.insert(key, track);
 
             if let Some(fallback) = fallback {
@@ -324,6 +350,7 @@ impl<A: Application> Runtime<A> {
                     frame
                         .paints
                         .push((fallback, ResolvedPaint::Foreground(ink)));
+                    frame.place_hint(editor, hint, computed.nodes[fallback.index()].bounds);
                     continue;
                 }
                 frame.hidden.push(fallback);
@@ -375,6 +402,7 @@ impl<A: Application> Runtime<A> {
             {
                 frame.paints.push((editor, ResolvedPaint::ClearPlaceholder));
             }
+            frame.place_hint(editor, hint, bounds);
             frame.labels.insert(
                 (editor, *label),
                 TextInputLabelMotion {
@@ -385,6 +413,56 @@ impl<A: Application> Runtime<A> {
             );
         }
         next
+    }
+
+    fn resolve_hint(
+        &self,
+        editor: NodeId,
+        key: &str,
+        state: TextInputPaintState,
+        expands: bool,
+        active: bool,
+        track: &mut Option<PlaceholderMotion>,
+    ) -> (Option<(Rect, ResolvedPaint)>, bool) {
+        let content = self.bindings.get(&editor).and_then(|binding| {
+            (binding.placeholder_presentation == PlaceholderPresentation::Animated)
+                .then_some(binding.text_input_placeholder.as_ref())
+                .flatten()
+        });
+        let Some(content) = content else {
+            *track = None;
+            return (None, false);
+        };
+        let phase = if state.is_focused {
+            PlaceholderPhase::Focused
+        } else if state.is_empty {
+            PlaceholderPhase::UnfocusedEmpty
+        } else {
+            PlaceholderPhase::UnfocusedNotEmpty
+        };
+        let visible = active && has_area(state.bounds.intersect(state.clip));
+        let (opacity, running) = track
+            .get_or_insert_with(|| PlaceholderMotion::new(phase, expands))
+            .sample(
+                phase,
+                expands,
+                self.input_time_ms(),
+                self.reduced_motion() || !visible,
+            );
+        // Keep the phase current while text or preedit owns the viewport.
+        let Color(red, green, blue, alpha) = content.1;
+        let alpha = (f32::from(alpha) * opacity).round() as u8;
+        let hint = if visible && state.is_empty && !state.is_composing && alpha > 0 {
+            self.text_input_hint_bounds(key).map(|bounds| {
+                (
+                    bounds,
+                    ResolvedPaint::Placeholder(content.clone(), Color(red, green, blue, alpha)),
+                )
+            })
+        } else {
+            None
+        };
+        (hint, running)
     }
 
     fn label_nodes(

@@ -961,7 +961,9 @@ fn compile_into<Op: CompileOp>(
             focus.push(*id, &mut ops);
         }
         let placeholder = n.text_input_placeholder();
-        let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
+        let text_run = placeholder
+            .map(|(text, ink, _)| (text, ink))
+            .or_else(|| n.text_value().map(|text| (text, s.foreground)));
         if let Some((text, text_color)) = text_run {
             let padded = g.bounds.inset(s.padding);
             let mut rect = padded.inset_horizontal(n.presented_text_input_horizontal_inset);
@@ -999,10 +1001,15 @@ fn compile_into<Op: CompileOp>(
             }
             let text_style = s.text_style();
             let (scroll_x, scroll_y) = decoration.map(|d| d.scroll).unwrap_or_default();
-            let scroll = if placeholder.is_some() {
+            let scroll = if let Some((_, _, use_horizontal_offset)) = placeholder {
                 // A cleared field can retain scroll from its previous value.
-                // Keep negative insets used for single-line alignment.
-                (scroll_x.min(0.), scroll_y.min(0.))
+                // Retain positive scroll only when it was measured for the hint.
+                let x = if use_horizontal_offset {
+                    scroll_x
+                } else {
+                    scroll_x.min(0.)
+                };
+                (x, scroll_y.min(0.))
             } else {
                 (scroll_x, scroll_y)
             };

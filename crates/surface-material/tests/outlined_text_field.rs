@@ -3,7 +3,7 @@ use std::num::NonZeroU16;
 
 use surface::{
     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
-    TextAlignment,
+    TextAlignment, TextMeasurer,
 };
 use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
 use surface_material::{
@@ -35,6 +35,7 @@ enum Message {
 
 struct Form {
     label: &'static str,
+    hint: &'static str,
     value: String,
     dark: bool,
     rtl: bool,
@@ -54,6 +55,7 @@ impl Default for Form {
     fn default() -> Self {
         Self {
             label: LABEL,
+            hint: HINT,
             value: String::new(),
             dark: false,
             rtl: false,
@@ -105,7 +107,7 @@ impl Application for Form {
             Theme::light()
         };
         let mut options = OutlinedTextFieldOptions::new(ID, self.label, &self.value);
-        options.placeholder = Some(HINT);
+        options.placeholder = Some(self.hint);
         options.supporting_text = Some(SUPPORT);
         options.error = self.invalid.then_some(ERROR);
         options.editability = self.editability;
@@ -266,6 +268,218 @@ fn label_color(list: &ExtendedDisplayList, label: &str) -> Color {
         panic!("expected painted field label");
     };
     *color
+}
+
+fn hint_alpha(list: &ExtendedDisplayList) -> Option<u8> {
+    let (PaintOp::StyledText { color, .. }, _) = text_run(list, HINT)? else {
+        unreachable!("a hint uses styled text");
+    };
+    Some(color.3)
+}
+
+#[test]
+fn expanding_label_hints_fade_without_overlapping_or_painting_during_ime() {
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            dark: true,
+            rtl: true,
+            scale: 2.,
+            ..Form::default()
+        })
+        .unwrap();
+        let mut fonts = TextSystem::default();
+        runtime.set_time(0.);
+        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
+        let editor = bounds(&runtime, ID);
+        tab(&mut runtime);
+        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
+
+        runtime.set_time(8.);
+        // The slow spring has positive alpha. The label still covers the
+        // right-aligned hint, including the part left of the caret.
+        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
+        runtime.set_time(180.);
+        assert_eq!(
+            hint_alpha(&render(&mut runtime, 400., &mut fonts)),
+            Some(245)
+        );
+        assert_eq!(bounds(&runtime, ID), editor);
+        let id = runtime.dom().by_id(ID).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let input = frame.node(id).unwrap().node;
+        assert_eq!(input.name(), LABEL);
+        assert_eq!(input.text_value(), Some(""));
+
+        runtime.dispatch(Event::Ime(ImeEvent::Begin)).unwrap();
+        assert!(runtime.input_snapshot().unwrap().composing);
+        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
+        runtime.dispatch(Event::Ime(ImeEvent::Cancel)).unwrap();
+        assert_eq!(
+            hint_alpha(&render(&mut runtime, 400., &mut fonts)),
+            Some(245)
+        );
+
+        runtime.set_reduced_motion(true);
+        assert_eq!(
+            hint_alpha(&render(&mut runtime, 400., &mut fonts)),
+            Some(255)
+        );
+        tab(&mut runtime);
+        assert_eq!(hint_alpha(&render(&mut runtime, 400., &mut fonts)), None);
+    }
+}
+
+#[test]
+fn above_label_shows_empty_idle_hint_and_fades_after_unfocused_clear() {
+    for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+        let mut runtime = Runtime::new(Form {
+            label: LONG_LABEL,
+            adorned: Some(appearance),
+            dark: true,
+            rtl: true,
+            scale: 2.,
+            ..Form::default()
+        })
+        .unwrap();
+        let mut fonts = TextSystem::default();
+        runtime.set_time(0.);
+        let idle = render(&mut runtime, 320., &mut fonts);
+        let pose = label_pose(&idle, LONG_LABEL);
+        assert_eq!(runtime.focused(), None);
+        assert_eq!(hint_alpha(&idle), Some(255));
+
+        runtime.apply(Message::Edit("已填".into())).unwrap();
+        assert_eq!(hint_alpha(&render(&mut runtime, 320., &mut fonts)), None);
+        runtime.set_time(400.);
+        render(&mut runtime, 320., &mut fonts);
+        runtime.apply(Message::Edit(String::new())).unwrap();
+        assert_eq!(hint_alpha(&render(&mut runtime, 320., &mut fonts)), None);
+        runtime.set_time(444.);
+        let rising = render(&mut runtime, 320., &mut fonts);
+        assert_eq!(hint_alpha(&rising), Some(90));
+        assert_eq!(label_pose(&rising, LONG_LABEL), pose);
+
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Disabled))
+            .unwrap();
+        let disabled = render(&mut runtime, 320., &mut fonts);
+        assert_eq!(hint_alpha(&disabled), Some(97));
+        let id = runtime.dom().by_id(ID).unwrap();
+        let frame = runtime.accessibility_frame().unwrap();
+        let input = frame.node(id).unwrap().node;
+        assert_eq!(input.text_value(), Some(""));
+        assert!(frame
+            .node(
+                runtime
+                    .dom()
+                    .by_id("project-name-disabled-placeholder")
+                    .unwrap()
+            )
+            .is_none());
+    }
+}
+
+#[test]
+fn disabled_above_label_hint_keeps_single_line_clipping() {
+    const OVERFLOW_HINT: &str = "Monitor Keyboard";
+    let visible_clusters = |list: &ExtendedDisplayList, fonts: &mut TextSystem| {
+        let Some((
+            PaintOp::StyledText {
+                rect,
+                clip,
+                text,
+                style,
+                scroll,
+                multiline,
+                ..
+            },
+            alignment,
+        )) = text_run(list, OVERFLOW_HINT)
+        else {
+            panic!("an empty above-label field paints its hint");
+        };
+        assert!(
+            fonts.measure_text("Keyboard", style, None).0 <= clip.width,
+            "the second word alone fits in the visible row"
+        );
+        // Shape with the same width and origin as the display run. A true
+        // line break can move a whole word out of the one visible row.
+        let layout = if *multiline {
+            fonts.text_layout_aligned_styled(text, style, rect.width, alignment)
+        } else {
+            fonts.text_layout_styled(text, style, None)
+        };
+        layout
+            .clusters
+            .into_iter()
+            .filter_map(|cluster| {
+                let bounds = cluster.bounds;
+                let visible = Rect::new(
+                    rect.x - scroll.0 + bounds.x,
+                    rect.y - scroll.1 + bounds.y,
+                    bounds.width,
+                    bounds.height,
+                )
+                .intersect(*clip);
+                (visible.width > 0. && visible.height > 0.).then_some(cluster.bytes.start)
+            })
+            .collect::<Vec<_>>()
+    };
+
+    for (appearance, rtl) in [
+        (TextFieldAppearance::Outlined, false),
+        (TextFieldAppearance::Filled, false),
+        (TextFieldAppearance::Outlined, true),
+        (TextFieldAppearance::Filled, true),
+    ] {
+        let mut fonts = TextSystem::default();
+        let mut runtime = Runtime::new(Form {
+            label: LONG_LABEL,
+            hint: OVERFLOW_HINT,
+            rtl,
+            adorned: Some(appearance),
+            ..Form::default()
+        })
+        .unwrap();
+        runtime.set_time(0.);
+        let idle = render(&mut runtime, 260., &mut fonts);
+        assert_eq!(bounds(&runtime, "project-name-floating-label").width, 0.);
+        let field = bounds(&runtime, ID);
+        let expected = visible_clusters(&idle, &mut fonts);
+        if rtl {
+            assert!(
+                expected.contains(&(OVERFLOW_HINT.len() - 1)) && !expected.contains(&0),
+                "the RTL value area keeps the physical-right end: {expected:?}"
+            );
+        } else {
+            assert!(
+                expected.contains(&"Monitor ".len())
+                    && !expected.contains(&(OVERFLOW_HINT.len() - 1)),
+                "the LTR value area clips the end of the second word: {expected:?}"
+            );
+        }
+
+        runtime.set_time(16.);
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Disabled))
+            .unwrap();
+        let disabled = render(&mut runtime, 260., &mut fonts);
+        assert_eq!(bounds(&runtime, ID), field);
+        assert_eq!(
+            visible_clusters(&disabled, &mut fonts),
+            expected,
+            "{appearance:?} rtl={rtl} disabled hint preserves the visible part of the same line"
+        );
+
+        runtime.set_time(32.);
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Editable))
+            .unwrap();
+        let enabled = render(&mut runtime, 260., &mut fonts);
+        assert_eq!(bounds(&runtime, ID), field);
+        assert_eq!(visible_clusters(&enabled, &mut fonts), expected);
+    }
 }
 
 #[test]

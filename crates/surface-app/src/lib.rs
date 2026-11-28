@@ -22,6 +22,7 @@ mod keys;
 mod motion;
 #[cfg(feature = "devtools")]
 mod paint_export;
+mod placeholder_motion;
 mod press_ripple;
 mod scroll_control;
 mod slider;
@@ -85,6 +86,13 @@ enum SingleLineVerticalPlacement {
     Inset(f32),
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum PlaceholderPresentation {
+    Always,
+    Focused,
+    Animated,
+}
+
 pub use editor_paint::TextInputPaintState;
 
 /// One view of application state. Messages return through `Application::update`.
@@ -105,7 +113,7 @@ pub struct View<M> {
     multiline_text_viewport: Option<(String, TextAlignment)>,
     text_input_hover_action: Option<String>,
     text_input_placeholder: Option<Arc<(String, Color)>>,
-    focused_placeholder: bool,
+    placeholder_presentation: PlaceholderPresentation,
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_slider_adjustment: bool,
     slider_input: Option<SliderInputOptions>,
@@ -201,7 +209,7 @@ impl<M> View<M> {
             multiline_text_viewport: None,
             text_input_hover_action: None,
             text_input_placeholder: None,
-            focused_placeholder: false,
+            placeholder_presentation: PlaceholderPresentation::Always,
             value: None,
             accessible_slider_adjustment: false,
             slider_input: None,
@@ -675,7 +683,7 @@ impl<M> View<M> {
     pub fn text_input_placeholder(mut self, text: impl Into<String>, color: Color) -> Self {
         let text = text.into();
         self.text_input_placeholder = (!text.is_empty()).then(|| Arc::new((text, color)));
-        self.focused_placeholder = false;
+        self.placeholder_presentation = PlaceholderPresentation::Always;
         self
     }
 
@@ -683,7 +691,17 @@ impl<M> View<M> {
     /// An active composition keeps the hint hidden, even with empty preedit.
     pub fn focused_text_input_placeholder(self, text: impl Into<String>, color: Color) -> Self {
         let mut view = self.text_input_placeholder(text, color);
-        view.focused_placeholder = true;
+        view.placeholder_presentation = PlaceholderPresentation::Focused;
+        view
+    }
+
+    /// Animate an empty editor's hint with its sibling label. An expanding
+    /// label hides the hint at rest. An above-field label leaves room for it.
+    /// Link the label to this editor with [`Self::animate_text_input_label_with_fallback`].
+    /// Input and IME composition take paint priority over the hint.
+    pub fn animated_text_input_placeholder(self, text: impl Into<String>, color: Color) -> Self {
+        let mut view = self.text_input_placeholder(text, color);
+        view.placeholder_presentation = PlaceholderPresentation::Animated;
         view
     }
     /// Bind a slider value or an opted-in adjustable Group.
@@ -1352,7 +1370,7 @@ struct Binding<M> {
     multiline_text_viewport: Option<(String, TextAlignment)>,
     text_input_hover_action: Option<String>,
     text_input_placeholder: Option<Arc<(String, Color)>>,
-    focused_placeholder: bool,
+    placeholder_presentation: PlaceholderPresentation,
     value: Option<Rc<dyn Fn(f64) -> M>>,
     accessible_slider_adjustment: bool,
     slider_input: Option<SliderInputOptions>,
@@ -1894,7 +1912,7 @@ impl<A: Application> Runtime<A> {
                     multiline_text_viewport: view.multiline_text_viewport,
                     text_input_hover_action: view.text_input_hover_action,
                     text_input_placeholder: view.text_input_placeholder,
-                    focused_placeholder: view.focused_placeholder,
+                    placeholder_presentation: view.placeholder_presentation,
                     value: view.value,
                     accessible_slider_adjustment: view.accessible_slider_adjustment,
                     slider_input: view.slider_input,

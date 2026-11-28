@@ -1,6 +1,6 @@
 use crate::{
-    AppError, Application, EditKey, Event, ImeEvent, Runtime, SingleLineVerticalPlacement,
-    TextEditor, TextSelection,
+    AppError, Application, EditKey, Event, ImeEvent, PlaceholderPresentation, Runtime,
+    SingleLineVerticalPlacement, TextEditor, TextSelection,
 };
 use std::collections::BTreeMap;
 use surface::{
@@ -17,6 +17,35 @@ fn right_alignment_space(content_width: f32, layout: &TextLayout) -> f32 {
     content_width - text_right - CARET_REVEAL_WIDTH
 }
 
+fn hint_bounds(
+    layout: &TextLayout,
+    viewport: Rect,
+    clip: Rect,
+    scroll: (f32, f32),
+) -> Option<Rect> {
+    let clip = clip.intersect(viewport);
+    let x = viewport.x - scroll.0;
+    let y = viewport.y - scroll.1.min(0.);
+    layout
+        .clusters
+        .iter()
+        .map(|cluster| {
+            let bounds = cluster.bounds;
+            Rect::new(bounds.x + x, bounds.y + y, bounds.width, bounds.height).intersect(clip)
+        })
+        .filter(|bounds| bounds.width > 0. && bounds.height > 0.)
+        .reduce(|a, b| {
+            let x = a.x.min(b.x);
+            let y = a.y.min(b.y);
+            Rect::new(
+                x,
+                y,
+                (a.x + a.width).max(b.x + b.width) - x,
+                (a.y + a.height).max(b.y + b.height) - y,
+            )
+        })
+}
+
 pub(crate) struct EditingGeometry {
     layout: TextLayout,
     origin: Rect,
@@ -26,6 +55,7 @@ pub(crate) struct EditingGeometry {
     manual_scroll: bool,
     vertical_goal: Option<f32>,
     caret: Option<Rect>,
+    hint_bounds: Option<Rect>,
 }
 
 impl EditingGeometry {
@@ -273,6 +303,10 @@ impl<A: Application> Runtime<A> {
         let mut line = geometry.origin;
         line.height = line.height.min(geometry.layout.line_height);
         Some(line)
+    }
+
+    pub(crate) fn text_input_hint_bounds(&self, key: &str) -> Option<Rect> {
+        self.text_geometry.get(key)?.hint_bounds
     }
 
     pub(crate) fn editing_event(&mut self, event: Event) -> Result<bool, AppError> {
@@ -548,6 +582,14 @@ impl<A: Application> Runtime<A> {
                 SingleLineVerticalPlacement::Center => (0., extra_height / 2.),
                 SingleLineVerticalPlacement::Inset(inset) => (inset.min(extra_height), 0.),
             };
+            // Keep the unshifted paint viewport. An empty right-aligned
+            // editor's caret width does not describe the hint's extent.
+            let hint_viewport = Rect::new(
+                origin.x,
+                origin.y + top_inset,
+                origin.width,
+                origin.height - top_inset,
+            );
             let right_aligned = binding.right_align_single_line_text && !options.multiline;
             let horizontal_space =
                 right_aligned.then(|| right_alignment_space(content_width, &layout));
@@ -619,13 +661,41 @@ impl<A: Application> Runtime<A> {
             let placeholder = binding.text_input_placeholder.as_ref().filter(|_| {
                 editor.value().is_empty()
                     && !editor.is_composing()
-                    && (!binding.focused_placeholder || self.focused() == Some(key.as_str()))
+                    && (binding.placeholder_presentation != PlaceholderPresentation::Focused
+                        || focused)
             });
-            let paint_scroll_x = if let (true, Some(hint)) = (right_aligned, placeholder) {
-                let hint_layout = measurer.text_layout_styled(&hint.0, &text_style, None);
-                -right_alignment_space(content_width, &hint_layout).max(0.)
-            } else {
-                scroll.0 - horizontal_inset
+            let animated = binding.placeholder_presentation == PlaceholderPresentation::Animated;
+            let hint_layout = placeholder
+                .filter(|_| right_aligned || animated)
+                .map(|hint| {
+                    if let Some(alignment) = alignment {
+                        measurer.text_layout_aligned_styled(
+                            &hint.0,
+                            &text_style,
+                            content_width,
+                            alignment,
+                        )
+                    } else {
+                        measurer.text_layout_styled(
+                            &hint.0,
+                            &text_style,
+                            options.multiline.then_some(content_width),
+                        )
+                    }
+                });
+            let paint_scroll_x = match &hint_layout {
+                Some(layout) if right_aligned => {
+                    let space = right_alignment_space(content_width, layout);
+                    if animated && space < -CARET_REVEAL_WIDTH {
+                        // An overflowing right-aligned hint starts at the
+                        // right edge of the clip. Short hints keep caret room.
+                        -space - CARET_REVEAL_WIDTH
+                    } else {
+                        -space.max(0.)
+                    }
+                }
+                Some(_) if animated => 0.,
+                _ => scroll.0 - horizontal_inset,
             };
             let mut decoration = TextDecoration {
                 // Paint already uses the fixed top inset. Signed scroll
@@ -676,6 +746,12 @@ impl<A: Application> Runtime<A> {
                     manual_scroll,
                     vertical_goal,
                     caret: multiline_caret,
+                    hint_bounds: hint_layout
+                        .as_ref()
+                        .filter(|_| animated)
+                        .and_then(|layout| {
+                            hint_bounds(layout, hint_viewport, g.clip, decoration.scroll)
+                        }),
                 },
             );
             decorations.insert(id, decoration);
@@ -701,7 +777,7 @@ impl<A: Application> Runtime<A> {
             if top_inset > 0. {
                 display.set_presented_text_input_top_inset(id, top_inset)?;
             }
-            if let Some(placeholder) = placeholder {
+            if let Some(placeholder) = placeholder.filter(|_| !animated) {
                 display.set_presented_text_input_placeholder(id, placeholder.clone())?;
             }
             if alignment.is_some() {
