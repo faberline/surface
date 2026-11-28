@@ -1,0 +1,26 @@
+usage: run-stock-material.py [-h] --source SOURCE --source-manifest
+                             SOURCE_MANIFEST --runner RUNNER --web-root
+                             WEB_ROOT --web-manifest WEB_MANIFEST
+                             --runner-sha256 RUNNER_SHA256 --web-sha256
+                             WEB_SHA256 [--chrome CHROME] [--out OUT]
+                             [--timeout TIMEOUT]
+                             (--check-inputs | --verify | --run)
+
+Observe the recovered stock Surface v0.1.75 Material suite on headless macOS
+Chrome.
+
+options:
+  -h, --help            show this help message and exit
+  --source SOURCE
+  --source-manifest SOURCE_MANIFEST
+  --runner RUNNER
+  --web-root WEB_ROOT
+  --web-manifest WEB_MANIFEST
+  --runner-sha256 RUNNER_SHA256
+  --web-sha256 WEB_SHA256
+  --chrome CHROME
+  --out OUT
+  --timeout TIMEOUT
+  --check-inputs
+  --verify
+  --run

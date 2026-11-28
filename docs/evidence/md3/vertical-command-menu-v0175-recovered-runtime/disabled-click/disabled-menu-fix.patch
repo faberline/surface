@@ -1,0 +1,28 @@
+diff --git a/crates/surface-app/src/controls.rs b/crates/surface-app/src/controls.rs
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -728,15 +728,20 @@
+             if binding.modal_layer.is_none() {
+                 return true;
+             }
+-            // A painted or scrollable positioned descendant is part of the
+-            // modal even at a blank point. A transparent spacer is not.
++            // A painted or scrollable positioned descendant is inside the
++            // modal. Disabled menu items that accept focus also count as
++            // inside here because normal hit testing skips them.
+             hit.is_none()
+                 && !self.dom.iter().any(|(id, node)| {
+                     let style = node.style();
+-                    style.position != Position::Flow
++                    let positioned_panel = style.position != Position::Flow
+                         && (style.clip
+                             || style.background.3 > 0
+-                            || (style.border_width > 0. && style.border_color.3 > 0))
++                            || (style.border_width > 0. && style.border_color.3 > 0));
++                    (positioned_panel
++                        || self.bindings.get(&id).is_some_and(|binding| {
++                            binding.disabled_menu_focus() && binding.accepts_interaction()
++                        }))
+                         && contains(id)
+                         && self.descendant(id, root)
+                 })
