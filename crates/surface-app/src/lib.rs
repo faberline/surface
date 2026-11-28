@@ -318,12 +318,34 @@ impl<M> View<M> {
         alignment: TextAlignment,
         color: impl Fn(TextInputPaintState) -> Color + 'static,
     ) -> Self {
+        self.animate_text_input_label_with_fallback_paint(
+            editor_id,
+            resting_label,
+            (fallback_label, None),
+            palette,
+            alignment,
+            color,
+        )
+    }
+
+    /// Like [Self::animate_text_input_label_with_fallback], with a fixed ink
+    /// for the fallback when it sits on a different background.
+    pub fn animate_text_input_label_with_fallback_paint(
+        self,
+        editor_id: impl Into<String>,
+        resting_label: impl Into<String>,
+        (fallback_label, fallback_ink): (impl Into<String>, Option<Color>),
+        palette: &[Color],
+        alignment: TextAlignment,
+        color: impl Fn(TextInputPaintState) -> Color + 'static,
+    ) -> Self {
         self.with_text_input_paint(
             editor_id,
             editor_paint::Effect::Label {
                 resting: resting_label.into(),
                 color_motion: Some(editor_paint::LabelColorMotion {
                     fallback: fallback_label.into(),
+                    fallback_ink,
                     palette: palette.into(),
                 }),
                 alignment,

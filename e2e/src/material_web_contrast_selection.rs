@@ -11,7 +11,7 @@ use serde_json::{json, Value};
 use super::{
     contrast, editor_focus, media, palette,
     pixels::{CanvasPng, Rect, Rgb},
-    popup, popup_state, EDITOR, FACE, TEXTAREA,
+    popup, popup_state, Blend, EDITOR, FACE, TEXTAREA,
 };
 use crate::browser::{js, Chrome, Tab};
 use crate::check::step;
@@ -122,52 +122,6 @@ impl Clip {
             x: inner_start(x + 7.)..inner_end(x + width - 7.),
             y: inner_start(y + 7.)..inner_end(y + height - 7.),
         }
-    }
-}
-
-#[derive(Clone, Copy)]
-enum Blend {
-    ByteSpace,
-    LinearLight,
-}
-
-impl Blend {
-    fn name(self) -> &'static str {
-        match self {
-            Self::ByteSpace => "byte-space source-over",
-            Self::LinearLight => "linear-light source-over",
-        }
-    }
-
-    fn over(self, base: Rgb, highlight: [u8; 4]) -> Rgb {
-        let alpha = f64::from(highlight[3]) / 255.;
-        std::array::from_fn(|i| {
-            let from = f64::from(base[i]) / 255.;
-            let to = f64::from(highlight[i]) / 255.;
-            let channel = match self {
-                Self::ByteSpace => from * (1. - alpha) + to * alpha,
-                Self::LinearLight => {
-                    encode_srgb(decode_srgb(from) * (1. - alpha) + decode_srgb(to) * alpha)
-                }
-            };
-            (channel * 255.).round() as u8
-        })
-    }
-}
-
-fn decode_srgb(value: f64) -> f64 {
-    if value <= 0.04045 {
-        value / 12.92
-    } else {
-        ((value + 0.055) / 1.055).powf(2.4)
-    }
-}
-
-fn encode_srgb(value: f64) -> f64 {
-    if value <= 0.0031308 {
-        value * 12.92
-    } else {
-        1.055 * value.powf(1. / 2.4) - 0.055
     }
 }
 

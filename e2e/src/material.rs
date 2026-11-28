@@ -122,6 +122,8 @@ mod material_text_field_disabled_contrast;
 mod material_text_field_label_motion;
 #[path = "material_text_field_placeholder.rs"]
 mod material_text_field_placeholder;
+#[path = "material_text_field_system_pair.rs"]
+mod material_text_field_system_pair;
 #[path = "material_time_baseline.rs"]
 mod material_time_baseline;
 #[path = "material_time_dial.rs"]
@@ -178,7 +180,7 @@ pub const STEPS: &[&str] = &[
     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
-    "M359",
+    "M359", "M360", "M361", "M362",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -319,7 +321,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_text_field_label_motion::run(env, chrome, &url).await?;
     material_text_field_placeholder::run(env, chrome, &url).await?;
     material_text_field_boundary_motion::run(env, chrome, &url).await?;
-    material_text_field_disabled_contrast::run(env, chrome, &url).await
+    material_text_field_disabled_contrast::run(env, chrome, &url).await?;
+    material_text_field_system_pair::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -575,7 +578,9 @@ mod tests {
             .any(|scope| { scope[..label.len()] == label && scope[label.len()..] == placeholder }));
         let boundary = super::material_text_field_boundary_motion::STEPS;
         let disabled_contrast = super::material_text_field_disabled_contrast::STEPS;
-        assert!(super::STEPS.ends_with(&[placeholder, boundary, disabled_contrast].concat()));
+        let system_field_pair = super::material_text_field_system_pair::STEPS;
+        assert!(super::STEPS
+            .ends_with(&[placeholder, boundary, disabled_contrast, system_field_pair].concat()));
     }
 
     #[test]

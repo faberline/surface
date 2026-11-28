@@ -7,8 +7,8 @@ use surface::{
     TextMeasurer, TextScaling, TextStyle,
 };
 use surface_app::{
-    CursorStyle, DisplayContrast, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions,
-    ToggleSpring, View,
+    CursorStyle, DisplayContrast, Key, SystemColorPair, TextInputBoundaryMotion,
+    TextInputPaintState, TextOptions, ToggleSpring, View,
 };
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -16,7 +16,7 @@ use crate::{
     shape::{self, LayoutDirection},
     text_field_adornments::{physical, AffixText, FieldAdornments, ACTION_SIZE, ICON_SIZE, SIDE},
     text_field_counter::supporting_row,
-    text_field_label_notch::{outline_contour, LabelNotch},
+    text_field_label_notch::{caption_backing, outline_contour, LabelNotch},
     typography, TextFieldAdornments, TextFieldAppearance, TextFieldCounterOptions,
     TextFieldOptions, Theme,
 };
@@ -79,25 +79,45 @@ struct FieldEditing<Submit> {
     on_submit: Submit,
 }
 
-/// Text field builders that can use the host's disabled text color.
+/// Text field builders that can use the host's forced-color text and face.
 #[derive(Clone, Copy, Debug)]
 pub struct TextFieldTheme<'a> {
     theme: &'a Theme,
     disabled_ink: Option<Color>,
+    system: Option<FieldSystemColors>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct FieldSystemColors {
+    field: SystemColorPair,
+    canvas: SystemColorPair,
+    button: SystemColorPair,
 }
 
 impl Theme {
-    /// Use the host's disabled text ink in forced colors when it is available.
+    /// Use the host's field color pair and disabled text ink when available.
     ///
-    /// Use a theme that already matches the display preference. This only
-    /// changes disabled text and glyph ink in the fields built here.
+    /// Use a theme that already matches the display preference. A field pair
+    /// equal to the canvas keeps the existing field appearance.
     pub fn text_fields_for(&self, contrast: DisplayContrast) -> TextFieldTheme<'_> {
+        let (system, disabled_ink) = match contrast {
+            DisplayContrast::Forced(colors) => (
+                colors
+                    .field
+                    .filter(|field| *field != colors.canvas)
+                    .map(|field| FieldSystemColors {
+                        field,
+                        canvas: colors.canvas,
+                        button: colors.button,
+                    }),
+                colors.disabled_text,
+            ),
+            _ => (None, None),
+        };
         TextFieldTheme {
             theme: self,
-            disabled_ink: match contrast {
-                DisplayContrast::Forced(colors) => colors.disabled_text,
-                _ => None,
-            },
+            system,
+            disabled_ink,
         }
     }
 
@@ -317,24 +337,27 @@ impl TextFieldTheme<'_> {
         let description = error.or_else(|| visible_text(options.supporting_text));
         let rgba = self.theme.colors;
         let filled = appearance == TextFieldAppearance::Filled;
+        let system = self.system.filter(|_| !disabled);
+        let field_ink = system.map(|colors| colors.field.foreground);
+        let canvas_ink = system.map(|colors| colors.canvas.foreground);
         let tokens = FieldColors {
             disabled,
             error: error.is_some(),
-            boundary: if filled {
+            boundary: field_ink.unwrap_or(if filled {
                 rgba.on_surface_variant
             } else {
                 rgba.outline
-            },
-            neutral_label: rgba.on_surface_variant,
-            boundary_hover: rgba.on_surface,
-            label_hover: if filled {
+            }),
+            neutral_label: field_ink.unwrap_or(rgba.on_surface_variant),
+            boundary_hover: field_ink.unwrap_or(rgba.on_surface),
+            label_hover: field_ink.unwrap_or(if filled {
                 rgba.on_surface_variant
             } else {
                 rgba.on_surface
-            },
-            primary: rgba.primary,
-            error_ink: rgba.error,
-            error_hover: rgba.on_error_container,
+            }),
+            primary: field_ink.unwrap_or(rgba.primary),
+            error_ink: field_ink.unwrap_or(rgba.error),
+            error_hover: field_ink.unwrap_or(rgba.on_error_container),
             disabled_boundary: translucent(rgba.on_surface, if filled { 97 } else { 31 }),
             disabled_text: self
                 .disabled_ink
@@ -381,9 +404,9 @@ impl TextFieldTheme<'_> {
             .invalid(!disabled && error.is_some())
             .text_scaling(TextScaling::Fixed)
             .text_input_caret_color(if error.is_some() {
-                rgba.error
+                tokens.error_ink
             } else {
-                rgba.primary
+                tokens.primary
             })
             .focus_color(Color::TRANSPARENT)
             .styled(
@@ -392,7 +415,7 @@ impl TextFieldTheme<'_> {
                     .foreground(if disabled {
                         Color::TRANSPARENT
                     } else {
-                        rgba.on_surface
+                        field_ink.unwrap_or(rgba.on_surface)
                     }),
             );
         if description.is_some() {
@@ -447,7 +470,7 @@ impl TextFieldTheme<'_> {
             });
         }
         if let Some(hint) = hint.filter(|_| !disabled) {
-            editor = editor.animated_text_input_placeholder(hint, rgba.on_surface_variant);
+            editor = editor.animated_text_input_placeholder(hint, tokens.neutral_label);
         }
 
         let boundary_part = if filled { "indicator" } else { "outline" };
@@ -512,22 +535,26 @@ impl TextFieldTheme<'_> {
         };
         let inline = label_view(inline_id.clone(), body.clone());
         let fallback_id = format!("{id}-above-label");
-        let floating = label_view(floating_id, caption.clone())
-            .animate_text_input_label_with_fallback(
+        let floating = label_view(floating_id.clone(), caption.clone())
+            .animate_text_input_label_with_fallback_paint(
                 id,
                 inline_id,
-                &fallback_id,
+                (&fallback_id, canvas_ink),
                 &[
-                    if filled {
-                        rgba.surface_container_highest
-                    } else {
-                        rgba.surface
-                    },
+                    system
+                        .map(|colors| colors.field.background)
+                        .unwrap_or(if filled {
+                            rgba.surface_container_highest
+                        } else {
+                            rgba.surface
+                        }),
                     rgba.on_surface,
                     rgba.on_surface_variant,
                     rgba.primary,
                     rgba.error,
                     rgba.on_error_container,
+                    field_ink.unwrap_or(rgba.on_surface),
+                    canvas_ink.unwrap_or(rgba.on_surface),
                 ],
                 alignment,
                 move |state| tokens.label(state),
@@ -569,9 +596,9 @@ impl TextFieldTheme<'_> {
         let supporting_color = if disabled {
             tokens.disabled_text
         } else if error.is_some() {
-            tokens.error_ink
+            canvas_ink.unwrap_or(tokens.error_ink)
         } else {
-            tokens.neutral_label
+            canvas_ink.unwrap_or(tokens.neutral_label)
         };
         let description_view = description.map(|description| {
             View::new(
@@ -591,9 +618,9 @@ impl TextFieldTheme<'_> {
             let counter_color = if disabled {
                 tokens.disabled_text
             } else if *exceeded {
-                tokens.error_ink
+                canvas_ink.unwrap_or(tokens.error_ink)
             } else {
-                tokens.neutral_label
+                canvas_ink.unwrap_or(tokens.neutral_label)
             };
             let alignment = if rtl {
                 TextAlignment::Left
@@ -656,15 +683,18 @@ impl TextFieldTheme<'_> {
         }
         if let Some(action) = adornments.trailing_action {
             let disabled = disabled || action.disabled;
+            let button_pair = system.filter(|_| !disabled).map(|colors| colors.button);
             let ink = if disabled {
                 tokens.disabled_text
+            } else if let Some(pair) = button_pair {
+                pair.foreground
             } else if tokens.error {
                 tokens.error_ink
             } else {
                 tokens.neutral_label
             };
             let icon = action.icon.contour_dp(ICON_SIZE, ink)?;
-            let icon_hover = if !disabled && tokens.error {
+            let icon_hover = if !disabled && tokens.error && button_pair.is_none() {
                 action.icon.contour_dp(ICON_SIZE, tokens.error_hover)?
             } else {
                 icon.clone()
@@ -676,6 +706,7 @@ impl TextFieldTheme<'_> {
                         action.name,
                         disabled,
                         ink,
+                        button_pair,
                         action.on_press,
                     )?
                     .restore_focus_on_removal(id)
@@ -721,8 +752,13 @@ impl TextFieldTheme<'_> {
                     .paint_when_text_input(id, floats),
             );
             slots.push(
-                text("wrapped", &affix.spoken_name, caption.clone(), affix_ink)
-                    .without_interaction(None),
+                text(
+                    "wrapped",
+                    &affix.spoken_name,
+                    caption.clone(),
+                    canvas_ink.unwrap_or(affix_ink),
+                )
+                .without_interaction(None),
             );
             slots.push(text(
                 "description",
@@ -735,6 +771,7 @@ impl TextFieldTheme<'_> {
         shell.min_width = FACE_MIN;
         let layout = FieldLayout {
             appearance,
+            paints_background: filled || system.is_some(),
             multiline,
             label: label.to_owned(),
             description: description.map(str::to_owned),
@@ -747,30 +784,40 @@ impl TextFieldTheme<'_> {
             disabled_text: disabled_text.map(|(kind, _)| kind),
             adornments: field_adornments,
         };
-        let filled_backgrounds = filled.then(|| {
+        let layer = |part, color, corners| {
+            View::new(
+                Node::new(Role::Group, "")
+                    .id(format!("{id}-{part}"))
+                    .styled(Style::default().corners(corners).background(color)),
+            )
+            .without_interaction(None)
+        };
+        let backgrounds = if filled {
             let container = if disabled {
                 translucent(rgba.on_surface, 10)
             } else {
-                rgba.surface_container_highest
+                system.map_or(rgba.surface_container_highest, |colors| {
+                    colors.field.background
+                })
             };
-            let layer = |part, color| {
-                View::new(
-                    Node::new(Role::Group, "")
-                        .id(format!("{id}-{part}"))
-                        .styled(
-                            Style::default()
-                                .corners(shape::EXTRA_SMALL_TOP)
-                                .background(color),
-                        ),
-                )
-                .without_interaction(None)
-            };
-            [
-                layer("container", container),
-                layer("hover-layer", translucent(rgba.on_surface, 20))
+            let hover = system.map_or(translucent(rgba.on_surface, 20), |_| Color::TRANSPARENT);
+            Some([
+                layer("container", container, shape::EXTRA_SMALL_TOP),
+                layer("hover-layer", hover, shape::EXTRA_SMALL_TOP)
                     .paint_when_text_input(id, |state| state.is_hovered && !state.is_focused),
-            ]
-        });
+            ])
+        } else {
+            system.map(|colors| {
+                [
+                    layer("container", colors.field.background, shape::EXTRA_SMALL),
+                    View::new(Node::new(Role::Group, "").id(format!("{id}-label-backing")))
+                        .without_interaction(None)
+                        .paint_text_input_label_outline(id, floating_id, move |_, face, pose| {
+                            caption_backing(face, pose?.bounds, colors.field.background)
+                        }),
+                ]
+            })
+        };
         Some(
             View::new(
                 Node::new(Role::Group, "")
@@ -779,7 +826,7 @@ impl TextFieldTheme<'_> {
                     .measured_group(layout),
             )
             .children(
-                filled_backgrounds
+                backgrounds
                     .into_iter()
                     .flatten()
                     .chain([editor, boundary, inline, floating, fallback])
@@ -895,6 +942,7 @@ impl MeasuredGroupLayout for ClippedSingleLineHint {
 #[derive(Debug)]
 struct FieldLayout {
     appearance: TextFieldAppearance,
+    paints_background: bool,
     multiline: Option<MultilineTextFieldSize>,
     label: String,
     description: Option<String>,
@@ -1005,7 +1053,7 @@ impl FieldLayout {
         };
         let above = Rect::new(SIDE, 0., content_width, above_height);
         let mut rects = Vec::new();
-        if filled {
+        if self.paints_background {
             rects.extend([face, face]);
         }
         rects.extend([editor, face, inline, floating, above]);

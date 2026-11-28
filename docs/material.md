@@ -1396,6 +1396,26 @@ fixed testing palettes in the CSS Color Adjustment specification.
 [W3C system colors](https://www.w3.org/TR/css-color-4/#css-system-colors) ·
 [Forced colors mode test palettes](https://www.w3.org/TR/css-color-adjust-1/#forced-colors-mode-color-palettes)
 
+### System colors for the field face and text
+
+On the Web, Surface reads CSS `Field` and `FieldText` together. Other
+hosts can pass the pair with `SystemContrastColors::with_field`. The
+opt-in field builders use a distinct pair for the editor face, value,
+caret, hint and in-field label. Filled and Outlined fields both support
+the pair. The field keeps its measured bounds and keyboard focus stroke.
+
+An Outlined label that crosses the top edge gets Field backing above the
+face. A label that wraps above the field uses CanvasText. Supporting text,
+counts and wrapped affixes also use CanvasText. A separate trailing button
+uses its ButtonFace and ButtonText pair. Selected text keeps Highlight
+and HighlightText. Disabled fields keep their existing disabled paint.
+
+A missing pair or one equal to the canvas keeps the existing field
+paint. To inspect a distinct synthetic palette on desktop, run the
+headless Gallery with `--forced-colors field-pair`.
+
+[W3C system colors](https://www.w3.org/TR/css-color-4/#css-system-colors)
+
 ## Baseline segmented buttons
 
 Use `Theme::baseline_segmented_button` for two to five related choices in

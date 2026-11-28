@@ -3,7 +3,7 @@ use std::num::NonZeroU16;
 
 use surface::{
     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
-    TextAlignment, TextMeasurer,
+    TextAlignment, TextMeasurer, TextSelectionColors,
 };
 use surface_app::{
     Application, DisplayContrast, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime,
@@ -357,6 +357,330 @@ fn assert_glyph_ink(list: &ExtendedDisplayList, bounds: Rect, ink: Color) {
         ExtendedPaintOp::FillPath(path) if path.color() == ink
             && covers(path, bounds.x + bounds.width / 2., bounds.y + bounds.height / 2.)
     )));
+}
+
+const PAIRED_APPEARANCES: [(TextFieldAppearance, &str); 2] = [
+    (TextFieldAppearance::Outlined, "project-name-outline"),
+    (TextFieldAppearance::Filled, "project-name-indicator"),
+];
+const CANVAS_PAIR: SystemColorPair = SystemColorPair {
+    background: Color::rgb(255, 255, 255),
+    foreground: Color::rgb(13, 38, 22),
+};
+const FIELD_PAIR: SystemColorPair = SystemColorPair {
+    background: Color::rgb(249, 230, 191),
+    foreground: Color::rgb(39, 22, 93),
+};
+const BUTTON_PAIR: SystemColorPair = SystemColorPair {
+    background: Color::rgb(199, 231, 255),
+    foreground: Color::rgb(13, 36, 114),
+};
+const HIGHLIGHT_PAIR: SystemColorPair = SystemColorPair {
+    background: Color::rgb(102, 27, 66),
+    foreground: Color::rgb(255, 244, 224),
+};
+const GRAY_TEXT: Color = Color::rgb(96, 0, 0);
+
+fn field_palette(field: Option<SystemColorPair>) -> DisplayContrast {
+    let colors = SystemContrastColors::new(CANVAS_PAIR, BUTTON_PAIR, HIGHLIGHT_PAIR)
+        .with_disabled_text(GRAY_TEXT);
+    DisplayContrast::Forced(field.map_or(colors, |field| colors.with_field(field)))
+}
+
+fn has_face_paint(paint: &ExtendedDisplayList, bounds: Rect, ink: Color) -> bool {
+    paint.ops().iter().any(|op| {
+        matches!(op, ExtendedPaintOp::Legacy(
+            PaintOp::Quad { rect, color, .. } | PaintOp::Shape { rect, color, .. }
+        ) if *rect == bounds && *color == ink)
+    })
+}
+
+fn caption_backing_index(paint: &ExtendedDisplayList, face: Rect, x: f32) -> Option<usize> {
+    paint.ops().iter().position(|op| {
+        matches!(op, ExtendedPaintOp::FillPath(path) if path.color() == FIELD_PAIR.background
+            && covers(path, x, face.y - 0.25))
+    })
+}
+
+fn assert_field_stroke(paint: &ExtendedDisplayList, face: Rect, width: f32) {
+    let stroke = bottom_boundary(paint, face);
+    assert_eq!(stroke.color(), FIELD_PAIR.foreground);
+    assert_bottom_width(stroke, face, width);
+}
+
+#[test]
+fn distinct_field_pair_paints_both_appearances_and_preserves_the_editor() {
+    const VALUE: &str = "Project";
+    let mut text = TextSystem::default();
+    for (appearance, boundary) in PAIRED_APPEARANCES {
+        for multiline in [
+            None,
+            Some(MultilineTextFieldSize::FixedRows(
+                NonZeroU16::new(2).unwrap(),
+            )),
+        ] {
+            let mut runtime = Runtime::new(Form {
+                adorned: Some(appearance),
+                multiline,
+                character_limit: Some(8),
+                field_contrast: Some(DisplayContrast::Normal),
+                ..Form::default()
+            })
+            .unwrap();
+            runtime.set_reduced_motion(true);
+            runtime.set_display_contrast(field_palette(None)).unwrap();
+            render(&mut runtime, 400., &mut text);
+            let editor = bounds(&runtime, ID);
+            let face = bounds(&runtime, boundary);
+            let value_box = bounds(&runtime, BODY);
+            let support = bounds(&runtime, HELP);
+
+            runtime
+                .set_display_contrast(field_palette(Some(FIELD_PAIR)))
+                .unwrap();
+            let idle = render(&mut runtime, 400., &mut text);
+            assert!(has_face_paint(&idle, face, FIELD_PAIR.background));
+            assert_eq!(label_color(&idle, LABEL), FIELD_PAIR.foreground);
+            assert_eq!(
+                label_pose(&idle, LABEL).0,
+                bounds(&runtime, "project-name-inline-label")
+            );
+            assert_eq!(label_color(&idle, SUPPORT), CANVAS_PAIR.foreground);
+            assert_eq!(label_color(&idle, "0/8"), CANVAS_PAIR.foreground);
+            assert!(text_run(&idle, HINT).is_none());
+            assert_field_stroke(&idle, face, 1.);
+            assert_eq!(bounds(&runtime, ID), editor);
+            assert_eq!(bounds(&runtime, boundary), face);
+            assert_eq!(bounds(&runtime, BODY), value_box);
+            assert_eq!(bounds(&runtime, HELP), support);
+
+            tab(&mut runtime);
+            let focused = render(&mut runtime, 400., &mut text);
+            assert_eq!(runtime.focused(), Some(ID));
+            assert_eq!(label_color(&focused, LABEL), FIELD_PAIR.foreground);
+            assert_eq!(label_color(&focused, HINT), FIELD_PAIR.foreground);
+            assert_eq!(label_color(&focused, "€"), FIELD_PAIR.foreground);
+            assert_field_stroke(&focused, face, 3.);
+
+            runtime.dispatch(Event::Text(VALUE.into())).unwrap();
+            let entered = render(&mut runtime, 400., &mut text);
+            assert_eq!(label_color(&entered, VALUE), FIELD_PAIR.foreground);
+            assert_eq!(label_color(&entered, "7/8"), CANVAS_PAIR.foreground);
+            assert!(text_run(&entered, HINT).is_none());
+            runtime
+                .dispatch(Event::Select {
+                    anchor: 5,
+                    cursor: 2,
+                })
+                .unwrap();
+            runtime.set_display_contrast(field_palette(None)).unwrap();
+            render(&mut runtime, 400., &mut text);
+            let before = runtime.input_snapshot().unwrap();
+            runtime
+                .set_display_contrast(field_palette(Some(FIELD_PAIR)))
+                .unwrap();
+            let selected = render(&mut runtime, 400., &mut text);
+            let after = runtime.input_snapshot().unwrap();
+            assert_eq!(
+                (
+                    after.id.as_str(),
+                    after.label.as_str(),
+                    after.value.as_str()
+                ),
+                (ID, LABEL, VALUE)
+            );
+            assert_eq!((after.selection.anchor, after.selection.cursor), (5, 2));
+            assert_eq!(after.selection, before.selection);
+            assert_eq!(after.caret, before.caret);
+            assert_eq!(after.multiline, multiline.is_some());
+            assert_eq!(bounds(&runtime, ID), editor);
+            assert_eq!(bounds(&runtime, BODY), value_box);
+            assert_eq!(runtime.app().edits, [VALUE]);
+            let selection = selected
+                .ops()
+                .iter()
+                .find_map(|op| match op {
+                    ExtendedPaintOp::TextSelection(selection)
+                        if matches!(selection.run(), PaintOp::StyledText { text, .. } if text == VALUE) =>
+                    {
+                        Some(selection)
+                    }
+                    _ => None,
+                })
+                .expect("selected editor value keeps the highlight paint");
+            assert!(matches!(selection.run(), PaintOp::StyledText { color, .. }
+                if *color == FIELD_PAIR.foreground));
+            assert_eq!(
+                selection.colors(),
+                TextSelectionColors {
+                    background: HIGHLIGHT_PAIR.background,
+                    foreground: HIGHLIGHT_PAIR.foreground,
+                }
+            );
+            let regions = selection.pixel_regions(1., (400, 440));
+            assert!(regions.iter().any(|part| part.selected));
+            assert!(regions.iter().any(|part| !part.selected));
+        }
+    }
+}
+
+#[test]
+fn only_the_outlined_intersecting_caption_gets_field_backing() {
+    let mut text = TextSystem::default();
+    for (appearance, boundary) in PAIRED_APPEARANCES {
+        let mut wide = Runtime::new(Form {
+            adorned: Some(appearance),
+            field_contrast: Some(DisplayContrast::Normal),
+            ..Form::default()
+        })
+        .unwrap();
+        wide.set_reduced_motion(true);
+        wide.set_display_contrast(field_palette(Some(FIELD_PAIR)))
+            .unwrap();
+        let idle = render(&mut wide, 400., &mut text);
+        let face = bounds(&wide, boundary);
+        let caption = bounds(&wide, "project-name-floating-label");
+        let x = caption.x + caption.width / 2.;
+        assert!(caption_backing_index(&idle, face, x).is_none());
+        tab(&mut wide);
+        let focused = render(&mut wide, 400., &mut text);
+        if appearance == TextFieldAppearance::Outlined {
+            assert!(caption.y < face.y && caption.y + caption.height > face.y);
+            assert_eq!(label_pose(&focused, LABEL).0, caption);
+            let backing = caption_backing_index(&focused, face, x)
+                .expect("field ink has a matching caption backdrop");
+            let boundary = focused
+                .ops()
+                .iter()
+                .position(|op| {
+                    matches!(op, ExtendedPaintOp::FillPath(path)
+                    if path.rect() == face && path.color() == FIELD_PAIR.foreground)
+                })
+                .expect("outlined boundary is painted");
+            assert!(backing < boundary);
+            let outline = find_outline(&focused, FIELD_PAIR.foreground, face);
+            assert!(!covers(outline, x, face.y + 0.5));
+            assert!(covers(outline, caption.x - 5., face.y + 0.5));
+        } else {
+            assert!(caption.y >= face.y);
+            assert!(caption_backing_index(&focused, face, x).is_none());
+        }
+
+        let mut compact = Runtime::new(Form {
+            label: LONG_LABEL,
+            rtl: true,
+            scale: 2.,
+            adorned: Some(appearance),
+            field_contrast: Some(DisplayContrast::Normal),
+            ..Form::default()
+        })
+        .unwrap();
+        compact.set_reduced_motion(true);
+        compact
+            .set_display_contrast(field_palette(Some(FIELD_PAIR)))
+            .unwrap();
+        render(&mut compact, 320., &mut text);
+        tab(&mut compact);
+        let focused = render(&mut compact, 320., &mut text);
+        let face = bounds(&compact, boundary);
+        let above = bounds(&compact, "project-name-above-label");
+        assert_eq!(label_pose(&focused, LONG_LABEL).0, above);
+        assert!(above.y + above.height < face.y);
+        assert_eq!(label_color(&focused, LONG_LABEL), CANVAS_PAIR.foreground);
+        assert_eq!(label_color(&focused, SUPPORT), CANVAS_PAIR.foreground);
+        assert_eq!(label_color(&focused, HINT), FIELD_PAIR.foreground);
+        assert!(has_face_paint(&focused, face, FIELD_PAIR.background));
+        assert!(focused.ops().iter().all(|op| !matches!(op,
+            ExtendedPaintOp::FillPath(path) if path.color() == FIELD_PAIR.background)));
+        if appearance == TextFieldAppearance::Outlined {
+            let outline = find_outline(&focused, FIELD_PAIR.foreground, face);
+            assert!(covers(outline, face.x + face.width / 2., face.y + 0.5));
+        }
+        assert_field_stroke(&focused, face, 3.);
+    }
+}
+
+#[test]
+fn field_pair_falls_back_for_equal_pairs_and_keeps_disabled_paint() {
+    let mut text = TextSystem::default();
+    for (appearance, _) in PAIRED_APPEARANCES {
+        for editability in [
+            TextFieldEditability::Editable,
+            TextFieldEditability::Disabled,
+        ] {
+            let mut runtime = Runtime::new(Form {
+                value: "Project".into(),
+                adorned: Some(appearance),
+                editability,
+                field_contrast: Some(DisplayContrast::Normal),
+                ..Form::default()
+            })
+            .unwrap();
+            runtime.set_reduced_motion(true);
+            runtime.set_display_contrast(field_palette(None)).unwrap();
+            render(&mut runtime, 400., &mut text);
+            tab(&mut runtime);
+            let missing = render(&mut runtime, 400., &mut text);
+            runtime
+                .set_display_contrast(field_palette(Some(CANVAS_PAIR)))
+                .unwrap();
+            assert_eq!(render(&mut runtime, 400., &mut text), missing);
+            if editability == TextFieldEditability::Disabled {
+                runtime
+                    .set_display_contrast(field_palette(Some(FIELD_PAIR)))
+                    .unwrap();
+                assert_eq!(render(&mut runtime, 400., &mut text), missing);
+                assert_eq!(label_color(&missing, "Project"), GRAY_TEXT);
+                assert_eq!(runtime.focused(), Some(AFTER));
+                assert!(runtime.editor(ID).is_none());
+            }
+        }
+    }
+}
+
+#[test]
+fn enabled_adornment_glyph_and_focus_use_the_button_pair() {
+    let mut text = TextSystem::default();
+    for (appearance, _) in PAIRED_APPEARANCES {
+        let mut runtime = Runtime::new(Form {
+            adorned: Some(appearance),
+            field_contrast: Some(DisplayContrast::Normal),
+            ..Form::default()
+        })
+        .unwrap();
+        runtime
+            .set_display_contrast(field_palette(Some(FIELD_PAIR)))
+            .unwrap();
+        render(&mut runtime, 400., &mut text);
+        tab(&mut runtime);
+        tab(&mut runtime);
+        let paint = render(&mut runtime, 400., &mut text);
+        assert_eq!(runtime.focused(), Some(TRAILING));
+        let action = bounds(&runtime, TRAILING);
+        let backing = bounds(&runtime, "project-name-trailing-action-system-face");
+        assert_eq!((action.width, action.height), (48., 48.));
+        assert_eq!(
+            backing,
+            bounds(&runtime, "project-name-trailing-action-focus")
+        );
+        assert!(has_face_paint(&paint, backing, BUTTON_PAIR.background));
+        assert_glyph_ink(
+            &paint,
+            bounds(&runtime, "project-name-trailing-icon"),
+            BUTTON_PAIR.foreground,
+        );
+        assert_glyph_ink(
+            &paint,
+            bounds(&runtime, "project-name-leading-icon"),
+            FIELD_PAIR.foreground,
+        );
+        assert!(paint.ops().iter().any(|op| matches!(op, ExtendedPaintOp::Legacy(
+            PaintOp::Stroke { rect, color, width, .. } | PaintOp::ShapeStroke { rect, color, width, .. }
+        ) if *rect == backing && *width == 3. && *color == BUTTON_PAIR.foreground)));
+        assert!(runtime.dispatch(Event::Activate).unwrap());
+        assert_eq!(runtime.app().actions, 1);
+        assert!(runtime.app().edits.is_empty());
+    }
 }
 
 #[test]

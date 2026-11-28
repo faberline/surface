@@ -43,6 +43,21 @@ pub(crate) fn outline_contour(
     FillContour::new(outline_points(face, stroke, cutout), color)
 }
 
+pub(crate) fn caption_backing(face: Rect, label: Rect, color: Color) -> Option<FillContour> {
+    let top = label.y - face.y;
+    // The field face backs the lower part. The contour only covers the
+    // part of the moving label that would otherwise sit on the canvas.
+    if top >= 0. || top + label.height <= 0. || label.width <= 0. {
+        return None;
+    }
+    let left = (label.x - face.x - NOTCH_PAD).max(CORNER);
+    let right = (label.x + label.width - face.x + NOTCH_PAD).min(face.width - CORNER);
+    if right <= left {
+        return None;
+    }
+    FillContour::new([[left, top], [right, top], [right, 0.], [left, 0.]], color)
+}
+
 fn cutout(face: Rect, stroke: f32, notch: LabelNotch) -> Option<Cutout> {
     if !notch.progress.is_finite() || notch.progress <= 0. {
         return None;
