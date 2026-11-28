@@ -49,6 +49,7 @@ pub use editing::{
     TextSelection,
 };
 pub use editing_runtime::InputSnapshot;
+pub use editor_paint::TextInputLabelMotion;
 pub use frame_input::{
     FrameInput, FramePress, FramePressPhase, InputAnimationUpdate, TouchContact,
 };
@@ -271,6 +272,44 @@ impl<M> View<M> {
         color: impl Fn(TextInputPaintState) -> Option<Color> + 'static,
     ) -> Self {
         self.with_text_input_paint(editor_id, editor_paint::Effect::Foreground(Box::new(color)))
+    }
+
+    /// Move this passive label between the measured resting and floating positions.
+    /// Both text nodes and the editor share an immediate parent. The labels
+    /// carry the same text and remain outside focus and accessibility.
+    pub fn animate_text_input_label(
+        self,
+        editor_id: impl Into<String>,
+        resting_label: impl Into<String>,
+        alignment: TextAlignment,
+        color: impl Fn(TextInputPaintState) -> Color + 'static,
+    ) -> Self {
+        self.with_text_input_paint(
+            editor_id,
+            editor_paint::Effect::Label {
+                resting: resting_label.into(),
+                alignment,
+                color: Box::new(color),
+            },
+        )
+    }
+
+    /// Paint an outline using the same presented geometry as its moving label.
+    /// No label pose is available when the measured label slots are empty.
+    pub fn paint_text_input_label_outline(
+        self,
+        editor_id: impl Into<String>,
+        label_id: impl Into<String>,
+        painter: impl Fn(TextInputPaintState, Rect, Option<TextInputLabelMotion>) -> Option<FillContour>
+            + 'static,
+    ) -> Self {
+        self.with_text_input_paint(
+            editor_id,
+            editor_paint::Effect::LabelContour {
+                label: label_id.into(),
+                paint: Box::new(painter),
+            },
+        )
     }
 
     /// Paint a node-local contour using the sibling editor's rendered state.
@@ -1391,6 +1430,7 @@ pub struct Runtime<A: Application> {
     scroll_state: scroll_control::State,
     editors: BTreeMap<String, TextEditor>,
     text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
+    editor_label_motion: editor_paint::LabelMotions,
     pending_multiline_caret_reveal: Option<String>,
     ime_area: Option<surface::Rect>,
     text_drag: Option<String>,
@@ -1441,6 +1481,7 @@ impl<A: Application> Runtime<A> {
             scroll_state: scroll_control::State::default(),
             editors: BTreeMap::new(),
             text_geometry: BTreeMap::new(),
+            editor_label_motion: editor_paint::LabelMotions::default(),
             pending_multiline_caret_reveal: None,
             ime_area: None,
             text_drag: None,
@@ -2085,7 +2126,7 @@ impl<A: Application> Runtime<A> {
             (display_dom, decorations, computed) =
                 self.layout_editing(width, height, text_scale, measurer)?;
         }
-        let editor_paint = self.resolve_text_input_paint(&mut computed);
+        let editor_paint = self.resolve_text_input_paint(&mut computed, measurer);
         let mut panel_effects = Vec::new();
         let viewport = computed.viewport;
         self.dom.apply_modal_layers_with_panel_ranges(

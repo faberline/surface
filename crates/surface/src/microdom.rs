@@ -211,6 +211,8 @@ pub struct Node {
     #[serde(skip)]
     presented_text_input_placeholder: Option<Arc<(String, Color)>>,
     #[serde(skip)]
+    pub(crate) presented_text_paint_bounds: Option<Rect>,
+    #[serde(skip)]
     pub(crate) presented_text_input_horizontal_inset: f32,
     #[serde(skip)]
     pub(crate) presented_text_input_horizontal_bounds: Option<(f32, f32)>,
@@ -308,6 +310,7 @@ impl Node {
             text: None,
             text_input_caret_color: None,
             presented_text_input_placeholder: None,
+            presented_text_paint_bounds: None,
             presented_text_input_horizontal_inset: 0.,
             presented_text_input_horizontal_bounds: None,
             presented_text_input_viewport: None,
@@ -1276,6 +1279,46 @@ impl MicroDom {
             .ok_or(DomError::InvalidNode(id.index()))?;
         if node.role() == Role::TextInput && !placeholder.0.is_empty() {
             node.presented_text_input_placeholder = Some(placeholder);
+        }
+        Ok(())
+    }
+
+    /// Suppress placeholder paint on the display copy for this frame.
+    #[doc(hidden)]
+    pub fn clear_presented_text_input_placeholder(&mut self, id: NodeId) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        node.presented_text_input_placeholder = None;
+        Ok(())
+    }
+
+    /// Place a passive text run in a different display rectangle for this frame.
+    /// Its authored bounds and clipping are retained for input and layout.
+    #[doc(hidden)]
+    pub fn set_presented_text_paint_bounds(
+        &mut self,
+        id: NodeId,
+        bounds: Rect,
+    ) -> Result<(), DomError> {
+        let node = self
+            .nodes
+            .get_mut(id.index())
+            .ok_or(DomError::InvalidNode(id.index()))?;
+        if node.role() == Role::Text
+            && [
+                bounds.x,
+                bounds.y,
+                bounds.x + bounds.width,
+                bounds.y + bounds.height,
+            ]
+            .into_iter()
+            .all(f32::is_finite)
+            && bounds.width > 0.
+            && bounds.height > 0.
+        {
+            node.presented_text_paint_bounds = Some(bounds);
         }
         Ok(())
     }

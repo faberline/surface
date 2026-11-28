@@ -1,6 +1,5 @@
 //! Material 3 fields with a stable Runtime editor.
 
-use std::f32::consts::FRAC_PI_2;
 use std::num::NonZeroU16;
 
 use surface::{
@@ -14,14 +13,13 @@ use crate::{
     shape::{self, LayoutDirection},
     text_field_adornments::{physical, AffixText, FieldAdornments, ACTION_SIZE, ICON_SIZE, SIDE},
     text_field_counter::supporting_row,
+    text_field_label_notch::{outline_contour, LabelNotch},
     typography, TextFieldAdornments, TextFieldAppearance, TextFieldCounterOptions,
     TextFieldOptions, Theme,
 };
 
 const FACE_MIN: f32 = 56.;
-const NOTCH_PAD: f32 = 4.;
 const DESCRIPTION_GAP: f32 = 4.;
-const CORNER: f32 = 4.;
 const FILLED_VERTICAL_PADDING: f32 = 8.;
 
 /// The actions the field allows. Read-only fields can still select and copy.
@@ -294,6 +292,7 @@ impl Theme {
         let id = options.id;
         let description_id = format!("{id}-description");
         let counter_id = format!("{id}-counter-description");
+        let inline_id = format!("{id}-inline-label");
         let floating_id = format!("{id}-floating-label");
         let action_id = format!("{id}-trailing-action");
         let value_box_id = format!("{id}-value-box");
@@ -389,42 +388,40 @@ impl Theme {
 
         let boundary_part = if filled { "indicator" } else { "outline" };
         let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
-            .without_interaction(None)
-            .paint_text_input_contour_with_bounds(
-                id,
-                (!filled).then_some(floating_id.as_str()),
-                move |state, face, floating| {
-                    let width = face.width;
-                    let height = face.height;
-                    let thickness = if state.is_focused && !disabled {
-                        3.
-                    } else {
-                        1.
-                    };
-                    let ink = tokens.boundary(state);
-                    if filled {
-                        return FillContour::new(
-                            [
-                                [0., height - thickness],
-                                [width, height - thickness],
-                                [width, height],
-                                [0., height],
-                            ],
-                            ink,
-                        );
-                    }
-                    let gap = floating
-                        .filter(|rect| {
-                            floats(state) && rect.width > 0. && rect.y + rect.height > face.y
-                        })
-                        .map(|rect| {
-                            let left = rect.x - face.x;
-                            (left - NOTCH_PAD, left + rect.width + NOTCH_PAD)
-                        });
-                    outline_contour(width, height, thickness, gap, ink)
-                },
-            );
-        let label_view = |id, font, shown: fn(TextInputPaintState) -> bool| {
+            .without_interaction(None);
+        let stroke = move |state: TextInputPaintState| {
+            if state.is_focused && !disabled {
+                3.
+            } else {
+                1.
+            }
+        };
+        let direction = options.direction;
+        let boundary = if filled {
+            boundary.paint_text_input_contour_with_bounds(id, None, move |state, face, _| {
+                let top = face.height - stroke(state);
+                FillContour::new(
+                    [
+                        [0., top],
+                        [face.width, top],
+                        [face.width, face.height],
+                        [0., face.height],
+                    ],
+                    tokens.boundary(state),
+                )
+            })
+        } else {
+            boundary.paint_text_input_label_outline(id, &floating_id, move |state, face, pose| {
+                let notch = pose.map(|pose| LabelNotch {
+                    progress: pose.progress,
+                    measured_size: (pose.bounds.width, pose.bounds.height),
+                    minimized: pose.floated_bounds,
+                    direction,
+                });
+                outline_contour(face, stroke(state), notch, tokens.boundary(state))
+            })
+        };
+        let label_view = |id, font| {
             View::new(
                 Node::new(Role::Text, "")
                     .id(id)
@@ -434,15 +431,16 @@ impl Theme {
                     .styled(Style::default().with_text_style(font)),
             )
             .without_interaction(None)
-            .paint_text_input_foreground(options.id, move |state| {
-                shown(state).then(|| tokens.label(state))
-            })
         };
-        let inline = label_view(format!("{id}-inline-label"), body.clone(), |state| {
-            !floats(state)
-        });
-        let floating = label_view(floating_id, caption.clone(), floats);
-        let fallback = label_view(format!("{id}-above-label"), caption.clone(), |_| true);
+        let inline = label_view(inline_id.clone(), body.clone());
+        let floating = label_view(floating_id, caption.clone()).animate_text_input_label(
+            id,
+            inline_id,
+            alignment,
+            move |state| tokens.label(state),
+        );
+        let fallback = label_view(format!("{id}-above-label"), caption.clone())
+            .paint_text_input_foreground(id, move |state| Some(tokens.label(state)));
         // Disabled peers have an authored value but do not mount an editor.
         // Draw their value in the same viewport as an enabled field.
         let disabled_ink = disabled_value.then(|| {
@@ -980,44 +978,4 @@ impl MeasuredGroupLayout for FieldLayout {
     ) -> Vec<Rect> {
         self.rects(children, width, fonts)
     }
-}
-
-fn outline_contour(
-    width: f32,
-    height: f32,
-    thickness: f32,
-    gap: Option<(f32, f32)>,
-    color: Color,
-) -> Option<FillContour> {
-    if width < 2. * CORNER || height < 2. * CORNER {
-        return None;
-    }
-    // Trace the outer edge clockwise and the inner edge back. For a closed
-    // outline the two edges share one seam, which cancels under even-odd fill.
-    let (left, right) = gap
-        .filter(|&(left, right)| left >= CORNER && right <= width - CORNER && left < right)
-        .unwrap_or((width / 2., width / 2.));
-    let edge = |inset| {
-        let radius = CORNER - inset;
-        let mut points = vec![[right, inset]];
-        for (x, y, start) in [
-            (width - CORNER, CORNER, -FRAC_PI_2),
-            (width - CORNER, height - CORNER, 0.),
-            (CORNER, height - CORNER, FRAC_PI_2),
-            (CORNER, CORNER, 2. * FRAC_PI_2),
-        ] {
-            for step in 0..=4 {
-                let angle = start + step as f32 * FRAC_PI_2 / 4.;
-                points.push([x + radius * angle.cos(), y + radius * angle.sin()]);
-            }
-        }
-        points.push([left, inset]);
-        points
-    };
-    FillContour::new(
-        edge(0.)
-            .into_iter()
-            .chain(edge(thickness).into_iter().rev()),
-        color,
-    )
 }

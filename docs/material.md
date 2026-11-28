@@ -1325,6 +1325,19 @@ preserves line breaks and spaces. When an enabled field gains focus,
 its active editor provides the value and keeps the same name and
 descriptions.
 
+### Floating label motion
+
+Outlined and Filled fields move the label when focus or the value
+changes. The Material Standard Fast Spatial spring moves and resizes
+one painted label. An Outlined field opens or closes its border notch
+from the same progress. The editor and its action retain their
+measured positions.
+
+Reduce Motion settles the label and notch immediately. A label that
+needs more space wraps above the field and keeps the outline closed.
+While an empty label moves out of the value row, the hint waits for
+that row to clear.
+
 ## Baseline segmented buttons
 
 Use `Theme::baseline_segmented_button` for two to five related choices in
