@@ -1,0 +1,163 @@
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.27
+   Compiling quote v1.0.47
+   Compiling wasm-bindgen-shared v0.2.129
+   Compiling cfg-if v1.0.5
+   Compiling rustversion v1.0.23
+   Compiling syn v3.0.9
+   Compiling version_check v0.9.5
+   Compiling serde_core v1.0.229
+   Compiling once_cell v1.21.4
+   Compiling bumpalo v3.20.3
+   Compiling wasm-bindgen-macro-support v0.2.129
+   Compiling wasm-bindgen v0.2.129
+   Compiling pin-project-lite v0.2.17
+   Compiling slotmap v1.1.1
+   Compiling slab v0.4.12
+   Compiling futures-task v0.3.34
+   Compiling futures-core v0.3.34
+   Compiling futures-util v0.3.34
+   Compiling bytemuck_derive v1.12.1
+   Compiling wasm-bindgen-macro v0.2.129
+   Compiling crossbeam-utils v0.8.23
+   Compiling bytemuck v1.25.2
+   Compiling js-sys v0.3.106
+   Compiling crossbeam-epoch v0.9.21
+   Compiling libm v0.2.16
+   Compiling cfg_aliases v0.2.2
+   Compiling bitflags v2.13.2
+   Compiling crossbeam-deque v0.8.8
+   Compiling smallvec v1.16.4
+   Compiling autocfg v1.5.1
+   Compiling arrayvec v0.7.8
+   Compiling num-traits v0.2.19
+   Compiling font-types v0.7.3
+   Compiling thiserror v2.0.21
+   Compiling parking_lot_core v0.9.12
+   Compiling log v0.4.35
+   Compiling serde v1.0.229
+   Compiling rayon-core v1.13.0
+   Compiling read-fonts v0.22.7
+   Compiling web-sys v0.3.106
+   Compiling serde_derive v1.0.229
+   Compiling thiserror-impl v2.0.21
+   Compiling scopeguard v1.2.0
+   Compiling grid v0.15.0
+   Compiling zmij v1.0.23
+   Compiling unicode-segmentation v1.13.3
+   Compiling taffy v0.7.7
+   Compiling lock_api v0.4.14
+   Compiling skrifa v0.22.3
+   Compiling wasm-bindgen-futures v0.4.79
+   Compiling wgpu v24.0.5
+   Compiling ttf-parser v0.21.1
+   Compiling raw-window-handle v0.6.2
+   Compiling zeno v0.2.3
+   Compiling tinyvec v1.13.3
+   Compiling unicode-ccc v0.2.0
+   Compiling unicode-properties v0.1.5
+   Compiling ttf-parser v0.20.0
+   Compiling yazi v0.1.6
+   Compiling serde_json v1.0.154
+   Compiling zerocopy v0.8.63
+   Compiling unicode-bidi-mirroring v0.2.0
+   Compiling either v1.19.0
+   Compiling memmap2 v0.9.12
+   Compiling unicode-script v0.5.9
+   Compiling litrs v1.0.1
+   Compiling rustybuzz v0.14.1
+   Compiling document-features v0.2.12
+   Compiling fontdb v0.16.2
+   Compiling rayon v1.12.0
+   Compiling swash v0.1.19
+   Compiling parking_lot v0.12.5
+   Compiling euclid v0.22.14
+   Compiling surface v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface)
+   Compiling wgpu-types v24.0.0
+   Compiling ahash v0.8.12
+   Compiling syn v2.0.119
+   Compiling rustc-hash v1.1.0
+   Compiling unicode-linebreak v0.1.5
+   Compiling svg_fmt v0.4.5
+   Compiling memchr v2.8.3
+   Compiling self_cell v1.3.0
+   Compiling profiling v1.0.18
+   Compiling unicode-bidi v0.3.18
+   Compiling itoa v1.0.18
+   Compiling sys-locale v0.3.2
+   Compiling static_assertions v1.1.0
+   Compiling rangemap v1.8.0
+   Compiling pin-project-internal v1.1.13
+   Compiling cosmic-text v0.12.1
+   Compiling etagere v0.2.15
+   Compiling winit v0.30.13
+   Compiling equivalent v1.0.3
+   Compiling tracing-core v0.1.36
+   Compiling hashbrown v0.17.1
+   Compiling rustc-hash v2.1.3
+   Compiling lru v0.12.5
+   Compiling glyphon v0.8.0
+   Compiling indexmap v2.14.2
+   Compiling tracing v0.1.44
+   Compiling surface-app v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-app)
+   Compiling pin-project v1.1.13
+   Compiling web-time v1.1.0
+   Compiling dpi v0.1.2
+   Compiling smol_str v0.2.2
+   Compiling cursor-icon v1.2.0
+   Compiling material-colors v0.4.2
+   Compiling surface-wgpu v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-wgpu)
+   Compiling surface-platform v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-platform)
+warning: function `should_exit` is never used
+  --> crates/surface-platform/src/close.rs:37:15
+   |
+37 | pub(crate) fn should_exit<A: Application>(runtime: &mut Runtime<A>, closing: &mut bool) -> bool {
+   |               ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling surface-material v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-material)
+warning: `surface-platform` (lib) generated 1 warning
+   Compiling console_error_panic_hook v0.1.7
+   Compiling surface-showcase v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/examples/showcase)
+    Finished `wasm-release` profile [optimized] target(s) in 59.36s
+built showcase (release) -> /private/tmp/surface-md3-v0172-replay.OgmvVGia/outputs/stock/web/release/showcase
+  surface_showcase_bg-ebe98b61fbf44418.wasm        5.84 MiB
+  surface_showcase-1a6c27e6ca32ae14.js             98.6 KiB
+  index.html                                        1.3 KiB
+   Compiling surface-platform v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-platform)
+warning: function `should_exit` is never used
+  --> crates/surface-platform/src/close.rs:37:15
+   |
+37 | pub(crate) fn should_exit<A: Application>(runtime: &mut Runtime<A>, closing: &mut bool) -> bool {
+   |               ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `surface-platform` (lib) generated 1 warning
+   Compiling surface-material-gallery v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/examples/material-gallery)
+    Finished `wasm-release` profile [optimized] target(s) in 22.47s
+built material-gallery (release) -> /private/tmp/surface-md3-v0172-replay.OgmvVGia/outputs/stock/web/release/material-gallery
+  surface_material_gallery_bg-1682fa6596652480.wasm     7.71 MiB
+  surface_material_gallery-5da2c4a355bba30b.js     97.4 KiB
+  index.html                                        1.2 KiB
+   Compiling surface-devtools-protocol v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-devtools-protocol)
+   Compiling jet-bridge-protocol v0.1.0 (https://github.com/faberline/jet-bridge?rev=a21f93425f8f27dfc7ab2bea0c34fdebcc71335f#a21f9342)
+   Compiling surface-app v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-app)
+   Compiling surface-material v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-material)
+   Compiling surface-platform v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/crates/surface-platform)
+warning: function `should_exit` is never used
+  --> crates/surface-platform/src/close.rs:37:15
+   |
+37 | pub(crate) fn should_exit<A: Application>(runtime: &mut Runtime<A>, closing: &mut bool) -> bool {
+   |               ^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `surface-platform` (lib) generated 1 warning
+   Compiling surface-material-gallery v0.1.72 (/private/tmp/surface-md3-v0172-full-source.OQDetDtP/source/examples/material-gallery)
+    Finished `wasm-release` profile [optimized] target(s) in 27.66s
+built material-gallery (release) -> /private/tmp/surface-md3-v0172-replay.OgmvVGia/outputs/stock/web/devtools/material-gallery
+  surface_material_gallery_bg-efd0ad0a5efd46ac.wasm     7.80 MiB
+  surface_material_gallery-b9c3898f463c7d38.js    100.1 KiB
+  index.html                                        1.2 KiB
