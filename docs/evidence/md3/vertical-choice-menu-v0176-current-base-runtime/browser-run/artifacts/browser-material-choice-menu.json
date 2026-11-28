@@ -1,0 +1,982 @@
+{
+  "browser": "Chrome/158.0.8127.37",
+  "adapter": {
+    "isFallbackAdapter": false,
+    "vendor": "apple",
+    "architecture": "metal-3"
+  },
+  "standard": {
+    "initial": {
+      "open": true,
+      "sort": "menu-demo-choice-recent",
+      "density": "menu-demo-choice-comfortable",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 0,
+      "focus": "menu-demo-choice-recent"
+    },
+    "initial_roles": [
+      {
+        "id": "menu-demo-choice-recent",
+        "name": "最近修改",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-name",
+        "name": "名稱",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-owner",
+        "name": "擁有者",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "false",
+        "disabled": true,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-comfortable",
+        "name": "舒適",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-density",
+        "group_name": "顯示密度",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-compact",
+        "name": "緊湊",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-density",
+        "group_name": "顯示密度",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-kind",
+        "name": "檔案類型",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-size",
+        "name": "檔案大小與可用空間的詳細資料",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemcheckbox",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-locked",
+        "name": "鎖定狀態",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": true,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    ],
+    "reselect": {
+      "open": true,
+      "sort": "menu-demo-choice-recent",
+      "density": "menu-demo-choice-comfortable",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 0,
+      "focus": "menu-demo-choice-recent"
+    },
+    "disabled": {
+      "open": true,
+      "sort": "menu-demo-choice-recent",
+      "density": "menu-demo-choice-comfortable",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 0,
+      "focus": "menu-demo-choice-owner"
+    },
+    "disabled_mouse": {
+      "open": true,
+      "sort": "menu-demo-choice-recent",
+      "density": "menu-demo-choice-comfortable",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 0,
+      "focus": "menu-demo-choice-owner"
+    },
+    "accepted": {
+      "open": false,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-comfortable",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 1,
+      "focus": "menu-demo-opener"
+    },
+    "reopened": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-comfortable",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 1,
+      "focus": "menu-demo-choice-recent"
+    },
+    "selected_roles": [
+      {
+        "id": "menu-demo-choice-recent",
+        "name": "最近修改",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-name",
+        "name": "名稱",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-owner",
+        "name": "擁有者",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "false",
+        "disabled": true,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-comfortable",
+        "name": "舒適",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-density",
+        "group_name": "顯示密度",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-compact",
+        "name": "緊湊",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-density",
+        "group_name": "顯示密度",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-kind",
+        "name": "檔案類型",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-size",
+        "name": "檔案大小與可用空間的詳細資料",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemcheckbox",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-locked",
+        "name": "鎖定狀態",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": true,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    ],
+    "initial_name_corners": [
+      4.0,
+      4.0,
+      4.0,
+      4.0
+    ],
+    "paint": {
+      "id": "menu-demo-choice-name",
+      "target": [
+        32.0,
+        304.0,
+        232.0,
+        48.0
+      ],
+      "face": [
+        32.0,
+        306.0,
+        232.0,
+        44.0
+      ],
+      "mark": [
+        48.0,
+        318.0,
+        20.0,
+        20.0
+      ],
+      "label": [
+        80.0,
+        318.0,
+        168.0,
+        20.0
+      ],
+      "mark_gap": 12.0,
+      "corners": [
+        12.0,
+        12.0,
+        12.0,
+        12.0
+      ],
+      "fill": [
+        255,
+        217,
+        227
+      ],
+      "corner_rgb": [
+        248,
+        242,
+        250
+      ],
+      "inner_rgb": [
+        255,
+        217,
+        227
+      ],
+      "ink": [
+        49,
+        16,
+        29
+      ],
+      "group_rgb": [
+        248,
+        242,
+        250
+      ],
+      "mark_pixels": 106,
+      "unchecked": {
+        "id": "menu-demo-choice-compact",
+        "face": [
+          32.0,
+          488.0,
+          232.0,
+          44.0
+        ],
+        "color": [
+          248,
+          242,
+          250
+        ],
+        "corners": [
+          4.0,
+          4.0,
+          12.0,
+          12.0
+        ]
+      },
+      "tokens": {
+        "selected_face": [
+          255,
+          217,
+          227
+        ],
+        "selected_ink": [
+          49,
+          16,
+          29
+        ],
+        "group": [
+          248,
+          242,
+          250
+        ]
+      },
+      "face_contrast": 1.1710768378015488,
+      "mark_contrast": 13.322695998368754
+    }
+  },
+  "vibrant": {
+    "density": {
+      "open": false,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 2,
+      "focus": "menu-demo-opener"
+    },
+    "disabled": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 2,
+      "focus": "menu-demo-choice-locked"
+    },
+    "keyboard": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked",
+        "menu-demo-choice-size"
+      ],
+      "changes": 3,
+      "focus": "menu-demo-choice-size"
+    },
+    "mouse": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-locked",
+        "menu-demo-choice-size"
+      ],
+      "changes": 4,
+      "focus": "menu-demo-choice-kind"
+    },
+    "cancelled": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-locked",
+        "menu-demo-choice-size"
+      ],
+      "changes": 4,
+      "focus": "menu-demo-choice-kind"
+    },
+    "tapped": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked",
+        "menu-demo-choice-size"
+      ],
+      "changes": 5,
+      "focus": "menu-demo-choice-kind"
+    },
+    "touch_events": [
+      [
+        "pointerdown",
+        true
+      ],
+      [
+        "pointercancel",
+        true
+      ],
+      [
+        "pointerdown",
+        true
+      ],
+      [
+        "pointerup",
+        true
+      ]
+    ],
+    "roles": [
+      {
+        "id": "menu-demo-choice-recent",
+        "name": "最近修改",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-name",
+        "name": "名稱",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-owner",
+        "name": "擁有者",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-sort",
+        "group_name": "排序方式",
+        "checked": "false",
+        "disabled": true,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          true,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-comfortable",
+        "name": "舒適",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-density",
+        "group_name": "顯示密度",
+        "checked": "false",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "false",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-compact",
+        "name": "緊湊",
+        "role": "menuitemradio",
+        "group": "menu-demo-choice-density",
+        "group_name": "顯示密度",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemradio",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-kind",
+        "name": "檔案類型",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-size",
+        "name": "檔案大小與可用空間的詳細資料",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": false,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          false,
+          true,
+          true,
+          true
+        ]
+      },
+      {
+        "id": "menu-demo-choice-locked",
+        "name": "鎖定狀態",
+        "role": "menuitemcheckbox",
+        "group": "menu-demo-choice-fields",
+        "group_name": "在清單中顯示",
+        "checked": "true",
+        "disabled": true,
+        "dom": [
+          "menuitemcheckbox",
+          "true",
+          null,
+          true,
+          true,
+          true,
+          true
+        ]
+      }
+    ],
+    "paint": {
+      "id": "menu-demo-choice-size",
+      "target": [
+        32.0,
+        620.0,
+        232.0,
+        56.0
+      ],
+      "face": [
+        32.0,
+        620.0,
+        232.0,
+        56.0
+      ],
+      "mark": [
+        48.0,
+        638.0,
+        20.0,
+        20.0
+      ],
+      "label": [
+        80.0,
+        628.0,
+        168.0,
+        40.0
+      ],
+      "mark_gap": 12.0,
+      "corners": [
+        12.0,
+        12.0,
+        12.0,
+        12.0
+      ],
+      "fill": [
+        126,
+        82,
+        96
+      ],
+      "corner_rgb": [
+        255,
+        217,
+        227
+      ],
+      "inner_rgb": [
+        126,
+        82,
+        96
+      ],
+      "ink": [
+        255,
+        255,
+        255
+      ],
+      "group_rgb": [
+        255,
+        217,
+        227
+      ],
+      "mark_pixels": 106,
+      "unchecked": {
+        "id": "menu-demo-choice-comfortable",
+        "face": [
+          32.0,
+          440.0,
+          232.0,
+          44.0
+        ],
+        "color": [
+          255,
+          217,
+          227
+        ],
+        "corners": [
+          12.0,
+          12.0,
+          4.0,
+          4.0
+        ]
+      },
+      "tokens": {
+        "selected_face": [
+          126,
+          82,
+          96
+        ],
+        "selected_ink": [
+          255,
+          255,
+          255
+        ],
+        "group": [
+          255,
+          217,
+          227
+        ]
+      },
+      "face_contrast": 4.991301482841873,
+      "mark_contrast": 6.435899923399208
+    },
+    "tabbed": {
+      "open": false,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked",
+        "menu-demo-choice-size"
+      ],
+      "changes": 5,
+      "focus": "menu-demo-list"
+    }
+  },
+  "compact": {
+    "panel": [
+      52.0,
+      8.0,
+      240.0,
+      392.0
+    ],
+    "viewport": [
+      52.0,
+      8.0,
+      240.0,
+      392.0
+    ],
+    "content": [
+      52.0,
+      8.0,
+      240.0,
+      696.0
+    ],
+    "anchor": [
+      156.0,
+      404.0,
+      136.0,
+      48.0
+    ],
+    "thumb_top": [
+      54.0,
+      12.0,
+      4.0,
+      216.0
+    ],
+    "thumb_bottom": [
+      54.0,
+      178.0,
+      4.0,
+      216.0
+    ],
+    "scroll": [
+      0.0,
+      300.0
+    ],
+    "last": [
+      56.0,
+      344.0,
+      232.0,
+      56.0
+    ],
+    "full_name": "檔案大小與可用空間的詳細資料",
+    "long": [
+      56.0,
+      208.0,
+      232.0,
+      136.0
+    ],
+    "label": [
+      72.0,
+      216.0,
+      168.0,
+      120.0
+    ],
+    "paint": {
+      "id": "menu-demo-choice-size",
+      "target": [
+        56.0,
+        208.0,
+        232.0,
+        136.0
+      ],
+      "face": [
+        56.0,
+        208.0,
+        232.0,
+        136.0
+      ],
+      "mark": [
+        252.0,
+        266.0,
+        20.0,
+        20.0
+      ],
+      "label": [
+        72.0,
+        216.0,
+        168.0,
+        120.0
+      ],
+      "mark_gap": 12.0,
+      "corners": [
+        12.0,
+        12.0,
+        12.0,
+        12.0
+      ],
+      "fill": [
+        239,
+        184,
+        200
+      ],
+      "corner_rgb": [
+        99,
+        59,
+        72
+      ],
+      "inner_rgb": [
+        239,
+        184,
+        200
+      ],
+      "ink": [
+        74,
+        37,
+        50
+      ],
+      "group_rgb": [
+        99,
+        59,
+        72
+      ],
+      "mark_pixels": 106,
+      "unchecked": null,
+      "tokens": {
+        "selected_face": [
+          239,
+          184,
+          200
+        ],
+        "selected_ink": [
+          74,
+          37,
+          50
+        ],
+        "group": [
+          99,
+          59,
+          72
+        ]
+      },
+      "face_contrast": 5.494249449603946,
+      "mark_contrast": 7.716286873712848
+    },
+    "toggled": {
+      "open": true,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 6,
+      "focus": "menu-demo-choice-size"
+    },
+    "dismissed": {
+      "open": false,
+      "sort": "menu-demo-choice-name",
+      "density": "menu-demo-choice-compact",
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "changes": 6,
+      "focus": "menu-demo-opener"
+    }
+  },
+  "errors": []
+}

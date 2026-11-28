@@ -1,0 +1,2884 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index ef481a2..de696a1 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.75"
++version = "0.1.76"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index b7e3698..d6c4d3a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.75"
++version = "0.1.76"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/command_menu.rs b/crates/surface-material/src/command_menu.rs
+index 696b670..91c9ce9 100644
+--- a/crates/surface-material/src/command_menu.rs
++++ b/crates/surface-material/src/command_menu.rs
+@@ -10,7 +10,9 @@ use crate::{
+     shape::{self, LayoutDirection},
+     typography, Elevation, Theme, VectorIcon,
+ };
+-pub use vertical::{VerticalCommandMenuGroup, VerticalMenuPalette};
++pub use vertical::{
++    VerticalChoiceMenuGroup, VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
++};
+ 
+ const OUTER_PADDING: f32 = 8.;
+ const ITEM_SPACE: f32 = 12.;
+diff --git a/crates/surface-material/src/command_menu/vertical.rs b/crates/surface-material/src/command_menu/vertical.rs
+index fd62fa1..a7a9b93 100644
+--- a/crates/surface-material/src/command_menu/vertical.rs
++++ b/crates/surface-material/src/command_menu/vertical.rs
+@@ -1,4 +1,4 @@
+-//! Grouped Expressive vertical commands.
++//! Grouped Expressive vertical commands and choices.
+ //!
+ //! Google M3 Menus Specs and Guidelines define the two color mappings and
+ //! continuous scrolling layout. Geometry follows AndroidX SegmentedMenuTokens
+@@ -17,7 +17,7 @@ use super::{
+ use crate::{
+     menu_layout::{place_menu, MenuAnchor, MenuLayout, MIN_ITEM_HEIGHT},
+     shape::{self, LayoutDirection},
+-    typography, Elevation, Theme,
++    typography, Elevation, Theme, VectorIcon,
+ };
+ 
+ const GROUP_GAP: f32 = 2.;
+@@ -47,6 +47,50 @@ pub struct VerticalCommandMenuGroup<'a, M> {
+     pub items: Vec<CommandMenuItem<'a, M>>,
+ }
+ 
++/// The choice state of one vertical menu group, supplied by the caller.
++#[derive(Clone, Copy, Debug, Default)]
++pub enum VerticalMenuSelection<'a> {
++    #[default]
++    Commands,
++    /// At most one checked item. Pressing it again sends no change.
++    Single { selected_id: Option<&'a str> },
++    /// Independent choices. The menu stays open while the caller keeps it open.
++    Multiple { checked_ids: &'a [&'a str] },
++}
++
++/// A named group of commands or checkable items. Each item's message is
++/// delivered to the caller, which owns its values and any decision to close.
++pub struct VerticalChoiceMenuGroup<'a, M> {
++    pub id: &'a str,
++    pub label: &'a str,
++    pub mode: VerticalMenuSelection<'a>,
++    pub items: Vec<CommandMenuItem<'a, M>>,
++}
++
++struct MenuGroup<'a, M> {
++    id: &'a str,
++    label: Option<&'a str>,
++    mode: VerticalMenuSelection<'a>,
++    items: Vec<CommandMenuItem<'a, M>>,
++}
++
++#[derive(Clone, Copy)]
++enum RowMode {
++    Command,
++    Radio(bool),
++    Checkbox(bool),
++}
++
++impl VerticalMenuSelection<'_> {
++    fn row(self, id: &str) -> RowMode {
++        match self {
++            Self::Commands => RowMode::Command,
++            Self::Single { selected_id } => RowMode::Radio(selected_id == Some(id)),
++            Self::Multiple { checked_ids } => RowMode::Checkbox(checked_ids.contains(&id)),
++        }
++    }
++}
++
+ #[derive(Clone, Copy, Debug, PartialEq)]
+ pub(super) struct VerticalMenuGeometry {
+     width: f32,
+@@ -87,6 +131,8 @@ struct MenuColors {
+     icon: Color,
+     layer: Color,
+     thumb: Color,
++    selected: (Color, Color),
++    disabled_selected: Option<(Color, Color)>,
+ }
+ 
+ #[derive(Clone, Copy)]
+@@ -112,6 +158,65 @@ impl Theme {
+         groups: impl IntoIterator<Item = VerticalCommandMenuGroup<'a, M>>,
+         on_dismiss: M,
+         measurement: &CommandMenuMeasurement,
++    ) -> View<M> {
++        self.vertical_menu(
++            options,
++            palette,
++            trigger,
++            groups.into_iter().map(|group| MenuGroup {
++                id: group.id,
++                label: group.label,
++                mode: VerticalMenuSelection::Commands,
++                items: group.items,
++            }),
++            on_dismiss,
++            measurement,
++        )
++    }
++
++    /// Build an anchored Expressive menu from up to three nonempty groups.
++    /// Give each checkable group a nonblank localized label. Use distinct
++    /// stable IDs for groups and items.
++    ///
++    /// Unchecked single choices and enabled multiple choices send the item's
++    /// message through the normal menu action. Pressing the checked single
++    /// choice sends no message. The caller supplies the committed values and
++    /// decides whether an accepted action closes the menu.
++    ///
++    /// Checkable rows reserve a logical leading slot. A check replaces any
++    /// leading icon while the item is selected.
++    pub fn vertical_choice_menu<'a, M: 'a>(
++        &self,
++        options: CommandMenuOptions<'_>,
++        palette: VerticalMenuPalette,
++        trigger: View<M>,
++        groups: impl IntoIterator<Item = VerticalChoiceMenuGroup<'a, M>>,
++        on_dismiss: M,
++        measurement: &CommandMenuMeasurement,
++    ) -> View<M> {
++        self.vertical_menu(
++            options,
++            palette,
++            trigger,
++            groups.into_iter().map(|group| MenuGroup {
++                id: group.id,
++                label: Some(group.label),
++                mode: group.mode,
++                items: group.items,
++            }),
++            on_dismiss,
++            measurement,
++        )
++    }
++
++    fn vertical_menu<'a, M: 'a>(
++        &self,
++        options: CommandMenuOptions<'_>,
++        palette: VerticalMenuPalette,
++        trigger: View<M>,
++        groups: impl IntoIterator<Item = MenuGroup<'a, M>>,
++        on_dismiss: M,
++        measurement: &CommandMenuMeasurement,
+     ) -> View<M> {
+         let scope = View::new(
+             Node::new(Role::Group, "")
+@@ -126,7 +231,12 @@ impl Theme {
+             .filter(|group| !group.items.is_empty())
+             .take(4)
+             .collect();
+-        if !(1..=3).contains(&groups.len()) {
++        if !(1..=3).contains(&groups.len())
++            || groups.iter().any(|group| {
++                !matches!(group.mode, VerticalMenuSelection::Commands)
++                    && group_label(group.label).is_none()
++            })
++        {
+             return scope.children([trigger.menu_expanded(false)]);
+         }
+         let minimum = groups
+@@ -154,6 +264,14 @@ impl Theme {
+                 icon: self.colors.on_surface_variant,
+                 layer: self.colors.on_surface,
+                 thumb: self.colors.outline,
++                selected: (
++                    self.colors.tertiary_container,
++                    self.colors.on_tertiary_container,
++                ),
++                disabled_selected: Some((
++                    disabled_color(self.colors.tertiary_container),
++                    disabled_color(self.colors.on_tertiary_container),
++                )),
+             },
+             VerticalMenuPalette::Vibrant => MenuColors {
+                 surface: self.colors.tertiary_container,
+@@ -161,6 +279,10 @@ impl Theme {
+                 icon: self.colors.on_tertiary_container,
+                 layer: self.colors.on_tertiary_container,
+                 thumb: self.colors.on_tertiary_container,
++                selected: (self.colors.tertiary, self.colors.on_tertiary),
++                // The Vibrant tokens give disabled ink opacity but no
++                // distinct disabled selected surface or ink role.
++                disabled_selected: None,
+             },
+         };
+         let panel = self.vertical_menu_panel(&options, placement, groups, colors);
+@@ -176,7 +298,7 @@ impl Theme {
+         &self,
+         options: &CommandMenuOptions<'_>,
+         placement: VerticalPlacement,
+-        groups: Vec<VerticalCommandMenuGroup<'_, M>>,
++        groups: Vec<MenuGroup<'_, M>>,
+         colors: MenuColors,
+     ) -> View<M> {
+         let count = groups.len();
+@@ -253,7 +375,7 @@ impl Theme {
+ 
+     fn vertical_menu_group<M>(
+         &self,
+-        group: VerticalCommandMenuGroup<'_, M>,
++        group: MenuGroup<'_, M>,
+         index: usize,
+         count: usize,
+         separated: bool,
+@@ -289,9 +411,11 @@ impl Theme {
+             .without_interaction(None)
+         });
+         let length = group.items.len();
++        let mode = group.mode;
+         View::new(owner).children(heading.into_iter().chain(
+             group.items.into_iter().enumerate().map(|(position, item)| {
+-                self.vertical_menu_item(item, position, length, direction, colors)
++                let row = mode.row(item.id);
++                self.vertical_menu_item(item, row, position, length, direction, colors)
+             }),
+         ))
+     }
+@@ -299,19 +423,32 @@ impl Theme {
+     fn vertical_menu_item<M>(
+         &self,
+         item: CommandMenuItem<'_, M>,
++        mode: RowMode,
+         position: usize,
+         count: usize,
+         direction: LayoutDirection,
+         colors: MenuColors,
+     ) -> View<M> {
+-        let corners = if count == 1 {
++        let checkable = !matches!(mode, RowMode::Command);
++        let checked = matches!(mode, RowMode::Radio(true) | RowMode::Checkbox(true));
++        let corners = if checked {
++            shape::MEDIUM
++        } else if count == 1 {
+             shape::EXTRA_SMALL
+         } else {
+             position_corners(position, count, 12., 4.)
+         };
+-        let (label_ink, icon_ink) = if item.disabled {
+-            let Color(r, g, b, _) = colors.label;
+-            let ink = Color(r, g, b, 97);
++        let selected_colors = if checked && !item.disabled {
++            Some(colors.selected)
++        } else if checked {
++            colors.disabled_selected
++        } else {
++            None
++        };
++        let (label_ink, icon_ink) = if let Some((_, ink)) = selected_colors {
++            (ink, ink)
++        } else if item.disabled {
++            let ink = disabled_color(colors.label);
+             (ink, ink)
+         } else {
+             (colors.label, colors.icon)
+@@ -325,13 +462,26 @@ impl Theme {
+                 .styled(
+                     Style::column()
+                         .grow(1.)
+-                        .with_text_style(typography::BODY_LARGE)
++                        .with_text_style(if checkable {
++                            typography::LABEL_LARGE
++                        } else {
++                            typography::BODY_LARGE
++                        })
+                         .foreground(label_ink),
+                 ),
+         );
+-        let leading = item
+-            .leading_icon
+-            .map(|icon| icon_view(format!("{}-leading", item.id), icon, icon_ink, ICON_SIZE));
++        let leading_id = || format!("{}-leading", item.id);
++        let leading = if checkable {
++            Some(choice_leading(
++                leading_id(),
++                item.leading_icon,
++                checked,
++                icon_ink,
++            ))
++        } else {
++            item.leading_icon
++                .map(|icon| icon_view(leading_id(), icon, icon_ink, ICON_SIZE))
++        };
+         let trailing = item
+             .trailing_icon
+             .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink, ICON_SIZE));
+@@ -359,29 +509,71 @@ impl Theme {
+                 Node::new(Role::Group, "").styled(Style::row().width(Length::Px(FACE_PADDING))),
+             )
+         };
+-        let face = View::new(
+-            Node::new(Role::Group, "")
+-                .id(format!("{}-face", item.id))
+-                .styled(face),
+-        )
+-        .children([side(), interior, side()])
+-        .without_interaction(None);
++        if let Some((surface, ink)) = selected_colors {
++            face = face.background(surface).state_layer(ink);
++        }
++        let mut face = Node::new(Role::Group, "")
++            .id(format!("{}-face", item.id))
++            .styled(face);
++        if checked {
++            face = face.state_layer_alphas(20, 26, 26);
++        }
++        let face = View::new(face)
++            .children([side(), interior, side()])
++            .without_interaction(None);
+         let mut owner = Style::column().justify(Align::Center).corners(corners);
+         owner.min_height = MIN_ITEM_HEIGHT;
+-        let view = View::new(
+-            Node::new(Role::MenuItem, item.label)
+-                .id(item.id)
+-                .disabled(item.disabled)
+-                .focus_color(self.colors.secondary)
+-                .focus_outline_width(3.)
+-                .styled(owner),
+-        )
+-        .children([face])
+-        .accessibility_scroll_into_view();
+-        bind_command_item(view, item.disabled, item.on_press)
++        let node = Node::new(Role::MenuItem, item.label)
++            .id(item.id)
++            .disabled(item.disabled)
++            .focus_color(self.colors.secondary)
++            .focus_outline_width(3.)
++            .styled(owner);
++        let node = match mode {
++            RowMode::Command => node,
++            RowMode::Radio(checked) => node.menu_radio_checked(checked),
++            RowMode::Checkbox(checked) => node.checked(checked),
++        };
++        let view = View::new(node)
++            .children([face])
++            .accessibility_scroll_into_view();
++        if !item.disabled && matches!(mode, RowMode::Radio(true)) {
++            view
++        } else {
++            bind_command_item(view, item.disabled, item.on_press)
++        }
+     }
+ }
+ 
++fn disabled_color(Color(r, g, b, _): Color) -> Color {
++    Color(r, g, b, 97)
++}
++
++fn choice_leading<M>(id: String, icon: Option<VectorIcon>, checked: bool, ink: Color) -> View<M> {
++    let artwork = if checked {
++        VectorIcon::new([
++            [9., 16.2],
++            [4.8, 12.],
++            [3.4, 13.4],
++            [9., 19.],
++            [21., 7.],
++            [19.6, 5.6],
++        ])
++    } else {
++        icon
++    };
++    if let Some(artwork) = artwork {
++        return icon_view(id, artwork, ink, ICON_SIZE);
++    }
++    let edge = Length::Px(ICON_SIZE);
++    View::new(
++        Node::new(Role::Group, "")
++            .id(id)
++            .styled(Style::column().width(edge).height(edge)),
++    )
++    .without_interaction(None)
++}
++
+ fn position_corners(index: usize, count: usize, outer: f32, inner: f32) -> Corners {
+     let top = if index == 0 { outer } else { inner };
+     let bottom = if index + 1 == count { outer } else { inner };
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 0eee133..b65d1d0 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -114,7 +114,7 @@ pub use chip::{ChipContent, ChipLeading, ChipOptions, ChipRemove, ChipStyle, Chi
+ pub use chip_group::ChipGridLayout;
+ pub use command_menu::{
+     CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
+-    VerticalCommandMenuGroup, VerticalMenuPalette,
++    VerticalChoiceMenuGroup, VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
+ };
+ pub use components::{
+     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
+diff --git a/crates/surface-material/tests/vertical_choice_menu.rs b/crates/surface-material/tests/vertical_choice_menu.rs
+new file mode 100644
+index 0000000..e452d32
+--- /dev/null
++++ b/crates/surface-material/tests/vertical_choice_menu.rs
+@@ -0,0 +1,454 @@
++use surface::{Color, ExtendedPaintOp, Node, Rect, Role, Style};
++use surface_app::{
++    AccessibilityActivationResult, AnimationFrame, AnimationUpdate, Application, EditKey, Event,
++    Key, KeyPress, Modifiers, Runtime, View,
++};
++use surface_material::{
++    shape::{self, LayoutDirection},
++    typography, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, Theme,
++    VerticalChoiceMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
++};
++use surface_wgpu::TextSystem;
++
++#[derive(Clone, Copy)]
++enum Message {
++    Open,
++    Dismiss,
++    Choose(&'static str),
++}
++
++struct Fixture {
++    open: bool,
++    rtl: bool,
++    large: bool,
++    mode: VerticalMenuPalette,
++    commands: bool,
++    missing_name: bool,
++    sort: &'static str,
++    view: &'static str,
++    checked: Vec<&'static str>,
++    choices: Vec<&'static str>,
++    measurement: CommandMenuMeasurement,
++}
++
++impl Default for Fixture {
++    fn default() -> Self {
++        Self {
++            open: false,
++            rtl: false,
++            large: false,
++            mode: VerticalMenuPalette::Standard,
++            commands: false,
++            missing_name: false,
++            sort: "sort-old",
++            view: "view-grid",
++            checked: vec!["check-disabled"],
++            choices: Vec::new(),
++            measurement: CommandMenuMeasurement::default(),
++        }
++    }
++}
++
++impl Fixture {
++    fn theme(&self) -> Theme {
++        if self.rtl {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++}
++
++impl Application for Fixture {
++    type Message = Message;
++
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Open => self.open = true,
++            Message::Dismiss => self.open = false,
++            Message::Choose(id) => {
++                self.choices.push(id);
++                match id {
++                    "sort-new" | "sort-old" => {
++                        self.sort = id;
++                        self.open = false;
++                    }
++                    "view-list" | "view-grid" => {
++                        self.view = id;
++                        self.open = false;
++                    }
++                    "report" => self.open = false,
++                    _ => {
++                        if let Some(index) = self.checked.iter().position(|choice| *choice == id) {
++                            self.checked.remove(index);
++                        } else {
++                            self.checked.push(id);
++                        }
++                    }
++                }
++            }
++        }
++    }
++
++    fn text_scale(&self) -> f32 {
++        if self.large {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
++        self.measurement.advance("choices", "trigger", &frame)
++    }
++
++    fn view(&self) -> View<Message> {
++        let theme = self.theme();
++        let item = |id, label, disabled| CommandMenuItem {
++            id,
++            label,
++            disabled,
++            leading_icon: None,
++            trailing_icon: None,
++            on_press: Message::Choose(id),
++        };
++        let middle = if self.commands {
++            VerticalChoiceMenuGroup {
++                id: "view-group",
++                label: "動作",
++                mode: VerticalMenuSelection::Commands,
++                items: vec![item("report", "報告", false)],
++            }
++        } else {
++            VerticalChoiceMenuGroup {
++                id: "view-group",
++                label: "版面",
++                mode: VerticalMenuSelection::Single {
++                    selected_id: Some(self.view),
++                },
++                items: vec![
++                    item("view-list", "清單", false),
++                    item("view-grid", "格線", true),
++                ],
++            }
++        };
++        let menu = theme.vertical_choice_menu(
++            CommandMenuOptions {
++                id: "choices",
++                label: "視圖設定",
++                trigger_id: "trigger",
++                open: self.open,
++                direction: if self.rtl {
++                    LayoutDirection::RightToLeft
++                } else {
++                    LayoutDirection::LeftToRight
++                },
++                preferred_width: 240.,
++                restore_focus_to: None,
++            },
++            self.mode,
++            theme.button("trigger", "開啟", Message::Open),
++            [
++                VerticalChoiceMenuGroup {
++                    id: "sort-group",
++                    label: if self.missing_name { " " } else { "排序" },
++                    mode: VerticalMenuSelection::Single {
++                        selected_id: Some(self.sort),
++                    },
++                    items: vec![
++                        item("sort-new", "最新", false),
++                        item("sort-old", "最舊", false),
++                        item("sort-disabled", "停用的完整檔案名稱", true),
++                    ],
++                },
++                middle,
++                VerticalChoiceMenuGroup {
++                    id: "check-group",
++                    label: "篩選",
++                    mode: VerticalMenuSelection::Multiple {
++                        checked_ids: &self.checked,
++                    },
++                    items: vec![
++                        item("check-pins", "釘選", false),
++                        item("check-recent", "最近", false),
++                        item("check-disabled", "停用的篩選", true),
++                    ],
++                },
++            ],
++            Message::Dismiss,
++            &self.measurement,
++        );
++        View::new(Node::new(Role::Window, "Gallery").styled(Style::column().padding(20.)))
++            .children([menu, theme.button("outside", "關於", Message::Dismiss)])
++    }
++}
++
++fn render(runtime: &mut Runtime<Fixture>, width: f32, height: f32) {
++    let mut fonts = TextSystem::default();
++    for _ in 0..8 {
++        runtime.render_extended(width, height, &mut fonts).unwrap();
++        if !runtime.needs_frame() {
++            return;
++        }
++    }
++    panic!("menu did not settle");
++}
++
++fn open(runtime: &mut Runtime<Fixture>, width: f32, height: f32) {
++    render(runtime, width, height);
++    assert!(runtime.activate("trigger").unwrap());
++    render(runtime, width, height);
++}
++
++fn node<'a>(runtime: &'a Runtime<Fixture>, key: &str) -> &'a Node {
++    runtime
++        .dom()
++        .get(runtime.dom().by_id(key).unwrap())
++        .unwrap()
++}
++
++fn bounds(runtime: &Runtime<Fixture>, key: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(key).unwrap().index()].bounds
++}
++
++fn key(runtime: &mut Runtime<Fixture>, key: EditKey) {
++    assert!(runtime
++        .dispatch(Event::Edit {
++            key,
++            extend: false,
++            by_word: false,
++        })
++        .unwrap());
++}
++
++#[test]
++fn single_choice_uses_named_independent_groups_and_one_change() {
++    let mut runtime = Runtime::new(Fixture::default()).unwrap();
++    open(&mut runtime, 720., 760.);
++    assert_eq!(runtime.focused(), Some("sort-new"));
++    assert_eq!(node(&runtime, "choices").role(), Role::Menu);
++    assert_eq!(node(&runtime, "sort-group").name(), "排序");
++    assert_eq!(node(&runtime, "view-group").name(), "版面");
++    assert_eq!(node(&runtime, "check-group").name(), "篩選");
++    assert_eq!(node(&runtime, "sort-new").role(), Role::MenuItem);
++    assert_eq!(
++        node(&runtime, "sort-new").menu_radio_checked_state(),
++        Some(false)
++    );
++    assert_eq!(
++        node(&runtime, "sort-old").menu_radio_checked_state(),
++        Some(true)
++    );
++    assert_eq!(
++        node(&runtime, "view-grid").menu_radio_checked_state(),
++        Some(true)
++    );
++    assert_eq!(node(&runtime, "check-pins").is_checked(), Some(false));
++    assert_eq!(
++        node(&runtime, "check-pins").menu_radio_checked_state(),
++        None
++    );
++
++    key(&mut runtime, EditKey::Down);
++    assert_eq!(runtime.focused(), Some("sort-old"));
++    assert!(!runtime.dispatch(Event::Activate).unwrap());
++    key(&mut runtime, EditKey::Down);
++    assert_eq!(runtime.focused(), Some("sort-disabled"));
++    runtime.dispatch(Event::Activate).unwrap();
++    assert!(runtime.app().choices.is_empty());
++
++    let frame = runtime.accessibility_frame().unwrap();
++    let checked = runtime.dom().by_id("sort-old").unwrap();
++    let disabled = runtime.dom().by_id("sort-disabled").unwrap();
++    assert!(frame.focus_target(checked).is_some());
++    assert!(frame.focus_target(disabled).is_some());
++    assert!(frame.activation_target(checked).is_none());
++    assert!(frame.activation_target(disabled).is_none());
++    let target = frame
++        .activation_target(runtime.dom().by_id("sort-new").unwrap())
++        .unwrap();
++    assert_eq!(
++        runtime.accessibility_activate(&target).unwrap(),
++        AccessibilityActivationResult::Activated
++    );
++    render(&mut runtime, 720., 760.);
++    assert_eq!(runtime.app().choices, ["sort-new"]);
++    assert!(!runtime.app().open);
++    assert_eq!(runtime.focused(), Some("trigger"));
++
++    open(&mut runtime, 720., 760.);
++    assert_eq!(
++        node(&runtime, "sort-new").menu_radio_checked_state(),
++        Some(true)
++    );
++    assert_eq!(
++        node(&runtime, "sort-old").menu_radio_checked_state(),
++        Some(false)
++    );
++    assert_eq!(
++        node(&runtime, "view-grid").menu_radio_checked_state(),
++        Some(true)
++    );
++    assert!(!runtime.dispatch(Event::Activate).unwrap());
++    assert_eq!(runtime.app().choices, ["sort-new"]);
++}
++
++#[test]
++fn independent_checks_stay_open_and_keep_stable_art_and_focus() {
++    let mut runtime = Runtime::new(Fixture::default()).unwrap();
++    open(&mut runtime, 720., 760.);
++    key(&mut runtime, EditKey::End);
++    assert_eq!(runtime.focused(), Some("check-disabled"));
++    runtime.dispatch(Event::Activate).unwrap();
++    key(&mut runtime, EditKey::Up);
++    assert_eq!(runtime.focused(), Some("check-recent"));
++    let geometry = bounds(&runtime, "check-recent-leading");
++    let label = bounds(&runtime, "check-recent-label");
++    let frame = runtime.accessibility_frame().unwrap();
++    let focus = frame
++        .focus_target(runtime.dom().by_id("check-recent").unwrap())
++        .unwrap();
++    let space = KeyPress::new(Key::Space, Modifiers::default());
++    assert!(runtime
++        .accessibility_key(&focus, &space, Some(Event::Activate))
++        .unwrap());
++    render(&mut runtime, 720., 760.);
++    assert!(runtime.app().open);
++    assert_eq!(runtime.focused(), Some("check-recent"));
++    assert_eq!(node(&runtime, "check-recent").is_checked(), Some(true));
++    assert_eq!(bounds(&runtime, "check-recent-leading"), geometry);
++    assert_eq!(bounds(&runtime, "check-recent-label"), label);
++
++    let tap = bounds(&runtime, "check-pins");
++    let (x, y) = (tap.x + tap.width / 2., tap.y + tap.height / 2.);
++    runtime.dispatch_touch(Event::PointerDown { x, y }).unwrap();
++    runtime.cancel_pointer().unwrap();
++    assert!(!runtime.dispatch_touch(Event::PointerUp { x, y }).unwrap());
++    assert_eq!(runtime.app().choices, ["check-recent"]);
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    render(&mut runtime, 720., 760.);
++    assert_eq!(runtime.app().choices, ["check-recent", "check-pins"]);
++    assert_eq!(node(&runtime, "check-pins").is_checked(), Some(true));
++    assert_eq!(node(&runtime, "check-recent").is_checked(), Some(true));
++    let repeat = KeyPress::new(Key::Enter, Modifiers::default()).with_repeat(true);
++    assert!(runtime.key(&repeat).unwrap());
++    assert_eq!(runtime.app().choices.len(), 2);
++    assert!(runtime.dispatch(Event::Activate).unwrap());
++    render(&mut runtime, 720., 760.);
++    assert_eq!(node(&runtime, "check-pins").is_checked(), Some(false));
++    assert_eq!(node(&runtime, "check-recent").is_checked(), Some(true));
++    assert!(runtime.app().open);
++
++    runtime
++        .dispatch(Event::FocusNext { reverse: false })
++        .unwrap();
++    render(&mut runtime, 720., 760.);
++    assert!(!runtime.app().open);
++    assert_eq!(runtime.focused(), Some("outside"));
++    assert_eq!(runtime.app().checked, ["check-disabled", "check-recent"]);
++}
++
++#[test]
++fn both_palettes_paint_a_stable_logical_leading_check() {
++    for (rtl, mode) in [
++        (false, VerticalMenuPalette::Standard),
++        (true, VerticalMenuPalette::Vibrant),
++    ] {
++        let mut runtime = Runtime::new(Fixture {
++            rtl,
++            large: rtl,
++            mode,
++            ..Fixture::default()
++        })
++        .unwrap();
++        let (w, h) = if rtl { (320., 480.) } else { (720., 760.) };
++        open(&mut runtime, w, h);
++        let theme = runtime.app().theme();
++        let (fill, ink) = if rtl {
++            (theme.colors.tertiary, theme.colors.on_tertiary)
++        } else {
++            (
++                theme.colors.tertiary_container,
++                theme.colors.on_tertiary_container,
++            )
++        };
++        let face = bounds(&runtime, "sort-old-face");
++        let row = bounds(&runtime, "sort-old");
++        let mark = bounds(&runtime, "sort-old-leading");
++        let unchecked = bounds(&runtime, "sort-new-leading");
++        assert_eq!(node(&runtime, "sort-old-face").style().background, fill);
++        assert_eq!(node(&runtime, "sort-old-face").style().state_layer, ink);
++        assert_eq!(
++            node(&runtime, "sort-old-face").style().corner_radii(),
++            shape::MEDIUM
++        );
++        assert_eq!(node(&runtime, "sort-old-label").style().foreground, ink);
++        assert_eq!(
++            node(&runtime, "sort-old-label").style().text_style(),
++            typography::LABEL_LARGE
++        );
++        assert_eq!(
++            (mark.width, mark.height, unchecked.width, unchecked.height),
++            (20., 20., 20., 20.)
++        );
++        assert!(!node(&runtime, "sort-old-leading").is_focusable());
++        assert_eq!(
++            if rtl {
++                face.x + face.width - mark.x - mark.width
++            } else {
++                mark.x - face.x
++            },
++            16.
++        );
++        assert!(row.height >= 48. && face.height >= 44.);
++        if rtl {
++            assert!(bounds(&runtime, "sort-disabled-label").height >= 80.);
++        } else {
++            assert_eq!((row.height, face.height), (48., 44.));
++        }
++        let Color(r, g, b, _) = theme.colors.tertiary_container;
++        assert_eq!(
++            node(&runtime, "view-grid-face").style().background,
++            if rtl {
++                Color::TRANSPARENT
++            } else {
++                Color(r, g, b, 97)
++            }
++        );
++        assert_eq!(node(&runtime, "view-grid-label").style().foreground.3, 97);
++
++        let mut fonts = TextSystem::default();
++        let paint = runtime.render_extended(w, h, &mut fonts).unwrap();
++        assert!(paint.ops().iter().any(|op| {
++            matches!(op, ExtendedPaintOp::FillPath(path)
++                if path.color() == ink && path.rect().intersect(mark) == path.rect())
++        }));
++    }
++}
++
++#[test]
++fn named_command_group_remains_ordinary_and_blank_radio_group_is_rejected() {
++    let mut runtime = Runtime::new(Fixture {
++        commands: true,
++        ..Fixture::default()
++    })
++    .unwrap();
++    open(&mut runtime, 720., 760.);
++    let command = node(&runtime, "report");
++    assert_eq!(command.role(), Role::MenuItem);
++    assert_eq!(command.is_checked(), None);
++    assert_eq!(command.menu_radio_checked_state(), None);
++    assert!(runtime.dom().by_id("report-leading").is_none());
++    assert!(runtime.activate("report").unwrap());
++    assert_eq!(runtime.app().choices, ["report"]);
++
++    let mut invalid = Runtime::new(Fixture {
++        missing_name: true,
++        ..Fixture::default()
++    })
++    .unwrap();
++    open(&mut invalid, 720., 760.);
++    assert!(invalid.dom().by_id("choices").is_none());
++    assert_eq!(node(&invalid, "trigger").expanded_state(), Some(false));
++}
+diff --git a/crates/surface-platform/src/macos_accessibility.rs b/crates/surface-platform/src/macos_accessibility.rs
+index ba8bd7b..7bbeeea 100644
+--- a/crates/surface-platform/src/macos_accessibility.rs
++++ b/crates/surface-platform/src/macos_accessibility.rs
+@@ -426,6 +426,9 @@ fn describe(source: &AccessibilityNode<'_>, slider_limits: Option<(f64, f64)>) -
+             SurfaceRole::Tab => Role::Tab,
+             SurfaceRole::TabList => Role::TabList,
+             SurfaceRole::Menu => Role::Menu,
++            SurfaceRole::MenuItem if authored.menu_radio_checked_state().is_some() => {
++                Role::MenuItemRadio
++            }
+             SurfaceRole::MenuItem if authored.is_checked().is_some() => Role::MenuItemCheckBox,
+             SurfaceRole::MenuItem => Role::MenuItem,
+             SurfaceRole::Dialog => Role::Dialog,
+@@ -482,7 +485,7 @@ fn describe(source: &AccessibilityNode<'_>, slider_limits: Option<(f64, f64)>) -
+         node.set_has_popup(HasPopup::Menu);
+     }
+     if let Some(value) = authored.is_checked() {
+-        node.set_toggled(if authored.is_mixed() {
++        node.set_toggled(if role != Role::MenuItemRadio && authored.is_mixed() {
+             Toggled::Mixed
+         } else {
+             value.into()
+@@ -823,6 +826,100 @@ mod tests {
+         assert_eq!(runtime.app().0, 1);
+     }
+ 
++    #[test]
++    fn radio_menu_items_project_boolean_values_and_activate_like_other_menu_items() {
++        struct Menu(bool);
++
++        impl Application for Menu {
++            type Message = bool;
++
++            fn update(&mut self, selected_first: bool) {
++                self.0 = selected_first;
++            }
++
++            fn view(&self) -> View<bool> {
++                let item = |id, label| {
++                    SurfaceNode::new(SurfaceRole::MenuItem, label)
++                        .id(id)
++                        .styled(Style::row().height(Length::Px(32.)))
++                };
++                let radio = |id, label, checked, message| {
++                    View::new(item(id, label).menu_radio_checked(checked).mixed(true))
++                        .on_press(message)
++                        .accessible_activation()
++                };
++                let group = View::new(
++                    SurfaceNode::new(SurfaceRole::Group, "Paper").styled(Style::column()),
++                )
++                .children([
++                    radio("a4", "A4", self.0, true),
++                    radio("letter", "Letter", !self.0, false),
++                    View::new(
++                        item("legal", "Legal")
++                            .menu_radio_checked(false)
++                            .disabled(true),
++                    )
++                    .on_press(false)
++                    .accessible_activation()
++                    .focus_disabled_menu_item(),
++                ]);
++                View::new(SurfaceNode::new(SurfaceRole::Window, "Desktop")).children([View::new(
++                    SurfaceNode::new(SurfaceRole::Menu, "Print").styled(Style::column()),
++                )
++                .children([
++                    View::new(item("print", "Print now").selected(true)),
++                    View::new(item("collate", "Collate").checked(false).mixed(true)),
++                    group,
++                ])])
++            }
++        }
++
++        let mut runtime = Runtime::new(Menu(true)).unwrap();
++        let mut tree = Tree::default();
++        let projected = update(&mut runtime, &mut tree);
++        let plain = named(&projected, "Print now").1;
++        assert_eq!(plain.role(), Role::MenuItem);
++        assert_eq!(plain.toggled(), None);
++        assert_eq!(plain.is_selected(), Some(true));
++        let checkbox = named(&projected, "Collate").1;
++        assert_eq!(checkbox.role(), Role::MenuItemCheckBox);
++        assert_eq!(checkbox.toggled(), Some(Toggled::Mixed));
++        let (a4_id, a4) = named(&projected, "A4");
++        let (letter_id, letter) = named(&projected, "Letter");
++        let (_, legal) = named(&projected, "Legal");
++        let group = named(&projected, "Paper").1;
++        assert_eq!(group.role(), Role::Group);
++        assert!(group.children().contains(&a4_id));
++        assert!(group.children().contains(&letter_id));
++        for (item, value) in [
++            (a4, Toggled::True),
++            (letter, Toggled::False),
++            (legal, Toggled::False),
++        ] {
++            assert_eq!(item.role(), Role::MenuItemRadio);
++            assert_eq!(item.toggled(), Some(value));
++            assert!(item.supports_action(Action::Focus));
++        }
++        assert!(letter.supports_action(Action::Click));
++        assert!(legal.is_disabled());
++        assert!(!legal.supports_action(Action::Click));
++        assert!(tree
++            .action(
++                &mut runtime,
++                ActionRequest {
++                    action: Action::Click,
++                    target_tree: TreeId::ROOT,
++                    target_node: letter_id,
++                    data: None,
++                },
++            )
++            .unwrap());
++        assert!(!runtime.app().0);
++        let updated = update(&mut runtime, &mut tree);
++        assert_eq!(named(&updated, "A4").1.toggled(), Some(Toggled::False));
++        assert_eq!(named(&updated, "Letter").1.toggled(), Some(Toggled::True));
++    }
++
+     #[test]
+     fn visible_alert_heading_and_description_reach_accesskit_and_rebuild_safely() {
+         #[derive(Clone, Copy, PartialEq, Eq)]
+diff --git a/crates/surface-platform/src/web_accessibility/semantics.rs b/crates/surface-platform/src/web_accessibility/semantics.rs
+index c00a75d..73f051c 100644
+--- a/crates/surface-platform/src/web_accessibility/semantics.rs
++++ b/crates/surface-platform/src/web_accessibility/semantics.rs
+@@ -76,7 +76,7 @@ pub(super) fn element(
+             };
+             element.set_attribute("aria-checked", checked)?;
+         }
+-        Some("radio" | "switch") => {
++        Some("radio" | "switch" | "menuitemradio") => {
+             let checked = node.is_checked().or(node.is_selected()).unwrap_or(false);
+             set_bool(&element, "aria-checked", checked)?;
+         }
+@@ -202,6 +202,7 @@ fn aria_role(node: &Node) -> Option<&'static str> {
+         Role::Tab => "tab",
+         Role::TabList => "tablist",
+         Role::Menu => "menu",
++        Role::MenuItem if node.menu_radio_checked_state().is_some() => "menuitemradio",
+         Role::MenuItem if node.is_checked().is_some() => "menuitemcheckbox",
+         Role::MenuItem => "menuitem",
+         Role::Dialog => "dialog",
+@@ -225,3 +226,25 @@ fn bool_value(value: bool) -> &'static str {
+ fn set_bool(element: &Element, attribute: &str, value: bool) -> Result<(), JsValue> {
+     element.set_attribute(attribute, bool_value(value))
+ }
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++
++    #[test]
++    fn menu_radio_role_requires_explicit_opt_in_and_keeps_unchecked_items() {
++        let command = Node::new(Role::MenuItem, "Paper");
++        assert_eq!(aria_role(&command), Some("menuitem"));
++        assert_eq!(aria_role(&command.clone().selected(true)), Some("menuitem"));
++        for checked in [false, true] {
++            assert_eq!(
++                aria_role(&command.clone().checked(checked)),
++                Some("menuitemcheckbox")
++            );
++            assert_eq!(
++                aria_role(&command.clone().menu_radio_checked(checked)),
++                Some("menuitemradio")
++            );
++        }
++    }
++}
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+index 440e2db..0c04545 100644
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -233,6 +233,8 @@ pub struct Node {
+     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+     invalid: bool,
+     pub(crate) checked: Option<bool>,
++    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
++    menu_radio: bool,
+     #[serde(default)]
+     selected: Option<bool>,
+     #[serde(default)]
+@@ -326,6 +328,7 @@ impl Node {
+             disabled: false,
+             invalid: false,
+             checked: None,
++            menu_radio: false,
+             selected: None,
+             mixed: false,
+             range: None,
+@@ -962,6 +965,27 @@ impl Node {
+         self.checked = Some(value);
+         self
+     }
++    /// Expose a menu item as a radio choice with an explicit checked state.
++    ///
++    /// The item keeps its menu keyboard and activation behavior. Callers
++    /// manage which item is checked. Other roles ignore this builder.
++    pub fn menu_radio_checked(mut self, value: bool) -> Self {
++        if self.role == Role::MenuItem {
++            self.menu_radio = true;
++            self.checked = Some(value);
++        }
++        self
++    }
++
++    /// The checked state of a menu item authored as a radio choice.
++    pub fn menu_radio_checked_state(&self) -> Option<bool> {
++        if self.role == Role::MenuItem && self.menu_radio {
++            self.checked
++        } else {
++            None
++        }
++    }
++
+     pub fn selected(mut self, value: bool) -> Self {
+         self.selected = Some(value);
+         self
+diff --git a/crates/surface/tests/menu_radio_semantics.rs b/crates/surface/tests/menu_radio_semantics.rs
+new file mode 100644
+index 0000000..8da07f0
+--- /dev/null
++++ b/crates/surface/tests/menu_radio_semantics.rs
+@@ -0,0 +1,43 @@
++use surface::{Node, Role};
++
++#[test]
++fn radio_menu_items_round_trip_explicit_checked_state_without_changing_role() {
++    let plain = Node::new(Role::MenuItem, "Paper");
++    let legacy = plain.clone().checked(false);
++    let legacy_json = serde_json::to_value(legacy.clone()).unwrap();
++    assert_eq!(legacy_json["role"], "MenuItem");
++    assert!(legacy_json.get("menu_radio").is_none());
++    let restored: Node = serde_json::from_value(legacy_json).unwrap();
++    assert_eq!(restored, legacy);
++    assert_eq!(restored.menu_radio_checked_state(), None);
++    assert_eq!(restored.is_checked(), Some(false));
++
++    for checked in [false, true] {
++        let choice = plain.clone().menu_radio_checked(checked);
++        let json = serde_json::to_value(&choice).unwrap();
++        assert_eq!(json["role"], "MenuItem");
++        assert_eq!(json["checked"], checked);
++        let restored: Node = serde_json::from_value(json).unwrap();
++        assert_eq!(restored, choice);
++        assert_eq!(restored.role(), Role::MenuItem);
++        assert_eq!(restored.menu_radio_checked_state(), Some(checked));
++        assert_eq!(restored.is_checked(), Some(checked));
++        assert_eq!(restored.is_selected(), None);
++        assert!(restored.is_focusable());
++        assert_eq!(
++            restored.checked(!checked).menu_radio_checked_state(),
++            Some(!checked)
++        );
++    }
++}
++
++#[test]
++fn radio_menu_metadata_is_ignored_for_other_roles_on_authoring_and_readback() {
++    let button = Node::new(Role::Button, "Show details").checked(true);
++    assert_eq!(button.clone().menu_radio_checked(false), button);
++    let mut foreign = serde_json::to_value(button).unwrap();
++    foreign["menu_radio"] = true.into();
++    let restored: Node = serde_json::from_value(foreign).unwrap();
++    assert_eq!(restored.menu_radio_checked_state(), None);
++    assert_eq!(restored.is_checked(), Some(true));
++}
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 0537bc8..96e167e 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -267,10 +267,10 @@
+       "spec": "https://m3.material.io/components/menus/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Headless Metal covers keyboard action, focus return, disabled commands, and scroll at 320 dp with 200% RTL text. The Baseline replay verified five PNGs. The vertical menu replay verified eight PNGs across two passes, including Standard in light, Vibrant in light, and Vibrant at both scroll positions in dark. Page.screenshot, CLI, and MCP produced matching PNG bytes.",
+-      "web_evidence": "Chrome WebGPU M267–M269 cover Baseline semantics, keys, pointer input, and compact scrolling. M370–M372 cover two vertical palettes, named groups, a single action per click, focus on reopen, Tab, focus outside Surface, dark RTL overflow, and repositioning on resize. The six scoped steps passed 276 checks and verified six PNGs in headless Chrome.",
+-      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Checkable commands, submenus, system high contrast, and live screen-reader speech remain open.",
+-      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection. Vertical menu tests cover both palettes, accessibility group order, pointer activation and focus return, and scrollbar geometry after resizing."
++      "desktop_evidence": "Headless Metal covers keyboard action, focus return, disabled commands, and scroll at 320 dp with 200% RTL text. The Baseline replay verified five PNGs. The vertical menu replay verified eight PNGs across two passes, including Standard in light, Vibrant in light, and Vibrant at both scroll positions in dark. Page.screenshot, CLI, and MCP produced matching PNG bytes. The choice-menu replay retained eight PNGs across Page.screenshot, CLI and MCP. It covers Standard, Vibrant and narrow dark RTL. https://github.com/faberline/surface/tree/30e48829f84afd381e4a7ee7f18d6bc3c3200750/docs/evidence/md3/vertical-choice-menu-v0176-corrected-runtime",
++      "web_evidence": "Chrome WebGPU M267–M269 cover Baseline semantics, keys, pointer input, and compact scrolling. M370–M372 cover two vertical palettes, named groups, a single action per click, focus on reopen, Tab, focus outside Surface, dark RTL overflow, and repositioning on resize. The six scoped steps passed 276 checks and verified six PNGs in headless Chrome. M373–M375 verify named radio and checkbox groups, a real disabled-row click that preserves focus and selection, independent toggles, and dark RTL at 200% text with rounded paint and Escape focus return. https://github.com/faberline/surface/tree/30e48829f84afd381e4a7ee7f18d6bc3c3200750/docs/evidence/md3/vertical-choice-menu-v0176-corrected-runtime",
++      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Vertical menus also support named command, single-choice, and multiple-choice groups. Single choices expose radio-menu state. Multiple choices expose checkbox-menu state. The caller owns the values. Keyboard movement keeps values unchanged until activation. Disabled choices preserve their checked state and cannot send actions. Submenus, system high contrast, and live screen-reader speech remain open.",
++      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection. Vertical menu tests cover both palettes, accessibility group order, pointer activation and focus return, and scrollbar geometry after resizing. Choice-menu tests cover named independent radio groups, retained focus and open state in multiple-choice groups, stable logical-leading checkmarks in both palettes, and disabled action rejection. Core tests verify that menu-radio metadata preserves the existing MenuItem role and serialization. macOS tests verify its separate accessibility role and action."
+     },
+     {
+       "id": "radio-button",
+diff --git a/docs/material.md b/docs/material.md
+index 013eb64..3223fd0 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -147,6 +147,7 @@ does not change application state.
+ | `button_group` | Standard and Connected press groups with one row, five sizes, round or square shapes, and controlled selection |
+ | `split_button` | Independent leading action and trailing disclosure with five sizes, four appearances, and an optional command menu |
+ | `command_menu` | Baseline M3 commands anchored to a caller's button, with grouped rows, keyboard focus, and scrolling |
++| `vertical_choice_menu` | Expressive Standard and Vibrant menus with named single-choice or multiple-choice groups |
+ | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+ | `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
+ | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
+@@ -1976,6 +1977,27 @@ the palette and **多區塊** to switch between layouts.
+ [Google Menu specifications](https://m3.material.io/components/menus/specs) ·
+ [Pinned Compose menu defaults](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MenuDefaults.kt)
+ 
++### Selection in vertical Expressive menus
++
++Use `Theme::vertical_choice_menu` to add checked states to an anchored
++menu. Pass up to three `VerticalChoiceMenuGroup` values. Give each group a
++stable ID and a visible name. Use `VerticalMenuSelection::Commands` for
++ordinary actions. For `Single`, pass the stable ID of the selected row or
++`None`. For `Multiple`, pass the stable IDs of the checked rows.
++
++Keep the selection in application state. On an accepted single choice,
++store its ID as the group's selection. Invoking the current selection
++leaves it selected and sends no action. On a multiple choice, toggle that
++row's checked state and keep the menu open. Arrow keys change focus.
++Activation changes selection. Disabled choices keep their checked state
++and cannot send actions.
++
++Selected choices use a different shape and color and show a checkmark.
++Single choices expose a radio menu item with its checked state. Multiple
++choices expose a checkbox menu item. The checkmark has no separate action.
++Open **選取清單選項** in the Gallery's **浮層** tab to try both group types.
++[Material 3 Menu guidelines](https://m3.material.io/components/menus/guidelines)
++
+ ## Dividers
+ 
+ Use `Theme::decorative_divider` to separate adjacent content with a 1 dp
+diff --git a/docs/provenance.json b/docs/provenance.json
+index fa58e03..04c6caf 100644
+--- a/docs/provenance.json
++++ b/docs/provenance.json
+@@ -68,7 +68,7 @@
+     "archive_sha256": "123828ceeec755b05255e3976cb0852993202de98a0626c97dd8d34246991f84",
+     "license": "MIT OR Apache-2.0; node.rs includes Chromium BSD-licensed code",
+     "local_path": "third-party/accesskit-macos",
+-    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders and spin buttons keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. Progress indicators expose a read-only AXValue in the legacy AppKit settable query. Grids publish their rows and selected cells through AXRows and AXSelectedChildren. Grid cells with selection state expose read-only AXSelected. AXTabs follows scroll areas owned by a tab list and stops at nested tab lists and other semantic groups. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
++    "note": "The src/node.rs patch exposes the macOS scroll area role, checked ByPage actions, explicit expanded state, numeric AXValue 2 for mixed checkboxes and AXInvalid for controls with explicit invalid state. Numeric sliders and spin buttons keep AXValue and expose their optional formatted text as AXValueDescription. Current navigation pages expose AXARIACurrent. Checked menu radio and checkbox items expose AXMenuItemMarkChar while retaining their numeric AXValue. Progress indicators expose a read-only AXValue in the legacy AppKit settable query. Grids publish their rows and selected cells through AXRows and AXSelectedChildren. Grid cells with selection state expose read-only AXSelected. AXTabs follows scroll areas owned by a tab list and stops at nested tab lists and other semantic groups. The src/event.rs patch keeps the existing notification priority for mixed values, emits one value change when either slider value changes, and emits AXCurrentStateChanged when a retained node's public current value changes. The normalized crate manifest omits upstream integration tests and their dev dependency."
+   },
+   "accesskit_winit": {
+     "repository": "https://github.com/AccessKit/accesskit",
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index f9de3a7..fbee07f 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -22,6 +22,8 @@ mod material_carousel;
+ mod material_checkbox;
+ #[path = "material_chips.rs"]
+ mod material_chips;
++#[path = "material_choice_menu.rs"]
++mod material_choice_menu;
+ #[path = "material_command_menu.rs"]
+ mod material_command_menu;
+ #[path = "material_date_picker.rs"]
+@@ -185,7 +187,7 @@ pub const STEPS: &[&str] = &[
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+-    "M371", "M372",
++    "M371", "M372", "M373", "M374", "M375",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -330,7 +332,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_text_field_system_pair::run(env, chrome, &url).await?;
+     material_horizontal_navigation_bar::run(env, chrome, &url).await?;
+     material_adaptive_navigation_scaffold::run(env, chrome, &url).await?;
+-    material_command_menu::run_vertical(env, chrome, &url).await
++    material_command_menu::run_vertical(env, chrome, &url).await?;
++    material_choice_menu::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -590,6 +593,7 @@ mod tests {
+         let horizontal_bar = super::material_horizontal_navigation_bar::STEPS;
+         let adaptive_navigation = super::material_adaptive_navigation_scaffold::STEPS;
+         let vertical_menu = super::material_command_menu::VERTICAL_STEPS;
++        let choice_menu = super::material_choice_menu::STEPS;
+         assert!(super::STEPS.ends_with(
+             &[
+                 placeholder.as_slice(),
+@@ -599,6 +603,7 @@ mod tests {
+                 horizontal_bar.as_slice(),
+                 adaptive_navigation.as_slice(),
+                 vertical_menu.as_slice(),
++                choice_menu.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_choice_menu.rs b/e2e/src/material_choice_menu.rs
+new file mode 100644
+index 0000000..aadff91
+--- /dev/null
++++ b/e2e/src/material_choice_menu.rs
+@@ -0,0 +1,783 @@
++//! Checkable vertical menus through trusted Chrome input and Canvas pixels.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M373", "M374", "M375"];
++
++const SHOW: &str = "menu-demo-choice-show";
++const BACK: &str = "menu-demo-back";
++const OPENER: &str = "menu-demo-opener";
++const OUTSIDE: &str = "menu-demo-list";
++const PANEL: &str = "menu-demo-panel";
++const VIEWPORT: &str = "menu-demo-panel-viewport";
++const CONTENT: &str = "menu-demo-panel-content";
++const THUMB: &str = "menu-demo-panel-scroll-thumb";
++const RECENT: &str = "menu-demo-choice-recent";
++const NAME: &str = "menu-demo-choice-name";
++const OWNER: &str = "menu-demo-choice-owner";
++const COMFORTABLE: &str = "menu-demo-choice-comfortable";
++const COMPACT: &str = "menu-demo-choice-compact";
++const KIND: &str = "menu-demo-choice-kind";
++const SIZE: &str = "menu-demo-choice-size";
++const LOCKED: &str = "menu-demo-choice-locked";
++const GROUPS: [(&str, &str); 3] = [
++    ("menu-demo-choice-sort", "排序方式"),
++    ("menu-demo-choice-density", "顯示密度"),
++    ("menu-demo-choice-fields", "在清單中顯示"),
++];
++
++struct ChoiceRow {
++    id: &'static str,
++    name: &'static str,
++    group: usize,
++    disabled: bool,
++}
++
++const ROWS: [ChoiceRow; 8] = [
++    ChoiceRow {
++        id: RECENT,
++        name: "最近修改",
++        group: 0,
++        disabled: false,
++    },
++    ChoiceRow {
++        id: NAME,
++        name: "名稱",
++        group: 0,
++        disabled: false,
++    },
++    ChoiceRow {
++        id: OWNER,
++        name: "擁有者",
++        group: 0,
++        disabled: true,
++    },
++    ChoiceRow {
++        id: COMFORTABLE,
++        name: "舒適",
++        group: 1,
++        disabled: false,
++    },
++    ChoiceRow {
++        id: COMPACT,
++        name: "緊湊",
++        group: 1,
++        disabled: false,
++    },
++    ChoiceRow {
++        id: KIND,
++        name: "檔案類型",
++        group: 2,
++        disabled: false,
++    },
++    ChoiceRow {
++        id: SIZE,
++        name: "檔案大小與可用空間的詳細資料",
++        group: 2,
++        disabled: false,
++    },
++    ChoiceRow {
++        id: LOCKED,
++        name: "鎖定狀態",
++        group: 2,
++        disabled: true,
++    },
++];
++
++#[derive(Clone, Copy)]
++struct Selection {
++    sort: &'static str,
++    density: &'static str,
++    checked: &'static [&'static str],
++    changes: u64,
++}
++
++const INITIAL: Selection = Selection {
++    sort: RECENT,
++    density: COMFORTABLE,
++    checked: &[KIND, LOCKED],
++    changes: 0,
++};
++const SORTED: Selection = Selection {
++    sort: NAME,
++    changes: 1,
++    ..INITIAL
++};
++const DENSE: Selection = Selection {
++    density: COMPACT,
++    changes: 2,
++    ..SORTED
++};
++const SIZE_ON: Selection = Selection {
++    checked: &[KIND, SIZE, LOCKED],
++    changes: 3,
++    ..DENSE
++};
++const KIND_OFF: Selection = Selection {
++    checked: &[SIZE, LOCKED],
++    changes: 4,
++    ..SIZE_ON
++};
++const KIND_BACK: Selection = Selection {
++    changes: 5,
++    ..SIZE_ON
++};
++const SIZE_OFF: Selection = Selection {
++    checked: &[KIND, LOCKED],
++    changes: 6,
++    ..KIND_BACK
++};
++
++impl Selection {
++    fn includes(self, row: &ChoiceRow) -> bool {
++        match row.group {
++            0 => self.sort == row.id,
++            1 => self.density == row.id,
++            _ => self.checked.contains(&row.id),
++        }
++    }
++}
++
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 2400).await?;
++    activate(tab, "section-2").await?;
++    until(tab, "s.section === 2").await?;
++    activate(tab, SHOW).await?;
++    until(tab, "s.menu_demo.visible && s.menu_demo.choice !== null").await?;
++    focused(tab, BACK).await?;
++    resize(tab, 960, 1120).await
++}
++
++async fn open(tab: &Tab) -> Result<()> {
++    activate(tab, OPENER).await?;
++    until(tab, "s.menu_demo.open").await?;
++    focused(tab, RECENT).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-expanded')",
++            projected(OPENER)
++        ))
++        .await?,
++        "true",
++        "the opener reports expansion"
++    );
++    Ok(())
++}
++
++async fn closed(tab: &Tab, restore: &str) -> Result<()> {
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, restore).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-expanded')",
++            projected(OPENER)
++        ))
++        .await?,
++        "false",
++        "the opener reports collapse"
++    );
++    check_eq!(
++        tab.eval(&format!("{} === null", projected(PANEL))).await?,
++        json!(true),
++        "the closed menu leaves the accessibility tree"
++    );
++    Ok(())
++}
++
++async fn expect(tab: &Tab, expected: Selection, open: bool) -> Result<Value> {
++    let keys = json!(expected.checked);
++    until(tab, &format!(
++        "(() => {{ const m = s.menu_demo, c = m.choice, expected = {keys};
++             return m.open === {open} && c?.sort === {} && c.density === {} && c.changes === {}
++                 && c.checked.length === expected.length && expected.every(id => c.checked.includes(id)); }})()",
++        js(expected.sort), js(expected.density), expected.changes,
++    )).await?;
++    tab.settle().await?;
++    let inspected = state(tab).await?;
++    let menu = &inspected["menu_demo"];
++    let choice = &menu["choice"];
++    let mut checks: Vec<String> = serde_json::from_value(choice["checked"].clone())?;
++    checks.sort_unstable();
++    let mut expected_checks = expected.checked.to_vec();
++    expected_checks.sort_unstable();
++    let mut receipt = json!({"open":menu["open"],"sort":choice["sort"],"density":choice["density"],
++                            "checked":checks,"changes":choice["changes"]});
++    check_eq!(
++        receipt,
++        json!({"open":open,"sort":expected.sort,"density":expected.density,
++                             "checked":expected_checks,"changes":expected.changes}),
++        "the model committed only the requested choice"
++    );
++    receipt["focus"] = inspected["focused"].clone();
++    Ok(receipt)
++}
++
++fn ax_owns(tree: &[Value], parent: &Value, child: &Value) -> bool {
++    let mut ancestor_id = child["parentId"].as_str();
++    while let Some(id) = ancestor_id {
++        if parent["nodeId"] == id {
++            return true;
++        }
++        ancestor_id = tree
++            .iter()
++            .find(|node| node["nodeId"] == id)
++            .and_then(|node| node["parentId"].as_str());
++    }
++    false
++}
++
++async fn semantics(tab: &Tab, expected: Selection) -> Result<Vec<Value>> {
++    let tree = ax_tree(tab).await?;
++    let menu_name = tab
++        .eval_str(&format!("{}?.getAttribute('aria-label')", projected(PANEL)))
++        .await?;
++    check!(
++        !menu_name.trim().is_empty(),
++        "the choice menu has an accessible name"
++    );
++    let menu = ax(&tree, "menu", &menu_name)?;
++    let mut rows = Vec::new();
++    for row in &ROWS {
++        let (group_id, group_name) = GROUPS[row.group];
++        let role = if row.group == 2 {
++            "menuitemcheckbox"
++        } else {
++            "menuitemradio"
++        };
++        let group = ax(&tree, "group", group_name)?;
++        let child = ax(&tree, role, row.name)?;
++        check!(
++            ax_owns(&tree, menu, group) && ax_owns(&tree, group, child),
++            "Chrome AX keeps {} inside its named group",
++            row.name
++        );
++        let checked = expected.includes(row).to_string();
++        check_eq!(
++            ax_property(child, "checked"),
++            Some(&json!(checked)),
++            "Chrome AX exposes the current checked value"
++        );
++        check_eq!(
++            ax_property(child, "disabled") == Some(&json!(true)),
++            row.disabled,
++            "Chrome AX exposes the authored enabled or disabled state"
++        );
++        let dom = tab
++            .eval(&format!(
++                "(() => {{ const e = {}, group = {};
++                 return [e?.getAttribute('role'), e?.getAttribute('aria-checked'),
++                     e?.getAttribute('aria-selected'), e?.getAttribute('aria-disabled') === 'true',
++                     Boolean(group?.contains(e)),
++                     e?.querySelector('[tabindex], button, input, [aria-checked]') === null,
++                     {} === null]; }})()",
++                projected(row.id),
++                projected(group_id),
++                projected(&format!("{}-leading", row.id)),
++            ))
++            .await?;
++        check_eq!(
++            dom,
++            json!([role, checked, null, row.disabled, true, true, true]),
++            "one projected choice action with a passive vector mark"
++        );
++        rows.push(
++            json!({"id":row.id,"name":row.name,"role":role,"group":group_id,
++                         "group_name":group_name,"checked":checked,"disabled":row.disabled,"dom":dom}),
++        );
++    }
++    Ok(rows)
++}
++
++fn rgb(value: &Value) -> Result<Rgb> {
++    let [r, g, b, alpha]: [u8; 4] =
++        serde_json::from_value(value.clone()).context("the fixture exposes its RGBA token")?;
++    check_eq!(alpha, 255, "the enabled choice paint token is opaque");
++    Ok([r, g, b])
++}
++
++fn luminance(color: Rgb) -> f64 {
++    color
++        .into_iter()
++        .zip([0.2126, 0.7152, 0.0722])
++        .map(|(channel, weight)| {
++            let s = f64::from(channel) / 255.;
++            weight
++                * if s <= 0.04045 {
++                    s / 12.92
++                } else {
++                    ((s + 0.055) / 1.055).powf(2.4)
++                }
++        })
++        .sum()
++}
++
++fn contrast(a: Rgb, b: Rgb) -> f64 {
++    let (a, b) = (luminance(a), luminance(b));
++    (a.max(b) + 0.05) / (a.min(b) + 0.05)
++}
++
++async fn radii(tab: &Tab, id: &str) -> Result<Rect> {
++    let corners = tab.eval(&format!(
++        "(() => {{ const s = JSON.parse(window.gallery.export_dom()).dom.nodes
++              .find(n => n.stable_id === {})?.style;
++              return ['top_left','top_right','bottom_right','bottom_left'].map(k => s?.corners?.[k] ?? s?.radius); }})()",
++        js(format!("{id}-face")),
++    )).await?;
++    serde_json::from_value(corners).context("read all four actual menu face corners")
++}
++
++async fn paint(
++    env: &Env,
++    tab: &Tab,
++    tag: &str,
++    id: &str,
++    unchecked: Option<&str>,
++    rtl: bool,
++) -> Result<Value> {
++    let [left, top, width, _] = tab.canvas_box().await?;
++    tab.mouse_move(left + width - 2., top + 2.).await?;
++    tab.settle().await?;
++    let owner = bounds(tab, id).await?;
++    let face = bounds(tab, &format!("{id}-face")).await?;
++    let mark = bounds(tab, &format!("{id}-leading")).await?;
++    let label = bounds(tab, &format!("{id}-label")).await?;
++    let corners = radii(tab, id).await?;
++    check_eq!(corners, [12.; 4], "selection rounds every corner to 12 dp");
++    check!(
++        owner[2] >= 48. && owner[3] >= 48. && face[3] >= 44. && contains(owner, face),
++        "the choice face fits inside its minimum 48 dp target"
++    );
++    check!(
++        near(mark[2], 20.) && near(mark[3], 20.) && contains(face, mark) && contains(face, label),
++        "a 20 dp vector and the complete label fit on the selected face"
++    );
++    let gap = if rtl {
++        mark[0] - label[0] - label[2]
++    } else {
++        label[0] - mark[0] - mark[2]
++    };
++    check!(
++        near(gap, 12.),
++        "paint uses a 12 dp gap and a logical leading mark: {gap}"
++    );
++    let menu = state(tab).await?["menu_demo"].clone();
++    let selected = rgb(&menu["choice"]["palette"][0])?;
++    let ink = rgb(&menu["choice"]["palette"][1])?;
++    let group = rgb(&menu["palette"][0])?;
++    let path = env.artifact(&format!("material-choice-menu-{tag}.png"));
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    let [x, y, w, _] = face;
++    let fill = raster.sample(x + w / 2., y + 4.)?;
++    // The compact scrollbar can cover the logical trailing corner.
++    let leading_x = |inset| if rtl { x + w - inset } else { x + inset };
++    let corner = raster.sample(leading_x(1.), y + 1.)?;
++    let inner = raster.sample(leading_x(6.), y + 3.)?;
++    check_eq!(
++        fill,
++        selected,
++        "the real selected face paints its palette token"
++    );
++    check_eq!(
++        corner,
++        group,
++        "the selected corner leaves the actual group paint visible"
++    );
++    check_eq!(
++        inner,
++        selected,
++        "the inside of the rounded corner is painted"
++    );
++    let mark_pixels = raster.colors(mark)?.get(&ink).copied().unwrap_or(0);
++    check!(
++        mark_pixels > 8 && contrast(fill, ink) >= 3.,
++        "the selected vector is visibly distinct from the face"
++    );
++    let unchecked = if let Some(id) = unchecked {
++        let face = bounds(tab, &format!("{id}-face")).await?;
++        let color = raster.sample(face[0] + face[2] / 2., face[1] + 4.)?;
++        let corners = radii(tab, id).await?;
++        check_eq!(
++            color,
++            group,
++            "an unselected face keeps the real group paint"
++        );
++        check!(
++            corners != [12.; 4],
++            "unchecked choice keeps the positional corner shape"
++        );
++        Some(json!({"id":id,"face":face,"color":color,"corners":corners}))
++    } else {
++        None
++    };
++    Ok(
++        json!({"id":id,"target":owner,"face":face,"mark":mark,"label":label,"mark_gap":gap,
++              "corners":corners,"fill":fill,"corner_rgb":corner,"inner_rgb":inner,"ink":ink,
++              "group_rgb":group,"mark_pixels":mark_pixels,"unchecked":unchecked,
++              "tokens":{"selected_face":selected,"selected_ink":ink,"group":group},
++              "face_contrast":contrast(fill,group),"mark_contrast":contrast(fill,ink)}),
++    )
++}
++
++async fn held_space(tab: &Tab, expected: Selection) -> Result<Value> {
++    let key = crate::keys::key("Space")?;
++    for repeat in [false, true, true] {
++        tab.cdp(
++            "Input.dispatchKeyEvent",
++            json!({
++                "type":"keyDown","key":key.key,"code":key.code,"windowsVirtualKeyCode":key.key_code,
++                "modifiers":0,"location":key.location,"text":key.text,"unmodifiedText":key.text,
++                "autoRepeat":repeat,
++            }),
++        )
++        .await?;
++        expect(tab, expected, true).await?;
++    }
++    tab.cdp(
++        "Input.dispatchKeyEvent",
++        json!({
++            "type":"keyUp","key":key.key,"code":key.code,"windowsVirtualKeyCode":key.key_code,
++            "modifiers":0,"location":key.location,
++        }),
++    )
++    .await?;
++    expect(tab, expected, true).await
++}
++
++async fn standard(env: &Env, tab: &Tab) -> Result<Value> {
++    open(tab).await?;
++    let initial = expect(tab, INITIAL, true).await?;
++    let initial_roles = semantics(tab, INITIAL).await?;
++    let original_name_corners = radii(tab, NAME).await?;
++    let reselect = held_space(tab, INITIAL).await?;
++    focused(tab, RECENT).await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, NAME).await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, OWNER).await?;
++    tab.press("Enter").await?;
++    focused(tab, OWNER).await?;
++    let disabled = expect(tab, INITIAL, true).await?;
++    let (x, y) = point(tab, OWNER).await?;
++    tab.click(x, y).await?;
++    let disabled_mouse = expect(tab, INITIAL, true).await?;
++    check_eq!(
++        disabled_mouse["focus"],
++        OWNER,
++        "the disabled click preserves row focus"
++    );
++    focus_projected(tab, OWNER).await?;
++    tab.press("ArrowUp").await?;
++    focused(tab, NAME).await?;
++    tab.press("Enter").await?;
++    closed(tab, OPENER).await?;
++    let accepted = expect(tab, SORTED, false).await?;
++    open(tab).await?;
++    let reopened = expect(tab, SORTED, true).await?;
++    let selected_roles = semantics(tab, SORTED).await?;
++    let pixels = paint(env, tab, "standard", NAME, Some(COMPACT), false).await?;
++    check!(
++        original_name_corners != [12.; 4],
++        "the formerly unselected row had a different shape"
++    );
++    check_eq!(
++        pixels["fill"],
++        json!([255, 217, 227]),
++        "the light Standard selection uses TertiaryContainer"
++    );
++    tab.press("Escape").await?;
++    closed(tab, OPENER).await?;
++    expect(tab, SORTED, false).await?;
++    Ok(
++        json!({"initial":initial,"initial_roles":initial_roles,"reselect":reselect,"disabled":disabled,
++              "disabled_mouse":disabled_mouse,
++              "accepted":accepted,"reopened":reopened,"selected_roles":selected_roles,
++              "initial_name_corners":original_name_corners,"paint":pixels}),
++    )
++}
++
++async fn point(tab: &Tab, id: &str) -> Result<(f64, f64)> {
++    let [x, y, w, h] = bounds(tab, id).await?;
++    let [left, top, _, _] = tab.canvas_box().await?;
++    Ok((left + x + w / 2., top + y + h / 2.))
++}
++
++async fn touch(tab: &Tab, id: &str, terminal: &str) -> Result<()> {
++    let (x, y) = point(tab, id).await?;
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":"touchStart","touchPoints":[{"x":x,"y":y,"id":1}]}),
++    )
++    .await?;
++    tab.settle().await?;
++    tab.cdp(
++        "Input.dispatchTouchEvent",
++        json!({"type":terminal,"touchPoints":[]}),
++    )
++    .await?;
++    tab.settle().await
++}
++
++async fn vibrant(env: &Env, tab: &Tab) -> Result<Value> {
++    activate(tab, "menu-demo-vibrant").await?;
++    until(tab, "s.menu_demo.vibrant").await?;
++    open(tab).await?;
++    for id in [NAME, OWNER, COMFORTABLE, COMPACT] {
++        tab.press("ArrowDown").await?;
++        focused(tab, id).await?;
++    }
++    tab.press("Enter").await?;
++    closed(tab, OPENER).await?;
++    let density = expect(tab, DENSE, false).await?;
++    open(tab).await?;
++    tab.press("End").await?;
++    focused(tab, LOCKED).await?;
++    tab.press("Space").await?;
++    focused(tab, LOCKED).await?;
++    let disabled = expect(tab, DENSE, true).await?;
++    tab.press("ArrowUp").await?;
++    focused(tab, SIZE).await?;
++    let keyboard = held_space(tab, SIZE_ON).await?;
++    focused(tab, SIZE).await?;
++
++    let (x, y) = point(tab, &format!("{KIND}-leading")).await?;
++    tab.click(x, y).await?;
++    let mouse = expect(tab, KIND_OFF, true).await?;
++    check_eq!(
++        mouse["focus"],
++        KIND,
++        "the mouse action stays on the original row"
++    );
++    check_eq!(
++        tab.eval("document.activeElement === document.querySelector('canvas')")
++            .await?,
++        json!(true),
++        "the browser keeps real Canvas focus after the mouse action"
++    );
++    tab.cdp(
++        "Emulation.setTouchEmulationEnabled",
++        json!({"enabled":true,"maxTouchPoints":1}),
++    )
++    .await?;
++    tab.eval(
++        "(() => { window.choiceMenuTouches = [];
++        for (const type of ['pointerdown','pointercancel','pointerup']) {
++            document.querySelector('canvas').addEventListener(type, e => {
++                if (e.pointerType === 'touch') window.choiceMenuTouches.push([type,e.isTrusted]);
++            }, true);
++        } })()",
++    )
++    .await?;
++    touch(tab, KIND, "touchCancel").await?;
++    let cancelled = expect(tab, KIND_OFF, true).await?;
++    touch(tab, KIND, "touchEnd").await?;
++    let tapped = expect(tab, KIND_BACK, true).await?;
++    let touch_events = tab.eval("window.choiceMenuTouches").await?;
++    check_eq!(
++        touch_events,
++        json!([
++            ["pointerdown", true],
++            ["pointercancel", true],
++            ["pointerdown", true],
++            ["pointerup", true]
++        ]),
++        "the Canvas received a trusted cancelled touch and a trusted tap"
++    );
++    tab.cdp(
++        "Emulation.setTouchEmulationEnabled",
++        json!({"enabled":false}),
++    )
++    .await?;
++
++    focus_projected(tab, KIND).await?;
++    let roles = semantics(tab, KIND_BACK).await?;
++    let pixels = paint(env, tab, "vibrant", SIZE, Some(COMFORTABLE), false).await?;
++    check!(
++        pixels["fill"] != json!([255, 217, 227])
++            && pixels["face_contrast"].as_f64().is_some_and(|v| v >= 3.),
++        "light Vibrant distinguishes its selected face from TertiaryContainer"
++    );
++    tab.press("Tab").await?;
++    closed(tab, OUTSIDE).await?;
++    let tabbed = expect(tab, KIND_BACK, false).await?;
++    Ok(
++        json!({"density":density,"disabled":disabled,"keyboard":keyboard,"mouse":mouse,
++              "cancelled":cancelled,"tapped":tapped,"touch_events":touch_events,
++              "roles":roles,"paint":pixels,"tabbed":tabbed}),
++    )
++}
++
++async fn scroll(tab: &Tab) -> Result<f64> {
++    tab.eval(&format!(
++        "JSON.parse(window.gallery.export_dom()).dom.nodes
++        .find(n => n.stable_id === {})?.style.scroll_y",
++        js(VIEWPORT)
++    ))
++    .await?
++    .as_f64()
++    .context("read the measured menu scroller offset")
++}
++
++async fn compact(env: &Env, tab: &Tab) -> Result<Value> {
++    for id in [
++        "menu-demo-theme",
++        "menu-demo-rtl",
++        "menu-demo-large-text",
++        "menu-demo-bottom",
++    ] {
++        activate(tab, id).await?;
++    }
++    until(tab, "s.dark && s.menu_demo.vibrant && s.menu_demo.rtl && s.menu_demo.text_scale === 2 && s.menu_demo.bottom_anchor").await?;
++    open(tab).await?;
++    resize(tab, 320, 480).await?;
++    focused(tab, RECENT).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({THUMB:?})?.length === 4"
++    ))
++    .await?;
++    let panel = bounds(tab, PANEL).await?;
++    let viewport = bounds(tab, VIEWPORT).await?;
++    let content = bounds(tab, CONTENT).await?;
++    let anchor = bounds(tab, OPENER).await?;
++    let top = bounds(tab, THUMB).await?;
++    let before = scroll(tab).await?;
++    check!(
++        contains([8., 8., 304., 464.], panel)
++            && contains(panel, viewport)
++            && near(panel[1] + panel[3] + 4., anchor[1])
++            && near(panel[0] + panel[2], anchor[0] + anchor[2]),
++        "the compact RTL popup aligns to its opener and flips above it"
++    );
++    tab.press("End").await?;
++    focused(tab, LOCKED).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({THUMB:?})?.[1] > {}",
++        top[1]
++    ))
++    .await?;
++    let bottom = bounds(tab, THUMB).await?;
++    let after = scroll(tab).await?;
++    let last = bounds(tab, LOCKED).await?;
++    let long = bounds(tab, SIZE).await?;
++    let label = bounds(tab, &format!("{SIZE}-label")).await?;
++    check!(
++        after > before && contains(viewport, last) && contains(viewport, long),
++        "End reveals the full last choice and its preceding wrapped option"
++    );
++    check!(
++        long[3] > 48. && label[3] > 40. && contains(long, label),
++        "the long label uses more than one line at 200 percent"
++    );
++    check!(
++        contains(panel, top)
++            && contains(panel, bottom)
++            && top[0] < panel[0] + panel[2] / 2.
++            && near(top[0], bottom[0])
++            && near(top[2], bottom[2])
++            && bottom[1] > top[1],
++        "the scroll thumb moves inside the left logical trailing edge"
++    );
++    check_eq!(
++        bounds(tab, OPENER).await?,
++        anchor,
++        "the footer opener stays fixed during menu scrolling"
++    );
++    let pixels = paint(env, tab, "compact-dark-rtl", SIZE, None, true).await?;
++    check!(
++        pixels["face_contrast"].as_f64().is_some_and(|v| v >= 3.),
++        "dark Vibrant faces retain their contrast"
++    );
++    tab.press("ArrowUp").await?;
++    focused(tab, SIZE).await?;
++    let before_toggle = bounds(tab, SIZE).await?;
++    let label_before = bounds(tab, &format!("{SIZE}-label")).await?;
++    let full_name = ROWS[6].name;
++    let tree = ax_tree(tab).await?;
++    check_eq!(
++        ax_property(ax(&tree, "menuitemcheckbox", full_name)?, "checked"),
++        Some(&json!("true")),
++        "the full wrapped name is exposed with its selected state"
++    );
++    tab.press("Enter").await?;
++    focused(tab, SIZE).await?;
++    let toggled = expect(tab, SIZE_OFF, true).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "{}?.getAttribute('aria-checked')",
++            projected(SIZE)
++        ))
++        .await?,
++        "false",
++        "the same compact choice publishes its unchecked state"
++    );
++    let tree = ax_tree(tab).await?;
++    check_eq!(
++        ax_property(ax(&tree, "menuitemcheckbox", full_name)?, "checked"),
++        Some(&json!("false")),
++        "the accessibility tree keeps the full name after toggling"
++    );
++    check_eq!(
++        bounds(tab, SIZE).await?,
++        before_toggle,
++        "toggling keeps the wrapped row bounds stable"
++    );
++    check_eq!(
++        bounds(tab, &format!("{SIZE}-label")).await?,
++        label_before,
++        "toggling keeps the wrapped label bounds stable"
++    );
++    tab.press("Escape").await?;
++    closed(tab, OPENER).await?;
++    let dismissed = expect(tab, SIZE_OFF, false).await?;
++    Ok(
++        json!({"panel":panel,"viewport":viewport,"content":content,"anchor":anchor,
++              "thumb_top":top,"thumb_bottom":bottom,"scroll":[before,after],"last":last,
++              "full_name":full_name,"long":long,"label":label,"paint":pixels,
++              "toggled":toggled,"dismissed":dismissed}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 2444, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(STEPS[0], "Standard checkable menu exposes named radio and checkbox groups and selects once");
++        route(&tab, url).await.context("M373 route")?;
++        report["adapter"] = tab.eval("(async () => { const a = await navigator.gpu?.requestAdapter();
++           if (!a) return null; const {isFallbackAdapter,vendor,architecture} = a.info;
++           return {isFallbackAdapter,vendor,architecture}; })()").await?;
++        check!(report["adapter"]["isFallbackAdapter"].is_boolean(), "WebGPU exposes actual adapter metadata");
++        report["standard"] = standard(env, &tab).await.context("M373")?;
++        step(STEPS[1], "Vibrant menu toggles independent choices by key, mouse and real touch and stays open");
++        report["vibrant"] = vibrant(env, &tab).await.context("M374")?;
++        step(STEPS[2], "short dark RTL checkable menu reveals a wrapped selected row and keeps state on Escape");
++        report["compact"] = compact(env, &tab).await.context("M375")?;
++        check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["state_at_failure"] = state(&tab).await.unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-choice-menu-failure.png"))
++            .await;
++    }
++    env.write_json("browser-material-choice-menu.json", &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 916767c..110a5bc 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1910,6 +1910,7 @@ impl Application for Gallery {
+                 ]));
+                 children.push(MenuDemo::show_button(&t));
+                 children.push(MenuDemo::show_vertical_button(&t));
++                children.push(MenuDemo::show_choices_button(&t));
+             }
+             _ => {
+                 children.push(CardDemo::show_button(&t));
+diff --git a/examples/material-gallery/src/menu_demo.rs b/examples/material-gallery/src/menu_demo.rs
+index a266b5e..847b657 100644
+--- a/examples/material-gallery/src/menu_demo.rs
++++ b/examples/material-gallery/src/menu_demo.rs
+@@ -1,3 +1,5 @@
++mod choices;
++
+ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::{AnimationFrame, AnimationUpdate, View};
+ use surface_material::{
+@@ -11,10 +13,12 @@ use crate::{
+     scroll_field_demo::control_row,
+     Message,
+ };
++use choices::MenuChoices;
+ 
+ pub(crate) const SECTION: usize = 2;
+ const SHOW: &str = "menu-demo-show";
+ const SHOW_VERTICAL: &str = "menu-demo-vertical-show";
++const SHOW_CHOICES: &str = "menu-demo-choice-show";
+ const BACK: &str = "menu-demo-back";
+ const OPENER: &str = "menu-demo-opener";
+ const MENU: &str = "menu-demo-panel";
+@@ -25,6 +29,7 @@ const FOOTER_CLEARANCE: f32 = 8.;
+ pub enum MenuDemoEvent {
+     Show,
+     ShowVertical,
++    ShowChoices,
+     Back,
+     ToggleDirection,
+     ToggleLargeText,
+@@ -34,18 +39,28 @@ pub enum MenuDemoEvent {
+     ToggleOpen,
+     Dismiss,
+     Choose(&'static str),
++    ChangeChoice(choices::MenuChoice),
+     OpenList,
+ }
+ 
++#[derive(Default, PartialEq, Eq)]
++enum MenuPreview {
++    #[default]
++    Hidden,
++    Commands,
++    Vertical,
++    Choices,
++}
++
+ #[derive(Default)]
+ pub(crate) struct MenuDemo {
+     measurement: CommandMenuMeasurement,
+-    visible: bool,
++    preview: MenuPreview,
++    choices: MenuChoices,
+     open: bool,
+     rtl: bool,
+     large_text: bool,
+     bottom_anchor: bool,
+-    vertical: bool,
+     grouped: bool,
+     vibrant: bool,
+     last: Option<&'static str>,
+@@ -55,11 +70,11 @@ pub(crate) struct MenuDemo {
+ 
+ impl MenuDemo {
+     pub(crate) fn visible(&self) -> bool {
+-        self.visible
++        self.preview != MenuPreview::Hidden
+     }
+ 
+     pub(crate) fn leave(&mut self) {
+-        self.visible = false;
++        self.preview = MenuPreview::Hidden;
+         self.open = false;
+         self.measurement = CommandMenuMeasurement::default();
+     }
+@@ -75,11 +90,9 @@ impl MenuDemo {
+     pub(crate) fn update(&mut self, event: MenuDemoEvent) {
+         use MenuDemoEvent::*;
+         match event {
+-            Show | ShowVertical => {
+-                self.visible = true;
+-                self.vertical = matches!(event, ShowVertical);
+-                self.grouped = self.vertical;
+-            }
++            Show => self.show(MenuPreview::Commands),
++            ShowVertical => self.show(MenuPreview::Vertical),
++            ShowChoices => self.show(MenuPreview::Choices),
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+@@ -93,12 +106,22 @@ impl MenuDemo {
+                 self.commands_executed += 1;
+                 self.open = false;
+             }
++            ChangeChoice(choice) => {
++                if self.choices.change(choice) {
++                    self.open = false;
++                }
++            }
+             OpenList => self.outside_actions += 1,
+         }
+     }
+ 
++    fn show(&mut self, preview: MenuPreview) {
++        self.grouped = preview == MenuPreview::Vertical;
++        self.preview = preview;
++    }
++
+     pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
+-        if !self.visible {
++        if !self.visible() {
+             return AnimationUpdate::default();
+         }
+         let mut update = self.measurement.advance(MENU, OPENER, frame);
+@@ -135,6 +158,19 @@ impl MenuDemo {
+             .accessible_activation()
+     }
+ 
++    pub(crate) fn show_choices_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW_CHOICES,
++                "選取清單選項",
++                ButtonKind::Outlined,
++                false,
++                Message::MenuDemo(MenuDemoEvent::ShowChoices),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
+     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+         use MenuDemoEvent::*;
+         let direction = if self.rtl {
+@@ -203,7 +239,15 @@ impl MenuDemo {
+             preferred_width: 240.,
+             restore_focus_to: Some(OPENER),
+         };
+-        let menu = if self.vertical {
++        let palette = if self.vibrant {
++            VerticalMenuPalette::Vibrant
++        } else {
++            VerticalMenuPalette::Standard
++        };
++        let menu = if self.preview == MenuPreview::Choices {
++            self.choices
++                .menu(theme, options, palette, trigger, &self.measurement)
++        } else if self.preview == MenuPreview::Vertical {
+             let groups = if self.grouped {
+                 vec![
+                     VerticalCommandMenuGroup {
+@@ -229,11 +273,6 @@ impl MenuDemo {
+                     items: first.into_iter().chain(second).chain([details]).collect(),
+                 }]
+             };
+-            let palette = if self.vibrant {
+-                VerticalMenuPalette::Vibrant
+-            } else {
+-                VerticalMenuPalette::Standard
+-            };
+             theme.vertical_command_menu(
+                 options,
+                 palette,
+@@ -279,7 +318,11 @@ impl MenuDemo {
+         let mut toggles = vec![
+             theme
+                 .tonal_button(BACK, "返回", Message::MenuDemo(Back))
+-                .restore_focus_on_removal(if self.vertical { SHOW_VERTICAL } else { SHOW })
++                .restore_focus_on_removal(match self.preview {
++                    MenuPreview::Vertical => SHOW_VERTICAL,
++                    MenuPreview::Choices => SHOW_CHOICES,
++                    _ => SHOW,
++                })
+                 .accessible_activation(),
+             theme
+                 .switch(
+@@ -306,19 +349,29 @@ impl MenuDemo {
+                 ToggleBottomAnchor,
+             ),
+         ];
+-        if self.vertical {
+-            toggles.extend([
+-                toggle("menu-demo-groups", "多區塊", self.grouped, ToggleGroups),
+-                toggle("menu-demo-vibrant", "鮮明", self.vibrant, ToggleVibrant),
+-            ]);
++        if self.preview == MenuPreview::Vertical {
++            toggles.push(toggle(
++                "menu-demo-groups",
++                "多區塊",
++                self.grouped,
++                ToggleGroups,
++            ));
++        }
++        if matches!(self.preview, MenuPreview::Vertical | MenuPreview::Choices) {
++            toggles.push(toggle(
++                "menu-demo-vibrant",
++                "鮮明",
++                self.vibrant,
++                ToggleVibrant,
++            ));
+         }
+         let controls = [
+             theme.heading(
+                 "menu-demo-title",
+-                if self.vertical {
+-                    "直向分組選單"
+-                } else {
+-                    "命令選單"
++                match self.preview {
++                    MenuPreview::Vertical => "直向分組選單",
++                    MenuPreview::Choices => "選取清單選項",
++                    _ => "命令選單",
+                 },
+             ),
+             control_row(toggles),
+@@ -375,12 +428,12 @@ impl MenuDemo {
+     #[cfg(target_arch = "wasm32")]
+     pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
+         serde_json::json!({
+-            "visible": self.visible,
++            "visible": self.visible(),
+             "open": self.open,
+             "rtl": self.rtl,
+             "text_scale": self.text_scale(),
+             "bottom_anchor": self.bottom_anchor,
+-            "vertical": self.vertical,
++            "vertical": self.preview == MenuPreview::Vertical,
+             "grouped": self.grouped,
+             "vibrant": self.vibrant,
+             "palette": if self.vibrant {
+@@ -391,13 +444,15 @@ impl MenuDemo {
+             "last": self.last,
+             "commands_executed": self.commands_executed,
+             "outside_actions": self.outside_actions,
++            "choice": (self.preview == MenuPreview::Choices)
++                .then(|| self.choices.inspect(theme, self.vibrant)),
+         })
+     }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+-    use super::{BACK, MENU, OPENER, SECTION, SHOW};
++    use super::{BACK, MENU, OPENER, SECTION, SHOW, SHOW_CHOICES};
+     use crate::{Gallery, Message};
+     use surface::{Rect, TextMeasurer};
+     use surface_app::{EditKey, Event, Runtime};
+@@ -446,6 +501,52 @@ mod tests {
+         rect.y + rect.height
+     }
+ 
++    #[test]
++    fn choice_preview_commits_single_and_multiple_items_independently() {
++        let viewport = (960., 1120.);
++        let mut runtime = Runtime::new(Gallery::default()).unwrap();
++        draw(&mut runtime, viewport);
++        runtime.apply(Message::Section(SECTION)).unwrap();
++        assert!(runtime.activate(SHOW_CHOICES).unwrap());
++        draw(&mut runtime, viewport);
++
++        let checked = |runtime: &Runtime<Gallery>, id| {
++            let id = runtime.dom().by_id(id).unwrap();
++            runtime.dom().get(id).unwrap().is_checked()
++        };
++        let recent = "menu-demo-choice-recent";
++        let name = "menu-demo-choice-name";
++        let comfortable = "menu-demo-choice-comfortable";
++        let kind = "menu-demo-choice-kind";
++        let size = "menu-demo-choice-size";
++        assert!(runtime.activate(OPENER).unwrap());
++        draw(&mut runtime, viewport);
++        assert_eq!(runtime.focused(), Some(recent));
++        assert_eq!(checked(&runtime, recent), Some(true));
++        assert_eq!(checked(&runtime, name), Some(false));
++        assert!(runtime.activate(name).unwrap());
++        draw(&mut runtime, viewport);
++        assert!(runtime.dom().by_id(MENU).is_none());
++        assert_eq!(runtime.focused(), Some(OPENER));
++
++        assert!(runtime.activate(OPENER).unwrap());
++        draw(&mut runtime, viewport);
++        assert_eq!(runtime.focused(), Some(recent));
++        assert_eq!(checked(&runtime, recent), Some(false));
++        assert_eq!(checked(&runtime, name), Some(true));
++        assert_eq!(checked(&runtime, comfortable), Some(true));
++        assert!(runtime.activate(size).unwrap());
++        draw(&mut runtime, viewport);
++        assert_eq!(checked(&runtime, size), Some(true));
++        assert_eq!(checked(&runtime, kind), Some(true));
++        assert!(runtime.activate(kind).unwrap());
++        draw(&mut runtime, viewport);
++        assert_eq!(checked(&runtime, size), Some(true));
++        assert_eq!(checked(&runtime, kind), Some(false));
++        assert_eq!(checked(&runtime, name), Some(true));
++        assert!(runtime.dom().by_id(MENU).is_some());
++    }
++
+     #[test]
+     fn bottom_menu_scrolls_status_clear_of_its_stationary_trigger() {
+         for viewport in [(320., 480.), (320., 240.)] {
+diff --git a/examples/material-gallery/src/menu_demo/choices.rs b/examples/material-gallery/src/menu_demo/choices.rs
+new file mode 100644
+index 0000000..40ec9bc
+--- /dev/null
++++ b/examples/material-gallery/src/menu_demo/choices.rs
+@@ -0,0 +1,178 @@
++use surface_app::View;
++use surface_material::{
++    CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, Theme, VerticalChoiceMenuGroup,
++    VerticalMenuPalette, VerticalMenuSelection,
++};
++
++use super::MenuDemoEvent;
++use crate::Message;
++
++const RECENT: &str = "menu-demo-choice-recent";
++const NAME: &str = "menu-demo-choice-name";
++const OWNER: &str = "menu-demo-choice-owner";
++const COMFORTABLE: &str = "menu-demo-choice-comfortable";
++const COMPACT: &str = "menu-demo-choice-compact";
++const KIND: &str = "menu-demo-choice-kind";
++const SIZE: &str = "menu-demo-choice-size";
++const LOCKED: &str = "menu-demo-choice-locked";
++
++#[derive(Clone)]
++pub enum MenuChoice {
++    SortByName(bool),
++    CompactDensity(bool),
++    ToggleKind,
++    ToggleSize,
++    Unavailable,
++}
++
++pub(super) struct MenuChoices {
++    sort_by_name: bool,
++    compact_density: bool,
++    show_kind: bool,
++    show_size: bool,
++    changes: usize,
++}
++
++impl Default for MenuChoices {
++    fn default() -> Self {
++        Self {
++            sort_by_name: false,
++            compact_density: false,
++            show_kind: true,
++            show_size: false,
++            changes: 0,
++        }
++    }
++}
++
++impl MenuChoices {
++    pub(super) fn change(&mut self, choice: MenuChoice) -> bool {
++        // Record every callback so the Gallery can detect duplicate actions.
++        self.changes += 1;
++        match choice {
++            MenuChoice::SortByName(value) if self.sort_by_name != value => {
++                self.sort_by_name = value;
++                true
++            }
++            MenuChoice::CompactDensity(value) if self.compact_density != value => {
++                self.compact_density = value;
++                true
++            }
++            MenuChoice::ToggleKind => {
++                self.show_kind = !self.show_kind;
++                false
++            }
++            MenuChoice::ToggleSize => {
++                self.show_size = !self.show_size;
++                false
++            }
++            _ => false,
++        }
++    }
++
++    fn sort(&self) -> &'static str {
++        if self.sort_by_name {
++            NAME
++        } else {
++            RECENT
++        }
++    }
++
++    fn density(&self) -> &'static str {
++        if self.compact_density {
++            COMPACT
++        } else {
++            COMFORTABLE
++        }
++    }
++
++    fn checked(&self) -> impl Iterator<Item = &'static str> {
++        [
++            (KIND, self.show_kind),
++            (SIZE, self.show_size),
++            (LOCKED, true),
++        ]
++        .into_iter()
++        .filter_map(|(id, checked)| checked.then_some(id))
++    }
++
++    pub(super) fn menu(
++        &self,
++        theme: &Theme,
++        options: CommandMenuOptions<'_>,
++        palette: VerticalMenuPalette,
++        trigger: View<Message>,
++        measurement: &CommandMenuMeasurement,
++    ) -> View<Message> {
++        use MenuChoice::*;
++        let row = |id, label, choice, disabled| CommandMenuItem {
++            id,
++            label,
++            leading_icon: None,
++            trailing_icon: None,
++            disabled,
++            on_press: Message::MenuDemo(MenuDemoEvent::ChangeChoice(choice)),
++        };
++        let checked: Vec<_> = self.checked().collect();
++        theme.vertical_choice_menu(
++            options,
++            palette,
++            trigger,
++            [
++                VerticalChoiceMenuGroup {
++                    id: "menu-demo-choice-sort",
++                    label: "排序方式",
++                    mode: VerticalMenuSelection::Single {
++                        selected_id: Some(self.sort()),
++                    },
++                    items: vec![
++                        row(RECENT, "最近修改", SortByName(false), false),
++                        row(NAME, "名稱", SortByName(true), false),
++                        row(OWNER, "擁有者", Unavailable, true),
++                    ],
++                },
++                VerticalChoiceMenuGroup {
++                    id: "menu-demo-choice-density",
++                    label: "顯示密度",
++                    mode: VerticalMenuSelection::Single {
++                        selected_id: Some(self.density()),
++                    },
++                    items: vec![
++                        row(COMFORTABLE, "舒適", CompactDensity(false), false),
++                        row(COMPACT, "緊湊", CompactDensity(true), false),
++                    ],
++                },
++                VerticalChoiceMenuGroup {
++                    id: "menu-demo-choice-fields",
++                    label: "在清單中顯示",
++                    mode: VerticalMenuSelection::Multiple {
++                        checked_ids: &checked,
++                    },
++                    items: vec![
++                        row(KIND, "檔案類型", ToggleKind, false),
++                        row(SIZE, "檔案大小與可用空間的詳細資料", ToggleSize, false),
++                        row(LOCKED, "鎖定狀態", Unavailable, true),
++                    ],
++                },
++            ],
++            Message::MenuDemo(MenuDemoEvent::Dismiss),
++            measurement,
++        )
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(super) fn inspect(&self, theme: &Theme, vibrant: bool) -> serde_json::Value {
++        let colors = &theme.colors;
++        serde_json::json!({
++            "sort": self.sort(),
++            "density": self.density(),
++            "checked": self.checked().collect::<Vec<_>>(),
++            "changes": self.changes,
++            "palette": if vibrant {
++                [colors.tertiary, colors.on_tertiary]
++            } else {
++                [colors.tertiary_container, colors.on_tertiary_container]
++            },
++        })
++    }
++}
+diff --git a/third-party/accesskit-macos/Cargo.toml b/third-party/accesskit-macos/Cargo.toml
+index 3a8ac27..eba6fc8 100644
+--- a/third-party/accesskit-macos/Cargo.toml
++++ b/third-party/accesskit-macos/Cargo.toml
+@@ -28,6 +28,12 @@ default-target = "x86_64-apple-darwin"
+ name = "accesskit_macos"
+ path = "src/lib.rs"
+ 
++# AppKit needs the process main thread, outside the default test harness.
++[[test]]
++name = "menu_item_mark_char"
++path = "tests/menu_item_mark_char.rs"
++harness = false
++
+ [dependencies.accesskit]
+ version = "0.25.2"
+ 
+diff --git a/third-party/accesskit-macos/src/node.rs b/third-party/accesskit-macos/src/node.rs
+index 0d3f65f..bc288a0 100644
+--- a/third-party/accesskit-macos/src/node.rs
++++ b/third-party/accesskit-macos/src/node.rs
+@@ -407,6 +407,11 @@ impl NodeWrapper<'_> {
+         self.0.value().map(Value::String).or(numeric)
+     }
+ 
++    fn exposes_menu_item_mark_char(&self) -> bool {
++        matches!(self.0.role(), Role::MenuItemCheckBox | Role::MenuItemRadio)
++            && self.0.toggled().is_some()
++    }
++
+     pub(crate) fn value_description(&self) -> Option<&str> {
+         if matches!(self.0.role(), Role::Slider | Role::SpinButton)
+             && self.0.numeric_value().is_some()
+@@ -1179,6 +1184,14 @@ declare_class!(
+             {
+                 attributes = unsafe { attributes.arrayByAddingObject(current) };
+             }
++            let mark_char = ns_string!("AXMenuItemMarkChar");
++            if self
++                .resolve(|node| NodeWrapper(node).exposes_menu_item_mark_char())
++                .unwrap_or(false)
++                && !unsafe { attributes.containsObject(mark_char) }
++            {
++                attributes = unsafe { attributes.arrayByAddingObject(mark_char) };
++            }
+             attributes
+         }
+ 
+@@ -1210,6 +1223,12 @@ declare_class!(
+                 if attr == ns_string!("AXARIACurrent") {
+                     return NodeWrapper(node).aria_current_value().map(NSString::from_str);
+                 }
++                if attr == ns_string!("AXMenuItemMarkChar") {
++                    // Core-AAM exposes a checkmark only for aria-checked=true.
++                    return (NodeWrapper(node).exposes_menu_item_mark_char()
++                        && node.toggled() == Some(Toggled::True))
++                        .then(|| NSString::from_str("✓"));
++                }
+                 if attr == ns_string!("AXBrailleLabel") && node.has_braille_label() {
+                     return Some(NSString::from_str(node.braille_label().unwrap()))
+                 } else if attr == ns_string!("AXBrailleRoleDescription") && node.has_braille_role_description() {
+@@ -1426,13 +1445,18 @@ declare_class!(
+                     return node.is_dialog();
+                 }
+                 if selector == sel!(accessibilityAttributeNames) {
+-                    return node.data().invalid().is_some() || NodeWrapper(node).aria_current_value().is_some();
++                    let wrapper = NodeWrapper(node);
++                    return node.data().invalid().is_some()
++                        || wrapper.aria_current_value().is_some()
++                        || wrapper.exposes_menu_item_mark_char();
+                 }
+                 if selector == sel!(accessibilityAttributeValue:) {
++                    let wrapper = NodeWrapper(node);
+                     return node.has_braille_label()
+                         || node.has_braille_role_description()
+                         || node.data().invalid().is_some()
+-                        || NodeWrapper(node).aria_current_value().is_some()
++                        || wrapper.aria_current_value().is_some()
++                        || wrapper.exposes_menu_item_mark_char()
+                         || node.has_html_id()
+                 }
+                 if selector == sel!(accessibilityURL) {
+diff --git a/third-party/accesskit-macos/tests/menu_item_mark_char.rs b/third-party/accesskit-macos/tests/menu_item_mark_char.rs
+new file mode 100644
+index 0000000..a5f3dee
+--- /dev/null
++++ b/third-party/accesskit-macos/tests/menu_item_mark_char.rs
+@@ -0,0 +1,134 @@
++// Copyright 2022 The AccessKit Authors. All rights reserved.
++// Licensed under the Apache License, Version 2.0 (found in
++// the LICENSE-APACHE file) or the MIT license (found in
++// the LICENSE-MIT file), at your option.
++
++use accesskit::{
++    Action, ActionHandler, ActionRequest, ActivationHandler, Node, NodeId, Role, Toggled, TreeId,
++    TreeInfo, TreeUpdate,
++};
++use accesskit_macos::Adapter;
++use objc2::{
++    msg_send, msg_send_id,
++    rc::{Id, autoreleasepool},
++    sel,
++};
++use objc2_app_kit::NSView;
++use objc2_foundation::{MainThreadMarker, NSArray, NSNumber, NSObject, NSObjectProtocol, NSString};
++
++struct InitialTree(Option<TreeUpdate>);
++
++impl ActivationHandler for InitialTree {
++    fn request_initial_tree(&mut self) -> Option<TreeUpdate> {
++        self.0.take()
++    }
++}
++
++struct NoActions;
++
++impl ActionHandler for NoActions {
++    fn do_action(&mut self, _request: ActionRequest) {
++        panic!("reading attributes must not send an action");
++    }
++}
++
++fn check_mark(
++    view: &NSView,
++    role: Role,
++    toggled: Option<(Toggled, i32)>,
++    disabled: bool,
++    expected_attribute: bool,
++    expected_mark: Option<&str>,
++) {
++    let id = NodeId(1);
++    let mut node = Node::new(role);
++    node.set_label("Choice");
++    if let Some((state, _)) = toggled {
++        node.set_toggled(state);
++    }
++    if disabled {
++        node.set_disabled();
++    } else {
++        node.add_action(Action::Click);
++    }
++    let mut initial = InitialTree(Some(TreeUpdate {
++        nodes: vec![(id, node)],
++        tree: Some(TreeInfo::new(id)),
++        tree_id: TreeId::ROOT,
++        focus: id,
++    }));
++    // The detached view lives through the adapter and all its AppKit queries.
++    let mut adapter =
++        unsafe { Adapter::new((view as *const NSView).cast_mut().cast(), false, NoActions) };
++    let children = adapter.view_children(&mut initial);
++    // The adapter returns an autoreleased array which remains valid inside main's pool.
++    let item = unsafe { children.as_ref() }.unwrap().first().unwrap();
++    let ax_role: Id<NSString> = unsafe { msg_send_id![item, accessibilityRole] };
++    let expected_role = match role {
++        Role::CheckBox => "AXCheckBox",
++        Role::RadioButton => "AXRadioButton",
++        _ => "AXMenuItem",
++    };
++    assert_eq!(ax_role.to_string(), expected_role);
++    for selector in [
++        sel!(accessibilityAttributeNames),
++        sel!(accessibilityAttributeValue:),
++    ] {
++        let allowed: bool = unsafe { msg_send![item, isAccessibilitySelectorAllowed: selector] };
++        assert_eq!(allowed, expected_attribute, "{role:?}, {toggled:?}");
++    }
++    let attribute = NSString::from_str("AXMenuItemMarkChar");
++    let names: Id<NSArray<NSString>> = unsafe { msg_send_id![item, accessibilityAttributeNames] };
++    let count = (0..names.len())
++        .filter(|&index| names.get(index) == Some(&*attribute))
++        .count();
++    assert_eq!(
++        count,
++        usize::from(expected_attribute),
++        "{role:?}, {toggled:?}"
++    );
++
++    let mark: Option<Id<NSString>> =
++        unsafe { msg_send_id![item, accessibilityAttributeValue: &*attribute] };
++    let mark = mark.map(|value| value.to_string());
++    assert_eq!(mark.as_deref(), expected_mark, "{role:?}, {toggled:?}");
++
++    let value: Option<Id<NSObject>> = unsafe { msg_send_id![item, accessibilityValue] };
++    let number = value.as_deref().map(|value| {
++        assert!(value.is_kind_of::<NSNumber>());
++        let number: i32 = unsafe { msg_send![value, intValue] };
++        number
++    });
++    assert_eq!(
++        number,
++        toggled.map(|(_, value)| value),
++        "{role:?}, {toggled:?}"
++    );
++    let enabled: bool = unsafe { msg_send![item, isAccessibilityEnabled] };
++    let press_allowed: bool =
++        unsafe { msg_send![item, isAccessibilitySelectorAllowed: sel!(accessibilityPerformPress)] };
++    assert_eq!(enabled, !disabled);
++    assert_eq!(press_allowed, !disabled);
++}
++
++fn main() {
++    autoreleasepool(|_| {
++        let mtm = MainThreadMarker::new().expect("run on the AppKit main thread");
++        let view = unsafe { NSView::new(mtm) };
++        for role in [Role::MenuItemCheckBox, Role::MenuItemRadio] {
++            for (state, value, mark) in [
++                (Toggled::True, 1, Some("✓")),
++                (Toggled::False, 0, None),
++                (Toggled::Mixed, 2, None),
++            ] {
++                check_mark(&view, role, Some((state, value)), false, true, mark);
++            }
++            check_mark(&view, role, Some((Toggled::True, 1)), true, true, Some("✓"));
++            check_mark(&view, role, None, false, false, None);
++        }
++        for role in [Role::MenuItem, Role::CheckBox, Role::RadioButton] {
++            check_mark(&view, role, Some((Toggled::True, 1)), false, false, None);
++        }
++        check_mark(&view, Role::MenuItem, None, false, false, None);
++    });
++}
