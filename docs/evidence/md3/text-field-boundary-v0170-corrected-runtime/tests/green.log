@@ -1,0 +1,30 @@
+   Compiling surface-app v0.1.70 (/private/tmp/surface-md3-v0170-boundary-regression.xnkkMNBE/surface/crates/surface-app)
+   Compiling surface-material v0.1.70 (/private/tmp/surface-md3-v0170-boundary-regression.xnkkMNBE/surface/crates/surface-material)
+    Finished `test` profile [unoptimized] target(s) in 4.74s
+warning: the following packages contain code that will be rejected by a future version of Rust: block v0.1.6
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running tests/outlined_text_field.rs (/tmp/cargo-target/surface-surface-md3-v0170-boundary-regression.xnkkMNBE-surface/debug/deps/outlined_text_field-991bf8eef9f990b0)
+
+running 19 tests
+test counter_counts_committed_graphemes_and_exposes_one_soft_limit_error ... ok
+test compact_rtl_long_label_wraps_above_a_closed_outline ... ok
+test adornments_keep_one_editor_and_a_separate_action_across_both_variants ... ok
+test expanding_label_hints_fade_without_overlapping_or_painting_during_ime ... ok
+test field_boundaries_follow_distinct_width_curves_and_reverse_from_the_presented_pose ... ok
+test counter_and_support_share_wide_rows_and_stack_in_compact_rtl ... ok
+test focus_repaints_one_semantic_editor_and_cuts_a_transparent_three_dp_outline ... ok
+test field_boundary_uses_enabled_ink_on_first_frame_after_reenable ... ok
+test floating_label_reverses_from_the_same_pose_and_reduced_motion_settles_it ... ok
+test field_boundaries_use_hover_and_error_ink_and_snap_on_disable_or_reduced_motion ... ok
+test same_id_theme_scale_and_validation_rebuild_preserve_backward_selection_and_preedit ... ok
+test read_only_selects_without_edits_and_disabled_leaves_the_tab_order ... ok
+test fixed_rows_clip_body_without_moving_adornments_or_footer ... ok
+test label_color_retargets_on_focus_and_error_without_changing_its_pose ... ok
+test narrow_rtl_multiline_relocates_action_and_keeps_disabled_and_read_only_values ... ok
+test growing_multiline_preserves_first_row_and_measures_preedit_and_committed_lines ... ok
+test above_label_shows_empty_idle_hint_and_fades_after_unfocused_clear ... ok
+test disabled_above_label_hint_keeps_single_line_clipping ... ok
+test outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+

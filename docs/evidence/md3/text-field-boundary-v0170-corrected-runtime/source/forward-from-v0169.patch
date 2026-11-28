@@ -1,0 +1,2284 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 1aa0faa8238bf77ef32d458fbb8ed0bba91f5fa1..0b2ff440b18faefe10bc34fcfc951ac3c69e9aab 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.69"
++version = "0.1.70"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index afa7b37544b2fa8ba9ab9ddf956ccebdc3e28613..fa2a5ee778345a1a30f5b1c247212816ecb3927c 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.69"
++version = "0.1.70"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/editor_paint.rs b/crates/surface-app/src/editor_paint.rs
+index ec4947d152c8b875485c7133e9f87e0d3b40de5f..46b3cbd8a71e64f04523bcf001def091206cd198 100644
+--- a/crates/surface-app/src/editor_paint.rs
++++ b/crates/surface-app/src/editor_paint.rs
+@@ -37,6 +37,27 @@ pub struct TextInputLabelMotion {
+ pub(crate) type TextInputLabelContour =
+     Box<dyn Fn(TextInputPaintState, Rect, Option<TextInputLabelMotion>) -> Option<FillContour>>;
+ 
++/// Motion for the paint of a text-input border or bottom indicator.
++pub struct TextInputBoundaryMotion<'a> {
++    /// The unfocused and focused widths, in that order, in logical pixels.
++    pub widths: [f32; 2],
++    pub width_spring: ToggleSpring,
++    /// The theme's boundary colors. Changing the palette settles the ink.
++    pub palette: &'a [Color],
++}
++
++type BoundaryContour =
++    Box<dyn Fn(Rect, Option<TextInputLabelMotion>, f32, Color) -> Option<FillContour>>;
++
++pub(crate) struct Boundary {
++    pub(crate) label: Option<String>,
++    pub(crate) widths: [f32; 2],
++    pub(crate) width_spring: ToggleSpring,
++    pub(crate) palette: Box<[Color]>,
++    pub(crate) color: Box<dyn Fn(TextInputPaintState) -> Color>,
++    pub(crate) paint: BoundaryContour,
++}
++
+ pub(crate) struct LabelColorMotion {
+     pub(crate) fallback: String,
+     pub(crate) palette: Box<[Color]>,
+@@ -59,6 +80,7 @@ pub(crate) enum Effect {
+         label: String,
+         paint: TextInputLabelContour,
+     },
++    Boundary(Boundary),
+ }
+ 
+ pub(crate) struct Binding {
+@@ -73,22 +95,94 @@ pub(crate) struct PaintBindings {
+ }
+ 
+ #[derive(Default)]
+-pub(crate) struct LabelMotions {
+-    tracks: BTreeMap<(String, String), LabelTrack>,
++pub(crate) struct EditorMotions {
++    labels: BTreeMap<(String, String), LabelTrack>,
++    boundaries: BTreeMap<(String, String), BoundaryTrack>,
+     pub(crate) running: bool,
+ }
+ 
+ struct LabelTrack {
+     spatial: ToggleMotion,
+-    color: Option<LabelColorTrack>,
++    color: Option<PaintColorTrack>,
+     placeholder: Option<PlaceholderMotion>,
+ }
+ 
+-struct LabelColorTrack {
++struct PaintColorTrack {
+     spring: ColorSpring,
+     palette: Box<[Color]>,
+ }
+ 
++impl PaintColorTrack {
++    fn new(ink: Color, palette: &[Color]) -> Self {
++        Self {
++            spring: ColorSpring::new(ink),
++            palette: palette.into(),
++        }
++    }
++
++    fn sample(
++        &mut self,
++        ink: Color,
++        palette: &[Color],
++        now: Option<f64>,
++        snap: bool,
++    ) -> (Color, bool) {
++        let palette_changed = self.palette.as_ref() != palette;
++        if palette_changed {
++            self.palette = palette.into();
++        }
++        self.spring.sample(ink, now, snap || palette_changed)
++    }
++}
++
++struct BoundaryTrack {
++    width: ToggleMotion,
++    width_spec: ([f32; 2], ToggleSpring),
++    color: Option<PaintColorTrack>,
++}
++
++impl BoundaryTrack {
++    fn new(boundary: &Boundary, focused: bool, ink: Color) -> Self {
++        Self {
++            width: ToggleMotion::new(focused),
++            width_spec: (boundary.widths, boundary.width_spring),
++            color: Some(PaintColorTrack::new(ink, &boundary.palette)),
++        }
++    }
++
++    fn sample(
++        &mut self,
++        boundary: &Boundary,
++        focused: bool,
++        ink: Color,
++        now: Option<f64>,
++        snap: bool,
++        enabled: bool,
++    ) -> (f32, Color, bool) {
++        let width_spec = (boundary.widths, boundary.width_spring);
++        let width_changed = self.width_spec != width_spec;
++        self.width_spec = width_spec;
++        let (progress, width_running) =
++            self.width
++                .sample(focused, now, snap || width_changed, boundary.width_spring);
++        let (ink, ink_running) = if enabled {
++            self.color
++                .get_or_insert_with(|| PaintColorTrack::new(ink, &boundary.palette))
++                .sample(ink, &boundary.palette, now, snap)
++        } else {
++            self.color = None;
++            (ink, false)
++        };
++        let [idle, focus] = boundary.widths;
++        let width = match progress {
++            0. => idle,
++            1. => focus,
++            _ => interpolate(idle, focus, progress),
++        };
++        (width, ink, width_running || ink_running)
++    }
++}
++
+ #[derive(Default)]
+ struct EditorPaint {
+     paints: Vec<(NodeId, ResolvedPaint)>,
+@@ -242,10 +336,10 @@ impl<A: Application> Runtime<A> {
+         computed: &ComputedDom,
+         hovered: Option<NodeId>,
+         fonts: &mut impl TextMeasurer,
+-        mut previous: LabelMotions,
++        previous: &mut EditorMotions,
+         frame: &mut EditorPaint,
+-    ) -> LabelMotions {
+-        let mut next = LabelMotions::default();
++    ) -> EditorMotions {
++        let mut next = EditorMotions::default();
+         for (label, binding) in &self.paint_bindings.text_inputs {
+             let Effect::Label {
+                 resting,
+@@ -294,7 +388,7 @@ impl<A: Application> Runtime<A> {
+             };
+             let enabled = !editor_node.is_disabled();
+             let active = enabled && self.in_scope(editor);
+-            let (key, mut track) = previous.tracks.remove_entry(&key).unwrap_or_else(|| {
++            let (key, mut track) = previous.labels.remove_entry(&key).unwrap_or_else(|| {
+                 (
+                     key,
+                     LabelTrack {
+@@ -318,17 +412,10 @@ impl<A: Application> Runtime<A> {
+                 .as_ref()
+                 .filter(|_| enabled && fallback.is_some());
+             let (ink, color_running) = if let Some(motion) = animated_color {
+-                let color = track.color.get_or_insert_with(|| LabelColorTrack {
+-                    spring: ColorSpring::new(target_color),
+-                    palette: motion.palette.clone(),
+-                });
+-                let palette_changed = color.palette != motion.palette;
+-                if palette_changed {
+-                    color.palette.clone_from(&motion.palette);
+-                }
+-                color
+-                    .spring
+-                    .sample(target_color, now, snap || palette_changed)
++                track
++                    .color
++                    .get_or_insert_with(|| PaintColorTrack::new(target_color, &motion.palette))
++                    .sample(target_color, &motion.palette, now, snap)
+             } else {
+                 track.color = None;
+                 (target_color, false)
+@@ -342,7 +429,7 @@ impl<A: Application> Runtime<A> {
+                 &mut track.placeholder,
+             );
+             next.running |= spatial_running || color_running || hint_running;
+-            next.tracks.insert(key, track);
++            next.labels.insert(key, track);
+ 
+             if let Some(fallback) = fallback {
+                 if !has_endpoints {
+@@ -511,16 +598,16 @@ impl<A: Application> Runtime<A> {
+         fonts: &mut impl TextMeasurer,
+     ) -> Vec<(NodeId, ResolvedPaint)> {
+         if self.paint_bindings.text_inputs.is_empty() {
+-            self.editor_label_motion = LabelMotions::default();
++            self.editor_motion = EditorMotions::default();
+             return Vec::new();
+         }
+         let hovered = self
+             .pointer_position
+             .and_then(|(x, y)| computed.hit_test_where(&self.dom, x, y, |id| self.in_scope(id)));
+-        let previous = std::mem::take(&mut self.editor_label_motion);
++        let mut previous = std::mem::take(&mut self.editor_motion);
+         let mut frame = EditorPaint::default();
+-        self.editor_label_motion =
+-            self.resolve_text_input_labels(computed, hovered, fonts, previous, &mut frame);
++        let mut next =
++            self.resolve_text_input_labels(computed, hovered, fonts, &mut previous, &mut frame);
+         for (id, binding) in &self.paint_bindings.text_inputs {
+             if matches!(binding.effect, Effect::Label { .. }) {
+                 continue;
+@@ -563,6 +650,49 @@ impl<A: Application> Runtime<A> {
+                     paint(state, computed.nodes[id.index()].bounds, pose)
+                         .map(ResolvedPaint::Contour)
+                 }
++                Effect::Boundary(boundary) => {
++                    let editor = self.dom.by_id(&binding.editor);
++                    let geometry = &computed.nodes[id.index()];
++                    let pose = editor
++                        .zip(
++                            boundary
++                                .label
++                                .as_deref()
++                                .and_then(|label| self.dom.by_id(label)),
++                        )
++                        .and_then(|key| frame.labels.get(&key).copied());
++                    let ink = (boundary.color)(state);
++                    let (width, ink) = if let Some(name) =
++                        self.dom.get(*id).ok().and_then(surface::Node::stable_id)
++                    {
++                        let key = (binding.editor.clone(), name.to_owned());
++                        let mut track = previous
++                            .boundaries
++                            .remove(&key)
++                            .unwrap_or_else(|| BoundaryTrack::new(boundary, state.is_focused, ink));
++                        let enabled = editor.is_some_and(|editor| {
++                            self.dom.get(editor).is_ok_and(|node| !node.is_disabled())
++                        });
++                        let active = enabled && editor.is_some_and(|editor| self.in_scope(editor));
++                        let snap = self.reduced_motion()
++                            || !active
++                            || !has_area(geometry.bounds.intersect(geometry.clip));
++                        let (width, ink, running) = track.sample(
++                            boundary,
++                            state.is_focused,
++                            ink,
++                            self.input_time_ms(),
++                            snap,
++                            enabled,
++                        );
++                        next.running |= running;
++                        next.boundaries.insert(key, track);
++                        (width, ink)
++                    } else {
++                        (boundary.widths[usize::from(state.is_focused)], ink)
++                    };
++                    (boundary.paint)(geometry.bounds, pose, width, ink).map(ResolvedPaint::Contour)
++                }
+                 Effect::Label { .. } => unreachable!("label paint was resolved before contours"),
+             };
+             if let Some(paint) = paint {
+@@ -571,6 +701,7 @@ impl<A: Application> Runtime<A> {
+                 frame.hidden.push(*id);
+             }
+         }
++        self.editor_motion = next;
+         if !frame.hidden.is_empty() {
+             let mut mask = vec![false; self.dom.len()];
+             for id in frame.hidden {
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 4e3a32d246e9792239b7bd51dc4990fd9c1867d8..9eb5c65a0fef868f7476bdc0c3f4e1cd68f4e0f1 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -51,7 +51,7 @@ pub use editing::{
+     TextSelection,
+ };
+ pub use editing_runtime::InputSnapshot;
+-pub use editor_paint::TextInputLabelMotion;
++pub use editor_paint::{TextInputBoundaryMotion, TextInputLabelMotion};
+ pub use frame_input::{
+     FrameInput, FramePress, FramePressPhase, InputAnimationUpdate, TouchContact,
+ };
+@@ -350,6 +350,31 @@ impl<M> View<M> {
+         )
+     }
+ 
++    /// Paint a boundary with retained width and color outside the editor's layout.
++    /// Give the boundary and its sibling editor stable IDs. An optional label
++    /// supplies the same measured pose used by its own paint. The contour
++    /// receives the boundary's global bounds and returns local points.
++    pub fn animate_text_input_boundary(
++        self,
++        editor_id: impl Into<String>,
++        label_id: Option<&str>,
++        motion: TextInputBoundaryMotion<'_>,
++        color: impl Fn(TextInputPaintState) -> Color + 'static,
++        paint: impl Fn(Rect, Option<TextInputLabelMotion>, f32, Color) -> Option<FillContour> + 'static,
++    ) -> Self {
++        self.with_text_input_paint(
++            editor_id,
++            editor_paint::Effect::Boundary(editor_paint::Boundary {
++                label: label_id.map(str::to_owned),
++                widths: motion.widths,
++                width_spring: motion.width_spring,
++                palette: motion.palette.into(),
++                color: Box::new(color),
++                paint: Box::new(paint),
++            }),
++        )
++    }
++
+     /// Paint a node-local contour using the sibling editor's rendered state.
+     /// The optional reference supplies its global bounds when it shares the
+     /// same immediate parent, including when its paint is hidden.
+@@ -1478,7 +1503,7 @@ pub struct Runtime<A: Application> {
+     scroll_state: scroll_control::State,
+     editors: BTreeMap<String, TextEditor>,
+     text_geometry: BTreeMap<String, editing_runtime::EditingGeometry>,
+-    editor_label_motion: editor_paint::LabelMotions,
++    editor_motion: editor_paint::EditorMotions,
+     pending_multiline_caret_reveal: Option<String>,
+     ime_area: Option<surface::Rect>,
+     text_drag: Option<String>,
+@@ -1529,7 +1554,7 @@ impl<A: Application> Runtime<A> {
+             scroll_state: scroll_control::State::default(),
+             editors: BTreeMap::new(),
+             text_geometry: BTreeMap::new(),
+-            editor_label_motion: editor_paint::LabelMotions::default(),
++            editor_motion: editor_paint::EditorMotions::default(),
+             pending_multiline_caret_reveal: None,
+             ime_area: None,
+             text_drag: None,
+diff --git a/crates/surface-app/src/motion.rs b/crates/surface-app/src/motion.rs
+index c7e6fcc49797413bd4ae95b6008dc6cc006fb185..bb1dfd2102de8bc0870b57132fe2cbed22c06c09 100644
+--- a/crates/surface-app/src/motion.rs
++++ b/crates/surface-app/src/motion.rs
+@@ -639,6 +639,7 @@ pub enum ToggleSpring {
+     StandardFastSpatial,
+     StandardSlowSpatial,
+     StandardDefaultEffects,
++    StandardFastEffects,
+ }
+ 
+ impl ToggleSpring {
+@@ -648,6 +649,7 @@ impl ToggleSpring {
+             Self::StandardFastSpatial => STANDARD_FAST_SPATIAL,
+             Self::StandardSlowSpatial => (300., 0.9),
+             Self::StandardDefaultEffects => (1600., 1.),
++            Self::StandardFastEffects => (3800., 1.),
+         }
+     }
+ }
+@@ -867,7 +869,7 @@ impl<A: Application> Runtime<A> {
+         self.animation_request_next
+             || ((self.motion.running
+                 || self.press_ripple.needs_frame()
+-                || self.editor_label_motion.running)
++                || self.editor_motion.running)
+                 && !self.motion.reduced)
+     }
+     pub(crate) fn input_time_ms(&self) -> Option<f64> {
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+index 15356bf6e31847fbf5ef5af8975ecb64b3a96327..93fea339be219af3b69f9d5564e5c2ee836c4be7 100644
+--- a/crates/surface-material/src/outlined_text_field.rs
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -6,7 +6,9 @@ use surface::{
+     Color, FillContour, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
+     TextMeasurer, TextScaling, TextStyle,
+ };
+-use surface_app::{CursorStyle, Key, TextInputPaintState, TextOptions, View};
++use surface_app::{
++    CursorStyle, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions, ToggleSpring, View,
++};
+ use unicode_segmentation::UnicodeSegmentation;
+ 
+ use crate::{
+@@ -80,9 +82,9 @@ impl Theme {
+     /// Build an outlined field which uses the width supplied by its parent.
+     ///
+     /// Keep the ID stable across changes to value, validation, theme and scale.
+-    /// The label floats when the field has focus or content. An optional hint
+-    /// shows only in the focused empty field outside IME composition. A long
+-    /// label that cannot fit inside the field stays above the outline.
++    /// The label floats when the field has focus or content. A long label
++    /// that cannot fit inside the field stays above the outline. The optional
++    /// hint can show in an empty field when the label leaves its value area.
+     pub fn outlined_text_field<M>(
+         &self,
+         options: OutlinedTextFieldOptions<'_>,
+@@ -394,40 +396,54 @@ impl Theme {
+         }
+ 
+         let boundary_part = if filled { "indicator" } else { "outline" };
+-        let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
+-            .without_interaction(None);
+-        let stroke = move |state: TextInputPaintState| {
+-            if state.is_focused && !disabled {
+-                3.
+-            } else {
+-                1.
+-            }
+-        };
+         let direction = options.direction;
+-        let boundary = if filled {
+-            boundary.paint_text_input_contour_with_bounds(id, None, move |state, face, _| {
+-                let top = face.height - stroke(state);
+-                FillContour::new(
+-                    [
+-                        [0., top],
+-                        [face.width, top],
+-                        [face.width, face.height],
+-                        [0., face.height],
++        let boundary = View::new(Node::new(Role::Group, "").id(format!("{id}-{boundary_part}")))
++            .without_interaction(None)
++            .animate_text_input_boundary(
++                id,
++                (!filled).then_some(floating_id.as_str()),
++                TextInputBoundaryMotion {
++                    widths: [1., 3.],
++                    // Filled uses Fast Spatial for width. Outlined uses
++                    // Fast Effects for both its width and color.
++                    width_spring: if filled {
++                        ToggleSpring::StandardFastSpatial
++                    } else {
++                        ToggleSpring::StandardFastEffects
++                    },
++                    palette: &[
++                        tokens.boundary,
++                        tokens.boundary_hover,
++                        tokens.primary,
++                        tokens.error_ink,
++                        tokens.error_hover,
++                        tokens.disabled_boundary,
+                     ],
+-                    tokens.boundary(state),
+-                )
+-            })
+-        } else {
+-            boundary.paint_text_input_label_outline(id, &floating_id, move |state, face, pose| {
+-                let notch = pose.map(|pose| LabelNotch {
+-                    progress: pose.progress,
+-                    measured_size: (pose.bounds.width, pose.bounds.height),
+-                    minimized: pose.floated_bounds,
+-                    direction,
+-                });
+-                outline_contour(face, stroke(state), notch, tokens.boundary(state))
+-            })
+-        };
++                },
++                move |state| tokens.boundary(state),
++                move |face, pose, width, color| {
++                    if filled {
++                        let top = face.height - width;
++                        FillContour::new(
++                            [
++                                [0., top],
++                                [face.width, top],
++                                [face.width, face.height],
++                                [0., face.height],
++                            ],
++                            color,
++                        )
++                    } else {
++                        let notch = pose.map(|pose| LabelNotch {
++                            progress: pose.progress,
++                            measured_size: (pose.bounds.width, pose.bounds.height),
++                            minimized: pose.floated_bounds,
++                            direction,
++                        });
++                        outline_contour(face, width, notch, color)
++                    }
++                },
++            );
+         let label_view = |id, font| {
+             View::new(
+                 Node::new(Role::Text, "")
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+index 4a14c3d38da5341c8a8ff8321811ef4a72a901ca..4d7a021cfe2d15343b2980efde3f6f91e3316e57 100644
+--- a/crates/surface-material/tests/outlined_text_field.rs
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -215,6 +215,27 @@ fn covers(path: &PathFill, x: f32, y: f32) -> bool {
+             == 1
+ }
+ 
++fn bottom_boundary(list: &ExtendedDisplayList, face: Rect) -> &PathFill {
++    let mut paths = list.ops().iter().filter_map(|op| match op {
++        ExtendedPaintOp::FillPath(path)
++            if covers(path, face.x + face.width / 2., face.y + face.height - 0.25) =>
++        {
++            Some(path)
++        }
++        _ => None,
++    });
++    let path = paths.next().expect("boundary covers the bottom edge");
++    assert!(paths.next().is_none(), "exactly one path covers that edge");
++    path
++}
++
++fn assert_bottom_width(path: &PathFill, face: Rect, width: f32) {
++    let x = face.x + face.width / 2.;
++    let inner = face.y + face.height - width;
++    assert!(covers(path, x, inner + 0.012), "stroke width under {width}");
++    assert!(!covers(path, x, inner - 0.012), "stroke width over {width}");
++}
++
+ fn text_run<'a>(list: &'a ExtendedDisplayList, text: &str) -> Option<(&'a PaintOp, TextAlignment)> {
+     list.ops().iter().find_map(|op| {
+         let (run, alignment) = match op {
+@@ -558,10 +579,11 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
+     let frame = render(&mut runtime, 360., &mut fonts);
+     let face = bounds(&runtime, "project-name-outline");
+     let left = bounds(&runtime, "project-name-floating-label").x;
+-    let outline = find_outline(&frame, Theme::light().colors.primary, face);
++    let outline = bottom_boundary(&frame, face);
+     assert!(label_pose(&frame, LABEL).0.y < resting.0.y);
+     assert!(!covers(outline, left, face.y + 0.1), "start of the cutout");
+-    assert!(covers(outline, left, face.y + 2.6), "lower stroke remains");
++    assert!(covers(outline, left, face.y + 0.95), "lower stroke remains");
++    assert!(!covers(outline, left, face.y + 1.25));
+     assert!(
+         covers(outline, face.x + face.width / 2., face.y + 0.1),
+         "outside the cutout"
+@@ -610,7 +632,7 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
+     let focused = render(&mut rtl, 320., &mut fonts);
+     assert_eq!(label_pose(&focused, LONG_LABEL), before);
+     let face = bounds(&rtl, "project-name-outline");
+-    let outline = find_outline(&focused, Theme::dark().colors.primary, face);
++    let outline = bottom_boundary(&focused, face);
+     assert!(covers(outline, face.x + face.width / 2., face.y + 1.));
+     assert!(rtl.needs_frame(), "the fallback still animates label color");
+     let ink = label_color(&focused, LONG_LABEL);
+@@ -634,6 +656,10 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
+     rtl.apply(Message::ChangeAppearance).unwrap();
+     let light = render(&mut rtl, 320., &mut fonts);
+     assert_eq!(label_color(&light, LONG_LABEL), Theme::light().colors.error);
++    assert_eq!(
++        bottom_boundary(&light, bounds(&rtl, "project-name-outline")).color(),
++        Theme::light().colors.error
++    );
+     // The separate Next button can still animate its own theme colors.
+     rtl.set_time(750.);
+     let light = render(&mut rtl, 320., &mut fonts);
+@@ -641,6 +667,228 @@ fn outlined_label_and_early_notch_share_one_frame_and_large_rtl_keeps_fallback()
+     assert!(!rtl.needs_frame());
+ }
+ 
++#[test]
++fn field_boundaries_follow_distinct_width_curves_and_reverse_from_the_presented_pose() {
++    let colors = Theme::light().colors;
++    // Independent analytic Standard motion samples at 24 and 48 ms.
++    for (appearance, boundary, idle_ink, at_24, at_48) in [
++        (
++            TextFieldAppearance::Outlined,
++            "project-name-outline",
++            colors.outline,
++            1.870_553,
++            2.589_262,
++        ),
++        (
++            TextFieldAppearance::Filled,
++            "project-name-indicator",
++            colors.on_surface_variant,
++            1.473_985,
++            2.139_934,
++        ),
++    ] {
++        let mut fonts = TextSystem::default();
++        let mut runtime = Runtime::new(Form {
++            adorned: Some(appearance),
++            value: "欄位內容".into(),
++            ..Form::default()
++        })
++        .unwrap();
++        runtime.set_time(0.);
++        let idle = render(&mut runtime, 400., &mut fonts);
++        let face = bounds(&runtime, boundary);
++        let editor_bounds = bounds(&runtime, ID);
++        let editor_id = runtime.dom().by_id(ID).unwrap();
++        let idle_path = bottom_boundary(&idle, face);
++        assert_eq!(idle_path.color(), idle_ink);
++        assert_bottom_width(idle_path, face, 1.);
++
++        tab(&mut runtime);
++        let first = render(&mut runtime, 400., &mut fonts);
++        let first_path = bottom_boundary(&first, face);
++        assert_eq!(first_path.points(), idle_path.points());
++        assert_eq!(first_path.color(), idle_ink);
++        assert!(runtime.needs_frame());
++        runtime.set_time(24.);
++        let rising = render(&mut runtime, 400., &mut fonts);
++        let rising_path = bottom_boundary(&rising, face);
++        assert_bottom_width(rising_path, face, at_24);
++        assert_ne!(rising_path.color(), idle_ink);
++        assert_ne!(rising_path.color(), colors.primary);
++        assert_eq!(bounds(&runtime, ID), editor_bounds);
++        assert_eq!(runtime.dom().by_id(ID), Some(editor_id));
++        assert_eq!(runtime.focused(), Some(ID));
++
++        runtime.set_time(48.);
++        let later = render(&mut runtime, 400., &mut fonts);
++        let later_path = bottom_boundary(&later, face);
++        assert_bottom_width(later_path, face, at_48);
++        assert_ne!(later_path.color(), rising_path.color());
++        tab(&mut runtime);
++        let reversal = render(&mut runtime, 400., &mut fonts);
++        let reversal_path = bottom_boundary(&reversal, face);
++        assert_eq!(reversal_path.points(), later_path.points());
++        assert_eq!(reversal_path.color(), later_path.color());
++        runtime.set_time(100.);
++        let falling = render(&mut runtime, 400., &mut fonts);
++        let falling_path = bottom_boundary(&falling, face);
++        assert!(covers(
++            falling_path,
++            face.x + 30.,
++            face.y + face.height - 1.02
++        ));
++        assert!(!covers(
++            falling_path,
++            face.x + 30.,
++            face.y + face.height - at_48
++        ));
++        runtime.set_time(650.);
++        let settled = render(&mut runtime, 400., &mut fonts);
++        let settled_path = bottom_boundary(&settled, face);
++        assert_eq!(settled_path.points(), idle_path.points());
++        assert_eq!(settled_path.color(), idle_ink);
++        assert!(!runtime.needs_frame());
++    }
++}
++
++#[test]
++fn field_boundaries_use_hover_and_error_ink_and_snap_on_disable_or_reduced_motion() {
++    let colors = Theme::light().colors;
++    for (appearance, boundary, disabled_alpha) in [
++        (TextFieldAppearance::Outlined, "project-name-outline", 31),
++        (TextFieldAppearance::Filled, "project-name-indicator", 97),
++    ] {
++        let mut fonts = TextSystem::default();
++        let mut runtime = Runtime::new(Form {
++            adorned: Some(appearance),
++            ..Form::default()
++        })
++        .unwrap();
++        runtime.set_time(0.);
++        render(&mut runtime, 400., &mut fonts);
++        let face = bounds(&runtime, boundary);
++        runtime
++            .dispatch(Event::PointerMove {
++                x: face.x + 8.,
++                y: face.y + face.height / 2.,
++            })
++            .unwrap();
++        render(&mut runtime, 400., &mut fonts);
++        runtime.set_time(350.);
++        let hover = render(&mut runtime, 400., &mut fonts);
++        let hover_path = bottom_boundary(&hover, face);
++        assert_eq!(hover_path.color(), colors.on_surface);
++        assert_bottom_width(hover_path, face, 1.);
++
++        runtime.apply(Message::SetInvalid(true)).unwrap();
++        let error_start = render(&mut runtime, 400., &mut fonts);
++        assert_eq!(
++            bottom_boundary(&error_start, face).color(),
++            colors.on_surface
++        );
++        runtime.set_time(410.);
++        let error_middle = render(&mut runtime, 400., &mut fonts);
++        let error_ink = bottom_boundary(&error_middle, face).color();
++        assert_ne!(error_ink, colors.on_surface);
++        assert_ne!(error_ink, colors.on_error_container);
++        runtime.set_time(650.);
++        let error_hover = render(&mut runtime, 400., &mut fonts);
++        assert_eq!(
++            bottom_boundary(&error_hover, face).color(),
++            colors.on_error_container
++        );
++
++        tab(&mut runtime);
++        render(&mut runtime, 400., &mut fonts);
++        runtime.set_time(674.);
++        let moving = render(&mut runtime, 400., &mut fonts);
++        assert_ne!(bottom_boundary(&moving, face).color(), colors.error);
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Disabled))
++            .unwrap();
++        let disabled = render(&mut runtime, 400., &mut fonts);
++        let disabled_path = bottom_boundary(&disabled, face);
++        let Color(r, g, b, _) = colors.on_surface;
++        assert_eq!(disabled_path.color(), Color(r, g, b, disabled_alpha));
++        assert_bottom_width(disabled_path, face, 1.);
++        assert_ne!(runtime.focused(), Some(ID));
++        assert!(!runtime
++            .accessibility_frame()
++            .unwrap()
++            .node(runtime.dom().by_id(ID).unwrap())
++            .unwrap()
++            .node
++            .is_invalid());
++
++        let mut reduced = Runtime::new(Form {
++            adorned: Some(appearance),
++            invalid: true,
++            ..Form::default()
++        })
++        .unwrap();
++        reduced.set_time(0.);
++        reduced.set_reduced_motion(true);
++        render(&mut reduced, 400., &mut fonts);
++        tab(&mut reduced);
++        let focused = render(&mut reduced, 400., &mut fonts);
++        let path = bottom_boundary(&focused, face);
++        assert_eq!(path.color(), colors.error);
++        assert_bottom_width(path, face, 3.);
++        tab(&mut reduced);
++        let blurred = render(&mut reduced, 400., &mut fonts);
++        assert_bottom_width(bottom_boundary(&blurred, face), face, 1.);
++        assert!(!reduced.needs_frame());
++    }
++}
++
++#[test]
++fn field_boundary_uses_enabled_ink_on_first_frame_after_reenable() {
++    let colors = Theme::light().colors;
++    for (appearance, boundary, idle_ink) in [
++        (
++            TextFieldAppearance::Outlined,
++            "project-name-outline",
++            colors.outline,
++        ),
++        (
++            TextFieldAppearance::Filled,
++            "project-name-indicator",
++            colors.on_surface_variant,
++        ),
++    ] {
++        for invalid in [false, true] {
++            let mut fonts = TextSystem::default();
++            let mut runtime = Runtime::new(Form {
++                adorned: Some(appearance),
++                invalid,
++                ..Form::default()
++            })
++            .unwrap();
++            runtime.set_time(0.);
++            render(&mut runtime, 400., &mut fonts);
++            let face = bounds(&runtime, boundary);
++            runtime
++                .apply(Message::SetEditability(TextFieldEditability::Disabled))
++                .unwrap();
++            let disabled = render(&mut runtime, 400., &mut fonts);
++            let disabled_ink = bottom_boundary(&disabled, face).color();
++            runtime.set_time(16.);
++            runtime
++                .apply(Message::SetEditability(TextFieldEditability::Editable))
++                .unwrap();
++            let enabled = render(&mut runtime, 400., &mut fonts);
++            let expected = if invalid { colors.error } else { idle_ink };
++            assert_ne!(disabled_ink, expected);
++            assert_eq!(
++                bottom_boundary(&enabled, face).color(),
++                expected,
++                "{appearance:?}, invalid={invalid}: enabled ink on first frame"
++            );
++            assert_bottom_width(bottom_boundary(&enabled, face), face, 1.);
++        }
++    }
++}
++
+ #[test]
+ fn label_color_retargets_on_focus_and_error_without_changing_its_pose() {
+     let colors = Theme::light().colors;
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index ef3457b62b449334e6bdb0a76fb3b76774053cb6..ef2ec7a860ab208e1e2b346c132cb42b49a18504 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -342,10 +342,10 @@
+       "spec": "https://m3.material.io/components/text-fields/overview",
+       "status": "partial",
+       "variant_review": "Baseline single-line Outlined and Filled reviewed against Material 3 text fields revision 3cf2, Outlined token revision d80a and Filled token revision 411b. Leading and trailing icons and text affixes checked against both token sets. The counter follows the supporting-row dimensions for both appearances. Grow and FixedRows cover the two multiline layouts with the same field tokens.",
+-      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints. Two placeholder replays add 40 matching PNGs through Page.screenshot, CLI and MCP. They check focus, blur and idle above-label hints in both appearances, including dark 320 dp RTL at 200% text.",
+-      "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. M351–M353 compare 58 paired WebGPU originals to verify the two placeholder spring rates, reversal, RTL alignment, Reduce Motion, immediate suppression during marked and empty composition, and the unfocused above-label clear transition. CDP delivers real marked text; an explicitly synthetic empty composition start exercises the same Runtime bridge.",
+-      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. With an expanding label, an empty field fades the hint in on focus using Standard Slow Effects and out on blur using Fast Effects. Above-field labels leave the hint visible at rest, including in a disabled field with disabled ink. Clearing an unfocused above-field editor fades the hint back in. Committed text, active composition and overlap with the moving label suppress the hint independently of its opacity. A long hint can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. Boundary motion, system contrast, live speech and operating-system composition remain open.",
+-      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry. The same-ID overflow regression checks that Outlined and Filled single-line hints keep the same visible text as the field disables and re-enables in LTR and RTL."
++      "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints. Two placeholder replays add 40 matching PNGs through Page.screenshot, CLI and MCP. They check focus, blur and idle above-label hints in both appearances, including dark 320 dp RTL at 200% text. Two boundary replays add 18 matching PNGs to check 1 dp idle and 3 dp focus ink in both appearances, blur restoration and the closed dark RTL top edge.",
++      "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. M351–M353 compare 58 paired WebGPU originals to verify the two placeholder spring rates, reversal, RTL alignment, Reduce Motion, immediate suppression during marked and empty composition, and the unfocused above-label clear transition. CDP delivers real marked text; an explicitly synthetic empty composition start exercises the same Runtime bridge. M354–M356 compare 33 boundary PNGs at 2×. They measure independent intermediate width and ink, hover, error and disabled color, focus reversal, a closed RTL long-label border and Reduce Motion.",
++      "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. With an expanding label, an empty field fades the hint in on focus using Standard Slow Effects and out on blur using Fast Effects. Above-field labels leave the hint visible at rest, including in a disabled field with disabled ink. Clearing an unfocused above-field editor fades the hint back in. Committed text, active composition and overlap with the moving label suppress the hint independently of its opacity. A long hint can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. The 1 dp and 3 dp boundary endpoints match the published Material artwork. Filled width uses Standard Fast Spatial and Outlined width uses Fast Effects. Both animate ink with Fast Effects. The measured notch stays with the label, and width and ink remain separate from editor geometry. System contrast, live speech and operating-system composition remain open.",
++      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. Boundary tests cover independent width curves, continuous focus reversal, hover and validation ink, same-ID disable during motion, the first enabled frame, theme replacement and Reduce Motion. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry. The same-ID overflow regression checks that Outlined and Filled single-line hints keep the same visible text as the field disables and re-enables in LTR and RTL."
+     },
+     {
+       "id": "toolbars",
+diff --git a/docs/material.md b/docs/material.md
+index 92667dd07de7cf47e7c584a82435004d492a8ec2..4b9d74078b0a1e7420feca5593357aa752c3971d 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1361,6 +1361,24 @@ An empty disabled field with an above-field label uses the disabled ink.
+ 
+ [Material placeholder transition phases](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/TextFieldImpl.kt#2048)
+ 
++### Field boundary motion
++
++The Outlined border and Filled indicator keep the Material 3 widths of
++1 dp at rest and 3 dp when focused. The Filled indicator changes width
++with Standard Fast Spatial. The Outlined border changes width with
++Standard Fast Effects. Both use Fast Effects in Oklab for boundary ink.
++Each track keeps its current position and speed if the target changes again.
++
++The border still opens around the measured label. The width changes
++inside the field, so the editor, caret and action stay in their measured
++positions. Disabled fields and Reduce Motion apply width and ink
++immediately. A theme change applies the new boundary ink immediately.
++A re-enabled field uses enabled ink from its first frame.
++
++[Material 3 text field specifications](https://m3.material.io/components/text-fields/specs) ·
++[Filled indicator motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextField.kt#773) ·
++[Outlined border motion](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/TextFieldDefaults.kt#1164)
++
+ ## Baseline segmented buttons
+ 
+ Use `Theme::baseline_segmented_button` for two to five related choices in
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 463fba138f967fb8aa11b8f9489e0f537559656a..5b59fb2502f1003b662ed963ee35db663b199945 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -112,6 +112,8 @@ mod material_switch;
+ mod material_tabs;
+ #[path = "material_text_field_adornments.rs"]
+ mod material_text_field_adornments;
++#[path = "material_text_field_boundary_motion.rs"]
++mod material_text_field_boundary_motion;
+ #[path = "material_text_field_counter.rs"]
+ mod material_text_field_counter;
+ #[path = "material_text_field_label_motion.rs"]
+@@ -173,7 +175,7 @@ pub const STEPS: &[&str] = &[
+     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+-    "M347", "M348", "M349", "M350", "M351", "M352", "M353",
++    "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -312,7 +314,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_text_field_counter::run(env, chrome, &url).await?;
+     material_multiline_text_field::run(env, chrome, &url).await?;
+     material_text_field_label_motion::run(env, chrome, &url).await?;
+-    material_text_field_placeholder::run(env, chrome, &url).await
++    material_text_field_placeholder::run(env, chrome, &url).await?;
++    material_text_field_boundary_motion::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -566,7 +569,8 @@ mod tests {
+         assert!(super::STEPS
+             .windows(label.len() + placeholder.len())
+             .any(|scope| { scope[..label.len()] == label && scope[label.len()..] == placeholder }));
+-        assert!(super::STEPS.ends_with(&placeholder));
++        let boundary = super::material_text_field_boundary_motion::STEPS;
++        assert!(super::STEPS.ends_with(&[placeholder, boundary].concat()));
+     }
+ 
+     #[test]
+diff --git a/e2e/src/material_text_field_boundary_motion.rs b/e2e/src/material_text_field_boundary_motion.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..49343b99222171817e2285abf407dd7588a3e37b
+--- /dev/null
++++ b/e2e/src/material_text_field_boundary_motion.rs
+@@ -0,0 +1,891 @@
++//! Retained Text Field boundary width and ink sampled from headless Canvas PNGs.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_list_corners::{leave_rows, reduced_motion, tick};
++use super::material_text_field_label_motion::{
++    enter, golden, leave, scene, textbox, toggle_error, Field,
++};
++use super::material_time_input::{ax, ax_tree, bounds, contains, Raster};
++use super::{click, focus, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 3] = ["M354", "M355", "M356"];
++const PREFIX: &str = "material-text-field-boundary-motion";
++const DPI: f64 = 2.;
++const END: u16 = 800;
++const TITLE: &str = "專案名稱";
++const HELP: &str = "請輸入中文或英文名稱。";
++const ERROR_HELP: &str = "請輸入有效的專案名稱。";
++const LONG: &str = "輸入團隊成員在共用專案清單中容易辨認的完整名稱";
++const DRAFT: &str = "草稿";
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++#[derive(Clone, Copy)]
++struct WidthPose {
++    dp: f64,
++    velocity: f64,
++}
++
++impl WidthPose {
++    fn at(dp: f64) -> Self {
++        Self { dp, velocity: 0. }
++    }
++
++    fn towards(self, field: Field, target: f64, ms: u16) -> Self {
++        let t = f64::from(ms) / 1000.;
++        let offset = self.dp - target;
++        let (displacement, derivative, damping) = match field {
++            Field::Outlined => {
++                let damping = 3800_f64.sqrt();
++                let slope = self.velocity + damping * offset;
++                (offset + slope * t, slope, damping)
++            }
++            Field::Filled => {
++                let rate = 1400_f64.sqrt();
++                let damping = rate * 0.9;
++                let frequency = rate * (1_f64 - 0.9_f64.powi(2)).sqrt();
++                let (sine, cosine) = (frequency * t).sin_cos();
++                let weight = (self.velocity + damping * offset) / frequency;
++                (
++                    offset * cosine + weight * sine,
++                    frequency * (weight * cosine - offset * sine),
++                    damping,
++                )
++            }
++        };
++        let decay = (-damping * t).exp();
++        Self {
++            dp: target + displacement * decay,
++            velocity: (derivative - damping * displacement) * decay,
++        }
++    }
++}
++
++fn rgb(model: &Value, key: &str) -> Result<Rgb> {
++    let [r, g, b, a]: [u8; 4] = serde_json::from_value(model["palette"][key].clone())
++        .with_context(|| format!("Gallery boundary role {key}"))?;
++    check_eq!(a, 255, format!("opaque Gallery role {key}"));
++    Ok([r, g, b])
++}
++
++struct Palette {
++    paper: Rgb,
++    base: Rgb,
++    idle: Rgb,
++    primary: Rgb,
++    hover: Rgb,
++    error: Rgb,
++    error_hover: Rgb,
++}
++
++impl Palette {
++    fn read(model: &Value, field: Field) -> Result<Self> {
++        let paper = rgb(model, "background")?;
++        let (base, idle) = match field {
++            Field::Outlined => (paper, rgb(model, "outline")?),
++            Field::Filled => (
++                rgb(model, "surface_container_highest")?,
++                rgb(model, "on_surface_variant")?,
++            ),
++        };
++        Ok(Self {
++            paper,
++            base,
++            idle,
++            primary: rgb(model, "primary")?,
++            hover: rgb(model, "on_surface")?,
++            error: rgb(model, "error")?,
++            error_hover: rgb(model, "on_error_container")?,
++        })
++    }
++}
++
++#[derive(Clone, Copy)]
++struct Stroke {
++    width: f64,
++    rgb: Rgb,
++    alpha: u8,
++}
++
++impl Stroke {
++    fn opaque(width: f64, rgb: Rgb) -> Self {
++        Self {
++            width,
++            rgb,
++            alpha: 255,
++        }
++    }
++}
++
++fn mixture(base: Rgb, ink: Rgb, alpha: f64, linear: bool) -> Rgb {
++    let decode = |channel: u8| {
++        let v = f64::from(channel) / 255.;
++        if !linear {
++            v
++        } else if v <= 0.04045 {
++            v / 12.92
++        } else {
++            ((v + 0.055) / 1.055).powf(2.4)
++        }
++    };
++    std::array::from_fn(|i| {
++        let v = decode(base[i]) * (1. - alpha) + decode(ink[i]) * alpha;
++        let encoded = if !linear {
++            v
++        } else if v <= 0.0031308 {
++            v * 12.92
++        } else {
++            1.055 * v.powf(1. / 2.4) - 0.055
++        };
++        (encoded * 255.).round() as u8
++    })
++}
++
++// Choose the same renderer blend convention for every partial sample.
++struct BlendModes([bool; 2]);
++
++impl BlendModes {
++    fn match_color(&mut self, actual: Rgb, base: Rgb, ink: Rgb, alpha: f64) -> bool {
++        if alpha == 0. {
++            return actual == base;
++        }
++        if alpha == 1. {
++            return actual == ink;
++        }
++        for (mode, is_linear) in self.0.iter_mut().zip([false, true]) {
++            *mode &= actual
++                .into_iter()
++                .zip(mixture(base, ink, alpha, is_linear))
++                .all(|(actual, expected)| actual.abs_diff(expected) <= 2);
++        }
++        self.0.into_iter().any(|valid| valid)
++    }
++}
++
++struct Face {
++    field: Field,
++    id: String,
++    bounds: Rect,
++    clip: Rect,
++    description: Option<Rect>,
++    canvas: Rect,
++}
++
++impl Face {
++    async fn read(tab: &Tab, field: Field, part: &str) -> Result<Self> {
++        let id = field.id(part);
++        let rect = bounds(tab, &id).await?;
++        let clip = serde_json::from_value::<Rect>(
++            tab.eval(&format!(
++                "(() => {{
++                    const s = JSON.parse(window.gallery.export_dom());
++                    const i = s.dom.nodes.findIndex(n => n.stable_id === {});
++                    const r = s.layout.nodes[i]?.clip;
++                    return r ? [r.x,r.y,r.width,r.height] : null;
++                }})()",
++                js(&id)
++            ))
++            .await?,
++        )
++        .context("field clip in the actual exported layout")?;
++        let canvas = tab.canvas_box().await?;
++        let [x, y, w, h] = rect;
++        check!(
++            w >= 112.
++                && h >= 48.
++                && contains(clip, rect)
++                && contains(
++                    [0., 0., canvas[2], canvas[3]],
++                    [x - 1., y - 1., w + 2., h + 2.]
++                ),
++            format!("the complete face and its exterior probes are visible: {rect:?}")
++        );
++        let description = if part == "editable" {
++            Some(bounds(tab, &format!("{id}-description")).await?)
++        } else {
++            None
++        };
++        Ok(Self {
++            field,
++            id,
++            bounds: rect,
++            clip,
++            description,
++            canvas,
++        })
++    }
++
++    async fn stable(&self, tab: &Tab) -> Result<()> {
++        check_eq!(
++            bounds(tab, &self.id).await?,
++            self.bounds,
++            "unchanged text input hit bounds"
++        );
++        if let Some(previous) = self.description {
++            check_eq!(
++                bounds(tab, &format!("{}-description", self.id)).await?,
++                previous,
++                "unchanged supporting text layout"
++            );
++        }
++        Ok(())
++    }
++
++    fn move_cursor(&self) -> [f64; 2] {
++        [
++            self.canvas[0] + self.bounds[0] + self.bounds[2] / 2.,
++            self.canvas[1] + self.bounds[1] + self.bounds[3] / 2.,
++        ]
++    }
++}
++
++#[derive(Clone, Copy)]
++struct Strip {
++    axis: usize,
++    edge: f64,
++    along: f64,
++    inward: f64,
++}
++
++impl Strip {
++    fn top(y: f64, x: f64) -> Self {
++        Self {
++            axis: 1,
++            edge: y,
++            along: x,
++            inward: 1.,
++        }
++    }
++
++    fn point(self, normal: f64) -> [f64; 2] {
++        if self.axis == 1 {
++            [self.along, normal]
++        } else {
++            [normal, self.along]
++        }
++    }
++
++    fn samples(
++        self,
++        frame: &Frame,
++        stroke: Stroke,
++        ink_starts_at: f64,
++        base: Rgb,
++        paper: Rgb,
++        blend: &mut BlendModes,
++    ) -> Result<Value> {
++        let origin = frame.canvas[self.axis];
++        let grid_edge = ((origin + self.edge) * DPI).floor() as i64;
++        let mut samples = Vec::new();
++        for relative in -2..13 {
++            let index = if self.inward > 0. {
++                grid_edge + relative
++            } else {
++                grid_edge - 1 - relative
++            };
++            let coord = (index as f64 + 0.5) / DPI - origin;
++            let depth = (coord - self.edge) * self.inward;
++            let quarter = [-0.375, -0.125, 0.125, 0.375]
++                .into_iter()
++                .filter(|offset| (ink_starts_at..stroke.width).contains(&(depth + offset / DPI)))
++                .count();
++            let [x, y] = self.point(coord);
++            let actual = frame.pixels.sample(x, y)?;
++            let under = if depth < 0. { paper } else { base };
++            check!(
++                blend.match_color(actual, under, stroke.rgb, f64::from(stroke.alpha) * quarter as f64 / (255. * 4.)),
++                format!("{} [{x:.3}, {y:.3}] depth {depth:.3}: {actual:?}, expected {:?} over {under:?} at {quarter}/4 coverage for width {:.4}",
++                    frame.name, stroke.rgb, stroke.width)
++            );
++            samples.push(
++                json!({"point":[x,y],"depth_dp":depth,"coverage_quarters":quarter,"rgb":actual}),
++            );
++        }
++        Ok(
++            json!({"edge_dp":self.edge, "normal_axis":self.axis, "inward":self.inward,
++            "ink_starts_at_dp":ink_starts_at,"samples":samples}),
++        )
++    }
++}
++
++struct Frame {
++    name: String,
++    pixels: Raster,
++    canvas: Rect,
++}
++
++impl Frame {
++    async fn take(tab: &Tab, env: &Env, tag: &str) -> Result<Self> {
++        tab.settle().await?;
++        let name = format!("{PREFIX}-{tag}.png");
++        let path = env.artifact(&name);
++        tab.screenshot(&path).await?;
++        Ok(Self {
++            name,
++            pixels: Raster::read(tab, path).await?,
++            canvas: tab.canvas_box().await?,
++        })
++    }
++
++    fn stripe_report(
++        &self,
++        face: &Face,
++        ink: Stroke,
++        colors: &Palette,
++        base: Rgb,
++        blend: &mut BlendModes,
++        rtl: bool,
++    ) -> Result<Value> {
++        let [x, y, w, h] = face.bounds;
++        let bottom = [0.25, 0.5, 0.75]
++            .into_iter()
++            .map(|fraction| {
++                Strip {
++                    axis: 1,
++                    edge: y + h,
++                    along: x + fraction * w,
++                    inward: -1.,
++                }
++                .samples(self, ink, 0., base, colors.paper, blend)
++            })
++            .collect::<Result<Vec<_>>>()?;
++        let mut other = Vec::new();
++        match face.field {
++            Field::Outlined => {
++                for strip in [
++                    Strip {
++                        axis: 0,
++                        edge: x,
++                        along: y + h / 2.,
++                        inward: 1.,
++                    },
++                    Strip {
++                        axis: 0,
++                        edge: x + w,
++                        along: y + h / 2.,
++                        inward: -1.,
++                    },
++                    Strip::top(y, x + w * if rtl { 0.25 } else { 0.75 }),
++                ] {
++                    other.push(strip.samples(self, ink, 0., base, colors.paper, blend)?);
++                }
++            }
++            Field::Filled => {
++                for point in [
++                    [x + 4., y + h / 2.],
++                    [x + w - 4., y + h / 2.],
++                    [x + w * 0.75, y + 0.25],
++                ] {
++                    let actual = self.pixels.sample(point[0], point[1])?;
++                    check_eq!(actual, base, "Filled has only the bottom indicator");
++                    other.push(json!({"point":point,"rgb":actual}));
++                }
++            }
++        }
++        Ok(
++            json!({"png":self.name,"face":face.bounds,"clip":face.clip,"canvas":self.canvas,
++            "width_dp":ink.width,"ink":ink.rgb,"ink_alpha":ink.alpha,"base":base,"paper":colors.paper,
++            "bottom":bottom,"other":other}),
++        )
++    }
++
++    fn base_sample(&self, face: &Face) -> Result<Rgb> {
++        let [x, y, w, h] = face.bounds;
++        self.pixels.sample(x + w * 0.75, y + h - 8.)
++    }
++}
++
++struct Series<'a> {
++    tab: &'a Tab,
++    env: &'a Env,
++    field: Field,
++    colors: Palette,
++    rtl: bool,
++    blends: &'a mut BlendModes,
++}
++
++impl Series<'_> {
++    async fn sample(
++        &mut self,
++        face: &Face,
++        phase: &str,
++        clock: u16,
++        ink: Stroke,
++        layer: u8,
++    ) -> Result<(Value, Frame)> {
++        face.stable(self.tab).await?;
++        let tag = format!("{}-{}", self.field.appearance(), phase);
++        let frame = Frame::take(self.tab, self.env, &tag).await?;
++        let actual_base = frame.base_sample(face)?;
++        let under = if layer == 10 {
++            self.colors.paper
++        } else {
++            self.colors.base
++        };
++        check!(
++            self.blends.match_color(
++                actual_base,
++                under,
++                self.colors.hover,
++                f64::from(layer) / 255.
++            ),
++            format!(
++                "{} has the expected face color: {actual_base:?}",
++                frame.name
++            )
++        );
++        let mut report =
++            frame.stripe_report(face, ink, &self.colors, actual_base, self.blends, self.rtl)?;
++        report["clock_ms"] = json!(clock);
++        report["layer_alpha"] = json!(layer);
++        Ok((report, frame))
++    }
++}
++
++async fn opening(s: &mut Series<'_>, face: &Face) -> Result<Value> {
++    enter(s.tab, s.field).await?;
++    s.tab.insert_text(DRAFT).await?;
++    until(
++        s.tab,
++        &format!("s.{}.value === {}", s.field.model(), js(DRAFT)),
++    )
++    .await?;
++    tick(s.tab, END).await?;
++    leave(s.tab, s.field).await?;
++    let start = 2 * END;
++    tick(s.tab, start).await?;
++    let before = textbox(s.tab, TITLE, false, Some(HELP)).await?;
++    let color_start = s.colors.idle;
++    let primary = s.colors.primary;
++    let mut frames = vec![
++        s.sample(face, "wide-idle", start, Stroke::opaque(1., color_start), 0)
++            .await?
++            .0,
++    ];
++    enter(s.tab, s.field).await?;
++    let after = textbox(s.tab, TITLE, true, Some(HELP)).await?;
++    check!(
++        before["backend"] != after["backend"] && after["value"] == DRAFT,
++        "focus changes host and preserves one named textbox value before the animation starts"
++    );
++    for (phase, ms) in [
++        ("focus-start", 0),
++        ("focus-14", 14),
++        ("focus-44", 44),
++        ("focus-end", END),
++    ] {
++        tick(s.tab, start + ms).await?;
++        let (width, ink) = if ms == END {
++            (3., primary)
++        } else {
++            (
++                WidthPose::at(1.).towards(s.field, 3., ms).dp,
++                golden::between(color_start, primary, ms),
++            )
++        };
++        frames.push(
++            s.sample(face, phase, start + ms, Stroke::opaque(width, ink), 0)
++                .await?
++                .0,
++        );
++    }
++    let last = textbox(s.tab, TITLE, true, Some(HELP)).await?;
++    let model = &state(s.tab).await?[s.field.model()];
++    check!(
++        last == after && model["edits"] == 1 && model["submits"] == 0,
++        "paint keeps the active input backend and caller state"
++    );
++    Ok(json!({"frames":frames,"rest_ax":before,"focused_ax":last}))
++}
++
++async fn palette_cases(s: &mut Series<'_>, face: &Face) -> Result<Value> {
++    let [x, y] = face.move_cursor();
++    let layer = if matches!(s.field, Field::Filled) {
++        20
++    } else {
++        0
++    };
++    s.tab.mouse_move(x, y).await?;
++    s.tab.settle().await?;
++    tick(s.tab, 44).await?;
++    let mid = golden::between(s.colors.idle, s.colors.hover, 44);
++    let primary = s.colors.primary;
++    let error = s.colors.error;
++    let hover = s.colors.hover;
++    let error_hover = s.colors.error_hover;
++    check!(
++        mid != s.colors.idle && mid != hover,
++        "hover color has an intermediate opaque value"
++    );
++    let mut frames = vec![
++        s.sample(face, "hover-44", 44, Stroke::opaque(1., mid), layer)
++            .await?
++            .0,
++    ];
++    tick(s.tab, END).await?;
++    frames.push(
++        s.sample(face, "hover-end", END, Stroke::opaque(1., hover), layer)
++            .await?
++            .0,
++    );
++    enter(s.tab, s.field).await?;
++    tick(s.tab, 2 * END).await?;
++    frames.push(
++        s.sample(
++            face,
++            "focus-over-hover",
++            2 * END,
++            Stroke::opaque(3., primary),
++            0,
++        )
++        .await?
++        .0,
++    );
++    leave_rows(s.tab).await?;
++    toggle_error(s.tab, s.field, true).await?;
++    let invalid = textbox(s.tab, TITLE, false, Some(ERROR_HELP)).await?;
++    check_eq!(
++        invalid["invalid"],
++        true,
++        "AX already reports invalid while border ink is moving"
++    );
++    let error_ms = 2 * END + 44;
++    tick(s.tab, error_ms).await?;
++    let width = WidthPose::at(3.).towards(s.field, 1., 44).dp;
++    let color = golden::between(primary, error, 44);
++    frames.push(
++        s.sample(
++            face,
++            "invalid-44",
++            error_ms,
++            Stroke::opaque(width, color),
++            0,
++        )
++        .await?
++        .0,
++    );
++    tick(s.tab, 3 * END).await?;
++    frames.push(
++        s.sample(face, "invalid-idle", 3 * END, Stroke::opaque(1., error), 0)
++            .await?
++            .0,
++    );
++    s.tab.mouse_move(x, y).await?;
++    s.tab.settle().await?;
++    tick(s.tab, 4 * END).await?;
++    frames.push(
++        s.sample(
++            face,
++            "invalid-hover",
++            4 * END,
++            Stroke::opaque(1., error_hover),
++            layer,
++        )
++        .await?
++        .0,
++    );
++    enter(s.tab, s.field).await?;
++    let active = textbox(s.tab, TITLE, true, Some(ERROR_HELP)).await?;
++    tick(s.tab, 5 * END).await?;
++    frames.push(
++        s.sample(
++            face,
++            "invalid-focus-over-hover",
++            5 * END,
++            Stroke::opaque(3., error),
++            0,
++        )
++        .await?
++        .0,
++    );
++
++    let disabled = Face::read(s.tab, s.field, "disabled").await?;
++    let [x, y] = disabled.move_cursor();
++    s.tab.mouse_move(x, y).await?;
++    click(s.tab, &disabled.id).await?;
++    let tree = ax_tree(s.tab).await?;
++    let node = ax(&tree, "textbox", "停用名稱")?;
++    let props = node["properties"]
++        .as_array()
++        .context("disabled input AX properties")?;
++    let model = state(s.tab).await?;
++    check!(
++        props
++            .iter()
++            .any(|p| p["name"] == "disabled" && p["value"]["value"] == true)
++            && model["focused"] != disabled.id
++            && model[s.field.model()]["locked_edit_requests"] == 0,
++        "the disabled specimen stays inert on trusted hover and click"
++    );
++    let (face_alpha, alpha) = match s.field {
++        Field::Filled => (10, 97),
++        Field::Outlined => (0, 31),
++    };
++    frames.push(
++        s.sample(
++            &disabled,
++            "disabled",
++            5 * END,
++            Stroke {
++                width: 1.,
++                rgb: hover,
++                alpha,
++            },
++            face_alpha,
++        )
++        .await?
++        .0,
++    );
++    Ok(json!({"frames":frames,"invalid_ax":[invalid,active],"disabled_ax":node}))
++}
++
++async fn compact(s: &mut Series<'_>, face: &Face) -> Result<Value> {
++    let primary = s.colors.primary;
++    let idle = s.colors.idle;
++    enter(s.tab, s.field).await?;
++    tick(s.tab, END).await?;
++    let [x, y, w, _] = face.bounds;
++    let [fx, _, fw, _] = bounds(s.tab, &s.field.id("editable-floating-label")).await?;
++    check_eq!(
++        x + w - fx - fw,
++        16.,
++        "the compact floating label keeps its physical right inset"
++    );
++    let proved = s
++        .sample(face, "rtl-focus", END, Stroke::opaque(3., primary), 0)
++        .await?;
++    let notch = Strip::top(y, fx + fw + 3.).samples(
++        &proved.1,
++        Stroke::opaque(3., primary),
++        3.,
++        s.colors.paper,
++        s.colors.paper,
++        s.blends,
++    )?;
++    let mut frames = vec![proved.0];
++    leave(s.tab, s.field).await?;
++    let turn = END + 44;
++    tick(s.tab, turn).await?;
++    let width = WidthPose::at(3.).towards(s.field, 1., 44);
++    let color = golden::Pose::at(primary).towards(idle, 44);
++    let falling = s
++        .sample(
++            face,
++            "rtl-falling",
++            turn,
++            Stroke::opaque(width.dp, color.rgb()),
++            0,
++        )
++        .await?
++        .0;
++    enter(s.tab, s.field).await?;
++    let same_time = s
++        .sample(
++            face,
++            "rtl-retarget",
++            turn,
++            Stroke::opaque(width.dp, color.rgb()),
++            0,
++        )
++        .await?
++        .0;
++    check_eq!(
++        falling["bottom"],
++        same_time["bottom"],
++        "same-time retarget retains actual border coverage and color"
++    );
++    frames.extend([falling, same_time]);
++    tick(s.tab, turn + 20).await?;
++    let turned = width.towards(s.field, 3., 20).dp;
++    let retargeted = color.towards(primary, 20).rgb();
++    frames.push(
++        s.sample(
++            face,
++            "rtl-retarget-20",
++            turn + 20,
++            Stroke::opaque(turned, retargeted),
++            0,
++        )
++        .await?
++        .0,
++    );
++    reduced_motion(s.tab, true).await?;
++    frames.push(
++        s.sample(
++            face,
++            "rtl-reduced-focus",
++            turn + 20,
++            Stroke::opaque(3., primary),
++            0,
++        )
++        .await?
++        .0,
++    );
++    leave(s.tab, s.field).await?;
++    frames.push(
++        s.sample(
++            face,
++            "rtl-reduced-blur",
++            turn + 20,
++            Stroke::opaque(1., idle),
++            0,
++        )
++        .await?
++        .0,
++    );
++
++    enter(s.tab, s.field).await?;
++    s.tab.press("Tab").await?;
++    focus(s.tab, &s.field.id("read-only"), "surface-text-input").await?;
++    let long = Face::read(s.tab, s.field, "long-label").await?;
++    let above = bounds(s.tab, &s.field.id("long-label-above-label")).await?;
++    let floating = bounds(s.tab, &s.field.id("long-label-floating-label")).await?;
++    check!(
++        above[3] >= 64. && above[1] + above[3] <= long.bounds[1] && floating[2] == 0.,
++        "the fallback label wraps above the compact field with no floating slot"
++    );
++    reduced_motion(s.tab, false).await?;
++    s.tab.press("Tab").await?;
++    focus(s.tab, &long.id, "surface-text-input").await?;
++    s.tab.settle().await?;
++    tick(s.tab, turn + 20 + 44).await?;
++    let width = WidthPose::at(1.).towards(s.field, 3., 44).dp;
++    let color = golden::between(idle, primary, 44);
++    let (long_report, long_image) = s
++        .sample(
++            &long,
++            "rtl-above-label-44",
++            turn + 64,
++            Stroke::opaque(width, color),
++            0,
++        )
++        .await?;
++    let [x, y, w, _] = long.bounds;
++    let top = [0.25, 0.5, 0.75]
++        .into_iter()
++        .map(|fraction| {
++            Strip::top(y, x + w * fraction).samples(
++                &long_image,
++                Stroke::opaque(width, color),
++                0.,
++                s.colors.paper,
++                s.colors.paper,
++                s.blends,
++            )
++        })
++        .collect::<Result<Vec<_>>>()?;
++    let active = textbox(s.tab, LONG, true, None).await?;
++    check_eq!(
++        active["value"],
++        "共用名稱",
++        "compact refocus preserves the actual text value"
++    );
++    Ok(
++        json!({"frames":frames,"right_notch":notch,"floating": [fx,fw],
++        "fallback":{"frame":long_report,"above":above,"closed_top":top,"ax":active}}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 864, DPI).await?;
++    let mut report = json!({"browser":chrome.version,"dpr":DPI,"clock":"held performance.now"});
++    let mut blends = BlendModes([true; 2]);
++    let result: Result<()> = async {
++        step(
++            STEPS[0],
++            "Filled and Outlined focus paint timed ink and different actual width curves",
++        );
++        for field in [Field::Filled, Field::Outlined] {
++            let model = scene(&tab, url, field, false).await?;
++            let face = Face::read(&tab, field, "editable").await?;
++            let mut series = Series {
++                tab: &tab,
++                env,
++                field,
++                colors: Palette::read(&model, field)?,
++                rtl: false,
++                blends: &mut blends,
++            };
++            report["opening"][field.appearance()] = opening(&mut series, &face).await?;
++            report["opening"][field.appearance()]["palette"] = model["palette"].clone();
++        }
++        report["adapter"] = tab
++            .eval(
++                r#"(async () => {
++            const {info} = await navigator.gpu.requestAdapter();
++            const {vendor,architecture,isFallbackAdapter} = info;
++            return {vendor,architecture,isFallbackAdapter};
++        })()"#,
++            )
++            .await?;
++        check!(
++            report["adapter"]["vendor"].is_string()
++                && report["adapter"]["architecture"].is_string()
++                && report["adapter"]["isFallbackAdapter"].is_boolean(),
++            "actual Chrome WebGPU adapter"
++        );
++        check_eq!(
++            tab.eval("devicePixelRatio").await?,
++            DPI,
++            "actual two-times device pixels"
++        );
++
++        step(
++            STEPS[1],
++            "Trusted hover, validation and disabled input keep distinct paint and semantics",
++        );
++        for field in [Field::Filled, Field::Outlined] {
++            let model = scene(&tab, url, field, false).await?;
++            let face = Face::read(&tab, field, "editable").await?;
++            let mut series = Series {
++                tab: &tab,
++                env,
++                field,
++                colors: Palette::read(&model, field)?,
++                rtl: false,
++                blends: &mut blends,
++            };
++            report["palette_states"][field.appearance()] =
++                palette_cases(&mut series, &face).await?;
++        }
++
++        step(
++            STEPS[2],
++            "Dark RTL short and wrapped fields respect notch, retarget and Reduce Motion",
++        );
++        let field = Field::Outlined;
++        let model = scene(&tab, url, field, true).await?;
++        let face = Face::read(&tab, field, "editable").await?;
++        let mut series = Series {
++            tab: &tab,
++            env,
++            field,
++            colors: Palette::read(&model, field)?,
++            rtl: true,
++            blends: &mut blends,
++        };
++        report["compact"] = compact(&mut series, &face).await?;
++        report["compact"]["palette"] = model["palette"].clone();
++        check!(tab.errors().is_empty(), "no boundary motion page errors");
++        Ok(())
++    }
++    .await;
++    report["page_errors"] = json!(tab.errors());
++    report["blend_modes"] = json!({"encoded":blends.0[0],"linear_light":blends.0[1]});
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        let _ = tab
++            .screenshot(&env.artifact(&format!("{PREFIX}-failure.png")))
++            .await;
++    }
++    std::fs::write(
++        env.artifact(&format!("{PREFIX}.json")),
++        serde_json::to_vec_pretty(&report)?,
++    )?;
++    result
++}
+diff --git a/e2e/src/material_text_field_label_motion.rs b/e2e/src/material_text_field_label_motion.rs
+index 36fd6e96aba9a83196a4cd44a2abe28ab3e59cc7..df61507a47c4f8439c3b65ef6bdbd951032dde03 100644
+--- a/e2e/src/material_text_field_label_motion.rs
++++ b/e2e/src/material_text_field_label_motion.rs
+@@ -28,7 +28,7 @@ type Rect = [f64; 4];
+ type Rgb = [u8; 3];
+ 
+ #[derive(Clone, Copy)]
+-enum Field {
++pub(super) enum Field {
+     Outlined,
+     Filled,
+ }
+@@ -41,21 +41,21 @@ impl Field {
+         }
+     }
+ 
+-    fn model(self) -> &'static str {
++    pub(super) fn model(self) -> &'static str {
+         match self {
+             Self::Outlined => "outlined_text_field_demo",
+             Self::Filled => "filled_text_field_demo",
+         }
+     }
+ 
+-    fn appearance(self) -> &'static str {
++    pub(super) fn appearance(self) -> &'static str {
+         match self {
+             Self::Outlined => "outlined",
+             Self::Filled => "filled",
+         }
+     }
+ 
+-    fn id(self, suffix: &str) -> String {
++    pub(super) fn id(self, suffix: &str) -> String {
+         format!("{}-{suffix}", self.prefix())
+     }
+ }
+@@ -181,7 +181,7 @@ fn bottom(rect: Rect) -> f64 {
+     rect[1] + rect[3]
+ }
+ 
+-async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Value> {
++pub(super) async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Value> {
+     tab.goto(url).await?;
+     crate::smoke::ready(tab, "gallery").await?;
+     resize(tab, 960, 2500).await?;
+@@ -207,6 +207,7 @@ async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Valu
+             && model["text_scale"] == if compact { 2. } else { 1. },
+         "the scene begins with an untouched empty field and the required theme"
+     );
++    super::material_list_corners::leave_rows(tab).await?;
+     reduced_motion(tab, false).await?;
+     freeze(tab).await?;
+     tab.eval(r#"(() => {
+@@ -219,19 +220,24 @@ async fn scene(tab: &Tab, url: &str, field: Field, compact: bool) -> Result<Valu
+     Ok(model)
+ }
+ 
+-async fn enter(tab: &Tab, field: Field) -> Result<()> {
++pub(super) async fn enter(tab: &Tab, field: Field) -> Result<()> {
+     tab.press("Tab").await?;
+     focus(tab, &field.id("editable"), "surface-text-input").await?;
+     tab.settle().await
+ }
+ 
+-async fn leave(tab: &Tab, field: Field) -> Result<()> {
++pub(super) async fn leave(tab: &Tab, field: Field) -> Result<()> {
+     tab.press("Shift+Tab").await?;
+     focused(tab, &field.id("error")).await?;
+     tab.settle().await
+ }
+ 
+-async fn textbox(tab: &Tab, label: &str, focused: bool, help: Option<&str>) -> Result<Value> {
++pub(super) async fn textbox(
++    tab: &Tab,
++    label: &str,
++    focused: bool,
++    help: Option<&str>,
++) -> Result<Value> {
+     let tree = ax_tree(tab).await?;
+     let node = ax(&tree, "textbox", label)?;
+     let count = tree
+@@ -375,13 +381,14 @@ struct Shot {
+     gap_columns: usize,
+     notch: Option<[Rgb; 2]>,
+     outline_sides: Option<[Rgb; 3]>,
++    outline_rgb: Option<Rgb>,
+ }
+ 
+ impl Shot {
+     fn report(&self, ms: u16) -> Value {
+         json!({"png":self.name,"ms":ms,"label":self.glyphs.bounds,"label_pixels":self.glyphs.pixels,
+             "label_rgb":self.glyphs.color,"placeholder_pixels":self.placeholder,"gap_pixel_columns":self.gap_columns,
+-            "notch":self.notch,"outline_sides":self.outline_sides})
++            "notch":self.notch,"outline_sides":self.outline_sides,"outline_rgb":self.outline_rgb})
+     }
+ }
+ 
+@@ -417,17 +424,16 @@ fn sample(
+     paint: LabelPaint<'_>,
+     name: String,
+     image: &Raster,
++    border: Option<Rgb>,
+ ) -> Result<Shot> {
+-    let (label, active, placeholder) = match paint {
+-        LabelPaint::Idle(color) => (color, false, 0),
+-        LabelPaint::Focused(color) => (
+-            color,
+-            true,
+-            color_pixels(image, geometry.clearance(), ink.label)?,
+-        ),
++    let (label, placeholder) = match paint {
++        LabelPaint::Idle(color) => (color, 0),
++        LabelPaint::Focused(color) => {
++            (color, color_pixels(image, geometry.clearance(), ink.label)?)
++        }
+         LabelPaint::FirstFocus(rest) => {
+             assert_same_color_mask(rest, image, geometry.clearance(), ink.label)?;
+-            (ink.label, true, 0)
++            (ink.label, 0)
+         }
+     };
+     let gap = matches!(geometry.field, Field::Outlined);
+@@ -441,15 +447,10 @@ fn sample(
+             0
+         },
+         notch: gap.then(|| notch_sample(image, geometry)).transpose()?,
+-        outline_sides: gap
+-            .then(|| {
+-                sides(
+-                    image,
+-                    geometry.face,
+-                    if active { ink.primary } else { ink.outline },
+-                )
+-            })
++        outline_sides: border
++            .map(|color| sides(image, geometry.face, color))
+             .transpose()?,
++        outline_rgb: border,
+     })
+ }
+ 
+@@ -460,10 +461,11 @@ async fn capture(
+     ink: Ink,
+     paint: LabelPaint<'_>,
+     name: &str,
++    border: Option<Rgb>,
+ ) -> Result<Shot> {
+     geometry.assert_stable(tab).await?;
+     let (name, image) = photo(tab, env, name).await?;
+-    sample(geometry, ink, paint, name, &image)
++    sample(geometry, ink, paint, name, &image, border)
+ }
+ 
+ async fn outlined(
+@@ -488,7 +490,14 @@ async fn outlined(
+     let ink = Ink::read(&model, field)?;
+     geometry.assert_stable(tab).await?;
+     let (name, neutral) = photo(tab, env, "outlined-rest").await?;
+-    let rest = sample(&geometry, ink, LabelPaint::Idle(ink.label), name, &neutral)?;
++    let rest = sample(
++        &geometry,
++        ink,
++        LabelPaint::Idle(ink.label),
++        name,
++        &neutral,
++        Some(ink.outline),
++    )?;
+     let proxy = textbox(tab, TITLE, false, Some(HELP)).await?;
+     enter(tab, field).await?;
+     let active = textbox(tab, TITLE, true, Some(HELP)).await?;
+@@ -503,6 +512,7 @@ async fn outlined(
+         ink,
+         LabelPaint::FirstFocus(&neutral),
+         "outlined-first",
++        Some(ink.outline),
+     )
+     .await?;
+     check_eq!(
+@@ -515,19 +525,36 @@ async fn outlined(
+         "the first frame has a closed top and no overlapping placeholder"
+     );
+     tick(tab, EARLY).await?;
+-    let early = capture(
+-        tab,
+-        env,
++    geometry.assert_stable(tab).await?;
++    let (early_name, early_image) = photo(tab, env, "outlined-early").await?;
++    let early_outline = golden::between(ink.outline, ink.primary, EARLY);
++    let early = sample(
+         &geometry,
+         ink,
+         LabelPaint::Focused(golden::between(ink.label, ink.primary, EARLY)),
+-        "outlined-early",
+-    )
+-    .await?;
+-    check_eq!(
+-        early.notch,
+-        Some([ink.paper, ink.primary]),
+-        "the early gap removes only the upper part of the three-dp stroke"
++        early_name,
++        &early_image,
++        Some(early_outline),
++    )?;
++    let y = geometry.face[1];
++    let gap_x = geometry.anchor() - 2.;
++    let full_x = geometry.face[0] + geometry.face[2] * 0.75;
++    let shallow = [0.25, 0.75, 1.25].map(|depth| [gap_x, y + depth]);
++    let uncut = shallow.map(|[_, y]| [full_x, y]);
++    let scan = |points: [[f64; 2]; 3]| {
++        points
++            .map(|[x, y]| early_image.sample(x, y))
++            .into_iter()
++            .collect::<Result<Vec<_>>>()
++    };
++    let cut_rgb = scan(shallow)?;
++    let full_rgb = scan(uncut)?;
++    check!(
++        cut_rgb[0] == ink.paper
++            && full_rgb[0] == early_outline
++            && cut_rgb[1..].iter().any(|sample| *sample != ink.paper)
++            && full_rgb[2] != ink.paper,
++        "the early cut clears the exterior and leaves residual inside the now-thinner line: {cut_rgb:?} vs {full_rgb:?}"
+     );
+     tick(tab, MIDDLE).await?;
+     let mid = capture(
+@@ -537,6 +564,7 @@ async fn outlined(
+         ink,
+         LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
+         "outlined-middle",
++        Some(golden::between(ink.outline, ink.primary, MIDDLE)),
+     )
+     .await?;
+     tick(tab, SETTLED).await?;
+@@ -547,6 +575,7 @@ async fn outlined(
+         ink,
+         LabelPaint::Focused(ink.primary),
+         "outlined-settled",
++        Some(ink.primary),
+     )
+     .await?;
+     check!(
+@@ -570,7 +599,8 @@ async fn outlined(
+     );
+     report["outlined"] = json!({"face":geometry.face,"inline":geometry.inline,"floated":geometry.floated,
+         "helper":geometry.help,"palette":model["palette"],"proxy":proxy,"active":active,
+-        "frames":[rest.report(0),first.report(0),early.report(EARLY),mid.report(MIDDLE),settled.report(SETTLED)]});
++        "frames":[rest.report(0),first.report(0),early.report(EARLY),mid.report(MIDDLE),settled.report(SETTLED)],
++        "early_shallow":{"cut_points":shallow,"uncut_points":uncut,"cut_rgb":cut_rgb,"uncut_rgb":full_rgb}});
+     Ok((geometry, ink, settled))
+ }
+ 
+@@ -587,6 +617,7 @@ async fn reversal(
+     let proxy = textbox(tab, TITLE, false, Some(HELP)).await?;
+     tick(tab, turn).await?;
+     let falling_color = golden::between(ink.primary, ink.label, MIDDLE);
++    let falling_outline = golden::between(ink.primary, ink.outline, MIDDLE);
+     let falling = capture(
+         tab,
+         env,
+@@ -594,6 +625,7 @@ async fn reversal(
+         ink,
+         LabelPaint::Idle(falling_color),
+         "outlined-falling",
++        Some(falling_outline),
+     )
+     .await?;
+     check!(
+@@ -609,6 +641,7 @@ async fn reversal(
+         ink,
+         LabelPaint::Focused(falling_color),
+         "outlined-retarget",
++        Some(falling_outline),
+     )
+     .await?;
+     check_eq!(
+@@ -624,6 +657,7 @@ async fn reversal(
+         ink,
+         LabelPaint::Focused(ink.primary),
+         "outlined-reduced",
++        Some(ink.primary),
+     )
+     .await?;
+     check_eq!(
+@@ -667,7 +701,14 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+     let geometry = Geometry::read(tab, field, false).await?;
+     let ink = Ink::read(&model, field)?;
+     let (name, neutral) = photo(tab, env, "filled-rest").await?;
+-    let rest = sample(&geometry, ink, LabelPaint::Idle(ink.label), name, &neutral)?;
++    let rest = sample(
++        &geometry,
++        ink,
++        LabelPaint::Idle(ink.label),
++        name,
++        &neutral,
++        None,
++    )?;
+     enter(tab, field).await?;
+     let active = textbox(tab, TITLE, true, Some(HELP)).await?;
+     let start = capture(
+@@ -677,6 +718,7 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+         ink,
+         LabelPaint::FirstFocus(&neutral),
+         "filled-first",
++        None,
+     )
+     .await?;
+     tick(tab, MIDDLE).await?;
+@@ -687,6 +729,7 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+         ink,
+         LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
+         "filled-middle",
++        None,
+     )
+     .await?;
+     check!(
+@@ -730,6 +773,7 @@ async fn filled(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+         ink,
+         LabelPaint::Focused(ink.primary),
+         "filled-settled",
++        None,
+     )
+     .await?;
+     check!(
+@@ -863,7 +907,7 @@ async fn draft_ax(tab: &Tab, active: bool, invalid: bool) -> Result<Value> {
+     Ok(node)
+ }
+ 
+-async fn toggle_error(tab: &Tab, field: Field, enabled: bool) -> Result<()> {
++pub(super) async fn toggle_error(tab: &Tab, field: Field, enabled: bool) -> Result<()> {
+     leave(tab, field).await?;
+     tab.press("Enter").await?;
+     until(
+@@ -1042,6 +1086,7 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+         ink,
+         LabelPaint::Idle(ink.label),
+         "rtl-rest",
++        Some(ink.outline),
+     )
+     .await?;
+     enter(tab, field).await?;
+@@ -1053,6 +1098,7 @@ async fn compact(tab: &Tab, env: &Env, url: &str) -> Result<Value> {
+         ink,
+         LabelPaint::Focused(golden::between(ink.label, ink.primary, MIDDLE)),
+         "rtl-middle",
++        Some(golden::between(ink.outline, ink.primary, MIDDLE)),
+     )
+     .await?;
+     check!(
+@@ -1201,7 +1247,7 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+ // The test uses the CSS Color 4 reference path through XYZ D65, independent
+ // of the direct sRGB/Oklab matrices in Surface. All fixture label inks are
+ // opaque. https://www.w3.org/TR/css-color-4/#color-conversion-code
+-mod golden {
++pub(super) mod golden {
+     use super::Rgb;
+ 
+     type Color = [f64; 3];
+@@ -1280,20 +1326,20 @@ mod golden {
+         })
+     }
+ 
+-    pub(super) struct Pose {
++    pub(in crate::material) struct Pose {
+         position: Color,
+         velocity: Color,
+     }
+ 
+     impl Pose {
+-        pub(super) fn at(rgb: Rgb) -> Self {
++        pub(in crate::material) fn at(rgb: Rgb) -> Self {
+             Self {
+                 position: to_lab(rgb),
+                 velocity: [0.; 3],
+             }
+         }
+ 
+-        pub(super) fn towards(&self, rgb: Rgb, ms: u16) -> Self {
++        pub(in crate::material) fn towards(&self, rgb: Rgb, ms: u16) -> Self {
+             let target = to_lab(rgb);
+             let seconds = f64::from(ms) / 1000.;
+             let omega = 3800_f64.sqrt();
+@@ -1312,12 +1358,12 @@ mod golden {
+             }
+         }
+ 
+-        pub(super) fn rgb(&self) -> Rgb {
++        pub(in crate::material) fn rgb(&self) -> Rgb {
+             to_srgb(self.position)
+         }
+     }
+ 
+-    pub(super) fn between(from: Rgb, to: Rgb, ms: u16) -> Rgb {
++    pub(in crate::material) fn between(from: Rgb, to: Rgb, ms: u16) -> Rgb {
+         Pose::at(from).towards(to, ms).rgb()
+     }
+ 
