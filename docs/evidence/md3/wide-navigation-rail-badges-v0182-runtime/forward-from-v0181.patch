@@ -1,0 +1,1627 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 1d4ba481a3ca5e23ab1512a81081d4654556dbba..750a425e22ca1696518cc3ae3251aa8fc83bb014 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.81"
++version = "0.1.82"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 03bae68189dc48f57fb5dc6eefc1c51c361b6311..85ec46c1e8c64950a30017b98534e36b73f613a3 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.81"
++version = "0.1.82"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/badge.rs b/crates/surface-material/src/badge.rs
+index a52975ace34d68c60222544d3fbc3f7c6f7fef26..9d6a8d4a11b774447c22fc7c11104ac2b6010a47 100644
+--- a/crates/surface-material/src/badge.rs
++++ b/crates/surface-material/src/badge.rs
+@@ -23,6 +23,23 @@ const LABEL_VERTICAL_OVERLAP: f32 = 14.;
+ // Leave most of the 24 dp navigation artwork visible beneath the label.
+ const NAVIGATION_LABEL_VERTICAL_OVERLAP: f32 = 4.;
+ 
++#[derive(Clone, Copy)]
++enum BadgePlacement {
++    Standalone,
++    Navigation,
++    BesideNavigationLabel { gap: f32 },
++}
++
++impl BadgePlacement {
++    fn label_overlap(self) -> (f32, f32) {
++        match self {
++            Self::Standalone => (LABEL_HORIZONTAL_OVERLAP, LABEL_VERTICAL_OVERLAP),
++            Self::Navigation => (LABEL_HORIZONTAL_OVERLAP, NAVIGATION_LABEL_VERTICAL_OVERLAP),
++            Self::BesideNavigationLabel { gap } => (gap, NAVIGATION_LABEL_VERTICAL_OVERLAP),
++        }
++    }
++}
++
+ /// Content shown on a badged anchor.
+ #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+ pub enum BadgeContent<'a> {
+@@ -155,7 +172,7 @@ impl Theme {
+         content: BadgeContent<'_>,
+         options: BadgedAnchorOptions,
+     ) -> View<M> {
+-        self.anchored_badge(anchor, content, options, None, LABEL_VERTICAL_OVERLAP)
++        self.anchored_badge(anchor, content, options, None, BadgePlacement::Standalone)
+     }
+ 
+     /// Place a badge inside the visible clip at the top and logical end.
+@@ -180,7 +197,7 @@ impl Theme {
+             content,
+             options,
+             Some((owner_id, boundary)),
+-            LABEL_VERTICAL_OVERLAP,
++            BadgePlacement::Standalone,
+         )
+     }
+ 
+@@ -196,7 +213,29 @@ impl Theme {
+             content,
+             options,
+             clearance,
+-            NAVIGATION_LABEL_VERTICAL_OVERLAP,
++            BadgePlacement::Navigation,
++        )
++    }
++
++    pub(crate) fn wide_rail_badged_anchor<M>(
++        &self,
++        anchor: View<M>,
++        content: BadgeContent<'_>,
++        direction: LayoutDirection,
++        owner_id: &str,
++        icon_label_gap: f32,
++    ) -> View<M> {
++        self.anchored_badge(
++            anchor,
++            content,
++            BadgedAnchorOptions {
++                direction,
++                ..Default::default()
++            },
++            Some((owner_id, BadgeBoundary::Owner)),
++            BadgePlacement::BesideNavigationLabel {
++                gap: icon_label_gap,
++            },
+         )
+     }
+ 
+@@ -206,7 +245,7 @@ impl Theme {
+         content: BadgeContent<'_>,
+         options: BadgedAnchorOptions,
+         clearance: Option<(&str, BadgeBoundary)>,
+-        label_vertical_overlap: f32,
++        placement: BadgePlacement,
+     ) -> View<M> {
+         let row = Node::new(Role::Group, "").styled(Style::row().align(Align::Start));
+         let row = match options.direction {
+@@ -220,8 +259,10 @@ impl Theme {
+         }
+ 
+         let label = content.label();
++        let beside_label =
++            label.is_some() && matches!(placement, BadgePlacement::BesideNavigationLabel { .. });
+         let (horizontal, vertical) = if label.is_some() {
+-            (LABEL_HORIZONTAL_OVERLAP, label_vertical_overlap)
++            placement.label_overlap()
+         } else {
+             (DOT_SIZE, DOT_SIZE)
+         };
+@@ -231,13 +272,23 @@ impl Theme {
+             bottom: Length::Px(-(artwork_inset(options.top_inset) + vertical)),
+             ..Default::default()
+         };
++        // Beside a rail label, anchor the badge's trailing edge at the end of
++        // the icon-to-label gap. A wider badge grows toward the icon.
+         let edge = match options.direction {
+             LayoutDirection::LeftToRight => {
+-                inset.left = horizontal;
++                if beside_label {
++                    inset.right = horizontal;
++                } else {
++                    inset.left = horizontal;
++                }
+                 OverlayHorizontalEdge::Right
+             }
+             LayoutDirection::RightToLeft => {
+-                inset.right = horizontal;
++                if beside_label {
++                    inset.left = horizontal;
++                } else {
++                    inset.right = horizontal;
++                }
+                 OverlayHorizontalEdge::Left
+             }
+         };
+diff --git a/crates/surface-material/src/wide_navigation_rail.rs b/crates/surface-material/src/wide_navigation_rail.rs
+index 4b494dac6e41f4e48ba475509877163aa56e467d..ba19551e34a5c7fc544bad792d5b535a7c9e0bb0 100644
+--- a/crates/surface-material/src/wide_navigation_rail.rs
++++ b/crates/surface-material/src/wide_navigation_rail.rs
+@@ -10,8 +10,9 @@ pub use motion::{
+ pub use swipe::WideNavigationRailSwipe;
+ 
+ use crate::{
+-    shape, shape::LayoutDirection, typography, vector_icon::VectorIconSize, Elevation,
+-    IconButtonKind, NavigationRailItem, Theme,
++    badge::badge_headroom, shape, shape::LayoutDirection, typography, vector_icon::VectorIconSize,
++    BadgeBoundary, BadgeContent, BadgedAnchorOptions, Elevation, IconButtonKind,
++    NavigationRailItem, Theme,
+ };
+ 
+ // Pinned AndroidX WideNavigationRail and NavigationRail token files use
+@@ -108,20 +109,24 @@ impl Theme {
+         header: Option<View<M>>,
+         items: impl IntoIterator<Item = View<M>>,
+     ) -> View<M> {
+-        let rail = match mode {
+-            WideNavigationRailMode::Collapsed => 0.,
+-            WideNavigationRailMode::Expanded => 1.,
+-        };
+-        self.animated_wide_navigation_rail(
+-            id,
+-            name,
+-            WideNavigationRailMotionFrame {
+-                rail,
+-                ..WideNavigationRailMotionFrame::default()
+-            },
+-            header,
+-            items,
+-        )
++        self.animated_wide_navigation_rail(id, name, static_rail_frame(mode), header, items)
++    }
++
++    /// Build a nonmodal rail whose contents scroll in a constrained height.
++    ///
++    /// Pass a finite height from the containing layout. Arrow focus reveals
++    /// destinations inside the rail, and accessibility can scroll the viewport
++    /// by a page. The viewport reserves `{id}-scroll`. Reuse all other IDs
++    /// when switching between modes.
++    pub fn scrollable_wide_navigation_rail<M>(
++        &self,
++        id: &str,
++        name: &str,
++        mode: WideNavigationRailMode,
++        header: Option<View<M>>,
++        items: impl IntoIterator<Item = View<M>>,
++    ) -> View<M> {
++        self.inline_wide_navigation_rail(id, name, static_rail_frame(mode), header, items, true)
+     }
+ 
+     /// Build the inline rail at its current motion fraction. The rail's layout
+@@ -513,6 +518,33 @@ impl Theme {
+         mode: WideNavigationRailMode,
+         direction: LayoutDirection,
+         item: NavigationRailItem<'_, M>,
++    ) -> View<M> {
++        self.wide_navigation_rail_item(mode, direction, item, None)
++    }
++
++    /// Build a wide rail destination with a decorative badge on its icon.
++    ///
++    /// Keep the complete localized status in `item.accessible_name`. The
++    /// caller owns badge visibility and clears it when the status is read.
++    /// Collapsed destinations reserve space for scaled badge text even when
++    /// the badge is hidden. Use this builder consistently for a destination
++    /// so acknowledging its badge keeps the same hit target.
++    pub fn wide_navigation_rail_item_with_badge<M>(
++        &self,
++        mode: WideNavigationRailMode,
++        direction: LayoutDirection,
++        item: NavigationRailItem<'_, M>,
++        badge: BadgeContent<'_>,
++    ) -> View<M> {
++        self.wide_navigation_rail_item(mode, direction, item, Some(badge))
++    }
++
++    fn wide_navigation_rail_item<M>(
++        &self,
++        mode: WideNavigationRailMode,
++        direction: LayoutDirection,
++        item: NavigationRailItem<'_, M>,
++        badge: Option<BadgeContent<'_>>,
+     ) -> View<M> {
+         let ItemAppearance {
+             owner,
+@@ -526,12 +558,36 @@ impl Theme {
+             WideNavigationRailMode::Expanded => ink,
+         };
+         let icon = item.icon.view(VectorIconSize::Dp24, ink);
++        let icon = match (mode, badge) {
++            (_, None | Some(BadgeContent::Hidden)) => icon,
++            (WideNavigationRailMode::Collapsed, Some(content)) => self.navigation_badged_anchor(
++                icon,
++                content,
++                BadgedAnchorOptions {
++                    direction,
++                    ..Default::default()
++                },
++                Some((item.id, BadgeBoundary::Owner)),
++            ),
++            (WideNavigationRailMode::Expanded, Some(content)) => self.wide_rail_badged_anchor(
++                icon,
++                content,
++                direction,
++                item.id,
++                EXPANDED_ICON_LABEL_GAP,
++            ),
++        };
+         let view = match mode {
+             WideNavigationRailMode::Collapsed => {
++                let badge_aware = badge.is_some();
+                 let mut row_style = Style::column()
+                     .align(Align::Center)
+                     .justify(Align::Center)
+-                    .gap(COLLAPSED_ICON_LABEL_GAP);
++                    .gap(if badge_aware {
++                        0.
++                    } else {
++                        COLLAPSED_ICON_LABEL_GAP
++                    });
+                 row_style.min_height = COLLAPSED_ITEM_MIN_HEIGHT;
+                 let indicator = View::new(
+                     indicator.styled(
+@@ -549,7 +605,17 @@ impl Theme {
+                     label_ink,
+                     Length::Auto,
+                 );
+-                View::new(owner.styled(row_style)).children([indicator, label])
++                let view = View::new(owner.styled(row_style));
++                if badge_aware {
++                    let art_top_inset =
++                        (COLLAPSED_INDICATOR_HEIGHT - VectorIconSize::Dp24.dp()) / 2.;
++                    let headroom = badge_headroom(art_top_inset).without_interaction(None);
++                    let gap = space(Style::column().height(Length::Px(COLLAPSED_ICON_LABEL_GAP)));
++                    // Keep the indicator a direct child so it paints the owner's focus.
++                    view.children([headroom, indicator, gap, label])
++                } else {
++                    view.children([indicator, label])
++                }
+             }
+             WideNavigationRailMode::Expanded => {
+                 let label_width = EXPANDED_MAX_WIDTH
+@@ -639,6 +705,16 @@ struct ItemAppearance {
+     compact_ink: Color,
+ }
+ 
++fn static_rail_frame(mode: WideNavigationRailMode) -> WideNavigationRailMotionFrame {
++    WideNavigationRailMotionFrame {
++        rail: match mode {
++            WideNavigationRailMode::Collapsed => 0.,
++            WideNavigationRailMode::Expanded => 1.,
++        },
++        ..WideNavigationRailMotionFrame::default()
++    }
++}
++
+ fn unit_fraction(value: f32) -> f32 {
+     if value.is_finite() {
+         value.clamp(0., 1.)
+diff --git a/crates/surface-material/tests/wide_navigation_rail.rs b/crates/surface-material/tests/wide_navigation_rail.rs
+index f8a38d9efb732ccb2f33fa037e2596941c4f5cb9..83fffd02bd676ae62c06d743e56033529c5a6f3f 100644
+--- a/crates/surface-material/tests/wide_navigation_rail.rs
++++ b/crates/surface-material/tests/wide_navigation_rail.rs
+@@ -8,8 +8,8 @@ use surface_app::{
+ };
+ use surface_material::{
+     shape::{self, LayoutDirection},
+-    typography, ChoiceState, NavigationRailItem, Theme, VectorIcon, WideNavigationRailMode,
+-    WideNavigationRailMotion, WideNavigationRailMotionKind,
++    typography, BadgeContent, ChoiceState, NavigationRailItem, Theme, VectorIcon,
++    WideNavigationRailMode, WideNavigationRailMotion, WideNavigationRailMotionKind,
+ };
+ use surface_wgpu::TextSystem;
+ 
+@@ -29,6 +29,7 @@ enum Message {
+     Toggle,
+     Mode(WideNavigationRailMode),
+     Select(usize),
++    Badge(BadgeContent<'static>),
+ }
+ 
+ struct Rail {
+@@ -43,6 +44,8 @@ struct Rail {
+     selected: usize,
+     actions: usize,
+     motion: Option<WideNavigationRailMotion>,
++    badge: BadgeContent<'static>,
++    badged_id: &'static str,
+ }
+ 
+ impl Rail {
+@@ -59,6 +62,8 @@ impl Rail {
+             selected: 0,
+             actions: 0,
+             motion: None,
++            badge: BadgeContent::Hidden,
++            badged_id: "",
+         }
+     }
+ }
+@@ -79,6 +84,7 @@ impl Application for Rail {
+                 self.selected = index;
+                 self.actions += 1;
+             }
++            Message::Badge(badge) => self.badge = badge,
+         }
+     }
+ 
+@@ -149,7 +155,15 @@ impl Application for Rail {
+             let item = NavigationRailItem {
+                 id,
+                 label,
+-                accessible_name,
++                accessible_name: if id == self.badged_id && id == INBOX && self.motion.is_none() {
++                    if self.badge != BadgeContent::Hidden {
++                        "收件匣，1234 封未讀訊息"
++                    } else {
++                        "收件匣"
++                    }
++                } else {
++                    accessible_name
++                },
+                 icon: &self.icon,
+                 state: ChoiceState {
+                     selected: self.selected == index,
+@@ -157,17 +171,26 @@ impl Application for Rail {
+                 },
+                 message: Message::Select(index),
+             };
+-            match &self.motion {
+-                Some(motion) => self.theme.animated_wide_navigation_rail_item_with_icon(
+-                    motion.frame().rail,
+-                    self.direction,
+-                    item,
+-                ),
+-                None => self.theme.wide_navigation_rail_item_with_icon(
++            if id == self.badged_id && self.motion.is_none() {
++                self.theme.wide_navigation_rail_item_with_badge(
+                     display_mode,
+                     self.direction,
+                     item,
+-                ),
++                    self.badge,
++                )
++            } else {
++                match &self.motion {
++                    Some(motion) => self.theme.animated_wide_navigation_rail_item_with_icon(
++                        motion.frame().rail,
++                        self.direction,
++                        item,
++                    ),
++                    None => self.theme.wide_navigation_rail_item_with_icon(
++                        display_mode,
++                        self.direction,
++                        item,
++                    ),
++                }
+             }
+         });
+         let rail = match &self.motion {
+@@ -256,6 +279,185 @@ fn label(paint: &ExtendedDisplayList, text: &str) -> (Rect, Rect, surface::TextS
+         .expect("the caller's label paints")
+ }
+ 
++fn badge_bounds(paint: &ExtendedDisplayList, color: Color) -> Option<Rect> {
++    paint.ops().iter().find_map(|op| match op {
++        ExtendedPaintOp::Legacy(PaintOp::Shape {
++            rect, color: ink, ..
++        })
++        | ExtendedPaintOp::Legacy(PaintOp::Quad {
++            rect, color: ink, ..
++        }) if *ink == color => Some(*rect),
++        _ => None,
++    })
++}
++
++#[test]
++fn wide_rail_badges_are_decorative_localized_and_fit_the_same_destination() {
++    let mut fonts = TextSystem::default();
++    for mode in [
++        WideNavigationRailMode::Collapsed,
++        WideNavigationRailMode::Expanded,
++    ] {
++        for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++            let mut app = Rail::new(mode, direction);
++            app.gallery_layout = true;
++            app.scale = 2.;
++            app.badged_id = INBOX;
++            if direction == LayoutDirection::RightToLeft {
++                app.theme = Theme::dark();
++            }
++            app.selected = 2;
++            let theme = app.theme;
++            let mut runtime = Runtime::new(app).unwrap();
++            let hidden = runtime.render_extended(960., 760., &mut fonts).unwrap();
++            let original_owner = bounds(&runtime, INBOX);
++            assert!(badge_bounds(&hidden, theme.colors.error).is_none());
++
++            for (badge, expected_text) in [
++                (BadgeContent::Dot, None),
++                (BadgeContent::Label("新"), Some("新")),
++                (BadgeContent::Count(7), Some("7")),
++                (BadgeContent::Count(1234), Some("999+")),
++            ] {
++                runtime.apply(Message::Badge(badge)).unwrap();
++                let paint = runtime.render_extended(960., 760., &mut fonts).unwrap();
++                let owner = bounds(&runtime, INBOX);
++                assert_eq!(owner, original_owner, "{mode:?} {direction:?} {badge:?}");
++                let badge_rect = badge_bounds(&paint, theme.colors.error).unwrap();
++                contains_rect(owner, badge_rect);
++                assert_eq!(
++                    badge_rect.height,
++                    if expected_text.is_some() { 32. } else { 6. }
++                );
++                if let Some(text) = expected_text {
++                    assert!(paint.ops().iter().any(|op| matches!(op,
++                        ExtendedPaintOp::Legacy(PaintOp::StyledText { text: visible, .. })
++                            if visible == text
++                    )));
++                }
++
++                let inbox = runtime.dom().by_id(INBOX).unwrap();
++                let frame = runtime.accessibility_frame().unwrap();
++                let node = frame.node(inbox).unwrap().node;
++                assert_eq!(node.role(), Role::Button);
++                assert_eq!(node.name(), "收件匣，1234 封未讀訊息");
++                assert_eq!(node.is_current_page(), Some(true));
++                assert!(frame.activation_target(inbox).is_some());
++                assert!(frame.children(inbox).next().is_none());
++                if badge == BadgeContent::Count(1234) {
++                    let decoration = runtime
++                        .dom()
++                        .iter()
++                        .find(|(_, node)| node.text_value() == Some("999+"))
++                        .unwrap()
++                        .0;
++                    assert!(frame.node(decoration).is_none());
++                    assert!(frame.activation_target(decoration).is_none());
++                    assert!(frame.focus_target(decoration).is_none());
++                }
++
++                if mode == WideNavigationRailMode::Expanded {
++                    let (label_box, _, _, _) = label(&paint, GALLERY_LABEL);
++                    let overlap = badge_rect.intersect(label_box);
++                    assert!(
++                        overlap.width == 0. || overlap.height == 0.,
++                        "{direction:?} {badge:?}: badge {badge_rect:?}, label {label_box:?}"
++                    );
++                }
++
++                if badge == BadgeContent::Count(1234) {
++                    let x = badge_rect.x + badge_rect.width * 0.5;
++                    let y = badge_rect.y + badge_rect.height * 0.5;
++                    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++                    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++                    assert_eq!(runtime.app().actions, 1);
++                    assert_eq!(runtime.app().selected, 2);
++                }
++            }
++
++            runtime.apply(Message::Badge(BadgeContent::Hidden)).unwrap();
++            runtime.render_extended(960., 760., &mut fonts).unwrap();
++            let frame = runtime.accessibility_frame().unwrap();
++            assert_eq!(
++                frame
++                    .node(runtime.dom().by_id(INBOX).unwrap())
++                    .unwrap()
++                    .node
++                    .name(),
++                "收件匣"
++            );
++            assert_eq!(bounds(&runtime, INBOX), original_owner);
++        }
++    }
++}
++
++#[test]
++fn a_scaled_badge_keeps_the_collapsed_icon_below_its_face() {
++    let mut fonts = TextSystem::default();
++    for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++        let mut app = Rail::new(WideNavigationRailMode::Collapsed, direction);
++        app.scale = 2.;
++        app.badged_id = INBOX;
++        app.selected = 2;
++        let theme = app.theme;
++        let mut runtime = Runtime::new(app).unwrap();
++        runtime.render_extended(320., 720., &mut fonts).unwrap();
++        let owner = bounds(&runtime, INBOX);
++
++        runtime
++            .apply(Message::Badge(BadgeContent::Count(1234)))
++            .unwrap();
++        let paint = runtime.render_extended(320., 720., &mut fonts).unwrap();
++        assert_eq!(bounds(&runtime, INBOX), owner);
++        let face = badge_bounds(&paint, theme.colors.error).unwrap();
++        let ink = paint
++            .ops()
++            .iter()
++            .find_map(|entry| match entry {
++                ExtendedPaintOp::FillPath(path)
++                    if path.color() == theme.colors.on_secondary_container
++                        && owner.intersect(path.rect()) == path.rect() =>
++                {
++                    Some(path.rect())
++                }
++                _ => None,
++            })
++            .unwrap();
++        let covered = face.intersect(ink);
++        assert!(
++            covered.height <= 4.,
++            "{direction:?}: badge {face:?}, icon ink {ink:?}"
++        );
++    }
++}
++
++#[test]
++fn a_disabled_wide_rail_destination_keeps_its_badge_inert() {
++    let mut app = Rail::new(
++        WideNavigationRailMode::Expanded,
++        LayoutDirection::LeftToRight,
++    );
++    app.badged_id = ARCHIVE;
++    app.badge = BadgeContent::Count(7);
++    let theme = app.theme;
++    let mut runtime = Runtime::new(app).unwrap();
++    let paint = runtime
++        .render_extended(960., 720., &mut TextSystem::default())
++        .unwrap();
++    let badge = badge_bounds(&paint, theme.colors.error).unwrap();
++    contains_rect(bounds(&runtime, ARCHIVE), badge);
++
++    let archive = runtime.dom().by_id(ARCHIVE).unwrap();
++    let frame = runtime.accessibility_frame().unwrap();
++    assert!(frame.node(archive).unwrap().node.is_disabled());
++    assert!(frame.activation_target(archive).is_none());
++    let x = badge.x + badge.width * 0.5;
++    let y = badge.y + badge.height * 0.5;
++    runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++    runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    assert_eq!(runtime.app().actions, 0);
++}
++
+ #[test]
+ fn endpoint_metrics_and_slots_use_the_rail_tokens_in_both_directions() {
+     let mut fonts = TextSystem::default();
+diff --git a/docs/material.md b/docs/material.md
+index 22770300a75516e72eb2b0824ee3ca03d8fbf128..ba4314155bf6f8de8f9edf414780a2cb6732e42e 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -2344,6 +2344,17 @@ Give the rail and its destinations the same
+ each button a localized name. The expanded layout uses the
+ logical start for its icon. Let the page fill the remaining width.
+ 
++Use `Theme::wide_navigation_rail_item_with_badge` to show an app-owned
++badge on an icon in the collapsed or expanded rail. Provide the full
++localized status in the destination's accessible name. Keep the same
++destination ID when the app changes the mode or clears unread status.
++The badge stays decorative and uses the destination's hit target. In the
++expanded rail its trailing edge stays before the label.
++Collapsed destinations reserve space for larger text, including after the
++badge clears. Use `Theme::scrollable_wide_navigation_rail` when the rail
++has a limited height. Arrow navigation reveals the focused destination.
++Open **寬導覽徽章** in the Navigation Gallery to try both modes.
++
+ For animation, keep a `WideNavigationRailMotion` in the app.
+ Call `advance` from `Application::animation_frame` and return
+ its `AnimationUpdate`. Pass `frame()` to
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 44d0b586dbce6b4221352569a052ad201411396e..ec2501df4ab9187839fd8dde113782fdb08260b5 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -158,6 +158,8 @@ mod material_vertical_centered_slider;
+ mod material_web_contrast;
+ #[path = "material_web_contrast_png.rs"]
+ mod material_web_contrast_png;
++#[path = "material_wide_navigation_badges.rs"]
++mod material_wide_navigation_badges;
+ 
+ use anyhow::Result;
+ use serde_json::{json, Value};
+@@ -198,7 +200,7 @@ pub const STEPS: &[&str] = &[
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+     "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380", "M381", "M382",
+-    "M383", "M384", "M385", "M386",
++    "M383", "M384", "M385", "M386", "M387", "M388",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -349,7 +351,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_choice_menu_forced::run(env, chrome, &url).await?;
+     material_divider_composition::run(env, chrome, &url).await?;
+     material_typography::run(env, chrome, &url).await?;
+-    material_flexible_navigation_badges::run(env, chrome, &url).await
++    material_flexible_navigation_badges::run(env, chrome, &url).await?;
++    material_wide_navigation_badges::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -627,6 +630,7 @@ mod tests {
+                 super::material_divider_composition::STEPS.as_slice(),
+                 super::material_typography::STEPS.as_slice(),
+                 super::material_flexible_navigation_badges::STEPS.as_slice(),
++                super::material_wide_navigation_badges::STEPS.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_wide_navigation_badges.rs b/e2e/src/material_wide_navigation_badges.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..c85b10640c04de221378bd969e872047bee0b738
+--- /dev/null
++++ b/e2e/src/material_wide_navigation_badges.rs
+@@ -0,0 +1,393 @@
++//! Headless WebGPU proof for badges on collapsed and expanded wide rail destinations.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{click, state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 2] = ["M387", "M388"];
++const SHOW: &str = "wide-navigation-badges-demo-show";
++const BACK: &str = "wide-navigation-badges-demo-back";
++const TITLE: &str = "wide-navigation-badges-demo-title";
++const EXPAND: &str = "wide-navigation-badges-demo-expand";
++const THEME: &str = "wide-navigation-badges-demo-theme";
++const RTL: &str = "wide-navigation-badges-demo-rtl";
++const LARGE: &str = "wide-navigation-badges-demo-large-text";
++const RAIL: &str = "wide-navigation-badges-demo-rail";
++const HOME: &str = "wide-navigation-badges-demo-home";
++const INBOX: &str = "wide-navigation-badges-demo-inbox";
++const UPDATES: &str = "wide-navigation-badges-demo-updates";
++const EXPLORE: &str = "wide-navigation-badges-demo-explore";
++const SETTINGS: &str = "wide-navigation-badges-demo-settings";
++const IDS: [&str; 5] = [HOME, INBOX, UPDATES, EXPLORE, SETTINGS];
++const NAMES: [&str; 5] = [
++    "首頁",
++    "收件匣，1,234 則未讀",
++    "最新消息，有新內容",
++    "探索路線，有新內容",
++    "設定，無法使用",
++];
++const INBOX_NAME: &str = "收件匣";
++const STEM: &str = "material-wide-navigation-badges";
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++async fn ready(tab: &Tab, condition: &str) -> Result<()> {
++    until(
++        tab,
++        &format!("(d => d?.visible && ({condition}))(s.wide_navigation_badges)"),
++    )
++    .await
++}
++
++async fn current(tab: &Tab, id: &str, activations: usize) -> Result<()> {
++    ready(
++        tab,
++        &format!(
++            "d.selected === {} && d.activations === {activations}",
++            js(id)
++        ),
++    )
++    .await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-current') === 'page' &&
++         document.querySelectorAll('#surface-accessibility [aria-current=page]').length === 1",
++        projected(id)
++    ))
++    .await
++}
++
++fn pixels(image: &Raster, rect: Rect, color: Rgb, tolerance: u8) -> Result<usize> {
++    Ok(image
++        .colors(rect)?
++        .iter()
++        .filter(|(actual, _)| {
++            actual
++                .iter()
++                .zip(color)
++                .all(|(a, b)| a.abs_diff(b) <= tolerance)
++        })
++        .map(|(_, count)| count)
++        .sum())
++}
++
++fn rgb(value: &Value) -> Result<Rgb> {
++    let [r, g, b, alpha]: [u8; 4] = serde_json::from_value(value.clone())?;
++    check_eq!(alpha, 255, "sampled ink token is opaque");
++    Ok([r, g, b])
++}
++
++async fn accessibility(tab: &Tab, acknowledged: bool) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let rail = ax(&tree, "navigation", "工作區導覽")?;
++    let mut items = Vec::new();
++    for (index, (id, name)) in IDS.iter().zip(NAMES).enumerate() {
++        let name = if *id == INBOX && acknowledged {
++            INBOX_NAME
++        } else {
++            name
++        };
++        let node = ax(&tree, "button", name)?;
++        let disabled = ax_property(node, "disabled")
++            .and_then(Value::as_bool)
++            .unwrap_or(false);
++        check_eq!(disabled, index == 4, "{id} exposes its disabled state");
++        items.push(json!({"id":id,"name":name,"disabled":disabled}));
++    }
++    check!(
++        tree.iter()
++            .all(|node| node["ignored"] == true || node["name"]["value"] != "999+"),
++        "decorative badge text is not announced separately"
++    );
++    Ok(json!({"landmark":rail["name"]["value"],"items":items}))
++}
++
++async fn owned_label(tab: &Tab, id: &str, text: &str, owner: Rect) -> Result<(Rect, Rgb)> {
++    let data = tab
++        .eval(&format!(
++            "(() => {{
++                const {{dom,layout}} = JSON.parse(window.gallery.export_dom());
++                const nodes = dom.nodes;
++                const owner = nodes.findIndex(n => n.stable_id === {});
++                const index = nodes.findIndex(n => {{
++                    if (n.text !== {}) return false;
++                    for (let i = n.parent; Number.isInteger(i); i = nodes[i].parent) {{
++                        if (i === owner) return true;
++                    }}
++                    return false;
++                }});
++                if (index < 0) return null;
++                const {{x,y,width,height}} = layout.nodes[index].bounds;
++                return {{bounds:[x,y,width,height],ink:nodes[index].style.foreground}};
++            }})()",
++            js(id),
++            js(text),
++        ))
++        .await?;
++    let rect: Rect = serde_json::from_value(data["bounds"].clone())
++        .with_context(|| format!("{text} label bounds inside {id}"))?;
++    check!(contains(owner, rect), "{text} label stays inside {id}");
++    Ok((rect, rgb(&data["ink"])?))
++}
++
++async fn capture(
++    env: &Env,
++    tab: &Tab,
++    label: &str,
++    expanded: bool,
++    rtl: bool,
++    acknowledged: bool,
++) -> Result<Value> {
++    let canvas = tab.canvas_box().await?;
++    let viewport: Rect = [0., 0., canvas[2], canvas[3]];
++    let rail = bounds(tab, RAIL).await?;
++    check!(
++        contains(viewport, rail),
++        "rail is inside the canvas: {rail:?}"
++    );
++    let width = rail[2];
++    if expanded {
++        check!(
++            (219.25..=360.75).contains(&width),
++            "expanded rail width follows the 220–360 dp range: {width}"
++        );
++    } else {
++        check!(near(width, 96.), "collapsed rail width is 96 dp: {width}");
++    }
++    let layout = bounds(tab, "wide-navigation-badges-demo-layout").await?;
++    let start = if rtl {
++        layout[0] + layout[2] - width
++    } else {
++        layout[0]
++    };
++    check!(near(rail[0], start), "rail follows logical start");
++    check!(
++        contains(viewport, bounds(tab, TITLE).await?),
++        "gallery title is inside the canvas"
++    );
++
++    let demo = &state(tab).await?["wide_navigation_badges"];
++    let fill = rgb(&demo["error_color"])?;
++    let filename = format!("{STEM}-{label}.png");
++    let path = env.artifact(&filename);
++    tab.settle().await?;
++    tab.screenshot(&path).await?;
++    let image = Raster::read(tab, path).await?;
++    let mut owners = Vec::new();
++    for (index, id) in IDS.iter().copied().enumerate() {
++        let owner = bounds(tab, id).await?;
++        check!(
++            contains(rail, owner) && owner[2] >= 48. && owner[3] >= 48.,
++            "destination {id} remains usable and inside the rail: {owner:?}"
++        );
++        let face = pixels(&image, owner, fill, 8)?;
++        if index == 0 || index == 4 || (index == 1 && acknowledged) {
++            check_eq!(face, 0, "{id} with a hidden badge has no Error pixels");
++        } else {
++            let minimum = if index == 2 { 8 } else { 30 };
++            check!(
++                face >= minimum,
++                "visible badge paints inside {id}: {face} pixels"
++            );
++        }
++        owners.push(json!({"id":id,"bounds":owner,"error_pixels":face}));
++    }
++    let count_ink = if acknowledged {
++        Value::Null
++    } else {
++        let (bounds, ink) = owned_label(tab, INBOX, "999+", bounds(tab, INBOX).await?).await?;
++        check_eq!(
++            ink,
++            rgb(&demo["on_error_color"])?,
++            "count text uses the On Error token"
++        );
++        let visible = pixels(&image, bounds, ink, 8)?;
++        check!(
++            visible >= 4,
++            "the abbreviated count paints visible ink: {visible} pixels"
++        );
++        json!({"bounds":bounds,"ink":ink,"pixels":visible})
++    };
++    let mut inbox_label = Value::Null;
++    if expanded {
++        let (bounds, ink) = owned_label(tab, INBOX, INBOX_NAME, bounds(tab, INBOX).await?).await?;
++        let visible = pixels(&image, bounds, ink, 12)?;
++        check!(
++            visible >= 10,
++            "expanded Inbox label glyphs remain visible: {visible} pixels"
++        );
++        inbox_label = json!({"bounds":bounds,"ink":ink,"pixels":visible});
++    }
++    Ok(json!({
++        "canvas":canvas,"rail":rail,"expanded":expanded,"rtl":rtl,
++        "owners":owners,"inbox_label":inbox_label,"count_ink":count_ink,"error":fill,
++        "screenshot":filename,"accessibility":accessibility(tab, acknowledged).await?,
++    }))
++}
++
++async fn short_collapsed(tab: &Tab) -> Result<Value> {
++    activate(tab, EXPAND).await?;
++    ready(tab, "!d.expanded").await?;
++    resize(tab, 320, 720).await?;
++    let scroll = "wide-navigation-badges-demo-rail-scroll";
++    let clip = bounds(tab, scroll).await?;
++    let page_id = "wide-navigation-badges-demo-page";
++    let page = bounds(tab, page_id).await?;
++    let before = bounds(tab, EXPLORE).await?;
++    check!(
++        !contains(clip, before),
++        "large text needs a short collapsed scroll area"
++    );
++    focus_projected(tab, HOME).await?;
++    for target in [INBOX, UPDATES, EXPLORE] {
++        tab.press("ArrowDown").await?;
++        focused(tab, target).await?;
++        current(tab, HOME, 0).await?;
++    }
++    let revealed = bounds(tab, EXPLORE).await?;
++    check!(
++        contains(clip, revealed) && revealed[1] < before[1],
++        "arrow focus reveals the destination inside the short rail"
++    );
++    check_eq!(
++        bounds(tab, page_id).await?,
++        page,
++        "rail scroll preserves the page layout"
++    );
++    let scroll_offset = tab
++        .eval(&format!(
++            "JSON.parse(window.gallery.export_dom()).dom.nodes
++         .find(node => node.stable_id === {})?.style.scroll_y",
++            js(scroll)
++        ))
++        .await?;
++    check!(
++        scroll_offset.as_f64().is_some_and(|offset| offset > 0.),
++        "only the short rail scrolls to reveal its destination"
++    );
++    resize(tab, 840, 1000).await?;
++    activate(tab, EXPAND).await?;
++    ready(tab, "d.expanded").await?;
++    Ok(
++        json!({"clip":clip,"before":before,"revealed":revealed,"page":page,
++        "focus":EXPLORE,"scroll_offset":scroll_offset}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1300, 2.).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(&tab, "gallery").await?;
++    resize(&tab, 960, 1800).await?;
++    activate(&tab, "section-1").await?;
++    until(&tab, "s.section === 1").await?;
++    activate(&tab, SHOW).await?;
++    ready(
++        &tab,
++        "!d.expanded && !d.dark && !d.rtl && d.text_scale === 1",
++    )
++    .await?;
++    focused(&tab, BACK).await?;
++
++    step(
++        STEPS[0],
++        "Wide rail badges stay within collapsed and expanded light destinations",
++    );
++    resize(&tab, 840, 720).await?;
++    current(&tab, HOME, 0).await?;
++    let collapsed = capture(env, &tab, "collapsed-light", false, false, false).await?;
++    activate(&tab, EXPAND).await?;
++    ready(&tab, "d.expanded").await?;
++    current(&tab, HOME, 0).await?;
++    focused(&tab, EXPAND).await?;
++    let expanded = capture(env, &tab, "expanded-light", true, false, false).await?;
++    check_eq!(
++        state(&tab).await?["wide_navigation_badges"]["destinations"],
++        json!(IDS),
++        "collapse and expand keep destination IDs"
++    );
++
++    step(
++        STEPS[1],
++        "Dark RTL large text preserves keyboard routing and clears the acknowledged badge",
++    );
++    activate(&tab, THEME).await?;
++    activate(&tab, RTL).await?;
++    activate(&tab, LARGE).await?;
++    ready(&tab, "d.dark && d.rtl && d.text_scale === 2").await?;
++    let compact = short_collapsed(&tab).await?;
++    resize(&tab, 420, 720).await?;
++    let dark = capture(env, &tab, "expanded-dark-rtl-200", true, true, false).await?;
++    activate(&tab, HOME).await?;
++    current(&tab, HOME, 1).await?;
++    focused(&tab, HOME).await?;
++    tab.press("ArrowDown").await?;
++    focused(&tab, INBOX).await?;
++    current(&tab, HOME, 1).await?;
++    let before_resize = state(&tab).await?["wide_navigation_badges"]["page"].clone();
++    resize(&tab, 430, 720).await?;
++    focused(&tab, INBOX).await?;
++    current(&tab, HOME, 1).await?;
++    check_eq!(
++        state(&tab).await?["wide_navigation_badges"]["page"],
++        before_resize,
++        "resizing retains the current page"
++    );
++    resize(&tab, 420, 720).await?;
++    focused(&tab, INBOX).await?;
++    tab.press("Enter").await?;
++    current(&tab, INBOX, 2).await?;
++    focused(&tab, INBOX).await?;
++    ready(&tab, "d.inbox_acknowledged").await?;
++    let acknowledged = capture(env, &tab, "acknowledged", true, true, true).await?;
++    check_eq!(
++        dark["owners"][1]["bounds"],
++        acknowledged["owners"][1]["bounds"],
++        "acknowledgement retains the hit target"
++    );
++    tab.press("ArrowDown").await?;
++    focused(&tab, UPDATES)
++        .await
++        .context("keyboard focus moves to Updates in the accessibility tree")?;
++    tab.press("ArrowDown").await?;
++    focused(&tab, EXPLORE).await?;
++    tab.press("ArrowDown").await?;
++    check!(
++        state(&tab).await?["focused"] != SETTINGS,
++        "arrows skip the disabled item"
++    );
++
++    click(&tab, SETTINGS).await?;
++    tab.settle().await?;
++    current(&tab, INBOX, 2).await?;
++    click(&tab, UPDATES).await?;
++    current(&tab, UPDATES, 3).await?;
++    check_eq!(
++        state(&tab).await?["focused"],
++        UPDATES,
++        "a pointer activation focuses Updates in Surface while Chrome may focus the canvas"
++    );
++
++    activate(&tab, BACK).await?;
++    until(&tab, "s.section === 1 && !s.wide_navigation_badges.visible").await?;
++    focused(&tab, SHOW).await?;
++    env.write_json(
++        "browser-material-wide-navigation-badges.json",
++        &json!({"browser":chrome.version,"steps":STEPS,"collapsed_light":collapsed,
++                "expanded_light":expanded,"collapsed_scroll":compact,"dark":dark,"acknowledged":acknowledged,
++                "errors":tab.errors()}),
++    )?;
++    check!(
++        tab.errors().is_empty(),
++        "page errors: {}",
++        tab.errors().join("\n")
++    );
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index fbb7fa270eef27f4c30c816a35b7e4402f0bf230..812681017364a06daf864e7865f5bb391f1d73c4 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -59,6 +59,7 @@ mod time_scroll_demo;
+ mod toolbar_demo;
+ mod tooltip_demo;
+ mod vertical_centered_slider_demo;
++mod wide_navigation_badge_demo;
+ mod wide_navigation_rail_demo;
+ 
+ use adaptive_navigation_demo::{AdaptiveNavigationDemo, AdaptiveNavigationDemoEvent};
+@@ -132,6 +133,7 @@ use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
+ use toolbar_demo::{ToolbarDemo, ToolbarEvent};
+ use tooltip_demo::{TooltipDemo, TooltipEvent};
+ use vertical_centered_slider_demo::{VerticalCenteredSliderDemo, VerticalCenteredSliderEvent};
++use wide_navigation_badge_demo::{WideNavigationBadgeDemo, WideNavigationBadgeEvent};
+ use wide_navigation_rail_demo::{WideRailDemo, WideRailEvent};
+ 
+ const TYPOGRAPHY_SECTION: usize = 4;
+@@ -158,6 +160,7 @@ pub struct Gallery {
+     pub nav: usize,
+     rail_large_text: bool,
+     wide_rail_demo: WideRailDemo,
++    wide_navigation_badge_demo: WideNavigationBadgeDemo,
+     modal_wide_rail_demo: ModalWideRailDemo,
+     snackbar_demo: SnackbarDemo,
+     badge_demo: BadgeDemo,
+@@ -244,6 +247,7 @@ impl Default for Gallery {
+             nav: 0,
+             rail_large_text: false,
+             wide_rail_demo: WideRailDemo::default(),
++            wide_navigation_badge_demo: WideNavigationBadgeDemo::default(),
+             modal_wide_rail_demo: ModalWideRailDemo::default(),
+             snackbar_demo: SnackbarDemo::default(),
+             badge_demo: BadgeDemo::default(),
+@@ -361,6 +365,7 @@ pub enum Message {
+     Rail(usize),
+     RailLargeText,
+     WideRail(WideRailEvent),
++    WideNavigationBadge(WideNavigationBadgeEvent),
+     ModalWideRail(ModalWideRailEvent),
+     Snackbar(SnackbarEvent),
+     Badge(BadgeEvent),
+@@ -453,6 +458,9 @@ impl Application for Gallery {
+     }
+ 
+     fn text_scale(&self) -> f32 {
++        if self.wide_navigation_badge_demo.visible() {
++            return self.wide_navigation_badge_demo.text_scale();
++        }
+         if self.drawer_demo.visible() {
+             return self.drawer_demo.text_scale();
+         }
+@@ -652,6 +660,7 @@ impl Application for Gallery {
+             .viewport_changed(width, height);
+         let slider_inset = self.slider_inset_demo.viewport_changed(width, height);
+         let inline = self.wide_rail_demo.viewport_changed(width);
++        let wide_navigation_badges = self.wide_navigation_badge_demo.viewport_changed(width);
+         let modal = self.modal_wide_rail_demo.viewport_changed(width, height);
+         let drawer = self.drawer_demo.viewport_changed(width, height);
+         let progress = self.progress_demo.viewport_changed(width);
+@@ -690,6 +699,7 @@ impl Application for Gallery {
+         let toolbar = self.toolbar_demo.viewport_changed(width, height);
+         let tooltip = self.tooltip_demo.viewport_changed(width, height);
+         (self.section == wide_navigation_rail_demo::SECTION && (inline || modal))
++            || wide_navigation_badges
+             || (self.drawer_demo.visible() && drawer)
+             || (self.progress_demo.visible() && progress)
+             || (self.loading_demo.visible() && loading)
+@@ -948,6 +958,9 @@ impl Application for Gallery {
+         match m {
+             Message::Section(i) => {
+                 self.section = i;
++                if i != wide_navigation_badge_demo::SECTION {
++                    self.wide_navigation_badge_demo.leave();
++                }
+                 if i != modal_wide_navigation_rail_demo::SECTION {
+                     self.modal_wide_rail_demo.close();
+                 }
+@@ -1110,6 +1123,7 @@ impl Application for Gallery {
+             Message::Rail(i) => self.rail = i,
+             Message::RailLargeText => self.rail_large_text = !self.rail_large_text,
+             Message::WideRail(event) => self.wide_rail_demo.update(event),
++            Message::WideNavigationBadge(event) => self.wide_navigation_badge_demo.update(event),
+             Message::ModalWideRail(event) => self.modal_wide_rail_demo.update(event),
+             Message::Snackbar(event) => self.snackbar_demo.update(event),
+             Message::Badge(event) => self.badge_demo.update(event),
+@@ -1360,6 +1374,9 @@ impl Application for Gallery {
+         if self.menu_demo.visible() {
+             return self.menu_demo.view(&t, self.dark, self.display_contrast);
+         }
++        if self.wide_navigation_badge_demo.visible() {
++            return self.wide_navigation_badge_demo.view();
++        }
+         if self.flexible_navigation_badge_demo.visible() {
+             return self.flexible_navigation_badge_demo.view(&t, self.dark);
+         }
+@@ -1591,6 +1608,7 @@ impl Application for Gallery {
+                     ExtendedFabDemo::show_button(&t),
+                     FabDemo::show_button(&t),
+                     FabMenuDemo::show_button(&t),
++                    WideNavigationBadgeDemo::show_button(&t),
+                 ]));
+                 let nav_items = [
+                     ("nav-home", "Home", "H"),
+@@ -2223,6 +2241,7 @@ mod web {
+         state["menu_demo"] = s.menu_demo.inspect(&theme, runtime.display_contrast());
+         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
+         state["navigation_badges"] = s.flexible_navigation_badge_demo.inspect(&theme);
++        state["wide_navigation_badges"] = s.wide_navigation_badge_demo.inspect();
+         state["adaptive_navigation"] = s.adaptive_navigation_demo.inspect(&theme);
+         state["switch_demo"] = s.switch_demo.inspect(&theme);
+         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
+diff --git a/examples/material-gallery/src/wide_navigation_badge_demo.rs b/examples/material-gallery/src/wide_navigation_badge_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f4abe07a63bbd79d5cf4ac600bf18e2bbf35545a
+--- /dev/null
++++ b/examples/material-gallery/src/wide_navigation_badge_demo.rs
+@@ -0,0 +1,347 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    shape::LayoutDirection, BadgeContent, ChoiceState, NavigationRailItem, Theme,
++    WideNavigationRailMode,
++};
++
++use crate::{rail_icons, scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 1;
++const SHOW: &str = "wide-navigation-badges-demo-show";
++const BACK: &str = "wide-navigation-badges-demo-back";
++const ROOT: &str = "wide-navigation-badges-demo";
++const RAIL: &str = "wide-navigation-badges-demo-rail";
++const EXPAND: &str = "wide-navigation-badges-demo-expand";
++const THEME: &str = "wide-navigation-badges-demo-theme";
++const RTL: &str = "wide-navigation-badges-demo-rtl";
++const LARGE_TEXT: &str = "wide-navigation-badges-demo-large-text";
++const TITLE: &str = "wide-navigation-badges-demo-title";
++const PAGE: &str = "wide-navigation-badges-demo-page";
++const INBOX_COUNT: u32 = 1234;
++const DISABLED: usize = 4;
++const IDS: [&str; 5] = [
++    "wide-navigation-badges-demo-home",
++    "wide-navigation-badges-demo-inbox",
++    "wide-navigation-badges-demo-updates",
++    "wide-navigation-badges-demo-explore",
++    "wide-navigation-badges-demo-settings",
++];
++const LABELS: [&str; 5] = ["首頁", "收件匣", "最新消息", "探索路線", "設定"];
++const NAMES: [&str; 5] = [
++    "首頁",
++    "收件匣，1,234 則未讀",
++    "最新消息，有新內容",
++    "探索路線，有新內容",
++    "設定，無法使用",
++];
++const PAGES: [&str; 5] = [
++    "首頁內容",
++    "收件匣內容",
++    "最新消息內容",
++    "探索路線內容",
++    "設定內容",
++];
++
++#[derive(Clone, Copy)]
++pub enum WideNavigationBadgeEvent {
++    Show,
++    Back,
++    ToggleExpanded,
++    ToggleDirection,
++    ToggleLargeText,
++    ToggleTheme,
++    Select(usize),
++}
++
++pub(crate) struct WideNavigationBadgeDemo {
++    visible: bool,
++    width: f32,
++    expanded: bool,
++    rtl: bool,
++    large_text: bool,
++    dark: bool,
++    selected: usize,
++    activations: usize,
++    inbox_acknowledged: bool,
++}
++
++impl Default for WideNavigationBadgeDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            width: 960.,
++            expanded: false,
++            rtl: false,
++            large_text: false,
++            dark: false,
++            selected: 0,
++            activations: 0,
++            inbox_acknowledged: false,
++        }
++    }
++}
++
++impl WideNavigationBadgeDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        let changed = self.width != width;
++        self.width = width;
++        self.visible && changed
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn update(&mut self, event: WideNavigationBadgeEvent) {
++        match event {
++            WideNavigationBadgeEvent::Show => self.visible = true,
++            WideNavigationBadgeEvent::Back => self.leave(),
++            WideNavigationBadgeEvent::ToggleExpanded => self.expanded = !self.expanded,
++            WideNavigationBadgeEvent::ToggleDirection => self.rtl = !self.rtl,
++            WideNavigationBadgeEvent::ToggleLargeText => self.large_text = !self.large_text,
++            WideNavigationBadgeEvent::ToggleTheme => self.dark = !self.dark,
++            WideNavigationBadgeEvent::Select(index) if index < IDS.len() && index != DISABLED => {
++                self.selected = index;
++                self.activations = self.activations.saturating_add(1);
++                if index == 1 {
++                    self.inbox_acknowledged = true;
++                }
++            }
++            WideNavigationBadgeEvent::Select(_) => {}
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "寬導覽徽章",
++                surface_material::ButtonKind::Outlined,
++                false,
++                Message::WideNavigationBadge(WideNavigationBadgeEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn badge(&self, index: usize) -> BadgeContent<'static> {
++        match index {
++            1 if !self.inbox_acknowledged => BadgeContent::Count(INBOX_COUNT),
++            2 => BadgeContent::Dot,
++            3 => BadgeContent::Label("新"),
++            _ => BadgeContent::Hidden,
++        }
++    }
++
++    fn accessible_name(&self, index: usize) -> &'static str {
++        if index == 1 && self.inbox_acknowledged {
++            "收件匣"
++        } else {
++            NAMES[index]
++        }
++    }
++
++    pub(crate) fn view(&self) -> View<Message> {
++        let theme = if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let event = Message::WideNavigationBadge;
++        let mode = if self.expanded {
++            WideNavigationRailMode::Expanded
++        } else {
++            WideNavigationRailMode::Collapsed
++        };
++        let header = theme.row([
++            theme
++                .tonal_button(BACK, "返回", event(WideNavigationBadgeEvent::Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            theme.heading(TITLE, "寬軌徽章"),
++        ]);
++        let controls = control_row(vec![
++            theme
++                .segmented_button(
++                    THEME,
++                    "深色",
++                    choice(self.dark),
++                    event(WideNavigationBadgeEvent::ToggleTheme),
++                )
++                .accessible_activation(),
++            theme
++                .segmented_button(
++                    RTL,
++                    "右起",
++                    choice(self.rtl),
++                    event(WideNavigationBadgeEvent::ToggleDirection),
++                )
++                .accessible_activation(),
++            theme
++                .segmented_button(
++                    LARGE_TEXT,
++                    "大字",
++                    choice(self.large_text),
++                    event(WideNavigationBadgeEvent::ToggleLargeText),
++                )
++                .accessible_activation(),
++        ]);
++        let rail = theme.scrollable_wide_navigation_rail(
++            RAIL,
++            "工作區導覽",
++            mode,
++            Some(
++                theme
++                    .icon_button(
++                        EXPAND,
++                        if self.expanded {
++                            "收合導覽列"
++                        } else {
++                            "展開導覽列"
++                        },
++                        if self.rtl == self.expanded {
++                            "»"
++                        } else {
++                            "«"
++                        },
++                        surface_material::IconButtonKind::Standard,
++                        Some(self.expanded),
++                        false,
++                        event(WideNavigationBadgeEvent::ToggleExpanded),
++                    )
++                    .disclosure_expanded(self.expanded)
++                    .accessible_activation(),
++            ),
++            (0..IDS.len()).map(|index| {
++                let icon = match index {
++                    0 => rail_icons::Destination::Home.icon(),
++                    1 => rail_icons::Destination::Inbox.icon(),
++                    2 => rail_icons::search(),
++                    3 => rail_icons::more(),
++                    _ => rail_icons::Destination::Archive.icon(),
++                };
++                let item = NavigationRailItem {
++                    id: IDS[index],
++                    label: LABELS[index],
++                    accessible_name: self.accessible_name(index),
++                    icon,
++                    state: ChoiceState {
++                        selected: self.selected == index,
++                        disabled: index == DISABLED,
++                    },
++                    message: event(WideNavigationBadgeEvent::Select(index)),
++                };
++                theme
++                    .wide_navigation_rail_item_with_badge(mode, direction, item, self.badge(index))
++                    .accessibility_scroll_into_view()
++            }),
++        );
++        let content = View::new(
++            Node::new(Role::Group, "頁面內容")
++                .id("wide-navigation-badges-demo-content")
++                .styled(
++                    Style::column()
++                        .width(Length::Px(0.))
++                        .grow(1.)
++                        .align(Align::Start)
++                        .padding(16.)
++                        .gap(12.)
++                        .background(theme.colors.surface_container_low),
++                ),
++        )
++        .children([
++            theme.heading(PAGE, PAGES[self.selected]),
++            theme.text(
++                "wide-navigation-badges-demo-status",
++                format!("目前頁面：{}", LABELS[self.selected]),
++            ),
++        ]);
++        let mut body_node = Node::new(Role::Group, "").id("wide-navigation-badges-demo-layout");
++        let body_style = Style::row()
++            .width(Length::Percent(1.))
++            .height(Length::Px(0.))
++            .grow(1.)
++            .align(Align::Stretch)
++            .clip(true);
++        if self.rtl {
++            body_node = body_node.reverse_row();
++        }
++        body_node = body_node.styled(body_style);
++        let body = View::new(body_node).children([rail, content]);
++        View::new(
++            Node::new(Role::Window, "Material gallery").id(ROOT).styled(
++                Style::column()
++                    .width(Length::Percent(1.))
++                    .height(Length::Percent(1.))
++                    .gap(8.)
++                    .padding(8.)
++                    .background(theme.background)
++                    .foreground(theme.on_background)
++                    .clip(true),
++            ),
++        )
++        .children([header, controls, body])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self) -> serde_json::Value {
++        let theme = if self.dark {
++            Theme::dark()
++        } else {
++            Theme::light()
++        };
++        let names = (0..IDS.len())
++            .map(|index| self.accessible_name(index))
++            .collect::<Vec<_>>();
++        let badges = (0..IDS.len())
++            .map(|index| match self.badge(index) {
++                BadgeContent::Hidden => "hidden",
++                BadgeContent::Dot => "dot",
++                BadgeContent::Label(label) => label,
++                BadgeContent::Count(_) => "999+",
++            })
++            .collect::<Vec<_>>();
++        serde_json::json!({
++            "visible": self.visible,
++            "dark": self.dark,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "preview_width": self.width,
++            "expanded": self.expanded,
++            "selected": IDS[self.selected],
++            "page": LABELS[self.selected],
++            "destinations": IDS,
++            "accessible_names": names,
++            "activations": self.activations,
++            "inbox_acknowledged": self.inbox_acknowledged,
++            "badges": badges,
++            "error_color": theme.colors.error,
++            "on_error_color": theme.colors.on_error,
++        })
++    }
++}
++
++fn choice(selected: bool) -> ChoiceState {
++    ChoiceState {
++        selected,
++        disabled: false,
++    }
++}
