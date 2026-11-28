@@ -1,0 +1,464 @@
+{
+  "source": {
+    "commit": "b9dc4ad7a5c6cdddd71196a669354f17984af7aa",
+    "tree": "ea61008a90b12a3f753398b9e5c1ff58f5813b3d",
+    "manifest_sha256": "8e4f44ab8774aebbdf629bea859101887d42c8904cd6abb32502ff7ffc0b230c",
+    "manifest_files": 714,
+    "checkout": "/tmp/surface-md3-v0181-flexible-nav-badges.lqVxZ01z/surface"
+  },
+  "build": {
+    "stock_manifest_sha256": "b8ec519c77617a727fada194dc6a446b4a1d9bcb0eda8eee20e24e38a452acac",
+    "web_root": "stock/web/release"
+  },
+  "pilot_runner_sha256": "4dd40dcf5af5977e0eb9c435c541d122c3cfd07103198c95f97f239efebe26d7",
+  "pilot_patch_sha256": "51baea6dfa0b6fda5538f2c6172f7d3c8bb82cc72a591994a0ce6af482a65d88",
+  "browser": "Chrome/158.0.8127.37",
+  "steps": [
+    "M385",
+    "M386"
+  ],
+  "checks": "case material ... ok (2 steps, 363 checks, 3.1s)",
+  "headless_guard": {
+    "allowed": true,
+    "pid": 99529,
+    "ppid": 99528,
+    "executable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "argv": [
+      "--remote-debugging-port=60981",
+      "--remote-debugging-address=127.0.0.1",
+      "--user-data-dir=/private/tmp/surface-md3-v0181-badge-pilot-r3.8zLBLMLM/run.gsClsJVo/tmp/.tmpO4KXEZ",
+      "--no-first-run",
+      "--no-default-browser-check",
+      "--disable-background-networking",
+      "--disable-default-apps",
+      "--disable-dev-shm-usage",
+      "--disable-extensions",
+      "--disable-sync",
+      "--disable-translate",
+      "--metrics-recording-only",
+      "--mute-audio",
+      "--no-sandbox",
+      "--headless=new",
+      "--disable-updater-scheduler"
+    ],
+    "profile": "/private/tmp/surface-md3-v0181-badge-pilot-r3.8zLBLMLM/run.gsClsJVo/tmp/.tmpO4KXEZ",
+    "headless": [
+      "--headless=new"
+    ]
+  },
+  "screenshots": [
+    {
+      "canvas": [
+        0.0,
+        44.0,
+        600.0,
+        720.0
+      ],
+      "device_pixel_ratio": 2,
+      "viewport": [
+        600.0,
+        720.0
+      ],
+      "layout": {
+        "bar": [
+          0.0,
+          656.0,
+          600.0,
+          64.0
+        ],
+        "cells": [
+          {
+            "id": "navigation-badges-demo-home",
+            "bounds": [
+              20.0,
+              656.0,
+              112.0,
+              64.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-inbox",
+            "bounds": [
+              132.0,
+              656.0,
+              112.0,
+              64.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-updates",
+            "bounds": [
+              244.0,
+              656.0,
+              112.0,
+              64.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-explore",
+            "bounds": [
+              356.0,
+              656.0,
+              112.0,
+              64.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-settings",
+            "bounds": [
+              468.0,
+              656.0,
+              112.0,
+              64.0
+            ]
+          }
+        ],
+        "horizontal": true,
+        "rtl": false
+      },
+      "colors": {
+        "error": [
+          186,
+          26,
+          26
+        ],
+        "on_error": [
+          255,
+          255,
+          255
+        ]
+      },
+      "paint": [
+        {
+          "id": "navigation-badges-demo-home",
+          "owner": [
+            20.0,
+            656.0,
+            112.0,
+            64.0
+          ],
+          "error_pixels": 0,
+          "on_error_pixels": 0
+        },
+        {
+          "id": "navigation-badges-demo-inbox",
+          "owner": [
+            132.0,
+            656.0,
+            112.0,
+            64.0
+          ],
+          "error_pixels": 1509,
+          "on_error_pixels": 79
+        },
+        {
+          "id": "navigation-badges-demo-updates",
+          "owner": [
+            244.0,
+            656.0,
+            112.0,
+            64.0
+          ],
+          "error_pixels": 96,
+          "on_error_pixels": 0
+        },
+        {
+          "id": "navigation-badges-demo-explore",
+          "owner": [
+            356.0,
+            656.0,
+            112.0,
+            64.0
+          ],
+          "error_pixels": 715,
+          "on_error_pixels": 69
+        },
+        {
+          "id": "navigation-badges-demo-settings",
+          "owner": [
+            468.0,
+            656.0,
+            112.0,
+            64.0
+          ],
+          "error_pixels": 0,
+          "on_error_pixels": 0
+        }
+      ],
+      "accessibility": {
+        "landmark": {
+          "type": "computedString",
+          "value": "導覽列徽章範例",
+          "sources": [
+            {
+              "type": "relatedElement",
+              "attribute": "aria-labelledby"
+            },
+            {
+              "type": "attribute",
+              "value": {
+                "type": "computedString",
+                "value": "導覽列徽章範例"
+              },
+              "attribute": "aria-label",
+              "attributeValue": {
+                "type": "string",
+                "value": "導覽列徽章範例"
+              }
+            },
+            {
+              "type": "attribute",
+              "attribute": "title",
+              "superseded": true
+            }
+          ]
+        },
+        "items": [
+          {
+            "id": "navigation-badges-demo-home",
+            "name": "首頁",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-inbox",
+            "name": "收件匣，1200 則未讀",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-updates",
+            "name": "最新消息，有新內容",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-explore",
+            "name": "探索路線，有新內容",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-settings",
+            "name": "設定",
+            "disabled": true,
+            "current": null
+          }
+        ]
+      },
+      "screenshot": "material-flexible-navigation-badges-wide-light-600.png",
+      "screenshot_sha256": "bf4562e166e239c7ef7ec6a3491bfedb73a447e67f46f6423015319f9c9296f5",
+      "png_device_size": [
+        1200,
+        1528
+      ]
+    },
+    {
+      "canvas": [
+        0.0,
+        44.0,
+        320.0,
+        720.0
+      ],
+      "device_pixel_ratio": 2,
+      "viewport": [
+        320.0,
+        720.0
+      ],
+      "layout": {
+        "bar": [
+          0.0,
+          584.0,
+          320.0,
+          136.0
+        ],
+        "cells": [
+          {
+            "id": "navigation-badges-demo-home",
+            "bounds": [
+              256.0,
+              584.0,
+              64.0,
+              136.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-inbox",
+            "bounds": [
+              192.0,
+              584.0,
+              64.0,
+              136.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-updates",
+            "bounds": [
+              128.0,
+              584.0,
+              64.0,
+              136.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-explore",
+            "bounds": [
+              64.0,
+              584.0,
+              64.0,
+              136.0
+            ]
+          },
+          {
+            "id": "navigation-badges-demo-settings",
+            "bounds": [
+              0.0,
+              584.0,
+              64.0,
+              136.0
+            ]
+          }
+        ],
+        "horizontal": false,
+        "rtl": true
+      },
+      "colors": {
+        "error": [
+          255,
+          180,
+          171
+        ],
+        "on_error": [
+          105,
+          0,
+          5
+        ]
+      },
+      "paint": [
+        {
+          "id": "navigation-badges-demo-home",
+          "owner": [
+            256.0,
+            584.0,
+            64.0,
+            136.0
+          ],
+          "error_pixels": 0,
+          "on_error_pixels": 0
+        },
+        {
+          "id": "navigation-badges-demo-inbox",
+          "owner": [
+            192.0,
+            584.0,
+            64.0,
+            136.0
+          ],
+          "error_pixels": 5090,
+          "on_error_pixels": 725
+        },
+        {
+          "id": "navigation-badges-demo-updates",
+          "owner": [
+            128.0,
+            584.0,
+            64.0,
+            136.0
+          ],
+          "error_pixels": 96,
+          "on_error_pixels": 0
+        },
+        {
+          "id": "navigation-badges-demo-explore",
+          "owner": [
+            64.0,
+            584.0,
+            64.0,
+            136.0
+          ],
+          "error_pixels": 2220,
+          "on_error_pixels": 446
+        },
+        {
+          "id": "navigation-badges-demo-settings",
+          "owner": [
+            0.0,
+            584.0,
+            64.0,
+            136.0
+          ],
+          "error_pixels": 0,
+          "on_error_pixels": 0
+        }
+      ],
+      "accessibility": {
+        "landmark": {
+          "type": "computedString",
+          "value": "導覽列徽章範例",
+          "sources": [
+            {
+              "type": "relatedElement",
+              "attribute": "aria-labelledby"
+            },
+            {
+              "type": "attribute",
+              "value": {
+                "type": "computedString",
+                "value": "導覽列徽章範例"
+              },
+              "attribute": "aria-label",
+              "attributeValue": {
+                "type": "string",
+                "value": "導覽列徽章範例"
+              }
+            },
+            {
+              "type": "attribute",
+              "attribute": "title",
+              "superseded": true
+            }
+          ]
+        },
+        "items": [
+          {
+            "id": "navigation-badges-demo-home",
+            "name": "首頁",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-inbox",
+            "name": "收件匣，1200 則未讀",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-updates",
+            "name": "最新消息，有新內容",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-explore",
+            "name": "探索路線，有新內容",
+            "disabled": false,
+            "current": null
+          },
+          {
+            "id": "navigation-badges-demo-settings",
+            "name": "設定",
+            "disabled": true,
+            "current": null
+          }
+        ]
+      },
+      "screenshot": "material-flexible-navigation-badges-compact-dark-rtl-200.png",
+      "screenshot_sha256": "7d5e29ba9d0e1424855658fa8add1e46fe5c94bc01547fd63ff4c0d88a31a750",
+      "png_device_size": [
+        640,
+        1528
+      ]
+    }
+  ],
+  "status": "PASS"
+}

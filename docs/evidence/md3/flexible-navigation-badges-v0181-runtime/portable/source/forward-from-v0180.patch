@@ -1,0 +1,1556 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 15121be64d9647abed1a666866868f5bfa19dacd..1d4ba481a3ca5e23ab1512a81081d4654556dbba 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.80"
++version = "0.1.81"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index b063fc992e946c55bf629256893820947047c2b0..03bae68189dc48f57fb5dc6eefc1c51c361b6311 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.80"
++version = "0.1.81"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/flexible_navigation_bar.rs b/crates/surface-material/src/flexible_navigation_bar.rs
+index 5acf8bb399235f951c8b18c4446c671e967008af..79f5fafd07f90225c43d0aa50eabaa3b757f5833 100644
+--- a/crates/surface-material/src/flexible_navigation_bar.rs
++++ b/crates/surface-material/src/flexible_navigation_bar.rs
+@@ -1,19 +1,21 @@
+ //! Compact and medium Material 3 Expressive navigation bars.
+ 
+ use surface::{
+-    Align, Color, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
++    Align, Color, Insets, Length, MeasuredGroupLayout, Node, Rect, Role, Style, TextAlignment,
+     TextMeasurer, TextStyle,
+ };
+ use surface_app::{CursorStyle, View};
+ 
+ use crate::{
+     adaptive::WindowWidthSizeClass,
++    badge::badge_headroom,
+     components::navigation_indicator,
+     motion::STATE_CHANGE,
+     shape::{self, LayoutDirection},
+     typography,
+     vector_icon::VectorIconSize,
+-    ChoiceState, Elevation, NavigationRailItem, Theme,
++    BadgeBoundary, BadgeContent, BadgedAnchorOptions, ChoiceState, Elevation, NavigationRailItem,
++    Theme,
+ };
+ 
+ const MIN_HEIGHT: f32 = 64.;
+@@ -39,6 +41,12 @@ pub struct FlexibleNavigationBarOptions<'a> {
+     pub direction: LayoutDirection,
+ }
+ 
++/// An application-owned destination and its decorative badge.
++pub struct BadgedFlexibleNavigationBarItem<'a, M> {
++    pub item: NavigationRailItem<'a, M>,
++    pub badge: BadgeContent<'a>,
++}
++
+ impl Theme {
+     /// Build a compact Expressive bar with vertical icon and label stacks.
+     ///
+@@ -55,12 +63,21 @@ impl Theme {
+         &self,
+         options: FlexibleNavigationBarOptions<'_>,
+         items: impl IntoIterator<Item = NavigationRailItem<'a, M>>,
++    ) -> Option<View<M>> {
++        self.compact_flexible_bar(options, items, |item| (item, None))
++    }
++
++    fn compact_flexible_bar<'a, M: 'a, Item>(
++        &self,
++        options: FlexibleNavigationBarOptions<'_>,
++        items: impl IntoIterator<Item = Item>,
++        split: impl FnMut(Item) -> (NavigationRailItem<'a, M>, Option<BadgeContent<'a>>),
+     ) -> Option<View<M>> {
+         let width = options.available_width;
+         if WindowWidthSizeClass::from_dp(width) != Some(WindowWidthSizeClass::Compact) {
+             return None;
+         }
+-        let items: Vec<_> = items.into_iter().take(6).collect();
++        let items: Vec<_> = items.into_iter().take(6).map(split).collect();
+         if !(3..=5).contains(&items.len()) || width < INDICATOR_WIDTH * items.len() as f32 {
+             return None;
+         }
+@@ -69,11 +86,15 @@ impl Theme {
+         let fraction = 1. / items.len() as f32;
+         let label_width = width * fraction - 2. * LABEL_INSET;
+         Some(
+-            View::new(bar).children(
+-                items
+-                    .into_iter()
+-                    .map(|item| self.flexible_navigation_destination(item, fraction, label_width)),
+-            ),
++            View::new(bar).children(items.into_iter().map(|(item, badge)| {
++                self.flexible_navigation_destination(
++                    item,
++                    fraction,
++                    label_width,
++                    badge,
++                    options.direction,
++                )
++            })),
+         )
+     }
+ 
+@@ -88,26 +109,53 @@ impl Theme {
+         &self,
+         options: FlexibleNavigationBarOptions<'_>,
+         items: impl IntoIterator<Item = NavigationRailItem<'a, M>>,
++    ) -> Option<View<M>> {
++        self.horizontal_flexible_bar(options, items, |item| (item, None))
++    }
++
++    fn horizontal_flexible_bar<'a, M: 'a, Item>(
++        &self,
++        options: FlexibleNavigationBarOptions<'_>,
++        items: impl IntoIterator<Item = Item>,
++        split: impl FnMut(Item) -> (NavigationRailItem<'a, M>, Option<BadgeContent<'a>>),
+     ) -> Option<View<M>> {
+         if WindowWidthSizeClass::from_dp(options.available_width)
+             != Some(WindowWidthSizeClass::Medium)
+         {
+             return None;
+         }
+-        let items: Vec<_> = items.into_iter().take(6).collect();
++        let items: Vec<_> = items.into_iter().take(6).map(split).collect();
+         if !(3..=5).contains(&items.len()) {
+             return None;
+         }
+         let bar = self.flexible_bar_node(&options, Align::Center);
+         Some(
+-            View::new(bar).children(
+-                items
+-                    .into_iter()
+-                    .map(|item| self.horizontal_flexible_destination(item, options.direction)),
+-            ),
++            View::new(bar).children(items.into_iter().map(|(item, badge)| {
++                self.horizontal_flexible_destination(item, options.direction, badge)
++            })),
+         )
+     }
+ 
++    /// Compact flexible bar with application-owned decorative badge states.
++    /// Put the full localized status in each item's accessible name.
++    pub fn flexible_navigation_bar_with_badges<'a, M: 'a>(
++        &self,
++        options: FlexibleNavigationBarOptions<'_>,
++        items: impl IntoIterator<Item = BadgedFlexibleNavigationBarItem<'a, M>>,
++    ) -> Option<View<M>> {
++        self.compact_flexible_bar(options, items, |entry| (entry.item, Some(entry.badge)))
++    }
++
++    /// Medium flexible bar with application-owned decorative badge states.
++    /// Put the full localized status in each item's accessible name.
++    pub fn horizontal_flexible_navigation_bar_with_badges<'a, M: 'a>(
++        &self,
++        options: FlexibleNavigationBarOptions<'_>,
++        items: impl IntoIterator<Item = BadgedFlexibleNavigationBarItem<'a, M>>,
++    ) -> Option<View<M>> {
++        self.horizontal_flexible_bar(options, items, |entry| (entry.item, Some(entry.badge)))
++    }
++
+     fn flexible_bar_node(
+         &self,
+         options: &FlexibleNavigationBarOptions<'_>,
+@@ -133,9 +181,25 @@ impl Theme {
+         item: NavigationRailItem<'_, M>,
+         width_fraction: f32,
+         label_width: f32,
++        badge: Option<BadgeContent<'_>>,
++        direction: LayoutDirection,
+     ) -> View<M> {
+         let (icon_ink, label_ink, caption) =
+             self.flexible_destination_ink(item.state, self.colors.secondary);
++        let art = item.icon.view(VectorIconSize::Dp24, icon_ink);
++        let art = if let Some(content) = badge {
++            self.navigation_badged_anchor(
++                art,
++                content,
++                BadgedAnchorOptions {
++                    direction,
++                    ..Default::default()
++                },
++                Some((item.id, BadgeBoundary::Owner)),
++            )
++        } else {
++            art
++        };
+         let indicator = View::new(
+             Node::new(Role::Group, "")
+                 .id(format!("{}-indicator", item.id))
+@@ -145,7 +209,7 @@ impl Theme {
+                 )
+                 .state_layer_alphas(20, 26, 26),
+         )
+-        .children([item.icon.view(VectorIconSize::Dp24, icon_ink)])
++        .children([art])
+         .without_interaction(None);
+         let label = View::new(
+             Node::new(Role::Text, "")
+@@ -165,13 +229,17 @@ impl Theme {
+             Style::column()
+                 .align(Align::Center)
+                 .width(Length::Percent(width_fraction)),
+-            [
+-                spacer(VERTICAL_PADDING),
+-                indicator,
+-                spacer(LABEL_GAP),
+-                label,
+-                spacer(VERTICAL_PADDING),
+-            ],
++            badge
++                .is_some()
++                .then(|| badge_headroom(4.))
++                .into_iter()
++                .chain([
++                    spacer(VERTICAL_PADDING),
++                    indicator,
++                    spacer(LABEL_GAP),
++                    label,
++                    spacer(VERTICAL_PADDING),
++                ]),
+         )
+     }
+ 
+@@ -179,6 +247,7 @@ impl Theme {
+         &self,
+         item: NavigationRailItem<'_, M>,
+         direction: LayoutDirection,
++        badge: Option<BadgeContent<'_>>,
+     ) -> View<M> {
+         let (icon_ink, label_ink, caption) =
+             self.flexible_destination_ink(item.state, self.colors.on_secondary_container);
+@@ -226,21 +295,80 @@ impl Theme {
+                         .transition(STATE_CHANGE),
+                 )
+                 .state_layer_alphas(20, 26, 26)
+-                .measured_group(HorizontalPill { direction }),
++                .measured_group(HorizontalPill {
++                    direction,
++                    badged: badge.is_some(),
++                }),
+         )
+         .children([icon, label])
+         .without_interaction(None);
++        // The measured pill must keep leaf children. Position a separate,
++        // non-painting badge anchor over its icon in a normal flow wrapper.
++        // The wrapper remains present for Hidden so badge updates do not
++        // change the destination's geometry.
++        let indicator = if let Some(content) = badge {
++            let inset = match direction {
++                LayoutDirection::LeftToRight => Insets {
++                    left: Length::Px(HORIZONTAL_PILL_INSET),
++                    top: Length::Px(HORIZONTAL_PILL_Y_PADDING),
++                    ..Insets::default()
++                },
++                LayoutDirection::RightToLeft => Insets {
++                    right: Length::Px(HORIZONTAL_PILL_INSET),
++                    top: Length::Px(HORIZONTAL_PILL_Y_PADDING),
++                    ..Insets::default()
++                },
++            };
++            let anchor = View::new(
++                Node::new(Role::Group, "").styled(
++                    Style::default()
++                        .width(Length::Px(HORIZONTAL_ICON_SIZE))
++                        .height(Length::Px(HORIZONTAL_ICON_SIZE)),
++                ),
++            );
++            let overlay = View::new(
++                Node::new(Role::Group, "").styled(
++                    Style::default()
++                        .width(Length::Px(HORIZONTAL_ICON_SIZE))
++                        .height(Length::Px(HORIZONTAL_ICON_SIZE))
++                        .absolute(inset),
++                ),
++            )
++            .children([self.navigation_badged_anchor(
++                anchor,
++                content,
++                BadgedAnchorOptions {
++                    direction,
++                    ..Default::default()
++                },
++                Some((item.id, BadgeBoundary::Owner)),
++            )])
++            .without_interaction(None);
++            View::new(
++                Node::new(Role::Group, "")
++                    .shrink_to_fit_width()
++                    .styled(Style::column().align(Align::Start)),
++            )
++            .children([indicator, overlay])
++            .without_interaction(None)
++        } else {
++            indicator
++        };
+         self.flexible_destination_button(
+             item,
+             Style::column()
+                 .align(Align::Center)
+                 .justify(Align::Center)
+                 .width(Length::Px(HORIZONTAL_CELL_WIDTH)),
+-            [
+-                spacer(HORIZONTAL_BAR_Y_PADDING),
+-                indicator,
+-                spacer(HORIZONTAL_BAR_Y_PADDING),
+-            ],
++            badge
++                .is_some()
++                .then(|| badge_headroom(0.))
++                .into_iter()
++                .chain([
++                    spacer(HORIZONTAL_BAR_Y_PADDING),
++                    indicator,
++                    spacer(HORIZONTAL_BAR_Y_PADDING),
++                ]),
+         )
+     }
+ 
+@@ -307,6 +435,7 @@ fn physical_row(node: Node, direction: LayoutDirection) -> Node {
+ #[derive(Debug)]
+ struct HorizontalPill {
+     direction: LayoutDirection,
++    badged: bool,
+ }
+ 
+ impl MeasuredGroupLayout for HorizontalPill {
+@@ -328,7 +457,8 @@ impl MeasuredGroupLayout for HorizontalPill {
+         let text_height = label_height(text, &styles, text_width, fonts);
+         (
+             HORIZONTAL_ART_WIDTH + text_width,
+-            HORIZONTAL_ICON_SIZE.max(text_height) + 2. * HORIZONTAL_PILL_Y_PADDING,
++            HORIZONTAL_ICON_SIZE.max(text_height + if self.badged { 4. } else { 0. })
++                + 2. * HORIZONTAL_PILL_Y_PADDING,
+         )
+     }
+ 
+@@ -359,13 +489,21 @@ impl MeasuredGroupLayout for HorizontalPill {
+         vec![
+             Rect::new(
+                 icon_x,
+-                (height - HORIZONTAL_ICON_SIZE) / 2.,
++                if self.badged {
++                    HORIZONTAL_PILL_Y_PADDING
++                } else {
++                    (height - HORIZONTAL_ICON_SIZE) / 2.
++                },
+                 HORIZONTAL_ICON_SIZE,
+                 HORIZONTAL_ICON_SIZE,
+             ),
+             Rect::new(
+                 label_x,
+-                (height - text_height) / 2.,
++                if self.badged {
++                    HORIZONTAL_PILL_Y_PADDING + 4.
++                } else {
++                    (height - text_height) / 2.
++                },
+                 text_width,
+                 text_height,
+             ),
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 7e3540d53cdd9584ad1b388d96616124a03d8c59..26065d7e248336bfa60d47e8957289c9b51a16ce 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -162,7 +162,7 @@ pub use fab_menu_layout::{
+ };
+ pub use fab_menu_motion::{FabMenuItemMotion, FabMenuMotion, FabMenuMotionTarget};
+ pub use fab_motion::{ExpressiveFabMotion, ExpressiveFabRipple};
+-pub use flexible_navigation_bar::FlexibleNavigationBarOptions;
++pub use flexible_navigation_bar::{BadgedFlexibleNavigationBarItem, FlexibleNavigationBarOptions};
+ pub use full_screen_dialog::{
+     full_screen_dialog_layout, FullScreenDialogAnchor, FullScreenDialogLayout,
+     FullScreenDialogMotion, FullScreenDialogOptions, FullScreenDialogTransition,
+diff --git a/crates/surface-material/tests/flexible_navigation_bar_badges.rs b/crates/surface-material/tests/flexible_navigation_bar_badges.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..44ef6bfd650fedc86c17ad22888d9a855132cb60
+--- /dev/null
++++ b/crates/surface-material/tests/flexible_navigation_bar_badges.rs
+@@ -0,0 +1,151 @@
++use surface::{Node, PaintOp, Rect, Role, TextMeasurer};
++use surface_app::{Application, Event, Runtime, View};
++use surface_material::{
++    shape::LayoutDirection, BadgeContent, BadgedFlexibleNavigationBarItem, ChoiceState,
++    FlexibleNavigationBarOptions, NavigationRailItem, Theme, VectorIcon,
++};
++
++struct Page {
++    width: f32,
++    direction: LayoutDirection,
++    badge: BadgeContent<'static>,
++    scale: f32,
++    icon: VectorIcon,
++}
++#[derive(Clone)]
++enum Message {
++    Change(BadgeContent<'static>),
++    Press(usize),
++}
++impl Application for Page {
++    type Message = Message;
++    fn update(&mut self, message: Message) {
++        match message {
++            Message::Change(badge) => self.badge = badge,
++            Message::Press(_index) => {}
++        }
++    }
++    fn text_scale(&self) -> f32 {
++        self.scale
++    }
++    fn view(&self) -> View<Message> {
++        let items = ["home", "inbox", "disabled"]
++            .into_iter()
++            .enumerate()
++            .map(|(i, id)| BadgedFlexibleNavigationBarItem {
++                item: NavigationRailItem {
++                    id,
++                    label: ["首頁", "收件匣", "設定"][i],
++                    accessible_name: if i == 1 {
++                        "收件匣，1200 封未讀"
++                    } else {
++                        ""
++                    },
++                    icon: &self.icon,
++                    state: ChoiceState {
++                        selected: i == 1,
++                        disabled: i == 2,
++                    },
++                    message: Message::Press(i),
++                },
++                badge: if i == 1 {
++                    self.badge
++                } else {
++                    BadgeContent::Hidden
++                },
++            });
++        let options = FlexibleNavigationBarOptions {
++            id: "bar",
++            name: "導覽",
++            available_width: self.width,
++            direction: self.direction,
++        };
++        let theme = Theme::light();
++        let bar = if self.width < 600. {
++            theme.flexible_navigation_bar_with_badges(options, items)
++        } else {
++            theme.horizontal_flexible_navigation_bar_with_badges(options, items)
++        };
++        View::new(Node::new(Role::Window, "Test")).children(bar)
++    }
++}
++struct Fonts;
++impl TextMeasurer for Fonts {
++    fn measure(&mut self, text: &str, size: f32, width: Option<f32>) -> (f32, f32) {
++        let natural = text.chars().count() as f32 * size;
++        let w = width.unwrap_or(natural).min(natural);
++        (w, (natural / w.max(1.)).ceil().max(1.) * size * 1.5)
++    }
++}
++fn rect(app: &Runtime<Page>, id: &str) -> Rect {
++    app.computed().unwrap().nodes[app.dom().by_id(id).unwrap().index()].bounds
++}
++fn page(width: f32, direction: LayoutDirection, scale: f32) -> Runtime<Page> {
++    Runtime::new(Page {
++        width,
++        direction,
++        badge: BadgeContent::Hidden,
++        scale,
++        icon: VectorIcon::new([[2., 2.], [22., 2.], [22., 22.], [2., 22.]]).unwrap(),
++    })
++    .unwrap()
++}
++#[test]
++fn badge_updates_preserve_destination_focus_and_stable_geometry() {
++    for width in [320., 600., 839.] {
++        for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++            for scale in [1., 2.] {
++                let mut app = page(width, direction, scale);
++                app.render(width, 500., &mut Fonts).unwrap();
++                let before = rect(&app, "inbox");
++                if width >= 600. {
++                    assert_eq!(before.width, 112.);
++                }
++                app.dispatch(Event::FocusNext { reverse: false }).unwrap();
++                app.dispatch(Event::FocusNext { reverse: false }).unwrap();
++                assert_eq!(app.focused(), Some("inbox"));
++                for badge in [
++                    BadgeContent::Dot,
++                    BadgeContent::Label("未讀"),
++                    BadgeContent::Count(1200),
++                    BadgeContent::Hidden,
++                ] {
++                    app.apply(Message::Change(badge)).unwrap();
++                    let display = app.render(width, 500., &mut Fonts).unwrap();
++                    assert_eq!(app.focused(), Some("inbox"));
++                    assert_eq!(rect(&app, "inbox"), before);
++                    let button = app.dom().get(app.dom().by_id("inbox").unwrap()).unwrap();
++                    assert_eq!(button.name(), "收件匣，1200 封未讀");
++                    assert_eq!(button.is_selected(), Some(true));
++                    if !matches!(badge, BadgeContent::Hidden) {
++                        let face = display
++                            .ops
++                            .iter()
++                            .find_map(|op| match op {
++                                PaintOp::Shape { rect, color, .. }
++                                | PaintOp::Quad { rect, color, .. }
++                                    if *color == Theme::light().colors.error =>
++                                {
++                                    Some(*rect)
++                                }
++                                _ => None,
++                            })
++                            .expect("visible badge face");
++                        assert!(
++                            face.x >= before.x
++                                && face.y >= before.y
++                                && face.x + face.width <= before.x + before.width
++                                && face.y + face.height <= before.y + before.height,
++                            "badge stays within destination: {face:?} vs {before:?}"
++                        );
++                    }
++                    if matches!(badge, BadgeContent::Count(_)) {
++                        assert!(display.ops.iter().any(
++                            |op| matches!(op, PaintOp::StyledText { text, .. } if text == "999+")
++                        ));
++                    }
++                }
++            }
++        }
++    }
++}
+diff --git a/docs/material.md b/docs/material.md
+index 61269d4ebafd7bf3aea3aae364df4abb4c5b36d7..22770300a75516e72eb2b0824ee3ca03d8fbf128 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -172,6 +172,7 @@ does not change application state.
+ | `navigation_bar` / `navigation_bar_item` | Baseline 80 dp bar with a 64 × 32 dp active indicator and arrow-key focus. Destination builders also support vector icons and badges. |
+ | `flexible_navigation_bar` | Compact Expressive bar with three to five equal destinations, Tab focus and labels that grow with text |
+ | `horizontal_flexible_navigation_bar` | Medium Expressive bar with fixed hit cells and leading icons beside labels |
++| `flexible_navigation_bar_with_badges` / `horizontal_flexible_navigation_bar_with_badges` | The same two bars with app-owned status badges on destination icons |
+ | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
+ | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
+ | `icon_button_with_options` | Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes, three widths, and two resting shapes. |
+@@ -398,6 +399,18 @@ Container. Large labels wrap inside the pill and grow the bar.
+ 
+ Open **橫向導覽列** in the same tab. Resize across 600 dp to see the
+ layout switch while the current page and destination IDs stay the same.
++
++Use `Theme::flexible_navigation_bar_with_badges` and
++`Theme::horizontal_flexible_navigation_bar_with_badges` to attach badges to
++the same icons. Wrap each `NavigationRailItem` in a
++`BadgedFlexibleNavigationBarItem` with Hidden, Dot, Label or Count content.
++Put the complete localized status in the destination's accessible name.
++The badge shares the destination's pointer target and has no separate Tab
++stop. Reuse each item ID when the app switches between the two bars.
++
++Open **徽章導覽** to try both layouts with badges and large text. Choose a
++destination to clear its unread badge and status from its accessible name.
++
+ [Material 3 Navigation Bar specifications](https://m3.material.io/components/navigation-bar/specs) ·
+ [Material 3 Navigation Bar guidelines](https://m3.material.io/components/navigation-bar/guidelines) ·
+ [Accessibility](https://m3.material.io/components/navigation-bar/accessibility)
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index a2abf289b4a0033bbdd084c8296e10b31c4d6ebb..44d0b586dbce6b4221352569a052ad201411396e 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -54,6 +54,8 @@ mod material_fab;
+ mod material_fab_menu;
+ #[path = "material_filled_text_field.rs"]
+ mod material_filled_text_field;
++#[path = "material_flexible_navigation_badges.rs"]
++mod material_flexible_navigation_badges;
+ #[path = "material_flexible_navigation_bar.rs"]
+ mod material_flexible_navigation_bar;
+ #[path = "material_horizontal_navigation_bar.rs"]
+@@ -196,7 +198,7 @@ pub const STEPS: &[&str] = &[
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+     "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380", "M381", "M382",
+-    "M383", "M384",
++    "M383", "M384", "M385", "M386",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -346,7 +348,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_command_menu_submenus::run(env, chrome, &url).await?;
+     material_choice_menu_forced::run(env, chrome, &url).await?;
+     material_divider_composition::run(env, chrome, &url).await?;
+-    material_typography::run(env, chrome, &url).await
++    material_typography::run(env, chrome, &url).await?;
++    material_flexible_navigation_badges::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -623,6 +626,7 @@ mod tests {
+                 forced_choice_menu.as_slice(),
+                 super::material_divider_composition::STEPS.as_slice(),
+                 super::material_typography::STEPS.as_slice(),
++                super::material_flexible_navigation_badges::STEPS.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_flexible_navigation_badges.rs b/e2e/src/material_flexible_navigation_badges.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..00f9017c63fb1bd59e41f8d938b1dd5da3dcff27
+--- /dev/null
++++ b/e2e/src/material_flexible_navigation_badges.rs
+@@ -0,0 +1,396 @@
++//! Browser proof for application-owned badges on the Expressive navigation bar.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, near,
++    projected, resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 2] = ["M385", "M386"];
++const SHOW: &str = "navigation-badges-demo-show";
++const BACK: &str = "navigation-badges-demo-back";
++const THEME: &str = "navigation-badges-demo-theme";
++const RTL: &str = "navigation-badges-demo-rtl";
++const LARGE: &str = "navigation-badges-demo-large-text";
++const BAR: &str = "navigation-badges-demo-bar";
++const HOME: &str = "navigation-badges-demo-home";
++const INBOX: &str = "navigation-badges-demo-inbox";
++const UPDATES: &str = "navigation-badges-demo-updates";
++const EXPLORE: &str = "navigation-badges-demo-explore";
++const SETTINGS: &str = "navigation-badges-demo-settings";
++const IDS: [&str; 5] = [HOME, INBOX, UPDATES, EXPLORE, SETTINGS];
++const NAMES: [&str; 5] = [
++    "首頁",
++    "收件匣，1200 則未讀",
++    "最新消息，有新內容",
++    "探索路線，有新內容",
++    "設定",
++];
++const PAGE_NAMES: [&str; 5] = ["首頁", "收件匣", "最新消息", "探索路線", "設定"];
++const STEM: &str = "material-flexible-navigation-badges";
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++fn pixels_near(image: &Raster, rect: Rect, color: Rgb) -> Result<usize> {
++    Ok(image
++        .colors(rect)?
++        .iter()
++        .filter(|(actual, _)| actual.iter().zip(color).all(|(a, b)| a.abs_diff(b) <= 8))
++        .map(|(_, count)| count)
++        .sum())
++}
++
++fn rgb(value: &Value, name: &str) -> Result<Rgb> {
++    let [r, g, b, a]: [u8; 4] = serde_json::from_value(value.clone())
++        .with_context(|| format!("{name} is an RGBA palette token"))?;
++    check_eq!(a, 255, "{name} is opaque");
++    Ok([r, g, b])
++}
++
++async fn route(tab: &Tab, url: &str) -> Result<()> {
++    tab.goto(url).await?;
++    crate::smoke::ready(tab, "gallery").await?;
++    resize(tab, 960, 1800).await?;
++    activate(tab, "section-3").await?;
++    until(tab, "s.section === 3").await?;
++    activate(tab, SHOW).await?;
++    until(tab, "s.navigation_badges.visible").await?;
++    focused(tab, BACK).await
++}
++
++async fn current(tab: &Tab, id: &str, page: &str, activations: u64) -> Result<()> {
++    until(
++        tab,
++        &format!(
++            "s.navigation_badges.selected === {id:?} && s.navigation_badges.page === {page:?} &&
++             s.navigation_badges.activations === {activations}"
++        ),
++    )
++    .await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-current') === 'page' &&
++         document.querySelectorAll('#surface-accessibility [aria-current=page]').length === 1",
++        projected(id)
++    ))
++    .await
++}
++
++async fn geometry(tab: &Tab, width: f64, horizontal: bool, rtl: bool) -> Result<Value> {
++    let bar = bounds(tab, BAR).await?;
++    check_eq!(bar[2], width, "the bar uses the measured viewport width");
++    check_eq!(
++        state(tab).await?["navigation_badges"]["horizontal"],
++        json!(horizontal),
++        "the measured breakpoint selects the expected layout"
++    );
++    let mut cells = Vec::new();
++    for (index, id) in IDS.iter().copied().enumerate() {
++        let cell = bounds(tab, id).await?;
++        check!(
++            cell[2] >= 48. && cell[3] >= 48.,
++            "{id} has a usable hit target: {cell:?}"
++        );
++        check!(
++            contains(bar, cell),
++            "{id} stays inside the bar clip: {cell:?}"
++        );
++        let visual = if rtl { IDS.len() - 1 - index } else { index };
++        let (expected_x, expected_width) = if horizontal {
++            (
++                bar[0] + (width - 112. * IDS.len() as f64) / 2. + 112. * visual as f64,
++                112.,
++            )
++        } else {
++            // The layout engine rounds cell edges. Adjacent widths can differ by one dp.
++            let edge = |index| (bar[0] + width / IDS.len() as f64 * index as f64).round();
++            (edge(visual), edge(visual + 1) - edge(visual))
++        };
++        check!(
++            near(cell[0], expected_x) && near(cell[2], expected_width),
++            "{id} follows the measured cell width and visual direction: {cell:?}"
++        );
++        cells.push(json!({"id":id,"bounds":cell}));
++    }
++    Ok(json!({"bar":bar,"cells":cells,"horizontal":horizontal,"rtl":rtl}))
++}
++
++async fn accessibility(tab: &Tab) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let navigation = ax(&tree, "navigation", "導覽列徽章範例")?;
++    let mut items = Vec::new();
++    for (index, (id, name)) in IDS.iter().zip(NAMES).enumerate() {
++        let node = ax(&tree, "button", name)?;
++        let disabled = ax_property(node, "disabled")
++            .cloned()
++            .unwrap_or(Value::Bool(false));
++        check_eq!(
++            disabled,
++            json!(index == 4),
++            "{id} exposes its disabled state"
++        );
++        let current = ax_property(node, "current").cloned().unwrap_or(Value::Null);
++        items.push(json!({"id":id,"name":name,"disabled":disabled,"current":current}));
++    }
++    Ok(json!({"landmark":navigation["name"],"items":items}))
++}
++
++async fn capture(
++    env: &Env,
++    tab: &Tab,
++    label: &str,
++    width: f64,
++    horizontal: bool,
++    rtl: bool,
++) -> Result<Value> {
++    let layout = geometry(tab, width, horizontal, rtl).await?;
++    let canvas = tab.canvas_box().await?;
++    let viewport = [0., 0., canvas[2], canvas[3]];
++    let title = bounds(tab, "navigation-badges-demo-title").await?;
++    check!(
++        contains(viewport, title),
++        "the title stays inside the canvas"
++    );
++    let bar = layout["bar"].as_array().context("bar geometry")?;
++    let bar_rect: Rect = serde_json::from_value(json!(bar))?;
++    check!(
++        contains(viewport, bar_rect),
++        "bar is fully inside the canvas"
++    );
++    let data = state(tab).await?;
++    let fill = rgb(&data["navigation_badges"]["error_color"], "Error")?;
++    let ink = rgb(&data["navigation_badges"]["on_error_color"], "On Error")?;
++    let path_name = format!("{STEM}-{label}.png");
++    let path = env.artifact(&path_name);
++    tab.settle().await?;
++    tab.screenshot(&path).await?;
++    let image = Raster::read(tab, path).await?;
++
++    let mut paint = Vec::new();
++    for (index, id) in IDS.iter().copied().enumerate() {
++        let owner = bounds(tab, id).await?;
++        let error_pixels = pixels_near(&image, owner, fill)?;
++        let on_error_pixels = pixels_near(&image, owner, ink)?;
++        match index {
++            0 | 4 => {
++                check_eq!(error_pixels, 0, "hidden {id} has no Error badge pixels");
++            }
++            1 | 3 => {
++                check!(
++                    error_pixels >= 30,
++                    "content badge paints inside {id}: {error_pixels}"
++                );
++                check!(
++                    on_error_pixels >= 4,
++                    "content badge text paints inside {id}"
++                );
++            }
++            2 => {
++                check!(
++                    error_pixels >= 8,
++                    "dot badge paints inside {id}: {error_pixels}"
++                );
++            }
++            _ => unreachable!(),
++        }
++        paint.push(json!({"id":id,"owner":owner,"error_pixels":error_pixels,
++            "on_error_pixels":on_error_pixels}));
++    }
++    Ok(json!({
++        "canvas":canvas,
++        "device_pixel_ratio":tab.eval("devicePixelRatio").await?,
++        "viewport":[canvas[2],canvas[3]],
++        "layout":layout,
++        "colors":{"error":fill,"on_error":ink},
++        "paint":paint,
++        "accessibility":accessibility(tab).await?,
++        "screenshot":path_name,
++    }))
++}
++
++async fn light(env: &Env, tab: &Tab) -> Result<Value> {
++    resize(tab, 599, 720).await?;
++    until(
++        tab,
++        "s.navigation_badges.preview_width === 599 && !s.navigation_badges.horizontal",
++    )
++    .await?;
++    current(tab, INBOX, PAGE_NAMES[1], 0).await?;
++    check_eq!(
++        state(tab).await?["navigation_badges"]["destinations"],
++        json!(IDS),
++        "stable destination IDs stay in source order"
++    );
++    check_eq!(
++        state(tab).await?["navigation_badges"]["selected"],
++        json!(INBOX),
++        "the application-owned default selection is Inbox"
++    );
++    let mut layouts = vec![geometry(tab, 599., false, false).await?];
++    resize(tab, 600, 720).await?;
++    until(
++        tab,
++        "s.navigation_badges.preview_width === 600 && s.navigation_badges.horizontal",
++    )
++    .await?;
++    current(tab, INBOX, PAGE_NAMES[1], 0).await?;
++    layouts.push(geometry(tab, 600., true, false).await?);
++    resize(tab, 599, 720).await?;
++    until(
++        tab,
++        "s.navigation_badges.preview_width === 599 && !s.navigation_badges.horizontal",
++    )
++    .await?;
++    current(tab, INBOX, PAGE_NAMES[1], 0).await?;
++
++    let mut focus_order = Vec::new();
++    focus_projected(tab, BACK).await?;
++    for id in [THEME, RTL, LARGE, HOME] {
++        tab.press("Tab").await?;
++        focused(tab, id).await?;
++        focus_order.push(id);
++    }
++    tab.press("Enter").await?;
++    current(tab, HOME, PAGE_NAMES[0], 1).await?;
++    focused(tab, HOME).await?;
++    for id in [INBOX, UPDATES, EXPLORE] {
++        tab.press("Tab").await?;
++        focused(tab, id).await?;
++        current(tab, HOME, PAGE_NAMES[0], 1).await?;
++        focus_order.push(id);
++    }
++    layouts.push(geometry(tab, 599., false, false).await?);
++
++    resize(tab, 600, 720).await?;
++    until(
++        tab,
++        "s.navigation_badges.preview_width === 600 && s.navigation_badges.horizontal",
++    )
++    .await?;
++    current(tab, HOME, PAGE_NAMES[0], 1).await?;
++    check_eq!(
++        state(tab).await?["navigation_badges"]["destinations"],
++        json!(IDS),
++        "breakpoint changes keep destination identity"
++    );
++    layouts.push(geometry(tab, 600., true, false).await?);
++    focused(tab, EXPLORE).await?;
++    let image = capture(env, tab, "wide-light-600", 600., true, false).await?;
++
++    let bad = bounds(tab, SETTINGS).await?;
++    let canvas = tab.canvas_box().await?;
++    let x = canvas[0] + bad[0] + bad[2] / 2.;
++    let y = canvas[1] + bad[1] + bad[3] / 2.;
++    tab.click(x, y).await?;
++    tab.settle().await?;
++    current(tab, HOME, PAGE_NAMES[0], 1).await?;
++    check!(
++        state(tab).await?["focused"] != SETTINGS,
++        "disabled pointer target never focuses"
++    );
++
++    resize(tab, 599, 720).await?;
++    until(
++        tab,
++        "!s.navigation_badges.horizontal && s.navigation_badges.preview_width === 599",
++    )
++    .await?;
++    current(tab, HOME, PAGE_NAMES[0], 1).await?;
++    layouts.push(geometry(tab, 599., false, false).await?);
++    let tree = accessibility(tab).await?;
++    Ok(
++        json!({"layouts":layouts,"focus_order":focus_order,"current_after_resize":HOME,
++        "activations":1,"disabled_pointer":SETTINGS,"accessibility":tree,"image":image}),
++    )
++}
++
++async fn dark_rtl_large(env: &Env, tab: &Tab) -> Result<Value> {
++    resize(tab, 320, 720).await?;
++    activate(tab, THEME).await?;
++    until(tab, "s.navigation_badges.dark").await?;
++    activate(tab, RTL).await?;
++    until(tab, "s.navigation_badges.rtl").await?;
++    activate(tab, LARGE).await?;
++    until(tab, "s.navigation_badges.text_scale === 2").await?;
++    current(tab, HOME, PAGE_NAMES[0], 1).await?;
++    let image = capture(env, tab, "compact-dark-rtl-200", 320., false, true).await?;
++    let geometry = geometry(tab, 320., false, true).await?;
++    let data = state(tab).await?;
++    check_eq!(data["navigation_badges"]["dark"], true, "dark theme");
++    check_eq!(data["navigation_badges"]["rtl"], true, "RTL layout");
++    check_eq!(
++        data["navigation_badges"]["text_scale"],
++        2.0,
++        "large text scale"
++    );
++    let ax = accessibility(tab).await?;
++    Ok(
++        json!({"geometry":geometry,"dark":true,"rtl":true,"text_scale":2.0,
++        "current":data["navigation_badges"]["selected"],"accessibility":ax,"image":image}),
++    )
++}
++
++async fn acknowledge(env: &Env, tab: &Tab) -> Result<Value> {
++    activate(tab, INBOX).await?;
++    current(tab, INBOX, PAGE_NAMES[1], 2).await?;
++    focused(tab, INBOX).await?;
++    until(
++        tab,
++        "s.navigation_badges.badges[1] === 'hidden' && s.navigation_badges.unread_count === 0",
++    )
++    .await?;
++    let tree = ax_tree(tab).await?;
++    let button = ax(&tree, "button", PAGE_NAMES[1])?;
++    let accessible_name = button["name"]["value"].clone();
++    let fill = rgb(
++        &state(tab).await?["navigation_badges"]["error_color"],
++        "Error",
++    )?;
++    let filename = format!("{STEM}-acknowledged.png");
++    let path = env.artifact(&filename);
++    tab.screenshot(&path).await?;
++    let image = Raster::read(tab, path).await?;
++    check_eq!(
++        pixels_near(&image, bounds(tab, INBOX).await?, fill)?,
++        0,
++        "acknowledging the count badge clears its paint"
++    );
++    Ok(json!({"id":INBOX,"accessible_name":accessible_name,"activations":2,"screenshot":filename}))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 844, 2.0).await?;
++    route(&tab, url).await?;
++    step(
++        STEPS[0],
++        "Navigation badge owners and selection persist across 599 and 600 dp",
++    );
++    let light = light(env, &tab).await?;
++    step(
++        STEPS[1],
++        "Dark RTL large text keeps badge paint inside targets and clears an acknowledged count",
++    );
++    let dark = dark_rtl_large(env, &tab).await?;
++    let acknowledged = acknowledge(env, &tab).await?;
++    activate(&tab, BACK).await?;
++    until(&tab, "s.section === 3 && !s.navigation_badges.visible").await?;
++    focused(&tab, SHOW).await?;
++    env.write_json(
++        "browser-material-flexible-navigation-badges.json",
++        &json!({
++            "browser":chrome.version,"steps":STEPS,"light":light,"dark":dark,
++            "acknowledged":acknowledged,"errors":tab.errors()
++        }),
++    )?;
++    check!(
++        tab.errors().is_empty(),
++        "page errors: {}",
++        tab.errors().join("\n")
++    );
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/flexible_navigation_badge_demo.rs b/examples/material-gallery/src/flexible_navigation_badge_demo.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f31643c21106db91fd1f438ad8727d0ba5ba1d8
+--- /dev/null
++++ b/examples/material-gallery/src/flexible_navigation_badge_demo.rs
+@@ -0,0 +1,321 @@
++use surface::{Align, Length, Node, Role, Style};
++use surface_app::View;
++use surface_material::{
++    adaptive::WindowWidthSizeClass, shape::LayoutDirection, BadgeContent,
++    BadgedFlexibleNavigationBarItem, ChoiceState, FlexibleNavigationBarOptions, NavigationRailItem,
++    Theme,
++};
++
++use crate::{flexible_navigation_bar_demo::icon, scroll_field_demo::control_row, Message};
++
++pub(crate) const SECTION: usize = 3;
++const SHOW: &str = "navigation-badges-demo-show";
++const BACK: &str = "navigation-badges-demo-back";
++const BAR: &str = "navigation-badges-demo-bar";
++const MAX_PREVIEW_WIDTH: f32 = 839.;
++const DISABLED: usize = 4;
++const IDS: [&str; 5] = [
++    "navigation-badges-demo-home",
++    "navigation-badges-demo-inbox",
++    "navigation-badges-demo-updates",
++    "navigation-badges-demo-explore",
++    "navigation-badges-demo-settings",
++];
++const LABELS: [&str; 5] = ["首頁", "收件匣", "最新消息", "探索路線", "設定"];
++const NAMES: [&str; 5] = [
++    "首頁",
++    "收件匣，1200 則未讀",
++    "最新消息，有新內容",
++    "探索路線，有新內容",
++    "設定",
++];
++const COUNT: u32 = 1200;
++
++#[derive(Clone)]
++pub enum FlexibleNavigationBadgeDemoEvent {
++    Show,
++    Back,
++    ToggleDirection,
++    ToggleLargeText,
++    Choose(usize),
++}
++
++pub(crate) struct FlexibleNavigationBadgeDemo {
++    visible: bool,
++    viewport_width: f32,
++    rtl: bool,
++    large_text: bool,
++    selected: usize,
++    activations: usize,
++    acknowledged: [bool; IDS.len()],
++}
++
++impl Default for FlexibleNavigationBadgeDemo {
++    fn default() -> Self {
++        Self {
++            visible: false,
++            viewport_width: 320.,
++            rtl: false,
++            large_text: false,
++            selected: 1,
++            activations: 0,
++            acknowledged: [false; IDS.len()],
++        }
++    }
++}
++
++impl FlexibleNavigationBadgeDemo {
++    pub(crate) fn visible(&self) -> bool {
++        self.visible
++    }
++
++    pub(crate) fn leave(&mut self) {
++        self.visible = false;
++    }
++
++    pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
++        let previous = self.preview_width();
++        self.viewport_width = width;
++        self.visible && previous != self.preview_width()
++    }
++
++    fn preview_width(&self) -> f32 {
++        self.viewport_width.min(MAX_PREVIEW_WIDTH)
++    }
++
++    fn horizontal(&self) -> bool {
++        WindowWidthSizeClass::from_dp(self.preview_width()) == Some(WindowWidthSizeClass::Medium)
++    }
++
++    pub(crate) fn text_scale(&self) -> f32 {
++        if self.large_text {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    pub(crate) fn update(&mut self, event: FlexibleNavigationBadgeDemoEvent) {
++        use FlexibleNavigationBadgeDemoEvent::*;
++        match event {
++            Show => self.visible = true,
++            Back => self.leave(),
++            ToggleDirection => self.rtl = !self.rtl,
++            ToggleLargeText => self.large_text = !self.large_text,
++            Choose(index) if index < IDS.len() && index != DISABLED => {
++                self.selected = index;
++                self.activations += 1;
++                self.acknowledged[index] = true;
++            }
++            Choose(_) => {}
++        }
++    }
++
++    pub(crate) fn show_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW,
++                "徽章導覽",
++                surface_material::ButtonKind::Outlined,
++                false,
++                Message::FlexibleNavigationBadgeDemo(FlexibleNavigationBadgeDemoEvent::Show),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn badge(&self, index: usize) -> BadgeContent<'static> {
++        if self.acknowledged[index] {
++            return BadgeContent::Hidden;
++        }
++        match index {
++            1 => BadgeContent::Count(COUNT),
++            2 => BadgeContent::Dot,
++            3 => BadgeContent::Label("新"),
++            _ => BadgeContent::Hidden,
++        }
++    }
++
++    fn accessible_name(&self, index: usize) -> &'static str {
++        if self.acknowledged[index] {
++            LABELS[index]
++        } else {
++            NAMES[index]
++        }
++    }
++
++    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++        use FlexibleNavigationBadgeDemoEvent::*;
++        let event = Message::FlexibleNavigationBadgeDemo;
++        let preview_width = self.preview_width();
++        let direction = if self.rtl {
++            LayoutDirection::RightToLeft
++        } else {
++            LayoutDirection::LeftToRight
++        };
++        let options = FlexibleNavigationBarOptions {
++            id: BAR,
++            name: "導覽列徽章範例",
++            available_width: preview_width,
++            direction,
++        };
++        let items = (0..IDS.len()).map(|index| BadgedFlexibleNavigationBarItem {
++            item: NavigationRailItem {
++                id: IDS[index],
++                label: LABELS[index],
++                accessible_name: self.accessible_name(index),
++                icon: icon(index, self.selected == index),
++                state: ChoiceState {
++                    selected: self.selected == index,
++                    disabled: index == DISABLED,
++                },
++                message: event(Choose(index)),
++            },
++            badge: self.badge(index),
++        });
++        let bar = if self.horizontal() {
++            theme.horizontal_flexible_navigation_bar_with_badges(options, items)
++        } else {
++            theme.flexible_navigation_bar_with_badges(options, items)
++        };
++        let bar = bar.unwrap_or_else(|| {
++            theme.text(
++                "navigation-badges-demo-width-hint",
++                "請將視窗加寬至 280 dp 以上。",
++            )
++        });
++
++        let toggle = |id, label, selected, message| {
++            theme
++                .segmented_button(id, label, choice(selected), message)
++                .accessible_activation()
++        };
++        let controls = control_row(vec![
++            toggle("navigation-badges-demo-theme", "深色", dark, Message::Theme),
++            toggle(
++                "navigation-badges-demo-rtl",
++                "右起",
++                self.rtl,
++                event(ToggleDirection),
++            ),
++            toggle(
++                "navigation-badges-demo-large-text",
++                "大字",
++                self.large_text,
++                event(ToggleLargeText),
++            ),
++        ]);
++        let header = View::new(
++            Node::new(Role::Group, "")
++                .id("navigation-badges-demo-header")
++                .styled(
++                    Style::row()
++                        .width(Length::Percent(1.))
++                        .align(Align::Center)
++                        .wrap(true)
++                        .padding(16.)
++                        .gap(12.),
++                ),
++        )
++        .children([
++            theme
++                .tonal_button(BACK, "返回", event(Back))
++                .restore_focus_on_removal(SHOW)
++                .accessible_activation(),
++            theme.heading("navigation-badges-demo-title", "導覽徽章"),
++        ]);
++        let controls = View::new(
++            Node::new(Role::Group, "")
++                .id("navigation-badges-demo-controls")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .padding(16.)
++                        .gap(8.),
++                ),
++        )
++        .children([
++            controls,
++            theme.text(
++                "navigation-badges-demo-page",
++                format!(
++                    "目前頁面：{} · 已選取 {} 次",
++                    LABELS[self.selected], self.activations
++                ),
++            ),
++        ]);
++        let spacer = View::new(
++            Node::new(Role::Group, "")
++                .id("navigation-badges-demo-spacer")
++                .styled(Style::column().height(Length::Px(0.)).grow(1.)),
++        );
++        let bar_holder = View::new(
++            Node::new(Role::Group, "")
++                .id("navigation-badges-demo-bar-holder")
++                .styled(
++                    Style::row()
++                        .width(Length::Percent(1.))
++                        .justify(Align::Center)
++                        .align(Align::End),
++                ),
++        )
++        .children([bar]);
++
++        View::new(
++            Node::new(Role::Window, "Material gallery")
++                .id("navigation-badges-demo")
++                .styled(
++                    Style::column()
++                        .width(Length::Percent(1.))
++                        .height(Length::Percent(1.))
++                        .align(Align::Stretch)
++                        .background(theme.colors.surface_container_low)
++                        .foreground(theme.on_background)
++                        .clip(true),
++                ),
++        )
++        .children([header, controls, spacer, bar_holder])
++    }
++
++    #[cfg(target_arch = "wasm32")]
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++        let width = self.preview_width();
++        let badges = (0..IDS.len())
++            .map(|index| match self.badge(index) {
++                BadgeContent::Hidden => "hidden",
++                BadgeContent::Dot => "dot",
++                BadgeContent::Label(label) => label,
++                BadgeContent::Count(_) => "999+",
++            })
++            .collect::<Vec<_>>();
++        let names = (0..IDS.len())
++            .map(|index| self.accessible_name(index))
++            .collect::<Vec<_>>();
++        serde_json::json!({
++            "visible": self.visible,
++            "rtl": self.rtl,
++            "text_scale": self.text_scale(),
++            "preview_width": width,
++            "horizontal": self.horizontal(),
++            "count": IDS.len(),
++            "unread_count": if self.acknowledged[1] { 0 } else { COUNT },
++            "destinations": IDS,
++            "accessible_names": names,
++            "disabled": IDS[DISABLED],
++            "selected": IDS[self.selected],
++            "page": LABELS[self.selected],
++            "activations": self.activations,
++            "badges": badges,
++            "dark": theme.is_dark,
++            "error_color": theme.colors.error,
++            "on_error_color": theme.colors.on_error,
++        })
++    }
++}
++
++fn choice(selected: bool) -> ChoiceState {
++    ChoiceState {
++        selected,
++        disabled: false,
++    }
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index ba53972a0b387fdb289ea72131f6b86e06329cd0..fbb7fa270eef27f4c30c816a35b7e4402f0bf230 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -17,6 +17,7 @@ mod extended_fab_demo;
+ mod fab_demo;
+ mod fab_menu_demo;
+ mod filled_text_field_demo;
++mod flexible_navigation_badge_demo;
+ mod flexible_navigation_bar_demo;
+ mod icon_button_demo;
+ mod list_actions_demo;
+@@ -79,6 +80,9 @@ use extended_fab_demo::{ExtendedFabDemo, ExtendedFabEvent};
+ use fab_demo::{FabDemo, FabEvent};
+ use fab_menu_demo::{FabMenuDemo, FabMenuEvent};
+ use filled_text_field_demo::{FilledTextFieldDemo, FilledTextFieldDemoEvent};
++use flexible_navigation_badge_demo::{
++    FlexibleNavigationBadgeDemo, FlexibleNavigationBadgeDemoEvent,
++};
+ use flexible_navigation_bar_demo::{FlexibleNavigationBarDemo, FlexibleNavigationBarDemoEvent};
+ use icon_button_demo::{IconButtonDemo, IconButtonDemoEvent};
+ use list_actions_demo::{ListActionsDemo, ListActionsEvent};
+@@ -197,6 +201,7 @@ pub struct Gallery {
+     search_overlay_demo: SearchOverlayDemo,
+     dialog_demo: DialogDemo,
+     menu_demo: MenuDemo,
++    flexible_navigation_badge_demo: FlexibleNavigationBadgeDemo,
+     flexible_navigation_bar_demo: FlexibleNavigationBarDemo,
+     adaptive_navigation_demo: AdaptiveNavigationDemo,
+     lists_demo: ListsDemo,
+@@ -282,6 +287,7 @@ impl Default for Gallery {
+             search_overlay_demo: SearchOverlayDemo::default(),
+             dialog_demo: DialogDemo::default(),
+             menu_demo: MenuDemo::default(),
++            flexible_navigation_badge_demo: FlexibleNavigationBadgeDemo::default(),
+             flexible_navigation_bar_demo: FlexibleNavigationBarDemo::default(),
+             adaptive_navigation_demo: AdaptiveNavigationDemo::default(),
+             lists_demo: ListsDemo::default(),
+@@ -399,6 +405,7 @@ pub enum Message {
+     SearchOverlay(SearchOverlayDemoEvent),
+     DialogDemo(DialogDemoEvent),
+     MenuDemo(MenuDemoEvent),
++    FlexibleNavigationBadgeDemo(FlexibleNavigationBadgeDemoEvent),
+     FlexibleNavigationBarDemo(FlexibleNavigationBarDemoEvent),
+     AdaptiveNavigationDemo(AdaptiveNavigationDemoEvent),
+     Lists(ListsEvent),
+@@ -518,6 +525,9 @@ impl Application for Gallery {
+         if self.menu_demo.visible() {
+             return self.menu_demo.text_scale();
+         }
++        if self.flexible_navigation_badge_demo.visible() {
++            return self.flexible_navigation_badge_demo.text_scale();
++        }
+         if self.flexible_navigation_bar_demo.visible() {
+             return self.flexible_navigation_bar_demo.text_scale();
+         }
+@@ -664,6 +674,8 @@ impl Application for Gallery {
+         let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
+         let dialog = self.dialog_demo.viewport_changed(width, height);
+         let flexible_navigation_bar = self.flexible_navigation_bar_demo.viewport_changed(width);
++        let flexible_navigation_badges =
++            self.flexible_navigation_badge_demo.viewport_changed(width);
+         let adaptive_navigation = self
+             .adaptive_navigation_demo
+             .viewport_changed(width, height);
+@@ -701,6 +713,7 @@ impl Application for Gallery {
+             || scroll_modal
+             || search_overlay
+             || dialog
++            || flexible_navigation_badges
+             || flexible_navigation_bar
+             || adaptive_navigation
+             || tabs
+@@ -1026,6 +1039,9 @@ impl Application for Gallery {
+                 if i != menu_demo::SECTION {
+                     self.menu_demo.leave();
+                 }
++                if i != flexible_navigation_badge_demo::SECTION {
++                    self.flexible_navigation_badge_demo.leave();
++                }
+                 if i != flexible_navigation_bar_demo::SECTION {
+                     self.flexible_navigation_bar_demo.leave();
+                 }
+@@ -1163,6 +1179,9 @@ impl Application for Gallery {
+             Message::SearchOverlay(event) => self.search_overlay_demo.update(event),
+             Message::DialogDemo(event) => self.dialog_demo.update(event),
+             Message::MenuDemo(event) => self.menu_demo.update(event),
++            Message::FlexibleNavigationBadgeDemo(event) => {
++                self.flexible_navigation_badge_demo.update(event)
++            }
+             Message::FlexibleNavigationBarDemo(event) => {
+                 self.flexible_navigation_bar_demo.update(event)
+             }
+@@ -1341,6 +1360,9 @@ impl Application for Gallery {
+         if self.menu_demo.visible() {
+             return self.menu_demo.view(&t, self.dark, self.display_contrast);
+         }
++        if self.flexible_navigation_badge_demo.visible() {
++            return self.flexible_navigation_badge_demo.view(&t, self.dark);
++        }
+         if self.flexible_navigation_bar_demo.visible() {
+             return self.flexible_navigation_bar_demo.view(&t, self.dark);
+         }
+@@ -1964,6 +1986,7 @@ impl Application for Gallery {
+                         )
+                         .restore_focus_on_removal("font-weight-demo-back")
+                         .accessible_activation(),
++                        FlexibleNavigationBadgeDemo::show_button(&t),
+                     ]),
+                 );
+                 children.push(self.badge_demo.card(&t));
+@@ -2199,6 +2222,7 @@ mod web {
+         state["dialog_demo"] = s.dialog_demo.inspect();
+         state["menu_demo"] = s.menu_demo.inspect(&theme, runtime.display_contrast());
+         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
++        state["navigation_badges"] = s.flexible_navigation_badge_demo.inspect(&theme);
+         state["adaptive_navigation"] = s.adaptive_navigation_demo.inspect(&theme);
+         state["switch_demo"] = s.switch_demo.inspect(&theme);
+         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
