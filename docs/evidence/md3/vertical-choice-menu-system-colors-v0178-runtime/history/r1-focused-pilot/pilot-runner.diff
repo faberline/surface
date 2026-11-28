@@ -1,0 +1,99 @@
+diff --git a/e2e/src/main.rs b/e2e/src/main.rs
+index 4710aa2..dafd5dc 100644
+--- a/e2e/src/main.rs
++++ b/e2e/src/main.rs
+@@ -192,6 +192,7 @@ fn expected_steps(suite: &str) -> &'static [&'static str] {
+     match suite {
+         "smoke" => smoke::STEPS,
+         "ime" => ime::STEPS,
++        "material" if std::env::var_os("SURFACE_M380_DIAGNOSTIC").is_some() => &["M380"],
+         "material" => material::STEPS,
+         "bridge-native" => bridge::NATIVE_STEPS,
+         "bridge-native-compact" => bridge::NATIVE_OVERFLOW_STEPS,
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index f0980f3..a1cc27b 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -245,6 +245,9 @@ async fn focus(tab: &Tab, id: &str, host: &str) -> Result<()> {
+ 
+ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     let (_server, url) = env.serve("material-gallery")?;
++    if std::env::var_os("SURFACE_M380_DIAGNOSTIC").is_some() {
++        return material_choice_menu_forced::run(env, chrome, &url).await;
++    }
+     let tab = chrome.page(1100, 1100, 2.0).await?;
+     tab.goto(&url).await?;
+     let result = journey(env, chrome, &tab).await;
+diff --git a/e2e/src/material_choice_menu.rs b/e2e/src/material_choice_menu.rs
+index aadff91..026b5c6 100644
+--- a/e2e/src/material_choice_menu.rs
++++ b/e2e/src/material_choice_menu.rs
+@@ -151,7 +151,7 @@ impl Selection {
+ type Rect = [f64; 4];
+ type Rgb = [u8; 3];
+ 
+-async fn route(tab: &Tab, url: &str) -> Result<()> {
++pub(super) async fn route(tab: &Tab, url: &str) -> Result<()> {
+     tab.goto(url).await?;
+     crate::smoke::ready(tab, "gallery").await?;
+     resize(tab, 960, 2400).await?;
+diff --git a/e2e/src/material_choice_menu_forced.rs b/e2e/src/material_choice_menu_forced.rs
+index badbf60..97df463 100644
+--- a/e2e/src/material_choice_menu_forced.rs
++++ b/e2e/src/material_choice_menu_forced.rs
+@@ -3,34 +3,21 @@
+ use anyhow::{Context, Result};
+ use serde_json::{json, Value};
+ 
+-use super::material_time_input::{
+-    activate, ax, ax_property, ax_tree, bounds, focused, resize, Raster,
+-};
++use super::material_time_input::{activate, ax, ax_property, ax_tree, bounds, focused, Raster};
+ use super::{state, until};
+ use crate::browser::{Chrome, Tab};
+ use crate::check::step;
+ use crate::{check, check_eq, Env};
+ 
+-const SHOW: &str = "menu-demo-choice-show";
+ const OPENER: &str = "menu-demo-opener";
+ const VIBRANT: &str = "menu-demo-vibrant";
+ const RECENT: &str = "menu-demo-choice-recent";
++const NAME: &str = "menu-demo-choice-name";
+ const KIND: &str = "menu-demo-choice-kind";
+ const LOCKED: &str = "menu-demo-choice-locked";
+ 
+ pub(super) const STEPS: [&str; 1] = ["M380"];
+ 
+-async fn route(tab: &Tab, url: &str) -> Result<()> {
+-    tab.goto(url).await?;
+-    crate::smoke::ready(tab, "gallery").await?;
+-    resize(tab, 960, 1600).await?;
+-    activate(tab, "section-2").await?;
+-    until(tab, "s.section === 2").await?;
+-    activate(tab, SHOW).await?;
+-    until(tab, "s.menu_demo.visible && s.menu_demo.choice !== null").await?;
+-    focused(tab, "menu-demo-back").await
+-}
+-
+ async fn open(tab: &Tab) -> Result<()> {
+     activate(tab, OPENER).await?;
+     until(tab, "s.menu_demo.open").await?;
+@@ -173,6 +160,9 @@ async fn palette_pass(env: &Env, tab: &Tab, css: &Value, palette: &str) -> Resul
+     open(tab).await?;
+     let semantics = check_menu_semantics(tab).await?;
+     let pair = selected_pair(tab, css, palette).await?;
++    // Sample idle selected rows while focus is on an unselected row.
++    tab.press("ArrowDown").await?;
++    focused(tab, NAME).await?;
+     let pixels = paint_checked_rows(env, tab, palette, pair).await?;
+ 
+     tab.press("End").await?;
+@@ -215,7 +205,7 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+         "Forced colors use SelectedItem system paint in checked choice menus",
+     );
+     let tab = chrome.page(960, 1200, 2.).await?;
+-    route(&tab, url).await?;
++    super::material_choice_menu::route(&tab, url).await?;
+     let normal_standard = state(&tab).await?["menu_demo"]["choice"]["palette"].clone();
+     activate(&tab, VIBRANT).await?;
+     until(&tab, "s.menu_demo.vibrant").await?;

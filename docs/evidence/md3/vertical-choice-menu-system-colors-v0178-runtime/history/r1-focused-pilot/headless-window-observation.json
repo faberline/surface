@@ -1,0 +1,67 @@
+{
+  "guard_events": [
+    {
+      "allowed": true,
+      "argv": [
+        "--remote-debugging-port=55914",
+        "--remote-debugging-address=127.0.0.1",
+        "--user-data-dir=/private/tmp/surface-md3-v0178-M380-focused.ltpjqsdP/pilot-run/tmp/.tmpgyVPBD",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-default-apps",
+        "--disable-dev-shm-usage",
+        "--disable-extensions",
+        "--disable-sync",
+        "--disable-translate",
+        "--metrics-recording-only",
+        "--mute-audio",
+        "--no-sandbox",
+        "--headless=new",
+        "--disable-updater-scheduler"
+      ],
+      "pid": 86117,
+      "ppid": 86108,
+      "profile": "/private/tmp/surface-md3-v0178-M380-focused.ltpjqsdP/pilot-run/tmp/.tmpgyVPBD",
+      "role": "chrome-primary"
+    }
+  ],
+  "interval_seconds": 0.05,
+  "launch_observations": {
+    "chrome-bridge": {
+      "detached_samples": 0,
+      "pids": [],
+      "samples": 0
+    },
+    "chrome-primary": {
+      "detached_samples": 0,
+      "pids": [
+        86117
+      ],
+      "samples": 21
+    },
+    "native": {
+      "detached_samples": 0,
+      "pids": [],
+      "samples": 0
+    }
+  },
+  "method": "CoreGraphics on-screen owner PIDs filtered to the verified private process family",
+  "observations": {
+    "chrome": {
+      "pids": [
+        86117
+      ],
+      "samples": 21
+    },
+    "native_gallery": {
+      "detached_samples": 0,
+      "pids": [],
+      "samples": 0
+    }
+  },
+  "problems": [],
+  "remaining_observed_processes": [],
+  "stock_exit": 0,
+  "visible_owned_windows": []
+}

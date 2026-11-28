@@ -1,0 +1,1203 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 7f807a9b92c6b1d805371b02dfc18202806d8b8f..1ab6fc875a5555af60f7cfff77bb4861f2afcac6 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.77"
++version = "0.1.78"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index bb0276b123705d70ff3a5989dd9b6134cda65d43..84c7f4f0af2a51b850d8f997934b22b736ce436c 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.77"
++version = "0.1.78"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/display_contrast.rs b/crates/surface-app/src/display_contrast.rs
+index 0b6d33a8a27bdd8f9f1893c99196dc9184ab1be2..31a117aa2b6dced244260113fc796a0670c50132 100644
+--- a/crates/surface-app/src/display_contrast.rs
++++ b/crates/surface-app/src/display_contrast.rs
+@@ -28,8 +28,10 @@ pub struct SystemContrastColors {
+     pub canvas: SystemColorPair,
+     /// Button face and its text.
+     pub button: SystemColorPair,
+-    /// Selected background and its text.
++    /// Text selection background and its text.
+     pub highlight: SystemColorPair,
++    /// Selected item background and its text, when the host can resolve both.
++    pub selected_item: Option<SystemColorPair>,
+     /// Input field face and its text, when the host can resolve both.
+     pub field: Option<SystemColorPair>,
+     /// System disabled text ink, when the host can resolve it.
+@@ -46,11 +48,20 @@ impl SystemContrastColors {
+             canvas,
+             button,
+             highlight,
++            selected_item: None,
+             field: None,
+             disabled_text: None,
+         }
+     }
+ 
++    /// Attach the complete system selected-item pair without changing either color.
++    pub const fn with_selected_item(self, selected_item: SystemColorPair) -> Self {
++        Self {
++            selected_item: Some(selected_item),
++            ..self
++        }
++    }
++
+     /// Attach the complete system input field pair without changing either color.
+     pub const fn with_field(self, field: SystemColorPair) -> Self {
+         Self {
+diff --git a/crates/surface-material/src/command_menu.rs b/crates/surface-material/src/command_menu.rs
+index a23e5a5f650532cffa6a2a2fb43beca6c5a19401..ff93f9af4ef16b873cf6eee6c21e1ade6301aacc 100644
+--- a/crates/surface-material/src/command_menu.rs
++++ b/crates/surface-material/src/command_menu.rs
+@@ -13,7 +13,8 @@ use crate::{
+ };
+ pub use submenu::{CommandMenuRow, CommandMenuSubmenu, CommandMenuWithSubmenusOptions};
+ pub use vertical::{
+-    VerticalChoiceMenuGroup, VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
++    VerticalChoiceMenuAppearance, VerticalChoiceMenuGroup, VerticalCommandMenuGroup,
++    VerticalMenuPalette, VerticalMenuSelection,
+ };
+ 
+ const OUTER_PADDING: f32 = 8.;
+diff --git a/crates/surface-material/src/command_menu/vertical.rs b/crates/surface-material/src/command_menu/vertical.rs
+index 052eb44e4fa30e885ab726f80ab4ecc8e0de5591..b08100e9e97e2d9891e8ad9afb8d296c3db4287b 100644
+--- a/crates/surface-material/src/command_menu/vertical.rs
++++ b/crates/surface-material/src/command_menu/vertical.rs
+@@ -8,7 +8,7 @@ use surface::{
+     Align, Color, ComputedDom, Corners, Insets, Length, MicroDom, Node, Rect, Role, Style,
+     TextAlignment,
+ };
+-use surface_app::{Roving, View};
++use surface_app::{Roving, SystemColorPair, View};
+ 
+ use super::{
+     bind_command_item, content_id, icon_view, CommandMenuItem, CommandMenuMeasurement,
+@@ -40,6 +40,14 @@ pub enum VerticalMenuPalette {
+     Vibrant,
+ }
+ 
++/// Colors for an Expressive choice menu.
++#[derive(Clone, Copy, Debug, Default)]
++pub struct VerticalChoiceMenuAppearance {
++    pub palette: VerticalMenuPalette,
++    /// The host pair for enabled checked rows, when it supplies one.
++    pub selected_item: Option<SystemColorPair>,
++}
++
+ /// One optional named heading and its ordered commands.
+ pub struct VerticalCommandMenuGroup<'a, M> {
+     pub id: &'a str,
+@@ -161,7 +169,7 @@ impl Theme {
+     ) -> View<M> {
+         self.vertical_menu(
+             options,
+-            palette,
++            self.vertical_menu_colors(palette),
+             trigger,
+             groups.into_iter().map(|group| MenuGroup {
+                 id: group.id,
+@@ -194,9 +202,38 @@ impl Theme {
+         on_dismiss: M,
+         measurement: &CommandMenuMeasurement,
+     ) -> View<M> {
++        self.vertical_choice_menu_with_appearance(
++            options,
++            VerticalChoiceMenuAppearance {
++                palette,
++                selected_item: None,
++            },
++            trigger,
++            groups,
++            on_dismiss,
++            measurement,
++        )
++    }
++
++    /// Build an Expressive choice menu with a host selection color pair.
++    /// The pair colors the face and content of enabled checked rows.
++    /// The palette supplies the group, command, focus, and disabled colors.
++    pub fn vertical_choice_menu_with_appearance<'a, M: 'a>(
++        &self,
++        options: CommandMenuOptions<'_>,
++        appearance: VerticalChoiceMenuAppearance,
++        trigger: View<M>,
++        groups: impl IntoIterator<Item = VerticalChoiceMenuGroup<'a, M>>,
++        on_dismiss: M,
++        measurement: &CommandMenuMeasurement,
++    ) -> View<M> {
++        let mut colors = self.vertical_menu_colors(appearance.palette);
++        if let Some(pair) = appearance.selected_item {
++            colors.selected = (pair.background, pair.foreground);
++        }
+         self.vertical_menu(
+             options,
+-            palette,
++            colors,
+             trigger,
+             groups.into_iter().map(|group| MenuGroup {
+                 id: group.id,
+@@ -212,7 +249,7 @@ impl Theme {
+     fn vertical_menu<'a, M: 'a>(
+         &self,
+         options: CommandMenuOptions<'_>,
+-        palette: VerticalMenuPalette,
++        colors: MenuColors,
+         trigger: View<M>,
+         groups: impl IntoIterator<Item = MenuGroup<'a, M>>,
+         on_dismiss: M,
+@@ -257,7 +294,17 @@ impl Theme {
+             return scope.children([trigger.menu_expanded(false)]);
+         };
+         let first = groups[0].items[0].id;
+-        let colors = match palette {
++        let panel = self.vertical_menu_panel(&options, placement, groups, colors);
++        scope
++            .children([trigger.menu_expanded(true), panel])
++            .modal_overlay_descendants(on_dismiss)
++            .modal_initial_focus(first)
++            .modal_focus_fallback(options.restore_focus_to.unwrap_or(options.trigger_id))
++            .dismiss_modal_on_tab()
++    }
++
++    fn vertical_menu_colors(&self, palette: VerticalMenuPalette) -> MenuColors {
++        match palette {
+             VerticalMenuPalette::Standard => MenuColors {
+                 surface: self.colors.surface_container_low,
+                 label: self.colors.on_surface,
+@@ -284,14 +331,7 @@ impl Theme {
+                 // distinct disabled selected surface or ink role.
+                 disabled_selected: None,
+             },
+-        };
+-        let panel = self.vertical_menu_panel(&options, placement, groups, colors);
+-        scope
+-            .children([trigger.menu_expanded(true), panel])
+-            .modal_overlay_descendants(on_dismiss)
+-            .modal_initial_focus(first)
+-            .modal_focus_fallback(options.restore_focus_to.unwrap_or(options.trigger_id))
+-            .dismiss_modal_on_tab()
++        }
+     }
+ 
+     fn vertical_menu_panel<M>(
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 366221e0011cb51e1cb0d7c350628d6d0f79d1d6..7e3540d53cdd9584ad1b388d96616124a03d8c59 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -114,8 +114,8 @@ pub use chip::{ChipContent, ChipLeading, ChipOptions, ChipRemove, ChipStyle, Chi
+ pub use chip_group::ChipGridLayout;
+ pub use command_menu::{
+     CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, CommandMenuRow,
+-    CommandMenuSubmenu, CommandMenuWithSubmenusOptions, VerticalChoiceMenuGroup,
+-    VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
++    CommandMenuSubmenu, CommandMenuWithSubmenusOptions, VerticalChoiceMenuAppearance,
++    VerticalChoiceMenuGroup, VerticalCommandMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
+ };
+ pub use components::{
+     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
+diff --git a/crates/surface-material/tests/vertical_choice_menu.rs b/crates/surface-material/tests/vertical_choice_menu.rs
+index e452d32f752f876647aeecf6eb7f5c3f2d0a57b4..a47ec514eeadef155ad56c0f59b9f362a006834d 100644
+--- a/crates/surface-material/tests/vertical_choice_menu.rs
++++ b/crates/surface-material/tests/vertical_choice_menu.rs
+@@ -1,12 +1,13 @@
+ use surface::{Color, ExtendedPaintOp, Node, Rect, Role, Style};
+ use surface_app::{
+     AccessibilityActivationResult, AnimationFrame, AnimationUpdate, Application, EditKey, Event,
+-    Key, KeyPress, Modifiers, Runtime, View,
++    Key, KeyPress, Modifiers, Runtime, SystemColorPair, View,
+ };
+ use surface_material::{
+     shape::{self, LayoutDirection},
+     typography, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, Theme,
+-    VerticalChoiceMenuGroup, VerticalMenuPalette, VerticalMenuSelection,
++    VerticalChoiceMenuAppearance, VerticalChoiceMenuGroup, VerticalMenuPalette,
++    VerticalMenuSelection,
+ };
+ use surface_wgpu::TextSystem;
+ 
+@@ -22,6 +23,7 @@ struct Fixture {
+     rtl: bool,
+     large: bool,
+     mode: VerticalMenuPalette,
++    selected_item: Option<SystemColorPair>,
+     commands: bool,
+     missing_name: bool,
+     sort: &'static str,
+@@ -38,6 +40,7 @@ impl Default for Fixture {
+             rtl: false,
+             large: false,
+             mode: VerticalMenuPalette::Standard,
++            selected_item: None,
+             commands: false,
+             missing_name: false,
+             sort: "sort-old",
+@@ -132,7 +135,7 @@ impl Application for Fixture {
+                 ],
+             }
+         };
+-        let menu = theme.vertical_choice_menu(
++        let menu = theme.vertical_choice_menu_with_appearance(
+             CommandMenuOptions {
+                 id: "choices",
+                 label: "視圖設定",
+@@ -146,7 +149,10 @@ impl Application for Fixture {
+                 preferred_width: 240.,
+                 restore_focus_to: None,
+             },
+-            self.mode,
++            VerticalChoiceMenuAppearance {
++                palette: self.mode,
++                selected_item: self.selected_item,
++            },
+             theme.button("trigger", "開啟", Message::Open),
+             [
+                 VerticalChoiceMenuGroup {
+@@ -427,6 +433,54 @@ fn both_palettes_paint_a_stable_logical_leading_check() {
+     }
+ }
+ 
++#[test]
++fn host_selection_colors_only_paint_enabled_checked_rows() {
++    let pair = SystemColorPair {
++        background: Color::rgb(41, 16, 93),
++        foreground: Color::rgb(248, 215, 173),
++    };
++    for palette in [VerticalMenuPalette::Standard, VerticalMenuPalette::Vibrant] {
++        let mut runtime = Runtime::new(Fixture {
++            mode: palette,
++            selected_item: Some(pair),
++            commands: true,
++            checked: vec!["check-disabled", "check-pins"],
++            ..Fixture::default()
++        })
++        .unwrap();
++        open(&mut runtime, 720., 760.);
++        for id in ["sort-old", "check-pins"] {
++            let face = format!("{id}-face");
++            let label = format!("{id}-label");
++            assert_eq!(node(&runtime, &face).style().background, pair.background);
++            assert_eq!(node(&runtime, &label).style().foreground, pair.foreground);
++        }
++        let theme = runtime.app().theme();
++        let normal = match palette {
++            VerticalMenuPalette::Standard => theme.colors.on_surface,
++            VerticalMenuPalette::Vibrant => theme.colors.on_tertiary_container,
++        };
++        for id in ["sort-new", "report", "check-recent"] {
++            assert_eq!(
++                node(&runtime, &format!("{id}-face")).style().background,
++                Color::TRANSPARENT
++            );
++            assert_eq!(
++                node(&runtime, &format!("{id}-label")).style().foreground,
++                normal
++            );
++        }
++        assert_ne!(
++            node(&runtime, "check-disabled-face").style().background,
++            pair.background
++        );
++        assert_eq!(
++            node(&runtime, "check-disabled-label").style().foreground.3,
++            97
++        );
++    }
++}
++
+ #[test]
+ fn named_command_group_remains_ordinary_and_blank_radio_group_is_rejected() {
+     let mut runtime = Runtime::new(Fixture {
+diff --git a/crates/surface-platform/src/web_contrast.rs b/crates/surface-platform/src/web_contrast.rs
+index 529cb32899fca69dcbc18aec644b05050d8c9364..e0f1b86919ec089bbdc3409e3c1ffa468269b190 100644
+--- a/crates/surface-platform/src/web_contrast.rs
++++ b/crates/surface-platform/src/web_contrast.rs
+@@ -48,15 +48,39 @@ fn with_field_css(
+     colors: SystemContrastColors,
+     background: Option<&str>,
+     foreground: Option<&str>,
++) -> SystemContrastColors {
++    with_optional_pair_css(colors, background, foreground, |colors, pair| {
++        colors.with_field(pair)
++    })
++}
++
++fn with_selected_item_css(
++    colors: SystemContrastColors,
++    background: Option<&str>,
++    foreground: Option<&str>,
++) -> SystemContrastColors {
++    with_optional_pair_css(colors, background, foreground, |colors, pair| {
++        colors.with_selected_item(pair)
++    })
++}
++
++fn with_optional_pair_css(
++    colors: SystemContrastColors,
++    background: Option<&str>,
++    foreground: Option<&str>,
++    attach: impl FnOnce(SystemContrastColors, SystemColorPair) -> SystemContrastColors,
+ ) -> SystemContrastColors {
+     let pair = background
+         .and_then(css_color)
+         .zip(foreground.and_then(css_color));
+     pair.map_or(colors, |(background, foreground)| {
+-        colors.with_field(SystemColorPair {
+-            background,
+-            foreground,
+-        })
++        attach(
++            colors,
++            SystemColorPair {
++                background,
++                foreground,
++            },
++        )
+     })
+ }
+ 
+@@ -91,7 +115,9 @@ mod browser {
+         Document, Event, EventTarget, HtmlCanvasElement, HtmlElement, MediaQueryList, Window,
+     };
+ 
+-    use super::{css_color, preference, with_field_css, SystemContrastColors};
++    use super::{
++        css_color, preference, with_field_css, with_selected_item_css, SystemContrastColors,
++    };
+ 
+     const FORCED: &str = "(forced-colors: active)";
+     const MORE: &str = "(prefers-contrast: more)";
+@@ -103,6 +129,7 @@ mod browser {
+         ("highlight", "Highlight", "HighlightText"),
+     ];
+     const FIELD: (&str, &str, &str) = ("field", "Field", "FieldText");
++    const SELECTED_ITEM: (&str, &str, &str) = ("selected-item", "SelectedItem", "SelectedItemText");
+ 
+     pub(crate) struct DisplayContrastWatch {
+         window: Window,
+@@ -267,6 +294,7 @@ mod browser {
+     struct ColorProbe {
+         root: HtmlElement,
+         pairs: [HtmlElement; 3],
++        selected_item: Option<HtmlElement>,
+         field: Option<HtmlElement>,
+         gray_text_supported: bool,
+         scheme: String,
+@@ -316,6 +344,7 @@ mod browser {
+                 pair(highlight, required)?,
+             ];
+             let field = pair(FIELD, "data-surface-optional-system-pair").ok();
++            let selected_item = pair(SELECTED_ITEM, "data-surface-optional-system-pair").ok();
+             let parent = canvas
+                 .parent_element()
+                 .or_else(|| document.body().map(Into::into))
+@@ -324,6 +353,7 @@ mod browser {
+             Ok(Self {
+                 root,
+                 pairs,
++                selected_item,
+                 field,
+                 gray_text_supported,
+                 scheme,
+@@ -363,6 +393,18 @@ mod browser {
+                 .and_then(|style| style.get_property_value("color").ok())
+                 .and_then(|color| css_color(&color));
+             let colors = gray_text.map_or(colors, |ink| colors.with_disabled_text(ink));
++            let selected_style = self
++                .selected_item
++                .as_ref()
++                .filter(|element| element.is_connected())
++                .and_then(|element| window.get_computed_style(element).ok().flatten());
++            let read_selected =
++                |property| selected_style.as_ref()?.get_property_value(property).ok();
++            let colors = with_selected_item_css(
++                colors,
++                read_selected("background-color").as_deref(),
++                read_selected("color").as_deref(),
++            );
+             let field_style = self
+                 .field
+                 .as_ref()
+@@ -510,4 +552,38 @@ mod tests {
+         assert_ne!(initial, updated);
+         assert_eq!(unavailable, base);
+     }
++
++    #[test]
++    fn selected_item_probe_requires_both_halves_and_preserves_highlight() {
++        let base = base_colors_with_gray_text();
++        assert_eq!(base.selected_item, None);
++        let background = Some("rgb(71, 29, 113)");
++        let foreground = Some("rgb(243, 239, 255)");
++        let valid = with_selected_item_css(base, background, foreground);
++        assert_eq!(
++            valid,
++            base.with_selected_item(SystemColorPair {
++                background: Color::rgb(71, 29, 113),
++                foreground: Color::rgb(243, 239, 255),
++            })
++        );
++        for (background, foreground) in [
++            (None, None),
++            (None, Some("rgb(243, 239, 255)")),
++            (Some("rgb(71, 29, 113)"), None),
++            (Some("SelectedItem"), Some("rgb(243, 239, 255)")),
++            (Some("rgb(71, 29, 113)"), Some("SelectedItemText")),
++            (Some("rgb(71, 29)"), Some("rgb(243, 239, 255)")),
++            (Some("rgb(71, 29, 113)"), Some("rgb(243, 239, 256)")),
++        ] {
++            assert_eq!(
++                with_selected_item_css(base, background, foreground),
++                base,
++                "{background:?}, {foreground:?}"
++            );
++        }
++        assert_eq!(valid.highlight, base.highlight);
++        assert_eq!(valid.field, base.field);
++        assert_eq!(valid.disabled_text, base.disabled_text);
++    }
+ }
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index 76bffe438c0ef144ae13c1ffd9e791245afcfe06..bd63f25d97802787115701e0e0fac1c2da6f7f47 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -269,7 +269,7 @@
+       "variant_review": "pending",
+       "desktop_evidence": "Headless Metal covers keyboard action, focus return, disabled commands, and scroll at 320 dp with 200% RTL text. The Baseline replay verified five PNGs. The vertical menu replay verified eight PNGs across two passes, including Standard in light, Vibrant in light, and Vibrant at both scroll positions in dark. Page.screenshot, CLI, and MCP produced matching PNG bytes. The choice-menu replay retained eight PNGs across Page.screenshot, CLI and MCP. It covers Standard, Vibrant and narrow dark RTL. https://github.com/faberline/surface/tree/30e48829f84afd381e4a7ee7f18d6bc3c3200750/docs/evidence/md3/vertical-choice-menu-v0176-corrected-runtime",
+       "web_evidence": "Chrome WebGPU M267–M269 cover Baseline semantics, keys, pointer input, and compact scrolling. M370–M372 cover two vertical palettes, named groups, a single action per click, focus on reopen, Tab, focus outside Surface, dark RTL overflow, and repositioning on resize. The six scoped steps passed 276 checks and verified six PNGs in headless Chrome. M373–M375 verify named radio and checkbox groups, a real disabled-row click that preserves focus and selection, independent toggles, and dark RTL at 200% text with rounded paint and Escape focus return. https://github.com/faberline/surface/tree/30e48829f84afd381e4a7ee7f18d6bc3c3200750/docs/evidence/md3/vertical-choice-menu-v0176-corrected-runtime",
+-      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Vertical menus also support named command, single-choice, and multiple-choice groups. Single choices expose radio-menu state. Multiple choices expose checkbox-menu state. The caller owns the values. Keyboard movement keeps values unchanged until activation. Disabled choices preserve their checked state and cannot send actions. Baseline command menus can open one child menu next to its parent row. Pointer and logical arrow activation move focus to the child. The opposite arrow and Escape return focus to the parent row. System high contrast and live screen-reader speech remain open.",
++      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Vertical menus also support named command, single-choice, and multiple-choice groups. Single choices expose radio-menu state. Multiple choices expose checkbox-menu state. The caller owns the values. Keyboard movement keeps values unchanged until activation. Disabled choices preserve their checked state and cannot send actions. Baseline command menus can open one child menu next to its parent row. Pointer and logical arrow activation move focus to the child. The opposite arrow and Escape return focus to the parent row. Enabled checked Expressive rows use the browser system selection pair when it is available. Further system high contrast and live screen-reader speech remain open.",
+       "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection. Vertical menu tests cover both palettes, accessibility group order, pointer activation and focus return, and scrollbar geometry after resizing. Choice-menu tests cover named independent radio groups, retained focus and open state in multiple-choice groups, stable logical-leading checkmarks in both palettes, and disabled action rejection. Core tests verify that menu-radio metadata preserves the existing MenuItem role and serialization. macOS tests verify its separate accessibility role and action. Submenu tests cover the two arrow directions, disabled children, one pointer activation, Escape per layer, Tab, outside dismissal and popup expansion in macOS AccessKit."
+     },
+     {
+diff --git a/docs/material.md b/docs/material.md
+index e38875cc499c2dc3423ad00e27e2838db2a8d00b..118a0ea7a63adddce7bbb0960a69c6cbe7a641af 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -149,6 +149,7 @@ does not change application state.
+ | `command_menu` | Baseline M3 commands anchored to a caller's button, with grouped rows, keyboard focus, and scrolling |
+ | `command_menu_with_submenus` | Baseline command menu with first-level child menus |
+ | `vertical_choice_menu` | Expressive Standard and Vibrant menus with named single-choice or multiple-choice groups |
++| `vertical_choice_menu_with_appearance` | Expressive choice menus with optional system colors for checked rows |
+ | `fab` | Small, regular and large; surface, primary, secondary and tertiary containers; disabled state; no elevation or ripple yet |
+ | `expressive_fab` | Square icon action in three sizes with six palettes, lowered elevation, an exterior focus ring, and a clipped press ripple |
+ | `extended_fab` | One named action with an optional icon, three sizes, six palettes, and scroll-driven expansion |
+@@ -2019,6 +2020,14 @@ choices expose a checkbox menu item. The checkmark has no separate action.
+ Open **選取清單選項** in the Gallery's **浮層** tab to try both group types.
+ [Material 3 Menu guidelines](https://m3.material.io/components/menus/guidelines)
+ 
++Use `vertical_choice_menu_with_appearance` when the host supplies a
++system selection pair. Pass it in `VerticalChoiceMenuAppearance` as
++`selected_item`. The menu uses the pair on enabled checked rows. The Web
++host supplies the `SelectedItem` background and `SelectedItemText` ink
++when the browser resolves both colors. When the pair is absent, the menu
++uses its Standard or Vibrant palette.
++[W3C system colors](https://www.w3.org/TR/css-color-4/#css-system-colors)
++
+ ## Dividers
+ 
+ Use `Theme::decorative_divider` to separate adjacent content with a 1 dp
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 4486a469efd0e8ebd6944e99e23039749833cb8c..f0980f324eb59cfadd9629f16d86e6efed4d43bf 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -24,6 +24,8 @@ mod material_checkbox;
+ mod material_chips;
+ #[path = "material_choice_menu.rs"]
+ mod material_choice_menu;
++#[path = "material_choice_menu_forced.rs"]
++mod material_choice_menu_forced;
+ #[path = "material_command_menu.rs"]
+ mod material_command_menu;
+ #[path = "material_command_menu_submenus.rs"]
+@@ -189,7 +191,7 @@ pub const STEPS: &[&str] = &[
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+-    "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379",
++    "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -336,7 +338,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_adaptive_navigation_scaffold::run(env, chrome, &url).await?;
+     material_command_menu::run_vertical(env, chrome, &url).await?;
+     material_choice_menu::run(env, chrome, &url).await?;
+-    material_command_menu_submenus::run(env, chrome, &url).await
++    material_command_menu_submenus::run(env, chrome, &url).await?;
++    material_choice_menu_forced::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -598,6 +601,7 @@ mod tests {
+         let vertical_menu = super::material_command_menu::VERTICAL_STEPS;
+         let choice_menu = super::material_choice_menu::STEPS;
+         let submenu_menu = super::material_command_menu_submenus::STEPS;
++        let forced_choice_menu = super::material_choice_menu_forced::STEPS;
+         assert!(super::STEPS.ends_with(
+             &[
+                 placeholder.as_slice(),
+@@ -609,6 +613,7 @@ mod tests {
+                 vertical_menu.as_slice(),
+                 choice_menu.as_slice(),
+                 submenu_menu.as_slice(),
++                forced_choice_menu.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_choice_menu.rs b/e2e/src/material_choice_menu.rs
+index aadff915597787a64b913984ed067ae005e0e0bc..026b5c6b38a822d840515667ee8453ccd0225171 100644
+--- a/e2e/src/material_choice_menu.rs
++++ b/e2e/src/material_choice_menu.rs
+@@ -151,7 +151,7 @@ impl Selection {
+ type Rect = [f64; 4];
+ type Rgb = [u8; 3];
+ 
+-async fn route(tab: &Tab, url: &str) -> Result<()> {
++pub(super) async fn route(tab: &Tab, url: &str) -> Result<()> {
+     tab.goto(url).await?;
+     crate::smoke::ready(tab, "gallery").await?;
+     resize(tab, 960, 2400).await?;
+diff --git a/e2e/src/material_choice_menu_forced.rs b/e2e/src/material_choice_menu_forced.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..97df46399988f0c9ff02af7a864fef9cf3ebf070
+--- /dev/null
++++ b/e2e/src/material_choice_menu_forced.rs
+@@ -0,0 +1,265 @@
++//! Forced-color selection pairs on real vertical choice menu paint.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{activate, ax, ax_property, ax_tree, bounds, focused, Raster};
++use super::{state, until};
++use crate::browser::{Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++const OPENER: &str = "menu-demo-opener";
++const VIBRANT: &str = "menu-demo-vibrant";
++const RECENT: &str = "menu-demo-choice-recent";
++const NAME: &str = "menu-demo-choice-name";
++const KIND: &str = "menu-demo-choice-kind";
++const LOCKED: &str = "menu-demo-choice-locked";
++
++pub(super) const STEPS: [&str; 1] = ["M380"];
++
++async fn open(tab: &Tab) -> Result<()> {
++    activate(tab, OPENER).await?;
++    until(tab, "s.menu_demo.open").await?;
++    focused(tab, RECENT).await
++}
++
++fn rgba(value: &Value) -> Result<[u8; 4]> {
++    let color: [u8; 4] =
++        serde_json::from_value(value.clone()).context("resolved system color is RGBA")?;
++    check_eq!(color[3], 255, "the system pair color is opaque");
++    Ok(color)
++}
++
++async fn paint_checked_rows(
++    env: &Env,
++    tab: &Tab,
++    label: &str,
++    expected_pair: [[u8; 4]; 2],
++) -> Result<Value> {
++    let [left, top, width, _] = tab.canvas_box().await?;
++    tab.mouse_move(left + width - 2., top + 2.).await?;
++    tab.settle().await?;
++    let file = format!("material-choice-menu-forced-{label}.png");
++    let path = env.artifact(&file);
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    let mut rows = Vec::new();
++    for id in [RECENT, KIND] {
++        let face = bounds(tab, &format!("{id}-face")).await?;
++        let mark = bounds(tab, &format!("{id}-leading")).await?;
++        let fill = raster.sample(face[0] + face[2] / 2., face[1] + 4.)?;
++        let foreground = [
++            expected_pair[1][0],
++            expected_pair[1][1],
++            expected_pair[1][2],
++        ];
++        let background = [
++            expected_pair[0][0],
++            expected_pair[0][1],
++            expected_pair[0][2],
++        ];
++        check_eq!(
++            fill,
++            background,
++            "the {label} enabled checked row paints SelectedItem background"
++        );
++        let mark_pixels = raster.colors(mark)?.get(&foreground).copied().unwrap_or(0);
++        check!(
++            mark_pixels > 8,
++            "the {label} checked mark paints SelectedItemText"
++        );
++        rows.push(json!({"id":id,"face":face,"mark":mark,"fill":fill,
++            "foreground":foreground,"mark_pixels":mark_pixels}));
++    }
++    Ok(json!({"file":file,"canvas":tab.canvas_box().await?,
++        "viewport":[tab.eval("innerWidth").await?,tab.eval("innerHeight").await?],
++        "device_pixel_ratio":tab.eval("devicePixelRatio").await?,"rows":rows}))
++}
++
++async fn check_menu_semantics(tab: &Tab) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let radio = ax(&tree, "menuitemradio", "最近修改")?;
++    let checkbox = ax(&tree, "menuitemcheckbox", "檔案類型")?;
++    let disabled = ax(&tree, "menuitemcheckbox", "鎖定狀態")?;
++    check_eq!(
++        ax_property(radio, "checked"),
++        Some(&json!("true")),
++        "the selected radio remains selected"
++    );
++    check_eq!(
++        ax_property(checkbox, "checked"),
++        Some(&json!("true")),
++        "the selected checkbox remains selected"
++    );
++    check_eq!(
++        ax_property(disabled, "checked"),
++        Some(&json!("true")),
++        "the disabled checkbox retains its selected value"
++    );
++    check_eq!(
++        ax_property(disabled, "disabled"),
++        Some(&json!(true)),
++        "the disabled checkbox exposes its disabled state"
++    );
++    Ok(json!({"radio":radio,"checkbox":checkbox,"disabled_checkbox":disabled}))
++}
++
++async fn selected_pair(tab: &Tab, css: &Value, palette: &str) -> Result<[[u8; 4]; 2]> {
++    let state = state(tab).await?;
++    let actual = &state["menu_demo"]["choice"]["palette"];
++    let item = &state["display_contrast"]["system_colors"]["selected_item"];
++    if css["selected_item"].is_object() {
++        check_eq!(
++            item.clone(),
++            css["selected_item"].clone(),
++            "the application receives the independent CSS SelectedItem pair"
++        );
++        check_eq!(
++            actual[0],
++            css["selected_item"]["background"],
++            "the selected face token comes from SelectedItem"
++        );
++        check_eq!(
++            actual[1],
++            css["selected_item"]["foreground"],
++            "the selected content token comes from SelectedItemText"
++        );
++    } else {
++        check_eq!(
++            css["selected_item_raw"],
++            Value::Null,
++            "the CSS witness found no complete supported SelectedItem pair"
++        );
++        check_eq!(
++            item.clone(),
++            Value::Null,
++            "the browser probe reports SelectedItem unavailable"
++        );
++        let fallback = if palette == "standard" {
++            [
++                css["pairs"]["button"]["background"].clone(),
++                css["pairs"]["button"]["foreground"].clone(),
++            ]
++        } else {
++            [
++                css["pairs"]["canvas"]["foreground"].clone(),
++                css["pairs"]["canvas"]["background"].clone(),
++            ]
++        };
++        check_eq!(
++            actual.clone(),
++            json!(fallback),
++            "the unsupported SelectedItem pair keeps the forced M3 fallback"
++        );
++    }
++    Ok([rgba(&actual[0])?, rgba(&actual[1])?])
++}
++
++async fn palette_pass(env: &Env, tab: &Tab, css: &Value, palette: &str) -> Result<Value> {
++    open(tab).await?;
++    let semantics = check_menu_semantics(tab).await?;
++    let pair = selected_pair(tab, css, palette).await?;
++    // Sample idle selected rows while focus is on an unselected row.
++    tab.press("ArrowDown").await?;
++    focused(tab, NAME).await?;
++    let pixels = paint_checked_rows(env, tab, palette, pair).await?;
++
++    tab.press("End").await?;
++    focused(tab, LOCKED).await?;
++    let before = state(tab).await?;
++    check_eq!(
++        before["menu_demo"]["choice"]["changes"],
++        json!(0),
++        "no choice ran yet"
++    );
++    tab.press("Enter").await?;
++    tab.settle().await?;
++    let after = state(tab).await?;
++    check_eq!(
++        after["menu_demo"]["open"],
++        json!(true),
++        "disabled activation keeps the menu open"
++    );
++    check_eq!(
++        after["menu_demo"]["choice"]["changes"],
++        json!(0),
++        "disabled activation sends no action"
++    );
++    check_eq!(
++        after["menu_demo"]["choice"]["checked"],
++        before["menu_demo"]["choice"]["checked"],
++        "disabled activation preserves selected values"
++    );
++    tab.press("Escape").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OPENER).await?;
++    Ok(
++        json!({"semantics":semantics,"pixels":pixels,"disabled_activation":after["menu_demo"]["choice"]}),
++    )
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    step(
++        STEPS[0],
++        "Forced colors use SelectedItem system paint in checked choice menus",
++    );
++    let tab = chrome.page(960, 1200, 2.).await?;
++    super::material_choice_menu::route(&tab, url).await?;
++    let normal_standard = state(&tab).await?["menu_demo"]["choice"]["palette"].clone();
++    activate(&tab, VIBRANT).await?;
++    until(&tab, "s.menu_demo.vibrant").await?;
++    let normal_vibrant = state(&tab).await?["menu_demo"]["choice"]["palette"].clone();
++    activate(&tab, VIBRANT).await?;
++    until(&tab, "!s.menu_demo.vibrant").await?;
++
++    super::material_web_contrast::media(&tab, true, false).await?;
++    let forced = super::material_web_contrast::contrast(&tab, "forced").await?;
++    let css = super::material_web_contrast::palette_with_disabled(&tab, &forced).await?;
++    super::material_web_contrast::hidden_probe(&tab, css["field"].is_object()).await?;
++    let pair_equal_to_highlight = css["selected_item"] == css["pairs"]["highlight"];
++
++    let standard = palette_pass(env, &tab, &css, "standard").await?;
++    activate(&tab, VIBRANT).await?;
++    until(&tab, "s.menu_demo.vibrant").await?;
++    let vibrant = palette_pass(env, &tab, &css, "vibrant").await?;
++
++    super::material_web_contrast::media(&tab, false, false).await?;
++    let normal = super::material_web_contrast::contrast(&tab, "normal").await?;
++    check_eq!(
++        normal["system_colors"],
++        Value::Null,
++        "normal contrast clears forced system pairs"
++    );
++    let restored_vibrant = state(&tab).await?["menu_demo"]["choice"]["palette"].clone();
++    check_eq!(
++        restored_vibrant,
++        normal_vibrant,
++        "clearing forced colors restores the authored Vibrant selection palette"
++    );
++    activate(&tab, VIBRANT).await?;
++    until(&tab, "!s.menu_demo.vibrant").await?;
++    let restored_standard = state(&tab).await?["menu_demo"]["choice"]["palette"].clone();
++    check_eq!(
++        restored_standard,
++        normal_standard,
++        "the authored Standard selection palette is still available"
++    );
++    check!(
++        tab.errors().is_empty(),
++        "the forced choice menu has no browser errors: {:?}",
++        tab.errors()
++    );
++    env.write_json(
++        "browser-material-choice-menu-forced.json",
++        &json!({"browser":chrome.version,"steps":STEPS,"mode":forced["mode"],
++            "selected_item":css["selected_item"],"highlight":css["pairs"]["highlight"],
++            "css_button":css["pairs"]["button"],"css_canvas":css["pairs"]["canvas"],
++            "selected_item_equals_highlight":pair_equal_to_highlight,
++            "standard":standard,"vibrant":vibrant,
++            "normal_palettes":{"standard":normal_standard,"vibrant":normal_vibrant},
++            "restored_palettes":{"standard":restored_standard,"vibrant":restored_vibrant},
++            "errors":tab.errors()}),
++    )?;
++    Ok(())
++}
+diff --git a/e2e/src/material_web_contrast.rs b/e2e/src/material_web_contrast.rs
+index 94982c06bef75c9ef302954d9bcb35e58c6ea315..780b9e1b920f4104fe4ad43c79126b3e54da93d2 100644
+--- a/e2e/src/material_web_contrast.rs
++++ b/e2e/src/material_web_contrast.rs
+@@ -141,12 +141,14 @@ pub(super) const CSS_WITNESS: &str = r#"(() => {
+             pairs[key] = measured.pair;
+         }
+         const field = sample("Field", "FieldText");
++        const selectedItem = sample("SelectedItem", "SelectedItemText");
+         const disabled = owner.createElement("span");
+         disabled.style.setProperty("color", "GrayText", "important");
+         witness.appendChild(disabled);
+         const grayCss = disabled.style.getPropertyValue("color")
+             ? view.getComputedStyle(disabled).getPropertyValue("color") : null;
+         return {scheme,pairs,raw,field:field?.pair ?? null,field_raw:field?.raw ?? null,
++            selected_item:selectedItem?.pair ?? null,selected_item_raw:selectedItem?.raw ?? null,
+             disabled_text: grayCss === null ? null : {css: grayCss, rgba: rgba(grayCss)} };
+     } finally {
+         witness.remove();
+@@ -211,8 +213,9 @@ pub(super) async fn palette_with_disabled(tab: &Tab, appearance: &Value) -> Resu
+     check_eq!(
+         appearance["system_colors"],
+         json!({"canvas":pairs["canvas"],"button":pairs["button"],"highlight":pairs["highlight"],
+-            "field":css["field"],"disabled_text":css["disabled_text"]["rgba"]}),
+-        "required pairs and optional Field and GrayText match independent browser measurements"
++            "selected_item":css["selected_item"],"field":css["field"],
++            "disabled_text":css["disabled_text"]["rgba"]}),
++        "required pairs and optional SelectedItem, Field and GrayText match independent browser measurements"
+     );
+     for (role, source) in [
+         ("surface", &pairs["canvas"]["background"]),
+@@ -260,16 +263,18 @@ pub(super) async fn hidden_probe(tab: &Tab, has_field: bool) -> Result<()> {
+         .cdp(
+             "DOM.querySelectorAll",
+             json!({"nodeId":node_id,
+-                "selector":"[data-surface-system-colors], [data-surface-system-pair], [data-surface-optional-system-pair='field']"}),
++                "selector":"[data-surface-system-colors], [data-surface-system-pair], [data-surface-optional-system-pair]"}),
+         )
+         .await?;
+     let probes = nodes["nodeIds"]
+         .as_array()
+         .context("hidden probe DOM nodes")?;
++    let colors = state(tab).await?["display_contrast"]["system_colors"].clone();
++    let has_selected_item = colors["selected_item"].is_object();
+     check_eq!(
+         probes.len(),
+-        4 + usize::from(has_field),
+-        "one hidden DOM root owns three required samples and the resolved optional Field sample"
++        4 + usize::from(has_field) + usize::from(has_selected_item),
++        "one hidden DOM root owns three required samples and each resolved optional pair"
+     );
+     let tree = ax_tree(tab).await?;
+     for node in probes {
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index aeb6f0f7167da64ff3f5efee2835bc7e84cb56e8..91e031a9064d5d337b3b27846b525daf9c56ad37 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1299,7 +1299,7 @@ impl Application for Gallery {
+             return self.dialog_demo.view(&t, self.dark);
+         }
+         if self.menu_demo.visible() {
+-            return self.menu_demo.view(&t, self.dark);
++            return self.menu_demo.view(&t, self.dark, self.display_contrast);
+         }
+         if self.flexible_navigation_bar_demo.visible() {
+             return self.flexible_navigation_bar_demo.view(&t, self.dark);
+@@ -2061,6 +2061,7 @@ mod web {
+                     "canvas": pair(colors.canvas),
+                     "button": pair(colors.button),
+                     "highlight": pair(colors.highlight),
++                    "selected_item": colors.selected_item.map(pair),
+                     "disabled_text": colors.disabled_text,
+                     "field": colors.field.map(pair),
+                 })),
+@@ -2144,7 +2145,7 @@ mod web {
+         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
+         state["search_overlay"] = s.search_overlay_demo.inspect();
+         state["dialog_demo"] = s.dialog_demo.inspect();
+-        state["menu_demo"] = s.menu_demo.inspect(&theme);
++        state["menu_demo"] = s.menu_demo.inspect(&theme, runtime.display_contrast());
+         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
+         state["adaptive_navigation"] = s.adaptive_navigation_demo.inspect(&theme);
+         state["switch_demo"] = s.switch_demo.inspect(&theme);
+diff --git a/examples/material-gallery/src/menu_demo.rs b/examples/material-gallery/src/menu_demo.rs
+index 9807d433da3baa47c8f7ef06475bf4d472326d6f..9b9275c1ec7654eb398cd06a37c2841366b735c2 100644
+--- a/examples/material-gallery/src/menu_demo.rs
++++ b/examples/material-gallery/src/menu_demo.rs
+@@ -1,11 +1,11 @@
+ mod choices;
+ 
+ use surface::{Align, Length, Node, Role, Style};
+-use surface_app::{AnimationFrame, AnimationUpdate, View};
++use surface_app::{AnimationFrame, AnimationUpdate, DisplayContrast, View};
+ use surface_material::{
+     shape::LayoutDirection, ButtonKind, ChoiceState, CommandMenuEntry, CommandMenuItem,
+     CommandMenuMeasurement, CommandMenuOptions, CommandMenuRow, CommandMenuSubmenu,
+-    CommandMenuWithSubmenusOptions, Theme, VerticalCommandMenuGroup, VerticalMenuPalette,
++    CommandMenuWithSubmenusOptions, Theme, VerticalCommandMenuGroup,
+ };
+ 
+ use crate::{
+@@ -212,7 +212,12 @@ impl MenuDemo {
+             .accessible_activation()
+     }
+ 
+-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
++    pub(crate) fn view(
++        &self,
++        theme: &Theme,
++        dark: bool,
++        contrast: DisplayContrast,
++    ) -> View<Message> {
+         use MenuDemoEvent::*;
+         let direction = if self.rtl {
+             LayoutDirection::RightToLeft
+@@ -280,11 +285,7 @@ impl MenuDemo {
+             preferred_width: 240.,
+             restore_focus_to: Some(OPENER),
+         };
+-        let palette = if self.vibrant {
+-            VerticalMenuPalette::Vibrant
+-        } else {
+-            VerticalMenuPalette::Standard
+-        };
++        let appearance = choices::appearance(self.vibrant, contrast);
+         let menu = if self.preview == MenuPreview::Submenus {
+             let child_entries = vec![
+                 CommandMenuEntry::Item(item("menu-demo-export-pdf", "匯出 PDF", None, None, false)),
+@@ -318,7 +319,7 @@ impl MenuDemo {
+             )
+         } else if self.preview == MenuPreview::Choices {
+             self.choices
+-                .menu(theme, options, palette, trigger, &self.measurement)
++                .menu(theme, options, appearance, trigger, &self.measurement)
+         } else if self.preview == MenuPreview::Vertical {
+             let groups = if self.grouped {
+                 vec![
+@@ -347,7 +348,7 @@ impl MenuDemo {
+             };
+             theme.vertical_command_menu(
+                 options,
+-                palette,
++                appearance.palette,
+                 trigger,
+                 groups,
+                 Message::MenuDemo(Dismiss),
+@@ -500,7 +501,7 @@ impl MenuDemo {
+     }
+ 
+     #[cfg(target_arch = "wasm32")]
+-    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
++    pub(crate) fn inspect(&self, theme: &Theme, contrast: DisplayContrast) -> serde_json::Value {
+         serde_json::json!({
+             "visible": self.visible(),
+             "open": self.open,
+@@ -519,7 +520,7 @@ impl MenuDemo {
+             "commands_executed": self.commands_executed,
+             "outside_actions": self.outside_actions,
+             "choice": (self.preview == MenuPreview::Choices)
+-                .then(|| self.choices.inspect(theme, self.vibrant)),
++                .then(|| self.choices.inspect(theme, choices::appearance(self.vibrant, contrast))),
+             "submenus": self.preview == MenuPreview::Submenus,
+             "active_submenu": self.active_submenu,
+             "submenu_exported": self.last == Some("匯出 PDF"),
+diff --git a/examples/material-gallery/src/menu_demo/choices.rs b/examples/material-gallery/src/menu_demo/choices.rs
+index 40ec9bc93f43b49b846f5f70d42dfd6dead7fe26..e0d4a7397f51d8ef79ade4edf435362b12cfb61e 100644
+--- a/examples/material-gallery/src/menu_demo/choices.rs
++++ b/examples/material-gallery/src/menu_demo/choices.rs
+@@ -1,7 +1,8 @@
+-use surface_app::View;
++use surface_app::{DisplayContrast, View};
+ use surface_material::{
+-    CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, Theme, VerticalChoiceMenuGroup,
+-    VerticalMenuPalette, VerticalMenuSelection,
++    CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, Theme,
++    VerticalChoiceMenuAppearance, VerticalChoiceMenuGroup, VerticalMenuPalette,
++    VerticalMenuSelection,
+ };
+ 
+ use super::MenuDemoEvent;
+@@ -16,6 +17,22 @@ const KIND: &str = "menu-demo-choice-kind";
+ const SIZE: &str = "menu-demo-choice-size";
+ const LOCKED: &str = "menu-demo-choice-locked";
+ 
++pub(super) fn appearance(vibrant: bool, contrast: DisplayContrast) -> VerticalChoiceMenuAppearance {
++    let palette = if vibrant {
++        VerticalMenuPalette::Vibrant
++    } else {
++        VerticalMenuPalette::Standard
++    };
++    let selected_item = match contrast {
++        DisplayContrast::Forced(colors) => colors.selected_item,
++        _ => None,
++    };
++    VerticalChoiceMenuAppearance {
++        palette,
++        selected_item,
++    }
++}
++
+ #[derive(Clone)]
+ pub enum MenuChoice {
+     SortByName(bool),
+@@ -100,7 +117,7 @@ impl MenuChoices {
+         &self,
+         theme: &Theme,
+         options: CommandMenuOptions<'_>,
+-        palette: VerticalMenuPalette,
++        appearance: VerticalChoiceMenuAppearance,
+         trigger: View<Message>,
+         measurement: &CommandMenuMeasurement,
+     ) -> View<Message> {
+@@ -114,9 +131,9 @@ impl MenuChoices {
+             on_press: Message::MenuDemo(MenuDemoEvent::ChangeChoice(choice)),
+         };
+         let checked: Vec<_> = self.checked().collect();
+-        theme.vertical_choice_menu(
++        theme.vertical_choice_menu_with_appearance(
+             options,
+-            palette,
++            appearance,
+             trigger,
+             [
+                 VerticalChoiceMenuGroup {
+@@ -161,18 +178,27 @@ impl MenuChoices {
+     }
+ 
+     #[cfg(target_arch = "wasm32")]
+-    pub(super) fn inspect(&self, theme: &Theme, vibrant: bool) -> serde_json::Value {
++    pub(super) fn inspect(
++        &self,
++        theme: &Theme,
++        appearance: VerticalChoiceMenuAppearance,
++    ) -> serde_json::Value {
+         let colors = &theme.colors;
++        let palette = match appearance.selected_item {
++            Some(pair) => [pair.background, pair.foreground],
++            None => match appearance.palette {
++                VerticalMenuPalette::Vibrant => [colors.tertiary, colors.on_tertiary],
++                VerticalMenuPalette::Standard => {
++                    [colors.tertiary_container, colors.on_tertiary_container]
++                }
++            },
++        };
+         serde_json::json!({
+             "sort": self.sort(),
+             "density": self.density(),
+             "checked": self.checked().collect::<Vec<_>>(),
+             "changes": self.changes,
+-            "palette": if vibrant {
+-                [colors.tertiary, colors.on_tertiary]
+-            } else {
+-                [colors.tertiary_container, colors.on_tertiary_container]
+-            },
++            "palette": palette,
+         })
+     }
+ }
