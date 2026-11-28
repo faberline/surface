@@ -481,6 +481,18 @@ fn label_color_retargets_on_focus_and_error_without_changing_its_pose() {
         let Color(r, g, b, _) = colors.on_surface;
         assert_eq!(label_color(&disabled, LABEL), Color(r, g, b, 97));
         assert!(!runtime.needs_frame());
+
+        runtime.set_time(62.);
+        runtime
+            .apply(Message::SetEditability(TextFieldEditability::Editable))
+            .unwrap();
+        let first_enabled_frame = render(&mut runtime, 400., &mut fonts);
+        assert_eq!(
+            label_color(&first_enabled_frame, LABEL),
+            colors.error,
+            "{appearance:?} label uses enabled ink on the first frame"
+        );
+        assert!(!runtime.needs_frame());
     }
 }
 
