@@ -1,0 +1,2184 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index ff61849..ef481a2 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.74"
++version = "0.1.75"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 30af216..b7e3698 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.74"
++version = "0.1.75"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-app/src/controls.rs b/crates/surface-app/src/controls.rs
+index 1fe1c4a..994c8fa 100644
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -728,15 +728,20 @@ impl<A: Application> Runtime<A> {
+             if binding.modal_layer.is_none() {
+                 return true;
+             }
+-            // A painted or scrollable positioned descendant is part of the
+-            // modal even at a blank point. A transparent spacer is not.
++            // A painted or scrollable positioned descendant is inside the
++            // modal. Disabled menu items that accept focus also count as
++            // inside here because normal hit testing skips them.
+             hit.is_none()
+                 && !self.dom.iter().any(|(id, node)| {
+                     let style = node.style();
+-                    style.position != Position::Flow
++                    let positioned_panel = style.position != Position::Flow
+                         && (style.clip
+                             || style.background.3 > 0
+-                            || (style.border_width > 0. && style.border_color.3 > 0))
++                            || (style.border_width > 0. && style.border_color.3 > 0));
++                    (positioned_panel
++                        || self.bindings.get(&id).is_some_and(|binding| {
++                            binding.disabled_menu_focus() && binding.accepts_interaction()
++                        }))
+                         && contains(id)
+                         && self.descendant(id, root)
+                 })
+diff --git a/crates/surface-app/src/lib.rs b/crates/surface-app/src/lib.rs
+index 6102e12..873f467 100644
+--- a/crates/surface-app/src/lib.rs
++++ b/crates/surface-app/src/lib.rs
+@@ -134,6 +134,7 @@ pub struct View<M> {
+     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
+     context: Option<context::ContextHandler<M>>,
+     stick: bool,
++    observe_scroll_geometry: bool,
+     horizontal_touch_scroll: bool,
+     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
+     horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
+@@ -230,6 +231,7 @@ impl<M> View<M> {
+             focus_navigation: None,
+             context: None,
+             stick: false,
++            observe_scroll_geometry: false,
+             horizontal_touch_scroll: false,
+             vertical_scroll: None,
+             horizontal_scroll: None,
+@@ -1027,6 +1029,15 @@ impl<M> View<M> {
+         self
+     }
+ 
++    /// Request a follow-up frame after the window viewport changes or layout
++    /// applies a new scroll offset. The application's frame callback can then
++    /// read the updated geometry. Offset changes need a clipped view with a
++    /// stable ID.
++    pub fn observe_scroll_geometry(mut self) -> Self {
++        self.observe_scroll_geometry = true;
++        self
++    }
++
+     /// Let a clipped view with a stable ID take part of a vertical wheel or
+     /// trackpad scroll. Return `None` to leave the whole delta with the view.
+     /// Only the enabled scroll target in the current interaction scope receives
+@@ -1439,6 +1450,7 @@ struct Binding<M> {
+     focus_navigation: Option<controls::FocusNavigationHandler<M>>,
+     context: Option<context::ContextHandler<M>>,
+     stick: bool,
++    observe_scroll_geometry: bool,
+     horizontal_touch_scroll: bool,
+     vertical_scroll: Option<scroll_control::VerticalScrollHandler<M>>,
+     horizontal_scroll: Option<scroll_control::HorizontalScrollHandler<M>>,
+@@ -1900,6 +1912,7 @@ impl<A: Application> Runtime<A> {
+                 || view.dismiss.is_some()
+                 || view.modal_layer.is_some_and(ModalLayer::is_retiring)
+                 || view.stick
++                || view.observe_scroll_geometry
+                 || view.horizontal_touch_scroll
+                 || view.vertical_scroll.is_some()
+                 || view.horizontal_scroll.is_some()
+@@ -1981,6 +1994,7 @@ impl<A: Application> Runtime<A> {
+                     focus_navigation: view.focus_navigation,
+                     context: view.context,
+                     stick: view.stick,
++                    observe_scroll_geometry: view.observe_scroll_geometry,
+                     horizontal_touch_scroll: view.horizontal_touch_scroll,
+                     vertical_scroll: view.vertical_scroll,
+                     horizontal_scroll: view.horizontal_scroll,
+@@ -2159,8 +2173,20 @@ impl<A: Application> Runtime<A> {
+             (display_dom, decorations, computed) =
+                 self.layout_editing(width, height, text_scale, measurer)?;
+         }
++        let viewport_changed = self.layout_viewport != Some((width, height));
++        if viewport_changed
++            && self.layout_viewport.is_some()
++            && self
++                .bindings
++                .values()
++                .any(|binding| binding.observe_scroll_geometry)
++        {
++            // The frame callback ran before the new layout. Let it observe
++            // the resized geometry even if the scroll offset did not change.
++            self.animation_request_next = true;
++        }
+         if self.focused != self.layout_focus
+-            || self.layout_viewport != Some((width, height))
++            || viewport_changed
+             || self.layout_text_scale != text_scale
+         {
+             if let Some(focused) = self.focused_node() {
+diff --git a/crates/surface-app/src/scroll_control.rs b/crates/surface-app/src/scroll_control.rs
+index e88b479..136d43c 100644
+--- a/crates/surface-app/src/scroll_control.rs
++++ b/crates/surface-app/src/scroll_control.rs
+@@ -633,6 +633,16 @@ impl<A: Application> Runtime<A> {
+                     changed = true;
+                 }
+             }
++            if self.bindings[&node].observe_scroll_geometry
++                && self
++                    .scroll_state
++                    .metrics
++                    .get(&key)
++                    .map_or((0., 0.), |previous| previous.offset)
++                    != offset
++            {
++                self.animation_request_next = true;
++            }
+             metrics.insert(
+                 key,
+                 ScrollMetrics {
+diff --git a/crates/surface-app/tests/accessibility_scroll_pages.rs b/crates/surface-app/tests/accessibility_scroll_pages.rs
+index e8bfc07..973d9f9 100644
+--- a/crates/surface-app/tests/accessibility_scroll_pages.rs
++++ b/crates/surface-app/tests/accessibility_scroll_pages.rs
+@@ -17,6 +17,7 @@ struct Example {
+     content_height: f32,
+     sticky: bool,
+     opted_in: bool,
++    observes_scroll_geometry: bool,
+     identified: bool,
+     disabled: bool,
+     modal: bool,
+@@ -29,6 +30,7 @@ impl Default for Example {
+             content_height: 260.,
+             sticky: false,
+             opted_in: true,
++            observes_scroll_geometry: false,
+             identified: true,
+             disabled: false,
+             modal: false,
+@@ -75,6 +77,9 @@ impl Application for Example {
+         if self.opted_in {
+             viewport = viewport.accessibility_scroll_pages();
+         }
++        if self.observes_scroll_geometry {
++            viewport = viewport.observe_scroll_geometry();
++        }
+         let outer = View::new(
+             Node::new(Role::Group, "Outer")
+                 .id("outer")
+@@ -157,6 +162,22 @@ fn relative_pages_use_the_visible_size_and_leave_the_other_axis_and_parent_alone
+     assert_eq!(runtime.focused(), Some("draft"));
+ }
+ 
++#[test]
++fn scroll_observation_requests_one_follow_up_only_for_opted_in_offsets() {
++    for observes_scroll_geometry in [false, true] {
++        let mut runtime = start(Example {
++            observes_scroll_geometry,
++            ..Example::default()
++        });
++        assert!(!runtime.needs_frame());
++        page(&mut runtime, Down);
++        assert_eq!(runtime.scroll_metrics("pages").unwrap().offset, (0., 30.));
++        assert_eq!(runtime.needs_frame(), observes_scroll_geometry);
++        render(&mut runtime);
++        assert!(!runtime.needs_frame());
++    }
++}
++
+ #[test]
+ fn vertical_pages_pause_and_resume_sticky_following() {
+     let mut runtime = start(Example {
+diff --git a/crates/surface-material/src/command_menu.rs b/crates/surface-material/src/command_menu.rs
+index ec17f5a..696b670 100644
+--- a/crates/surface-material/src/command_menu.rs
++++ b/crates/surface-material/src/command_menu.rs
+@@ -1,5 +1,7 @@
+ //! Baseline Material 3 menu for commands launched by a button.
+ 
++mod vertical;
++
+ use surface::{Align, Color, Insets, Length, Node, Rect, Role, Style, TextAlignment};
+ use surface_app::{AnimationFrame, AnimationUpdate, CursorStyle, Roving, View};
+ 
+@@ -8,6 +10,7 @@ use crate::{
+     shape::{self, LayoutDirection},
+     typography, Elevation, Theme, VectorIcon,
+ };
++pub use vertical::{VerticalCommandMenuGroup, VerticalMenuPalette};
+ 
+ const OUTER_PADDING: f32 = 8.;
+ const ITEM_SPACE: f32 = 12.;
+@@ -52,6 +55,7 @@ pub struct CommandMenuItem<'a, M> {
+ pub struct CommandMenuMeasurement {
+     anchor: Option<MenuAnchor>,
+     content_height: Option<f32>,
++    vertical: Option<vertical::VerticalMenuGeometry>,
+ }
+ 
+ impl CommandMenuMeasurement {
+@@ -73,6 +77,7 @@ impl CommandMenuMeasurement {
+                 .and_then(|id| layout.nodes.get(id.index()))
+                 .map(|node| node.bounds.height)
+                 .filter(|height| height.is_finite() && *height > 0.);
++            self.vertical = vertical::VerticalMenuGeometry::measure(menu_id, frame.dom, layout);
+         }
+         let changed = previous != *self;
+         AnimationUpdate {
+@@ -241,22 +246,14 @@ impl Theme {
+         .without_interaction(None);
+         let leading = item
+             .leading_icon
+-            .map(|icon| icon_view(format!("{}-leading", item.id), icon, icon_ink));
++            .map(|icon| icon_view(format!("{}-leading", item.id), icon, icon_ink, ICON_SIZE));
+         let trailing = item
+             .trailing_icon
+-            .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink));
++            .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink, ICON_SIZE));
+         let control = View::new(control)
+             .children(leading.into_iter().chain([text]).chain(trailing))
+             .accessibility_scroll_into_view();
+-        if item.disabled {
+-            control.focus_disabled_menu_item()
+-        } else {
+-            control
+-                .on_press(item.on_press)
+-                .accessible_activation()
+-                .suppress_repeated_activation()
+-                .cursor(CursorStyle::Pointer)
+-        }
++        bind_command_item(control, item.disabled, item.on_press)
+     }
+ 
+     fn command_menu_separator<M>(&self, id: &str) -> View<M> {
+@@ -278,6 +275,17 @@ impl Theme {
+     }
+ }
+ 
++fn bind_command_item<M>(view: View<M>, disabled: bool, on_press: M) -> View<M> {
++    if disabled {
++        view.focus_disabled_menu_item()
++    } else {
++        view.on_press(on_press)
++            .accessible_activation()
++            .suppress_repeated_activation()
++            .cursor(CursorStyle::Pointer)
++    }
++}
++
+ fn content_id(menu_id: &str) -> String {
+     format!("{menu_id}-content")
+ }
+@@ -286,19 +294,16 @@ fn spacer<M>(height: f32) -> View<M> {
+     View::new(Node::new(Role::Group, "").styled(Style::column().height(Length::Px(height))))
+ }
+ 
+-fn icon_view<M>(id: String, icon: VectorIcon, ink: Color) -> View<M> {
++fn icon_view<M>(id: String, icon: VectorIcon, ink: Color, size: f32) -> View<M> {
+     View::new(
+         Node::new(Role::Group, "")
+             .id(id)
+             .styled(
+                 Style::column()
+-                    .width(Length::Px(ICON_SIZE))
+-                    .height(Length::Px(ICON_SIZE)),
++                    .width(Length::Px(size))
++                    .height(Length::Px(size)),
+             )
+-            .fill_contour(
+-                icon.contour_dp(ICON_SIZE, ink)
+-                    .expect("validated icon contour"),
+-            ),
++            .fill_contour(icon.contour_dp(size, ink).expect("validated icon contour")),
+     )
+     .without_interaction(None)
+ }
+diff --git a/crates/surface-material/src/command_menu/vertical.rs b/crates/surface-material/src/command_menu/vertical.rs
+new file mode 100644
+index 0000000..fd62fa1
+--- /dev/null
++++ b/crates/surface-material/src/command_menu/vertical.rs
+@@ -0,0 +1,467 @@
++//! Grouped Expressive vertical commands.
++//!
++//! Google M3 Menus Specs and Guidelines define the two color mappings and
++//! continuous scrolling layout. Geometry follows AndroidX SegmentedMenuTokens
++//! (268d841a45644cadf438fc335c793869728449ec).
++
++use surface::{
++    Align, Color, ComputedDom, Corners, Insets, Length, MicroDom, Node, Rect, Role, Style,
++    TextAlignment,
++};
++use surface_app::{Roving, View};
++
++use super::{
++    bind_command_item, content_id, icon_view, CommandMenuItem, CommandMenuMeasurement,
++    CommandMenuOptions,
++};
++use crate::{
++    menu_layout::{place_menu, MenuAnchor, MenuLayout, MIN_ITEM_HEIGHT},
++    shape::{self, LayoutDirection},
++    typography, Elevation, Theme,
++};
++
++const GROUP_GAP: f32 = 2.;
++const GROUP_PADDING: f32 = 4.;
++const FACE_HEIGHT: f32 = 44.;
++const FACE_PADDING: f32 = 8.;
++const SLOT_GAP: f32 = 12.;
++const ICON_SIZE: f32 = 20.;
++const HEADER_MIN: f32 = 28.;
++const THUMB_WIDTH: f32 = 4.;
++const THUMB_EDGE: f32 = 2.;
++const THUMB_VERTICAL: f32 = 4.;
++const THUMB_MIN: f32 = 16.;
++
++/// The two Material 3 Expressive vertical menu color mappings.
++#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
++pub enum VerticalMenuPalette {
++    #[default]
++    Standard,
++    Vibrant,
++}
++
++/// One optional named heading and its ordered commands.
++pub struct VerticalCommandMenuGroup<'a, M> {
++    pub id: &'a str,
++    pub label: Option<&'a str>,
++    pub items: Vec<CommandMenuItem<'a, M>>,
++}
++
++#[derive(Clone, Copy, Debug, PartialEq)]
++pub(super) struct VerticalMenuGeometry {
++    width: f32,
++    height_without_gaps: f32,
++    offset_y: f32,
++    groups: usize,
++}
++
++impl VerticalMenuGeometry {
++    pub(super) fn measure(menu_id: &str, dom: &MicroDom, layout: &ComputedDom) -> Option<Self> {
++        let viewport = layout
++            .nodes
++            .get(dom.by_id(&viewport_id(menu_id))?.index())?
++            .bounds;
++        let content = dom.by_id(&content_id(menu_id))?;
++        let bounds = layout.nodes.get(content.index())?.bounds;
++        let groups = dom.children(content).count();
++        let gaps = dom.get(content).ok()?.style().gap * groups.saturating_sub(1) as f32;
++        let result = Self {
++            width: viewport.width,
++            height_without_gaps: bounds.height - gaps,
++            offset_y: (viewport.y - bounds.y).max(0.),
++            groups,
++        };
++        (result.width.is_finite()
++            && result.width > 0.
++            && result.height_without_gaps.is_finite()
++            && result.height_without_gaps > 0.
++            && result.offset_y.is_finite())
++        .then_some(result)
++    }
++}
++
++#[derive(Clone, Copy)]
++struct MenuColors {
++    surface: Color,
++    label: Color,
++    icon: Color,
++    layer: Color,
++    thumb: Color,
++}
++
++#[derive(Clone, Copy)]
++struct VerticalPlacement {
++    menu: MenuLayout,
++    separated: bool,
++    thumb: Option<Rect>,
++}
++
++impl Theme {
++    /// Build one anchored Expressive vertical menu from one to three
++    /// nonempty groups. Each group and command must have a distinct stable ID.
++    /// A nonempty group label names the group and paints a passive heading.
++    ///
++    /// Use the same measurement and caller-owned open/dismiss flow as
++    /// [Self::command_menu]. If measured contents need to scroll, the groups
++    /// share a continuous surface and a passive thumb follows the viewport.
++    pub fn vertical_command_menu<'a, M: 'a>(
++        &self,
++        options: CommandMenuOptions<'_>,
++        palette: VerticalMenuPalette,
++        trigger: View<M>,
++        groups: impl IntoIterator<Item = VerticalCommandMenuGroup<'a, M>>,
++        on_dismiss: M,
++        measurement: &CommandMenuMeasurement,
++    ) -> View<M> {
++        let scope = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-scope", options.id))
++                .styled(Style::column()),
++        );
++        let Some(anchor) = measurement.anchor.filter(|_| options.open) else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let groups: Vec<_> = groups
++            .into_iter()
++            .filter(|group| !group.items.is_empty())
++            .take(4)
++            .collect();
++        if !(1..=3).contains(&groups.len()) {
++            return scope.children([trigger.menu_expanded(false)]);
++        }
++        let minimum = groups
++            .iter()
++            .map(|group| {
++                2. * GROUP_PADDING
++                    + group.items.len() as f32 * MIN_ITEM_HEIGHT
++                    + group_label(group.label).map_or(0., |_| HEADER_MIN)
++            })
++            .sum();
++        let Some(placement) = placement(
++            anchor,
++            &options,
++            minimum,
++            groups.len(),
++            measurement.vertical,
++        ) else {
++            return scope.children([trigger.menu_expanded(false)]);
++        };
++        let first = groups[0].items[0].id;
++        let colors = match palette {
++            VerticalMenuPalette::Standard => MenuColors {
++                surface: self.colors.surface_container_low,
++                label: self.colors.on_surface,
++                icon: self.colors.on_surface_variant,
++                layer: self.colors.on_surface,
++                thumb: self.colors.outline,
++            },
++            VerticalMenuPalette::Vibrant => MenuColors {
++                surface: self.colors.tertiary_container,
++                label: self.colors.on_tertiary_container,
++                icon: self.colors.on_tertiary_container,
++                layer: self.colors.on_tertiary_container,
++                thumb: self.colors.on_tertiary_container,
++            },
++        };
++        let panel = self.vertical_menu_panel(&options, placement, groups, colors);
++        scope
++            .children([trigger.menu_expanded(true), panel])
++            .modal_overlay_descendants(on_dismiss)
++            .modal_initial_focus(first)
++            .modal_focus_fallback(options.restore_focus_to.unwrap_or(options.trigger_id))
++            .dismiss_modal_on_tab()
++    }
++
++    fn vertical_menu_panel<M>(
++        &self,
++        options: &CommandMenuOptions<'_>,
++        placement: VerticalPlacement,
++        groups: Vec<VerticalCommandMenuGroup<'_, M>>,
++        colors: MenuColors,
++    ) -> View<M> {
++        let count = groups.len();
++        let gap = if placement.separated { GROUP_GAP } else { 0. };
++        let content = View::new(
++            Node::new(Role::Group, "")
++                .id(content_id(options.id))
++                .styled(Style::column().width(Length::Percent(1.)).gap(gap)),
++        )
++        .children(groups.into_iter().enumerate().map(|(index, group)| {
++            self.vertical_menu_group(
++                group,
++                index,
++                count,
++                placement.separated,
++                options.direction,
++                colors,
++            )
++        }));
++        let scroller = View::new(
++            Node::new(Role::Group, "")
++                .id(viewport_id(options.id))
++                .styled(
++                    Style::column()
++                        .height(Length::Px(0.))
++                        .grow(1.)
++                        .clip(!placement.separated),
++                ),
++        )
++        .children([content])
++        .accessibility_scroll_pages()
++        .observe_scroll_geometry();
++        let bounds = placement.menu.bounds;
++        let mut style = Style::column()
++            .width(Length::Px(bounds.width))
++            .height(Length::Px(bounds.height))
++            .fixed(Insets {
++                left: Length::Px(bounds.x),
++                top: Length::Px(bounds.y),
++                ..Insets::default()
++            });
++        if !placement.separated {
++            style = style.background(colors.surface).corners(shape::LARGE);
++        }
++        let mut panel = Node::new(Role::Menu, options.label)
++            .id(options.id)
++            .styled(style);
++        if !placement.separated {
++            panel = panel.box_shadows(self.elevation(Elevation::Level2));
++        }
++        let thumb = placement.thumb.map(|rect| {
++            View::new(
++                Node::new(Role::Group, "")
++                    .id(format!("{}-scroll-thumb", options.id))
++                    .styled(
++                        Style::column()
++                            .width(Length::Px(rect.width))
++                            .height(Length::Px(rect.height))
++                            .absolute(Insets {
++                                left: Length::Px(rect.x),
++                                top: Length::Px(rect.y),
++                                ..Insets::default()
++                            })
++                            .background(colors.thumb)
++                            .corners(shape::FULL),
++                    ),
++            )
++            .without_interaction(None)
++        });
++        View::new(panel)
++            .children(std::iter::once(scroller).chain(thumb))
++            .roving(Roving::vertical(false))
++    }
++
++    fn vertical_menu_group<M>(
++        &self,
++        group: VerticalCommandMenuGroup<'_, M>,
++        index: usize,
++        count: usize,
++        separated: bool,
++        direction: LayoutDirection,
++        colors: MenuColors,
++    ) -> View<M> {
++        let label = group_label(group.label);
++        let mut style = Style::column().padding(GROUP_PADDING);
++        if separated {
++            style = style
++                .background(colors.surface)
++                .corners(position_corners(index, count, 16., 8.));
++        }
++        let mut owner = Node::new(Role::Group, label.unwrap_or_default())
++            .id(group.id)
++            .styled(style);
++        if separated {
++            owner = owner.box_shadows(self.elevation(Elevation::Level2));
++        }
++        let heading = label.map(|label| {
++            View::new(
++                Node::new(Role::Text, "")
++                    .id(format!("{}-header", group.id))
++                    .text(label)
++                    .text_alignment(text_alignment(direction))
++                    .styled(
++                        Style::column()
++                            .padding(GROUP_PADDING)
++                            .with_text_style(typography::BODY_MEDIUM)
++                            .foreground(colors.icon),
++                    ),
++            )
++            .without_interaction(None)
++        });
++        let length = group.items.len();
++        View::new(owner).children(heading.into_iter().chain(
++            group.items.into_iter().enumerate().map(|(position, item)| {
++                self.vertical_menu_item(item, position, length, direction, colors)
++            }),
++        ))
++    }
++
++    fn vertical_menu_item<M>(
++        &self,
++        item: CommandMenuItem<'_, M>,
++        position: usize,
++        count: usize,
++        direction: LayoutDirection,
++        colors: MenuColors,
++    ) -> View<M> {
++        let corners = if count == 1 {
++            shape::EXTRA_SMALL
++        } else {
++            position_corners(position, count, 12., 4.)
++        };
++        let (label_ink, icon_ink) = if item.disabled {
++            let Color(r, g, b, _) = colors.label;
++            let ink = Color(r, g, b, 97);
++            (ink, ink)
++        } else {
++            (colors.label, colors.icon)
++        };
++        let text = View::new(
++            Node::new(Role::Text, "")
++                .id(format!("{}-label", item.id))
++                .text(item.label)
++                .text_alignment(text_alignment(direction))
++                .shrink_to_fit_width()
++                .styled(
++                    Style::column()
++                        .grow(1.)
++                        .with_text_style(typography::BODY_LARGE)
++                        .foreground(label_ink),
++                ),
++        );
++        let leading = item
++            .leading_icon
++            .map(|icon| icon_view(format!("{}-leading", item.id), icon, icon_ink, ICON_SIZE));
++        let trailing = item
++            .trailing_icon
++            .map(|icon| icon_view(format!("{}-trailing", item.id), icon, icon_ink, ICON_SIZE));
++        let mut row = Node::new(Role::Group, "").styled(
++            Style::row()
++                .width(Length::Px(0.))
++                .grow(1.)
++                .gap(SLOT_GAP)
++                .align(Align::Center),
++        );
++        if direction == LayoutDirection::RightToLeft {
++            row = row.reverse_row();
++        }
++        let interior = View::new(row).children(leading.into_iter().chain([text]).chain(trailing));
++        let mut face = Style::row()
++            .align(Align::Center)
++            .padding(FACE_PADDING)
++            .corners(corners)
++            .state_layer(colors.layer);
++        face.min_height = FACE_HEIGHT;
++        // The extra horizontal spacer makes 16 dp outer spacing on each side
++        // while keeping the inside vertical padding at 8 dp.
++        let side = || {
++            View::new(
++                Node::new(Role::Group, "").styled(Style::row().width(Length::Px(FACE_PADDING))),
++            )
++        };
++        let face = View::new(
++            Node::new(Role::Group, "")
++                .id(format!("{}-face", item.id))
++                .styled(face),
++        )
++        .children([side(), interior, side()])
++        .without_interaction(None);
++        let mut owner = Style::column().justify(Align::Center).corners(corners);
++        owner.min_height = MIN_ITEM_HEIGHT;
++        let view = View::new(
++            Node::new(Role::MenuItem, item.label)
++                .id(item.id)
++                .disabled(item.disabled)
++                .focus_color(self.colors.secondary)
++                .focus_outline_width(3.)
++                .styled(owner),
++        )
++        .children([face])
++        .accessibility_scroll_into_view();
++        bind_command_item(view, item.disabled, item.on_press)
++    }
++}
++
++fn position_corners(index: usize, count: usize, outer: f32, inner: f32) -> Corners {
++    let top = if index == 0 { outer } else { inner };
++    let bottom = if index + 1 == count { outer } else { inner };
++    Corners::new(top, top, bottom, bottom)
++}
++
++fn group_label(label: Option<&str>) -> Option<&str> {
++    label.filter(|label| !label.trim().is_empty())
++}
++
++fn text_alignment(direction: LayoutDirection) -> TextAlignment {
++    match direction {
++        LayoutDirection::LeftToRight => TextAlignment::Left,
++        LayoutDirection::RightToLeft => TextAlignment::Right,
++    }
++}
++
++fn viewport_id(menu_id: &str) -> String {
++    format!("{menu_id}-viewport")
++}
++
++fn placement(
++    anchor: MenuAnchor,
++    options: &CommandMenuOptions<'_>,
++    minimum: f32,
++    count: usize,
++    geometry: Option<VerticalMenuGeometry>,
++) -> Option<VerticalPlacement> {
++    let plan = |height| place_menu(anchor, (options.preferred_width, height), options.direction);
++    let minimum_layout = plan(minimum)?;
++    let geometry = geometry.filter(|geometry| {
++        geometry.groups == count && (geometry.width - minimum_layout.bounds.width).abs() <= 0.5
++    });
++    let continuous = geometry.map_or(minimum, |geometry| {
++        geometry.height_without_gaps.max(minimum)
++    });
++    // Keep the viewport clipped until Runtime clears an old scroll offset.
++    // The separated layout can then let the group shadows escape the viewport.
++    if geometry.is_some_and(|geometry| geometry.offset_y == 0.) && count > 1 {
++        let gapped = continuous + GROUP_GAP * (count - 1) as f32;
++        if let Some(menu) = plan(gapped).filter(|layout| layout.bounds.height >= gapped) {
++            return Some(VerticalPlacement {
++                menu,
++                separated: true,
++                thumb: None,
++            });
++        }
++    }
++    let menu = plan(continuous)?;
++    let thumb = geometry.and_then(|geometry| {
++        scroll_thumb(
++            menu.bounds,
++            continuous,
++            geometry.offset_y,
++            options.direction,
++        )
++    });
++    Some(VerticalPlacement {
++        menu,
++        separated: false,
++        thumb,
++    })
++}
++
++fn scroll_thumb(
++    bounds: Rect,
++    content_height: f32,
++    offset: f32,
++    direction: LayoutDirection,
++) -> Option<Rect> {
++    let track = bounds.height - 2. * THUMB_VERTICAL;
++    let overflow = content_height - bounds.height;
++    if bounds.width < THUMB_WIDTH + 2. * THUMB_EDGE || track <= THUMB_MIN || overflow <= 0. {
++        return None;
++    }
++    let height = (track * bounds.height / content_height).clamp(THUMB_MIN, track);
++    let y = THUMB_VERTICAL + (track - height) * (offset / overflow).clamp(0., 1.);
++    let x = match direction {
++        LayoutDirection::LeftToRight => bounds.width - THUMB_WIDTH - THUMB_EDGE,
++        LayoutDirection::RightToLeft => THUMB_EDGE,
++    };
++    Some(Rect::new(x, y, THUMB_WIDTH, height))
++}
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 7707d92..0eee133 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -114,6 +114,7 @@ pub use chip::{ChipContent, ChipLeading, ChipOptions, ChipRemove, ChipStyle, Chi
+ pub use chip_group::ChipGridLayout;
+ pub use command_menu::{
+     CommandMenuEntry, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions,
++    VerticalCommandMenuGroup, VerticalMenuPalette,
+ };
+ pub use components::{
+     BadgedNavigationBarItem, ButtonKind, CardKind, CheckValue, ChipKind, ChoiceState, DividerKind,
+diff --git a/crates/surface-material/tests/vertical_command_menu.rs b/crates/surface-material/tests/vertical_command_menu.rs
+new file mode 100644
+index 0000000..f7b9f50
+--- /dev/null
++++ b/crates/surface-material/tests/vertical_command_menu.rs
+@@ -0,0 +1,420 @@
++use surface::{Color, Corners, ExtendedPaintOp, Node, Rect, Role, Style};
++use surface_app::{
++    AccessibilityScrollDirection, AccessibilityScrollResult, AnimationFrame, AnimationUpdate,
++    Application, EditKey, Event, Runtime, View,
++};
++use surface_material::{
++    shape::LayoutDirection, CommandMenuItem, CommandMenuMeasurement, CommandMenuOptions, Theme,
++    VectorIcon, VerticalCommandMenuGroup, VerticalMenuPalette,
++};
++use surface_wgpu::TextSystem;
++
++#[derive(Clone, Copy)]
++enum Message {
++    Open,
++    Dismiss,
++    Choose(&'static str),
++}
++
++#[derive(Default)]
++struct Fixture {
++    open: bool,
++    chosen: Vec<&'static str>,
++    rtl: bool,
++    large: bool,
++    palette: VerticalMenuPalette,
++    many: bool,
++    measurement: CommandMenuMeasurement,
++}
++
++impl Fixture {
++    fn theme(&self) -> Theme {
++        if self.rtl {
++            Theme::dark()
++        } else {
++            Theme::light()
++        }
++    }
++}
++
++impl Application for Fixture {
++    type Message = Message;
++
++    fn update(&mut self, message: Self::Message) {
++        match message {
++            Message::Open => self.open = true,
++            Message::Dismiss => self.open = false,
++            Message::Choose(id) => {
++                self.chosen.push(id);
++                self.open = false;
++            }
++        }
++    }
++
++    fn text_scale(&self) -> f32 {
++        if self.large {
++            2.
++        } else {
++            1.
++        }
++    }
++
++    fn animation_frame(&mut self, frame: AnimationFrame<'_>) -> AnimationUpdate {
++        self.measurement.advance("vertical", "trigger", &frame)
++    }
++
++    fn view(&self) -> View<Self::Message> {
++        let theme = self.theme();
++        let icon = || VectorIcon::new([[2., 2.], [22., 2.], [22., 22.], [2., 22.]]);
++        let command = |id: &'static str, label, disabled, icons| CommandMenuItem {
++            id,
++            label,
++            leading_icon: if icons { icon() } else { None },
++            trailing_icon: if icons { icon() } else { None },
++            disabled,
++            on_press: Message::Choose(id),
++        };
++        let mut next = vec![command("archive", "封存", false, false)];
++        if self.many {
++            next.extend([
++                command("load", "載入已儲存的工作區與標籤", false, false),
++                command("clear", "清除", false, false),
++                command("sort", "排序", false, false),
++                command("report", "列出工作區中的完整報告", false, false),
++                command("last", "結束", false, false),
++            ]);
++        }
++        let menu = theme.vertical_command_menu(
++            CommandMenuOptions {
++                id: "vertical",
++                label: "報告操作",
++                trigger_id: "trigger",
++                open: self.open,
++                direction: if self.rtl {
++                    LayoutDirection::RightToLeft
++                } else {
++                    LayoutDirection::LeftToRight
++                },
++                preferred_width: 240.,
++                restore_focus_to: None,
++            },
++            self.palette,
++            theme.button("trigger", "開啟", Message::Open),
++            [
++                VerticalCommandMenuGroup {
++                    id: "documents",
++                    label: Some("文件"),
++                    items: vec![
++                        command("disabled", "停用", true, false),
++                        command("save", "儲存", false, true),
++                    ],
++                },
++                VerticalCommandMenuGroup {
++                    id: "other",
++                    label: Some("其他動作"),
++                    items: next,
++                },
++                VerticalCommandMenuGroup {
++                    id: "empty",
++                    label: Some("沒有可用的動作"),
++                    items: Vec::new(),
++                },
++            ],
++            Message::Dismiss,
++            &self.measurement,
++        );
++        View::new(Node::new(Role::Window, "Gallery").styled(Style::column().padding(20.)))
++            .children([menu])
++    }
++}
++
++fn settle(runtime: &mut Runtime<Fixture>, width: f32, height: f32) {
++    let mut fonts = TextSystem::default();
++    for _ in 0..7 {
++        runtime.render_extended(width, height, &mut fonts).unwrap();
++    }
++}
++
++fn render_until_idle(runtime: &mut Runtime<Fixture>, width: f32, height: f32) -> usize {
++    let mut fonts = TextSystem::default();
++    for count in 1..=8 {
++        runtime.render_extended(width, height, &mut fonts).unwrap();
++        if !runtime.needs_frame() {
++            return count;
++        }
++    }
++    panic!("menu still needs frames after layout settled");
++}
++
++fn get<'a>(runtime: &'a Runtime<Fixture>, id: &str) -> &'a Node {
++    runtime.dom().get(runtime.dom().by_id(id).unwrap()).unwrap()
++}
++
++fn bounds(runtime: &Runtime<Fixture>, id: &str) -> Rect {
++    runtime.computed().unwrap().nodes[runtime.dom().by_id(id).unwrap().index()].bounds
++}
++
++fn right(bounds: Rect) -> f32 {
++    bounds.x + bounds.width
++}
++
++fn bottom(bounds: Rect) -> f32 {
++    bounds.y + bounds.height
++}
++
++fn key(runtime: &mut Runtime<Fixture>, key: EditKey) {
++    assert!(runtime
++        .dispatch(Event::Edit {
++            key,
++            extend: false,
++            by_word: false
++        })
++        .unwrap());
++}
++
++fn open(runtime: &mut Runtime<Fixture>, width: f32, height: f32) {
++    settle(runtime, width, height);
++    assert!(runtime.activate("trigger").unwrap());
++    settle(runtime, width, height);
++}
++
++#[test]
++fn grouped_commands_use_two_token_palettes_and_one_keyboard_scope() {
++    for (rtl, palette) in [
++        (false, VerticalMenuPalette::Standard),
++        (true, VerticalMenuPalette::Vibrant),
++    ] {
++        let mut runtime = Runtime::new(Fixture {
++            rtl,
++            palette,
++            ..Fixture::default()
++        })
++        .unwrap();
++        open(&mut runtime, 720., 640.);
++        let group = bounds(&runtime, "documents");
++        assert_eq!(bounds(&runtime, "other").y - bottom(group), 2.);
++        assert_eq!(get(&runtime, "documents").name(), "文件");
++        assert_eq!(get(&runtime, "documents-header").text_value(), Some("文件"));
++        assert_eq!(get(&runtime, "vertical").role(), Role::Menu);
++        assert_eq!(get(&runtime, "vertical").name(), "報告操作");
++        assert_eq!(get(&runtime, "trigger").expanded_state(), Some(true));
++        assert_eq!(
++            get(&runtime, "documents").style().corner_radii(),
++            Corners::new(16., 16., 8., 8.)
++        );
++        assert_eq!(
++            get(&runtime, "other").style().corner_radii(),
++            Corners::new(8., 8., 16., 16.)
++        );
++        assert_eq!(
++            get(&runtime, "vertical").style().background,
++            Color::TRANSPARENT
++        );
++        let theme = runtime.app().theme();
++        let (surface, ink, icon) = if rtl {
++            (
++                theme.colors.tertiary_container,
++                theme.colors.on_tertiary_container,
++                theme.colors.on_tertiary_container,
++            )
++        } else {
++            (
++                theme.colors.surface_container_low,
++                theme.colors.on_surface,
++                theme.colors.on_surface_variant,
++            )
++        };
++        assert_eq!(get(&runtime, "documents").style().background, surface);
++        assert_eq!(get(&runtime, "save-label").style().foreground, ink);
++        let target = bounds(&runtime, "save");
++        let face = bounds(&runtime, "save-face");
++        let leading = bounds(&runtime, "save-leading");
++        let trailing = bounds(&runtime, "save-trailing");
++        assert_eq!(
++            (target.height, face.height, face.y - target.y),
++            (48., 44., 2.)
++        );
++        assert_eq!((leading.width, leading.height), (20., 20.));
++        let (left, right_icon) = if rtl {
++            (trailing, leading)
++        } else {
++            (leading, trailing)
++        };
++        assert_eq!(left.x - face.x, 16.);
++        assert_eq!(right(face) - right(right_icon), 16.);
++        let mut fonts = TextSystem::default();
++        let paint = runtime.render_extended(720., 640., &mut fonts).unwrap();
++        assert!(paint
++            .ops()
++            .iter()
++            .any(|op| matches!(op, ExtendedPaintOp::FillPath(path)
++            if path.color() == icon && path.rect().intersect(leading) == path.rect())));
++        assert!(runtime.dom().by_id("empty").is_none());
++        assert!(runtime.dom().by_id("vertical-scroll-thumb").is_none());
++
++        assert_eq!(runtime.focused(), Some("disabled"));
++        runtime.dispatch(Event::Activate).unwrap();
++        assert!(runtime.app().chosen.is_empty());
++        key(&mut runtime, EditKey::Down);
++        assert_eq!(runtime.focused(), Some("save"));
++        key(&mut runtime, EditKey::Down);
++        assert_eq!(runtime.focused(), Some("archive"));
++        runtime.dispatch(Event::Activate).unwrap();
++        settle(&mut runtime, 720., 640.);
++        assert_eq!(runtime.app().chosen, vec!["archive"]);
++        assert_eq!(runtime.focused(), Some("trigger"));
++        assert!(runtime.dom().by_id("vertical").is_none());
++
++        open(&mut runtime, 720., 640.);
++        let target = bounds(&runtime, "save");
++        let x = target.x + target.width / 2.;
++        let y = target.y + target.height / 2.;
++        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++        assert_eq!(runtime.focused(), Some("save"));
++        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++        render_until_idle(&mut runtime, 720., 640.);
++        assert_eq!(runtime.app().chosen, vec!["archive", "save"]);
++        assert_eq!(runtime.focused(), Some("trigger"));
++        assert!(runtime.dom().by_id("vertical").is_none());
++    }
++}
++
++#[test]
++fn disabled_click_stays_in_a_separated_menu_and_outside_click_dismisses() {
++    let mut runtime = Runtime::new(Fixture::default()).unwrap();
++    open(&mut runtime, 720., 640.);
++
++    let panel = bounds(&runtime, "vertical");
++    let group = bounds(&runtime, "documents");
++    let gap = bounds(&runtime, "other").y - bottom(group);
++    let row = bounds(&runtime, "disabled");
++    let (x, y) = (row.x + row.width / 2., row.y + row.height / 2.);
++    assert_eq!(gap, 2.);
++    assert_eq!(
++        get(&runtime, "vertical").style().background,
++        Color::TRANSPARENT
++    );
++    assert!(!get(&runtime, "vertical").style().clip);
++    assert_eq!(get(&runtime, "documents").style().background.3, 255);
++    assert!(panel.contains(x, y) && group.contains(x, y));
++    assert!(get(&runtime, "disabled").is_disabled());
++    assert_eq!(runtime.focused(), Some("disabled"));
++
++    let click = |runtime: &mut Runtime<Fixture>, x, y| {
++        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    };
++    click(&mut runtime, x, y);
++    assert!(runtime.app().open, "a disabled row is inside the popup");
++    assert!(runtime.app().chosen.is_empty());
++    assert_eq!(runtime.focused(), Some("disabled"));
++
++    assert!(!panel.contains(700., 620.));
++    click(&mut runtime, 700., 620.);
++    assert!(!runtime.app().open);
++    assert!(runtime.app().chosen.is_empty());
++    assert_eq!(runtime.focused(), Some("trigger"));
++
++    open(&mut runtime, 720., 640.);
++    let group = bounds(&runtime, "documents");
++    let next = bounds(&runtime, "other");
++    let gap_y = (bottom(group) + next.y) / 2.;
++    assert!(bounds(&runtime, "vertical").contains(x, gap_y));
++    assert!(!group.contains(x, gap_y) && !next.contains(x, gap_y));
++    click(&mut runtime, x, gap_y);
++    assert!(!runtime.app().open);
++    assert!(runtime.app().chosen.is_empty());
++    assert_eq!(runtime.focused(), Some("trigger"));
++}
++
++#[test]
++fn overflow_has_real_mirrored_thumb_and_retains_group_and_focus_on_resize() {
++    for rtl in [false, true] {
++        let mut runtime = Runtime::new(Fixture {
++            rtl,
++            large: true,
++            many: true,
++            ..Fixture::default()
++        })
++        .unwrap();
++        open(&mut runtime, 320., 270.);
++        let viewport = bounds(&runtime, "vertical-viewport");
++        let group = bounds(&runtime, "documents");
++        assert_eq!(bounds(&runtime, "other").y, bottom(group));
++        assert!(bounds(&runtime, "vertical-content").height > viewport.height);
++        assert!(bounds(&runtime, "report-label").height >= 48.);
++        let start = bounds(&runtime, "vertical-scroll-thumb");
++        assert_eq!((start.width, start.y - viewport.y), (4., 4.));
++        assert_eq!(
++            if rtl {
++                start.x - viewport.x
++            } else {
++                right(viewport) - right(start)
++            },
++            2.
++        );
++        assert!(!get(&runtime, "vertical-scroll-thumb").is_focusable());
++        runtime
++            .dispatch(Event::Scroll {
++                x: viewport.x + viewport.width / 2.,
++                y: viewport.y + viewport.height / 2.,
++                delta_x: 0.,
++                delta_y: 38.,
++            })
++            .unwrap();
++        assert!(render_until_idle(&mut runtime, 320., 270.) > 1);
++        let wheel = bounds(&runtime, "vertical-scroll-thumb");
++        assert!(
++            runtime
++                .scroll_metrics("vertical-viewport")
++                .unwrap()
++                .offset
++                .1
++                > 0.
++        );
++        assert!(wheel.y > start.y);
++        assert_eq!(runtime.focused(), Some("disabled"));
++        let viewport_id = runtime.dom().by_id("vertical-viewport").unwrap();
++        let page_down = runtime
++            .accessibility_frame()
++            .unwrap()
++            .scroll_page_target(viewport_id, AccessibilityScrollDirection::Down)
++            .unwrap();
++        assert_eq!(
++            runtime.accessibility_scroll_page(&page_down).unwrap(),
++            AccessibilityScrollResult::Scheduled
++        );
++        assert!(render_until_idle(&mut runtime, 320., 270.) > 1);
++        let page = bounds(&runtime, "vertical-scroll-thumb");
++        assert!(page.y > wheel.y);
++        assert_eq!(runtime.focused(), Some("disabled"));
++
++        let tail_unrevealed = bounds(&runtime, "last");
++        key(&mut runtime, EditKey::End);
++        assert!(render_until_idle(&mut runtime, 320., 270.) > 1);
++        assert_eq!(runtime.focused(), Some("last"));
++        let tail_revealed = bounds(&runtime, "last");
++        let end = bounds(&runtime, "vertical-scroll-thumb");
++        assert!(tail_revealed.y < tail_unrevealed.y);
++        assert!(bottom(tail_revealed) <= bottom(viewport));
++        assert!(end.y > page.y);
++        assert!(bottom(end) <= bottom(viewport) - 3.5);
++        assert!(render_until_idle(&mut runtime, 720., 900.) > 1);
++        let anchor = runtime.app().measurement.anchor().unwrap();
++        assert_eq!(anchor.viewport, Rect::new(0., 0., 720., 900.));
++        assert_eq!(anchor.trigger, bounds(&runtime, "trigger"));
++        assert!(bounds(&runtime, "vertical").height > viewport.height);
++        assert_eq!(runtime.focused(), Some("last"));
++        assert!(runtime.dom().by_id("vertical-scroll-thumb").is_none());
++        assert_eq!(
++            bounds(&runtime, "other").y - bottom(bounds(&runtime, "documents")),
++            2.
++        );
++        assert_eq!(
++            bounds(&runtime, "vertical-content").y,
++            bounds(&runtime, "vertical-viewport").y,
++            "Fitted groups must clear the old scroll offset"
++        );
++        assert_eq!(get(&runtime, "other").name(), "其他動作");
++    }
++}
+diff --git a/crates/surface-platform/src/lib.rs b/crates/surface-platform/src/lib.rs
+index a306102..c157b6c 100644
+--- a/crates/surface-platform/src/lib.rs
++++ b/crates/surface-platform/src/lib.rs
+@@ -1255,9 +1255,7 @@ impl<A: Application> ApplicationHandler<UserEvent> for Host<A> {
+             }
+             WindowEvent::Focused(false) => {
+                 #[cfg(target_arch = "wasm32")]
+-                {
+-                    let _ = self.proxy.send_event(UserEvent::VerifyWebFocus);
+-                }
++                web_accessibility::defer_focus_check(&self.proxy);
+                 #[cfg(not(target_arch = "wasm32"))]
+                 {
+                     self.reset_pointer_route();
+diff --git a/crates/surface-platform/src/web_accessibility.rs b/crates/surface-platform/src/web_accessibility.rs
+index e1e8b22..498e248 100644
+--- a/crates/surface-platform/src/web_accessibility.rs
++++ b/crates/surface-platform/src/web_accessibility.rs
+@@ -24,6 +24,19 @@ const ROOT: &str = "surface-accessibility";
+ const TEXT_INPUT: &str = "surface-text-input";
+ type EventListener = Closure<dyn FnMut(web_sys::Event)>;
+ 
++pub(super) fn defer_focus_check(proxy: &EventLoopProxy<UserEvent>) {
++    let Some(browser) = web_sys::window() else {
++        return;
++    };
++    // During blur the document can report the body before focusing another
++    // Surface control. Check at the next task, after the browser moves focus.
++    let proxy = proxy.clone();
++    let callback = Closure::once_into_js(move || {
++        let _ = proxy.send_event(UserEvent::VerifyWebFocus);
++    });
++    let _ = browser.set_timeout_with_callback(callback.unchecked_ref());
++}
++
+ pub(crate) fn contains(element: &Element) -> bool {
+     element
+         .closest("#surface-accessibility")
+@@ -116,7 +129,7 @@ impl WebAccessibility {
+             let projecting_focus = Rc::clone(&bridge.projecting_focus);
+             let callback = EventListener::new(move |event: web_sys::Event| {
+                 if name == "focusout" {
+-                    let _ = proxy.send_event(UserEvent::VerifyWebFocus);
++                    defer_focus_check(&proxy);
+                     return;
+                 }
+                 let Some(element) = event
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+index ee3b8df..0537bc8 100644
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -267,10 +267,10 @@
+       "spec": "https://m3.material.io/components/menus/overview",
+       "status": "partial",
+       "variant_review": "pending",
+-      "desktop_evidence": "Headless Metal covers a named command menu, keyboard action, focus on a disabled item, focus return, and scroll in a 320 dp RTL viewport at 200% text. Two runs reproduce five PNGs through Page.screenshot, CLI and MCP.",
+-      "web_evidence": "Chrome WebGPU M267–M269 cover trusted keyboard and pointer input, menu and separator roles, expanded and disabled semantics, Tab in both directions, and outside dismissal. They check paint in light and dark and scroll at 320 dp with 200% RTL text.",
+-      "implemented": "A Baseline M3 menu with measured placement, grouped commands, leading and trailing icons, wrapped labels, and bounded scrolling. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup still supports the original skip-disabled policy. Expressive variants, submenus, system high contrast, and live screen-reader speech remain open.",
+-      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection."
++      "desktop_evidence": "Headless Metal covers keyboard action, focus return, disabled commands, and scroll at 320 dp with 200% RTL text. The Baseline replay verified five PNGs. The vertical menu replay verified eight PNGs across two passes, including Standard in light, Vibrant in light, and Vibrant at both scroll positions in dark. Page.screenshot, CLI, and MCP produced matching PNG bytes.",
++      "web_evidence": "Chrome WebGPU M267–M269 cover Baseline semantics, keys, pointer input, and compact scrolling. M370–M372 cover two vertical palettes, named groups, a single action per click, focus on reopen, Tab, focus outside Surface, dark RTL overflow, and repositioning on resize. The six scoped steps passed 276 checks and verified six PNGs in headless Chrome.",
++      "implemented": "A Baseline menu and Standard and Vibrant vertical Expressive command menus. They share measured placement, leading and trailing icons, wrapped labels, and bounded scrolling. The vertical menus use one to three named or unnamed groups, with gaps when they fit and a logical-trailing scrollbar when they overflow. A disabled command can receive focus and stays inactive. Selection and dismissal use caller messages. The legacy positioned popup keeps its skip-disabled policy. Checkable commands, submenus, system high contrast, and live screen-reader speech remain open.",
++      "unit_evidence": "Material and Runtime tests cover visible trigger bounds, placement above or below, logical-edge mirroring, keyboard focus and reveal, rejection of disabled input, and click-through protection. Vertical menu tests cover both palettes, accessibility group order, pointer activation and focus return, and scrollbar geometry after resizing."
+     },
+     {
+       "id": "radio-button",
+diff --git a/docs/material.md b/docs/material.md
+index 84cffd3..013eb64 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -1956,6 +1956,26 @@ with right-to-left layout and large text.
+ [Material 3 Menu specifications](https://m3.material.io/components/menus/specs) ·
+ [WAI menu keyboard guidance](https://www.w3.org/WAI/ARIA/apg/patterns/menubar/#keyboard-interaction)
+ 
++### Vertical Expressive command menus
++
++Use `Theme::vertical_command_menu` with the same button, options, and
++measurement as the Baseline menu. Pass `VerticalMenuPalette::Standard`
++for a surface-colored menu or `VerticalMenuPalette::Vibrant` for a
++tertiary-colored menu. Pass one to three `VerticalCommandMenuGroup`
++values. Give each group a stable ID. Set its optional label to name
++the group and show its heading.
++
++When all groups fit, the menu uses 2 dp gaps. In a short viewport,
++it removes the gaps and scrolls inside the popup. A visible thumb
++shows the scroll position. The trigger, groups, and commands keep
++the same IDs through resize. Arrow keys, Home, and End move through
++the groups. The application handles each command and dismissal.
++
++Open **直向分組選單** in the Gallery's **浮層** tab. Use **鮮明** to change
++the palette and **多區塊** to switch between layouts.
++[Google Menu specifications](https://m3.material.io/components/menus/specs) ·
++[Pinned Compose menu defaults](https://android.googlesource.com/platform/frameworks/support/+/268d841a45644cadf438fc335c793869728449ec/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MenuDefaults.kt)
++
+ ## Dividers
+ 
+ Use `Theme::decorative_divider` to separate adjacent content with a 1 dp
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 6479144..f9de3a7 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -184,7 +184,8 @@ pub const STEPS: &[&str] = &[
+     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
+     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+-    "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369",
++    "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
++    "M371", "M372",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -328,7 +329,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_text_field_disabled_contrast::run(env, chrome, &url).await?;
+     material_text_field_system_pair::run(env, chrome, &url).await?;
+     material_horizontal_navigation_bar::run(env, chrome, &url).await?;
+-    material_adaptive_navigation_scaffold::run(env, chrome, &url).await
++    material_adaptive_navigation_scaffold::run(env, chrome, &url).await?;
++    material_command_menu::run_vertical(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -587,6 +589,7 @@ mod tests {
+         let system_field_pair = super::material_text_field_system_pair::STEPS;
+         let horizontal_bar = super::material_horizontal_navigation_bar::STEPS;
+         let adaptive_navigation = super::material_adaptive_navigation_scaffold::STEPS;
++        let vertical_menu = super::material_command_menu::VERTICAL_STEPS;
+         assert!(super::STEPS.ends_with(
+             &[
+                 placeholder.as_slice(),
+@@ -595,6 +598,7 @@ mod tests {
+                 system_field_pair.as_slice(),
+                 horizontal_bar.as_slice(),
+                 adaptive_navigation.as_slice(),
++                vertical_menu.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_command_menu.rs b/e2e/src/material_command_menu.rs
+index 10170af..a121484 100644
+--- a/e2e/src/material_command_menu.rs
++++ b/e2e/src/material_command_menu.rs
+@@ -20,6 +20,15 @@ const DISABLED: &str = "menu-demo-archive";
+ const FIND: &str = "menu-demo-find";
+ const LAST: &str = "menu-demo-details";
+ const OUTSIDE: &str = "menu-demo-list";
++const VERTICAL_SHOW: &str = "menu-demo-vertical-show";
++const VERTICAL_GROUPS: [&str; 3] = [
++    "menu-demo-file-group",
++    "menu-demo-copy-group",
++    "menu-demo-info-group",
++];
++const THUMB: &str = "menu-demo-panel-scroll-thumb";
++const VERTICAL_VIEWPORT: &str = "menu-demo-panel-viewport";
++pub(super) const VERTICAL_STEPS: [&str; 3] = ["M370", "M371", "M372"];
+ 
+ async fn route(tab: &Tab, url: &str) -> Result<()> {
+     tab.goto(url).await?;
+@@ -277,3 +286,346 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+     env.write_json("browser-material-command-menu.json", &report)?;
+     result
+ }
++
++async fn vertical_groups(tab: &Tab, gap: f64) -> Result<[[f64; 4]; 3]> {
++    let [first, second, third] = VERTICAL_GROUPS;
++    tab.wait_for(&format!(
++        "(() => {{ const [a,b,c] = [{first:?},{second:?},{third:?}].map(id => window.gallery.control_bounds(id));
++            return a && b && c && Math.abs(b[1]-a[1]-a[3]-{gap}) < 0.2
++                && Math.abs(c[1]-b[1]-b[3]-{gap}) < 0.2; }})()"
++    )).await?;
++    Ok([
++        bounds(tab, first).await?,
++        bounds(tab, second).await?,
++        bounds(tab, third).await?,
++    ])
++}
++
++async fn vertical_paint(
++    env: &Env,
++    tab: &Tab,
++    photo: &str,
++    group: [f64; 4],
++    thumb: Option<[f64; 4]>,
++) -> Result<Value> {
++    tab.settle().await?;
++    let fixture = state(tab).await?;
++    let [red, green, blue, alpha]: [u8; 4] =
++        serde_json::from_value(fixture["menu_demo"]["palette"][0].clone())
++            .context("vertical menu exposes its group paint token")?;
++    check_eq!(alpha, 255, "the palette uses opaque group paint");
++    let path = env.artifact(&format!("material-vertical-menu-{photo}.png"));
++    tab.screenshot(&path).await?;
++    let raster = Raster::read(tab, path).await?;
++    let [x, y, width, height] = group;
++    let fill = raster.sample(x + width / 2., y + height / 2.)?;
++    let inset = if fixture["menu_demo"]["rtl"] == true {
++        width - 2.
++    } else {
++        2.
++    };
++    let edge = raster.sample(x + inset, y + height / 2.)?;
++    check_eq!(
++        edge,
++        [red, green, blue],
++        "the group paints its Material palette"
++    );
++    let thumb_color = if let Some([x, y, width, height]) = thumb {
++        let [red, green, blue, _]: [u8; 4] =
++            serde_json::from_value(fixture["menu_demo"]["palette"][1].clone())
++                .context("Vibrant menu exposes its scrollbar paint token")?;
++        let ink = raster.sample(x + width / 2., y + height / 2.)?;
++        check_eq!(
++            ink,
++            [red, green, blue],
++            "the scrollbar paints its contrasted token"
++        );
++        Some(ink)
++    } else {
++        None
++    };
++    Ok(json!({
++        "group": group,
++        "color": edge,
++        "center": fill,
++        "thumb_color": thumb_color,
++        "commands_at_capture": fixture["menu_demo"]["commands_executed"],
++    }))
++}
++
++async fn vertical_standard(env: &Env, tab: &Tab) -> Result<Value> {
++    open(tab).await?;
++    let boxes = vertical_groups(tab, 2.).await?;
++    let tree = ax_tree(tab).await?;
++    ax(&tree, "menu", "檔案動作")?;
++    for (id, label) in VERTICAL_GROUPS.into_iter().zip(["檔案", "整理", "資訊"]) {
++        ax(&tree, "group", label)?;
++        check_eq!(
++            tab.eval(&format!(
++                "{}?.contains({})",
++                projected(PANEL),
++                projected(id)
++            ))
++            .await?,
++            json!(true),
++            "the named group belongs to the menu's accessibility projection"
++        );
++    }
++    tab.press("ArrowDown").await?;
++    focused(tab, DISABLED).await?;
++    tab.press("Enter").await?;
++    until(
++        tab,
++        "s.menu_demo.open && s.menu_demo.commands_executed === 0",
++    )
++    .await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, FIND).await?;
++    tab.press("ArrowDown").await?;
++    focused(tab, "menu-demo-rename").await?;
++    let paint = vertical_paint(env, tab, "standard", boxes[0], None).await?;
++    check_eq!(
++        tab.eval(&format!(
++            "window.gallery.control_bounds({THUMB:?}).length === 0"
++        ))
++        .await?,
++        json!(true),
++        "a fitting menu needs no scrollbar"
++    );
++    tab.press("End").await?;
++    focused(tab, LAST).await?;
++    tab.press("Enter").await?;
++    until(
++        tab,
++        "!s.menu_demo.open && s.menu_demo.commands_executed === 1 && s.menu_demo.last === '顯示詳細資料'",
++    )
++    .await?;
++    focused(tab, OPENER).await?;
++    Ok(json!({"groups":boxes,"paint":paint,"last":"顯示詳細資料"}))
++}
++
++async fn vertical_vibrant(env: &Env, tab: &Tab) -> Result<Value> {
++    activate(tab, "menu-demo-vibrant").await?;
++    activate(tab, "menu-demo-groups").await?;
++    until(tab, "s.menu_demo.vibrant && !s.menu_demo.grouped").await?;
++    open(tab).await?;
++    let group = bounds(tab, VERTICAL_GROUPS[0]).await?;
++    check!(
++        contains(group, bounds(tab, FIRST).await?) && contains(group, bounds(tab, LAST).await?),
++        "one group contains all commands"
++    );
++    let mut paint = vertical_paint(env, tab, "vibrant", group, None).await?;
++    let (x, y) = point(tab, "menu-demo-copy", 0.5).await?;
++    tab.click(x, y).await?;
++    until(
++        tab,
++        "!s.menu_demo.open && s.menu_demo.commands_executed === 2 && s.menu_demo.last === '建立副本'",
++    )
++    .await?;
++    canvas_focus(tab, OPENER)
++        .await
++        .context("the trusted click returns focus to the trigger through the canvas")?;
++    let after = state(tab).await?;
++    paint["pointer_command"] = json!({
++        "before_count": paint["commands_at_capture"],
++        "after_count": after["menu_demo"]["commands_executed"],
++        "focus": after["focused"],
++        "last": after["menu_demo"]["last"],
++    });
++    open(tab)
++        .await
++        .context("the projected trigger keeps focus when it reopens from the canvas")?;
++    paint["reopen_focus"] = state(tab).await?["focused"].clone();
++    tab.press("Tab").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OUTSIDE).await?;
++    paint["tab_focus"] = state(tab).await?["focused"].clone();
++
++    // An actual focus change to the surrounding page must still leave Surface.
++    tab.eval(
++        "(() => { const button = document.createElement('button');
++            button.id = 'menu-demo-host-focus'; button.textContent = 'Host action';
++            document.body.append(button); button.focus(); })()",
++    )
++    .await?;
++    until(tab, "s.focused === null").await?;
++    let host_focus = tab.eval("document.activeElement.id").await?;
++    check_eq!(
++        host_focus,
++        "menu-demo-host-focus",
++        "the surrounding page keeps its focus"
++    );
++    paint["external_focus"] = json!({
++        "element": host_focus,
++        "surface_focus": state(tab).await?["focused"],
++    });
++    tab.eval("document.getElementById('menu-demo-host-focus').remove()")
++        .await?;
++    Ok(paint)
++}
++
++async fn vertical_overflow(env: &Env, tab: &Tab) -> Result<Value> {
++    for control in [
++        "menu-demo-groups",
++        "menu-demo-theme",
++        "menu-demo-rtl",
++        "menu-demo-large-text",
++        "menu-demo-bottom",
++    ] {
++        activate(tab, control).await?;
++    }
++    until(
++        tab,
++        "s.dark && s.menu_demo.grouped && s.menu_demo.vibrant &&
++          s.menu_demo.rtl && s.menu_demo.text_scale === 2 && s.menu_demo.bottom_anchor",
++    )
++    .await?;
++    open(tab).await?;
++    vertical_groups(tab, 2.).await?;
++    resize(tab, 320, 480).await?;
++    focused(tab, FIRST).await?;
++    let groups = vertical_groups(tab, 0.).await?;
++    let panel = bounds(tab, PANEL).await?;
++    let viewport = bounds(tab, VERTICAL_VIEWPORT).await?;
++    let content = bounds(tab, "menu-demo-panel-content").await?;
++    let trigger = bounds(tab, OPENER).await?;
++    let top_thumb = bounds(tab, THUMB).await?;
++    let scroll_y = format!(
++        "JSON.parse(window.gallery.export_dom()).dom.nodes
++            .find(node => node.stable_id === {VERTICAL_VIEWPORT:?})?.style.scroll_y"
++    );
++    let scroll_before = tab
++        .eval(&scroll_y)
++        .await?
++        .as_f64()
++        .context("read the menu scroll offset")?;
++    check!(
++        contains([8., 8., 304., 464.], panel) && panel[1] + panel[3] <= trigger[1],
++        "the short RTL popup flips above its trigger and stays inside the viewport"
++    );
++    check!(
++        contains(panel, top_thumb) && top_thumb[0] < panel[0] + panel[2] / 2.,
++        "the overflow thumb is inside the logical trailing edge"
++    );
++    let rename = bounds(tab, "menu-demo-rename").await?;
++    check!(
++        rename[3] > 48.,
++        "large Chinese label wraps instead of truncating"
++    );
++    tab.press("End").await?;
++    focused(tab, LAST).await?;
++    tab.wait_for(&format!(
++        "window.gallery.control_bounds({THUMB:?})?.[1] > {}",
++        top_thumb[1]
++    ))
++    .await?;
++    let bottom_thumb = bounds(tab, THUMB).await?;
++    let last = bounds(tab, LAST).await?;
++    let scroll_after = tab
++        .eval(&scroll_y)
++        .await?
++        .as_f64()
++        .context("read the revealed scroll offset")?;
++    let thumb_height = ((viewport[3] - 8.) * viewport[3] / content[3]).max(16.);
++    check!(
++        contains(viewport, last)
++            && contains(panel, bottom_thumb)
++            && [top_thumb, bottom_thumb]
++                .iter()
++                .all(|thumb| (thumb[3] - thumb_height).abs() <= 1.)
++            && scroll_after > scroll_before,
++        "keyboard reveal scrolls the menu and moves the proportionally sized thumb"
++    );
++    let paint = vertical_paint(
++        env,
++        tab,
++        "dark-rtl",
++        bounds(tab, VERTICAL_GROUPS[2]).await?,
++        Some(bottom_thumb),
++    )
++    .await?;
++    check_eq!(
++        bounds(tab, OPENER).await?,
++        trigger,
++        "scrolling only moves content inside the menu"
++    );
++    resize(tab, 960, 1120).await?;
++    focused(tab, LAST).await?;
++    let restored_groups = vertical_groups(tab, 2.)
++        .await
++        .context("the expanded window restores the normal group gaps")?;
++    let [trigger_x, trigger_y, trigger_width, _] = bounds(tab, OPENER).await?;
++    let restored_panel = bounds(tab, PANEL).await?;
++    let [panel_x, panel_y, panel_width, panel_height] = restored_panel;
++    check!(
++        contains([8., 8., 944., 1104.], restored_panel)
++            && (panel_x + panel_width - trigger_x - trigger_width).abs() <= 1.
++            && (trigger_y - panel_y - panel_height - 4.).abs() <= 1.,
++        "the expanded popup moves with its RTL bottom trigger"
++    );
++    tab.wait_for(&format!("({scroll_y}) === 0")).await?;
++    let restored_scroll = tab.eval(&scroll_y).await?;
++    check!(
++        contains(
++            bounds(tab, VERTICAL_VIEWPORT).await?,
++            bounds(tab, LAST).await?
++        ),
++        "the last focused item stays visible after restoring the group gaps"
++    );
++    let restored_thumb = tab
++        .eval(&format!(
++            "Array.from(window.gallery.control_bounds({THUMB:?}))"
++        ))
++        .await?;
++    check_eq!(
++        restored_thumb,
++        json!([]),
++        "the scrollbar leaves once the menu fits again"
++    );
++    tab.press("Escape").await?;
++    until(tab, "!s.menu_demo.open").await?;
++    focused(tab, OPENER).await?;
++    Ok(
++        json!({"panel":panel,"viewport":viewport,"content":content,"rename":rename,
++              "trigger":trigger,"groups":groups,"last":last,
++              "scroll":[scroll_before,scroll_after],"thumb_top":top_thumb,
++              "thumb_bottom":bottom_thumb,"paint":paint,"restored_groups":restored_groups,
++              "restored_panel":restored_panel,"restored_scroll":restored_scroll,
++              "restored_thumb":restored_thumb}),
++    )
++}
++
++pub(super) async fn run_vertical(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 2444, 2.).await?;
++    let mut report = json!({"browser":chrome.version});
++    let result: Result<()> = async {
++        step(VERTICAL_STEPS[0], "Standard uses three named groups and two gaps with real keyboard navigation");
++        tab.goto(url).await?;
++        crate::smoke::ready(&tab, "gallery").await?;
++        resize(&tab, 960, 2400).await?;
++        activate(&tab, "section-2").await?;
++        until(&tab, "s.section === 2").await?;
++        activate(&tab, VERTICAL_SHOW).await?;
++        focused(&tab, BACK).await?;
++        resize(&tab, 960, 1120).await?;
++        report["adapter"] = tab.eval("(async()=>{const a=await navigator.gpu?.requestAdapter();if(!a)return null;const {isFallbackAdapter,vendor,architecture}=a.info;return {isFallbackAdapter,vendor,architecture};})()").await?;
++        check!(report["adapter"]["isFallbackAdapter"].is_boolean(), "WebGPU reports fallback status");
++        report["standard"] = vertical_standard(env, &tab).await?;
++        step(VERTICAL_STEPS[1], "Vibrant paints one group, takes a trusted click and returns Tab focus to the page");
++        report["vibrant"] = vertical_vibrant(env, &tab).await?;
++        step(VERTICAL_STEPS[2], "short dark RTL removes gaps and shows a scrollbar that follows trusted keys");
++        report["overflow"] = vertical_overflow(env, &tab).await?;
++        check!(tab.errors().is_empty(), "no page errors: {:?}", tab.errors());
++        Ok(())
++    }.await;
++    report["errors"] = json!(tab.errors());
++    if let Err(error) = &result {
++        report["failure"] = json!(format!("{error:#}"));
++        report["state_at_failure"] = state(&tab).await.unwrap_or(Value::Null);
++        let _ = tab
++            .screenshot(&env.artifact("material-vertical-menu-failure.png"))
++            .await;
++    }
++    env.write_json("browser-material-vertical-menu.json", &report)?;
++    result
++}
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index fa25ece..916767c 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -1909,6 +1909,7 @@ impl Application for Gallery {
+                     DialogDemo::show_transform_button(&t),
+                 ]));
+                 children.push(MenuDemo::show_button(&t));
++                children.push(MenuDemo::show_vertical_button(&t));
+             }
+             _ => {
+                 children.push(CardDemo::show_button(&t));
+@@ -2141,7 +2142,7 @@ mod web {
+         state["scroll_modal"] = s.scroll_modal_demo.inspect(&runtime);
+         state["search_overlay"] = s.search_overlay_demo.inspect();
+         state["dialog_demo"] = s.dialog_demo.inspect();
+-        state["menu_demo"] = s.menu_demo.inspect();
++        state["menu_demo"] = s.menu_demo.inspect(&theme);
+         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
+         state["adaptive_navigation"] = s.adaptive_navigation_demo.inspect(&theme);
+         state["switch_demo"] = s.switch_demo.inspect(&theme);
+diff --git a/examples/material-gallery/src/menu_demo.rs b/examples/material-gallery/src/menu_demo.rs
+index 0ee0243..a266b5e 100644
+--- a/examples/material-gallery/src/menu_demo.rs
++++ b/examples/material-gallery/src/menu_demo.rs
+@@ -2,7 +2,8 @@ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::{AnimationFrame, AnimationUpdate, View};
+ use surface_material::{
+     shape::LayoutDirection, ButtonKind, ChoiceState, CommandMenuEntry, CommandMenuItem,
+-    CommandMenuMeasurement, CommandMenuOptions, Theme,
++    CommandMenuMeasurement, CommandMenuOptions, Theme, VerticalCommandMenuGroup,
++    VerticalMenuPalette,
+ };
+ 
+ use crate::{
+@@ -13,6 +14,7 @@ use crate::{
+ 
+ pub(crate) const SECTION: usize = 2;
+ const SHOW: &str = "menu-demo-show";
++const SHOW_VERTICAL: &str = "menu-demo-vertical-show";
+ const BACK: &str = "menu-demo-back";
+ const OPENER: &str = "menu-demo-opener";
+ const MENU: &str = "menu-demo-panel";
+@@ -22,10 +24,13 @@ const FOOTER_CLEARANCE: f32 = 8.;
+ #[derive(Clone)]
+ pub enum MenuDemoEvent {
+     Show,
++    ShowVertical,
+     Back,
+     ToggleDirection,
+     ToggleLargeText,
+     ToggleBottomAnchor,
++    ToggleGroups,
++    ToggleVibrant,
+     ToggleOpen,
+     Dismiss,
+     Choose(&'static str),
+@@ -40,7 +45,11 @@ pub(crate) struct MenuDemo {
+     rtl: bool,
+     large_text: bool,
+     bottom_anchor: bool,
++    vertical: bool,
++    grouped: bool,
++    vibrant: bool,
+     last: Option<&'static str>,
++    commands_executed: usize,
+     outside_actions: usize,
+ }
+ 
+@@ -66,15 +75,22 @@ impl MenuDemo {
+     pub(crate) fn update(&mut self, event: MenuDemoEvent) {
+         use MenuDemoEvent::*;
+         match event {
+-            Show => self.visible = true,
++            Show | ShowVertical => {
++                self.visible = true;
++                self.vertical = matches!(event, ShowVertical);
++                self.grouped = self.vertical;
++            }
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+             ToggleBottomAnchor => self.bottom_anchor = !self.bottom_anchor,
++            ToggleGroups => self.grouped = !self.grouped,
++            ToggleVibrant => self.vibrant = !self.vibrant,
+             ToggleOpen => self.open = !self.open,
+             Dismiss => self.open = false,
+             Choose(label) => {
+                 self.last = Some(label);
++                self.commands_executed += 1;
+                 self.open = false;
+             }
+             OpenList => self.outside_actions += 1,
+@@ -106,6 +122,19 @@ impl MenuDemo {
+             .accessible_activation()
+     }
+ 
++    pub(crate) fn show_vertical_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW_VERTICAL,
++                "直向分組選單",
++                ButtonKind::Outlined,
++                false,
++                Message::MenuDemo(MenuDemoEvent::ShowVertical),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
+     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+         use MenuDemoEvent::*;
+         let direction = if self.rtl {
+@@ -122,17 +151,15 @@ impl MenuDemo {
+                 Message::MenuDemo(ToggleOpen),
+             )
+             .accessible_activation();
+-        let item = |id, label, leading_icon, trailing_icon, disabled| {
+-            CommandMenuEntry::Item(CommandMenuItem {
+-                id,
+-                label,
+-                leading_icon,
+-                trailing_icon,
+-                disabled,
+-                on_press: Message::MenuDemo(Choose(label)),
+-            })
++        let item = |id, label, leading_icon, trailing_icon, disabled| CommandMenuItem {
++            id,
++            label,
++            leading_icon,
++            trailing_icon,
++            disabled,
++            on_press: Message::MenuDemo(Choose(label)),
+         };
+-        let entries = [
++        let first = [
+             item(
+                 "menu-demo-inbox",
+                 "移到收件匣",
+@@ -154,9 +181,8 @@ impl MenuDemo {
+                 Some(rail_icons::search().clone()),
+                 false,
+             ),
+-            CommandMenuEntry::Separator {
+-                id: "menu-demo-divider",
+-            },
++        ];
++        let second = [
+             item(
+                 "menu-demo-rename",
+                 "重新命名目前選取的檔案",
+@@ -166,23 +192,77 @@ impl MenuDemo {
+             ),
+             item("menu-demo-copy", "建立副本", None, None, false),
+             item("menu-demo-export", "匯出檔案", None, None, false),
+-            item("menu-demo-details", "顯示詳細資料", None, None, false),
+         ];
+-        let menu = theme.command_menu(
+-            CommandMenuOptions {
+-                id: MENU,
+-                label: "檔案動作",
+-                trigger_id: OPENER,
+-                open: self.open,
+-                direction,
+-                preferred_width: 240.,
+-                restore_focus_to: Some(OPENER),
+-            },
+-            trigger,
+-            entries,
+-            Message::MenuDemo(Dismiss),
+-            &self.measurement,
+-        );
++        let details = item("menu-demo-details", "顯示詳細資料", None, None, false);
++        let options = CommandMenuOptions {
++            id: MENU,
++            label: "檔案動作",
++            trigger_id: OPENER,
++            open: self.open,
++            direction,
++            preferred_width: 240.,
++            restore_focus_to: Some(OPENER),
++        };
++        let menu = if self.vertical {
++            let groups = if self.grouped {
++                vec![
++                    VerticalCommandMenuGroup {
++                        id: "menu-demo-file-group",
++                        label: Some("檔案"),
++                        items: Vec::from(first),
++                    },
++                    VerticalCommandMenuGroup {
++                        id: "menu-demo-copy-group",
++                        label: Some("整理"),
++                        items: Vec::from(second),
++                    },
++                    VerticalCommandMenuGroup {
++                        id: "menu-demo-info-group",
++                        label: Some("資訊"),
++                        items: vec![details],
++                    },
++                ]
++            } else {
++                vec![VerticalCommandMenuGroup {
++                    id: "menu-demo-file-group",
++                    label: None,
++                    items: first.into_iter().chain(second).chain([details]).collect(),
++                }]
++            };
++            let palette = if self.vibrant {
++                VerticalMenuPalette::Vibrant
++            } else {
++                VerticalMenuPalette::Standard
++            };
++            theme.vertical_command_menu(
++                options,
++                palette,
++                trigger,
++                groups,
++                Message::MenuDemo(Dismiss),
++                &self.measurement,
++            )
++        } else {
++            let entries = first
++                .into_iter()
++                .map(CommandMenuEntry::Item)
++                .chain([CommandMenuEntry::Separator {
++                    id: "menu-demo-divider",
++                }])
++                .chain(
++                    second
++                        .into_iter()
++                        .chain([details])
++                        .map(CommandMenuEntry::Item),
++                );
++            theme.command_menu(
++                options,
++                trigger,
++                entries,
++                Message::MenuDemo(Dismiss),
++                &self.measurement,
++            )
++        };
+         let toggle = |id, label, selected, event| {
+             theme
+                 .segmented_button(
+@@ -196,38 +276,52 @@ impl MenuDemo {
+                 )
+                 .accessible_activation()
+         };
++        let mut toggles = vec![
++            theme
++                .tonal_button(BACK, "返回", Message::MenuDemo(Back))
++                .restore_focus_on_removal(if self.vertical { SHOW_VERTICAL } else { SHOW })
++                .accessible_activation(),
++            theme
++                .switch(
++                    "menu-demo-theme",
++                    "深色",
++                    ChoiceState {
++                        selected: dark,
++                        disabled: false,
++                    },
++                    Message::Theme,
++                )
++                .accessible_activation(),
++            toggle("menu-demo-rtl", "右起", self.rtl, ToggleDirection),
++            toggle(
++                "menu-demo-large-text",
++                "大字",
++                self.large_text,
++                ToggleLargeText,
++            ),
++            toggle(
++                "menu-demo-bottom",
++                "底部入口",
++                self.bottom_anchor,
++                ToggleBottomAnchor,
++            ),
++        ];
++        if self.vertical {
++            toggles.extend([
++                toggle("menu-demo-groups", "多區塊", self.grouped, ToggleGroups),
++                toggle("menu-demo-vibrant", "鮮明", self.vibrant, ToggleVibrant),
++            ]);
++        }
+         let controls = [
+-            theme.heading("menu-demo-title", "命令選單"),
+-            control_row(vec![
+-                theme
+-                    .tonal_button(BACK, "返回", Message::MenuDemo(Back))
+-                    .restore_focus_on_removal(SHOW)
+-                    .accessible_activation(),
+-                theme
+-                    .switch(
+-                        "menu-demo-theme",
+-                        "深色",
+-                        ChoiceState {
+-                            selected: dark,
+-                            disabled: false,
+-                        },
+-                        Message::Theme,
+-                    )
+-                    .accessible_activation(),
+-                toggle("menu-demo-rtl", "右起", self.rtl, ToggleDirection),
+-                toggle(
+-                    "menu-demo-large-text",
+-                    "大字",
+-                    self.large_text,
+-                    ToggleLargeText,
+-                ),
+-                toggle(
+-                    "menu-demo-bottom",
+-                    "底部入口",
+-                    self.bottom_anchor,
+-                    ToggleBottomAnchor,
+-                ),
+-            ]),
++            theme.heading(
++                "menu-demo-title",
++                if self.vertical {
++                    "直向分組選單"
++                } else {
++                    "命令選單"
++                },
++            ),
++            control_row(toggles),
+         ];
+         let list = theme
+             .button_with(
+@@ -279,14 +373,23 @@ impl MenuDemo {
+     }
+ 
+     #[cfg(target_arch = "wasm32")]
+-    pub(crate) fn inspect(&self) -> serde_json::Value {
++    pub(crate) fn inspect(&self, theme: &Theme) -> serde_json::Value {
+         serde_json::json!({
+             "visible": self.visible,
+             "open": self.open,
+             "rtl": self.rtl,
+             "text_scale": self.text_scale(),
+             "bottom_anchor": self.bottom_anchor,
++            "vertical": self.vertical,
++            "grouped": self.grouped,
++            "vibrant": self.vibrant,
++            "palette": if self.vibrant {
++                [theme.colors.tertiary_container, theme.colors.on_tertiary_container]
++            } else {
++                [theme.colors.surface_container_low, theme.colors.on_surface]
++            },
+             "last": self.last,
++            "commands_executed": self.commands_executed,
+             "outside_actions": self.outside_actions,
+         })
+     }
