@@ -1,0 +1,1180 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 750a425e22ca1696518cc3ae3251aa8fc83bb014..763f236c535e586fd5419475eef36b264fc50463 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.82"
++version = "0.1.83"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 85ec46c1e8c64950a30017b98534e36b73f613a3..19e4e76a5cb46e32f67c989cfd01cc471e32f015 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.82"
++version = "0.1.83"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/adaptive_navigation_scaffold.rs b/crates/surface-material/src/adaptive_navigation_scaffold.rs
+index 5d45b150e1fa4537c0decc70657721e41d7a44a2..3b3e3ba7d65bf461a4fb2bfa3d093200ac483b51 100644
+--- a/crates/surface-material/src/adaptive_navigation_scaffold.rs
++++ b/crates/surface-material/src/adaptive_navigation_scaffold.rs
+@@ -4,8 +4,8 @@ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ 
+ use crate::{
+-    adaptive::WindowWidthSizeClass, shape::LayoutDirection, FlexibleNavigationBarOptions,
+-    NavigationRailItem, Theme, WideNavigationRailMode,
++    adaptive::WindowWidthSizeClass, shape::LayoutDirection, BadgedFlexibleNavigationBarItem,
++    FlexibleNavigationBarOptions, NavigationRailItem, Theme, WideNavigationRailMode,
+ };
+ 
+ /// Stable identities and exact logical size of an adaptive navigation scaffold.
+@@ -81,30 +81,98 @@ impl Theme {
+                 }),
+             ),
+         };
+-        let style = if rail { Style::row() } else { Style::column() }
+-            .width(Length::Px(options.available_width))
+-            .height(Length::Px(options.available_height))
+-            .align(Align::Stretch);
+-        let mut shell = Node::new(Role::Group, "").id(options.id).styled(style);
+-        if rail && options.direction == LayoutDirection::RightToLeft {
+-            shell = shell.reverse_row();
++        Some(adaptive_scaffold_shell(options, page, navigation, rail))
++    }
++
++    /// Place a caller-owned page beside adaptive navigation destinations with
++    /// decorative badges.
++    ///
++    /// Use the same stable IDs, accessible names, selection state and messages
++    /// as the unbadged scaffold. Put the full localized badge meaning in the
++    /// destination's accessible name. The badge itself adds no accessibility
++    /// stop. The caller owns badge changes and current-page state.
++    ///
++    /// This uses the same compact, medium and expanded breakpoints as
++    /// [`adaptive_navigation_scaffold`](Self::adaptive_navigation_scaffold).
++    /// It reserves the same scaffold and navigation IDs. It returns `None`
++    /// for the same invalid sizes and destination counts.
++    pub fn adaptive_navigation_scaffold_with_badges<'a, M: 'a>(
++        &self,
++        options: AdaptiveNavigationScaffoldOptions<'_>,
++        page: View<M>,
++        items: impl IntoIterator<Item = BadgedFlexibleNavigationBarItem<'a, M>>,
++    ) -> Option<View<M>> {
++        let width_class = WindowWidthSizeClass::from_dp(options.available_width)?;
++        if !options.available_height.is_finite() || options.available_height < 64. {
++            return None;
++        }
++        let items: Vec<_> = items.into_iter().take(6).collect();
++        if !(3..=5).contains(&items.len()) {
++            return None;
+         }
+-        let content_style = if rail {
+-            Style::column().width(Length::Px(0.))
+-        } else {
+-            Style::column().height(Length::Px(0.))
++
++        let rail = width_class >= WindowWidthSizeClass::Expanded;
++        let bar_options = FlexibleNavigationBarOptions {
++            id: options.navigation_id,
++            name: options.name,
++            available_width: options.available_width,
++            direction: options.direction,
+         };
+-        let content = View::new(
+-            Node::new(Role::Group, "")
+-                .id(format!("{}-content", options.id))
+-                .styled(content_style.grow(1.).clip(true)),
+-        )
+-        .children([page]);
+-        let children = if rail {
+-            [navigation, content]
+-        } else {
+-            [content, navigation]
++        let navigation = match width_class {
++            WindowWidthSizeClass::Compact => {
++                self.flexible_navigation_bar_with_badges(bar_options, items)?
++            }
++            WindowWidthSizeClass::Medium => {
++                self.horizontal_flexible_navigation_bar_with_badges(bar_options, items)?
++            }
++            _ => self.scaffold_wide_navigation_rail(
++                options.navigation_id,
++                options.name,
++                items.into_iter().map(|entry| {
++                    self.wide_navigation_rail_item_with_badge(
++                        WideNavigationRailMode::Collapsed,
++                        options.direction,
++                        entry.item,
++                        entry.badge,
++                    )
++                    .suppress_repeated_activation()
++                    .accessibility_scroll_into_view()
++                }),
++            ),
+         };
+-        Some(View::new(shell).children(children))
++        Some(adaptive_scaffold_shell(options, page, navigation, rail))
++    }
++}
++
++fn adaptive_scaffold_shell<M>(
++    options: AdaptiveNavigationScaffoldOptions<'_>,
++    page: View<M>,
++    navigation: View<M>,
++    rail: bool,
++) -> View<M> {
++    let style = if rail { Style::row() } else { Style::column() }
++        .width(Length::Px(options.available_width))
++        .height(Length::Px(options.available_height))
++        .align(Align::Stretch);
++    let mut shell = Node::new(Role::Group, "").id(options.id).styled(style);
++    if rail && options.direction == LayoutDirection::RightToLeft {
++        shell = shell.reverse_row();
+     }
++    let content_style = if rail {
++        Style::column().width(Length::Px(0.))
++    } else {
++        Style::column().height(Length::Px(0.))
++    };
++    let content = View::new(
++        Node::new(Role::Group, "")
++            .id(format!("{}-content", options.id))
++            .styled(content_style.grow(1.).clip(true)),
++    )
++    .children([page]);
++    let children = if rail {
++        [navigation, content]
++    } else {
++        [content, navigation]
++    };
++    View::new(shell).children(children)
+ }
+diff --git a/crates/surface-material/src/badge.rs b/crates/surface-material/src/badge.rs
+index 9d6a8d4a11b774447c22fc7c11104ac2b6010a47..b72f4b187515e68b58185684521adcbfddb18b89 100644
+--- a/crates/surface-material/src/badge.rs
++++ b/crates/surface-material/src/badge.rs
+@@ -100,6 +100,7 @@ pub(crate) fn badge_headroom<M>(art_top_inset: f32) -> View<M> {
+         .styled(Style::default().with_text_style(typography::LABEL_SMALL));
+     View::new(Node::new(Role::Group, "").measured_group(BadgeHeadroom { art_top_inset }))
+         .children([View::new(label)])
++        .without_interaction(None)
+ }
+ 
+ #[derive(Debug)]
+diff --git a/crates/surface-material/src/wide_navigation_rail.rs b/crates/surface-material/src/wide_navigation_rail.rs
+index ba19551e34a5c7fc544bad792d5b535a7c9e0bb0..8e43394fd94c3fbe67f13208b1c06f1ce58d6cdb 100644
+--- a/crates/surface-material/src/wide_navigation_rail.rs
++++ b/crates/surface-material/src/wide_navigation_rail.rs
+@@ -609,7 +609,7 @@ impl Theme {
+                 if badge_aware {
+                     let art_top_inset =
+                         (COLLAPSED_INDICATOR_HEIGHT - VectorIconSize::Dp24.dp()) / 2.;
+-                    let headroom = badge_headroom(art_top_inset).without_interaction(None);
++                    let headroom = badge_headroom(art_top_inset);
+                     let gap = space(Style::column().height(Length::Px(COLLAPSED_ICON_LABEL_GAP)));
+                     // Keep the indicator a direct child so it paints the owner's focus.
+                     view.children([headroom, indicator, gap, label])
+diff --git a/crates/surface-material/tests/adaptive_navigation_scaffold.rs b/crates/surface-material/tests/adaptive_navigation_scaffold.rs
+index d4b5469a15abb0e2678a08d43f90db98106a90e9..a21892c3e5c187c90263289a9a2b803ee88e757c 100644
+--- a/crates/surface-material/tests/adaptive_navigation_scaffold.rs
++++ b/crates/surface-material/tests/adaptive_navigation_scaffold.rs
+@@ -1,8 +1,8 @@
+-use surface::{Length, Node, NodeId, Rect, Role, Style};
++use surface::{Length, Node, NodeId, PaintOp, Rect, Role, Style};
+ use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+ use surface_material::{
+-    shape::LayoutDirection, AdaptiveNavigationScaffoldOptions, ChoiceState, NavigationRailItem,
+-    Theme, VectorIcon,
++    shape::LayoutDirection, AdaptiveNavigationScaffoldOptions, BadgeContent,
++    BadgedFlexibleNavigationBarItem, ChoiceState, NavigationRailItem, Theme, VectorIcon,
+ };
+ use surface_wgpu::TextSystem;
+ 
+@@ -26,6 +26,8 @@ struct Page {
+     height: f32,
+     direction: LayoutDirection,
+     enlarged: bool,
++    badged: bool,
++    inbox_badge: BadgeContent<'static>,
+     selected: usize,
+     calls: Vec<usize>,
+     draft: String,
+@@ -39,6 +41,8 @@ impl Default for Page {
+             height: 720.,
+             direction: LayoutDirection::LeftToRight,
+             enlarged: false,
++            badged: false,
++            inbox_badge: BadgeContent::Count(1200),
+             selected: 0,
+             calls: Vec::new(),
+             draft: "先走後".into(),
+@@ -75,35 +79,57 @@ impl Page {
+             ),
+         ])
+         .accessibility_scroll_pages();
+-        theme.adaptive_navigation_scaffold(
+-            AdaptiveNavigationScaffoldOptions {
+-                id: SHELL,
+-                navigation_id: NAV,
+-                name: "主要導覽",
+-                available_width: self.width,
+-                available_height: self.height,
+-                direction: self.direction,
+-            },
+-            page,
+-            ITEMS[..count]
+-                .iter()
+-                .enumerate()
+-                .map(|(index, id)| NavigationRailItem {
+-                    id,
+-                    label: if index == 4 && !self.enlarged {
+-                        "設定"
+-                    } else {
+-                        LABELS[index]
+-                    },
+-                    accessible_name: if index == 4 { "個人設定" } else { "" },
+-                    icon: &self.icon,
+-                    state: ChoiceState {
+-                        selected: self.selected == index,
+-                        disabled: index == 1,
+-                    },
+-                    message: Message::Select(index),
++        let options = AdaptiveNavigationScaffoldOptions {
++            id: SHELL,
++            navigation_id: NAV,
++            name: "主要導覽",
++            available_width: self.width,
++            available_height: self.height,
++            direction: self.direction,
++        };
++        let items = ITEMS[..count]
++            .iter()
++            .enumerate()
++            .map(|(index, id)| NavigationRailItem {
++                id,
++                label: if index == 4 && !self.enlarged {
++                    "設定"
++                } else {
++                    LABELS[index]
++                },
++                accessible_name: if index == 4 {
++                    "個人設定"
++                } else if index == 2 && self.badged && self.inbox_badge != BadgeContent::Hidden {
++                    "收藏，1,200 則未讀"
++                } else {
++                    ""
++                },
++                icon: &self.icon,
++                state: ChoiceState {
++                    selected: self.selected == index,
++                    disabled: index == 1,
++                },
++                message: Message::Select(index),
++            })
++            .collect::<Vec<_>>();
++        if self.badged {
++            theme.adaptive_navigation_scaffold_with_badges(
++                options,
++                page,
++                items.into_iter().enumerate().map(|(index, item)| {
++                    BadgedFlexibleNavigationBarItem {
++                        item,
++                        badge: if index == 2 {
++                            self.inbox_badge
++                        } else {
++                            BadgeContent::Hidden
++                        },
++                    }
+                 }),
+-        )
++            )
++        } else {
++            theme.adaptive_navigation_scaffold(options, page, items)
++        }
+     }
+ }
+ 
+@@ -115,6 +141,9 @@ impl Application for Page {
+             Message::Select(index) => {
+                 self.calls.push(index);
+                 self.selected = index;
++                if self.badged && index == 2 {
++                    self.inbox_badge = BadgeContent::Hidden;
++                }
+             }
+             Message::Edit(value) => self.draft = value,
+         }
+@@ -171,33 +200,60 @@ fn arrow_down(runtime: &mut Runtime<Page>) {
+         .unwrap());
+ }
+ 
++fn has_error_badge(display: &surface::DisplayList) -> bool {
++    display.ops.iter().any(|op| match op {
++        PaintOp::Shape { color, .. } | PaintOp::Quad { color, .. } => {
++            *color == Theme::light().colors.error
++        }
++        _ => false,
++    })
++}
++
++fn error_badge_bounds(display: &surface::DisplayList) -> Rect {
++    display
++        .ops
++        .iter()
++        .find_map(|op| match op {
++            PaintOp::Shape { rect, color, .. } | PaintOp::Quad { rect, color, .. }
++                if *color == Theme::light().colors.error =>
++            {
++                Some(*rect)
++            }
++            _ => None,
++        })
++        .expect("visible badge face")
++}
++
+ #[test]
+ fn rejects_invalid_size_or_destination_count_without_losing_supported_breakpoints() {
+-    for (width, height, count, valid) in [
+-        (f32::NAN, 720., 5, false),
+-        (840., f32::INFINITY, 5, false),
+-        (840., 63., 5, false),
+-        (840., 720., 2, false),
+-        (840., 720., 6, false),
+-        (279., 720., 5, false),
+-        (280., 720., 5, true),
+-        (599., 720., 3, true),
+-        (600., 720., 5, true),
+-        (839., 720., 5, true),
+-        (840., 720., 5, true),
+-        (1600., 720., 4, true),
+-    ] {
+-        assert_eq!(
+-            Page {
+-                width,
+-                height,
+-                ..Page::default()
+-            }
+-            .scaffold(count)
+-            .is_some(),
+-            valid,
+-            "{width} × {height} with {count} destinations"
+-        );
++    for badged in [false, true] {
++        for (width, height, count, valid) in [
++            (f32::NAN, 720., 5, false),
++            (840., f32::INFINITY, 5, false),
++            (840., 63., 5, false),
++            (840., 720., 2, false),
++            (840., 720., 6, false),
++            (279., 720., 5, false),
++            (280., 720., 5, true),
++            (599., 720., 3, true),
++            (600., 720., 5, true),
++            (839., 720., 5, true),
++            (840., 720., 5, true),
++            (1600., 720., 4, true),
++        ] {
++            assert_eq!(
++                Page {
++                    width,
++                    height,
++                    badged,
++                    ..Page::default()
++                }
++                .scaffold(count)
++                .is_some(),
++                valid,
++                "badged={badged}: {width} × {height} with {count} destinations"
++            );
++        }
+     }
+ }
+ 
+@@ -307,6 +363,92 @@ fn resize_retains_distinct_current_page_and_focus_and_never_activates_on_its_own
+     assert_eq!(runtime.app().selected, 4);
+ }
+ 
++#[test]
++fn badged_scaffold_keeps_owner_name_selection_focus_and_geometry_across_breakpoints() {
++    let mut fonts = TextSystem::default();
++    for direction in [LayoutDirection::LeftToRight, LayoutDirection::RightToLeft] {
++        let mut runtime = Runtime::new(Page {
++            badged: true,
++            selected: 2,
++            direction,
++            ..Page::default()
++        })
++        .unwrap();
++        render(&mut runtime, &mut fonts, 839., 720.);
++
++        for _ in 0..8 {
++            if runtime.focused() == Some("saved") {
++                break;
++            }
++            runtime
++                .dispatch(Event::FocusNext { reverse: false })
++                .unwrap();
++        }
++        assert_eq!(runtime.focused(), Some("saved"));
++        assert!(runtime.app().calls.is_empty());
++
++        let mut bounds_by_width = Vec::new();
++        for width in [840., 839., 599., 600., 840.] {
++            let display = runtime.render(width, 720., &mut fonts).unwrap();
++            assert_eq!(runtime.focused(), Some("saved"));
++            assert_eq!(runtime.app().selected, 2);
++            assert!(runtime.app().calls.is_empty());
++
++            let owner = rect(&runtime, "saved");
++            let badge = error_badge_bounds(&display);
++            assert!(badge.x >= owner.x && badge.y >= owner.y);
++            assert!(badge.x + badge.width <= owner.x + owner.width);
++            assert!(badge.y + badge.height <= owner.y + owner.height);
++            assert!(display
++                .ops
++                .iter()
++                .any(|op| matches!(op, PaintOp::StyledText { text, .. } if text == "999+")));
++
++            let frame = runtime.accessibility_frame().unwrap();
++            let saved_id = id(&runtime, "saved");
++            let saved = frame.node(saved_id).unwrap().node;
++            assert_eq!(saved.role(), Role::Button);
++            assert_eq!(saved.name(), "收藏，1,200 則未讀");
++            assert_eq!(saved.is_current_page(), Some(true));
++            assert_eq!(
++                frame.children(saved_id).count(),
++                0,
++                "badge has no AX child at {width} dp"
++            );
++            bounds_by_width.push((width, owner));
++        }
++
++        let frame = runtime.accessibility_frame().unwrap();
++        let focus = frame.focus_target(id(&runtime, "saved")).unwrap();
++        let enter = KeyPress::new(Key::Enter, Modifiers::default());
++        assert!(runtime
++            .accessibility_key(&focus, &enter, Event::Activate)
++            .unwrap());
++        let display = runtime.render(840., 720., &mut fonts).unwrap();
++        assert_eq!(runtime.focused(), Some("saved"));
++        assert_eq!(runtime.app().calls, [2]);
++        assert_eq!(runtime.app().selected, 2);
++        assert!(!has_error_badge(&display));
++        let frame = runtime.accessibility_frame().unwrap();
++        let saved_id = id(&runtime, "saved");
++        let saved = frame.node(saved_id).unwrap().node;
++        assert_eq!(saved.name(), "收藏");
++        assert_eq!(saved.is_current_page(), Some(true));
++        assert_eq!(frame.children(saved_id).count(), 0);
++
++        for (width, before) in bounds_by_width {
++            let display = runtime.render(width, 720., &mut fonts).unwrap();
++            assert_eq!(runtime.focused(), Some("saved"));
++            assert_eq!(rect(&runtime, "saved"), before);
++            assert!(!has_error_badge(&display));
++            let frame = runtime.accessibility_frame().unwrap();
++            let saved = frame.node(id(&runtime, "saved")).unwrap().node;
++            assert_eq!(saved.name(), "收藏");
++            assert_eq!(saved.is_current_page(), Some(true));
++        }
++    }
++}
++
+ #[test]
+ fn short_rtl_rail_scrolls_to_focused_destinations_without_moving_the_page() {
+     let mut fonts = TextSystem::default();
+@@ -355,7 +497,11 @@ fn short_rtl_rail_scrolls_to_focused_destinations_without_moving_the_page() {
+ #[test]
+ fn resizing_during_editor_composition_keeps_the_same_focused_page_and_draft() {
+     let mut fonts = TextSystem::default();
+-    let mut runtime = Runtime::new(Page::default()).unwrap();
++    let mut runtime = Runtime::new(Page {
++        badged: true,
++        ..Page::default()
++    })
++    .unwrap();
+     render(&mut runtime, &mut fonts, 839., 720.);
+     tap(&mut runtime, EDITOR);
+     runtime
+@@ -371,7 +517,7 @@ fn resizing_during_editor_composition_keeps_the_same_focused_page_and_draft() {
+             selection: None,
+         }))
+         .unwrap();
+-    for width in [840., 839., 599.] {
++    for width in [840., 839., 600., 599.] {
+         render(&mut runtime, &mut fonts, width, 720.);
+         let editor = runtime.input_snapshot().unwrap();
+         assert_eq!(editor.id, EDITOR);
+diff --git a/docs/material.md b/docs/material.md
+index ba4314155bf6f8de8f9edf414780a2cb6732e42e..adb049ec2a980404863459ab3a12e6e65cbba6cd 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -436,6 +436,14 @@ when labels wrap. The compact bar needs at least 56 dp per destination.
+ Open **自適應導覽** in the Gallery's **色彩** tab. Resize the window with
+ focus in the draft field to try all three layouts.
+ 
++Use `Theme::adaptive_navigation_scaffold_with_badges` to keep the same
++badge content on a destination in the compact bar, horizontal bar and
++collapsed wide rail. Pass each item as a `BadgedFlexibleNavigationBarItem`
++and include the full localized status in that destination's accessible name.
++The caller clears its badge after it handles the destination. Keep the page
++ID and the destination IDs stable during resize. Open **自適應導覽徽章** in
++the Gallery to try the same count and label in all three layouts.
++
+ ## Navigation drawers
+ 
+ Build destinations with `Theme::navigation_drawer_item_with_icon`. Give
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index ec2501df4ab9187839fd8dde113782fdb08260b5..6e73dfc4797bba489e1e8d6a541431c81f265074 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -2,6 +2,8 @@
+ //! menus, Tab cycles and mobile sizing.
+ //! Port of `scripts/browser-material.mjs` (M1–M23 in issue #62).
+ 
++#[path = "material_adaptive_navigation_badges.rs"]
++mod material_adaptive_navigation_badges;
+ #[path = "material_adaptive_navigation_scaffold.rs"]
+ mod material_adaptive_navigation_scaffold;
+ #[path = "material_app_bar.rs"]
+@@ -200,7 +202,7 @@ pub const STEPS: &[&str] = &[
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+     "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380", "M381", "M382",
+-    "M383", "M384", "M385", "M386", "M387", "M388",
++    "M383", "M384", "M385", "M386", "M387", "M388", "M389", "M390",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -352,7 +354,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_divider_composition::run(env, chrome, &url).await?;
+     material_typography::run(env, chrome, &url).await?;
+     material_flexible_navigation_badges::run(env, chrome, &url).await?;
+-    material_wide_navigation_badges::run(env, chrome, &url).await
++    material_wide_navigation_badges::run(env, chrome, &url).await?;
++    material_adaptive_navigation_badges::run(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -631,6 +634,7 @@ mod tests {
+                 super::material_typography::STEPS.as_slice(),
+                 super::material_flexible_navigation_badges::STEPS.as_slice(),
+                 super::material_wide_navigation_badges::STEPS.as_slice(),
++                super::material_adaptive_navigation_badges::STEPS.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_adaptive_navigation_badges.rs b/e2e/src/material_adaptive_navigation_badges.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..896fc4904eecca6e1ad7fe51ddefa9599d932257
+--- /dev/null
++++ b/e2e/src/material_adaptive_navigation_badges.rs
+@@ -0,0 +1,290 @@
++//! Browser proof for badges on the adaptive navigation scaffold.
++
++use anyhow::{Context, Result};
++use serde_json::{json, Value};
++
++use super::material_time_input::{
++    activate, ax, ax_property, ax_tree, bounds, contains, focus_projected, focused, projected,
++    resize, Raster,
++};
++use super::{state, until};
++use crate::browser::{js, Chrome, Tab};
++use crate::check::step;
++use crate::{check, check_eq, Env};
++
++pub(super) const STEPS: [&str; 2] = ["M389", "M390"];
++const SHOW: &str = "adaptive-navigation-badges-demo-show";
++const BACK: &str = "adaptive-navigation-demo-back";
++const THEME: &str = "adaptive-navigation-demo-theme";
++const RTL: &str = "adaptive-navigation-demo-rtl";
++const LARGE: &str = "adaptive-navigation-demo-large";
++const NAV: &str = "adaptive-navigation-demo-bar";
++const HOME: &str = "adaptive-navigation-demo-home";
++const EXPLORE: &str = "adaptive-navigation-demo-explore";
++const SAVED: &str = "adaptive-navigation-demo-saved";
++const UPDATES: &str = "adaptive-navigation-demo-updates";
++const SETTINGS: &str = "adaptive-navigation-demo-settings";
++const IDS: [&str; 5] = [HOME, EXPLORE, SAVED, UPDATES, SETTINGS];
++const STEM: &str = "material-adaptive-navigation-badges";
++type Rect = [f64; 4];
++type Rgb = [u8; 3];
++
++async fn ready(tab: &Tab, condition: &str) -> Result<()> {
++    until(
++        tab,
++        &format!("(d => d?.visible && ({condition}))(s.adaptive_navigation)"),
++    )
++    .await
++}
++
++async fn current(tab: &Tab, id: &str, activations: usize) -> Result<()> {
++    ready(
++        tab,
++        &format!("d.selected === {id:?} && d.activations === {activations}"),
++    )
++    .await?;
++    tab.wait_for(&format!(
++        "{}?.getAttribute('aria-current') === 'page' &&
++         document.querySelectorAll('#surface-accessibility [aria-current=page]').length === 1",
++        projected(id)
++    ))
++    .await
++}
++
++async fn accessibility(tab: &Tab, acknowledged: bool) -> Result<Value> {
++    let tree = ax_tree(tab).await?;
++    let landmark = ax(&tree, "navigation", "主要導覽")?;
++    let names = [
++        "首頁",
++        "探索路線",
++        "收藏，有新項目",
++        if acknowledged {
++            "最新消息"
++        } else {
++            "最新消息，1,234 則未讀"
++        },
++        "設定，有新功能",
++    ];
++    let mut items = Vec::new();
++    for (index, (id, name)) in IDS.iter().zip(names).enumerate() {
++        let node = ax(&tree, "button", name)?;
++        let disabled = ax_property(node, "disabled")
++            .and_then(Value::as_bool)
++            .unwrap_or(false);
++        check_eq!(disabled, index == 1, "{id} exposes its disabled state");
++        // Chrome's AX serialization omits aria-current. Read its DOM projection.
++        let current = tab
++            .eval(&format!(
++                "{}?.getAttribute('aria-current') ?? null",
++                projected(id)
++            ))
++            .await?;
++        items.push(json!({"id":id,"name":name,"disabled":disabled,"current":current}));
++    }
++    check_eq!(
++        tree.iter()
++            .filter(|node| node["ignored"] == false && node["role"]["value"] == "navigation")
++            .count(),
++        1,
++        "the active page exposes one navigation landmark"
++    );
++    check!(
++        tree.iter()
++            .all(|node| node["ignored"] == true || node["name"]["value"] != "999+"),
++        "the abbreviated badge is not announced as a separate item"
++    );
++    Ok(json!({"landmark":landmark["name"]["value"],"items":items}))
++}
++
++fn rgb(value: &Value, name: &str) -> Result<Rgb> {
++    let [r, g, b, alpha]: [u8; 4] = serde_json::from_value(value.clone())
++        .with_context(|| format!("{name} is an RGBA palette color"))?;
++    check_eq!(alpha, 255, "{name} is opaque");
++    Ok([r, g, b])
++}
++
++fn pixels_near(image: &Raster, rect: Rect, color: Rgb, tolerance: u8) -> Result<usize> {
++    Ok(image
++        .colors(rect)?
++        .iter()
++        .filter(|(actual, _)| {
++            actual
++                .iter()
++                .zip(color)
++                .all(|(a, b)| a.abs_diff(b) <= tolerance)
++        })
++        .map(|(_, count)| count)
++        .sum())
++}
++
++async fn count_bounds(tab: &Tab, owner_id: &str, owner: Rect) -> Result<Rect> {
++    let value = tab
++        .eval(&format!(
++            "(() => {{
++                const {{dom,layout}} = JSON.parse(window.gallery.export_dom());
++                const nodes = dom.nodes;
++                const owner = nodes.findIndex(n => n.stable_id === {});
++                const index = nodes.findIndex(n => {{
++                    if (n.text !== '999+') return false;
++                    for (let i = n.parent; Number.isInteger(i); i = nodes[i].parent) {{
++                        if (i === owner) return true;
++                    }}
++                    return false;
++                }});
++                if (owner < 0 || index < 0) return null;
++                const {{x,y,width,height}} = layout.nodes[index].bounds;
++                return [x,y,width,height];
++            }})()",
++            js(owner_id),
++        ))
++        .await?;
++    let rect: Rect = serde_json::from_value(value).context("the 999+ text belongs to its owner")?;
++    check!(
++        contains(owner, rect),
++        "the count text stays inside {owner_id}: {rect:?}"
++    );
++    Ok(rect)
++}
++
++async fn capture(env: &Env, tab: &Tab, label: &str, acknowledged: bool) -> Result<Value> {
++    tab.settle().await?;
++    let state = state(tab).await?;
++    let demo = &state["adaptive_navigation"];
++    let error = rgb(&demo["badge_palette"]["error"], "Error")?;
++    let on_error = rgb(&demo["badge_palette"]["on_error"], "On Error")?;
++    let nav = bounds(tab, NAV).await?;
++    let canvas = tab.canvas_box().await?;
++    check!(
++        contains([0., 0., canvas[2], canvas[3]], nav),
++        "navigation is inside the screenshot"
++    );
++    let name = format!("{STEM}-{label}.png");
++    let path = env.artifact(&name);
++    tab.screenshot(&path).await?;
++    let image = Raster::read(tab, path).await?;
++    let mut owners = Vec::new();
++    for (index, id) in IDS.iter().copied().enumerate() {
++        let owner = bounds(tab, id).await?;
++        check!(
++            contains(nav, owner),
++            "{id} remains inside the navigation bounds"
++        );
++        let error_pixels = pixels_near(&image, owner, error, 8)?;
++        if index == 2 || (index == 3 && !acknowledged) || index == 4 {
++            check!(
++                error_pixels >= 8,
++                "the badge paints inside {id}: {error_pixels} pixels"
++            );
++        }
++        owners.push(json!({"id":id,"bounds":owner,"error_pixels":error_pixels}));
++    }
++    let count = if acknowledged {
++        Value::Null
++    } else {
++        let owner = bounds(tab, UPDATES).await?;
++        let text = count_bounds(tab, UPDATES, owner).await?;
++        let ink_pixels = pixels_near(&image, text, on_error, 8)?;
++        check!(
++            ink_pixels >= 4,
++            "count text paints with On Error ink: {ink_pixels} pixels"
++        );
++        json!({"bounds":text,"on_error_pixels":ink_pixels})
++    };
++    Ok(json!({"screenshot":name,"canvas":canvas,"navigation":nav,
++        "rtl":demo["rtl"],"text_scale":demo["text_scale"],"dark":state["dark"],
++        "colors":{"error":error,"on_error":on_error},
++        "owners":owners,"count":count,"accessibility":accessibility(tab,acknowledged).await?}))
++}
++
++pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    let tab = chrome.page(960, 1400, 2.).await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(&tab, "gallery").await?;
++    resize(&tab, 960, 1400).await?;
++    activate(&tab, "section-3").await?;
++    until(&tab, "s.section === 3").await?;
++    let launcher_tree = ax_tree(&tab).await?;
++    let launcher = ax(&launcher_tree, "button", "自適應導覽徽章")?["name"]["value"].clone();
++    activate(&tab, SHOW).await?;
++    ready(&tab, "d.badges_enabled && d.unread_count === 1234").await?;
++    focused(&tab, BACK).await?;
++    current(&tab, HOME, 0).await?;
++    check_eq!(
++        state(&tab).await?["adaptive_navigation"]["badge_contents"],
++        json!(["hidden", "hidden", "dot", "999+", "新"]),
++        "the application supplies stable hidden, dot, count and label badge data"
++    );
++
++    step(
++        STEPS[0],
++        "Keyboard focus and selection survive the 599/600 and 839/840 breakpoints",
++    );
++    resize(&tab, 599, 720).await?;
++    ready(&tab, "d.viewport[0] === 599").await?;
++    focus_projected(&tab, HOME).await?;
++    tab.press("Tab").await?;
++    focused(&tab, SAVED).await?;
++    current(&tab, HOME, 0).await?;
++    tab.press("Enter").await?;
++    current(&tab, SAVED, 1).await?;
++    ready(&tab, "d.accessible_names[3] === '最新消息，1,234 則未讀'").await?;
++    let initial_accessibility = accessibility(&tab, false).await?;
++    resize(&tab, 600, 720).await?;
++    ready(&tab, "d.viewport[0] === 600").await?;
++    focused(&tab, SAVED).await?;
++    current(&tab, SAVED, 1).await?;
++    let medium = capture(env, &tab, "light-medium-600", false).await?;
++    resize(&tab, 599, 720).await?;
++    focused(&tab, SAVED).await?;
++    current(&tab, SAVED, 1).await?;
++    resize(&tab, 839, 720).await?;
++    focused(&tab, SAVED).await?;
++    current(&tab, SAVED, 1).await?;
++    resize(&tab, 840, 720).await?;
++    focused(&tab, SAVED).await?;
++    current(&tab, SAVED, 1).await?;
++    tab.press("ArrowDown").await?;
++    focused(&tab, UPDATES).await?;
++    current(&tab, SAVED, 1).await?;
++    check_eq!(
++        accessibility(&tab, false).await?,
++        initial_accessibility,
++        "layout changes preserve the full AX name and disabled destination"
++    );
++    let light_rail = capture(env, &tab, "light-rail-840", false).await?;
++
++    step(
++        STEPS[1],
++        "Dark RTL 200 percent text keeps badges attached and selection clears the count",
++    );
++    activate(&tab, THEME).await?;
++    activate(&tab, RTL).await?;
++    activate(&tab, LARGE).await?;
++    ready(&tab, "s.dark && d.rtl && d.text_scale === 2").await?;
++    resize(&tab, 840, 720).await?;
++    focus_projected(&tab, UPDATES).await?;
++    current(&tab, SAVED, 1).await?;
++    let dark = capture(env, &tab, "dark-rtl-200-count", false).await?;
++    tab.press("Enter").await?;
++    current(&tab, UPDATES, 2).await?;
++    ready(&tab, "d.unread_count === 0 && d.accessible_names[3] === '最新消息' && d.badge_contents[3] === 'hidden'").await?;
++    let acknowledged = accessibility(&tab, true).await?;
++    let cleared = capture(env, &tab, "dark-rtl-200-cleared", true).await?;
++    env.write_json(
++        &format!("{STEM}.json"),
++        &json!({
++            "browser":chrome.version,"steps":STEPS,"breakpoints":[599,600,839,840],
++            "launcher_accessibility":launcher,
++            "light_medium":medium,"light_rail":light_rail,"dark_rtl_200":dark,
++            "acknowledged":cleared,"initial_accessibility":initial_accessibility,
++            "acknowledged_accessibility":acknowledged,"selected":UPDATES,
++            "activations":2,"errors":tab.errors()
++        }),
++    )?;
++    check!(
++        tab.errors().is_empty(),
++        "page errors: {}",
++        tab.errors().join("\n")
++    );
++    Ok(())
++}
+diff --git a/examples/material-gallery/src/adaptive_navigation_demo.rs b/examples/material-gallery/src/adaptive_navigation_demo.rs
+index 830dbc5fe9e1cf600197c0f81dc79658d0b6f9dd..83b6ea725ca51cd4bf96acf314798d81394ef0f3 100644
+--- a/examples/material-gallery/src/adaptive_navigation_demo.rs
++++ b/examples/material-gallery/src/adaptive_navigation_demo.rs
+@@ -1,14 +1,16 @@
+ use surface::{Align, Length, Node, Role, Style};
+ use surface_app::View;
+ use surface_material::{
+-    shape::LayoutDirection, typography, AdaptiveNavigationScaffoldOptions, ButtonKind, ChoiceState,
+-    NavigationRailItem, TextFieldOptions, Theme,
++    shape::LayoutDirection, typography, AdaptiveNavigationScaffoldOptions, BadgeContent,
++    BadgedFlexibleNavigationBarItem, ButtonKind, ChoiceState, NavigationRailItem, TextFieldOptions,
++    Theme,
+ };
+ 
+ use crate::{flexible_navigation_bar_demo::icon, scroll_field_demo::control_row, Message};
+ 
+ pub(crate) const SECTION: usize = 3;
+ const SHOW: &str = "adaptive-navigation-demo-show";
++const SHOW_BADGES: &str = "adaptive-navigation-badges-demo-show";
+ const BACK: &str = "adaptive-navigation-demo-back";
+ const SCAFFOLD: &str = "adaptive-navigation-demo-scaffold";
+ const NAVIGATION: &str = "adaptive-navigation-demo-bar";
+@@ -30,10 +32,13 @@ const CONTENT: [[&str; 3]; 5] = [
+     ["通知", "語言", "隱私"],
+ ];
+ const DISABLED: usize = 1;
++const UPDATES: usize = 3;
++const UNREAD_COUNT: u32 = 1234;
+ 
+ #[derive(Clone)]
+ pub enum AdaptiveNavigationDemoEvent {
+     Show,
++    ShowBadges,
+     Back,
+     ToggleDirection,
+     ToggleLargeText,
+@@ -49,6 +54,8 @@ pub(crate) struct AdaptiveNavigationDemo {
+     selected: usize,
+     activations: usize,
+     draft: String,
++    badge_mode: bool,
++    updates_acknowledged: bool,
+ }
+ 
+ impl Default for AdaptiveNavigationDemo {
+@@ -61,6 +68,8 @@ impl Default for AdaptiveNavigationDemo {
+             selected: 0,
+             activations: 0,
+             draft: String::new(),
++            badge_mode: false,
++            updates_acknowledged: false,
+         }
+     }
+ }
+@@ -90,13 +99,24 @@ impl AdaptiveNavigationDemo {
+     pub(crate) fn update(&mut self, event: AdaptiveNavigationDemoEvent) {
+         use AdaptiveNavigationDemoEvent::*;
+         match event {
+-            Show => self.visible = true,
++            Show => {
++                self.visible = true;
++                self.badge_mode = false;
++            }
++            ShowBadges => {
++                self.visible = true;
++                self.badge_mode = true;
++                self.updates_acknowledged = false;
++            }
+             Back => self.leave(),
+             ToggleDirection => self.rtl = !self.rtl,
+             ToggleLargeText => self.large_text = !self.large_text,
+             Choose(index) if index < IDS.len() && index != DISABLED => {
+                 self.selected = index;
+                 self.activations += 1;
++                if self.badge_mode && index == UPDATES {
++                    self.updates_acknowledged = true;
++                }
+             }
+             Choose(_) => {}
+             Edit(value) => self.draft = value,
+@@ -116,6 +136,43 @@ impl AdaptiveNavigationDemo {
+             .accessible_activation()
+     }
+ 
++    pub(crate) fn show_badges_button(theme: &Theme) -> View<Message> {
++        theme
++            .button_with(
++                SHOW_BADGES,
++                "自適應導覽徽章",
++                ButtonKind::Outlined,
++                false,
++                Message::AdaptiveNavigationDemo(AdaptiveNavigationDemoEvent::ShowBadges),
++            )
++            .restore_focus_on_removal(BACK)
++            .accessible_activation()
++    }
++
++    fn badge(&self, index: usize) -> BadgeContent<'static> {
++        if !self.badge_mode {
++            return BadgeContent::Hidden;
++        }
++        match index {
++            2 => BadgeContent::Dot,
++            UPDATES if !self.updates_acknowledged => BadgeContent::Count(UNREAD_COUNT),
++            4 => BadgeContent::Label("新"),
++            _ => BadgeContent::Hidden,
++        }
++    }
++
++    fn accessible_name(&self, index: usize) -> &'static str {
++        if !self.badge_mode {
++            return LABELS[index];
++        }
++        match index {
++            2 => "收藏，有新項目",
++            UPDATES if !self.updates_acknowledged => "最新消息，1,234 則未讀",
++            4 => "設定，有新功能",
++            _ => LABELS[index],
++        }
++    }
++
+     pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+         use AdaptiveNavigationDemoEvent::*;
+         let event = Message::AdaptiveNavigationDemo;
+@@ -127,7 +184,7 @@ impl AdaptiveNavigationDemo {
+         let controls = control_row(vec![
+             theme
+                 .tonal_button(BACK, "返回", event(Back))
+-                .restore_focus_on_removal(SHOW)
++                .restore_focus_on_removal(if self.badge_mode { SHOW_BADGES } else { SHOW })
+                 .accessible_activation(),
+             theme
+                 .segmented_button(
+@@ -210,15 +267,29 @@ impl AdaptiveNavigationDemo {
+             .map(|(index, id)| NavigationRailItem {
+                 id,
+                 label: LABELS[index],
+-                accessible_name: LABELS[index],
++                accessible_name: self.accessible_name(index),
+                 icon: icon(index, self.selected == index),
+                 state: ChoiceState {
+                     selected: self.selected == index,
+                     disabled: index == DISABLED,
+                 },
+                 message: event(Choose(index)),
+-            });
+-        let scaffold = theme.adaptive_navigation_scaffold(options, page, items);
++            })
++            .collect::<Vec<_>>();
++        let scaffold = if self.badge_mode {
++            theme.adaptive_navigation_scaffold_with_badges(
++                options,
++                page,
++                items.into_iter().enumerate().map(|(index, item)| {
++                    BadgedFlexibleNavigationBarItem {
++                        item,
++                        badge: self.badge(index),
++                    }
++                }),
++            )
++        } else {
++            theme.adaptive_navigation_scaffold(options, page, items)
++        };
+         View::new(
+             Node::new(Role::Window, "自適應導覽")
+                 .id("adaptive-navigation-demo")
+@@ -244,11 +315,28 @@ impl AdaptiveNavigationDemo {
+             "selected": IDS[self.selected],
+             "activations": self.activations,
+             "draft": self.draft,
++            "badges_enabled": self.badge_mode,
++            "unread_count": if self.badge_mode && !self.updates_acknowledged { UNREAD_COUNT } else { 0 },
++            "accessible_names": (0..IDS.len())
++                .map(|index| self.accessible_name(index))
++                .collect::<Vec<_>>(),
++            "badge_contents": (0..IDS.len())
++                .map(|index| match self.badge(index) {
++                    BadgeContent::Hidden => "hidden",
++                    BadgeContent::Dot => "dot",
++                    BadgeContent::Label(label) => label,
++                    BadgeContent::Count(_) => "999+",
++                })
++                .collect::<Vec<_>>(),
+             "palette": {
+                 "bar": theme.colors.surface_container,
+                 "rail": theme.colors.surface,
+                 "selected": theme.colors.secondary_container,
+             },
++            "badge_palette": {
++                "error": theme.colors.error,
++                "on_error": theme.colors.on_error,
++            },
+         })
+     }
+ }
+diff --git a/examples/material-gallery/src/lib.rs b/examples/material-gallery/src/lib.rs
+index 812681017364a06daf864e7865f5bb391f1d73c4..9fdebcff56c2b926e4a258a6fa29514851d6742c 100644
+--- a/examples/material-gallery/src/lib.rs
++++ b/examples/material-gallery/src/lib.rs
+@@ -2005,6 +2005,7 @@ impl Application for Gallery {
+                         .restore_focus_on_removal("font-weight-demo-back")
+                         .accessible_activation(),
+                         FlexibleNavigationBadgeDemo::show_button(&t),
++                        AdaptiveNavigationDemo::show_badges_button(&t),
+                     ]),
+                 );
+                 children.push(self.badge_demo.card(&t));
