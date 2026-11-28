@@ -46,6 +46,8 @@ mod material_fab_menu;
 mod material_filled_text_field;
 #[path = "material_flexible_navigation_bar.rs"]
 mod material_flexible_navigation_bar;
+#[path = "material_horizontal_navigation_bar.rs"]
+mod material_horizontal_navigation_bar;
 #[path = "material_icon_buttons.rs"]
 mod material_icon_buttons;
 #[path = "material_list_actions.rs"]
@@ -180,7 +182,7 @@ pub const STEPS: &[&str] = &[
     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
-    "M359", "M360", "M361", "M362",
+    "M359", "M360", "M361", "M362", "M363", "M364", "M365",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -322,7 +324,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_text_field_placeholder::run(env, chrome, &url).await?;
     material_text_field_boundary_motion::run(env, chrome, &url).await?;
     material_text_field_disabled_contrast::run(env, chrome, &url).await?;
-    material_text_field_system_pair::run(env, chrome, &url).await
+    material_text_field_system_pair::run(env, chrome, &url).await?;
+    material_horizontal_navigation_bar::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -579,8 +582,17 @@ mod tests {
         let boundary = super::material_text_field_boundary_motion::STEPS;
         let disabled_contrast = super::material_text_field_disabled_contrast::STEPS;
         let system_field_pair = super::material_text_field_system_pair::STEPS;
-        assert!(super::STEPS
-            .ends_with(&[placeholder, boundary, disabled_contrast, system_field_pair].concat()));
+        let horizontal_bar = super::material_horizontal_navigation_bar::STEPS;
+        assert!(super::STEPS.ends_with(
+            &[
+                placeholder,
+                boundary,
+                disabled_contrast,
+                system_field_pair,
+                horizontal_bar
+            ]
+            .concat()
+        ));
     }
 
     #[test]

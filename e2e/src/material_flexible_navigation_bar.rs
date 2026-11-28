@@ -279,7 +279,7 @@ async fn counts_and_colors(env: &Env, tab: &Tab) -> Result<Value> {
     )
 }
 
-async fn selection(tab: &Tab, id: &str, page: &str, activations: usize) -> Result<()> {
+pub(super) async fn selection(tab: &Tab, id: &str, page: &str, activations: usize) -> Result<()> {
     until(
         tab,
         &format!(
@@ -296,7 +296,7 @@ async fn selection(tab: &Tab, id: &str, page: &str, activations: usize) -> Resul
     .await
 }
 
-async fn projection_and_tab(tab: &Tab) -> Result<Value> {
+pub(super) async fn projection_and_tab(tab: &Tab) -> Result<Value> {
     selection(tab, HOME, "首頁", 0).await?;
     let tree = ax_tree(tab).await?;
     let bar = ax(&tree, "navigation", "主要導覽")?;
@@ -384,7 +384,7 @@ async fn screen(tab: &Tab, id: &str, edge: bool) -> Result<(f64, f64)> {
     })
 }
 
-async fn activate_with_keys_and_contact(tab: &Tab) -> Result<Value> {
+pub(super) async fn activate_with_keys_and_contact(tab: &Tab) -> Result<Value> {
     focused(tab, HOME).await?;
     tab.press("Tab").await?;
     focused(tab, SAVED).await?;
