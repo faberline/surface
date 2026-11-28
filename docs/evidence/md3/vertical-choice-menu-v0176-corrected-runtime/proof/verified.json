@@ -1,0 +1,325 @@
+{
+  "browser": {
+    "adapter": {
+      "architecture": "metal-3",
+      "isFallbackAdapter": false,
+      "vendor": "apple"
+    },
+    "checks": 30925,
+    "chromium_samples": 4732,
+    "menus": {
+      "browser-material-choice-menu.json": {
+        "m373_disabled_mouse": {
+          "changes": 0,
+          "checked": [
+            "menu-demo-choice-kind",
+            "menu-demo-choice-locked"
+          ],
+          "density": "menu-demo-choice-comfortable",
+          "focus": "menu-demo-choice-owner",
+          "open": true,
+          "sort": "menu-demo-choice-recent"
+        },
+        "m375_rtl_leading_corner": {
+          "checked_after_escape": [
+            "menu-demo-choice-kind",
+            "menu-demo-choice-locked"
+          ],
+          "corner_rgb": [
+            99,
+            59,
+            72
+          ],
+          "focus_after_escape": "menu-demo-opener",
+          "group_rgb": [
+            99,
+            59,
+            72
+          ],
+          "inner_rgb": [
+            239,
+            184,
+            200
+          ],
+          "selected_face_rgb": [
+            239,
+            184,
+            200
+          ]
+        },
+        "sha256": "93efcfd4a458b57a85c5b908a7add18df84d05b334e92e0acda6fe750f57fa8c",
+        "webgpu_fallback": false
+      },
+      "browser-material-command-menu.json": {
+        "sha256": "e176e050a902b6e7f866b9f14f1317761b47ba2037c9ec4d13d1698ab9ea765a",
+        "webgpu_fallback": false
+      },
+      "browser-material-vertical-menu.json": {
+        "sha256": "5092fbc0af8918b91bdcd040d1f3f51b9310e1132d9342e5e48d034aadd1c5b5",
+        "webgpu_fallback": false
+      },
+      "material-choice-menu-compact-dark-rtl.png": {
+        "sha256": "3ece7fa6fb0eb1c39b4cedd08bac7ee704460f6ee3e7bbe00c18bb0da7eacd06",
+        "size": [
+          640,
+          1048
+        ]
+      },
+      "material-choice-menu-standard.png": {
+        "sha256": "1754cef1bd9bfb38a9ad3f9ceac8a9c6c060cfc7999a226d5c051a5182163318",
+        "size": [
+          1920,
+          2328
+        ]
+      },
+      "material-choice-menu-vibrant.png": {
+        "sha256": "72b15c9cf4a8d8a6d6bcafbd67b6112957a68648f022118236f1a735fefe80ce",
+        "size": [
+          1920,
+          2328
+        ]
+      },
+      "material-command-menu-compact-footer.png": {
+        "sha256": "05a64c5c9d3135b0e92230f5a0cc1ec807fdbfa195951ce781c6ff74f1657d94",
+        "size": [
+          640,
+          1048
+        ]
+      },
+      "material-command-menu-compact.png": {
+        "sha256": "ee5682a2ac7f17e0002edae3f19346152d332f11df95a28be1cfddc0985e2175",
+        "size": [
+          640,
+          1048
+        ]
+      },
+      "material-command-menu-wide.png": {
+        "sha256": "bb92246b1e06df4c8270e661e328e0d7b07b4ed16ae06e8877b276955c16b7a7",
+        "size": [
+          1920,
+          1688
+        ]
+      },
+      "material-vertical-menu-dark-rtl.png": {
+        "sha256": "a7256df2967145b994b390c1813930a30510feffb8f3d32bb6a5e3fe1db4009a",
+        "size": [
+          640,
+          1048
+        ]
+      },
+      "material-vertical-menu-standard.png": {
+        "sha256": "8a46856957ade87b00b7d0078e95a8576965b7cea0e723ab8285f457113ae88e",
+        "size": [
+          1920,
+          2328
+        ]
+      },
+      "material-vertical-menu-vibrant.png": {
+        "sha256": "837976474236f0995a91ec22c265c7524961f6d82debc49e5ef7cbd227105229",
+        "size": [
+          1920,
+          2328
+        ]
+      }
+    },
+    "steps": 374,
+    "surviving_processes": 0,
+    "visible_windows": 0
+  },
+  "build": {
+    "artifact_manifests": {
+      "native/SHA256SUMS": "6b832cc83ce145e563b53e2e12aa922df684b27fe6bbf5110ed079d14f7d5334",
+      "runners/SHA256SUMS": "6b4a780815140e8c4534dee710819469e8b0813761b49f6731ba2697f88bd852",
+      "web/SHA256SUMS": "3c471440987193713a55394e334f0b8a5078da7bad8dc98016c9dca1985d9ec4"
+    },
+    "logs": {
+      "native-build.log": "3f52a5136772c62cbdcd82d5e4ab02d8419cbe55cd113e7eb4b337ad7a0c0dbd",
+      "runner-build.log": "48774ba90d05778a256163b8f9ebe01d23782ffea68586f6e2b5210dc48266b2",
+      "toolchain.txt": "66bcee9cb7e4408c7f3ca2b37c1d1a3558059ae543250f814c96ae5e251f8e9b",
+      "web-build.log": "18756ba6fa1e7cc3742e0f55d87d2ead15d43a473b5b1e57fb198e2be149f195"
+    },
+    "source": {
+      "base_source_sha256": "b1b3dea6427bb8bdd5debdd2715d3956e8ac4549a03a70880aa7fe12aabc700f",
+      "base_tree": "b3e62f07a03b08f1741de8695fe845d3b771f11d",
+      "changed_paths": [
+        "crates/surface-app/src/controls.rs",
+        "crates/surface-material/tests/vertical_command_menu.rs",
+        "docs/material-coverage.json",
+        "docs/provenance.json",
+        "third-party/accesskit-macos/Cargo.toml",
+        "third-party/accesskit-macos/src/node.rs",
+        "third-party/accesskit-macos/tests/menu_item_mark_char.rs"
+      ],
+      "patch_set_sha256": "54696fc9387a2248948771c2682a98cc7d40a742de9c4098d0846a6dee2a0c18",
+      "patches": {
+        "disabled-menu.patch": "4f1fb9d57083d7f36b7eec8900e657c1db42f182c80bd7351b74444c63a69de4",
+        "macos-menu-mark-v0176.patch": "bd0f2293a9dfac4a171caea3c5c9f9b89b57538cec8afdf707e4251f4e68cc34",
+        "v0176-menu-coverage-implementation.patch": "76146320a082865ef0ecfc238f3abd7d0c686074ba6e5474b45f2680fe755723"
+      },
+      "source_file_count": 703,
+      "source_sha256": "a9aa38ee7ab64746471491ccfd6cd7df0132e8f30254d536a6fdd3fc95e10eb8",
+      "tree": "37e4454bc7d3f63f7111c8264d4e59e451c8ef9e",
+      "version": "0.1.76"
+    }
+  },
+  "native": {
+    "binary_sha256": "6b832cc83ce145e563b53e2e12aa922df684b27fe6bbf5110ed079d14f7d5334",
+    "evidence_sha256": "fee03d7712c9d80298959980c38c1b4b63b6f1ed6420cba557ce7e18d27fd10e",
+    "original_pngs": 8,
+    "reaped": 6,
+    "repeats": 2,
+    "schema": "surface.test.vertical-choice-menu.native.v1",
+    "source_sha256": "a9aa38ee7ab64746471491ccfd6cd7df0132e8f30254d536a6fdd3fc95e10eb8",
+    "source_tree": "37e4454bc7d3f63f7111c8264d4e59e451c8ef9e",
+    "transports": [
+      "Page.screenshot",
+      "surface-devtools page screenshot",
+      "MCP page_screenshot"
+    ],
+    "visible_windows": 0,
+    "window_samples": 46
+  },
+  "prior_r3_source": "https://github.com/faberline/surface/tree/6ad148ea4b6419d5d011873bcb45a720f2f88c34/docs/evidence/md3/vertical-choice-menu-v0176-recovered-source",
+  "r4_browser_failure": {
+    "assertions_before_stop": 30898,
+    "crop_box": [
+      104,
+      496,
+      584,
+      522
+    ],
+    "m373_disabled_mouse": {
+      "changes": 0,
+      "checked": [
+        "menu-demo-choice-kind",
+        "menu-demo-choice-locked"
+      ],
+      "density": "menu-demo-choice-comfortable",
+      "focus": "menu-demo-choice-owner",
+      "open": true,
+      "sort": "menu-demo-choice-recent"
+    },
+    "m374_completed": true,
+    "original_png_sha256": "3ece7fa6fb0eb1c39b4cedd08bac7ee704460f6ee3e7bbe00c18bb0da7eacd06",
+    "samples": {
+      "mirrored_right_corner": {
+        "pixel": [
+          574,
+          506
+        ],
+        "rgb": [
+          99,
+          59,
+          72
+        ]
+      },
+      "mirrored_right_interior": {
+        "pixel": [
+          564,
+          510
+        ],
+        "rgb": [
+          239,
+          184,
+          200
+        ]
+      },
+      "old_left_corner": {
+        "pixel": [
+          114,
+          506
+        ],
+        "rgb": [
+          255,
+          217,
+          227
+        ]
+      },
+      "selected_center": {
+        "pixel": [
+          344,
+          512
+        ],
+        "rgb": [
+          239,
+          184,
+          200
+        ]
+      }
+    },
+    "status": "failed at M375 pixel probe",
+    "surviving_processes": 0,
+    "visible_windows": 0
+  },
+  "r5_browser_inputs": {
+    "observer_sha256": "ae8dab806e95653212495348ba78ea8e4bb0ac396047da3cd3c967b9f9e3eca7",
+    "runner_build_log_sha256": "e4ea67c2cb91957c7b7f79ed3e2cfd715f4b5dee7a11f32c00ad1cfe1ff71026",
+    "runner_manifest_sha256": "da2f8b4115489f006de691c2fe4b7c934f3dc7dd2c2c699a1bc109cbbbe96fa0",
+    "runner_sha256": "cd10e21a67723e8f07844d5a5d861e17845a5b4486e5b4e7f5e6c37108d19e3a",
+    "source_sha256": "28c5bf44e9618f47ab4b541851d50c0d1d3c7df4748aac5518103d9f24e92893",
+    "source_tree": "b6dc18c4baf8e6b65bddfbc6f59b7b07b4a0b5b9",
+    "test_only_patch_sha256": "4239e9da0541b1794b4fc15f26ddef035d97d0a6f0f35572de5cccb0039c7b39",
+    "test_only_path": "e2e/src/material_choice_menu.rs",
+    "web_manifest_sha256": "3c471440987193713a55394e334f0b8a5078da7bad8dc98016c9dca1985d9ec4",
+    "web_producer_source_sha256": "a9aa38ee7ab64746471491ccfd6cd7df0132e8f30254d536a6fdd3fc95e10eb8",
+    "web_producer_tree": "37e4454bc7d3f63f7111c8264d4e59e451c8ef9e"
+  },
+  "r5_source": {
+    "only_changed_path": "e2e/src/material_choice_menu.rs",
+    "source_files": 703,
+    "source_sha256": "28c5bf44e9618f47ab4b541851d50c0d1d3c7df4748aac5518103d9f24e92893",
+    "test_only_patch_sha256": "4239e9da0541b1794b4fc15f26ddef035d97d0a6f0f35572de5cccb0039c7b39",
+    "tree": "b6dc18c4baf8e6b65bddfbc6f59b7b07b4a0b5b9",
+    "unchanged_paths": 702
+  },
+  "rust": {
+    "offscreen": {
+      "adapter": "Apple M1 Max",
+      "backend": "Metal",
+      "original_pngs": 21,
+      "runs": {
+        "gpu-fixed-primary.log": {
+          "ignored": 0,
+          "log_sha256": "c887f287809070513fe0e47cff3b59ab88377b2bf9fd105492603b104902e3ea",
+          "passed": 16
+        },
+        "gpu-fixed-supplemental.log": {
+          "ignored": 0,
+          "log_sha256": "9084b55fa73f68bd19237a2ee4b36bbc38252890cce86db2c29f36d6465bc5f7",
+          "passed": 2
+        }
+      },
+      "tests": 18
+    },
+    "workspace": {
+      "ignored": 20,
+      "log_sha256": "e36cd7c245ec666d581c56d9794c32c8b5428d54adb11f29f38989c54d52fc8f",
+      "passed": 1615,
+      "wasm_checks": 3
+    }
+  },
+  "source": {
+    "base_source_sha256": "b1b3dea6427bb8bdd5debdd2715d3956e8ac4549a03a70880aa7fe12aabc700f",
+    "base_tree": "b3e62f07a03b08f1741de8695fe845d3b771f11d",
+    "changed_paths": [
+      "crates/surface-app/src/controls.rs",
+      "crates/surface-material/tests/vertical_command_menu.rs",
+      "docs/material-coverage.json",
+      "docs/provenance.json",
+      "third-party/accesskit-macos/Cargo.toml",
+      "third-party/accesskit-macos/src/node.rs",
+      "third-party/accesskit-macos/tests/menu_item_mark_char.rs"
+    ],
+    "patch_set_sha256": "54696fc9387a2248948771c2682a98cc7d40a742de9c4098d0846a6dee2a0c18",
+    "patches": {
+      "disabled-menu.patch": "4f1fb9d57083d7f36b7eec8900e657c1db42f182c80bd7351b74444c63a69de4",
+      "macos-menu-mark-v0176.patch": "bd0f2293a9dfac4a171caea3c5c9f9b89b57538cec8afdf707e4251f4e68cc34",
+      "v0176-menu-coverage-implementation.patch": "76146320a082865ef0ecfc238f3abd7d0c686074ba6e5474b45f2680fe755723"
+    },
+    "source_file_count": 703,
+    "source_sha256": "a9aa38ee7ab64746471491ccfd6cd7df0132e8f30254d536a6fdd3fc95e10eb8",
+    "tree": "37e4454bc7d3f63f7111c8264d4e59e451c8ef9e",
+    "version": "0.1.76"
+  },
+  "status": "verified R4 native product and R5 test-only Chrome replay"
+}

@@ -1,0 +1,13 @@
+PASS pure guard predicates; no executable started
+{
+  "file_count": 703,
+  "manifest_sha256": "a9aa38ee7ab64746471491ccfd6cd7df0132e8f30254d536a6fdd3fc95e10eb8",
+  "tree": "37e4454bc7d3f63f7111c8264d4e59e451c8ef9e",
+  "version": "0.1.76"
+}
+PASS rejected with: Expected the exact corrected source hash
+PASS rejected with: Use the corrected v0.1.76 native manifest
+PASS rejected with: Different corrected v0.1.76 source manifest
+PASS rejected with: Use the corrected v0.1.76 Gallery manifest
+PASS rejected with: A verified build input changed
+PASS fixture parser: M373 positive, four state rejections and exact 374-ID scope. No browser launched.

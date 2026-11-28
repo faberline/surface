@@ -1,0 +1,16 @@
+diff --git a/e2e/src/material_choice_menu.rs b/e2e/src/material_choice_menu.rs
+--- a/e2e/src/material_choice_menu.rs
++++ b/e2e/src/material_choice_menu.rs
+@@ -384,8 +384,10 @@
+     let raster = Raster::read(tab, path).await?;
+     let [x, y, w, _] = face;
+     let fill = raster.sample(x + w / 2., y + 4.)?;
+-    let corner = raster.sample(x + 1., y + 1.)?;
+-    let inner = raster.sample(x + 6., y + 3.)?;
++    // The compact scrollbar can cover the logical trailing corner.
++    let leading_x = |inset| if rtl { x + w - inset } else { x + inset };
++    let corner = raster.sample(leading_x(1.), y + 1.)?;
++    let inner = raster.sample(leading_x(6.), y + 3.)?;
+     check_eq!(
+         fill,
+         selected,
