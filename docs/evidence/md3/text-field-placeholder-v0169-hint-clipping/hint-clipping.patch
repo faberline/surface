@@ -1,0 +1,392 @@
+diff --git a/crates/surface-app/src/editing_runtime.rs b/crates/surface-app/src/editing_runtime.rs
+--- a/crates/surface-app/src/editing_runtime.rs
++++ b/crates/surface-app/src/editing_runtime.rs
+@@ -24,7 +24,7 @@
+     scroll: (f32, f32),
+ ) -> Option<Rect> {
+     let clip = clip.intersect(viewport);
+-    let x = viewport.x - scroll.0.min(0.);
++    let x = viewport.x - scroll.0;
+     let y = viewport.y - scroll.1.min(0.);
+     layout
+         .clusters
+@@ -683,10 +683,19 @@
+                         )
+                     }
+                 });
+-            let paint_scroll_x = if let (true, Some(layout)) = (right_aligned, &hint_layout) {
+-                -right_alignment_space(content_width, layout).max(0.)
+-            } else {
+-                scroll.0 - horizontal_inset
++            let paint_scroll_x = match &hint_layout {
++                Some(layout) if right_aligned => {
++                    let space = right_alignment_space(content_width, layout);
++                    if animated && space < -CARET_REVEAL_WIDTH {
++                        // An overflowing right-aligned hint starts at the
++                        // right edge of the clip. Short hints keep caret room.
++                        -space - CARET_REVEAL_WIDTH
++                    } else {
++                        -space.max(0.)
++                    }
++                }
++                Some(_) if animated => 0.,
++                _ => scroll.0 - horizontal_inset,
+             };
+             let mut decoration = TextDecoration {
+                 // Paint already uses the fixed top inset. Signed scroll
+diff --git a/crates/surface-material/src/outlined_text_field.rs b/crates/surface-material/src/outlined_text_field.rs
+--- a/crates/surface-material/src/outlined_text_field.rs
++++ b/crates/surface-material/src/outlined_text_field.rs
+@@ -469,7 +469,7 @@
+                 DisabledText::Value => "disabled-value",
+                 DisabledText::Hint => "disabled-placeholder",
+             };
+-            View::new(
++            let art = View::new(
+                 Node::new(Role::Text, "")
+                     .id(format!("{id}-{part}"))
+                     .text(text)
+@@ -482,7 +482,18 @@
+                             .clip(true),
+                     ),
+             )
+-            .without_interaction(None)
++            .without_interaction(None);
++            if matches!(kind, DisabledText::Hint) && multiline.is_none() {
++                View::new(
++                    Node::new(Role::Group, "")
++                        .styled(Style::column().clip(true))
++                        .measured_group(ClippedSingleLineHint { line_height, rtl }),
++                )
++                .children([art])
++                .without_interaction(None)
++            } else {
++                art
++            }
+         });
+         let supporting_color = if disabled {
+             tokens.disabled_text
+@@ -771,6 +782,44 @@
+     Hint,
+ }
+ 
++/// Shape the passive hint at its natural width and clip it to the value area.
++/// A one-row value area must not wrap the next word into a hidden second row.
++#[derive(Debug)]
++struct ClippedSingleLineHint {
++    line_height: f32,
++    rtl: bool,
++}
++
++impl MeasuredGroupLayout for ClippedSingleLineHint {
++    fn measure(
++        &self,
++        _children: &[&Node],
++        available_width: Option<f32>,
++        _fonts: &mut dyn TextMeasurer,
++    ) -> (f32, f32) {
++        (available_width.unwrap_or_default(), self.line_height)
++    }
++
++    fn place(
++        &self,
++        children: &[&Node],
++        (width, height): (f32, f32),
++        fonts: &mut dyn TextMeasurer,
++    ) -> Vec<Rect> {
++        let child = children[0];
++        let natural = child.text_value().map_or(0., |hint| {
++            fonts
++                .measure_text(hint, &child.style().text_style(), None)
++                .0
++        });
++        vec![physical(
++            Rect::new(0., 0., width.max(natural), height),
++            width,
++            self.rtl,
++        )]
++    }
++}
++
+ #[derive(Debug)]
+ struct FieldLayout {
+     appearance: TextFieldAppearance,
+diff --git a/crates/surface-material/tests/outlined_text_field.rs b/crates/surface-material/tests/outlined_text_field.rs
+--- a/crates/surface-material/tests/outlined_text_field.rs
++++ b/crates/surface-material/tests/outlined_text_field.rs
+@@ -3,7 +3,7 @@
+ 
+ use surface::{
+     Color, ExtendedDisplayList, ExtendedPaintOp, Node, PaintOp, PathFill, Rect, Role, Style,
+-    TextAlignment,
++    TextAlignment, TextMeasurer,
+ };
+ use surface_app::{Application, EditKey, Event, ImeEvent, Key, KeyPress, Modifiers, Runtime, View};
+ use surface_material::{
+@@ -35,6 +35,7 @@
+ 
+ struct Form {
+     label: &'static str,
++    hint: &'static str,
+     value: String,
+     dark: bool,
+     rtl: bool,
+@@ -54,6 +55,7 @@
+     fn default() -> Self {
+         Self {
+             label: LABEL,
++            hint: HINT,
+             value: String::new(),
+             dark: false,
+             rtl: false,
+@@ -105,7 +107,7 @@
+             Theme::light()
+         };
+         let mut options = OutlinedTextFieldOptions::new(ID, self.label, &self.value);
+-        options.placeholder = Some(HINT);
++        options.placeholder = Some(self.hint);
+         options.supporting_text = Some(SUPPORT);
+         options.error = self.invalid.then_some(ERROR);
+         options.editability = self.editability;
+@@ -379,6 +381,108 @@
+ }
+ 
+ #[test]
++fn disabled_above_label_hint_keeps_single_line_clipping() {
++    const OVERFLOW_HINT: &str = "Monitor Keyboard";
++    let visible_clusters = |list: &ExtendedDisplayList, fonts: &mut TextSystem| {
++        let Some((
++            PaintOp::StyledText {
++                rect,
++                clip,
++                text,
++                style,
++                scroll,
++                multiline,
++                ..
++            },
++            alignment,
++        )) = text_run(list, OVERFLOW_HINT)
++        else {
++            panic!("an empty above-label field paints its hint");
++        };
++        assert!(
++            fonts.measure_text("Keyboard", style, None).0 <= clip.width,
++            "the second word alone fits in the visible row"
++        );
++        // Shape with the same width and origin as the display run. A true
++        // line break can move a whole word out of the one visible row.
++        let layout = if *multiline {
++            fonts.text_layout_aligned_styled(text, style, rect.width, alignment)
++        } else {
++            fonts.text_layout_styled(text, style, None)
++        };
++        layout
++            .clusters
++            .into_iter()
++            .filter_map(|cluster| {
++                let bounds = cluster.bounds;
++                let visible = Rect::new(
++                    rect.x - scroll.0 + bounds.x,
++                    rect.y - scroll.1 + bounds.y,
++                    bounds.width,
++                    bounds.height,
++                )
++                .intersect(*clip);
++                (visible.width > 0. && visible.height > 0.).then_some(cluster.bytes.start)
++            })
++            .collect::<Vec<_>>()
++    };
++
++    for (appearance, rtl) in [
++        (TextFieldAppearance::Outlined, false),
++        (TextFieldAppearance::Filled, false),
++        (TextFieldAppearance::Outlined, true),
++        (TextFieldAppearance::Filled, true),
++    ] {
++        let mut fonts = TextSystem::default();
++        let mut runtime = Runtime::new(Form {
++            label: LONG_LABEL,
++            hint: OVERFLOW_HINT,
++            rtl,
++            adorned: Some(appearance),
++            ..Form::default()
++        })
++        .unwrap();
++        runtime.set_time(0.);
++        let idle = render(&mut runtime, 260., &mut fonts);
++        assert_eq!(bounds(&runtime, "project-name-floating-label").width, 0.);
++        let field = bounds(&runtime, ID);
++        let expected = visible_clusters(&idle, &mut fonts);
++        if rtl {
++            assert!(
++                expected.contains(&(OVERFLOW_HINT.len() - 1)) && !expected.contains(&0),
++                "the RTL value area keeps the physical-right end: {expected:?}"
++            );
++        } else {
++            assert!(
++                expected.contains(&"Monitor ".len())
++                    && !expected.contains(&(OVERFLOW_HINT.len() - 1)),
++                "the LTR value area clips the end of the second word: {expected:?}"
++            );
++        }
++
++        runtime.set_time(16.);
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Disabled))
++            .unwrap();
++        let disabled = render(&mut runtime, 260., &mut fonts);
++        assert_eq!(bounds(&runtime, ID), field);
++        assert_eq!(
++            visible_clusters(&disabled, &mut fonts),
++            expected,
++            "{appearance:?} rtl={rtl} disabled hint preserves the visible part of the same line"
++        );
++
++        runtime.set_time(32.);
++        runtime
++            .apply(Message::SetEditability(TextFieldEditability::Editable))
++            .unwrap();
++        let enabled = render(&mut runtime, 260., &mut fonts);
++        assert_eq!(bounds(&runtime, ID), field);
++        assert_eq!(visible_clusters(&enabled, &mut fonts), expected);
++    }
++}
++
++#[test]
+ fn floating_label_reverses_from_the_same_pose_and_reduced_motion_settles_it() {
+     for appearance in [TextFieldAppearance::Outlined, TextFieldAppearance::Filled] {
+         let mut runtime = Runtime::new(Form {
+diff --git a/crates/surface/src/microdom.rs b/crates/surface/src/microdom.rs
+--- a/crates/surface/src/microdom.rs
++++ b/crates/surface/src/microdom.rs
+@@ -124,6 +124,13 @@
+     pub(crate) opacity: f32,
+ }
+ 
++#[derive(Clone, Debug, PartialEq)]
++struct PresentedPlaceholder {
++    content: Arc<(String, Color)>,
++    ink: Color,
++    use_horizontal_offset: bool,
++}
++
+ #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+ pub struct Node {
+     #[serde(default, skip_serializing_if = "no_box_shadows")]
+@@ -209,7 +216,7 @@
+     #[serde(default, skip_serializing_if = "Option::is_none")]
+     text_input_caret_color: Option<Color>,
+     #[serde(skip)]
+-    presented_text_input_placeholder: Option<(Arc<(String, Color)>, Color)>,
++    presented_text_input_placeholder: Option<PresentedPlaceholder>,
+     #[serde(skip)]
+     pub(crate) presented_text_paint_bounds: Option<Rect>,
+     #[serde(skip)]
+@@ -575,11 +582,17 @@
+         self.text_alignment.filter(|_| self.role != Role::TextInput)
+     }
+ 
+-    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color)> {
++    pub(crate) fn text_input_placeholder(&self) -> Option<(&str, Color, bool)> {
+         self.presented_text_input_placeholder
+             .as_ref()
+             .filter(|_| self.text_value().is_none_or(str::is_empty))
+-            .map(|(content, ink)| (content.0.as_str(), *ink))
++            .map(|hint| {
++                (
++                    hint.content.0.as_str(),
++                    hint.ink,
++                    hint.use_horizontal_offset,
++                )
++            })
+     }
+ 
+     /// Set the editable caret's color independently of text and IME ink.
+@@ -1274,10 +1287,11 @@
+         placeholder: Arc<(String, Color)>,
+     ) -> Result<(), DomError> {
+         let ink = placeholder.1;
+-        self.set_presented_text_input_placeholder_ink(id, placeholder, ink)
++        self.set_presented_placeholder(id, placeholder, ink, false)
+     }
+ 
+     /// Set the sampled ink without cloning or changing the authored hint.
++    /// Use the explicit horizontal offset computed for the hint in this frame.
+     #[doc(hidden)]
+     pub fn set_presented_text_input_placeholder_ink(
+         &mut self,
+@@ -1285,12 +1299,26 @@
+         placeholder: Arc<(String, Color)>,
+         ink: Color,
+     ) -> Result<(), DomError> {
++        self.set_presented_placeholder(id, placeholder, ink, true)
++    }
++
++    fn set_presented_placeholder(
++        &mut self,
++        id: NodeId,
++        content: Arc<(String, Color)>,
++        ink: Color,
++        use_horizontal_offset: bool,
++    ) -> Result<(), DomError> {
+         let node = self
+             .nodes
+             .get_mut(id.index())
+             .ok_or(DomError::InvalidNode(id.index()))?;
+-        if node.role() == Role::TextInput && !placeholder.0.is_empty() {
+-            node.presented_text_input_placeholder = Some((placeholder, ink));
++        if node.role() == Role::TextInput && !content.0.is_empty() {
++            node.presented_text_input_placeholder = Some(PresentedPlaceholder {
++                content,
++                ink,
++                use_horizontal_offset,
++            });
+         }
+         Ok(())
+     }
+diff --git a/crates/surface/src/paint.rs b/crates/surface/src/paint.rs
+--- a/crates/surface/src/paint.rs
++++ b/crates/surface/src/paint.rs
+@@ -961,7 +961,9 @@
+             focus.push(*id, &mut ops);
+         }
+         let placeholder = n.text_input_placeholder();
+-        let text_run = placeholder.or_else(|| n.text_value().map(|text| (text, s.foreground)));
++        let text_run = placeholder
++            .map(|(text, ink, _)| (text, ink))
++            .or_else(|| n.text_value().map(|text| (text, s.foreground)));
+         if let Some((text, text_color)) = text_run {
+             let padded = g.bounds.inset(s.padding);
+             let mut rect = padded.inset_horizontal(n.presented_text_input_horizontal_inset);
+@@ -999,10 +1001,15 @@
+             }
+             let text_style = s.text_style();
+             let (scroll_x, scroll_y) = decoration.map(|d| d.scroll).unwrap_or_default();
+-            let scroll = if placeholder.is_some() {
++            let scroll = if let Some((_, _, use_horizontal_offset)) = placeholder {
+                 // A cleared field can retain scroll from its previous value.
+-                // Keep negative insets used for single-line alignment.
+-                (scroll_x.min(0.), scroll_y.min(0.))
++                // Retain positive scroll only when it was measured for the hint.
++                let x = if use_horizontal_offset {
++                    scroll_x
++                } else {
++                    scroll_x.min(0.)
++                };
++                (x, scroll_y.min(0.))
+             } else {
+                 (scroll_x, scroll_y)
+             };
+diff --git a/docs/material-coverage.json b/docs/material-coverage.json
+--- a/docs/material-coverage.json
++++ b/docs/material-coverage.json
+@@ -345,7 +345,7 @@
+       "desktop_evidence": "Native headless Gallery checks outline and filled-container pixels, 1 dp idle and 3 dp focused indicators, keyboard focus and submit, dark RTL at 200%, long-label placement, 112 dp slot reflow and counter stacking. Multiline replays check growth with a blank final row, fixed visible rows, caret paint, keyboard reveal and separate Submit. Page.screenshot, CLI and MCP return identical PNGs. Two headless replays also check that both label and notch retain the same Reduce Motion endpoints. Two placeholder replays add 40 matching PNGs through Page.screenshot, CLI and MCP. They check focus, blur and idle above-label hints in both appearances, including dark 320 dp RTL at 200% text.",
+       "web_evidence": "M325–M345 cover both appearances, adornments, a passive grapheme counter, linked descriptions, deduplicated assertive errors, read-only and disabled states, composition during reflow, narrow action relocation and count stacking. Multiline tests exercise separate Enter and Submit, visual page navigation, backward selection, locked Chrome accessibility states, inner scroll with parent residual, and trusted touch capture loss. M346 verifies committed values for inactive single-line, multiline, read-only and disabled boxes. An independent Chrome replay also checks whitespace and the transfer to the active textarea. M347–M350 check WebGPU pixels during label and notch motion, reversal, Reduce Motion, placeholder timing, one editor through preedit, and dark RTL at 320 dp at 200% text. Fixed glyph positions in both appearances verify intermediate Oklab colors, validation retargeting and retained velocity. The dark RTL fallback also verifies intermediate color at the same stationary label. Chrome continues to expose one textbox with immediate committed value and invalid state. M351–M353 compare 58 paired WebGPU originals to verify the two placeholder spring rates, reversal, RTL alignment, Reduce Motion, immediate suppression during marked and empty composition, and the unfocused above-label clear transition. CDP delivers real marked text; an explicitly synthetic empty composition start exercises the same Runtime bridge.",
+       "implemented": "Both single-line variants start at 56 dp and share hints, supporting text, validation, read-only and disabled modes, and scaled labels in both directions. Outlined opens a measured notch in its 1 or 3 dp border. Filled uses a top-rounded container, an inside caption above the input, and a 1 or 3 dp bottom indicator. Both appearances move and resize a single floating label with Standard Fast Spatial. The Outlined notch follows the same progress in width and depth. A long label wraps above either variant. Standard Fast Effects blends the label color independently in Oklab, including during the switch to the above-field label. Disable, theme changes and Reduce Motion settle the color immediately. Reduce Motion settles the notch immediately. The editor retains committed Unicode text, selection and IME across appearance changes. Optional decorative leading and named 48 dp trailing icons and localized prefix and suffix work in both appearances. Affixes remain separate from the committed value. Tight layouts wrap the affixes and move the action below. With an expanding label, an empty field fades the hint in on focus using Standard Slow Effects and out on blur using Fast Effects. Above-field labels leave the hint visible at rest, including in a disabled field with disabled ink. Clearing an unfocused above-field editor fades the hint back in. Committed text, active composition and overlap with the moving label suppress the hint independently of its opacity. A long hint can clip within the one-line input area. The optional counter measures committed grapheme clusters, keeps over-limit text, and shows a localized error. The count stays passive and does not include preedit. Either appearance can wrap text in an automatically growing field or a fixed number of visible rows. Visual line movement and selection use the same text geometry as paint. Wheel and touch can pass unused motion to an enclosing scroll region. Inactive leaf textboxes expose their committed value to the Web accessibility tree. Some emoji still use fallback boxes in the bundled font. Boundary motion, system contrast, live speech and operating-system composition remain open.",
+-      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry."
++      "unit_evidence": "Material layout, Runtime editing and input tests cover editor identity, grapheme limits, preedit, Enter, scroll handoff and touch cancellation. Timed field tests check one moving label, early notch depth, reversal, Reduce Motion, and normal and fallback 320 dp dark RTL at 200% text. Color tests cover exact Fast Effects reference samples, focus, validation, theme replacement and the same color during resize. Placeholder tests cover both input curves, reversal, RTL paint bounds, empty composition, above-label clear, Reduce Motion and disabled ink. macOS AccessKit projection tests cover the multiline role, raw value, ordered descriptions and disabled focus exclusion. Metal selection tests check the actual painted wrapped geometry. The same-ID overflow regression checks that Outlined and Filled single-line hints keep the same visible text as the field disables and re-enables in LTR and RTL."
+     },
+     {
+       "id": "toolbars",
