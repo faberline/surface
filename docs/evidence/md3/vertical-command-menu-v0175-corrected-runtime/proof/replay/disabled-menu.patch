@@ -1,0 +1,86 @@
+diff --git a/crates/surface-app/src/controls.rs b/crates/surface-app/src/controls.rs
+--- a/crates/surface-app/src/controls.rs
++++ b/crates/surface-app/src/controls.rs
+@@ -728,15 +728,20 @@
+             if binding.modal_layer.is_none() {
+                 return true;
+             }
+-            // A painted or scrollable positioned descendant is part of the
+-            // modal even at a blank point. A transparent spacer is not.
++            // A painted or scrollable positioned descendant is inside the
++            // modal. Disabled menu items that accept focus also count as
++            // inside here because normal hit testing skips them.
+             hit.is_none()
+                 && !self.dom.iter().any(|(id, node)| {
+                     let style = node.style();
+-                    style.position != Position::Flow
++                    let positioned_panel = style.position != Position::Flow
+                         && (style.clip
+                             || style.background.3 > 0
+-                            || (style.border_width > 0. && style.border_color.3 > 0))
++                            || (style.border_width > 0. && style.border_color.3 > 0));
++                    (positioned_panel
++                        || self.bindings.get(&id).is_some_and(|binding| {
++                            binding.disabled_menu_focus() && binding.accepts_interaction()
++                        }))
+                         && contains(id)
+                         && self.descendant(id, root)
+                 })
+diff --git a/crates/surface-material/tests/vertical_command_menu.rs b/crates/surface-material/tests/vertical_command_menu.rs
+--- a/crates/surface-material/tests/vertical_command_menu.rs
++++ b/crates/surface-material/tests/vertical_command_menu.rs
+@@ -280,6 +280,54 @@
+ }
+ 
+ #[test]
++fn disabled_click_stays_in_a_separated_menu_and_outside_click_dismisses() {
++    let mut runtime = Runtime::new(Fixture::default()).unwrap();
++    open(&mut runtime, 720., 640.);
++
++    let panel = bounds(&runtime, "vertical");
++    let group = bounds(&runtime, "documents");
++    let gap = bounds(&runtime, "other").y - bottom(group);
++    let row = bounds(&runtime, "disabled");
++    let (x, y) = (row.x + row.width / 2., row.y + row.height / 2.);
++    assert_eq!(gap, 2.);
++    assert_eq!(
++        get(&runtime, "vertical").style().background,
++        Color::TRANSPARENT
++    );
++    assert!(!get(&runtime, "vertical").style().clip);
++    assert_eq!(get(&runtime, "documents").style().background.3, 255);
++    assert!(panel.contains(x, y) && group.contains(x, y));
++    assert!(get(&runtime, "disabled").is_disabled());
++    assert_eq!(runtime.focused(), Some("disabled"));
++
++    let click = |runtime: &mut Runtime<Fixture>, x, y| {
++        runtime.dispatch(Event::PointerDown { x, y }).unwrap();
++        runtime.dispatch(Event::PointerUp { x, y }).unwrap();
++    };
++    click(&mut runtime, x, y);
++    assert!(runtime.app().open, "a disabled row is inside the popup");
++    assert!(runtime.app().chosen.is_empty());
++    assert_eq!(runtime.focused(), Some("disabled"));
++
++    assert!(!panel.contains(700., 620.));
++    click(&mut runtime, 700., 620.);
++    assert!(!runtime.app().open);
++    assert!(runtime.app().chosen.is_empty());
++    assert_eq!(runtime.focused(), Some("trigger"));
++
++    open(&mut runtime, 720., 640.);
++    let group = bounds(&runtime, "documents");
++    let next = bounds(&runtime, "other");
++    let gap_y = (bottom(group) + next.y) / 2.;
++    assert!(bounds(&runtime, "vertical").contains(x, gap_y));
++    assert!(!group.contains(x, gap_y) && !next.contains(x, gap_y));
++    click(&mut runtime, x, gap_y);
++    assert!(!runtime.app().open);
++    assert!(runtime.app().chosen.is_empty());
++    assert_eq!(runtime.focused(), Some("trigger"));
++}
++
++#[test]
+ fn overflow_has_real_mirrored_thumb_and_retains_group_and_focus_on_resize() {
+     for rtl in [false, true] {
+         let mut runtime = Runtime::new(Fixture {

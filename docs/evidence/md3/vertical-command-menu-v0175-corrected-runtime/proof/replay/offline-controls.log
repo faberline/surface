@@ -1,0 +1,32 @@
+PASS pure guard predicates; no executable started
+{
+  "file_count": 698,
+  "manifest_sha256": "8a2037d8b5fb11afcb226f5b27b41656d7c3dd428b09db9c4aaf2d711cacf2d0",
+  "tree": "8046e25a630284411e1ebf9f9d16d1004b02651b",
+  "version": "0.1.75"
+}
+Corrected vertical menu native replay stopped. Expected the exact corrected source hash
+Corrected vertical menu native replay stopped. Use the corrected native build manifest
+Traceback (most recent call last):
+  File "/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/run-stock-material.py", line 199, in <module>
+    main()
+  File "/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/run-stock-material.py", line 177, in main
+    pins = inputs(args)
+           ^^^^^^^^^^^^
+  File "/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/run-stock-material.py", line 41, in inputs
+    require(digest(args.source_manifest) == SOURCE_SHA, "Different corrected v0.1.75 source manifest")
+  File "/private/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/evidence_common.py", line 21, in require
+    raise ValueError(message)
+ValueError: Different corrected v0.1.75 source manifest
+Traceback (most recent call last):
+  File "/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/run-stock-material.py", line 199, in <module>
+    main()
+  File "/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/run-stock-material.py", line 177, in main
+    pins = inputs(args)
+           ^^^^^^^^^^^^
+  File "/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/run-stock-material.py", line 48, in inputs
+    require(args.web_sha256 != ORIGINAL_WEB_SHA, "The original v0.1.75 Web build is not the corrected build")
+  File "/private/tmp/surface-md3-disabled-menu-corrected-replay.ZIfGJCvi/evidence_common.py", line 21, in require
+    raise ValueError(message)
+ValueError: The original v0.1.75 Web build is not the corrected build
+PASS four original-source/build rejection controls without starting an app.

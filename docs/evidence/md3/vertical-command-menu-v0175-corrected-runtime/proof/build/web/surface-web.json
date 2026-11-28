@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "app": "material-gallery",
+  "package": "surface-material-gallery",
+  "profile": "release",
+  "cargo_profile": "wasm-release",
+  "rustc_target": "wasm32-unknown-unknown",
+  "features": [],
+  "tools": {
+    "rustc": "rustc 1.96.1 (31fca3adb 2026-06-26)",
+    "wasm_bindgen": "0.2.129",
+    "wasm_opt": "133",
+    "wasm_opt_args": [
+      "-Oz",
+      "--enable-bulk-memory",
+      "--enable-mutable-globals",
+      "--enable-nontrapping-float-to-int",
+      "--enable-sign-ext",
+      "--enable-reference-types",
+      "--enable-multivalue",
+      "--strip-debug",
+      "--strip-producers"
+    ]
+  },
+  "entry": "index.html",
+  "js": "surface_material_gallery-aea7ea22c02f3ee8.js",
+  "wasm": "surface_material_gallery_bg-d82612d45b94c531.wasm",
+  "files": [
+    {
+      "path": "index.html",
+      "sha256": "5c815ac454810020f4dcc543cc5e782ac40d0deaa371e70406434ec18a5086e4",
+      "bytes": 1277,
+      "immutable": false
+    },
+    {
+      "path": "surface_material_gallery-aea7ea22c02f3ee8.js",
+      "sha256": "aea7ea22c02f3ee8bbb8e50a5514aea700076446312170b930020d6bab4c5b9d",
+      "bytes": 99730,
+      "immutable": true
+    },
+    {
+      "path": "surface_material_gallery_bg-d82612d45b94c531.wasm",
+      "sha256": "d82612d45b94c531ca14228c6d61945710eb0f30296c56ee7feff1ea4ae52cf4",
+      "bytes": 8119391,
+      "immutable": true
+    }
+  ]
+}
