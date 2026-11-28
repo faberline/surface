@@ -137,6 +137,34 @@ impl Theme {
         header: Option<View<M>>,
         items: impl IntoIterator<Item = View<M>>,
     ) -> View<M> {
+        self.inline_wide_navigation_rail(id, name, frame, header, items, false)
+    }
+
+    pub(crate) fn scaffold_wide_navigation_rail<M>(
+        &self,
+        id: &str,
+        name: &str,
+        items: impl IntoIterator<Item = View<M>>,
+    ) -> View<M> {
+        self.inline_wide_navigation_rail(
+            id,
+            name,
+            WideNavigationRailMotionFrame::default(),
+            None,
+            items,
+            true,
+        )
+    }
+
+    fn inline_wide_navigation_rail<M>(
+        &self,
+        id: &str,
+        name: &str,
+        frame: WideNavigationRailMotionFrame,
+        header: Option<View<M>>,
+        items: impl IntoIterator<Item = View<M>>,
+        scroll_destinations: bool,
+    ) -> View<M> {
         let progress = unit_fraction(frame.rail);
         let moving = progress > 0. && progress < 1.;
         let mut style = Style::column().background(self.colors.surface).clip(moving);
@@ -152,8 +180,13 @@ impl Theme {
                 .id(format!("{id}-destinations"))
                 .styled(destinations_style),
         )
-        .children(items)
-        .roving(Roving::vertical(false));
+        .children(items);
+        let roving = Roving::vertical(false);
+        let destinations = if scroll_destinations {
+            destinations.roving_retained_layout(roving)
+        } else {
+            destinations.roving(roving)
+        };
         let mut children = vec![space(Style::column().height(Length::Px(TOP_SPACE)))];
         if let Some(header) = header {
             children.extend([
@@ -162,7 +195,19 @@ impl Theme {
             ]);
         }
         children.push(destinations);
-        View::new(Node::new(Role::Navigation, name).id(id).styled(style)).children(children)
+        let rail = View::new(Node::new(Role::Navigation, name).id(id).styled(style));
+        if scroll_destinations {
+            let viewport = View::new(
+                Node::new(Role::Group, "")
+                    .id(format!("{id}-scroll"))
+                    .styled(Style::column().height(Length::Px(0.)).grow(1.).clip(true)),
+            )
+            .children(children)
+            .accessibility_scroll_pages();
+            rail.children([viewport])
+        } else {
+            rail.children(children)
+        }
     }
 
     /// Build the expanded modal wide navigation rail at the logical start.

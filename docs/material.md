@@ -399,6 +399,27 @@ layout switch while the current page and destination IDs stay the same.
 [Material 3 Navigation Bar guidelines](https://m3.material.io/components/navigation-bar/guidelines) ·
 [Accessibility](https://m3.material.io/components/navigation-bar/accessibility)
 
+## Adaptive navigation scaffold
+
+Use `Theme::adaptive_navigation_scaffold` to place one page beside or
+above its navigation. Set the logical width, height, reading direction,
+stable scaffold and navigation IDs, and localized landmark name in
+`AdaptiveNavigationScaffoldOptions`. Pass three to five destinations.
+Keep the page key and destination IDs stable when the window resizes.
+
+Surface puts a compact bar at the bottom below 600 dp. It uses a
+horizontal bar at the bottom from 600 dp to less than 840 dp. At 840 dp
+and wider, a 96 dp rail sits at the leading edge. The rail has its own
+scroll area. In the rail, Up and Down move focus. In the bars, Tab moves
+through enabled destinations. Enter, Space and pointer input select a
+destination. The application owns the current destination and page.
+
+The shortest supported viewport is 64 dp. Give the bars more height
+when labels wrap. The compact bar needs at least 56 dp per destination.
+
+Open **自適應導覽** in the Gallery's **色彩** tab. Resize the window with
+focus in the draft field to try all three layouts.
+
 ## Navigation drawers
 
 Build destinations with `Theme::navigation_drawer_item_with_icon`. Give
