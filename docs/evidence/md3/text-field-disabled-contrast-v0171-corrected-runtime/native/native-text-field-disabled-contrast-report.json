@@ -1,0 +1,5726 @@
+{
+  "source_version": "0.1.71",
+  "source_files": 690,
+  "source_manifest_sha256": "7ff2289093941bab73f8f718492d800b8a9c2bd33c3a03aae0f2396b6d03a65e",
+  "binary_manifest_sha256": "1837e4d13f3f7bb2e92444094249d31da9cae7deb7430c36eeee38f07e33fab2",
+  "binaries": {
+    "surface-material-gallery": "e1a8a0a056cee1682216bcc964fe4b2db282e2b06e9dfc5a3dc3940c47cfab4e",
+    "surface-devtools": "ffe1f74bea587830ab3bc5913dc681794ce6d8e6d4326b8272f60034e7a3cc9b"
+  },
+  "schema": "surface.test.disabled-text-field-contrast.native.v2",
+  "scope": "Native headless Gallery fixed forced-colors preview, W3C CSS Color Adjustment Level 1 §5.2",
+  "w3c_palette": "https://www.w3.org/TR/css-color-adjust-1/#forced-color-palettes",
+  "helpers_manifest_sha256": "34291d67bd5e47502553bcbf0171b424b4bee2f9be0fa7e5f2873b7c235d7575",
+  "transports": [
+    "Page.screenshot",
+    "CLI",
+    "MCP"
+  ],
+  "observer_sha256": "fd0f0b651544fddabaa26e0df5995620fb427b43d001f85c70daa9773a713262",
+  "replays": [
+    {
+      "wide-light": {
+        "viewport": [
+          960,
+          900
+        ],
+        "preview": "light",
+        "palette": {
+          "canvas": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "canvas_text": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "gray_text": [
+            96,
+            0,
+            0,
+            255
+          ]
+        },
+        "forms": {
+          "outlined": {
+            "captures": {
+              "idle": {
+                "name": "wide-light-outlined-idle.png",
+                "sha256": "cbea94f34801da7bc0ee674955c53c679353b8ec99d111a5834eb0ca6419775e",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        270,
+                        103,
+                        284
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-light-outlined-read-only-focused.png",
+                "sha256": "a5b0096470e6ba73b7cdec9fda28e50ca0e1c8315f8ef3d4bfd8e216d80724c2",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        264,
+                        105,
+                        288
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "outlined-text-field-demo-long-label",
+            "restored_focus": "outlined-text-field-demo-show"
+          },
+          "filled": {
+            "captures": {
+              "idle": {
+                "name": "wide-light-filled-idle.png",
+                "sha256": "eb8096c47e317e6f434fa6fafe024224e1eadadc4d616be664d479c330f47120",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        245,
+                        245,
+                        245,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        262,
+                        103,
+                        276
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-light-filled-read-only-focused.png",
+                "sha256": "9ab19a9ec5388f42ebf1a216207cde88be05838d692b537d8f511a89d7491fdf",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        245,
+                        245,
+                        245,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        256,
+                        105,
+                        280
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "filled-text-field-demo-long-label",
+            "restored_focus": "filled-text-field-demo-show"
+          }
+        }
+      },
+      "wide-dark": {
+        "viewport": [
+          960,
+          900
+        ],
+        "preview": "dark",
+        "palette": {
+          "canvas": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "canvas_text": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "gray_text": [
+            63,
+            242,
+            63,
+            255
+          ]
+        },
+        "forms": {
+          "outlined": {
+            "captures": {
+              "idle": {
+                "name": "wide-dark-outlined-idle.png",
+                "sha256": "3205db9809653bd09825350c6936cb76b438c3fe23c233ffc82e0250f4852768",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        270,
+                        103,
+                        284
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-dark-outlined-read-only-focused.png",
+                "sha256": "236b0a053e37f248fbce004e890dce225ac0a736b5350d2fff362805e545182b",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        264,
+                        105,
+                        288
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "outlined-text-field-demo-long-label",
+            "restored_focus": "outlined-text-field-demo-show"
+          },
+          "filled": {
+            "captures": {
+              "idle": {
+                "name": "wide-dark-filled-idle.png",
+                "sha256": "fe5c1d058e9a3a2604b3e97871ddbdb66e90a2732668beadc1e15a09f3247dce",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        262,
+                        103,
+                        276
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-dark-filled-read-only-focused.png",
+                "sha256": "e53d087ca156574d8cdafcd843faf53d6af632f37d3de3dc295c9595fd59a3a5",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        256,
+                        105,
+                        280
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "filled-text-field-demo-long-label",
+            "restored_focus": "filled-text-field-demo-show"
+          }
+        }
+      },
+      "compact-dark-rtl": {
+        "viewport": [
+          320,
+          900
+        ],
+        "preview": "dark",
+        "palette": {
+          "canvas": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "canvas_text": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "gray_text": [
+            63,
+            242,
+            63,
+            255
+          ]
+        },
+        "forms": {
+          "outlined": {
+            "captures": {
+              "idle": {
+                "name": "compact-dark-rtl-outlined-idle.png",
+                "sha256": "7b76b92cea9c39e1364579c8fee20cbb8e9d5f9bc95788f84ccb251810a52901",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 628.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 644.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 612.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 512.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 528.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 496.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        618,
+                        279,
+                        641
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 445
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        655,
+                        278,
+                        685
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        502,
+                        279,
+                        525
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 868,
+                      "extent": [
+                        153,
+                        539,
+                        276,
+                        569
+                      ],
+                      "leading_margin": 4,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "compact-dark-rtl-outlined-read-only-focused.png",
+                "sha256": "b2e8b578a7d93f05f7f1ade1990d64e8a0ff250a7ee1cd3a2ee3477f3ae7f7be",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 628.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 644.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 612.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 512.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 528.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 496.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        618,
+                        279,
+                        641
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 445
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        655,
+                        278,
+                        685
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        502,
+                        279,
+                        525
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 916,
+                      "extent": [
+                        153,
+                        528,
+                        279,
+                        576
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "outlined-text-field-demo-long-label",
+            "restored_focus": "outlined-text-field-demo-show"
+          },
+          "filled": {
+            "captures": {
+              "idle": {
+                "name": "compact-dark-rtl-filled-idle.png",
+                "sha256": "23b61570011f75245ea4da3ed7253b1cbb1c5d7722ba26917868cf2fdbd4bfa5",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 612.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 652.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 620.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 496.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 536.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 504.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        626,
+                        279,
+                        649
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 440
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        663,
+                        278,
+                        693
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        510,
+                        279,
+                        533
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 868,
+                      "extent": [
+                        153,
+                        547,
+                        276,
+                        577
+                      ],
+                      "leading_margin": 4,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "compact-dark-rtl-filled-read-only-focused.png",
+                "sha256": "8f86a7affde276664d2f7a61b9b1a790a2dbdcd8dcb7dc907fd2f924124de366",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 612.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 652.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 620.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 496.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 536.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 504.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        626,
+                        279,
+                        649
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 440
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        663,
+                        278,
+                        693
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        510,
+                        279,
+                        533
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 916,
+                      "extent": [
+                        153,
+                        536,
+                        279,
+                        584
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "filled-text-field-demo-long-label",
+            "restored_focus": "filled-text-field-demo-show"
+          }
+        }
+      }
+    },
+    {
+      "wide-light": {
+        "viewport": [
+          960,
+          900
+        ],
+        "preview": "light",
+        "palette": {
+          "canvas": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "canvas_text": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "gray_text": [
+            96,
+            0,
+            0,
+            255
+          ]
+        },
+        "forms": {
+          "outlined": {
+            "captures": {
+              "idle": {
+                "name": "wide-light-outlined-idle.png",
+                "sha256": "cbea94f34801da7bc0ee674955c53c679353b8ec99d111a5834eb0ca6419775e",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        270,
+                        103,
+                        284
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-light-outlined-read-only-focused.png",
+                "sha256": "a5b0096470e6ba73b7cdec9fda28e50ca0e1c8315f8ef3d4bfd8e216d80724c2",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        264,
+                        105,
+                        288
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "outlined-text-field-demo-long-label",
+            "restored_focus": "outlined-text-field-demo-show"
+          },
+          "filled": {
+            "captures": {
+              "idle": {
+                "name": "wide-light-filled-idle.png",
+                "sha256": "eb8096c47e317e6f434fa6fafe024224e1eadadc4d616be664d479c330f47120",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        245,
+                        245,
+                        245,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        262,
+                        103,
+                        276
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-light-filled-read-only-focused.png",
+                "sha256": "9ab19a9ec5388f42ebf1a216207cde88be05838d692b537d8f511a89d7491fdf",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": false,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        245,
+                        245,
+                        245,
+                        255
+                      ],
+                      "caption_fit_pixels": 176,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        96,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "paper_rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        256,
+                        105,
+                        280
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "filled-text-field-demo-long-label",
+            "restored_focus": "filled-text-field-demo-show"
+          }
+        }
+      },
+      "wide-dark": {
+        "viewport": [
+          960,
+          900
+        ],
+        "preview": "dark",
+        "palette": {
+          "canvas": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "canvas_text": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "gray_text": [
+            63,
+            242,
+            63,
+            255
+          ]
+        },
+        "forms": {
+          "outlined": {
+            "captures": {
+              "idle": {
+                "name": "wide-dark-outlined-idle.png",
+                "sha256": "3205db9809653bd09825350c6936cb76b438c3fe23c233ffc82e0250f4852768",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        270,
+                        103,
+                        284
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-dark-outlined-read-only-focused.png",
+                "sha256": "236b0a053e37f248fbce004e890dce225ac0a736b5350d2fff362805e545182b",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 332.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 348.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 324.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 248.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 264.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        326,
+                        87,
+                        338
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        354,
+                        119,
+                        368
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        264,
+                        105,
+                        288
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 304,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "outlined-text-field-demo-long-label",
+            "restored_focus": "outlined-text-field-demo-show"
+          },
+          "filled": {
+            "captures": {
+              "idle": {
+                "name": "wide-dark-filled-idle.png",
+                "sha256": "fe5c1d058e9a3a2604b3e97871ddbdb66e90a2732668beadc1e15a09f3247dce",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 118,
+                      "extent": [
+                        42,
+                        262,
+                        103,
+                        276
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "wide-dark-filled-read-only-focused.png",
+                "sha256": "e53d087ca156574d8cdafcd843faf53d6af632f37d3de3dc295c9595fd59a3a5",
+                "format": "png",
+                "width": 960,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": false,
+                    "large-text": false,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 308.0
+                      },
+                      "body": {
+                        "height": 24.0,
+                        "width": 472.0,
+                        "x": 40.0,
+                        "y": 332.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 316.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 56.0,
+                        "width": 504.0,
+                        "x": 24.0,
+                        "y": 232.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 472.0,
+                        "height": 24,
+                        "y": 256.0
+                      },
+                      "label": {
+                        "height": 16.0,
+                        "width": 48.0,
+                        "x": 40.0,
+                        "y": 240.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 0,
+                      "extent": [
+                        41,
+                        318,
+                        87,
+                        330
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 175,
+                      "caption_strong_pixels": 47
+                    },
+                    "body": {
+                      "exact_pixels": 152,
+                      "extent": [
+                        42,
+                        338,
+                        119,
+                        352
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 1,
+                      "extent": [
+                        41,
+                        242,
+                        87,
+                        254
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 193,
+                      "caption_strong_pixels": 42
+                    },
+                    "body": {
+                      "exact_pixels": 142,
+                      "extent": [
+                        42,
+                        256,
+                        105,
+                        280
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 402,
+                    "bottom": 288,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "filled-text-field-demo-long-label",
+            "restored_focus": "filled-text-field-demo-show"
+          }
+        }
+      },
+      "compact-dark-rtl": {
+        "viewport": [
+          320,
+          900
+        ],
+        "preview": "dark",
+        "palette": {
+          "canvas": [
+            0,
+            0,
+            0,
+            255
+          ],
+          "canvas_text": [
+            255,
+            255,
+            255,
+            255
+          ],
+          "gray_text": [
+            63,
+            242,
+            63,
+            255
+          ]
+        },
+        "forms": {
+          "outlined": {
+            "captures": {
+              "idle": {
+                "name": "compact-dark-rtl-outlined-idle.png",
+                "sha256": "7b76b92cea9c39e1364579c8fee20cbb8e9d5f9bc95788f84ccb251810a52901",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 628.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 644.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 612.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 512.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 528.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 496.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        618,
+                        279,
+                        641
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 445
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        655,
+                        278,
+                        685
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        502,
+                        279,
+                        525
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 868,
+                      "extent": [
+                        153,
+                        539,
+                        276,
+                        569
+                      ],
+                      "leading_margin": 4,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "compact-dark-rtl-outlined-read-only-focused.png",
+                "sha256": "b2e8b578a7d93f05f7f1ade1990d64e8a0ff250a7ee1cd3a2ee3477f3ae7f7be",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 628.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 644.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 612.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 80.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 512.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 528.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 496.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "outlined-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "outlined-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "outlined-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        618,
+                        279,
+                        641
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 445
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        655,
+                        278,
+                        685
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        502,
+                        279,
+                        525
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 916,
+                      "extent": [
+                        153,
+                        528,
+                        279,
+                        576
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "outlined-text-field-demo-long-label",
+            "restored_focus": "outlined-text-field-demo-show"
+          },
+          "filled": {
+            "captures": {
+              "idle": {
+                "name": "compact-dark-rtl-filled-idle.png",
+                "sha256": "23b61570011f75245ea4da3ed7253b1cbb1c5d7722ba26917868cf2fdbd4bfa5",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 612.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 652.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 620.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 496.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 536.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 504.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-editable"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        626,
+                        279,
+                        649
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 440
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        663,
+                        278,
+                        693
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        510,
+                        279,
+                        533
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 868,
+                      "extent": [
+                        153,
+                        547,
+                        276,
+                        577
+                      ],
+                      "leading_margin": 4,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 1,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              },
+              "read-only-focused": {
+                "name": "compact-dark-rtl-filled-read-only-focused.png",
+                "sha256": "8f86a7affde276664d2f7a61b9b1a790a2dbdcd8dcb7dc907fd2f924124de366",
+                "format": "png",
+                "width": 320,
+                "height": 900,
+                "scale": 1.0,
+                "geometry": {
+                  "settings": {
+                    "theme": true,
+                    "rtl": true,
+                    "large-text": true,
+                    "error": false
+                  },
+                  "regions": {
+                    "disabled": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 612.0
+                      },
+                      "body": {
+                        "height": 48.0,
+                        "width": 240.0,
+                        "x": 40.0,
+                        "y": 652.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 620.0
+                      }
+                    },
+                    "read-only": {
+                      "face": {
+                        "height": 96.0,
+                        "width": 272.0,
+                        "x": 24.0,
+                        "y": 496.0
+                      },
+                      "body": {
+                        "x": 40.0,
+                        "width": 240.0,
+                        "height": 48,
+                        "y": 536.0
+                      },
+                      "label": {
+                        "height": 32.0,
+                        "width": 96.0,
+                        "x": 184.0,
+                        "y": 504.0
+                      }
+                    }
+                  }
+                },
+                "semantic": {
+                  "locked_fields": {
+                    "disabled": {
+                      "id": "filled-text-field-demo-disabled",
+                      "role": "TextInput",
+                      "name": "停用名稱",
+                      "value": "已封存專案",
+                      "disabled": true,
+                      "has_editor": false
+                    },
+                    "read-only": {
+                      "id": "filled-text-field-demo-read-only",
+                      "role": "TextInput",
+                      "name": "唯讀名稱",
+                      "value": "既有專案",
+                      "disabled": false,
+                      "has_editor": true
+                    }
+                  },
+                  "focus": "filled-text-field-demo-read-only"
+                },
+                "verified_transports": [
+                  "Page.screenshot",
+                  "CLI",
+                  "MCP"
+                ],
+                "pixels": {
+                  "disabled": {
+                    "label": {
+                      "exact_pixels": 350,
+                      "extent": [
+                        185,
+                        626,
+                        279,
+                        649
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ],
+                      "paper_rgba": [
+                        10,
+                        10,
+                        10,
+                        255
+                      ],
+                      "caption_fit_pixels": 644,
+                      "caption_strong_pixels": 440
+                    },
+                    "body": {
+                      "exact_pixels": 1013,
+                      "extent": [
+                        123,
+                        663,
+                        278,
+                        693
+                      ],
+                      "leading_margin": 2,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        63,
+                        242,
+                        63,
+                        255
+                      ]
+                    }
+                  },
+                  "read-only": {
+                    "label": {
+                      "exact_pixels": 376,
+                      "extent": [
+                        186,
+                        510,
+                        279,
+                        533
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      "paper_rgba": [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      "caption_fit_pixels": 725,
+                      "caption_strong_pixels": 516
+                    },
+                    "body": {
+                      "exact_pixels": 916,
+                      "extent": [
+                        153,
+                        536,
+                        279,
+                        584
+                      ],
+                      "leading_margin": 1,
+                      "other_role_pixels": 0,
+                      "rgba": [
+                        255,
+                        255,
+                        255,
+                        255
+                      ]
+                    }
+                  },
+                  "read_only_boundary": {
+                    "x": 92,
+                    "bottom": 592,
+                    "depths": [
+                      -2,
+                      0,
+                      1,
+                      2,
+                      3
+                    ],
+                    "stroke_dp": 3,
+                    "samples": [
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        255,
+                        255,
+                        255,
+                        255
+                      ],
+                      [
+                        0,
+                        0,
+                        0,
+                        255
+                      ]
+                    ]
+                  }
+                }
+              }
+            },
+            "rejected_fills": {
+              "read-only": "action_failed",
+              "disabled": "disabled"
+            },
+            "tab_after_read_only": "filled-text-field-demo-long-label",
+            "restored_focus": "filled-text-field-demo-show"
+          }
+        }
+      }
+    }
+  ],
+  "processes": [
+    {
+      "wide-light": {
+        "pid": 87327,
+        "reaped": true,
+        "visible_windows": {
+          "ready": 0,
+          "opened/outlined": 0,
+          "before/wide-light-outlined-idle.png": 0,
+          "after/wide-light-outlined-idle.png": 0,
+          "before/wide-light-outlined-read-only-focused.png": 0,
+          "after/wide-light-outlined-read-only-focused.png": 0,
+          "closed/outlined": 0,
+          "opened/filled": 0,
+          "before/wide-light-filled-idle.png": 0,
+          "after/wide-light-filled-idle.png": 0,
+          "before/wide-light-filled-read-only-focused.png": 0,
+          "after/wide-light-filled-read-only-focused.png": 0,
+          "closed/filled": 0
+        },
+        "argv_without_binary": [
+          "--headless",
+          "--width",
+          "960",
+          "--height",
+          "900",
+          "--forced-colors",
+          "light"
+        ]
+      },
+      "wide-dark": {
+        "pid": 87910,
+        "reaped": true,
+        "visible_windows": {
+          "ready": 0,
+          "opened/outlined": 0,
+          "before/wide-dark-outlined-idle.png": 0,
+          "after/wide-dark-outlined-idle.png": 0,
+          "before/wide-dark-outlined-read-only-focused.png": 0,
+          "after/wide-dark-outlined-read-only-focused.png": 0,
+          "closed/outlined": 0,
+          "opened/filled": 0,
+          "before/wide-dark-filled-idle.png": 0,
+          "after/wide-dark-filled-idle.png": 0,
+          "before/wide-dark-filled-read-only-focused.png": 0,
+          "after/wide-dark-filled-read-only-focused.png": 0,
+          "closed/filled": 0
+        },
+        "argv_without_binary": [
+          "--headless",
+          "--width",
+          "960",
+          "--height",
+          "900",
+          "--forced-colors",
+          "dark"
+        ]
+      },
+      "compact-dark-rtl": {
+        "pid": 88460,
+        "reaped": true,
+        "visible_windows": {
+          "ready": 0,
+          "opened/outlined": 0,
+          "before/compact-dark-rtl-outlined-idle.png": 0,
+          "after/compact-dark-rtl-outlined-idle.png": 0,
+          "before/compact-dark-rtl-outlined-read-only-focused.png": 0,
+          "after/compact-dark-rtl-outlined-read-only-focused.png": 0,
+          "closed/outlined": 0,
+          "opened/filled": 0,
+          "before/compact-dark-rtl-filled-idle.png": 0,
+          "after/compact-dark-rtl-filled-idle.png": 0,
+          "before/compact-dark-rtl-filled-read-only-focused.png": 0,
+          "after/compact-dark-rtl-filled-read-only-focused.png": 0,
+          "closed/filled": 0
+        },
+        "argv_without_binary": [
+          "--headless",
+          "--width",
+          "320",
+          "--height",
+          "900",
+          "--forced-colors",
+          "dark"
+        ]
+      }
+    },
+    {
+      "wide-light": {
+        "pid": 88966,
+        "reaped": true,
+        "visible_windows": {
+          "ready": 0,
+          "opened/outlined": 0,
+          "before/wide-light-outlined-idle.png": 0,
+          "after/wide-light-outlined-idle.png": 0,
+          "before/wide-light-outlined-read-only-focused.png": 0,
+          "after/wide-light-outlined-read-only-focused.png": 0,
+          "closed/outlined": 0,
+          "opened/filled": 0,
+          "before/wide-light-filled-idle.png": 0,
+          "after/wide-light-filled-idle.png": 0,
+          "before/wide-light-filled-read-only-focused.png": 0,
+          "after/wide-light-filled-read-only-focused.png": 0,
+          "closed/filled": 0
+        },
+        "argv_without_binary": [
+          "--headless",
+          "--width",
+          "960",
+          "--height",
+          "900",
+          "--forced-colors",
+          "light"
+        ]
+      },
+      "wide-dark": {
+        "pid": 89511,
+        "reaped": true,
+        "visible_windows": {
+          "ready": 0,
+          "opened/outlined": 0,
+          "before/wide-dark-outlined-idle.png": 0,
+          "after/wide-dark-outlined-idle.png": 0,
+          "before/wide-dark-outlined-read-only-focused.png": 0,
+          "after/wide-dark-outlined-read-only-focused.png": 0,
+          "closed/outlined": 0,
+          "opened/filled": 0,
+          "before/wide-dark-filled-idle.png": 0,
+          "after/wide-dark-filled-idle.png": 0,
+          "before/wide-dark-filled-read-only-focused.png": 0,
+          "after/wide-dark-filled-read-only-focused.png": 0,
+          "closed/filled": 0
+        },
+        "argv_without_binary": [
+          "--headless",
+          "--width",
+          "960",
+          "--height",
+          "900",
+          "--forced-colors",
+          "dark"
+        ]
+      },
+      "compact-dark-rtl": {
+        "pid": 90048,
+        "reaped": true,
+        "visible_windows": {
+          "ready": 0,
+          "opened/outlined": 0,
+          "before/compact-dark-rtl-outlined-idle.png": 0,
+          "after/compact-dark-rtl-outlined-idle.png": 0,
+          "before/compact-dark-rtl-outlined-read-only-focused.png": 0,
+          "after/compact-dark-rtl-outlined-read-only-focused.png": 0,
+          "closed/outlined": 0,
+          "opened/filled": 0,
+          "before/compact-dark-rtl-filled-idle.png": 0,
+          "after/compact-dark-rtl-filled-idle.png": 0,
+          "before/compact-dark-rtl-filled-read-only-focused.png": 0,
+          "after/compact-dark-rtl-filled-read-only-focused.png": 0,
+          "closed/filled": 0
+        },
+        "argv_without_binary": [
+          "--headless",
+          "--width",
+          "320",
+          "--height",
+          "900",
+          "--forced-colors",
+          "dark"
+        ]
+      }
+    }
+  ]
+}
