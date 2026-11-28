@@ -1927,6 +1927,7 @@ impl Application for Gallery {
                     swatch("error-swatch", "Error", t.colors.error, t.colors.on_error),
                 ]);
                 children.push(FlexibleNavigationBarDemo::show_button(&t));
+                children.push(FlexibleNavigationBarDemo::show_medium_button(&t));
             }
         }
         children.extend(self.snackbar_demo.layer(&t));

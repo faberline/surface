@@ -168,6 +168,7 @@ does not change application state.
 | `navigation_drawer` / `modal_navigation_drawer` | Standard and modal drawer; 360-pixel panel; 56-pixel destinations; selected and disabled destination; full-width active indicator; modal scrim, focus trap and Escape/outside dismiss; light and dark; text-glyph icons, no badge, section headline or ripple |
 | `navigation_bar` / `navigation_bar_item` | Baseline 80 dp bar with a 64 × 32 dp active indicator and arrow-key focus. Destination builders also support vector icons and badges. |
 | `flexible_navigation_bar` | Compact Expressive bar with three to five equal destinations, Tab focus and labels that grow with text |
+| `horizontal_flexible_navigation_bar` | Medium Expressive bar with fixed hit cells and leading icons beside labels |
 | `progress-indicators` | Linear determinate and indeterminate; light and dark; phase set by the application; no circular variant, no rotation or motion yet |
 | `loading_indicator_with_motion` | Default and Contained Expressive indicators with a seven-shape morph, clockwise spin, Reduce Motion, and named indeterminate progress |
 | `icon_button_with_options` | Standalone vector commands and controlled toggles in Standard, Filled, Tonal, and Outlined styles. Five sizes, three widths, and two resting shapes. |
@@ -384,7 +385,18 @@ the selection and page. The chosen destination exposes the current page.
 
 Open **彈性導覽列** in the Gallery's **色彩** tab. Try three, four and five
 destinations with large text and right-to-left layout.
+
+Use `Theme::horizontal_flexible_navigation_bar` from 600 dp to less than 840 dp.
+It takes the same options and destinations. Surface uses fixed 112 dp
+hit cells. The remaining width stays at the two outer ends. The active
+pill starts at 40 dp high. It holds a logical-leading 24 dp icon and the
+label with a 4 dp gap. The active label and icon use On Secondary
+Container. Large labels wrap inside the pill and grow the bar.
+
+Open **橫向導覽列** in the same tab. Resize across 600 dp to see the
+layout switch while the current page and destination IDs stay the same.
 [Material 3 Navigation Bar specifications](https://m3.material.io/components/navigation-bar/specs) ·
+[Material 3 Navigation Bar guidelines](https://m3.material.io/components/navigation-bar/guidelines) ·
 [Accessibility](https://m3.material.io/components/navigation-bar/accessibility)
 
 ## Navigation drawers

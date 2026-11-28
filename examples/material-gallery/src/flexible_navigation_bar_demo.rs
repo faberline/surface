@@ -3,20 +3,22 @@ use std::sync::OnceLock;
 use surface::{Align, Length, Node, Role, Style};
 use surface_app::View;
 use surface_material::{
-    shape::LayoutDirection, typography, ButtonKind, ChoiceState, FlexibleNavigationBarOptions,
-    NavigationRailItem, Theme, VectorIcon,
+    adaptive::WindowWidthSizeClass, shape::LayoutDirection, typography, ButtonKind, ChoiceState,
+    FlexibleNavigationBarOptions, NavigationRailItem, Theme, VectorIcon,
 };
 
 use crate::{scroll_field_demo::control_row, Message};
 
 pub(crate) const SECTION: usize = 3;
 const SHOW: &str = "navigation-bar-demo-show";
+const SHOW_MEDIUM: &str = "navigation-bar-medium-demo-show";
 const BACK: &str = "navigation-bar-demo-back";
 const PREVIEW: &str = "navigation-bar-demo-preview";
 const SCROLL: &str = "navigation-bar-demo-scroll";
 const BAR: &str = "navigation-bar-demo-bar";
 const PAGE: &str = "navigation-bar-demo-page";
 const PREVIEW_WIDTH: f32 = 480.;
+const MEDIUM_PREVIEW_WIDTH: f32 = 839.;
 const DISABLED: usize = 1;
 const IDS: [&str; 5] = [
     "navigation-bar-demo-home",
@@ -38,6 +40,7 @@ const CONTENT: [[&str; 3]; 5] = [
 #[derive(Clone)]
 pub enum FlexibleNavigationBarDemoEvent {
     Show,
+    ShowMedium,
     Back,
     ToggleDirection,
     ToggleLargeText,
@@ -47,7 +50,8 @@ pub enum FlexibleNavigationBarDemoEvent {
 
 pub(crate) struct FlexibleNavigationBarDemo {
     visible: bool,
-    preview_width: f32,
+    medium_preview: bool,
+    viewport_width: f32,
     rtl: bool,
     large_text: bool,
     count: usize,
@@ -59,7 +63,8 @@ impl Default for FlexibleNavigationBarDemo {
     fn default() -> Self {
         Self {
             visible: false,
-            preview_width: PREVIEW_WIDTH,
+            medium_preview: false,
+            viewport_width: PREVIEW_WIDTH,
             rtl: false,
             large_text: false,
             count: IDS.len(),
@@ -79,10 +84,23 @@ impl FlexibleNavigationBarDemo {
     }
 
     pub(crate) fn viewport_changed(&mut self, width: f32) -> bool {
-        let preview_width = width.min(PREVIEW_WIDTH);
-        let changed = self.preview_width != preview_width;
-        self.preview_width = preview_width;
-        self.visible && changed
+        let previous = self.preview_width();
+        self.viewport_width = width;
+        self.visible && previous != self.preview_width()
+    }
+
+    fn preview_width(&self) -> f32 {
+        self.viewport_width.min(if self.medium_preview {
+            MEDIUM_PREVIEW_WIDTH
+        } else {
+            PREVIEW_WIDTH
+        })
+    }
+
+    fn horizontal(&self) -> bool {
+        self.medium_preview
+            && WindowWidthSizeClass::from_dp(self.preview_width())
+                == Some(WindowWidthSizeClass::Medium)
     }
 
     pub(crate) fn text_scale(&self) -> f32 {
@@ -96,7 +114,10 @@ impl FlexibleNavigationBarDemo {
     pub(crate) fn update(&mut self, event: FlexibleNavigationBarDemoEvent) {
         use FlexibleNavigationBarDemoEvent::*;
         match event {
-            Show => self.visible = true,
+            Show | ShowMedium => {
+                self.visible = true;
+                self.medium_preview = matches!(event, ShowMedium);
+            }
             Back => self.leave(),
             ToggleDirection => self.rtl = !self.rtl,
             ToggleLargeText => self.large_text = !self.large_text,
@@ -115,13 +136,36 @@ impl FlexibleNavigationBarDemo {
     }
 
     pub(crate) fn show_button(theme: &Theme) -> View<Message> {
+        Self::launcher(
+            theme,
+            SHOW,
+            "彈性導覽列",
+            FlexibleNavigationBarDemoEvent::Show,
+        )
+    }
+
+    pub(crate) fn show_medium_button(theme: &Theme) -> View<Message> {
+        Self::launcher(
+            theme,
+            SHOW_MEDIUM,
+            "橫向導覽列",
+            FlexibleNavigationBarDemoEvent::ShowMedium,
+        )
+    }
+
+    fn launcher(
+        theme: &Theme,
+        id: &str,
+        label: &str,
+        event: FlexibleNavigationBarDemoEvent,
+    ) -> View<Message> {
         theme
             .button_with(
-                SHOW,
-                "彈性導覽列",
+                id,
+                label,
                 ButtonKind::Outlined,
                 false,
-                Message::FlexibleNavigationBarDemo(FlexibleNavigationBarDemoEvent::Show),
+                Message::FlexibleNavigationBarDemo(event),
             )
             .restore_focus_on_removal(BACK)
             .accessible_activation()
@@ -131,6 +175,12 @@ impl FlexibleNavigationBarDemo {
         use FlexibleNavigationBarDemoEvent::*;
         let event = Message::FlexibleNavigationBarDemo;
         let selected_label = LABELS[self.selected];
+        let preview_width = self.preview_width();
+        let launcher = if self.medium_preview {
+            SHOW_MEDIUM
+        } else {
+            SHOW
+        };
         let header = Node::new(Role::Group, "")
             .id("navigation-bar-demo-header")
             .styled(
@@ -148,7 +198,7 @@ impl FlexibleNavigationBarDemo {
         let header = View::new(header).children([
             theme
                 .tonal_button(BACK, "返回", event(Back))
-                .restore_focus_on_removal(SHOW)
+                .restore_focus_on_removal(launcher)
                 .accessible_activation(),
             View::new(
                 Node::new(Role::Heading, selected_label)
@@ -216,33 +266,36 @@ impl FlexibleNavigationBarDemo {
         )
         .accessibility_scroll_pages()
         .children([controls, counts, page]);
-        let bar = theme.flexible_navigation_bar(
-            FlexibleNavigationBarOptions {
-                id: BAR,
-                name: "主要導覽",
-                available_width: self.preview_width,
-                direction: if self.rtl {
-                    LayoutDirection::RightToLeft
-                } else {
-                    LayoutDirection::LeftToRight
-                },
+        let options = FlexibleNavigationBarOptions {
+            id: BAR,
+            name: "主要導覽",
+            available_width: preview_width,
+            direction: if self.rtl {
+                LayoutDirection::RightToLeft
+            } else {
+                LayoutDirection::LeftToRight
             },
-            (0..self.count).map(|index| NavigationRailItem {
-                id: IDS[index],
-                label: LABELS[index],
-                accessible_name: NAMES[index],
-                icon: icon(index, self.selected == index),
-                state: ChoiceState {
-                    selected: self.selected == index,
-                    disabled: index == DISABLED,
-                },
-                message: event(Choose(index)),
-            }),
-        );
+        };
+        let destinations = (0..self.count).map(|index| NavigationRailItem {
+            id: IDS[index],
+            label: LABELS[index],
+            accessible_name: NAMES[index],
+            icon: icon(index, self.selected == index),
+            state: ChoiceState {
+                selected: self.selected == index,
+                disabled: index == DISABLED,
+            },
+            message: event(Choose(index)),
+        });
+        let bar = if self.horizontal() {
+            theme.horizontal_flexible_navigation_bar(options, destinations)
+        } else {
+            theme.flexible_navigation_bar(options, destinations)
+        };
         let preview = View::new(
             Node::new(Role::Group, "").id(PREVIEW).styled(
                 Style::column()
-                    .width(Length::Px(self.preview_width))
+                    .width(Length::Px(preview_width))
                     .height(Length::Percent(1.))
                     .background(theme.background),
             ),
@@ -270,7 +323,8 @@ impl FlexibleNavigationBarDemo {
             "visible": self.visible,
             "rtl": self.rtl,
             "text_scale": self.text_scale(),
-            "preview_width": self.preview_width,
+            "preview_width": self.preview_width(),
+            "horizontal": self.horizontal(),
             "count": self.count,
             "destinations": &IDS[..self.count],
             "disabled": IDS[DISABLED],
