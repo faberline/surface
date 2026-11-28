@@ -1,3 +1,4 @@
+mod adaptive_navigation_demo;
 mod app_bar_demo;
 mod badge_demo;
 mod bottom_sheet_demo;
@@ -59,6 +60,7 @@ mod tooltip_demo;
 mod vertical_centered_slider_demo;
 mod wide_navigation_rail_demo;
 
+use adaptive_navigation_demo::{AdaptiveNavigationDemo, AdaptiveNavigationDemoEvent};
 use app_bar_demo::{AppBarDemo, AppBarEvent};
 use badge_demo::{BadgeDemo, BadgeEvent};
 use bottom_sheet_demo::{BottomSheetDemo, BottomSheetEvent};
@@ -194,6 +196,7 @@ pub struct Gallery {
     dialog_demo: DialogDemo,
     menu_demo: MenuDemo,
     flexible_navigation_bar_demo: FlexibleNavigationBarDemo,
+    adaptive_navigation_demo: AdaptiveNavigationDemo,
     lists_demo: ListsDemo,
     list_actions_demo: ListActionsDemo,
     list_expand_demo: ListExpandDemo,
@@ -278,6 +281,7 @@ impl Default for Gallery {
             dialog_demo: DialogDemo::default(),
             menu_demo: MenuDemo::default(),
             flexible_navigation_bar_demo: FlexibleNavigationBarDemo::default(),
+            adaptive_navigation_demo: AdaptiveNavigationDemo::default(),
             lists_demo: ListsDemo::default(),
             list_actions_demo: ListActionsDemo::default(),
             list_expand_demo: ListExpandDemo::default(),
@@ -394,6 +398,7 @@ pub enum Message {
     DialogDemo(DialogDemoEvent),
     MenuDemo(MenuDemoEvent),
     FlexibleNavigationBarDemo(FlexibleNavigationBarDemoEvent),
+    AdaptiveNavigationDemo(AdaptiveNavigationDemoEvent),
     Lists(ListsEvent),
     ListActions(ListActionsEvent),
     ListExpand(ListExpandEvent),
@@ -513,6 +518,9 @@ impl Application for Gallery {
         }
         if self.flexible_navigation_bar_demo.visible() {
             return self.flexible_navigation_bar_demo.text_scale();
+        }
+        if self.adaptive_navigation_demo.visible() {
+            return self.adaptive_navigation_demo.text_scale();
         }
         if self.lists_demo.visible() {
             return self.lists_demo.text_scale();
@@ -654,6 +662,9 @@ impl Application for Gallery {
         let search_overlay = self.search_overlay_demo.viewport_changed(width, height);
         let dialog = self.dialog_demo.viewport_changed(width, height);
         let flexible_navigation_bar = self.flexible_navigation_bar_demo.viewport_changed(width);
+        let adaptive_navigation = self
+            .adaptive_navigation_demo
+            .viewport_changed(width, height);
         let list_actions = self.list_actions_demo.viewport_changed(width);
         let list_media = self.list_media_demo.viewport_changed(width, height);
         let list_reorder = self.list_reorder_demo.viewport_changed(width);
@@ -689,6 +700,7 @@ impl Application for Gallery {
             || search_overlay
             || dialog
             || flexible_navigation_bar
+            || adaptive_navigation
             || tabs
             || chips
             || icon_buttons
@@ -1015,6 +1027,9 @@ impl Application for Gallery {
                 if i != flexible_navigation_bar_demo::SECTION {
                     self.flexible_navigation_bar_demo.leave();
                 }
+                if i != adaptive_navigation_demo::SECTION {
+                    self.adaptive_navigation_demo.leave();
+                }
                 if i != toolbar_demo::SECTION {
                     self.toolbar_demo.leave();
                 }
@@ -1149,6 +1164,7 @@ impl Application for Gallery {
             Message::FlexibleNavigationBarDemo(event) => {
                 self.flexible_navigation_bar_demo.update(event)
             }
+            Message::AdaptiveNavigationDemo(event) => self.adaptive_navigation_demo.update(event),
             Message::Toolbar(event) => self.toolbar_demo.update(event),
             Message::Tooltip(event) => self.tooltip_demo.update(event),
             Message::Nav(i) => self.nav = i,
@@ -1287,6 +1303,9 @@ impl Application for Gallery {
         }
         if self.flexible_navigation_bar_demo.visible() {
             return self.flexible_navigation_bar_demo.view(&t, self.dark);
+        }
+        if self.adaptive_navigation_demo.visible() {
+            return self.adaptive_navigation_demo.view(&t, self.dark);
         }
         if self.toolbar_demo.visible() {
             return self.toolbar_demo.view(&t, self.dark);
@@ -1928,6 +1947,7 @@ impl Application for Gallery {
                 ]);
                 children.push(FlexibleNavigationBarDemo::show_button(&t));
                 children.push(FlexibleNavigationBarDemo::show_medium_button(&t));
+                children.push(AdaptiveNavigationDemo::show_button(&t));
             }
         }
         children.extend(self.snackbar_demo.layer(&t));
@@ -2123,6 +2143,7 @@ mod web {
         state["dialog_demo"] = s.dialog_demo.inspect();
         state["menu_demo"] = s.menu_demo.inspect();
         state["navigation_bar"] = s.flexible_navigation_bar_demo.inspect(&theme);
+        state["adaptive_navigation"] = s.adaptive_navigation_demo.inspect(&theme);
         state["switch_demo"] = s.switch_demo.inspect(&theme);
         state["checkbox_demo"] = s.checkbox_demo.inspect(&theme);
         state["radio_demo"] = s.radio_demo.inspect(&theme);

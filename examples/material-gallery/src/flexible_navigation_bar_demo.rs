@@ -349,7 +349,7 @@ fn choice(selected: bool) -> ChoiceState {
     }
 }
 
-fn icon(index: usize, selected: bool) -> &'static VectorIcon {
+pub(crate) fn icon(index: usize, selected: bool) -> &'static VectorIcon {
     static ICONS: OnceLock<[[VectorIcon; 2]; 5]> = OnceLock::new();
     let icons = ICONS.get_or_init(|| {
         [

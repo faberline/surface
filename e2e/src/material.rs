@@ -2,6 +2,8 @@
 //! menus, Tab cycles and mobile sizing.
 //! Port of `scripts/browser-material.mjs` (M1–M23 in issue #62).
 
+#[path = "material_adaptive_navigation_scaffold.rs"]
+mod material_adaptive_navigation_scaffold;
 #[path = "material_app_bar.rs"]
 mod material_app_bar;
 #[path = "material_badge.rs"]
@@ -182,7 +184,7 @@ pub const STEPS: &[&str] = &[
     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
-    "M359", "M360", "M361", "M362", "M363", "M364", "M365",
+    "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -325,7 +327,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_text_field_boundary_motion::run(env, chrome, &url).await?;
     material_text_field_disabled_contrast::run(env, chrome, &url).await?;
     material_text_field_system_pair::run(env, chrome, &url).await?;
-    material_horizontal_navigation_bar::run(env, chrome, &url).await
+    material_horizontal_navigation_bar::run(env, chrome, &url).await?;
+    material_adaptive_navigation_scaffold::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -583,13 +586,15 @@ mod tests {
         let disabled_contrast = super::material_text_field_disabled_contrast::STEPS;
         let system_field_pair = super::material_text_field_system_pair::STEPS;
         let horizontal_bar = super::material_horizontal_navigation_bar::STEPS;
+        let adaptive_navigation = super::material_adaptive_navigation_scaffold::STEPS;
         assert!(super::STEPS.ends_with(
             &[
-                placeholder,
-                boundary,
-                disabled_contrast,
-                system_field_pair,
-                horizontal_bar
+                placeholder.as_slice(),
+                boundary.as_slice(),
+                disabled_contrast.as_slice(),
+                system_field_pair.as_slice(),
+                horizontal_bar.as_slice(),
+                adaptive_navigation.as_slice(),
             ]
             .concat()
         ));
