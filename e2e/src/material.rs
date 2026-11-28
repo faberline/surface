@@ -116,6 +116,8 @@ mod material_text_field_adornments;
 mod material_text_field_counter;
 #[path = "material_text_field_label_motion.rs"]
 mod material_text_field_label_motion;
+#[path = "material_text_field_placeholder.rs"]
+mod material_text_field_placeholder;
 #[path = "material_time_baseline.rs"]
 mod material_time_baseline;
 #[path = "material_time_dial.rs"]
@@ -171,7 +173,7 @@ pub const STEPS: &[&str] = &[
     "M311", "M312", "M313", "M314", "M315", "M316", "M317", "M318", "M319", "M320", "M321", "M322",
     "M323", "M324", "M325", "M326", "M327", "M328", "M329", "M330", "M331", "M332", "M333", "M334",
     "M335", "M336", "M337", "M338", "M339", "M340", "M341", "M342", "M343", "M344", "M345", "M346",
-    "M347", "M348", "M349", "M350",
+    "M347", "M348", "M349", "M350", "M351", "M352", "M353",
 ];
 
 const STATE: &str = "JSON.parse(window.gallery.inspect())";
@@ -309,7 +311,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
     material_text_field_adornments::run(env, chrome, &url).await?;
     material_text_field_counter::run(env, chrome, &url).await?;
     material_multiline_text_field::run(env, chrome, &url).await?;
-    material_text_field_label_motion::run(env, chrome, &url).await
+    material_text_field_label_motion::run(env, chrome, &url).await?;
+    material_text_field_placeholder::run(env, chrome, &url).await
 }
 
 async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
@@ -558,7 +561,12 @@ mod tests {
 
     #[test]
     fn text_field_label_motion_steps_are_required_by_the_material_case() {
-        assert!(super::STEPS.ends_with(&super::material_text_field_label_motion::STEPS));
+        let label = super::material_text_field_label_motion::STEPS;
+        let placeholder = super::material_text_field_placeholder::STEPS;
+        assert!(super::STEPS
+            .windows(label.len() + placeholder.len())
+            .any(|scope| { scope[..label.len()] == label && scope[label.len()..] == placeholder }));
+        assert!(super::STEPS.ends_with(&placeholder));
     }
 
     #[test]

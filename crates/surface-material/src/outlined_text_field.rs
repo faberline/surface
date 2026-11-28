@@ -309,7 +309,14 @@ impl Theme {
             suffix: adornments.suffix.and_then(affix_text),
         };
         let has_value_box = multiline.is_some() || field_adornments.has_slots();
-        let disabled_value = disabled && !options.value.is_empty();
+        let hint = visible_text(options.placeholder);
+        let disabled_text = if !disabled {
+            None
+        } else if !options.value.is_empty() {
+            Some((DisabledText::Value, options.value))
+        } else {
+            hint.map(|hint| (DisabledText::Hint, hint))
+        };
         let mut input = Node::new(Role::TextInput, label)
             .id(id)
             .text(options.value)
@@ -382,8 +389,8 @@ impl Theme {
                 }
             });
         }
-        if let Some(hint) = visible_text(options.placeholder) {
-            editor = editor.focused_text_input_placeholder(hint, rgba.on_surface_variant);
+        if let Some(hint) = hint.filter(|_| !disabled) {
+            editor = editor.animated_text_input_placeholder(hint, rgba.on_surface_variant);
         }
 
         let boundary_part = if filled { "indicator" } else { "outline" };
@@ -455,13 +462,17 @@ impl Theme {
                 move |state| tokens.label(state),
             );
         let fallback = label_view(fallback_id, caption.clone());
-        // Disabled peers have an authored value but do not mount an editor.
-        // Draw their value in the same viewport as an enabled field.
-        let disabled_ink = disabled_value.then(|| {
-            View::new(
+        // A disabled peer has no editor. Use the same viewport for its value
+        // or for a hint when its label is placed above the field.
+        let disabled_ink = disabled_text.map(|(kind, text)| {
+            let part = match kind {
+                DisabledText::Value => "disabled-value",
+                DisabledText::Hint => "disabled-placeholder",
+            };
+            let art = View::new(
                 Node::new(Role::Text, "")
-                    .id(format!("{id}-disabled-value"))
-                    .text(options.value)
+                    .id(format!("{id}-{part}"))
+                    .text(text)
                     .text_alignment(alignment)
                     .text_scaling(TextScaling::Fixed)
                     .styled(
@@ -471,7 +482,18 @@ impl Theme {
                             .clip(true),
                     ),
             )
-            .without_interaction(None)
+            .without_interaction(None);
+            if matches!(kind, DisabledText::Hint) && multiline.is_none() {
+                View::new(
+                    Node::new(Role::Group, "")
+                        .styled(Style::column().clip(true))
+                        .measured_group(ClippedSingleLineHint { line_height, rtl }),
+                )
+                .children([art])
+                .without_interaction(None)
+            } else {
+                art
+            }
         });
         let supporting_color = if disabled {
             tokens.disabled_text
@@ -650,7 +672,7 @@ impl Theme {
             line_height,
             caption_height,
             rtl,
-            disabled_value,
+            disabled_text: disabled_text.map(|(kind, _)| kind),
             adornments: field_adornments,
         };
         let filled_backgrounds = filled.then(|| {
@@ -754,6 +776,50 @@ impl FieldColors {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+enum DisabledText {
+    Value,
+    Hint,
+}
+
+/// Shape the passive hint at its natural width and clip it to the value area.
+/// A one-row value area must not wrap the next word into a hidden second row.
+#[derive(Debug)]
+struct ClippedSingleLineHint {
+    line_height: f32,
+    rtl: bool,
+}
+
+impl MeasuredGroupLayout for ClippedSingleLineHint {
+    fn measure(
+        &self,
+        _children: &[&Node],
+        available_width: Option<f32>,
+        _fonts: &mut dyn TextMeasurer,
+    ) -> (f32, f32) {
+        (available_width.unwrap_or_default(), self.line_height)
+    }
+
+    fn place(
+        &self,
+        children: &[&Node],
+        (width, height): (f32, f32),
+        fonts: &mut dyn TextMeasurer,
+    ) -> Vec<Rect> {
+        let child = children[0];
+        let natural = child.text_value().map_or(0., |hint| {
+            fonts
+                .measure_text(hint, &child.style().text_style(), None)
+                .0
+        });
+        vec![physical(
+            Rect::new(0., 0., width.max(natural), height),
+            width,
+            self.rtl,
+        )]
+    }
+}
+
 #[derive(Debug)]
 struct FieldLayout {
     appearance: TextFieldAppearance,
@@ -766,7 +832,7 @@ struct FieldLayout {
     line_height: f32,
     caption_height: f32,
     rtl: bool,
-    disabled_value: bool,
+    disabled_text: Option<DisabledText>,
     adornments: FieldAdornments,
 }
 
@@ -871,8 +937,12 @@ impl FieldLayout {
             rects.extend([face, face]);
         }
         rects.extend([editor, face, inline, floating, above]);
-        if self.disabled_value {
-            rects.push(value);
+        if let Some(text) = self.disabled_text {
+            rects.push(match text {
+                DisabledText::Value => value,
+                DisabledText::Hint if !label_fits => value,
+                DisabledText::Hint => empty,
+            });
         }
         let (description, count) = supporting_row(
             fonts,

@@ -50,6 +50,7 @@ mod switch_demo;
 mod tabs_demo;
 mod text_field_adornments_demo;
 mod text_field_counter_demo;
+mod text_field_placeholder_demo;
 mod time_dial_demo;
 mod time_input_demo;
 mod time_scroll_demo;
@@ -118,6 +119,7 @@ use switch_demo::{SwitchDemo, SwitchDemoEvent};
 use tabs_demo::{TabsDemo, TabsDemoEvent};
 use text_field_adornments_demo::{TextFieldAdornmentsDemo, TextFieldAdornmentsDemoEvent};
 use text_field_counter_demo::{TextFieldCounterDemo, TextFieldCounterDemoEvent};
+use text_field_placeholder_demo::{TextFieldPlaceholderDemo, TextFieldPlaceholderDemoEvent};
 use time_dial_demo::{TimeDialDemo, TimeDialDemoEvent};
 use time_input_demo::{TimeInputDemo, TimeInputDemoEvent};
 use time_scroll_demo::{TimeScrollDemo, TimeScrollDemoEvent};
@@ -163,6 +165,7 @@ pub struct Gallery {
     outlined_text_field_demo: OutlinedTextFieldDemo,
     text_field_adornments_demo: TextFieldAdornmentsDemo,
     text_field_counter_demo: TextFieldCounterDemo,
+    text_field_placeholder_demo: TextFieldPlaceholderDemo,
     multiline_text_field_demo: MultilineTextFieldDemo,
     segmented_demo: SegmentedDemo,
     slider_demo: SliderDemo,
@@ -246,6 +249,7 @@ impl Default for Gallery {
             outlined_text_field_demo: OutlinedTextFieldDemo::default(),
             text_field_adornments_demo: TextFieldAdornmentsDemo::default(),
             text_field_counter_demo: TextFieldCounterDemo::default(),
+            text_field_placeholder_demo: TextFieldPlaceholderDemo::default(),
             multiline_text_field_demo: MultilineTextFieldDemo::default(),
             segmented_demo: SegmentedDemo::default(),
             slider_demo: SliderDemo::default(),
@@ -374,6 +378,7 @@ pub enum Message {
     OutlinedTextFieldDemo(OutlinedTextFieldDemoEvent),
     TextFieldAdornmentsDemo(TextFieldAdornmentsDemoEvent),
     TextFieldCounterDemo(TextFieldCounterDemoEvent),
+    TextFieldPlaceholderDemo(TextFieldPlaceholderDemoEvent),
     MultilineTextFieldDemo(MultilineTextFieldDemoEvent),
     SegmentedDemo(SegmentedDemoEvent),
     SliderDemo(SliderDemoEvent),
@@ -574,6 +579,9 @@ impl Application for Gallery {
         }
         if self.text_field_counter_demo.visible() {
             return self.text_field_counter_demo.text_scale();
+        }
+        if self.text_field_placeholder_demo.visible() {
+            return self.text_field_placeholder_demo.text_scale();
         }
         if self.multiline_text_field_demo.visible() {
             return self.multiline_text_field_demo.text_scale();
@@ -1046,6 +1054,9 @@ impl Application for Gallery {
                 if i != text_field_counter_demo::SECTION {
                     self.text_field_counter_demo.leave();
                 }
+                if i != text_field_placeholder_demo::SECTION {
+                    self.text_field_placeholder_demo.leave();
+                }
                 if i != multiline_text_field_demo::SECTION {
                     self.multiline_text_field_demo.leave();
                 }
@@ -1083,6 +1094,9 @@ impl Application for Gallery {
                 self.text_field_adornments_demo.update(event)
             }
             Message::TextFieldCounterDemo(event) => self.text_field_counter_demo.update(event),
+            Message::TextFieldPlaceholderDemo(event) => {
+                self.text_field_placeholder_demo.update(event)
+            }
             Message::MultilineTextFieldDemo(event) => self.multiline_text_field_demo.update(event),
             Message::SegmentedDemo(event) => self.segmented_demo.update(event),
             Message::SliderDemo(event) => self.slider_demo.update(event),
@@ -1316,6 +1330,9 @@ impl Application for Gallery {
         if self.text_field_counter_demo.visible() {
             return self.text_field_counter_demo.view(&t, self.dark);
         }
+        if self.text_field_placeholder_demo.visible() {
+            return self.text_field_placeholder_demo.view(&t, self.dark);
+        }
         if self.multiline_text_field_demo.visible() {
             return self.multiline_text_field_demo.view(&t, self.dark);
         }
@@ -1453,6 +1470,7 @@ impl Application for Gallery {
                             TextFieldAdornmentsDemo::show_button(&t),
                             TextFieldCounterDemo::show_button(&t),
                             MultilineTextFieldDemo::show_button(&t),
+                            TextFieldPlaceholderDemo::show_button(&t),
                         ],
                     ),
                 );
@@ -2089,6 +2107,7 @@ mod web {
         state["outlined_text_field_demo"] = s.outlined_text_field_demo.inspect(&theme, s.dark);
         state["text_field_adornments_demo"] = s.text_field_adornments_demo.inspect(&theme, s.dark);
         state["text_field_counter_demo"] = s.text_field_counter_demo.inspect(&theme, s.dark);
+        state["text_field_placeholder_demo"] = s.text_field_placeholder_demo.inspect(&theme, s.dark);
         state["multiline_text_field_demo"] = s.multiline_text_field_demo.inspect(&theme, s.dark);
         state["segmented_demo"] = s.segmented_demo.inspect(&theme, s.dark);
         state["slider_demo"] = s.slider_demo.inspect(&theme);

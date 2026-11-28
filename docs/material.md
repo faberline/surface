@@ -1225,7 +1225,7 @@ and the border opens around the label. A long label can wrap above the
 closed outline when it needs more room.
 
 Set the layout direction and text scale to match the containing view.
-An empty focused field can show a placeholder. Supporting text has its
+An empty field can show a placeholder in its value area. Supporting text has its
 own line and is linked to the accessible editor. An error replaces that
 line and marks the enabled field invalid. The Web and macOS accessibility
 paths expose new errors as assertive updates. A read-only field allows
@@ -1345,6 +1345,21 @@ current color and speed when focus or validation changes again.
 The above-field label shares that color during a resize.
 Reduce Motion, a disabled field, or a new theme settles the color
 immediately. The validation state and its description update at once.
+
+### Placeholder motion
+
+An expanding label reveals the hint when an empty field gains focus.
+The Material Standard Slow Effects spring fades it in. The Fast Effects
+spring fades it out on blur. A label that wraps above leaves space for
+the hint at rest. Clearing an unfocused above-label field fades the hint
+back in. Reduce Motion applies each endpoint immediately.
+
+The hint uses the existing value area and its own painted opacity.
+Committed text or active composition hides it immediately. This also
+applies to an empty composition. The editor keeps its value and name.
+An empty disabled field with an above-field label uses the disabled ink.
+
+[Material placeholder transition phases](https://android.googlesource.com/platform/frameworks/support/+/26065e0db6b4c61d1779c89ad388ea75ce98235a/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/internal/TextFieldImpl.kt#2048)
 
 ## Baseline segmented buttons
 
