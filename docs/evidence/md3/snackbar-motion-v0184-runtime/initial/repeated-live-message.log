@@ -1,0 +1,11 @@
+case material ...
+browser: Chrome/158.0.8127.37 (/private/tmp/surface-md3-v0184-snackbar-browser-pilot.DRrt4IHi/run.baQbNZSG/guards/chrome)
+  [M28] Snackbar keeps trigger focus and expires a short message
+  [M29] Queued actions advance once on Enter and pointer release
+  [M30] Dark RTL Snackbar wraps large CJK text in a 320 dp viewport
+  [M31] Snackbar exposes passive status and separate named controls
+case material ... FAILED after 2.5s: a stable polite region updates once per notification, including repeated text: expected Array [String("變更已儲存"), String("專案已移到封存"), String("專案已移到封存"), String("已將跨部門協作專案移到另一個工作區。你可以復原這項變更。"), String("已將跨部門協作專案移到另一個工作區。你可以復原這項變更。")], got Array [String("變更已儲存"), String("專案已移到封存"), String("專案已移到封存"), String("已將跨部門協作專案移到另一個工作區。你可以復原這項變更。"), String("已將跨部門協作專案移到另一個工作區。你可以復原這項變更。"), String("已將跨部門協作專案移到另一個工作區。你可以復原這項變更。")]
+  last step: M31
+
+e2e result: 0 passed; 1 failed; 96 checks; artifacts in /private/tmp/surface-md3-v0184-snackbar-browser-pilot.DRrt4IHi/run.baQbNZSG/artifacts
+no case passed

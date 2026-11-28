@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "source": {
+    "source_commit": "b067e40910e9f86683ef6352ec631e9c8a8436dc",
+    "source_tree": "34f4de1d361c5693643059da0d6c602732ace4a8",
+    "source_sha256": "a7c84e6a36b5a876a78cc62c3fbbf254d5023dd38492c815d352d1cf2334633f",
+    "stock_manifest_sha256": "2d88bf742366d4835a7a8151b0a2712570a23799d95ae8bcdb00d1e0c26fc680",
+    "web_root": "/private/tmp/surface-md3-v0184-snackbar-motion.PfCPZA50/build-r5/stock/web/release",
+    "verifier_kit": "/private/tmp/surface-md3-v0183-browser-stock.96NPmqar",
+    "verifier_files": {
+      "evidence_common.py": "a51f3386c63b0cc8408ed1a1d41cae6788886a83b3baec28a2e735092b3716a5",
+      "observe-focused-original.py": "ae8dab806e95653212495348ba78ea8e4bb0ac396047da3cd3c967b9f9e3eca7",
+      "verify_snackbar_motion.py": "f74bc3b5443b528c5d5e28ea8e320f9c0c443a0f4f237217c6aeeedf5d14503c"
+    },
+    "runner_sha256": "84aa2e62b7142c564e1c3af3ec0507375e3bbdcf8a4eaac751416557d9cd6440"
+  },
+  "steps": [
+    "M28",
+    "M29",
+    "M30",
+    "M31",
+    "M391",
+    "M392"
+  ],
+  "checks": 158,
+  "browser": "Chrome/158.0.8127.37",
+  "snackbar_motion": {
+    "report_sha256": "147d1109195c544371b7e9ab580d132594788c92adc5f0d739cf156c0ca595a0",
+    "screenshots": {
+      "material-snackbar-motion-light-rest.png": "dd134e1dfc70341399f37acb9e2151a5520759c5712ea26b76ed6bba5fc3c97d",
+      "material-snackbar-motion-light-exit.png": "15f22939d07be54732b5b116f0bb99625bffb7e42446ce523d0adb0412d49952",
+      "material-snackbar-motion-dark-rtl-200.png": "78bd4ccf3584e280f29ed8949aa789381591935360791e7d33c947c4a4f25f60"
+    },
+    "light_fill": [
+      50,
+      47,
+      53
+    ],
+    "dark_fill": [
+      230,
+      224,
+      233
+    ],
+    "exit_progress": 0.6507763266563416
+  },
+  "headless_window": {
+    "chrome_samples": 30,
+    "visible_owned_windows": [],
+    "remaining_observed_processes": []
+  },
+  "pilot_runner_sha256": "2531ad6f936391a8b4d0b95d1d73df3ac2ce0ac8e21b388246afd1efd8a893ba",
+  "e2e_binary_sha256": "84aa2e62b7142c564e1c3af3ec0507375e3bbdcf8a4eaac751416557d9cd6440",
+  "pilot_patch_sha256": "56d486223967ca0eaea4dd21fdb79ca8a8a30526124dc2f841aed418302a08f3",
+  "report_sha256": "147d1109195c544371b7e9ab580d132594788c92adc5f0d739cf156c0ca595a0"
+}

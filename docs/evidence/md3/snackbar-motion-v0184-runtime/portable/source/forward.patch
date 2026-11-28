@@ -1,0 +1,626 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index 763f236c535e586fd5419475eef36b264fc50463..780f8daf44eaa7d26235027586ebd854443d7fef 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3841,7 +3841,7 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
+ 
+ [[package]]
+ name = "surface"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3851,7 +3851,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-app"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "jet-bridge-protocol",
+  "serde",
+@@ -3864,7 +3864,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "base64 0.22.1",
+  "serde_json",
+@@ -3874,7 +3874,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-devtools-protocol"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "serde",
+  "serde_json",
+@@ -3882,7 +3882,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-e2e"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "anyhow",
+  "base64 0.22.1",
+@@ -3895,7 +3895,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "material-colors",
+  "surface",
+@@ -3906,7 +3906,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-material-gallery"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "console_error_panic_hook",
+  "serde_json",
+@@ -3919,7 +3919,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-platform"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "accesskit",
+  "accesskit_winit",
+@@ -3949,7 +3949,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-showcase"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "console_error_panic_hook",
+  "surface",
+@@ -3961,7 +3961,7 @@ dependencies = [
+ 
+ [[package]]
+ name = "surface-wgpu"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "bytemuck",
+  "glyphon",
+@@ -4475,7 +4475,7 @@ checksum = "b6f5e870be6c3b371b77fe0ee0bafb859fa4964b4404c27de1d380043c4dda20"
+ 
+ [[package]]
+ name = "ui-runtime"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "serde_json",
+  "surface",
+@@ -5451,7 +5451,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
+ 
+ [[package]]
+ name = "xtask"
+-version = "0.1.83"
++version = "0.1.84"
+ dependencies = [
+  "anyhow",
+  "brotli",
+diff --git a/Cargo.toml b/Cargo.toml
+index 19e4e76a5cb46e32f67c989cfd01cc471e32f015..30d0a51ab5c97301217684acba91f6d75ec55a45 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -5,7 +5,7 @@ exclude = ["third-party/accesskit-macos", "third-party/accesskit-winit"]
+ default-members = ["crates/surface", "crates/ui-runtime", "crates/surface-app", "crates/surface-material"]
+ 
+ [workspace.package]
+-version = "0.1.83"
++version = "0.1.84"
+ edition = "2021"
+ license = "MIT"
+ authors = ["Faberline contributors"]
+diff --git a/crates/surface-material/src/lib.rs b/crates/surface-material/src/lib.rs
+index 26065d7e248336bfa60d47e8957289c9b51a16ce..6df3fb6e71523706ac81faa4e9ec7b2131faf773 100644
+--- a/crates/surface-material/src/lib.rs
++++ b/crates/surface-material/src/lib.rs
+@@ -60,6 +60,7 @@ mod search_overlay;
+ pub mod shape;
+ mod side_sheet;
+ mod snackbar;
++mod snackbar_motion;
+ mod snackbar_state;
+ mod split_button;
+ mod split_button_layout;
+@@ -214,6 +215,7 @@ pub use side_sheet::{
+     SideSheetStyle,
+ };
+ pub use snackbar::SnackbarOptions;
++pub use snackbar_motion::SnackbarMotion;
+ pub use snackbar_state::{SnackbarDuration, SnackbarId, SnackbarQueue};
+ pub use split_button::{
+     SplitButtonAppearance, SplitButtonContent, SplitButtonLeading, SplitButtonMenu,
+diff --git a/crates/surface-material/src/snackbar_motion.rs b/crates/surface-material/src/snackbar_motion.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..940ca58b1b13c49aed66b7d79b3b27dbb891be9b
+--- /dev/null
++++ b/crates/surface-material/src/snackbar_motion.rs
+@@ -0,0 +1,104 @@
++//! Presentation for a caller-owned Snackbar.
++
++use surface_app::{AnimationFrame, AnimationUpdate, ToggleMotion, ToggleSpring};
++
++/// The displayed fraction of a Snackbar that enters or leaves its host.
++///
++/// Keep one track for each presented message. Rebuild immediately when the
++/// application closes it and keep the outgoing view only for paint. The queue
++/// can advance independently. A replacement message can start its own track.
++#[derive(Default)]
++pub struct SnackbarMotion {
++    track: ToggleMotion,
++    progress: f32,
++}
++
++impl SnackbarMotion {
++    /// Start hidden or at the fully shown resting position.
++    pub fn new(open: bool) -> Self {
++        Self {
++            track: ToggleMotion::new(open),
++            progress: if open { 1. } else { 0. },
++        }
++    }
++
++    /// Zero is hidden and one is at rest. Use this for presentation only.
++    pub fn progress(&self) -> f32 {
++        self.progress
++    }
++
++    /// Whether to mount the live Snackbar or keep its outgoing paint.
++    pub fn should_mount(&self, open: bool) -> bool {
++        open || self.progress > 0.
++    }
++
++    /// Update the presentation. Reduce Motion and a missing or non-finite
++    /// frame clock settle immediately. A reversal starts from the current pose.
++    pub fn advance(&mut self, frame: &AnimationFrame<'_>, open: bool) -> AnimationUpdate {
++        let snap = frame.reduced_motion || (!open && self.progress == 0.);
++        let (progress, request_next) =
++            self.track
++                .sample(open, frame.now_ms, snap, ToggleSpring::StandardFastEffects);
++        let rebuild = self.progress != progress;
++        self.progress = progress;
++        AnimationUpdate {
++            rebuild,
++            request_next,
++        }
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use surface::{MicroDom, Node, Role};
++
++    #[test]
++    fn an_interrupted_entrance_exits_from_its_last_pose() {
++        let dom = MicroDom::new(Node::new(Role::Window, ""));
++        let frame = |now_ms| AnimationFrame {
++            now_ms: Some(now_ms),
++            reduced_motion: false,
++            dom: &dom,
++            layout: None,
++        };
++        let mut motion = SnackbarMotion::default();
++        assert!(!motion.should_mount(false));
++        assert!(motion.advance(&frame(0.), true).request_next);
++        assert!(motion.advance(&frame(45.), true).rebuild);
++        let before = motion.progress();
++        assert!((0. ..1.).contains(&before) && before > 0.);
++        assert!(motion.advance(&frame(45.), false).request_next);
++        assert_eq!(motion.progress(), before);
++        assert!(motion.should_mount(false));
++        motion.advance(&frame(100.), false);
++        assert!(motion.progress() < before);
++        let settled = motion.advance(&frame(1000.), false);
++        assert!(!settled.request_next);
++        assert!(!motion.should_mount(false));
++    }
++
++    #[test]
++    fn missing_clock_and_reduced_motion_snap_without_retaining_a_view() {
++        let dom = MicroDom::new(Node::new(Role::Window, ""));
++        let frame = |now_ms, reduced_motion| AnimationFrame {
++            now_ms,
++            reduced_motion,
++            dom: &dom,
++            layout: None,
++        };
++        let mut motion = SnackbarMotion::new(true);
++        for frame in [
++            frame(None, false),
++            frame(Some(f64::NAN), false),
++            frame(Some(5.), true),
++        ] {
++            let closed = motion.advance(&frame, false);
++            assert!(closed.rebuild && !closed.request_next);
++            assert!(!motion.should_mount(false));
++            let opened = motion.advance(&frame, true);
++            assert!(opened.rebuild && !opened.request_next);
++            assert_eq!(motion.progress(), 1.);
++        }
++    }
++}
+diff --git a/docs/material.md b/docs/material.md
+index adb049ec2a980404863459ab3a12e6e65cbba6cd..6b5ab5345388c652aead9d740760ebcfe5ae2ed8 100644
+--- a/docs/material.md
++++ b/docs/material.md
+@@ -329,8 +329,14 @@ The visual reference is [Material 3 Snackbar](https://m3.material.io/components/
+ The Snackbar sizes, inverse colors, typography and action layout follow the
+ [AndroidX Snackbar](https://android.googlesource.com/platform/frameworks/support/+/3a4444a5b801bb899ca38bb982b83be53c169090/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/Snackbar.kt).
+ The [AndroidX host](https://android.googlesource.com/platform/frameworks/support/+/3a4444a5b801bb899ca38bb982b83be53c169090/compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/SnackbarHost.kt)
+-defines the timing reference. The Gallery adds a short entrance animation.
+-It settles immediately with Reduce Motion.
++provides the reference for the message lifecycle. Surface's optional
++`SnackbarMotion` tracks the displayed fraction of one message. Call `advance`
++on host animation frames and use `progress` to position its view. Rebuild as
++soon as the app dismisses the message. Call `without_interaction` with the
++optional focus target on any view kept for exit paint. Remove that view when
++`should_mount(false)` returns false. A replacement message starts its own
++track. The Gallery slides the message from and toward the lower edge and
++settles immediately with Reduce Motion.
+ 
+ ## Badges
+ 
+diff --git a/e2e/src/material.rs b/e2e/src/material.rs
+index 6e73dfc4797bba489e1e8d6a541431c81f265074..849f38ac4fb6e5197abd8c23304bd1c1fd9b3541 100644
+--- a/e2e/src/material.rs
++++ b/e2e/src/material.rs
+@@ -202,7 +202,7 @@ pub const STEPS: &[&str] = &[
+     "M347", "M348", "M349", "M350", "M351", "M352", "M353", "M354", "M355", "M356", "M357", "M358",
+     "M359", "M360", "M361", "M362", "M363", "M364", "M365", "M366", "M367", "M368", "M369", "M370",
+     "M371", "M372", "M373", "M374", "M375", "M376", "M377", "M378", "M379", "M380", "M381", "M382",
+-    "M383", "M384", "M385", "M386", "M387", "M388", "M389", "M390",
++    "M383", "M384", "M385", "M386", "M387", "M388", "M389", "M390", "M391", "M392",
+ ];
+ 
+ const STATE: &str = "JSON.parse(window.gallery.inspect())";
+@@ -355,7 +355,8 @@ pub async fn run(env: &Env, chrome: &Chrome) -> Result<()> {
+     material_typography::run(env, chrome, &url).await?;
+     material_flexible_navigation_badges::run(env, chrome, &url).await?;
+     material_wide_navigation_badges::run(env, chrome, &url).await?;
+-    material_adaptive_navigation_badges::run(env, chrome, &url).await
++    material_adaptive_navigation_badges::run(env, chrome, &url).await?;
++    material_snackbar::run_motion(env, chrome, &url).await
+ }
+ 
+ async fn journey(env: &Env, chrome: &Chrome, tab: &Tab) -> Result<()> {
+@@ -635,6 +636,7 @@ mod tests {
+                 super::material_flexible_navigation_badges::STEPS.as_slice(),
+                 super::material_wide_navigation_badges::STEPS.as_slice(),
+                 super::material_adaptive_navigation_badges::STEPS.as_slice(),
++                super::material_snackbar::MOTION_STEPS.as_slice(),
+             ]
+             .concat()
+         ));
+diff --git a/e2e/src/material_snackbar.rs b/e2e/src/material_snackbar.rs
+index 5d51d256600b21efecb2f50e1685f75250dfbce1..8370d904bd747c1e1ad0194fec4b37c3260de3bc 100644
+--- a/e2e/src/material_snackbar.rs
++++ b/e2e/src/material_snackbar.rs
+@@ -14,6 +14,7 @@ const TEXT_MESSAGE: &str = "變更已儲存";
+ const UNDO_MESSAGE: &str = "專案已移到封存";
+ const LONG_MESSAGE: &str = "已將跨部門協作專案移到另一個工作區。你可以復原這項變更。";
+ const LIVE: &str = "document.querySelector('#surface-accessibility > [aria-live=polite]')";
++pub(super) const MOTION_STEPS: [&str; 2] = ["M391", "M392"];
+ 
+ async fn visible_click(tab: &Tab, id: &str) -> Result<()> {
+     let p = point(tab, id).await?;
+@@ -439,3 +440,142 @@ pub(super) async fn run(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
+     }
+     result
+ }
++
++async fn set_motion_preference(tab: &Tab, preference: &str) -> Result<()> {
++    tab.cdp(
++        "Emulation.setEmulatedMedia",
++        json!({"features":[{"name":"prefers-reduced-motion","value":preference}]}),
++    )
++    .await?;
++    tab.wait_for(&format!(
++        "matchMedia({}).matches",
++        js(format!("(prefers-reduced-motion: {preference})"))
++    ))
++    .await
++}
++
++pub(super) async fn run_motion(env: &Env, chrome: &Chrome, url: &str) -> Result<()> {
++    use super::material_time_input::{resize, Raster};
++
++    let tab = chrome.page(960, 804, 2.).await?;
++    set_motion_preference(&tab, "no-preference").await?;
++    tab.goto(url).await?;
++    crate::smoke::ready(&tab, "gallery").await?;
++    visible_click(&tab, "section-2").await?;
++    until(&tab, "s.section === 2 && !s.dark").await?;
++    pin_clock(&tab).await?;
++    observe_announcements(&tab).await?;
++
++    step(
++        MOTION_STEPS[0],
++        "Snackbar exit keeps paint while removing status and controls immediately",
++    );
++    let id = show(&tab, SHOW_UNDO, "undo").await?;
++    let status = element(&format!("{id}-text"));
++    let dismiss = format!("{id}-dismiss");
++    let before = point(&tab, &id).await?;
++    let focus = point(&tab, &dismiss).await?;
++    let rest_path = env.artifact("material-snackbar-motion-light-rest.png");
++    tab.screenshot(&rest_path).await?;
++    let rest_image = Raster::read(&tab, rest_path).await?;
++    let light_fill = rest_image.sample(before.b[0] + 8., before.b[1] + 8.)?;
++    project(&tab, &dismiss).await?;
++    tab.press("Enter").await?;
++    ready(
++        &tab,
++        &format!("r.visible === null && r.dismissed === 1 && r.presented_id === {id:?}"),
++    )
++    .await?;
++    projected_focus(&tab, SHOW_UNDO).await?;
++    tab.wait_for(&format!(
++        "{status} === null && {} === null && {} === null",
++        element(&dismiss),
++        element(&format!("{id}-action"))
++    ))
++    .await?;
++    tab.click(focus.x, focus.y).await?;
++    ready(&tab, "r.dismissed === 1 && r.acted === 0").await?;
++
++    clock_at(&tab, 220).await?;
++    let retired = point(&tab, &id).await?;
++    check!(
++        retired.b[1] > before.b[1],
++        "exit moves toward the lower edge"
++    );
++    check_eq!(retired.b[3], before.b[3], "exit keeps the measured height");
++    let exit_progress = state(&tab).await?["snackbar"]["motion_progress"].clone();
++    let exit_path = env.artifact("material-snackbar-motion-light-exit.png");
++    tab.screenshot(&exit_path).await?;
++    let exit_image = Raster::read(&tab, exit_path).await?;
++    check_eq!(
++        exit_image.sample(retired.b[0] + 8., retired.b[1] + 8.)?,
++        light_fill,
++        "the departing Snackbar still paints its surface"
++    );
++    check!(
++        exit_image.sample(before.b[0] + 8., before.b[1] + 8.)? != light_fill,
++        "the retired view no longer paints at the original position"
++    );
++    clock_at(&tab, 620).await?;
++    ready(&tab, "r.presented_id === null && r.motion_progress === 0").await?;
++    check_eq!(
++        tab.eval("window.snackbarAnnouncements.messages").await?,
++        json!([UNDO_MESSAGE]),
++        "exit paint never repeats the status message"
++    );
++
++    step(
++        MOTION_STEPS[1],
++        "Reduce Motion settles a narrow dark RTL Snackbar and preserves focus",
++    );
++    visible_click(&tab, "theme").await?;
++    visible_click(&tab, "snackbar-direction").await?;
++    visible_click(&tab, "snackbar-scale").await?;
++    until(
++        &tab,
++        "s.dark && s.snackbar.rtl && s.snackbar.text_scale === 2",
++    )
++    .await?;
++    set_motion_preference(&tab, "reduce").await?;
++    visible_click(&tab, SHOW_LONG).await?;
++    ready(&tab, "r.visible === 'long' && r.motion_progress === 1").await?;
++    let id = panel_id(&tab).await?;
++    resize(&tab, 320, 720).await?;
++    let narrow = point(&tab, &id).await?;
++    check!(
++        narrow.b[0] >= 0.
++            && narrow.b[1] >= 0.
++            && narrow.b[0] + narrow.b[2] <= narrow.canvas[2]
++            && narrow.b[1] + narrow.b[3] <= narrow.canvas[3],
++        "the open large-text Snackbar stays within the narrow viewport"
++    );
++    let dark_path = env.artifact("material-snackbar-motion-dark-rtl-200.png");
++    tab.screenshot(&dark_path).await?;
++    let dark_fill = Raster::read(&tab, dark_path)
++        .await?
++        .sample(narrow.b[0] + 8., narrow.b[1] + 8.)?;
++    check!(
++        dark_fill != light_fill,
++        "the dark theme changes the surface paint"
++    );
++    project(&tab, &format!("{id}-dismiss")).await?;
++    tab.press("Space").await?;
++    ready(
++        &tab,
++        "r.visible === null && r.presented_id === null && r.dismissed === 2 && r.motion_progress === 0",
++    )
++    .await?;
++    projected_focus(&tab, SHOW_LONG).await?;
++    check!(
++        tab.errors().is_empty(),
++        "Snackbar motion has no page errors"
++    );
++    env.write_json(
++        "material-snackbar-motion.json",
++        &json!({"browser":chrome.version, "steps": MOTION_STEPS,
++            "light_rest":before.b, "light_exit":retired.b, "exit_progress":exit_progress,
++            "dark_rtl_200":narrow.b, "light_fill":light_fill, "dark_fill":dark_fill,
++            "canvases":[before.canvas, retired.canvas, narrow.canvas],
++            "state":state(&tab).await?["snackbar"], "errors":tab.errors()}),
++    )
++}
+diff --git a/examples/material-gallery/src/snackbar_demo.rs b/examples/material-gallery/src/snackbar_demo.rs
+index 595433b411501617eb21381c91df9b835d09bf13..e77e6d080c201b26f68f546edd74e57e8197f0e2 100644
+--- a/examples/material-gallery/src/snackbar_demo.rs
++++ b/examples/material-gallery/src/snackbar_demo.rs
+@@ -2,8 +2,8 @@ use std::time::Duration;
+ use surface::{Align, Insets, Length, Node, Role, Style};
+ use surface_app::{AnimationFrame, AnimationUpdate, View};
+ use surface_material::{
+-    motion, shape::LayoutDirection, SnackbarDuration, SnackbarId, SnackbarOptions, SnackbarQueue,
+-    Theme,
++    shape::LayoutDirection, SnackbarDuration, SnackbarId, SnackbarMotion, SnackbarOptions,
++    SnackbarQueue, Theme,
+ };
+ 
+ use crate::Message;
+@@ -65,8 +65,10 @@ impl Sample {
+ pub(crate) struct SnackbarDemo {
+     queue: SnackbarQueue<Sample>,
+     now: Duration,
+-    appeared: Duration,
+-    progress: f32,
++    motion: SnackbarMotion,
++    presented: Option<(SnackbarId, Sample)>,
++    panel_height: Option<f32>,
++    retiring_from: Option<f32>,
+     rtl: bool,
+     large_text: bool,
+     acted: u32,
+@@ -92,18 +94,27 @@ impl SnackbarDemo {
+         );
+     }
+ 
+-    fn restart_if_changed(&mut self, previous: Option<SnackbarId>) -> bool {
+-        let next = self.current().map(|(id, _)| id);
+-        if previous == next {
+-            return false;
++    fn sync_presentation(&mut self) {
++        let current = self.current();
++        match current {
++            Some((id, _)) if self.presented.is_none_or(|(previous, _)| id != previous) => {
++                self.presented = current;
++                self.motion = SnackbarMotion::default();
++                self.panel_height = None;
++                self.retiring_from = None;
++            }
++            None if !self.motion.should_mount(false) => {
++                self.presented = None;
++                self.retiring_from = None;
++            }
++            None if self.retiring_from.is_none() => {
++                self.retiring_from = Some(self.motion.progress());
++            }
++            _ => {}
+         }
+-        self.appeared = self.now;
+-        self.progress = 0.;
+-        true
+     }
+ 
+     pub(crate) fn update(&mut self, event: SnackbarEvent) {
+-        let previous = self.current().map(|(id, _)| id);
+         match event {
+             SnackbarEvent::ShowText => self.show(Sample::Text),
+             SnackbarEvent::ShowUndo => self.show(Sample::Undo),
+@@ -121,7 +132,7 @@ impl SnackbarDemo {
+                 }
+             }
+         }
+-        self.restart_if_changed(previous);
++        self.sync_presentation();
+     }
+ 
+     pub(crate) fn frame(&mut self, frame: &AnimationFrame<'_>) -> AnimationUpdate {
+@@ -135,24 +146,29 @@ impl SnackbarDemo {
+         if self.queue.expire(self.now).is_some() {
+             self.expired = self.expired.saturating_add(1);
+         }
+-        let changed = self.restart_if_changed(previous);
+-        if self.current().is_none() {
+-            return AnimationUpdate {
+-                rebuild: changed,
+-                request_next: false,
+-            };
++        let current = self.current().map(|(id, _)| id);
++        self.sync_presentation();
++        let mut measurement_changed = false;
++        if let Some((id, _)) = self.presented {
++            let height = frame
++                .dom
++                .by_id(&Self::view_id(id))
++                .and_then(|node| frame.layout?.nodes.get(node.index()))
++                .map(|node| node.bounds.height)
++                .filter(|height| height.is_finite() && *height > 0.);
++            if let Some(height) = height {
++                measurement_changed = self.panel_height != Some(height);
++                self.panel_height = Some(height);
++            }
+         }
+-        let elapsed = self.now.saturating_sub(self.appeared).as_secs_f32() * 1000.;
+-        let progress = if frame.reduced_motion || time.is_none() {
+-            1.
+-        } else {
+-            (elapsed / motion::duration::SHORT3).min(1.)
+-        };
+-        let moved = progress != self.progress;
+-        self.progress = progress;
++        let motion = self.motion.advance(frame, current.is_some());
++        self.sync_presentation();
+         AnimationUpdate {
+-            rebuild: changed || moved,
+-            request_next: time.is_some() && (progress < 1. || self.queue.deadline().is_some()),
++            rebuild: previous != current
++                || motion.rebuild
++                || (measurement_changed && motion.request_next),
++            request_next: motion.request_next
++                || (time.is_some() && self.queue.deadline().is_some()),
+         }
+     }
+ 
+@@ -205,7 +221,7 @@ impl SnackbarDemo {
+     }
+ 
+     pub(crate) fn layer(&self, theme: &Theme) -> Option<View<Message>> {
+-        let (id, sample) = self.current()?;
++        let (id, sample) = self.presented?;
+         let action = sample
+             .action()
+             .map(|label| (label, Message::Snackbar(SnackbarEvent::Act(id))));
+@@ -227,12 +243,24 @@ impl SnackbarDemo {
+                 restore_focus_to: Some(sample.trigger()),
+             },
+         );
+-        let progress = motion::easing::STANDARD_DECELERATE.sample(self.progress);
++        let progress = self.motion.progress();
++        let (snackbar, bottom) = if let Some(start) = self.retiring_from {
++            let hidden = -(self.panel_height.unwrap_or(68.) + 12.);
++            let shown = 4. + 12. * start;
++            let fraction = (progress / start).min(1.);
++            (
++                snackbar.without_interaction(Some(sample.trigger())),
++                hidden + (shown - hidden) * fraction,
++            )
++        } else {
++            // Keep the live status visible while its small entrance settles.
++            (snackbar, 4. + 12. * progress)
++        };
+         let style = Style::column().align(Align::Center).fixed(Insets {
+             left: Length::Px(16.),
+             right: Length::Px(16.),
+             top: Length::Auto,
+-            bottom: Length::Px(4. + 12. * progress),
++            bottom: Length::Px(bottom),
+         });
+         Some(
+             View::new(Node::new(Role::Group, "").id("snackbar-host").styled(style))
+@@ -251,6 +279,8 @@ impl SnackbarDemo {
+             "acted": self.acted,
+             "dismissed": self.dismissed,
+             "expired": self.expired,
++            "presented_id": self.presented.map(|(id, _)| Self::view_id(id)),
++            "motion_progress": self.motion.progress(),
+             "rtl": self.rtl,
+             "text_scale": text_scale,
+         })
