@@ -7,7 +7,8 @@ use surface::{
     TextMeasurer, TextScaling, TextStyle,
 };
 use surface_app::{
-    CursorStyle, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions, ToggleSpring, View,
+    CursorStyle, DisplayContrast, Key, TextInputBoundaryMotion, TextInputPaintState, TextOptions,
+    ToggleSpring, View,
 };
 use unicode_segmentation::UnicodeSegmentation;
 
@@ -78,7 +79,28 @@ struct FieldEditing<Submit> {
     on_submit: Submit,
 }
 
+/// Text field builders that can use the host's disabled text color.
+#[derive(Clone, Copy, Debug)]
+pub struct TextFieldTheme<'a> {
+    theme: &'a Theme,
+    disabled_ink: Option<Color>,
+}
+
 impl Theme {
+    /// Use the host's disabled text ink in forced colors when it is available.
+    ///
+    /// Use a theme that already matches the display preference. This only
+    /// changes disabled text and glyph ink in the fields built here.
+    pub fn text_fields_for(&self, contrast: DisplayContrast) -> TextFieldTheme<'_> {
+        TextFieldTheme {
+            theme: self,
+            disabled_ink: match contrast {
+                DisplayContrast::Forced(colors) => colors.disabled_text,
+                _ => None,
+            },
+        }
+    }
+
     /// Build an outlined field which uses the width supplied by its parent.
     ///
     /// Keep the ID stable across changes to value, validation, theme and scale.
@@ -148,17 +170,8 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
-        self.build_text_field(
-            appearance,
-            options,
-            adornments,
-            None,
-            on_input,
-            FieldEditing {
-                multiline: None,
-                on_submit,
-            },
-        )
+        self.text_fields_for(DisplayContrast::Normal)
+            .single_line(appearance, options, adornments, None, on_input, on_submit)
     }
 
     /// Add a character count and soft limit to either field appearance.
@@ -174,16 +187,13 @@ impl Theme {
         on_input: impl Fn(String) -> M + 'static,
         on_submit: impl Fn() -> Option<M> + 'static,
     ) -> Option<View<M>> {
-        self.build_text_field(
+        self.text_fields_for(DisplayContrast::Normal).single_line(
             appearance,
             options,
             adornments,
             Some(counter),
             on_input,
-            FieldEditing {
-                multiline: None,
-                on_submit,
-            },
+            on_submit,
         )
     }
 
@@ -193,6 +203,49 @@ impl Theme {
     /// Enter inserts a line break. An application can submit with a separate
     /// action. The optional counter counts committed graphemes across all rows.
     pub fn multiline_text_field<M>(
+        &self,
+        appearance: TextFieldAppearance,
+        options: TextFieldOptions<'_>,
+        size: MultilineTextFieldSize,
+        adornments: TextFieldAdornments<'_, M>,
+        counter: Option<TextFieldCounterOptions<'_>>,
+        on_input: impl Fn(String) -> M + 'static,
+    ) -> Option<View<M>> {
+        self.text_fields_for(DisplayContrast::Normal)
+            .multiline(appearance, options, size, adornments, counter, on_input)
+    }
+}
+
+impl TextFieldTheme<'_> {
+    /// Build either single-line appearance with optional adornments and a counter.
+    ///
+    /// A plain Enter can submit after any active IME composition ends.
+    pub fn single_line<M>(
+        &self,
+        appearance: TextFieldAppearance,
+        options: TextFieldOptions<'_>,
+        adornments: TextFieldAdornments<'_, M>,
+        counter: Option<TextFieldCounterOptions<'_>>,
+        on_input: impl Fn(String) -> M + 'static,
+        on_submit: impl Fn() -> Option<M> + 'static,
+    ) -> Option<View<M>> {
+        self.build_text_field(
+            appearance,
+            options,
+            adornments,
+            counter,
+            on_input,
+            FieldEditing {
+                multiline: None,
+                on_submit,
+            },
+        )
+    }
+
+    /// Build a growing field or a fixed text area in either appearance.
+    ///
+    /// Enter inserts a line break. Place any submit action outside the editor.
+    pub fn multiline<M>(
         &self,
         appearance: TextFieldAppearance,
         options: TextFieldOptions<'_>,
@@ -262,7 +315,7 @@ impl Theme {
         };
         let error = visible_text(options.error).or(limit_error);
         let description = error.or_else(|| visible_text(options.supporting_text));
-        let rgba = self.colors;
+        let rgba = self.theme.colors;
         let filled = appearance == TextFieldAppearance::Filled;
         let tokens = FieldColors {
             disabled,
@@ -283,7 +336,9 @@ impl Theme {
             error_ink: rgba.error,
             error_hover: rgba.on_error_container,
             disabled_boundary: translucent(rgba.on_surface, if filled { 97 } else { 31 }),
-            disabled_text: translucent(rgba.on_surface, 97),
+            disabled_text: self
+                .disabled_ink
+                .unwrap_or_else(|| translucent(rgba.on_surface, 97)),
         };
         let rtl = options.direction == LayoutDirection::RightToLeft;
         let alignment = if rtl {
@@ -615,15 +670,16 @@ impl Theme {
                 icon.clone()
             };
             slots.push(
-                self.text_field_trailing_icon_button(
-                    &action_id,
-                    action.name,
-                    disabled,
-                    ink,
-                    action.on_press,
-                )?
-                .restore_focus_on_removal(id)
-                .accessibility_scroll_into_view(),
+                self.theme
+                    .text_field_trailing_icon_button(
+                        &action_id,
+                        action.name,
+                        disabled,
+                        ink,
+                        action.on_press,
+                    )?
+                    .restore_focus_on_removal(id)
+                    .accessibility_scroll_into_view(),
             );
             slots.push(
                 View::new(

@@ -30,6 +30,21 @@ impl CanvasPng {
         name: &str,
         scale: f64,
     ) -> Result<Self> {
+        Self::capture_file(
+            env,
+            tab,
+            &format!("material-web-contrast-{name}.png"),
+            scale,
+        )
+        .await
+    }
+
+    pub(super) async fn capture_file(
+        env: &Env,
+        tab: &Tab,
+        filename: &str,
+        scale: f64,
+    ) -> Result<Self> {
         tab.settle().await?;
         let [x, y, width, height] = tab.canvas_box().await?;
         let dpr = tab.eval("devicePixelRatio").await?;
@@ -47,10 +62,7 @@ impl CanvasPng {
             )
             .await?;
         let png = STANDARD.decode(response["data"].as_str().context("Chrome PNG bytes")?)?;
-        fs::write(
-            env.artifact(&format!("material-web-contrast-{name}.png")),
-            &png,
-        )?;
+        fs::write(env.artifact(filename), &png)?;
         let mut decoder = png::Decoder::new(Cursor::new(png));
         decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
         let mut reader = decoder.read_info()?;

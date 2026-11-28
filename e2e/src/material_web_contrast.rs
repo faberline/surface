@@ -85,7 +85,13 @@ const CSS_WITNESS: &str = r#"(() => {
             raw[key] = {background:css.backgroundColor,foreground:css.color};
             pairs[key] = {background:rgba(raw[key].background),foreground:rgba(raw[key].foreground)};
         }
-        return {scheme, pairs, raw};
+        const disabled = owner.createElement("span");
+        disabled.style.setProperty("color", "GrayText", "important");
+        witness.appendChild(disabled);
+        const grayCss = disabled.style.getPropertyValue("color")
+            ? view.getComputedStyle(disabled).getPropertyValue("color") : null;
+        return {scheme, pairs, raw, disabled_text: grayCss === null ? null :
+            {css: grayCss, rgba: rgba(grayCss)} };
     } finally {
         witness.remove();
     }
@@ -118,13 +124,22 @@ pub(super) async fn contrast(tab: &Tab, mode: &str) -> Result<Value> {
 }
 
 pub(super) async fn palette(tab: &Tab, appearance: &Value) -> Result<Value> {
+    let mut css = palette_with_disabled(tab, appearance).await?;
+    css.as_object_mut()
+        .context("CSS palette witness")?
+        .remove("disabled_text");
+    Ok(css)
+}
+
+pub(super) async fn palette_with_disabled(tab: &Tab, appearance: &Value) -> Result<Value> {
     let css = tab.eval(CSS_WITNESS).await?;
     let pairs = &css["pairs"];
     let theme = &appearance["theme"];
     check_eq!(
-        &appearance["system_colors"],
-        pairs,
-        "the accepted palette matches all three independently measured browser pairs byte for byte"
+        appearance["system_colors"],
+        json!({"canvas":pairs["canvas"],"button":pairs["button"],"highlight":pairs["highlight"],
+            "disabled_text":css["disabled_text"]["rgba"]}),
+        "the three accepted system pairs and optional GrayText match independent browser measurements"
     );
     for (role, source) in [
         ("surface", &pairs["canvas"]["background"]),

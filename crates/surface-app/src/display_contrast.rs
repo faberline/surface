@@ -19,7 +19,7 @@ pub struct SystemColorPair {
     pub foreground: Color,
 }
 
-/// Resolved native color pairs. The host owns color lookup and any policy for
+/// Resolved system colors. The host owns color lookup and any policy for
 /// a forced palette. Surface keeps the resolved RGBA values as supplied.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[non_exhaustive]
@@ -30,6 +30,8 @@ pub struct SystemContrastColors {
     pub button: SystemColorPair,
     /// Selected background and its text.
     pub highlight: SystemColorPair,
+    /// System disabled text ink, when the host can resolve it.
+    pub disabled_text: Option<Color>,
 }
 
 impl SystemContrastColors {
@@ -42,6 +44,15 @@ impl SystemContrastColors {
             canvas,
             button,
             highlight,
+            disabled_text: None,
+        }
+    }
+
+    /// Attach the system's disabled text color without changing its alpha.
+    pub const fn with_disabled_text(self, ink: Color) -> Self {
+        Self {
+            disabled_text: Some(ink),
+            ..self
         }
     }
 }

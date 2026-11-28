@@ -411,7 +411,7 @@ async fn outer_offset(tab: &Tab) -> Result<f64> {
     .context("outer scroller offset")
 }
 
-async fn wheel(tab: &Tab, body: Rect, dy: f64) -> Result<()> {
+pub(super) async fn wheel(tab: &Tab, body: Rect, dy: f64) -> Result<()> {
     let [left, top, ..] = tab.canvas_box().await?;
     let (x, y) = (left + body[0] + body[2] / 2., top + body[1] + body[3] / 2.);
     tab.cdp(

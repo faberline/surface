@@ -5,7 +5,7 @@ use surface_app::View;
 use surface_material::{
     shape::LayoutDirection, typography, ButtonKind, ChoiceState, MultilineTextFieldSize,
     TextFieldAdornments, TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions,
-    TextFieldEditability, TextFieldOptions, TextFieldTrailingAction, Theme,
+    TextFieldEditability, TextFieldOptions, TextFieldTheme, TextFieldTrailingAction, Theme,
 };
 
 use crate::{scroll_field_demo::control_row, text_field_counter_demo::clear_icon, Message};
@@ -173,7 +173,7 @@ impl MultilineTextFieldDemo {
             .suppress_repeated_activation()
     }
 
-    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
+    fn field(&self, fields: TextFieldTheme<'_>, sample: Sample) -> View<Message> {
         use MultilineTextFieldDemoEvent::*;
         use MultilineTextFieldSize::{FixedRows, Grow};
         let demo = Message::MultilineTextFieldDemo;
@@ -242,8 +242,8 @@ impl MultilineTextFieldDemo {
         } else {
             None
         };
-        theme
-            .multiline_text_field(
+        fields
+            .multiline(
                 self.appearance,
                 options,
                 size,
@@ -260,7 +260,12 @@ impl MultilineTextFieldDemo {
             .expect("valid Gallery multiline field")
     }
 
-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+    pub(crate) fn view(
+        &self,
+        theme: &Theme,
+        fields: TextFieldTheme<'_>,
+        dark: bool,
+    ) -> View<Message> {
         use MultilineTextFieldDemoEvent::*;
         let demo = Message::MultilineTextFieldDemo;
         let toggle = |id, label, selected, message| {
@@ -329,12 +334,12 @@ impl MultilineTextFieldDemo {
         )
         .accessibility_scroll_pages()
         .children([
-            self.field(theme, Sample::Grow),
-            self.field(theme, Sample::Fixed),
+            self.field(fields, Sample::Grow),
+            self.field(fields, Sample::Fixed),
             submit,
             feedback,
-            self.field(theme, Sample::ReadOnly),
-            self.field(theme, Sample::Disabled),
+            self.field(fields, Sample::ReadOnly),
+            self.field(fields, Sample::Disabled),
         ]);
         View::new(
             Node::new(Role::Window, TITLE)

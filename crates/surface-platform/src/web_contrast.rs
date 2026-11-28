@@ -250,6 +250,7 @@ mod browser {
     struct ColorProbe {
         root: HtmlElement,
         pairs: [HtmlElement; 3],
+        gray_text_supported: bool,
         scheme: String,
     }
 
@@ -267,6 +268,12 @@ mod browser {
                 "position:fixed;visibility:hidden;pointer-events:none;width:0;height:0;overflow:hidden;forced-color-adjust:auto;",
             );
             style.set_property_with_priority("color-scheme", &scheme, "important")?;
+            let gray_text_supported = style
+                .set_property_with_priority("color", "GrayText", "important")
+                .is_ok()
+                && style
+                    .get_property_value("color")
+                    .is_ok_and(|value| !value.is_empty());
             let pair = |(name, background, foreground)| -> Result<HtmlElement, JsValue> {
                 let element: HtmlElement = document.create_element("span")?.dyn_into()?;
                 element.set_attribute("data-surface-system-pair", name)?;
@@ -293,6 +300,7 @@ mod browser {
             Ok(Self {
                 root,
                 pairs,
+                gray_text_supported,
                 scheme,
             })
         }
@@ -318,11 +326,18 @@ mod browser {
             };
             let [canvas, button, highlight] = PAIRS;
             let [canvas_probe, button_probe, highlight_probe] = &self.pairs;
-            Ok(SystemContrastColors::new(
+            let colors = SystemContrastColors::new(
                 read_pair(canvas_probe, canvas)?,
                 read_pair(button_probe, button)?,
                 read_pair(highlight_probe, highlight)?,
-            ))
+            );
+            let gray_text = self
+                .gray_text_supported
+                .then(|| window.get_computed_style(&self.root).ok().flatten())
+                .flatten()
+                .and_then(|style| style.get_property_value("color").ok())
+                .and_then(|color| css_color(&color));
+            Ok(gray_text.map_or(colors, |ink| colors.with_disabled_text(ink)))
         }
     }
 

@@ -5,7 +5,7 @@ use surface_app::View;
 use surface_material::{
     shape::LayoutDirection, typography, ButtonKind, ChoiceState, TextFieldAdornments,
     TextFieldAffix, TextFieldAppearance, TextFieldCounterOptions, TextFieldEditability,
-    TextFieldOptions, TextFieldTrailingAction, Theme, VectorIcon,
+    TextFieldOptions, TextFieldTheme, TextFieldTrailingAction, Theme, VectorIcon,
 };
 
 use crate::{scroll_field_demo::control_row, Message};
@@ -176,7 +176,7 @@ impl TextFieldCounterDemo {
             .suppress_repeated_activation()
     }
 
-    fn field(&self, theme: &Theme, sample: Sample) -> View<Message> {
+    fn field(&self, fields: TextFieldTheme<'_>, sample: Sample) -> View<Message> {
         use TextFieldCounterDemoEvent::*;
         let demo = Message::TextFieldCounterDemo;
         let (id, label, value, editability) = match sample {
@@ -230,18 +230,18 @@ impl TextFieldCounterDemo {
                 on_press: demo(Clear),
             });
         }
-        let field = theme
-            .text_field_with_counter(
+        let field = fields
+            .single_line(
                 self.appearance,
                 options,
                 adornments,
-                TextFieldCounterOptions {
+                Some(TextFieldCounterOptions {
                     max_graphemes: LIMIT,
                     over_limit_error: "請輸入最多 5 個字。",
                     describe: &|count, limit| {
                         format!("字數，已輸入 {count} 個字，上限 {limit} 個字。")
                     },
-                },
+                }),
                 move |value| demo(if editable { Edit(value) } else { EditLocked }),
                 move || editable.then(|| demo(Submit)),
             )
@@ -258,7 +258,12 @@ impl TextFieldCounterDemo {
         }
     }
 
-    pub(crate) fn view(&self, theme: &Theme, dark: bool) -> View<Message> {
+    pub(crate) fn view(
+        &self,
+        theme: &Theme,
+        fields: TextFieldTheme<'_>,
+        dark: bool,
+    ) -> View<Message> {
         use TextFieldCounterDemoEvent::*;
         let demo = Message::TextFieldCounterDemo;
         let toggle = |id, label, selected, message| {
@@ -322,9 +327,9 @@ impl TextFieldCounterDemo {
         )
         .accessibility_scroll_pages()
         .children([
-            self.field(theme, Sample::Editable),
-            self.field(theme, Sample::ReadOnly),
-            self.field(theme, Sample::Disabled),
+            self.field(fields, Sample::Editable),
+            self.field(fields, Sample::ReadOnly),
+            self.field(fields, Sample::Disabled),
             feedback,
         ]);
         View::new(
